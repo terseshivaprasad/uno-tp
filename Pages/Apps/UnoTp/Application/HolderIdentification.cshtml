@@ -39,7 +39,7 @@
             <div style="min-width:0;flex:1">
                 <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap">
                     <div style="font-size:14.5px;font-weight:700;color:var(--ink)">Holder 1</div>
-                    <span class="tag" style="background:#E8F1FB;color:var(--blue)">Primary</span>
+                    <span class="chip chip--primary">Primary</span>
                 </div>
                 <div style="font-size:11.5px;color:var(--muted);padding-top:3px">PAN and date of birth &middot; a folio search returns the same record</div>
             </div>
@@ -68,7 +68,7 @@
         <div style="display:flex;align-items:center;gap:12px;padding:14px 0 16px">
             <div class="holder-num holder-num--todo">+</div>
             <div style="min-width:0;flex:1">
-                <div style="font-size:14px;font-weight:600;color:var(--ink)">Add joint holder <span class="tag tag--optional" style="margin-left:6px">Optional</span></div>
+                <div style="font-size:14px;font-weight:600;color:var(--ink)">Add joint holder <span class="chip chip--muted" style="margin-left:6px">Optional</span></div>
                 <div style="font-size:11.5px;color:var(--muted);padding-top:3px">Opens a second search block below. A third holder unlocks only after the second is identified. Any joint holder can be removed later.</div>
             </div>
             <div style="display:flex;align-items:center;gap:7px;flex:none;color:var(--red)">
@@ -80,7 +80,7 @@
 
     <div class="field-hint">Renewal does not need its own flow &mdash; enter the same PAN or folio above and, if the folio has a deposit approaching maturity, the search result offers to renew it.</div>
 
-    <div class="actionbar">
+    <div class="actionbar actionbar--sticky">
         <div class="actionbar__hint">Identify the primary holder to continue &mdash; <strong>consent opens once a record is matched</strong></div>
         <div style="display:flex;align-items:center;gap:24px">
             <a class="btn btn-secondary" asp-page="/Apps/UnoTp/Desktop/Dashboard">Back</a>
@@ -104,7 +104,7 @@
         <div style="min-width:0;flex:1">
             <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap">
                 <div style="font-size:17px;font-weight:600;color:var(--ink)">R&bull;&bull;&bull;&bull;&bull;&bull; T&bull;&bull;&bull;&bull;&bull;</div>
-                <span class="tag tag--success">Existing customer</span>
+                <span class="chip chip--success">Existing customer</span>
             </div>
             <div style="font-size:12px;color:var(--muted);padding-top:5px">PAN BISPM4465N &middot; DOB 10/06/1992 &middot; CKYC on file &middot; DPDP consent recorded 12 Mar 2025</div>
         </div>
@@ -151,7 +151,7 @@
         <span style="font-weight:600">Renew carries the folio forward</span> &mdash; the broker then makes the one decision renewal needs, whether to keep, add or drop a holder, and from there the flow is the ordinary purchase flow with the carried-forward holders already identified and consented. Create new FD starts that flow with no holders at all.
     </div>
 
-    <div class="actionbar">
+    <div class="actionbar actionbar--sticky">
         <div class="actionbar__hint">Pick an intent &mdash; <strong>renew an existing deposit, or start a new FD for this investor</strong></div>
         <div style="display:flex;align-items:center;gap:24px">
             <button type="button" class="btn btn-secondary hid-next" data-goto="search">Back</button>
@@ -182,7 +182,7 @@
                 <div style="font-size:11.5px;color:var(--text);line-height:1.5">All three carry forward. Identification and consent are already on file, so nothing is asked again except from a holder whose CKYC has lapsed &mdash; that holder re-enters consent and documents.</div>
             </div>
             <div style="border:1px solid var(--divider);background:#FAFBFC;border-radius:8px;padding:16px 17px;display:flex;flex-direction:column;gap:8px">
-                <div style="display:flex;align-items:center;gap:9px"><span class="radio-toggle__dot" style="background:#F2F4F7"></span><span style="font-size:13.5px;font-weight:700;color:var(--muted-2)">Add a holder</span><span class="tag" style="background:#EEF0F3;color:var(--muted)">Unavailable</span></div>
+                <div style="display:flex;align-items:center;gap:9px"><span class="radio-toggle__dot" style="background:#F2F4F7"></span><span style="font-size:13.5px;font-weight:700;color:var(--muted-2)">Add a holder</span><span class="chip chip--muted">Unavailable</span></div>
                 <div style="font-size:11.5px;color:var(--muted);line-height:1.5">Three holders on the folio already &mdash; the maximum. Removing one frees a slot, after which the new holder enters identification, consent and documents exactly as on a purchase.</div>
             </div>
             <div style="border:1px solid var(--border-3);border-radius:8px;padding:16px 17px;display:flex;flex-direction:column;gap:8px">
@@ -201,7 +201,7 @@
             <div class="holder-row">
                 <div class="holder-num holder-num--done holder-num--sm">&#10003;</div>
                 <div style="min-width:0;flex:1">
-                    <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap"><span style="font-size:13.5px;font-weight:600;color:var(--ink)">R&bull;&bull;&bull;&bull;&bull;&bull; T&bull;&bull;&bull;&bull;&bull;</span><span class="tag" style="background:#E8F1FB;color:var(--blue)">Primary</span></div>
+                    <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap"><span style="font-size:13.5px;font-weight:600;color:var(--ink)">R&bull;&bull;&bull;&bull;&bull;&bull; T&bull;&bull;&bull;&bull;&bull;</span><span class="chip chip--primary">Primary</span></div>
                     <div style="font-size:11.5px;color:var(--muted);padding-top:2px">Identified and consented 12 Mar 2025 &middot; CKYC valid &middot; documents on file</div>
                 </div>
                 <div style="font-size:12.5px;font-weight:700;color:var(--green);flex:none">Passes through</div>
@@ -243,7 +243,7 @@
         <span style="font-weight:600">From here the flow is the purchase flow.</span> Proceed opens Investor Information (03&ndash;08) with the carried-forward holders already identified and consented; only holder 3 walks the full identification, consent and document path. Amount, tenure and scheme are pre-filled from the maturing deposit on the deposit-details step and stay editable.
     </div>
 
-    <div class="actionbar">
+    <div class="actionbar actionbar--sticky">
         <div class="actionbar__hint">Continuing with the same three holders &mdash; <strong>holder 3 will be asked to re-verify inside the normal flow</strong></div>
         <div style="display:flex;align-items:center;gap:24px">
             <button type="button" class="btn btn-secondary hid-next" data-goto="result">Back</button>
@@ -261,20 +261,20 @@
             <div style="min-width:0;flex:1">
                 <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap">
                     <div style="font-size:14.5px;font-weight:700;color:var(--ink)">Holder 1</div>
-                    <span class="tag" style="background:#E8F1FB;color:var(--blue)">Primary</span>
+                    <span class="chip chip--primary">Primary</span>
                 </div>
                 <div style="font-size:11.5px;color:var(--muted);padding-top:3px">Identified &middot; 1 holder added, a third unlocks once the second is complete</div>
             </div>
             <div style="display:flex;align-items:center;gap:7px;flex:none">
                 <span style="font-size:13px;font-weight:600;color:var(--red)">Add joint holder</span>
-                <span class="tag tag--optional">Optional</span>
+                <span class="chip chip--muted">Optional</span>
             </div>
         </div>
     </div>
 
     <div style="display:flex;align-items:center;gap:12px">
         <div style="font-size:14px;font-weight:600;flex:1;min-width:0">Existing customer &middot; matched on PAN + date of birth</div>
-        <span class="tag tag--success">Identified</span>
+        <span class="chip chip--success">Identified</span>
     </div>
 
     <div class="kv-grid kv-grid--4">
@@ -292,14 +292,14 @@
 
     <div style="border-top:1px solid var(--divider);padding-top:16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
         <div style="min-width:260px;flex:1">
-            <div class="section-label">DPDP consent</div>
+            <div style="font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">DPDP consent</div>
             <div style="display:flex;align-items:center;gap:9px;padding-top:6px">
                 <span class="text-green" style="font-size:14px;font-weight:700">&#10003;</span>
                 <span style="font-size:13.5px;font-weight:600">Valid consent already on file &middot; 12 Mar 2025 &middot; CN-77341</span>
             </div>
             <div class="field-hint" style="padding-top:4px">Nothing to collect. A notification goes to the registered mobile and email, and this holder is complete.</div>
         </div>
-        <span class="tag tag--success" style="white-space:nowrap">Consent complete</span>
+        <span class="chip chip--success">Consent complete</span>
     </div>
 
     <div class="field-hint">Yes &mdash; no PAN document and no NSDL check. Because consent is already on file the consent screen is skipped entirely. No &mdash; Operations corrects the record and this holder waits.</div>
@@ -309,7 +309,7 @@
         <button type="button" class="btn btn-secondary btn-sm hid-next" data-goto="newpan" style="align-self:flex-start">Add joint holder</button>
     </div>
 
-    <div class="actionbar">
+    <div class="actionbar actionbar--sticky">
         <div class="actionbar__hint">Record matched and consent already on file &mdash; <strong>this holder needs nothing further</strong></div>
         <div style="display:flex;align-items:center;gap:24px">
             <button type="button" class="btn btn-secondary hid-next" data-goto="result">Back</button>
@@ -323,7 +323,7 @@
 <section class="hid-section" data-step="newpan" hidden>
     <div style="display:flex;flex-direction:column;gap:10px;border-bottom:1px solid var(--divider-2);padding-bottom:18px">
         <div style="display:flex;align-items:baseline;gap:12px">
-            <div class="section-label" style="flex:1">Holders on this application</div>
+            <div class="section-label" style="flex:1;font-size:11.5px">Holders on this application</div>
             <div style="font-size:12px;color:var(--muted)">Either or Survivor &middot; 3 holders</div>
         </div>
         <div style="display:flex;flex-direction:column;gap:7px">
@@ -383,14 +383,14 @@
 
     <div style="border-top:1px solid var(--divider);padding-top:16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
         <div style="min-width:260px;flex:1">
-            <div class="section-label">DPDP consent</div>
+            <div style="font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">DPDP consent</div>
             <div style="font-size:13.5px;font-weight:600;padding-top:6px">No consent on file &mdash; collection required</div>
             <div class="field-hint" style="padding-top:4px">Opens once NSDL returns valid. This holder is set to offline, so two signed forms and a consent OTP are collected on screen 05.</div>
         </div>
-        <span class="tag tag--warn" style="white-space:nowrap">Consent pending</span>
+        <span class="chip chip--warn">Consent pending</span>
     </div>
 
-    <div class="actionbar">
+    <div class="actionbar actionbar--sticky">
         <div class="actionbar__hint">Holder 3 &middot; NSDL validation failed &mdash; <strong>correct the name and date of birth, then retry</strong></div>
         <div style="display:flex;align-items:center;gap:24px">
             <button type="button" class="btn btn-secondary hid-next" data-goto="existing">Back</button>
@@ -404,7 +404,7 @@
 <section class="hid-section" data-step="consent" hidden>
     <div style="display:flex;flex-direction:column;gap:10px;border-bottom:1px solid var(--divider-2);padding-bottom:18px">
         <div style="display:flex;align-items:baseline;gap:12px">
-            <div class="section-label" style="flex:1">Holders on this application</div>
+            <div class="section-label" style="flex:1;font-size:11.5px">Holders on this application</div>
             <div style="font-size:12px;color:var(--muted)">Either or Survivor &middot; 3 holders</div>
         </div>
         <div style="display:flex;flex-direction:column;gap:7px">
@@ -428,7 +428,7 @@
 
     <div style="display:flex;align-items:center;gap:12px">
         <div style="font-size:14px;font-weight:600;flex:1;min-width:0">Holder 2 &middot; S&bull;&bull;&bull;&bull; T&bull;&bull;&bull;&bull;&bull; &middot; consent required</div>
-        <span class="tag" style="background:#EEF0F3;color:var(--muted)">Joint holder</span>
+        <span class="chip chip--muted">Joint holder</span>
         <button type="button" class="btn btn-secondary btn-sm hid-next" data-goto="newpan">Remove holder</button>
     </div>
 
@@ -446,16 +446,16 @@
 
     <div class="form-grid form-grid--2">
         <div style="border-top:2px solid var(--red);padding-top:14px;display:flex;flex-direction:column;gap:12px">
-            <div style="display:flex;align-items:center;gap:8px"><div style="font-size:13px;font-weight:700;flex:1;min-width:0">Offline &middot; selected for this holder</div><span class="tag tag--warn">2 forms + OTP</span></div>
+            <div style="display:flex;align-items:center;gap:8px"><div style="font-size:13px;font-weight:700;flex:1;min-width:0">Offline &middot; selected for this holder</div><span class="chip chip--warn">2 forms + OTP</span></div>
             <div class="field-hint">Each consent is a separate form with its own download and its own upload. Both must be accepted before the consent OTP is sent. No CKYC record is pulled here.</div>
 
             <div style="border-top:1px solid var(--divider);padding-top:10px;display:flex;flex-direction:column;gap:8px">
-                <div style="display:flex;align-items:center;gap:8px"><div style="font-size:12.5px;font-weight:700;flex:1;min-width:0">1 &middot; DPDP consent</div><span class="tag tag--success" style="white-space:nowrap">Uploaded</span></div>
+                <div style="display:flex;align-items:center;gap:8px"><div style="font-size:12.5px;font-weight:700;flex:1;min-width:0">1 &middot; DPDP consent</div><span class="chip chip--success">Uploaded</span></div>
                 <div class="field-hint">Consent to process the holder&rsquo;s personal data. dpdp-holder2.pdf &middot; 1.1 MB &middot; accepted 11:14</div>
                 <div style="display:flex;gap:8px"><button type="button" class="btn btn-secondary btn-sm">Download form</button><button type="button" class="btn btn-secondary btn-sm">Replace upload</button></div>
             </div>
             <div style="border-top:1px solid var(--divider);padding-top:10px;display:flex;flex-direction:column;gap:8px">
-                <div style="display:flex;align-items:center;gap:8px"><div style="font-size:12.5px;font-weight:700;flex:1;min-width:0">2 &middot; CKYC (CERSAI) consent</div><span class="tag tag--warn" style="white-space:nowrap">Awaiting upload</span></div>
+                <div style="display:flex;align-items:center;gap:8px"><div style="font-size:12.5px;font-weight:700;flex:1;min-width:0">2 &middot; CKYC (CERSAI) consent</div><span class="chip chip--warn">Awaiting upload</span></div>
                 <div class="field-hint">Authorises the CKYC record download from CERSAI &mdash; the download itself runs at application completion. Form downloaded 11:05 &mdash; signed copy not uploaded yet.</div>
                 <div style="display:flex;gap:8px"><button type="button" class="btn btn-secondary btn-sm">Download form</button><button type="button" class="btn btn-primary btn-sm">Upload signed copy</button></div>
             </div>
@@ -466,14 +466,14 @@
         </div>
 
         <div style="border-top:1px solid var(--divider-2);padding-top:14px;display:flex;flex-direction:column;gap:10px">
-            <div style="display:flex;align-items:center;gap:8px"><div style="font-size:13px;font-weight:700;flex:1;min-width:0;color:var(--text)">Digital &middot; not selected</div><span class="tag" style="background:#E8F1FB;color:var(--blue)">1 link</span></div>
+            <div style="display:flex;align-items:center;gap:8px"><div style="font-size:13px;font-weight:700;flex:1;min-width:0;color:var(--text)">Digital &middot; not selected</div><span class="chip chip--primary">1 link</span></div>
             <div class="field-hint">One link covering DPDP and CERSAI goes to the registered mobile and email. The holder accepts it &mdash; no upload, no consent OTP. The CKYC download and its OTP come at application completion.</div>
             <button type="button" class="btn btn-secondary btn-sm" disabled>Send consent link</button>
         </div>
     </div>
     <div class="field-hint">Registered contacts cannot be edited here.</div>
 
-    <div class="actionbar">
+    <div class="actionbar actionbar--sticky">
         <div class="actionbar__hint">Holder 2 &middot; both signed forms must be accepted before the consent OTP is sent &mdash; <strong>1 of 2 accepted</strong></div>
         <div style="display:flex;align-items:center;gap:24px">
             <button type="button" class="btn btn-secondary hid-next" data-goto="newpan">Back</button>
@@ -493,14 +493,14 @@
     <table class="data-table">
         <thead><tr><th>Holder</th><th>Source</th><th>Identification</th><th>DPDP consent</th><th>CKYC</th></tr></thead>
         <tbody>
-            <tr><td><strong>Holder 1</strong><div class="field-hint">primary &middot; folio MF0051187</div></td><td><span class="tag" style="background:#EEF0F3;color:var(--muted)">n/a</span></td><td class="text-green">Existing</td><td class="text-green">On file 12 Mar 2025</td><td class="text-green">On file</td></tr>
-            <tr><td><strong>Holder 2</strong><div class="field-hint">folio MF0051188</div></td><td><span class="tag tag--warn">Offline</span></td><td class="text-green">Existing</td><td class="text-green">Uploaded &middot; OTP verified</td><td style="color:var(--blue);font-weight:600">At completion</td></tr>
-            <tr><td><strong>Holder 3</strong><div class="field-hint">new customer</div></td><td><span class="tag tag--warn">Offline</span></td><td class="text-green">NSDL valid</td><td class="text-green">Uploaded &middot; OTP verified</td><td style="color:var(--blue);font-weight:600">At completion</td></tr>
+            <tr><td><strong>Holder 1</strong><div class="field-hint">primary &middot; folio MF0051187</div></td><td><span class="chip chip--muted">n/a</span></td><td class="text-green">Existing</td><td class="text-green">On file 12 Mar 2025</td><td class="text-green">On file</td></tr>
+            <tr><td><strong>Holder 2</strong><div class="field-hint">folio MF0051188</div></td><td><span class="chip chip--warn">Offline</span></td><td class="text-green">Existing</td><td class="text-green">Uploaded &middot; OTP verified</td><td style="color:var(--blue);font-weight:600">At completion</td></tr>
+            <tr><td><strong>Holder 3</strong><div class="field-hint">new customer</div></td><td><span class="chip chip--warn">Offline</span></td><td class="text-green">NSDL valid</td><td class="text-green">Uploaded &middot; OTP verified</td><td style="color:var(--blue);font-weight:600">At completion</td></tr>
         </tbody>
     </table>
     <div class="field-hint">Consent artefacts &mdash; timestamp, channel, purpose, IP, holder reference &mdash; are stored against the application for audit.</div>
 
-    <div class="actionbar">
+    <div class="actionbar actionbar--sticky">
         <div class="actionbar__hint">All three holders are identified and consented &mdash; <strong>ready to move to the documents step</strong></div>
         <div style="display:flex;align-items:center;gap:24px">
             <button type="button" class="btn btn-secondary hid-next" data-goto="consent">Back</button>
