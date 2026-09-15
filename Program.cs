@@ -1,5 +1,9 @@
 var builder = WebApplication.CreateBuilder(args);
 
+// Render (and most container platforms) assign the listen port via $PORT.
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+
 // Add services to the container.
 builder.Services.AddRazorPages();
 
@@ -13,7 +17,7 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+// No UseHttpsRedirection: Render terminates TLS at the edge and forwards plain HTTP to the container.
 
 app.UseRouting();
 
