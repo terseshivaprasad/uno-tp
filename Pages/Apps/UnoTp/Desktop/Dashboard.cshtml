@@ -1,0 +1,115 @@
+@page "/Apps/UnoTp/Dashboard"
+@model UnoTp.Pages.Apps.UnoTpApp.Desktop.DashboardModel
+@namespace UnoTp.Pages.Apps.UnoTpApp.Desktop
+@{
+    ViewData["Title"] = "Uno TP Dashboard";
+}
+
+<div class="dashboard-grid">
+    <div style="display:flex;flex-direction:column;gap:16px">
+        <div class="card" style="display:flex;align-items:center;gap:24px;flex-wrap:wrap">
+            <div style="min-width:0;flex:1">
+                <div style="font-size:22px;font-weight:500;color:var(--ink)">Good morning, Shivaprasad</div>
+                <div style="font-size:13px;color:var(--muted);padding-top:5px"><span style="font-weight:600;color:var(--red-dark)">5 applications need you today</span> &middot; 11 in flight &middot; 3 booked this week</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:18px">
+                <a class="btn btn-primary" asp-page="/Apps/UnoTp/Application/HolderIdentification">Create New FD
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M10 6l6 6-6 6"></path></svg>
+                </a>
+                <a href="#" style="font-size:13px;font-weight:600;color:var(--text)">Resume last application</a>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card__header">
+                <div class="card__title">Needs your attention</div>
+                <div class="card__subtitle">oldest first &middot; a blocker older than 7 days is escalated to Operations</div>
+            </div>
+            <table class="data-table" style="border:none">
+                <thead><tr><th>Application</th><th>Holder</th><th>Stage</th><th>What is blocking it</th><th>Waiting</th><th></th></tr></thead>
+                <tbody>
+                @foreach (var n in Model.NeedsAttention)
+                {
+                    <tr>
+                        <td><strong>@n.AppNo</strong></td>
+                        <td><strong>@n.Holder</strong><div style="font-size:11px;color:var(--muted);padding-top:2px">@n.HolderTag</div></td>
+                        <td>@n.Stage</td>
+                        <td class="@n.BlockerClass">@n.Blocker</td>
+                        <td class="@n.BlockerClass">@n.Waiting</td>
+                        <td><a class="action-link" asp-page="/Apps/UnoTp/Application/HolderIdentification">@n.Action</a></td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <div class="card__header">
+                <div class="card__title">In flight</div>
+                <a class="action-link" asp-page="/Desktop/Index">View all 11</a>
+            </div>
+            <div class="kv-grid kv-grid--4">
+            @foreach (var s in Model.InFlightSummary)
+            {
+                <div style="border:1px solid var(--border);border-radius:8px;padding:14px 15px"><div style="font-size:22px;font-weight:600">@s.Count</div><div style="font-size:12px;font-weight:600;color:var(--text)">@s.Label</div><div style="font-size:11px;color:var(--muted)">@s.Detail</div></div>
+            }
+            </div>
+        </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:16px">
+        <div class="card">
+            <div style="font-size:14px;font-weight:600;margin-bottom:8px">Start a new FD</div>
+        @{
+            var quickActionIcons = new[]
+            {
+                "<path d=\"M14 3H7a1 1 0 00-1 1v16a1 1 0 001 1h10a1 1 0 001-1V7z\"></path><path d=\"M14 3v4h4\"></path>",
+                "<rect x=\"3\" y=\"5\" width=\"18\" height=\"12\" rx=\"2\"></rect><path d=\"M8 21h8M12 17v4\"></path>",
+                "<path d=\"M10 13a5 5 0 007 0l2-2a5 5 0 00-7-7l-1 1\"></path><path d=\"M14 11a5 5 0 00-7 0l-2 2a5 5 0 007 7l1-1\"></path>",
+                "<path d=\"M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6z\"></path>",
+            };
+        }
+        @for (var i = 0; i < Model.QuickActions.Count; i++)
+        {
+            var q = Model.QuickActions[i];
+            var icon = quickActionIcons[i % quickActionIcons.Length];
+            @if (q.PageLink is not null)
+            {
+                <a class="profile-link-row" style="text-decoration:none;color:inherit;gap:11px" asp-page="@q.PageLink"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="1.6" stroke-linecap="round" style="flex:none">@Html.Raw(icon)</svg> @q.Title <span class="action-link" style="margin-left:auto">Open</span></a>
+            }
+            else
+            {
+                <div class="profile-link-row js-stub" style="gap:11px"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="1.6" stroke-linecap="round" style="flex:none">@Html.Raw(icon)</svg> @q.Title <span class="action-link" style="margin-left:auto">Open</span></div>
+            }
+        }
+        </div>
+
+        <div class="card">
+            <div style="font-size:14px;font-weight:600;margin-bottom:8px">FD services</div>
+        @foreach (var s in Model.Services)
+        {
+            <div class="profile-link-row">@s.Title <span style="margin-left:auto;font-size:11px;color:var(--muted)">@s.Detail</span></div>
+        }
+        </div>
+
+        <div class="callout">
+            <div style="font-size:13.5px;font-weight:700">Have these ready before you start</div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+            @foreach (var c in Model.Checklist)
+            {
+                <div style="display:flex;gap:9px;font-size:12px;color:var(--text)"><span style="color:var(--red);font-weight:700">@c.Step</span>@c.Text</div>
+            }
+            </div>
+            <div style="font-size:11.5px;color:var(--muted)">Four steps: documents, investor information, payment, deposit details. Only the primary holder is required &mdash; joint holders are optional, up to two more.</div>
+            <a class="action-link" href="#">See the full document list</a>
+        </div>
+
+        <div class="card">
+            <div style="font-size:12.5px;font-weight:600;margin-bottom:6px">Good to know</div>
+        @foreach (var note in Model.GoodToKnow)
+        {
+            <div style="font-size:11.5px;color:var(--muted);padding-bottom:4px">&bull; @note</div>
+        }
+        </div>
+    </div>
+</div>

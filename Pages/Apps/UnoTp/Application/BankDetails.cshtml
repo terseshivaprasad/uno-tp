@@ -1,0 +1,58 @@
+@page "/Apps/UnoTp/Application/BankDetails"
+@model UnoTp.Pages.Apps.UnoTpApp.Application.BankDetailsModel
+@namespace UnoTp.Pages.Apps.UnoTpApp.Application
+@{
+    ViewData["Title"] = "Bank Details & Payment";
+    Layout = "/Pages/Shared/_WizardLayout.cshtml";
+    ViewData["WizardStep"] = "bank";
+    ViewData["StepLabel"] = "Step 3 of 5";
+}
+
+<div class="summary-block">
+    <div class="summary-block__title">Payment Bank Details</div>
+    <div class="field-hint">The payment account the deposit is funded from.</div>
+    <div class="form-grid">
+        <div class="field"><label>Bank name <span class="required">*</span></label><input value="HDFC Bank" /></div>
+        <div class="field"><label>Branch name</label><input value="Andheri East, Mumbai" /></div>
+        <div class="field"><label>IFSC <span class="required">*</span></label><input value="HDFC0000521" /></div>
+        <div class="field"><label>Account number <span class="required">*</span></label><input /></div>
+        <div class="field"><label>Re-enter Account Number <span class="required">*</span></label><input /></div>
+        <div class="field"><label>Search IFSC / branch / location</label><input placeholder="Axis CMS location" /></div>
+    </div>
+</div>
+
+<div class="summary-block">
+    <div class="summary-block__title">Repayment Bank Details</div>
+    <div class="field-hint">Same as the payment account &mdash; skipped while the accounts are the same.</div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500"><input type="checkbox" checked /> Same as the payment account</label>
+    <div class="form-grid" style="opacity:.5">
+        <div class="field"><label>Bank name</label><input disabled placeholder="not needed" /></div>
+        <div class="field"><label>IFSC</label><input disabled placeholder="not needed" /></div>
+        <div class="field"><label>Account Number</label><input disabled placeholder="not needed" /></div>
+    </div>
+</div>
+
+<div class="summary-block">
+    <div class="summary-block__title">Payment cheque</div>
+    <div class="doc-row">
+        <div><div class="doc-row__title">Cheque no. FD41120CQ</div><div class="doc-row__hint">Matches the payment account &middot; cheque date verified</div></div>
+        <span class="tag tag--success">Matches</span>
+    </div>
+    <div class="form-grid">
+        <div class="field"><label>Cheque Number <span class="required">*</span></label><input /></div>
+        <div class="field"><label>Cheque Date <span class="required">*</span></label><input type="date" /></div>
+        <div class="field"><label>MICR</label><input /></div>
+    </div>
+</div>
+
+<form method="post">
+    <div class="wizard__actions">
+        <div class="wizard__actions-left">
+            <a class="btn btn-secondary" asp-page="/Apps/UnoTp/Application/InvestorInfo">Back</a>
+            <button type="button" class="btn btn-secondary">Clear All</button>
+        </div>
+        <div class="wizard__actions-right">
+            <button type="submit" class="btn btn-primary">Proceed</button>
+        </div>
+    </div>
+</form>

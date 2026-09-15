@@ -1,0 +1,56 @@
+@{
+    Layout = "_Layout";
+    // Expected ViewData: "WizardStep" = one of "docs","investor","bank","fdconfig","review"
+    // "ApplicationNo" = application number to show, "StepLabel" = "Step X of 5"
+    var step = ViewData["WizardStep"] as string ?? "investor";
+    var appNo = ViewData["ApplicationNo"] as string ?? "FBBMFL26F99AAC1";
+    var stepLabel = ViewData["StepLabel"] as string ?? "Step 2 of 5";
+
+    string RailClass(string key) => key == step ? "rail-item rail-item--active" : "rail-item";
+}
+<div class="wizard">
+    <div class="wizard__topbar">
+        <div class="wizard__appno">@appNo</div>
+        <div class="wizard__steplabel">@stepLabel</div>
+    </div>
+    <div class="wizard__body">
+        <nav class="wizard__rail">
+            <a class="@RailClass("docs")" asp-page="/Apps/UnoTp/Application/UploadDocuments">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V7z"></path><path d="M14 3v4h4"></path></svg>
+                <span>Upload Documents</span>
+                <i class="rail-dot rail-dot--@(step=="docs" || RailDone(step,"docs") ? "done" : "todo")"></i>
+            </a>
+            <a class="@RailClass("investor")" asp-page="/Apps/UnoTp/Application/InvestorInfo">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>
+                <span>Investor Information</span>
+                <i class="rail-dot rail-dot--@(step=="investor" ? "current" : (RailDone(step,"investor") ? "done" : "todo"))"></i>
+            </a>
+            <a class="@RailClass("bank")" asp-page="/Apps/UnoTp/Application/BankDetails">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v8M9.5 10.5h5M9.5 13.5h5"></path></svg>
+                <span>Bank Details &amp; Payment</span>
+                <i class="rail-dot rail-dot--@(step=="bank" ? "current" : (RailDone(step,"bank") ? "done" : "todo"))"></i>
+            </a>
+            <a class="@RailClass("fdconfig")" asp-page="/Apps/UnoTp/Application/FdConfiguration">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5h6a2 2 0 0 1 2 2v12a2 2 0 0 0-2-2H5z"></path><path d="M19 5h-6a2 2 0 0 0-2 2v12a2 2 0 0 1 2-2h6z"></path></svg>
+                <span>FD Configuration</span>
+                <i class="rail-dot rail-dot--@(step=="fdconfig" ? "current" : (RailDone(step,"fdconfig") ? "done" : "todo"))"></i>
+            </a>
+            <a class="@RailClass("review")" asp-page="/Apps/UnoTp/Application/ReviewSummary">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"></path><circle cx="12" cy="12" r="9"></circle></svg>
+                <span>Review Summary</span>
+                <i class="rail-dot rail-dot--@(step=="review" ? "current" : "todo")"></i>
+            </a>
+        </nav>
+        <div class="wizard__content">
+            @RenderBody()
+        </div>
+    </div>
+</div>
+@await RenderSectionAsync("Scripts", required: false)
+@functions {
+    bool RailDone(string current, string check)
+    {
+        var order = new[] { "docs", "investor", "bank", "fdconfig", "review" };
+        return Array.IndexOf(order, check) < Array.IndexOf(order, current);
+    }
+}

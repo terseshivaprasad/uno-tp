@@ -1,0 +1,54 @@
+@page "/Apps/UnoTp/Application/Submitted"
+@model UnoTp.Pages.Apps.UnoTpApp.Application.SubmittedModel
+@namespace UnoTp.Pages.Apps.UnoTpApp.Application
+@{
+    ViewData["Title"] = "Application Submitted";
+    Layout = "/Pages/Shared/_Layout.cshtml";
+}
+
+<div class="app-shell">
+<div class="center-panel">
+    <div class="success-icon">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#146C34" stroke-width="2.2" stroke-linecap="round"><path d="M20 6L9 17l-5-5"></path></svg>
+    </div>
+    <div>
+        <div style="font-size:20px;font-weight:700;color:var(--ink)">Application submitted</div>
+        <div style="font-size:13px;color:var(--muted);padding-top:6px">FBBMFL26F99AAC1 &middot; waiting on the investor's payment</div>
+    </div>
+
+    <div class="card" style="width:100%;text-align:left">
+        <div class="summary-block__title" style="border:none;margin:0;padding:0">Payment pending</div>
+        <div class="field-hint" style="padding-top:6px">The link was sent to 9821440063 and expires if unpaid by 16 Sep, 5:04 PM &mdash; held to 16 Sep.</div>
+    </div>
+
+    <div class="card" style="width:100%;text-align:left">
+        <div class="summary-block__title" style="border:none;margin:0;padding:0 0 10px">Deposit summary</div>
+        <dl class="kv-grid--2">
+            <div class="kv"><dt>Invested amount</dt><dd>&#8377; 5,00,000</dd></div>
+            <div class="kv"><dt>Rate of interest</dt><dd>7.9%</dd></div>
+            <div class="kv"><dt>Tenure</dt><dd>44 months</dd></div>
+            <div class="kv"><dt>Maturity value</dt><dd>&#8377; 7,04,120 &middot; rate locks on realisation</dd></div>
+            <div class="kv"><dt>Scheme</dt><dd>Public &middot; Cumulative</dd></div>
+            <div class="kv"><dt>Payout / Delivery</dt><dd>On maturity &middot; E-receipt on booking</dd></div>
+            <div class="kv"><dt>Auto renewal</dt><dd>Yes</dd></div>
+            <div class="kv"><dt>Holders</dt><dd>Priya Sunil Nair (primary) + 2</dd></div>
+        </dl>
+    </div>
+
+    <div class="card" style="width:100%;text-align:left">
+        <div class="summary-block__title" style="border:none;margin:0;padding:0 0 10px">What happens next</div>
+        <div class="field-hint">1. Investor pays the link &middot; 2. Operations verifies the documents &middot; 3. TDS/15G and cheque re-checked at booking &middot; 4. Deposit booked and e-receipt issued.</div>
+    </div>
+
+    <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
+        <button type="button" class="btn btn-secondary">Resend payment link</button>
+        <button type="button" class="btn btn-secondary">Download acknowledgement</button>
+        <a class="btn btn-secondary" asp-page="/Apps/UnoTp/Desktop/Dashboard">Track this application</a>
+    </div>
+
+    <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;padding-top:10px;border-top:1px solid var(--divider-2);width:100%">
+        <a class="btn btn-primary" asp-page="/Apps/UnoTp/Application/HolderIdentification">New application</a>
+        <a class="btn btn-secondary" asp-page="/Apps/UnoTp/Desktop/Dashboard">Back to home</a>
+    </div>
+</div>
+</div>

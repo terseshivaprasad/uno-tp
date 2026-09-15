@@ -1,0 +1,72 @@
+@page "/Apps/UnoTp/Application/UploadDocuments"
+@model UnoTp.Pages.Apps.UnoTpApp.Application.UploadDocumentsModel
+@namespace UnoTp.Pages.Apps.UnoTpApp.Application
+@{
+    ViewData["Title"] = "Upload Documents";
+    Layout = "/Pages/Shared/_WizardLayout.cshtml";
+    ViewData["WizardStep"] = "docs";
+    ViewData["StepLabel"] = "Step 1 of 5";
+}
+
+<div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
+    <div class="card__title">Documents by holder</div>
+    <div class="card__subtitle">each row states why the document is asked for, what the system read from it, and what to do when a check fails</div>
+</div>
+
+<div class="field">
+    <label>Payment Mode <span class="required">*</span></label>
+    <select style="max-width:260px"><option>Cheque</option><option>NEFT/RTGS</option></select>
+</div>
+
+<div class="holder-block">
+    <div class="holder-block__title">Holder 1 <span class="tag tag--primary">Primary</span></div>
+    <div class="form-grid form-grid--2">
+        <div class="field"><label>Differing mailing address?</label><select><option>No</option><option>Yes</option></select></div>
+        <div class="field"><label>Person with disability?</label><select><option>No</option><option>Yes</option></select></div>
+    </div>
+
+    <div class="doc-row">
+        <div><div class="doc-row__title">PAN card</div><div class="doc-row__hint">Verified against source on all seven fields</div></div>
+        <span class="tag tag--success">Verified</span>
+    </div>
+    <div class="doc-row">
+        <div><div class="doc-row__title">Proof of address (Aadhaar)</div><div class="doc-row__hint">Verify-with-source mandatory before proceeding</div></div>
+        <span class="tag tag--success">Verified</span>
+    </div>
+    <div class="doc-row">
+        <div><div class="doc-row__title">Photograph</div><div class="doc-row__hint">Face match against PAN and POA &mdash; mandatory</div></div>
+        <span class="tag tag--success">Passes</span>
+    </div>
+    <div class="doc-row">
+        <div><div class="doc-row__title">Payment cheque copy</div><div class="doc-row__hint">Asked because Payment Mode is Cheque</div></div>
+        <button type="button" class="btn btn-secondary btn-sm">Replace</button>
+    </div>
+</div>
+
+<div class="holder-block">
+    <div class="holder-block__title">Holder 3 <span class="tag tag--optional">Joint</span></div>
+    <div class="doc-row">
+        <div><div class="doc-row__title">PAN card</div><div class="doc-row__hint">OCR read name, DOB, gender &mdash; cross-checked with source</div></div>
+        <span class="tag tag--success">Verified</span>
+    </div>
+    <div class="doc-row">
+        <div><div class="doc-row__title">Proof of address (Driving licence)</div><div class="doc-row__hint">Verify-with-source mandatory before proceeding</div></div>
+        <span class="tag tag--warn">Awaiting upload</span>
+    </div>
+    <div class="doc-row">
+        <div><div class="doc-row__title">Photograph</div><div class="doc-row__hint">Face match against PAN and POA &mdash; mandatory</div></div>
+        <span class="tag tag--warn">Awaiting upload</span>
+    </div>
+</div>
+
+<form method="post">
+    <div class="wizard__actions">
+        <div class="wizard__actions-left">
+            <a class="btn btn-secondary" asp-page="/Apps/UnoTp/Application/HoldersComplete">Back</a>
+            <button type="button" class="btn btn-secondary">Clear All</button>
+        </div>
+        <div class="wizard__actions-right">
+            <button type="submit" class="btn btn-primary">Proceed</button>
+        </div>
+    </div>
+</form>

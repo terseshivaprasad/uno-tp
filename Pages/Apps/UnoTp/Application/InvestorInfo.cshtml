@@ -1,0 +1,69 @@
+@page "/Apps/UnoTp/Application/InvestorInfo"
+@model UnoTp.Pages.Apps.UnoTpApp.Application.InvestorInfoModel
+@namespace UnoTp.Pages.Apps.UnoTpApp.Application
+@{
+    ViewData["Title"] = "Investor Information";
+    Layout = "/Pages/Shared/_WizardLayout.cshtml";
+    ViewData["WizardStep"] = "investor";
+    ViewData["StepLabel"] = "Step 2 of 5";
+}
+
+<div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
+    <div class="card__title">Holder details</div>
+    <div class="card__subtitle">Fields OCR could not extract from the uploaded documents &mdash; two fields could not be read for Holder 3: gender, parent name and sub occupation</div>
+</div>
+
+<div class="holder-block">
+    <div class="holder-block__title">Holder 1 <span class="tag tag--primary">Primary</span></div>
+    <div class="form-grid">
+        <div class="field"><label>Applicant Name</label><input value="Priya Sunil Nair" readonly /></div>
+        <div class="field"><label>Date Of Birth</label><input value="12 Mar 1985" readonly /></div>
+        <div class="field"><label>Gender</label><select><option>Female</option><option>Male</option></select></div>
+        <div class="field"><label>Father / Mother / Spouse name</label><input /></div>
+        <div class="field"><label>Marital Status</label><select><option>Married</option><option>Single</option></select></div>
+        <div class="field"><label>Occupation</label><select><option>Professional</option><option>Salaried</option><option>Self-employed</option></select></div>
+        <div class="field"><label>Sub Occupation</label><input /></div>
+        <div class="field"><label>Annual Income</label><select><option>Upto Rs.5,00,000</option></select></div>
+        <div class="field"><label>Mobile Number</label><input value="98214XXX63" readonly /></div>
+        <div class="field"><label>E-Mail</label><input /></div>
+    </div>
+    <div class="summary-block">
+        <div class="summary-block__title">Permanent address</div>
+        <div class="form-grid">
+            <div class="field"><label>Address Line 1</label><input /></div>
+            <div class="field"><label>Address Line 2 (Non-mandatory)</label><input /></div>
+            <div class="field"><label>City</label><input /></div>
+            <div class="field"><label>Pin Code</label><input /></div>
+            <div class="field"><label>Mailing POA type</label><select><option>Same as permanent address</option></select></div>
+        </div>
+    </div>
+    <div class="summary-block">
+        <div class="summary-block__title">Nominee Details</div>
+        <div class="form-grid">
+            <div class="field"><label>Nominee Name</label><input /></div>
+            <div class="field"><label>Relation with primary holder</label><select><option>Daughter</option><option>Son</option><option>Spouse</option></select></div>
+            <div class="field"><label>Guardian Name (if minor)</label><input /></div>
+        </div>
+    </div>
+</div>
+
+<div class="holder-block">
+    <div class="holder-block__title">Holder 3 <span class="tag tag--optional">Joint</span> <span class="tag tag--warn">Two fields could not be read</span></div>
+    <div class="form-grid">
+        <div class="field"><label>Gender</label><select><option>Select</option><option>Male</option><option>Female</option></select></div>
+        <div class="field"><label>Father / Mother / Spouse name</label><input /></div>
+        <div class="field"><label>Sub Occupation</label><input /></div>
+    </div>
+</div>
+
+<form method="post">
+    <div class="wizard__actions">
+        <div class="wizard__actions-left">
+            <a class="btn btn-secondary" asp-page="/Apps/UnoTp/Application/UploadDocuments">Back</a>
+            <button type="button" class="btn btn-secondary">Clear All</button>
+        </div>
+        <div class="wizard__actions-right">
+            <button type="submit" class="btn btn-primary">Proceed</button>
+        </div>
+    </div>
+</form>

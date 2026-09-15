@@ -1,0 +1,31 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - E-Sarathi | Uno TP</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Georama:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/site.css" />
+</head>
+<body>
+    <header class="app-header">
+        <div class="app-header__brand">
+            <span class="brand-mahindra">mahindra</span><span class="brand-finance">FINANCE</span>
+        </div>
+        <div class="app-header__right">
+            <div><span class="welcome-label">Welcome,</span> Shivaprasad Terse <span class="entity-code">100002225</span></div>
+            <div class="app-header__nav">
+                <a asp-page="@(ViewData["FirstNavPage"] as string ?? "/Apps/UnoTp/Dashboard")">@(ViewData["FirstNavLabel"] as string ?? "Dashboard")</a>
+                <a asp-page="/Desktop/Index">Home</a>
+                <a asp-page="/Desktop/Index">Logout</a>
+            </div>
+        </div>
+    </header>
+    <main class="app-shell">
+        @RenderBody()
+    </main>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,51 @@
+@page "/Apps/UnoTp/Application/FdConfiguration"
+@model UnoTp.Pages.Apps.UnoTpApp.Application.FdConfigurationModel
+@namespace UnoTp.Pages.Apps.UnoTpApp.Application
+@{
+    ViewData["Title"] = "Fixed Deposit Configuration";
+    Layout = "/Pages/Shared/_WizardLayout.cshtml";
+    ViewData["WizardStep"] = "fdconfig";
+    ViewData["StepLabel"] = "Step 4 of 5";
+}
+
+<div class="card__title">Fixed Deposit Configuration</div>
+
+<div class="form-grid">
+    <div class="field"><label>Scheme <span class="required">*</span></label><select><option>Public</option><option>MMFSL Employee</option></select></div>
+    <div class="field"><label>Category <span class="required">*</span></label><select><option>Cumulative</option><option>Non-cumulative</option></select></div>
+    <div class="field"><label>Amount <span class="required">*</span></label><input value="₹ 5,00,000" /></div>
+    <div class="field"><label>Tenure <span class="required">*</span></label><select><option>44 months</option><option>33 months</option><option>50 months</option></select><div class="field-hint">longer tenures carry a higher rate</div></div>
+    <div class="field"><label>Interest rate</label><input value="7.9% p.a." readonly /></div>
+    <div class="field"><label>Interest payout</label><select><option>On maturity</option><option>Monthly</option><option>Quarterly</option><option>Half yearly</option><option>Yearly</option></select></div>
+    <div class="field"><label>Delivery type</label><select><option>E-receipt</option><option>Physical</option></select></div>
+    <div class="field"><label>Maturity instruction</label><select><option>Principal only</option><option>Principal and interest</option></select></div>
+</div>
+
+<div class="summary-block">
+    <div class="summary-block__title">Auto renewal</div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500"><input type="checkbox" /> Renew this deposit on maturity at the card rate of the day</label>
+</div>
+
+<div class="summary-block">
+    <div class="summary-block__title">Payout</div>
+    <div class="field-hint">Do not deduct tax at source &mdash; Form 15G is now mandatory when this is selected.</div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500"><input type="checkbox" /> Do not deduct tax at source (Form 15G)</label>
+</div>
+
+<dl class="kv-grid" style="border-top:1px solid var(--divider-2);padding-top:14px">
+    <div class="kv"><dt>Matures on</dt><dd>14 Sep 2029</dd></div>
+    <div class="kv"><dt>Maturity value</dt><dd>&#8377; 7,04,120 (indicative, from tenure and payout together)</dd></div>
+</dl>
+
+<form method="post">
+    <div class="wizard__actions">
+        <div class="wizard__actions-left">
+            <a class="btn btn-secondary" asp-page="/Apps/UnoTp/Application/BankDetails">Back</a>
+            <button type="button" class="btn btn-secondary">Clear All</button>
+        </div>
+        <div class="wizard__actions-right">
+            <a class="btn btn-secondary" asp-page="/Apps/UnoTp/Application/UploadDocuments">Go to documents</a>
+            <button type="submit" class="btn btn-primary">Proceed</button>
+        </div>
+    </div>
+</form>

@@ -1,0 +1,124 @@
+@page "/Apps/UnoTp/Application/ReviewSummary"
+@model UnoTp.Pages.Apps.UnoTpApp.Application.ReviewSummaryModel
+@namespace UnoTp.Pages.Apps.UnoTpApp.Application
+@{
+    ViewData["Title"] = "Review Summary";
+    Layout = "/Pages/Shared/_WizardLayout.cshtml";
+    ViewData["WizardStep"] = "review";
+    ViewData["StepLabel"] = "Step 5 of 5";
+}
+
+<div class="card__title">Review Summary</div>
+<div class="card__subtitle">Every control point has passed &mdash; the declarations below are the only thing left.</div>
+
+<div class="summary-block">
+    <div class="summary-block__title">Holders <a class="action-link" asp-page="/Apps/UnoTp/Application/HolderIdentification">Edit on 02-06</a></div>
+    <dl class="kv-grid">
+        <div class="kv"><dt>Holder 1 &middot; Primary</dt><dd>Priya Sunil Nair &middot; PAN BISPM4465N</dd></div>
+        <div class="kv"><dt>Holder 2</dt><dd>Anita Nair &middot; PAN AXKPT8891L</dd></div>
+        <div class="kv"><dt>Holder 3 &middot; Joint</dt><dd>Rohan Nair &middot; PAN CDEPN2290F</dd></div>
+    </dl>
+    <div class="field-hint">OCR name and DOB matched CKYC for each &middot; face match against POA and PAN passed for each.</div>
+</div>
+
+<div class="summary-block">
+    <div class="summary-block__title">Documents <a class="action-link" asp-page="/Apps/UnoTp/Application/UploadDocuments">Edit on 07</a></div>
+    <div class="field-hint">Verified on 07 &middot; verified against source on all seven fields &middot; all uploads for this application passed.</div>
+</div>
+
+<div class="summary-block">
+    <div class="summary-block__title">Investor Information <a class="action-link" asp-page="/Apps/UnoTp/Application/InvestorInfo">Edit on 08</a></div>
+    <dl class="kv-grid">
+        <div class="kv"><dt>Occupation</dt><dd>Professional</dd></div>
+        <div class="kv"><dt>Marital status</dt><dd>Married</dd></div>
+        <div class="kv"><dt>Annual income</dt><dd>Upto &#8377; 5,00,000</dd></div>
+        <div class="kv"><dt>Nominee</dt><dd>Daughter &middot; captured</dd></div>
+        <div class="kv"><dt>Mailing address</dt><dd>Same as permanent</dd></div>
+        <div class="kv"><dt>FATCA</dt><dd>Not a tax resident of a country other than India</dd></div>
+    </dl>
+</div>
+
+<div class="summary-block">
+    <div class="summary-block__title">Bank &amp; Payment <a class="action-link" asp-page="/Apps/UnoTp/Application/BankDetails">Edit on 09</a></div>
+    <dl class="kv-grid">
+        <div class="kv"><dt>Payment account</dt><dd>HDFC Bank &middot; XXXX XXXX 4417</dd></div>
+        <div class="kv"><dt>Repayment account</dt><dd>Same account</dd></div>
+        <div class="kv"><dt>Payment cheque</dt><dd class="text-green">Cheque matched</dd></div>
+    </dl>
+</div>
+
+<div class="summary-block">
+    <div class="summary-block__title">FD Configuration <a class="action-link" asp-page="/Apps/UnoTp/Application/FdConfiguration">Edit on 10</a></div>
+    <dl class="kv-grid">
+        <div class="kv"><dt>Invested amount</dt><dd>&#8377; 5,00,000</dd></div>
+        <div class="kv"><dt>Scheme / Category</dt><dd>Public &middot; Cumulative</dd></div>
+        <div class="kv"><dt>Tenure / Rate</dt><dd>44 months &middot; 7.9%</dd></div>
+        <div class="kv"><dt>Maturity value</dt><dd>&#8377; 7,04,120 &middot; matures on 14 Sep 2029</dd></div>
+        <div class="kv"><dt>Auto renewal</dt><dd>renews on maturity at the rate of the day</dd></div>
+        <div class="kv"><dt>TDS</dt><dd>Form 15G on file for the primary holder</dd></div>
+    </dl>
+</div>
+
+<div class="summary-block">
+    <div class="summary-block__title">Declarations</div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500"><input type="checkbox" checked disabled /> Sourced by sub broker code SB-100002225-14 &mdash; verified</label>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500"><input type="checkbox" /> One declaration still to sign &mdash; sign the last declaration to submit</label>
+</div>
+
+<div class="wizard__actions">
+    <div class="wizard__actions-left">
+        <a class="btn btn-secondary" asp-page="/Apps/UnoTp/Application/FdConfiguration">Back</a>
+        <button type="button" class="btn btn-secondary">Clear All</button>
+        <button type="button" class="btn btn-secondary">Download summary</button>
+    </div>
+    <div class="wizard__actions-right">
+        <button type="button" class="btn btn-primary" id="openPaymentLinkModal">Submit application</button>
+    </div>
+</div>
+
+@* 11A: Submit / payment link dialog. Overlay on top of Review Summary (11), per the mockup
+   ("11A — Submit · payment link dialog") — not a separate routed page. *@
+<div class="modal-overlay" id="paymentLinkModal" hidden>
+    <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="paymentLinkTitle">
+        <div class="center-panel" style="max-width:480px;margin:0 auto">
+            <div id="paymentLinkTitle" class="card__title">Send the payment link</div>
+            <div class="card__subtitle">The deposit is not booked until the investor pays. Unpaid after 48 hours the application lapses.</div>
+
+            <div class="card" style="width:100%;text-align:left">
+                <dl class="kv-grid--2">
+                    <div class="kv"><dt>Invested amount</dt><dd>&#8377; 5,00,000</dd></div>
+                    <div class="kv"><dt>Tenure / Rate of interest</dt><dd>44 months &middot; 7.9%</dd></div>
+                    <div class="kv"><dt>Payment method</dt><dd>Online</dd></div>
+                    <div class="kv"><dt>Paid from</dt><dd>Any account in a holder's name</dd></div>
+                    <div class="kv"><dt>Sent to</dt><dd>Primary holder's mobile, captured at search &middot; 98214 40063</dd></div>
+                    <div class="kv"><dt>Valid for</dt><dd>48 hours</dd></div>
+                </dl>
+                <div class="field-hint" style="margin-top:10px">The broker is the one the investor will call if the link does not work.</div>
+            </div>
+
+            <form method="post" asp-page-handler="Send" style="width:100%">
+                <div class="wizard__actions" style="border-top:none">
+                    <div class="wizard__actions-left">
+                        <button type="button" class="btn btn-secondary" id="closePaymentLinkModal">Back</button>
+                        <button type="button" class="btn btn-secondary">Try later</button>
+                    </div>
+                    <div class="wizard__actions-right">
+                        <button type="submit" class="btn btn-primary">Send payment link</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var modal = document.getElementById('paymentLinkModal');
+            var openBtn = document.getElementById('openPaymentLinkModal');
+            var closeBtn = document.getElementById('closePaymentLinkModal');
+            if (openBtn) openBtn.addEventListener('click', function () { modal.hidden = false; });
+            if (closeBtn) closeBtn.addEventListener('click', function () { modal.hidden = true; });
+        })();
+    </script>
+}
