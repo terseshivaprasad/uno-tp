@@ -4,7 +4,7 @@
 @{
     ViewData["Title"] = "Investor Information - Holder Identification";
     Layout = "/Pages/Shared/_WizardLayout.cshtml";
-    ViewData["WizardStep"] = "docs";
+    ViewData["WizardStep"] = "investor";
     ViewData["StepLabel"] = "Step 2 of 5";
     ViewData["ApplicationNo"] = "New application";
 }
@@ -32,30 +32,59 @@
         <div class="card__title">Holders</div>
         <div class="card__subtitle">the primary holder is required &middot; up to two joint holders are optional, each added after the previous one is identified</div>
     </div>
-    <div class="holder-block">
-        <div class="holder-block__title">Holder 1 <span class="tag tag--primary">Primary</span></div>
-        <div class="form-grid">
-            <div class="field">
-                <label>Search By</label>
-                <select><option>PAN</option><option>Folio Number</option></select>
+
+    <div style="border-top:2px solid var(--red)">
+        <div style="display:flex;align-items:center;gap:12px;padding:14px 0 12px">
+            <div class="holder-num holder-num--current">1</div>
+            <div style="min-width:0;flex:1">
+                <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap">
+                    <div style="font-size:14.5px;font-weight:700;color:var(--ink)">Holder 1</div>
+                    <span class="tag" style="background:#E8F1FB;color:var(--blue)">Primary</span>
+                </div>
+                <div style="font-size:11.5px;color:var(--muted);padding-top:3px">PAN and date of birth &middot; a folio search returns the same record</div>
             </div>
-            <div class="field">
-                <label>PAN <span class="required">*</span></label>
-                <input placeholder="e.g. BISPM4465N" />
+            <div style="font-size:12.5px;font-weight:700;color:var(--red-dark);flex:none">Not identified</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:16px;padding:0 0 18px;max-width:900px">
+            <div style="display:flex;align-items:center;gap:28px;flex-wrap:wrap">
+                <div style="font-size:12px;font-weight:500;color:var(--muted)">Search By</div>
+                <label class="radio-toggle"><span class="radio-toggle__dot radio-toggle__dot--checked"></span><span style="font-size:13px;font-weight:500;color:var(--ink)">PAN &amp; Date of Birth</span></label>
+                <label class="radio-toggle"><span class="radio-toggle__dot"></span><span style="font-size:13px;font-weight:500;color:var(--text)">Folio Number</span></label>
             </div>
-            <div class="field">
-                <label>Date of birth <span class="required">*</span></label>
-                <input type="date" />
+            <div class="form-grid" style="align-items:end">
+                <div class="field"><label>PAN <span class="required">*</span></label><input placeholder="e.g. BISPM4465N" /></div>
+                <div class="field"><label>Date of birth <span class="required">*</span></label><input type="date" /></div>
+                <div style="display:flex;align-items:center;gap:7px;padding-bottom:11px">
+                    <button type="button" class="action-link" style="background:none;border:0;cursor:pointer;display:flex;align-items:center;gap:7px">Check record
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#E31837" stroke-width="2" stroke-linecap="round"><path d="M10 6l6 6-6 6"></path></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="field-hint">Both fields are required &mdash; a PAN-only search is not permitted.</div>
+        </div>
+    </div>
+
+    <div style="border-top:2px solid var(--divider-2)">
+        <div style="display:flex;align-items:center;gap:12px;padding:14px 0 16px">
+            <div class="holder-num holder-num--todo">+</div>
+            <div style="min-width:0;flex:1">
+                <div style="font-size:14px;font-weight:600;color:var(--ink)">Add joint holder <span class="tag tag--optional" style="margin-left:6px">Optional</span></div>
+                <div style="font-size:11.5px;color:var(--muted);padding-top:3px">Opens a second search block below. A third holder unlocks only after the second is identified. Any joint holder can be removed later.</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:7px;flex:none;color:var(--red)">
+                <span style="font-size:13px;font-weight:600">Add holder 2</span>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#E31837" stroke-width="2" stroke-linecap="round"><path d="M10 6l6 6-6 6"></path></svg>
             </div>
         </div>
     </div>
+
     <div class="field-hint">Renewal does not need its own flow &mdash; enter the same PAN or folio above and, if the folio has a deposit approaching maturity, the search result offers to renew it.</div>
-    <div class="wizard__actions">
-        <div class="wizard__actions-left">
+
+    <div class="actionbar">
+        <div class="actionbar__hint">Identify the primary holder to continue &mdash; <strong>consent opens once a record is matched</strong></div>
+        <div style="display:flex;align-items:center;gap:24px">
             <a class="btn btn-secondary" asp-page="/Apps/UnoTp/Desktop/Dashboard">Back</a>
             <button type="button" class="btn btn-secondary">Clear All</button>
-        </div>
-        <div class="wizard__actions-right">
             <button type="button" class="btn btn-primary hid-next" data-goto="result">Proceed</button>
         </div>
     </div>
@@ -63,41 +92,70 @@
 
 <!-- 02A: Search result -->
 <section class="hid-section" data-step="result" hidden>
-    <div class="card__title">Search result</div>
-    <div class="card__subtitle">An outcome of the search the broker already runs &mdash; record found on the folio, with existing deposits and holders shown before proceeding.</div>
-    <div class="holder-block">
-        <div class="holder-block__title">Record found <span class="tag tag--success">Existing customer</span></div>
-        <dl class="kv-grid">
-            <div class="kv"><dt>Folio number</dt><dd>MF0051187</dd></div>
-            <div class="kv"><dt>PAN</dt><dd>BISPM4465N</dd></div>
-            <div class="kv"><dt>Name</dt><dd>Priya Sunil Nair</dd></div>
-        </dl>
-        <div class="summary-block">
-            <div class="summary-block__title">Holders on the folio</div>
-            <dl class="kv-grid">
-                <div class="kv"><dt>Holder 1 &middot; Primary</dt><dd>Priya Sunil Nair</dd></div>
-                <div class="kv"><dt>Holder 2</dt><dd>Not identified</dd></div>
-            </dl>
+    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--divider-2);padding-bottom:16px">
+        <div style="min-width:0;flex:1">
+            <div class="card__title">Record found</div>
+            <div class="card__subtitle" style="padding-top:4px">Searched by PAN &amp; date of birth &middot; one search, both intents</div>
         </div>
-        <div class="summary-block">
-            <div class="summary-block__title">Existing deposits</div>
-            <table class="data-table">
-                <thead><tr><th>FD number</th><th>Rate</th><th>Maturity</th><th></th></tr></thead>
-                <tbody>
-                    <tr><td>FD22771</td><td>7.4%</td><td>Not due</td><td></td></tr>
-                    <tr><td>FD38904</td><td>7.6%</td><td>Matures 13 Feb 2028</td><td></td></tr>
-                    <tr><td>FD41120</td><td>7.9%</td><td class="text-danger">Maturing soon</td><td><button type="button" class="action-link hid-next" data-goto="renewal" style="background:none;border:none;cursor:pointer">Renew</button></td></tr>
-                </tbody>
-            </table>
-            <div class="field-hint">Renew carries the folio forward &middot; or choose a different deposit above.</div>
-        </div>
+        <button type="button" class="btn btn-secondary btn-sm hid-next" data-goto="search">Search again</button>
     </div>
-    <div class="wizard__actions">
-        <div class="wizard__actions-left">
+
+    <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;background:var(--page-bg);border-radius:8px;padding:16px 18px">
+        <div style="min-width:0;flex:1">
+            <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap">
+                <div style="font-size:17px;font-weight:600;color:var(--ink)">R&bull;&bull;&bull;&bull;&bull;&bull; T&bull;&bull;&bull;&bull;&bull;</div>
+                <span class="tag tag--success">Existing customer</span>
+            </div>
+            <div style="font-size:12px;color:var(--muted);padding-top:5px">PAN BISPM4465N &middot; DOB 10/06/1992 &middot; CKYC on file &middot; DPDP consent recorded 12 Mar 2025</div>
+        </div>
+        <button type="button" class="btn btn-secondary btn-sm">Create new FD</button>
+    </div>
+
+    <div class="summary-block">
+        <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap">
+            <div class="summary-block__title" style="border:none;padding:0;margin:0;flex:1;min-width:0">Existing deposits</div>
+            <div style="font-size:11.5px;color:var(--muted)">renewal opens 30 days before maturity and stays open through the 14-day grace period</div>
+        </div>
+        <table class="data-table">
+            <thead><tr><th>FD number</th><th>Scheme &amp; holders</th><th>Amount</th><th>Rate</th><th>Maturity</th><th></th></tr></thead>
+            <tbody>
+                <tr class="attention">
+                    <td><strong>FD41120</strong></td>
+                    <td><strong>Samruddhi &middot; cumulative</strong><div class="field-hint">3 holders &middot; Either or Survivor</div></td>
+                    <td><strong>&#8377; 5,00,000</strong></td>
+                    <td><strong>7.85%</strong></td>
+                    <td><span class="text-amber">12 days to maturity</span><div class="field-hint">25 Sep 2026</div></td>
+                    <td><button type="button" class="btn btn-sm hid-next" data-goto="renewal" style="background:var(--red);color:#fff;border:0">Renew</button></td>
+                </tr>
+                <tr>
+                    <td><strong>FD38904</strong></td>
+                    <td><strong>Samruddhi &middot; non-cumulative</strong><div class="field-hint">single holder &middot; monthly payout</div></td>
+                    <td><strong>&#8377; 2,00,000</strong></td>
+                    <td><strong>7.40%</strong></td>
+                    <td><span class="text-danger">Matured &middot; day 4 of grace</span><div class="field-hint">09 Sep 2026 &middot; 10 days left</div></td>
+                    <td><button type="button" class="btn btn-sm hid-next" data-goto="renewal" style="background:var(--red);color:#fff;border:0">Renew</button></td>
+                </tr>
+                <tr>
+                    <td><strong class="text-muted">FD22771</strong></td>
+                    <td class="text-muted"><strong>Samruddhi &middot; cumulative</strong><div class="field-hint">2 holders &middot; Either or Survivor</div></td>
+                    <td class="text-muted"><strong>&#8377; 8,00,000</strong></td>
+                    <td class="text-muted"><strong>7.60%</strong></td>
+                    <td class="text-muted">Not due<div class="field-hint">14 Mar 2028</div></td>
+                    <td><span class="text-muted" style="font-weight:600">Renew</span><div class="field-hint">opens 13 Feb 2028</div></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="callout callout--info">
+        <span style="font-weight:600">Renew carries the folio forward</span> &mdash; the broker then makes the one decision renewal needs, whether to keep, add or drop a holder, and from there the flow is the ordinary purchase flow with the carried-forward holders already identified and consented. Create new FD starts that flow with no holders at all.
+    </div>
+
+    <div class="actionbar">
+        <div class="actionbar__hint">Pick an intent &mdash; <strong>renew an existing deposit, or start a new FD for this investor</strong></div>
+        <div style="display:flex;align-items:center;gap:24px">
             <button type="button" class="btn btn-secondary hid-next" data-goto="search">Back</button>
             <button type="button" class="btn btn-secondary hid-next" data-goto="search">Search again</button>
-        </div>
-        <div class="wizard__actions-right">
             <button type="button" class="btn btn-primary hid-next" data-goto="existing">Proceed with existing customer</button>
         </div>
     </div>
@@ -105,57 +163,157 @@
 
 <!-- 02B: Renewal decision -->
 <section class="hid-section" data-step="renewal" hidden>
-    <div class="card__title">Renewal &middot; the one decision taken on search</div>
-    <div class="card__subtitle">Renewing FD41120 &middot; same holders pass through &middot; only a holder who needs re-verification walks identification, consent and documents.</div>
-    <div class="holder-block">
-        <dl class="kv-grid">
-            <div class="kv"><dt>Renewal of</dt><dd>FD41120</dd></div>
-            <div class="kv"><dt>Maturity</dt><dd>opens 13 Feb 2028</dd></div>
-            <div class="kv"><dt>Rate</dt><dd>at the card rate on the renewal date, not today's</dd></div>
-        </dl>
-        <div class="summary-block">
-            <div class="summary-block__title">Holders</div>
-            <dl class="kv-grid">
-                <div class="kv"><dt>Holder 1 &middot; Primary</dt><dd>Priya Sunil Nair <span class="tag tag--success">CKYC valid</span></dd></div>
-                <div class="kv"><dt>Holder 2</dt><dd>Anita Nair <span class="tag tag--success">CKYC valid</span></dd></div>
-                <div class="kv"><dt>Holder 3</dt><dd>Rohan Nair <span class="tag tag--warn">Needs re-verification</span></dd></div>
-            </dl>
-            <div class="field-hint">CKYC lapsed 08 Jun 2024 for holder 3 &mdash; holder 3 will be asked to re-verify inside the normal flow. From here the flow is the purchase flow.</div>
+    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--divider-2);padding-bottom:16px">
+        <div style="min-width:0;flex:1">
+            <div class="card__title">Renewing FD41120</div>
+            <div class="card__subtitle" style="padding-top:4px">&#8377; 5,00,000 &middot; Samruddhi cumulative &middot; matures 25 Sep 2026 &middot; 3 holders</div>
+        </div>
+        <div style="font-size:12.5px;font-weight:600;color:var(--text)">Choose a different deposit</div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap">
+            <div style="font-size:16px;font-weight:500;color:var(--text);flex:1;min-width:0">Who is on the renewed deposit? <span class="required">*</span></div>
+            <div style="font-size:11.5px;color:var(--muted)">the only decision unique to renewal &mdash; everything after this is the purchase flow</div>
+        </div>
+        <div class="form-grid">
+            <div style="border:2px solid var(--red);border-radius:8px;padding:16px 17px;display:flex;flex-direction:column;gap:8px;background:#FFF8F9">
+                <label class="radio-toggle"><span class="radio-toggle__dot radio-toggle__dot--checked"></span><span style="font-size:13.5px;font-weight:700;color:var(--ink)">Same holders</span></label>
+                <div style="font-size:11.5px;color:var(--text);line-height:1.5">All three carry forward. Identification and consent are already on file, so nothing is asked again except from a holder whose CKYC has lapsed &mdash; that holder re-enters consent and documents.</div>
+            </div>
+            <div style="border:1px solid var(--divider);background:#FAFBFC;border-radius:8px;padding:16px 17px;display:flex;flex-direction:column;gap:8px">
+                <div style="display:flex;align-items:center;gap:9px"><span class="radio-toggle__dot" style="background:#F2F4F7"></span><span style="font-size:13.5px;font-weight:700;color:var(--muted-2)">Add a holder</span><span class="tag" style="background:#EEF0F3;color:var(--muted)">Unavailable</span></div>
+                <div style="font-size:11.5px;color:var(--muted);line-height:1.5">Three holders on the folio already &mdash; the maximum. Removing one frees a slot, after which the new holder enters identification, consent and documents exactly as on a purchase.</div>
+            </div>
+            <div style="border:1px solid var(--border-3);border-radius:8px;padding:16px 17px;display:flex;flex-direction:column;gap:8px">
+                <label class="radio-toggle"><span class="radio-toggle__dot"></span><span style="font-size:13.5px;font-weight:700;color:var(--text)">Remove a holder</span></label>
+                <div style="font-size:11.5px;color:var(--text);line-height:1.5">Any joint holder can be dropped; the primary cannot. The remaining holders re-consent to the changed holding pattern before the renewal is submitted.</div>
+            </div>
         </div>
     </div>
-    <div class="wizard__actions">
-        <div class="wizard__actions-left">
+
+    <div class="summary-block">
+        <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap">
+            <div class="summary-block__title" style="border:none;padding:0;margin:0;flex:1;min-width:0">Holders on the folio</div>
+            <div style="font-size:11.5px;color:var(--muted)">what each one needs once the decision above is made</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:7px">
+            <div class="holder-row">
+                <div class="holder-num holder-num--done holder-num--sm">&#10003;</div>
+                <div style="min-width:0;flex:1">
+                    <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap"><span style="font-size:13.5px;font-weight:600;color:var(--ink)">R&bull;&bull;&bull;&bull;&bull;&bull; T&bull;&bull;&bull;&bull;&bull;</span><span class="tag" style="background:#E8F1FB;color:var(--blue)">Primary</span></div>
+                    <div style="font-size:11.5px;color:var(--muted);padding-top:2px">Identified and consented 12 Mar 2025 &middot; CKYC valid &middot; documents on file</div>
+                </div>
+                <div style="font-size:12.5px;font-weight:700;color:var(--green);flex:none">Passes through</div>
+            </div>
+            <div class="holder-row">
+                <div class="holder-num holder-num--done holder-num--sm">&#10003;</div>
+                <div style="min-width:0;flex:1">
+                    <div style="font-size:13.5px;font-weight:600;color:var(--ink)">S&bull;&bull;&bull;&bull; T&bull;&bull;&bull;&bull;&bull;</div>
+                    <div style="font-size:11.5px;color:var(--muted);padding-top:2px">Joint &middot; identified and consented 12 Mar 2025 &middot; CKYC valid &middot; documents on file</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:16px;flex:none">
+                    <span style="font-size:12.5px;font-weight:700;color:var(--green)">Passes through</span>
+                    <span style="font-size:12px;font-weight:600;color:var(--red-dark)">Remove</span>
+                </div>
+            </div>
+            <div class="holder-row holder-row--flagged">
+                <div class="holder-num holder-num--warn holder-num--sm">3</div>
+                <div style="min-width:0;flex:1">
+                    <div style="font-size:13.5px;font-weight:600;color:var(--ink)">P&bull;&bull;&bull;&bull; N&bull;&bull;&bull;</div>
+                    <div class="text-amber" style="font-size:11.5px;padding-top:2px">Joint &middot; <span style="font-weight:600">CKYC lapsed &mdash; last verified 08 Jun 2024</span> &middot; re-enters consent and documents like any holder on a purchase</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:16px;flex:none">
+                    <span class="text-danger" style="font-size:12.5px;font-weight:700">Needs re-verification</span>
+                    <span style="font-size:12px;font-weight:600;color:var(--red-dark)">Remove</span>
+                </div>
+            </div>
+            <div class="holder-row holder-row--dashed">
+                <div class="holder-num holder-num--todo">+</div>
+                <div style="min-width:0;flex:1">
+                    <div style="font-size:13.5px;font-weight:600;color:var(--ink)">Add a joint holder</div>
+                    <div style="font-size:11.5px;color:var(--muted);padding-top:2px">Three holders on the folio already &mdash; removing one frees a slot</div>
+                </div>
+                <span style="font-size:12.5px;font-weight:600;color:var(--muted-2);flex:none">Unavailable</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="callout callout--info">
+        <span style="font-weight:600">From here the flow is the purchase flow.</span> Proceed opens Investor Information (03&ndash;08) with the carried-forward holders already identified and consented; only holder 3 walks the full identification, consent and document path. Amount, tenure and scheme are pre-filled from the maturing deposit on the deposit-details step and stay editable.
+    </div>
+
+    <div class="actionbar">
+        <div class="actionbar__hint">Continuing with the same three holders &mdash; <strong>holder 3 will be asked to re-verify inside the normal flow</strong></div>
+        <div style="display:flex;align-items:center;gap:24px">
             <button type="button" class="btn btn-secondary hid-next" data-goto="result">Back</button>
             <button type="button" class="btn btn-secondary hid-next" data-goto="search">Cancel renewal</button>
-        </div>
-        <div class="wizard__actions-right">
-            <button type="button" class="btn btn-primary hid-next" data-goto="complete">Renew</button>
+            <button type="button" class="btn btn-primary hid-next" data-goto="complete">Proceed</button>
         </div>
     </div>
 </section>
 
 <!-- 03: Existing customer found -->
 <section class="hid-section" data-step="existing" hidden>
-    <div class="card__title">Holders</div>
-    <div class="card__subtitle">the primary holder is required &middot; up to two joint holders are optional, each added after the previous one is identified</div>
-    <div class="holder-block">
-        <div class="holder-block__title">Holder 1 <span class="tag tag--primary">Primary</span> <span class="tag tag--success">Existing customer</span> <span class="tag tag--success">Identified</span></div>
-        <dl class="kv-grid">
-            <div class="kv"><dt>Folio Number</dt><dd>MF0051187</dd></div>
-            <div class="kv"><dt>Name</dt><dd>Priya Sunil Nair</dd></div>
-            <div class="kv"><dt>Masked Mobile</dt><dd>98214XXX63</dd></div>
-            <div class="kv"><dt>Masked Email</dt><dd>pr***@@gmail.com</dd></div>
-            <div class="kv"><dt>DPDP consent</dt><dd><span class="tag tag--success">Valid consent already on file</span> &middot; this holder needs nothing further</dd></div>
-        </dl>
+    <div style="display:flex;gap:0;border-bottom:1px solid var(--divider-2);padding-bottom:14px">
+        <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:0">
+            <div class="holder-num holder-num--done">&#10003;</div>
+            <div style="min-width:0;flex:1">
+                <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap">
+                    <div style="font-size:14.5px;font-weight:700;color:var(--ink)">Holder 1</div>
+                    <span class="tag" style="background:#E8F1FB;color:var(--blue)">Primary</span>
+                </div>
+                <div style="font-size:11.5px;color:var(--muted);padding-top:3px">Identified &middot; 1 holder added, a third unlocks once the second is complete</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:7px;flex:none">
+                <span style="font-size:13px;font-weight:600;color:var(--red)">Add joint holder</span>
+                <span class="tag tag--optional">Optional</span>
+            </div>
+        </div>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:12px">
+        <div style="font-size:14px;font-weight:600;flex:1;min-width:0">Existing customer &middot; matched on PAN + date of birth</div>
+        <span class="tag tag--success">Identified</span>
+    </div>
+
+    <div class="kv-grid kv-grid--4">
+        <div class="kv"><dt>Folio Number</dt><dd>MF0051187</dd></div>
+        <div class="kv"><dt>Name</dt><dd>R&bull;&bull;&bull;&bull;&bull;&bull; T&bull;&bull;&bull;&bull;&bull;</dd></div>
+        <div class="kv"><dt>Masked Email</dt><dd class="text-muted">r&bull;&bull;&bull;&bull;&bull;&bull;&bull;@@m&bull;&bull;&bull;.com</dd></div>
+        <div class="kv"><dt>Masked Mobile</dt><dd class="text-muted">&bull;&bull;&bull;&bull;&bull; &bull;1122</dd></div>
+    </div>
+
+    <div style="border-top:1px solid var(--divider);padding-top:16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <div style="font-size:13.5px;font-weight:600;flex:1;min-width:220px">Are the email and mobile correct?</div>
+        <div style="padding:10px 24px;border-radius:4px;background:#E7F6EC;border:2px solid #1E9E52;color:var(--green);font-size:13px;font-weight:600;flex:none">&#10003; Yes</div>
+        <div style="padding:10px 24px;border-radius:4px;border:1px solid var(--border-3);color:var(--text);font-size:13px;font-weight:500;flex:none">No</div>
+    </div>
+
+    <div style="border-top:1px solid var(--divider);padding-top:16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <div style="min-width:260px;flex:1">
+            <div class="section-label">DPDP consent</div>
+            <div style="display:flex;align-items:center;gap:9px;padding-top:6px">
+                <span class="text-green" style="font-size:14px;font-weight:700">&#10003;</span>
+                <span style="font-size:13.5px;font-weight:600">Valid consent already on file &middot; 12 Mar 2025 &middot; CN-77341</span>
+            </div>
+            <div class="field-hint" style="padding-top:4px">Nothing to collect. A notification goes to the registered mobile and email, and this holder is complete.</div>
+        </div>
+        <span class="tag tag--success" style="white-space:nowrap">Consent complete</span>
+    </div>
+
+    <div class="field-hint">Yes &mdash; no PAN document and no NSDL check. Because consent is already on file the consent screen is skipped entirely. No &mdash; Operations corrects the record and this holder waits.</div>
+
+    <div class="holder-block" style="border-top-color:var(--border-2);padding-top:0">
         <div class="field-hint">Add a joint holder, optional &middot; a third unlocks once the second is complete.</div>
         <button type="button" class="btn btn-secondary btn-sm hid-next" data-goto="newpan" style="align-self:flex-start">Add joint holder</button>
     </div>
-    <div class="wizard__actions">
-        <div class="wizard__actions-left">
+
+    <div class="actionbar">
+        <div class="actionbar__hint">Record matched and consent already on file &mdash; <strong>this holder needs nothing further</strong></div>
+        <div style="display:flex;align-items:center;gap:24px">
             <button type="button" class="btn btn-secondary hid-next" data-goto="result">Back</button>
             <button type="button" class="btn btn-secondary">Clear All</button>
-        </div>
-        <div class="wizard__actions-right">
             <button type="button" class="btn btn-primary hid-next" data-goto="complete">Proceed</button>
         </div>
     </div>
@@ -163,36 +321,80 @@
 
 <!-- 04: New customer PAN & NSDL -->
 <section class="hid-section" data-step="newpan" hidden>
-    <div class="card__title">Holders on this application</div>
-    <div class="card__subtitle">OCR read vs verify with source &mdash; correct the name and date of birth, then retry.</div>
-    <div class="holder-block">
-        <div class="holder-block__title">Holder 3 <span class="tag tag--optional">Joint</span> <span class="tag tag--danger">NSDL FAILED</span></div>
-        <div class="form-grid">
-            <div class="field"><label>PAN <span class="required">*</span></label><input value="CDEPN2290F" /></div>
-            <div class="field"><label>Name (as on PAN) <span class="required">*</span></label><input value="Priya S Nair" /></div>
-            <div class="field"><label>Date of birth (as on PAN) <span class="required">*</span></label><input type="date" /></div>
-            <div class="field"><label>Gender</label><select><option>Female</option><option>Male</option></select></div>
-            <div class="field"><label>Mobile Number <span class="required">*</span></label><input /></div>
-            <div class="field"><label>Email ID</label><input /></div>
+    <div style="display:flex;flex-direction:column;gap:10px;border-bottom:1px solid var(--divider-2);padding-bottom:18px">
+        <div style="display:flex;align-items:baseline;gap:12px">
+            <div class="section-label" style="flex:1">Holders on this application</div>
+            <div style="font-size:12px;color:var(--muted)">Either or Survivor &middot; 3 holders</div>
         </div>
-        <div class="doc-row">
-            <div>
-                <div class="doc-row__title">PAN card image &mdash; pan-nair.jpg</div>
-                <div class="doc-row__hint">OCR read "Priya Sunil Nair" &middot; NSDL validation failed &mdash; correct the name and date of birth first.</div>
+        <div style="display:flex;flex-direction:column;gap:7px">
+            <div class="holder-row">
+                <div class="holder-num holder-num--done holder-num--sm">&#10003;</div>
+                <div style="min-width:0;flex:1"><div style="font-size:13.5px;font-weight:600;color:var(--text)">Holder 1 &middot; R&bull;&bull;&bull;&bull;&bull;&bull; T&bull;&bull;&bull;&bull;&bull;</div><div class="field-hint">Primary &middot; existing customer</div></div>
+                <span class="text-green" style="font-size:12px;font-weight:700;white-space:nowrap">Complete</span>
             </div>
-            <div style="display:flex;gap:10px;flex:none">
-                <button type="button" class="btn btn-secondary btn-sm">Replace</button>
-                <button type="button" class="btn btn-secondary btn-sm">Retry NSDL</button>
+            <div class="holder-row">
+                <div class="holder-num holder-num--done holder-num--sm">&#10003;</div>
+                <div style="min-width:0;flex:1"><div style="font-size:13.5px;font-weight:600;color:var(--text)">Holder 2 &middot; S&bull;&bull;&bull;&bull; T&bull;&bull;&bull;&bull;&bull;</div><div class="field-hint">Joint &middot; existing customer</div></div>
+                <span class="text-green" style="font-size:12px;font-weight:700;white-space:nowrap">Complete</span>
+            </div>
+            <div class="holder-row holder-row--flagged">
+                <div class="holder-num holder-num--current holder-num--sm">3</div>
+                <div style="min-width:0;flex:1"><div style="font-size:13.5px;font-weight:700;color:var(--ink)">Holder 3 &middot; P&bull;&bull;&bull;&bull; N&bull;&bull;&bull;</div><div class="field-hint">Joint &middot; new customer &mdash; PAN and NSDL below</div></div>
+                <span class="text-danger" style="font-size:12px;font-weight:700;white-space:nowrap">NSDL failed &middot; attempt 2 of 3</span>
+                <button type="button" class="btn btn-secondary btn-sm hid-next" data-goto="existing">Remove Holder 3</button>
             </div>
         </div>
-        <div><button type="button" class="btn btn-secondary btn-sm hid-next" data-goto="existing">Remove Holder 3</button></div>
     </div>
-    <div class="wizard__actions">
-        <div class="wizard__actions-left">
+
+    <div class="form-grid">
+        <div class="field"><label>PAN</label><input value="CDEPN2290F" readonly style="background:#F7F8FA" /></div>
+        <div class="field"><label>Date of Birth</label><input value="27/11/1991" readonly style="background:#F7F8FA" /></div>
+        <div class="field"><label>Mobile Number</label><input value="99301 22087" /></div>
+        <div class="field"><label>Email ID</label><input value="p.nair@mail.com" /></div>
+    </div>
+
+    <div class="doc-row" style="border:1px dashed #C9CFD6;border-radius:10px;padding:14px;border-top:1px dashed #C9CFD6">
+        <div><div class="doc-row__title">pan-nair.jpg &middot; OCR complete</div></div>
+        <div style="display:flex;gap:8px;flex:none">
+            <button type="button" class="btn btn-secondary btn-sm">Replace</button>
+            <button type="button" class="btn btn-secondary btn-sm">Capture</button>
+        </div>
+    </div>
+
+    <div style="background:#F3FAF5;border-radius:6px;padding:12px 14px;display:flex;flex-direction:column;gap:8px">
+        <div class="text-danger" style="font-size:12.5px;line-height:1.45"><span style="font-weight:600">NSDL validation failed.</span> Date of birth and name do not match the PAN &mdash; correct them and retry. Attempt 2 of 3.</div>
+        <table class="data-table" style="border:none;font-size:11px">
+            <thead><tr><th></th><th>OCR read</th><th>Verify with source &middot; NSDL</th><th></th></tr></thead>
+            <tbody>
+                <tr><td class="text-muted" style="font-weight:600">Name</td><td>Priya S Nair</td><td class="text-danger">Priya Sunil Nair</td><td class="text-danger">&#10007;</td></tr>
+                <tr><td class="text-muted" style="font-weight:600">DOB</td><td>27/11/1991</td><td class="text-danger">27/11/1990</td><td class="text-danger">&#10007;</td></tr>
+                <tr><td class="text-muted" style="font-weight:600">Gender</td><td>Female</td><td>Female</td><td class="text-green">&#10003;</td></tr>
+                <tr><td class="text-muted" style="font-weight:600">PAN</td><td>CDEPN2290F</td><td>CDEPN2290F</td><td class="text-green">&#10003;</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="form-grid form-grid--2" style="align-items:end">
+        <div class="field"><label>Date of birth (as on PAN)</label><input value="27/11/1991" /></div>
+        <div class="field"><label>Name (as on PAN)</label><input value="Priya S Nair" /></div>
+        <button type="button" class="btn btn-primary" style="align-self:end">Retry NSDL</button>
+    </div>
+    <div class="field-hint">After three failures the holder goes to Operations for manual verification.</div>
+
+    <div style="border-top:1px solid var(--divider);padding-top:16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <div style="min-width:260px;flex:1">
+            <div class="section-label">DPDP consent</div>
+            <div style="font-size:13.5px;font-weight:600;padding-top:6px">No consent on file &mdash; collection required</div>
+            <div class="field-hint" style="padding-top:4px">Opens once NSDL returns valid. This holder is set to offline, so two signed forms and a consent OTP are collected on screen 05.</div>
+        </div>
+        <span class="tag tag--warn" style="white-space:nowrap">Consent pending</span>
+    </div>
+
+    <div class="actionbar">
+        <div class="actionbar__hint">Holder 3 &middot; NSDL validation failed &mdash; <strong>correct the name and date of birth, then retry</strong></div>
+        <div style="display:flex;align-items:center;gap:24px">
             <button type="button" class="btn btn-secondary hid-next" data-goto="existing">Back</button>
             <button type="button" class="btn btn-secondary">Clear All</button>
-        </div>
-        <div class="wizard__actions-right">
             <button type="button" class="btn btn-primary hid-next" data-goto="consent">Continue to consent</button>
         </div>
     </div>
@@ -200,37 +402,82 @@
 
 <!-- 05: DPDP consent -->
 <section class="hid-section" data-step="consent" hidden>
-    <div class="card__title">Holders on this application</div>
-    <div class="card__subtitle">Consent collection for this holder is chosen here, per holder &mdash; digital sends an OTP or link, offline needs a signed form uploaded.</div>
-    <div class="holder-block">
-        <div class="holder-block__title">Holder 3 <span class="tag tag--optional">Joint</span> <span class="tag tag--warn">CONSENT DUE</span></div>
-        <div class="field-hint">Holder 3 is set to</div>
-        <div style="display:flex;gap:10px">
-            <button type="button" class="btn btn-secondary btn-sm">Digital</button>
-            <button type="button" class="btn btn-primary btn-sm">Offline</button>
+    <div style="display:flex;flex-direction:column;gap:10px;border-bottom:1px solid var(--divider-2);padding-bottom:18px">
+        <div style="display:flex;align-items:baseline;gap:12px">
+            <div class="section-label" style="flex:1">Holders on this application</div>
+            <div style="font-size:12px;color:var(--muted)">Either or Survivor &middot; 3 holders</div>
         </div>
-        <div class="doc-row">
-            <div>
-                <div class="doc-row__title">Signed DPDP &amp; CKYC form</div>
-                <div class="doc-row__hint">Registered contacts cannot be edited here &middot; upload the signed copy collected offline.</div>
+        <div style="display:flex;flex-direction:column;gap:7px">
+            <div class="holder-row">
+                <div class="holder-num holder-num--done holder-num--sm">&#10003;</div>
+                <div style="min-width:0;flex:1"><div style="font-size:13.5px;font-weight:600;color:var(--text)">Holder 1 &middot; R&bull;&bull;&bull;&bull;&bull;&bull; T&bull;&bull;&bull;&bull;&bull;</div><div class="field-hint">Primary &middot; consent already on file &mdash; no route needed</div></div>
+                <span class="text-green" style="font-size:12px;font-weight:700;white-space:nowrap">Complete</span>
             </div>
-            <div style="display:flex;gap:10px;flex:none">
-                <button type="button" class="btn btn-secondary btn-sm">Download form</button>
-                <button type="button" class="btn btn-secondary btn-sm">Upload signed copy</button>
+            <div class="holder-row holder-row--flagged">
+                <div class="holder-num holder-num--current holder-num--sm">2</div>
+                <div style="min-width:0;flex:1"><div style="font-size:13.5px;font-weight:700;color:var(--ink)">Holder 2 &middot; S&bull;&bull;&bull;&bull; T&bull;&bull;&bull;&bull;&bull;</div><div class="field-hint">Joint &middot; offline &mdash; two signed forms and a consent OTP</div></div>
+                <span class="text-danger" style="font-size:12px;font-weight:700;white-space:nowrap">Consent required</span>
             </div>
-        </div>
-        <div style="display:flex;gap:10px">
-            <button type="button" class="btn btn-secondary btn-sm">Send consent OTP</button>
-            <button type="button" class="btn btn-secondary btn-sm">Send consent link</button>
-            <button type="button" class="btn btn-secondary btn-sm hid-next" data-goto="newpan">Remove this joint holder</button>
+            <div class="holder-row">
+                <div class="holder-num holder-num--todo holder-num--sm">3</div>
+                <div style="min-width:0;flex:1"><div style="font-size:13.5px;font-weight:600;color:var(--text)">Holder 3 &middot; P&bull;&bull;&bull;&bull; N&bull;&bull;&bull;</div><div class="field-hint">Joint &middot; optional</div></div>
+                <span class="text-muted" style="font-size:12px;font-weight:700;white-space:nowrap">Not started</span>
+            </div>
         </div>
     </div>
-    <div class="wizard__actions">
-        <div class="wizard__actions-left">
+
+    <div style="display:flex;align-items:center;gap:12px">
+        <div style="font-size:14px;font-weight:600;flex:1;min-width:0">Holder 2 &middot; S&bull;&bull;&bull;&bull; T&bull;&bull;&bull;&bull;&bull; &middot; consent required</div>
+        <span class="tag" style="background:#EEF0F3;color:var(--muted)">Joint holder</span>
+        <button type="button" class="btn btn-secondary btn-sm hid-next" data-goto="newpan">Remove holder</button>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--divider);padding-bottom:16px">
+        <div style="min-width:0;flex:1">
+            <div style="font-size:14px;font-weight:600;color:var(--ink)">Consent collection for this holder <span class="required">*</span></div>
+            <div class="field-hint" style="padding-top:3px">Chosen <span style="font-weight:600;color:var(--ink)">per holder</span> &mdash; one holder can sign offline while another accepts a digital link. It can be switched until the first form is uploaded or the link is sent.</div>
+        </div>
+        <div class="seg-toggle">
+            <div class="seg-toggle__opt seg-toggle__opt--active">Offline</div>
+            <div class="seg-toggle__opt">Digital</div>
+        </div>
+        <div style="font-size:11.5px;color:var(--muted);line-height:1.4;flex:none;width:190px">Holder 2 is set to <span style="font-weight:600;color:var(--ink)">Offline</span> &mdash; two signed forms and a consent OTP.</div>
+    </div>
+
+    <div class="form-grid form-grid--2">
+        <div style="border-top:2px solid var(--red);padding-top:14px;display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;align-items:center;gap:8px"><div style="font-size:13px;font-weight:700;flex:1;min-width:0">Offline &middot; selected for this holder</div><span class="tag tag--warn">2 forms + OTP</span></div>
+            <div class="field-hint">Each consent is a separate form with its own download and its own upload. Both must be accepted before the consent OTP is sent. No CKYC record is pulled here.</div>
+
+            <div style="border-top:1px solid var(--divider);padding-top:10px;display:flex;flex-direction:column;gap:8px">
+                <div style="display:flex;align-items:center;gap:8px"><div style="font-size:12.5px;font-weight:700;flex:1;min-width:0">1 &middot; DPDP consent</div><span class="tag tag--success" style="white-space:nowrap">Uploaded</span></div>
+                <div class="field-hint">Consent to process the holder&rsquo;s personal data. dpdp-holder2.pdf &middot; 1.1 MB &middot; accepted 11:14</div>
+                <div style="display:flex;gap:8px"><button type="button" class="btn btn-secondary btn-sm">Download form</button><button type="button" class="btn btn-secondary btn-sm">Replace upload</button></div>
+            </div>
+            <div style="border-top:1px solid var(--divider);padding-top:10px;display:flex;flex-direction:column;gap:8px">
+                <div style="display:flex;align-items:center;gap:8px"><div style="font-size:12.5px;font-weight:700;flex:1;min-width:0">2 &middot; CKYC (CERSAI) consent</div><span class="tag tag--warn" style="white-space:nowrap">Awaiting upload</span></div>
+                <div class="field-hint">Authorises the CKYC record download from CERSAI &mdash; the download itself runs at application completion. Form downloaded 11:05 &mdash; signed copy not uploaded yet.</div>
+                <div style="display:flex;gap:8px"><button type="button" class="btn btn-secondary btn-sm">Download form</button><button type="button" class="btn btn-primary btn-sm">Upload signed copy</button></div>
+            </div>
+            <div style="border-top:1px solid var(--divider);padding-top:10px;display:flex;align-items:center;gap:10px">
+                <div class="field-hint" style="flex:1">Consent OTP unlocks when both forms are accepted &mdash; 1 of 2 so far.</div>
+                <button type="button" class="btn btn-secondary btn-sm" disabled>Send consent OTP</button>
+            </div>
+        </div>
+
+        <div style="border-top:1px solid var(--divider-2);padding-top:14px;display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:center;gap:8px"><div style="font-size:13px;font-weight:700;flex:1;min-width:0;color:var(--text)">Digital &middot; not selected</div><span class="tag" style="background:#E8F1FB;color:var(--blue)">1 link</span></div>
+            <div class="field-hint">One link covering DPDP and CERSAI goes to the registered mobile and email. The holder accepts it &mdash; no upload, no consent OTP. The CKYC download and its OTP come at application completion.</div>
+            <button type="button" class="btn btn-secondary btn-sm" disabled>Send consent link</button>
+        </div>
+    </div>
+    <div class="field-hint">Registered contacts cannot be edited here.</div>
+
+    <div class="actionbar">
+        <div class="actionbar__hint">Holder 2 &middot; both signed forms must be accepted before the consent OTP is sent &mdash; <strong>1 of 2 accepted</strong></div>
+        <div style="display:flex;align-items:center;gap:24px">
             <button type="button" class="btn btn-secondary hid-next" data-goto="newpan">Back</button>
             <button type="button" class="btn btn-secondary">Clear All</button>
-        </div>
-        <div class="wizard__actions-right">
             <button type="button" class="btn btn-primary hid-next" data-goto="complete">Continue</button>
         </div>
     </div>
@@ -238,22 +485,26 @@
 
 <!-- 06: All holders complete -->
 <section class="hid-section" data-step="complete" hidden>
-    <div class="card__title">All holders complete</div>
+    <div style="display:flex;align-items:baseline;gap:12px;border-bottom:1px solid var(--divider-2);padding-bottom:14px">
+        <div class="card__title" style="flex:1">All holders complete</div>
+        <div style="font-size:12px;color:var(--muted)">Either or Survivor &middot; 3 holders</div>
+    </div>
     <div class="card__subtitle">At completion, every holder is either identified with valid CKYC/NSDL or has consent on file &mdash; ready to move to the documents step.</div>
     <table class="data-table">
-        <thead><tr><th>Holder</th><th>Source</th><th>Identification</th><th>DPDP consent</th></tr></thead>
+        <thead><tr><th>Holder</th><th>Source</th><th>Identification</th><th>DPDP consent</th><th>CKYC</th></tr></thead>
         <tbody>
-            <tr><td><strong>Holder 1</strong><div class="field-hint">primary</div></td><td>Existing &middot; folio MF0051187</td><td class="text-green">NSDL valid</td><td class="text-green">On file 12 Mar 2025</td></tr>
-            <tr><td><strong>Holder 2</strong></td><td>Existing &middot; folio MF0051188</td><td class="text-green">NSDL valid</td><td class="text-green">On file</td></tr>
-            <tr><td><strong>Holder 3</strong></td><td>new customer</td><td class="text-green">CKYC</td><td class="text-green">Offline &middot; signed form uploaded</td></tr>
+            <tr><td><strong>Holder 1</strong><div class="field-hint">primary &middot; folio MF0051187</div></td><td><span class="tag" style="background:#EEF0F3;color:var(--muted)">n/a</span></td><td class="text-green">Existing</td><td class="text-green">On file 12 Mar 2025</td><td class="text-green">On file</td></tr>
+            <tr><td><strong>Holder 2</strong><div class="field-hint">folio MF0051188</div></td><td><span class="tag tag--warn">Offline</span></td><td class="text-green">Existing</td><td class="text-green">Uploaded &middot; OTP verified</td><td style="color:var(--blue);font-weight:600">At completion</td></tr>
+            <tr><td><strong>Holder 3</strong><div class="field-hint">new customer</div></td><td><span class="tag tag--warn">Offline</span></td><td class="text-green">NSDL valid</td><td class="text-green">Uploaded &middot; OTP verified</td><td style="color:var(--blue);font-weight:600">At completion</td></tr>
         </tbody>
     </table>
-    <div class="wizard__actions">
-        <div class="wizard__actions-left">
+    <div class="field-hint">Consent artefacts &mdash; timestamp, channel, purpose, IP, holder reference &mdash; are stored against the application for audit.</div>
+
+    <div class="actionbar">
+        <div class="actionbar__hint">All three holders are identified and consented &mdash; <strong>ready to move to the documents step</strong></div>
+        <div style="display:flex;align-items:center;gap:24px">
             <button type="button" class="btn btn-secondary hid-next" data-goto="consent">Back</button>
             <button type="button" class="btn btn-secondary">Clear All</button>
-        </div>
-        <div class="wizard__actions-right">
             <button type="submit" class="btn btn-primary">Proceed to documents</button>
         </div>
     </div>
