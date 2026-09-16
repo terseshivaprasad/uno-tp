@@ -65,16 +65,19 @@
     <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500"><input type="checkbox" /> One declaration still to sign &mdash; sign the last declaration to submit</label>
 </div>
 
-<div class="wizard__actions">
-    <div class="wizard__actions-left">
-        <a class="btn btn-secondary" asp-page="/Apps/UnoTp/Application/FdConfiguration">Back</a>
-        <button type="button" class="btn btn-secondary">Clear All</button>
-        <button type="button" class="btn btn-secondary">Download summary</button>
+@section Footer {
+    <div class="hid-footer">
+        <div class="hid-footer__inner">
+            <div class="actionbar__hint">Every control point passed &middot; 26 of 26 fields, nominee captured, all proofs verified against source &mdash; <strong>sign the last declaration to submit</strong></div>
+            <div style="display:flex;align-items:center;gap:24px">
+                <a class="hid-link" asp-page="/Apps/UnoTp/Application/FdConfiguration"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 6l-6 6 6 6"></path></svg> Back</a>
+                <button type="button" class="hid-link">Download summary</button>
+                <button type="button" class="hid-link">Clear All</button>
+                <button type="button" class="hid-link hid-link--primary" id="openPaymentLinkModal">Submit application <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 6l6 6-6 6"></path></svg></button>
+            </div>
+        </div>
     </div>
-    <div class="wizard__actions-right">
-        <button type="button" class="btn btn-primary" id="openPaymentLinkModal">Submit application</button>
-    </div>
-</div>
+}
 
 @* 11A: Submit / payment link dialog. Overlay on top of Review Summary (11), per the mockup
    ("11A — Submit · payment link dialog") — not a separate routed page. *@

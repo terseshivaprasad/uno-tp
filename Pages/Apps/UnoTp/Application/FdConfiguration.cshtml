@@ -37,15 +37,18 @@
     <div class="kv"><dt>Maturity value</dt><dd>&#8377; 7,04,120 (indicative, from tenure and payout together)</dd></div>
 </dl>
 
-<form method="post">
-    <div class="wizard__actions">
-        <div class="wizard__actions-left">
-            <a class="btn btn-secondary" asp-page="/Apps/UnoTp/Application/BankDetails">Back</a>
-            <button type="button" class="btn btn-secondary">Clear All</button>
-        </div>
-        <div class="wizard__actions-right">
-            <a class="btn btn-secondary" asp-page="/Apps/UnoTp/Application/UploadDocuments">Go to documents</a>
-            <button type="submit" class="btn btn-primary">Proceed</button>
+<form method="post" id="fdConfigForm">
+</form>
+
+@section Footer {
+    <div class="hid-footer">
+        <div class="hid-footer__inner">
+            <div class="actionbar__hint">Two items outstanding &mdash; <strong>choose what auto renewal renews, and upload Form 15G on Upload Documents</strong></div>
+            <div style="display:flex;align-items:center;gap:24px">
+                <a class="hid-link" asp-page="/Apps/UnoTp/Application/BankDetails"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 6l-6 6 6 6"></path></svg> Back</a>
+                <button type="button" class="hid-link">Clear All</button>
+                <button type="submit" form="fdConfigForm" class="hid-link hid-link--disabled">Save &amp; Proceed <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 6l6 6-6 6"></path></svg></button>
+            </div>
         </div>
     </div>
-</form>
+}

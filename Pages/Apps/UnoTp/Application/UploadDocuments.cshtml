@@ -59,14 +59,17 @@
     </div>
 </div>
 
-<form method="post">
-    <div class="wizard__actions">
-        <div class="wizard__actions-left">
-            <a class="btn btn-secondary" asp-page="/Apps/UnoTp/Application/HoldersComplete">Back</a>
-            <button type="button" class="btn btn-secondary">Clear All</button>
-        </div>
-        <div class="wizard__actions-right">
-            <button type="submit" class="btn btn-primary">Proceed</button>
+<form method="post" id="uploadDocsForm">
+</form>
+
+@section Footer {
+    <div class="hid-footer">
+        <div class="hid-footer__inner">
+            <div class="actionbar__hint">Six items need attention across holders 1 and 3 &mdash; <strong>every proof of address must pass verification before Proceed opens</strong></div>
+            <div style="display:flex;align-items:center;gap:24px">
+                <a class="hid-link" asp-page="/Apps/UnoTp/Application/HolderIdentification"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 6l-6 6 6 6"></path></svg> Back</a>
+                <button type="submit" form="uploadDocsForm" class="hid-link hid-link--disabled">Proceed <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 6l6 6-6 6"></path></svg></button>
+            </div>
         </div>
     </div>
-</form>
+}
