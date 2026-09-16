@@ -2,9 +2,9 @@
 @model UnoTp.Pages.Apps.UnoTpApp.Application.HolderIdentificationModel
 @namespace UnoTp.Pages.Apps.UnoTpApp.Application
 @{
-    ViewData["Title"] = "Investor Information - Holder Identification";
+    ViewData["Title"] = "Investor Identification";
     Layout = "/Pages/Shared/_WizardLayout.cshtml";
-    ViewData["WizardStep"] = "investor";
+    ViewData["WizardStep"] = "identify";
 }
 
 @* This single page covers mockup screens 02, 02A, 02B, 03, 04, 05, 06.
@@ -27,7 +27,7 @@
 <!-- 02: Holder search -->
 <section class="hid-section" data-step="search">
     <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
-        <div class="card__title">Holders</div>
+        <div class="card__title" style="flex:none">Holders</div>
         <div class="card__subtitle">the primary holder is required &middot; up to two joint holders are optional, each added after the previous one is identified</div>
     </div>
 
@@ -44,28 +44,30 @@
             <div style="font-size:12.5px;font-weight:700;color:var(--red-dark);flex:none">Not identified</div>
         </div>
         <div style="display:flex;flex-direction:column;gap:16px;padding:0 0 18px;max-width:900px">
-            <div class="hid-searchby" style="display:flex;align-items:center;gap:28px;flex-wrap:wrap">
-                <div style="font-size:12px;font-weight:500;color:var(--muted)">Search By</div>
-                <button type="button" class="radio-toggle hid-searchby-opt hid-searchby-opt--active" data-searchby="pan" style="background:none;border:0;cursor:pointer;padding:0">
-                    <span class="radio-toggle__dot radio-toggle__dot--checked"></span><span class="hid-searchby-opt__label">PAN &amp; Date of Birth</span>
-                </button>
-                <button type="button" class="radio-toggle hid-searchby-opt" data-searchby="folio" style="background:none;border:0;cursor:pointer;padding:0">
-                    <span class="radio-toggle__dot"></span><span class="hid-searchby-opt__label">Folio Number</span>
-                </button>
+            <div class="hid-searchby">
+                <div class="hid-searchby__label">Search By</div>
+                <div class="hid-searchby-opts">
+                    <button type="button" class="radio-toggle hid-searchby-opt hid-searchby-opt--active" data-searchby="pan">
+                        <span class="radio-toggle__dot radio-toggle__dot--checked"></span><span class="hid-searchby-opt__label">PAN &amp; Date of Birth</span>
+                    </button>
+                    <button type="button" class="radio-toggle hid-searchby-opt" data-searchby="folio">
+                        <span class="radio-toggle__dot"></span><span class="hid-searchby-opt__label">Folio Number</span>
+                    </button>
+                </div>
             </div>
             <div class="form-grid hid-searchby-fields" data-searchby="pan" style="align-items:end">
-                <div class="field"><label>PAN <span class="required">*</span></label><input placeholder="e.g. BISPM4465N" /></div>
-                <div class="field"><label>Date of birth <span class="required">*</span></label><input type="date" /></div>
-                <div style="display:flex;align-items:center;gap:7px;padding-bottom:11px">
-                    <button type="button" class="action-link" style="background:none;border:0;cursor:pointer;display:flex;align-items:center;gap:7px">Check record
+                <div class="field"><label>PAN <span class="required">*</span></label><input class="field__input--filled" value="BISPM4465N" placeholder="e.g. BISPM4465N" /></div>
+                <div class="field"><label>Date of Birth <span class="required">*</span></label><input type="date" value="1992-06-10" /></div>
+                <div class="hid-searchby-check">
+                    <button type="button" class="action-link hid-searchby-check__btn">Check record
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#E31837" stroke-width="2" stroke-linecap="round"><path d="M10 6l6 6-6 6"></path></svg>
                     </button>
                 </div>
             </div>
             <div class="form-grid hid-searchby-fields" data-searchby="folio" hidden style="align-items:end">
                 <div class="field"><label>Folio Number <span class="required">*</span></label><input placeholder="e.g. MF0051187" /></div>
-                <div style="display:flex;align-items:center;gap:7px;padding-bottom:11px">
-                    <button type="button" class="action-link" style="background:none;border:0;cursor:pointer;display:flex;align-items:center;gap:7px">Check record
+                <div class="hid-searchby-check">
+                    <button type="button" class="action-link hid-searchby-check__btn">Check record
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#E31837" stroke-width="2" stroke-linecap="round"><path d="M10 6l6 6-6 6"></path></svg>
                     </button>
                 </div>
@@ -88,8 +90,6 @@
             </div>
         </div>
     </div>
-
-    <div class="field-hint">Renewal does not need its own flow &mdash; enter the same PAN or folio above and, if the folio has a deposit approaching maturity, the search result offers to renew it.</div>
 
     </section>
 

@@ -30,7 +30,7 @@
                     <div class="@n.BlockerClass" style="font-size:11px;padding-top:3px;line-height:1.45">@n.Blocker</div>
                     <div style="font-size:10.5px;color:var(--muted);padding-top:3px">@n.Stage &middot; waiting @n.Waiting</div>
                 </div>
-                <a class="action-link" style="flex:none" asp-page="/Apps/UnoTp/Application/HolderIdentification">@n.Action</a>
+                <a style="flex:none;font-size:11px;font-weight:700;color:var(--red)" asp-page="/Apps/UnoTp/Application/HolderIdentification">@n.ShortAction</a>
             </div>
         }
         <div style="font-size:11.5px;font-weight:700;color:var(--red);text-align:center;padding-top:2px">See all @Model.NeedsAttention.Count</div>

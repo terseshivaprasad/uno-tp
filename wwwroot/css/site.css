@@ -145,6 +145,10 @@ h1, h2, h3, p { margin: 0; }
   padding: 0 12px; font-size: 14px; font-family: inherit; background: #fff; color: var(--ink);
 }
 .field textarea { height: auto; padding: 10px 12px; }
+/* Board 02 draws a field that already carries a value with an ink border rather than
+   the resting grey, so the prefilled PAN reads as answered next to the empty ones.
+   Qualified by .field to outweigh the `.field input` border shorthand above. */
+.field .field__input--filled { border-color: var(--ink); }
 .field-hint { font-size: 11px; color: var(--muted); }
 .form-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 16px; }
 .form-grid--2 { grid-template-columns: repeat(2, minmax(0,1fr)); }
@@ -292,7 +296,7 @@ h1, h2, h3, p { margin: 0; }
 .holder-num { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 700; flex: none; }
 .holder-num--current { background: var(--red); color: #fff; }
 .holder-num--done { background: var(--green-2); color: #fff; }
-.holder-num--todo { border: 2px dashed #C9CFD6; color: var(--muted-2); }
+.holder-num--todo { border: 2px dashed #C9CFD6; color: var(--muted-2); font-size: 14px; font-weight: 500; }
 .holder-num--warn { background: var(--amber-bg); color: var(--amber); }
 .holder-num--sm { width: 24px; height: 24px; font-size: 11.5px; }
 
@@ -304,11 +308,23 @@ h1, h2, h3, p { margin: 0; }
 .radio-toggle__dot { width: 18px; height: 18px; border-radius: 50%; border: 1px solid #DFE3E8; flex: none; display: flex; align-items: center; justify-content: center; }
 .radio-toggle__dot--checked { border: 3px solid var(--red); }
 .radio-toggle__dot--checked::after { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--red); }
+/* Board 02's "Search By" row: a label and two radio options, 28px apart. */
+.hid-searchby { display: flex; align-items: center; gap: 28px; flex-wrap: wrap; }
+.hid-searchby__label { font-size: 12px; font-weight: 500; color: var(--muted); }
+.hid-searchby-opts { display: flex; align-items: center; gap: 28px; flex-wrap: wrap; }
+.hid-searchby-opt { background: none; border: 0; padding: 0; cursor: pointer; font-family: inherit; }
 .hid-searchby-opt__label { font-size: 13px; font-weight: 500; color: var(--text); }
 .hid-searchby-opt--active .hid-searchby-opt__label { color: var(--ink); }
 /* .form-grid sets display:grid, which (being an author rule) otherwise beats the
    browser's default [hidden]{display:none} regardless of specificity. */
 .hid-searchby-fields[hidden] { display: none; }
+.hid-searchby-check { display: flex; align-items: center; gap: 7px; padding-bottom: 11px; }
+.hid-searchby-check__btn {
+  display: flex; align-items: center; gap: 7px;
+  background: none; border: 0; padding: 0; cursor: pointer; font-family: inherit;
+  /* Board 02 sets this action a step larger and lighter than a table's .action-link. */
+  font-size: 13.5px; font-weight: 600;
+}
 
 .seg-toggle { display: inline-flex; border: 1px solid var(--border-3); border-radius: 6px; overflow: hidden; flex: none; }
 .seg-toggle__opt { padding: 8px 20px; font-size: 12.5px; font-weight: 500; background: #fff; color: var(--text); white-space: nowrap; border: 0; cursor: pointer; font-family: inherit; }
@@ -477,6 +493,9 @@ tbody tr[hidden] { display: none; }
   .console-grid, .dashboard-grid { grid-template-columns: 1fr; }
   .app-tile-grid, .kv-grid, .kv-grid--2, .kv-grid--4, .form-grid, .form-grid--2 { grid-template-columns: repeat(2, minmax(0,1fr)); }
   .wizard__body { grid-template-columns: 1fr; }
+  /* A grid item defaults to min-width:auto, so the scrolling rail would otherwise
+     push the whole column - and the page - wider than the viewport. */
+  .wizard__body > * { min-width: 0; }
   .wizard__rail { flex-direction: row; overflow-x: auto; }
   .rail-item span { white-space: nowrap; }
   .data-table { font-size: 10px; display: block; overflow-x: auto; }
@@ -484,6 +503,22 @@ tbody tr[hidden] { display: none; }
   .app-header__nav a { padding: 0 8px; }
 }
 @media (max-width: 560px) {
+  /* Board 02 - Mobile renders "Search By" as a segmented pair of full-width buttons
+     rather than the laptop radio row, and drops the radio dots entirely. */
+  .hid-searchby { flex-direction: column; align-items: stretch; gap: 10px; }
+  .hid-searchby__label { font-size: 11.5px; }
+  .hid-searchby-opts { gap: 8px; flex-wrap: nowrap; }
+  .hid-searchby-opt {
+    flex: 1; justify-content: center; text-align: center;
+    padding: 9px 6px; border-radius: 6px; border: 1px solid var(--border-3);
+  }
+  .hid-searchby-opt--active { border: 2px solid var(--red); }
+  .hid-searchby-opt .radio-toggle__dot { display: none; }
+  .hid-searchby-opt__label { font-size: 11.5px; font-weight: 600; }
+  .hid-searchby-opt--active .hid-searchby-opt__label { color: var(--red); font-weight: 700; }
+  .hid-searchby-check { justify-content: flex-end; padding-bottom: 0; }
+  .hid-searchby-check__btn { font-size: 12.5px; font-weight: 700; }
+
   /* Board 00 - Mobile trims the header to the brand and Logout. */
   .app-header { padding: 0 14px; }
   .app-header__welcome { display: none; }
