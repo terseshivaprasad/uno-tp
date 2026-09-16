@@ -30,4 +30,26 @@
 
   var initial = (stepField && stepField.value) || 'search';
   showStep(initial);
+
+  // "Search By" toggle on the search step: swap PAN+DOB fields for a single Folio field.
+  var searchByOpts = document.querySelectorAll('.hid-searchby-opt');
+  var searchByFields = document.querySelectorAll('.hid-searchby-fields');
+  var searchByHints = document.querySelectorAll('.hid-searchby-hint');
+  searchByOpts.forEach(function (opt) {
+    opt.addEventListener('click', function () {
+      var mode = opt.getAttribute('data-searchby');
+      searchByOpts.forEach(function (o) {
+        var active = o === opt;
+        o.classList.toggle('hid-searchby-opt--active', active);
+        var dot = o.querySelector('.radio-toggle__dot');
+        if (dot) dot.classList.toggle('radio-toggle__dot--checked', active);
+      });
+      searchByFields.forEach(function (f) {
+        f.hidden = f.getAttribute('data-searchby') !== mode;
+      });
+      searchByHints.forEach(function (h) {
+        h.hidden = h.getAttribute('data-searchby') !== mode;
+      });
+    });
+  });
 })();

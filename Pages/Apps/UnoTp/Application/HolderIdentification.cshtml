@@ -5,8 +5,6 @@
     ViewData["Title"] = "Investor Information - Holder Identification";
     Layout = "/Pages/Shared/_WizardLayout.cshtml";
     ViewData["WizardStep"] = "investor";
-    ViewData["StepLabel"] = "Step 2 of 5";
-    ViewData["ApplicationNo"] = "New application";
 }
 
 @* This single page covers mockup screens 02, 02A, 02B, 03, 04, 05, 06.
@@ -46,12 +44,16 @@
             <div style="font-size:12.5px;font-weight:700;color:var(--red-dark);flex:none">Not identified</div>
         </div>
         <div style="display:flex;flex-direction:column;gap:16px;padding:0 0 18px;max-width:900px">
-            <div style="display:flex;align-items:center;gap:28px;flex-wrap:wrap">
+            <div class="hid-searchby" style="display:flex;align-items:center;gap:28px;flex-wrap:wrap">
                 <div style="font-size:12px;font-weight:500;color:var(--muted)">Search By</div>
-                <label class="radio-toggle"><span class="radio-toggle__dot radio-toggle__dot--checked"></span><span style="font-size:13px;font-weight:500;color:var(--ink)">PAN &amp; Date of Birth</span></label>
-                <label class="radio-toggle"><span class="radio-toggle__dot"></span><span style="font-size:13px;font-weight:500;color:var(--text)">Folio Number</span></label>
+                <button type="button" class="radio-toggle hid-searchby-opt hid-searchby-opt--active" data-searchby="pan" style="background:none;border:0;cursor:pointer;padding:0">
+                    <span class="radio-toggle__dot radio-toggle__dot--checked"></span><span class="hid-searchby-opt__label">PAN &amp; Date of Birth</span>
+                </button>
+                <button type="button" class="radio-toggle hid-searchby-opt" data-searchby="folio" style="background:none;border:0;cursor:pointer;padding:0">
+                    <span class="radio-toggle__dot"></span><span class="hid-searchby-opt__label">Folio Number</span>
+                </button>
             </div>
-            <div class="form-grid" style="align-items:end">
+            <div class="form-grid hid-searchby-fields" data-searchby="pan" style="align-items:end">
                 <div class="field"><label>PAN <span class="required">*</span></label><input placeholder="e.g. BISPM4465N" /></div>
                 <div class="field"><label>Date of birth <span class="required">*</span></label><input type="date" /></div>
                 <div style="display:flex;align-items:center;gap:7px;padding-bottom:11px">
@@ -60,7 +62,16 @@
                     </button>
                 </div>
             </div>
-            <div class="field-hint">Both fields are required &mdash; a PAN-only search is not permitted.</div>
+            <div class="form-grid hid-searchby-fields" data-searchby="folio" hidden style="align-items:end">
+                <div class="field"><label>Folio Number <span class="required">*</span></label><input placeholder="e.g. MF0051187" /></div>
+                <div style="display:flex;align-items:center;gap:7px;padding-bottom:11px">
+                    <button type="button" class="action-link" style="background:none;border:0;cursor:pointer;display:flex;align-items:center;gap:7px">Check record
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#E31837" stroke-width="2" stroke-linecap="round"><path d="M10 6l6 6-6 6"></path></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="field-hint hid-searchby-hint" data-searchby="pan">Both fields are required &mdash; a PAN-only search is not permitted.</div>
+            <div class="field-hint hid-searchby-hint" data-searchby="folio" hidden>The folio number alone is enough &mdash; if it has a deposit approaching maturity, the search result offers to renew it.</div>
         </div>
     </div>
 

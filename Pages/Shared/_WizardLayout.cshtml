@@ -1,18 +1,11 @@
 @{
     Layout = "_Layout";
     // Expected ViewData: "WizardStep" = one of "docs","investor","bank","fdconfig","review"
-    // "ApplicationNo" = application number to show, "StepLabel" = "Step X of 5"
     var step = ViewData["WizardStep"] as string ?? "investor";
-    var appNo = ViewData["ApplicationNo"] as string ?? "FBBMFL26F99AAC1";
-    var stepLabel = ViewData["StepLabel"] as string ?? "Step 2 of 5";
 
     string RailClass(string key) => key == step ? "rail-item rail-item--active" : "rail-item";
 }
 <div class="wizard">
-    <div class="wizard__topbar">
-        <div class="wizard__appno">@appNo</div>
-        <div class="wizard__steplabel">@stepLabel</div>
-    </div>
     <div class="wizard__body">
         <nav class="wizard__rail">
             <a class="@RailClass("docs")" asp-page="/Apps/UnoTp/Application/UploadDocuments">
