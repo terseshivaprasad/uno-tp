@@ -109,6 +109,18 @@
                                     </div>
                                 </a>
                             }
+                            else if (app.PageLink is not null)
+                            {
+                                <a class="app-tile" data-search="@search" asp-page="@app.PageLink">
+                                    <div class="app-tile__head">
+                                        <div class="app-tile__icon"><partial name="_AppIcon" model="new AppIcon(app.Icon)" /></div>
+                                        <div style="min-width:0;flex:1">
+                                            <div class="app-tile__title">@app.Title</div>
+                                            <div class="app-tile__desc">@app.Description</div>
+                                        </div>
+                                    </div>
+                                </a>
+                            }
                             else
                             {
                                 <button type="button" class="app-tile btn-reset js-stub" data-search="@search">
@@ -290,6 +302,15 @@
                                     {
                                         <div class="app-tile__badge" style="margin-left:auto">@app.Badge</div>
                                     }
+                                </div>
+                                <div style="min-width:0"><div class="app-tile__title">@app.Title</div><div class="app-tile__desc">@(app.MobileDescription ?? app.Description)</div></div>
+                            </a>
+                        }
+                        else if (app.PageLink is not null)
+                        {
+                            <a class="app-tile app-tile--sm" data-search="@search" asp-page="@app.PageLink">
+                                <div style="display:flex;align-items:flex-start;gap:6px">
+                                    <div class="app-tile__icon"><partial name="_AppIcon" model="new AppIcon(app.Icon, 14)" /></div>
                                 </div>
                                 <div style="min-width:0"><div class="app-tile__title">@app.Title</div><div class="app-tile__desc">@(app.MobileDescription ?? app.Description)</div></div>
                             </a>

@@ -3,7 +3,7 @@ namespace UnoTp.Models;
 // Icon is the key the _AppIcon partial switches on; MobileDescription is the
 // shorter label Board 00 - Mobile uses on the two-up tiles, where the desktop
 // description would wrap to three lines.
-public record PinnedApp(string Title, string Description, bool Pinned, string Icon, int? Badge = null, string? MobileDescription = null);
+public record PinnedApp(string Title, string Description, bool Pinned, string Icon, int? Badge = null, string? MobileDescription = null, string? PageLink = null);
 
 public record AppTile(string Title, string Description, string Icon, int? Badge = null, bool Disabled = false, string? MobileDescription = null);
 
@@ -76,6 +76,43 @@ public record ConsentRecord(
     int RequestedDaysAgo
 );
 
+public enum DmsClass { Kyc, Fd, Open }
+
+// One file the document store holds under a control number. InDms and DmsId stay
+// null while the upload is still waiting to reach DMS.
+public record DmsDocument(
+    string HolderType,
+    string Type,
+    DmsClass Class,
+    string File,
+    DateTime Uploaded,
+    DateTime? InDms,
+    string? DmsId,
+    // Masked as the row shows it; the viewer adds that it unmasks on open.
+    string? Ref = null,
+    string? Expiry = null,
+    // A free line under the type, e.g. "mailing address".
+    string? Note = null,
+    string? Remark = null,
+    string Action = "View",
+    // Versions this one replaced, oldest first. The store never drops a version.
+    List<DmsVersion>? Earlier = null
+);
+
+// One filed version of a document. ApplicationNo is set only when it was filed
+// for an earlier application than the one the control number is now on;
+// ReplacedBecause is the reason given when the next version replaced it.
+public record DmsVersion(
+    string File,
+    DateTime Uploaded,
+    DateTime? InDms,
+    string? DmsId,
+    string? ApplicationNo = null,
+    string? ReplacedBecause = null
+);
+
+public record DmsFiling(string ControlNo, string ApplicationNo, string FiledBy, List<DmsDocument> Documents);
+
 public static class MockData
 {
     public const string ApplicationNo = "FBBMFL26F99AAC1";
@@ -112,7 +149,7 @@ public static class MockData
     public static List<PinnedApp> PinnedApps { get; } = new()
     {
         new("Uno TP", "FD sourcing and renewals", true, "uno-tp", 5, "FD sourcing"),
-        new("DMS Explorer", "Document repository", false, "folder", null, "Documents"),
+        new("DMS Explorer", "Document repository", false, "folder", null, "Documents", "/Apps/DmsExplorer/Index"),
         new("OVD Explorer", "Officially valid documents", false, "id-card", null, "Valid documents"),
         new("CP MIS View", "Business and payout MIS", false, "bars", null, "Business MIS"),
     };
@@ -177,6 +214,53 @@ public static class MockData
         "eSarathi covers individual and sole proprietorship investments only.",
         "Booking is subject to Operations validating the submitted documents.",
     };
+
+    // The DMS Explorer's one filing: the documents behind FBBMFL26F99AAC1, whose
+    // three holders the store files as the investor and two joint holders. The
+    // investor first deposited in March 2025 (consent CN-77341), so the investor's
+    // KYC, the cheque and the form each carry a version from that application.
+    public static DmsFiling DmsFiling { get; } = new("123456", ApplicationNo, EntityCode, BuildDmsDocuments());
+
+    private static List<DmsDocument> BuildDmsDocuments()
+    {
+        static DateTime At(int day, int hour, int minute) => new(2026, 9, day, hour, minute, 0);
+        static DateTime In2025(int hour, int minute) => new(2025, 3, 12, hour, minute, 0);
+        const string Earlier = "FBBMFL25C12RT7";
+        const string Investor = "Investor", Joint1 = "Joint holder 1", Joint2 = "Joint holder 2", Shared = "Not holder-specific";
+
+        return new()
+        {
+            new(Investor, "Identity proof · PAN", DmsClass.Kyc, "123456_01_PAN__13092026.tif", At(13, 18, 15), At(13, 18, 16), "DMS-883911", Ref: "ABCPT••••D",
+                Earlier: new() { new("123456_01_PAN__12032025.tif", In2025(10, 14), In2025(10, 15), "DMS-612044", Earlier, "refiled with the new application") }),
+            new(Investor, "Proof of address · passport", DmsClass.Kyc, "123456_01_Passport__14092026.jpg", At(14, 11, 36), At(14, 11, 37), "DMS-884101", Ref: "P44•••82", Expiry: "11/2032"),
+            new(Investor, "Proof of address · utility bill", DmsClass.Kyc, "123456_01_UtilityBill__14092026.pdf", At(14, 11, 38), At(14, 11, 39), "DMS-884103", Note: "mailing address",
+                Earlier: new() { new("123456_01_UtilityBill__12032025.pdf", In2025(10, 18), In2025(10, 19), "DMS-612047", Earlier, "bill older than three months") }),
+            new(Investor, "Photograph", DmsClass.Kyc, "123456_01_Photograph__13092026.jpg", At(13, 18, 14), At(13, 18, 15), "DMS-883912",
+                Earlier: new() { new("123456_01_Photograph__12032025.jpg", In2025(10, 16), In2025(10, 17), "DMS-612045", Earlier, "refiled with the new application") }),
+
+            new(Joint1, "Identity proof · PAN", DmsClass.Kyc, "123456_02_PAN__13092026.tif", At(13, 18, 16), null, null, Ref: "BCDPT••••E", Remark: "Awaiting DMS · 2 h", Action: "Retry"),
+            new(Joint1, "Proof of address · driving licence", DmsClass.Kyc, "123456_02_DrivingLicence__14092026.jpg", At(14, 11, 41), At(14, 11, 42), "DMS-884108", Ref: "MH02••••••044", Expiry: "06/2031"),
+            new(Joint1, "Photograph", DmsClass.Kyc, "123456_02_Photograph__13092026.jpg", At(13, 18, 16), At(13, 18, 17), "DMS-883915"),
+            new(Joint1, "Tax declaration · Form 15G", DmsClass.Fd, "123456_02_Form15G__14092026.pdf", At(14, 12, 20), At(14, 12, 21), "DMS-884122", Expiry: "31/03/2027"),
+
+            new(Joint2, "Identity proof · PAN", DmsClass.Kyc, "123456_03_PAN__13092026.tif", At(13, 18, 17), At(13, 18, 18), "DMS-883914", Ref: "CDEPN••••F"),
+            new(Joint2, "Proof of address · Aadhaar", DmsClass.Kyc, "123456_03_AadharCard__14092026.jpg", At(14, 11, 36), At(14, 11, 37), "DMS-884120", Ref: "••••2290",
+                Remark: "Superseded on re-upload", Action: "Replace",
+                Earlier: new() { new("123456_03_AadharCard__13092026.jpg", At(13, 18, 17), At(13, 18, 18), "DMS-883913", ReplacedBecause: "address side cropped") }),
+            new(Joint2, "Photograph", DmsClass.Kyc, "123456_03_Photograph__13092026.jpg", At(13, 18, 18), At(13, 18, 19), "DMS-883916"),
+
+            new(Shared, "Payment instrument · cheque", DmsClass.Fd, "123456_00_Cheque__14092026.jpg", At(14, 12, 2), At(14, 12, 3), "DMS-884130", Ref: "004512",
+                Earlier: new()
+                {
+                    new("123456_00_Cheque__12032025.jpg", In2025(10, 31), In2025(10, 32), "DMS-612052", Earlier, "cheque for the new deposit"),
+                    new("123456_00_Cheque__13092026.jpg", At(13, 18, 20), At(13, 18, 21), "DMS-883918", ReplacedBecause: "cheque date overwritten · Operations asked for a fresh scan"),
+                }),
+            new(Shared, "Application form · signed", DmsClass.Fd, "123456_00_FDForm__14092026.pdf", At(14, 16, 58), At(14, 16, 59), "DMS-884144",
+                Earlier: new() { new("123456_00_FDForm__12032025.pdf", In2025(10, 40), In2025(10, 41), "DMS-612058", Earlier, "form for the new application") }),
+            new(Shared, "Letter of authority", DmsClass.Open, "123456_00_Authority Letter__14092026.pdf", At(14, 17, 4), At(14, 17, 5), "DMS-884151",
+                Note: "typed type · open class", Remark: "Filed at broker request"),
+        };
+    }
 
     // Board 12's "today": validity dates and the Requested filter count back from here.
     public static readonly DateOnly ConsentToday = new(2026, 9, 17);

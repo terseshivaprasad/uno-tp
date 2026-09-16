@@ -17,7 +17,7 @@
         <div class="app-header__right">
             <div class="app-header__welcome"><span class="welcome-label">Welcome,</span> Shivaprasad Terse <span class="entity-code">100002225</span></div>
             <div class="app-header__nav">
-                <a asp-page="@(ViewData["FirstNavPage"] as string ?? "/Apps/UnoTp/Dashboard")">@(ViewData["FirstNavLabel"] as string ?? "Dashboard")</a>
+                <a class="@(ViewData["FirstNavActive"] is true ? "app-header__nav-active" : null)" asp-page="@(ViewData["FirstNavPage"] as string ?? "/Apps/UnoTp/Dashboard")">@(ViewData["FirstNavLabel"] as string ?? "Dashboard")</a>
                 <a asp-page="/Desktop/Index">Home</a>
                 <a asp-page="/Desktop/Index">Logout</a>
             </div>
