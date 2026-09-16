@@ -80,15 +80,7 @@
 
     <div class="field-hint">Renewal does not need its own flow &mdash; enter the same PAN or folio above and, if the folio has a deposit approaching maturity, the search result offers to renew it.</div>
 
-    <div class="actionbar actionbar--sticky">
-        <div class="actionbar__hint">Identify the primary holder to continue &mdash; <strong>consent opens once a record is matched</strong></div>
-        <div style="display:flex;align-items:center;gap:24px">
-            <a class="btn btn-secondary" asp-page="/Apps/UnoTp/Desktop/Dashboard">Back</a>
-            <button type="button" class="btn btn-secondary">Clear All</button>
-            <button type="button" class="btn btn-primary hid-next" data-goto="result">Proceed</button>
-        </div>
-    </div>
-</section>
+    </section>
 
 <!-- 02A: Search result -->
 <section class="hid-section" data-step="result" hidden>
@@ -151,15 +143,7 @@
         <span style="font-weight:600">Renew carries the folio forward</span> &mdash; the broker then makes the one decision renewal needs, whether to keep, add or drop a holder, and from there the flow is the ordinary purchase flow with the carried-forward holders already identified and consented. Create new FD starts that flow with no holders at all.
     </div>
 
-    <div class="actionbar actionbar--sticky">
-        <div class="actionbar__hint">Pick an intent &mdash; <strong>renew an existing deposit, or start a new FD for this investor</strong></div>
-        <div style="display:flex;align-items:center;gap:24px">
-            <button type="button" class="btn btn-secondary hid-next" data-goto="search">Back</button>
-            <button type="button" class="btn btn-secondary hid-next" data-goto="search">Search again</button>
-            <button type="button" class="btn btn-primary hid-next" data-goto="existing">Proceed with existing customer</button>
-        </div>
-    </div>
-</section>
+    </section>
 
 <!-- 02B: Renewal decision -->
 <section class="hid-section" data-step="renewal" hidden>
@@ -243,15 +227,7 @@
         <span style="font-weight:600">From here the flow is the purchase flow.</span> Proceed opens Investor Information (03&ndash;08) with the carried-forward holders already identified and consented; only holder 3 walks the full identification, consent and document path. Amount, tenure and scheme are pre-filled from the maturing deposit on the deposit-details step and stay editable.
     </div>
 
-    <div class="actionbar actionbar--sticky">
-        <div class="actionbar__hint">Continuing with the same three holders &mdash; <strong>holder 3 will be asked to re-verify inside the normal flow</strong></div>
-        <div style="display:flex;align-items:center;gap:24px">
-            <button type="button" class="btn btn-secondary hid-next" data-goto="result">Back</button>
-            <button type="button" class="btn btn-secondary hid-next" data-goto="search">Cancel renewal</button>
-            <button type="button" class="btn btn-primary hid-next" data-goto="complete">Proceed</button>
-        </div>
-    </div>
-</section>
+    </section>
 
 <!-- 03: Existing customer found -->
 <section class="hid-section" data-step="existing" hidden>
@@ -309,15 +285,7 @@
         <button type="button" class="btn btn-secondary btn-sm hid-next" data-goto="newpan" style="align-self:flex-start">Add joint holder</button>
     </div>
 
-    <div class="actionbar actionbar--sticky">
-        <div class="actionbar__hint">Record matched and consent already on file &mdash; <strong>this holder needs nothing further</strong></div>
-        <div style="display:flex;align-items:center;gap:24px">
-            <button type="button" class="btn btn-secondary hid-next" data-goto="result">Back</button>
-            <button type="button" class="btn btn-secondary">Clear All</button>
-            <button type="button" class="btn btn-primary hid-next" data-goto="complete">Proceed</button>
-        </div>
-    </div>
-</section>
+    </section>
 
 <!-- 04: New customer PAN & NSDL -->
 <section class="hid-section" data-step="newpan" hidden>
@@ -390,15 +358,7 @@
         <span class="chip chip--warn">Consent pending</span>
     </div>
 
-    <div class="actionbar actionbar--sticky">
-        <div class="actionbar__hint">Holder 3 &middot; NSDL validation failed &mdash; <strong>correct the name and date of birth, then retry</strong></div>
-        <div style="display:flex;align-items:center;gap:24px">
-            <button type="button" class="btn btn-secondary hid-next" data-goto="existing">Back</button>
-            <button type="button" class="btn btn-secondary">Clear All</button>
-            <button type="button" class="btn btn-primary hid-next" data-goto="consent">Continue to consent</button>
-        </div>
-    </div>
-</section>
+    </section>
 
 <!-- 05: DPDP consent -->
 <section class="hid-section" data-step="consent" hidden>
@@ -473,15 +433,7 @@
     </div>
     <div class="field-hint">Registered contacts cannot be edited here.</div>
 
-    <div class="actionbar actionbar--sticky">
-        <div class="actionbar__hint">Holder 2 &middot; both signed forms must be accepted before the consent OTP is sent &mdash; <strong>1 of 2 accepted</strong></div>
-        <div style="display:flex;align-items:center;gap:24px">
-            <button type="button" class="btn btn-secondary hid-next" data-goto="newpan">Back</button>
-            <button type="button" class="btn btn-secondary">Clear All</button>
-            <button type="button" class="btn btn-primary hid-next" data-goto="complete">Continue</button>
-        </div>
-    </div>
-</section>
+    </section>
 
 <!-- 06: All holders complete -->
 <section class="hid-section" data-step="complete" hidden>
@@ -500,17 +452,68 @@
     </table>
     <div class="field-hint">Consent artefacts &mdash; timestamp, channel, purpose, IP, holder reference &mdash; are stored against the application for audit.</div>
 
-    <div class="actionbar actionbar--sticky">
+    </section>
+
+</form>
+
+@section Footer {
+    <div class="hid-footer" data-step="search">
+        <div class="actionbar__hint">Identify the primary holder to continue &mdash; <strong>consent opens once a record is matched</strong></div>
+        <div style="display:flex;align-items:center;gap:24px">
+            <a class="btn btn-secondary" asp-page="/Apps/UnoTp/Desktop/Dashboard">Back</a>
+            <button type="button" class="btn btn-secondary">Clear All</button>
+            <button type="button" class="btn btn-primary hid-next" data-goto="result">Proceed</button>
+        </div>
+    </div>
+    <div class="hid-footer" data-step="result" hidden>
+        <div class="actionbar__hint">Pick an intent &mdash; <strong>renew an existing deposit, or start a new FD for this investor</strong></div>
+        <div style="display:flex;align-items:center;gap:24px">
+            <button type="button" class="btn btn-secondary hid-next" data-goto="search">Back</button>
+            <button type="button" class="btn btn-secondary hid-next" data-goto="search">Search again</button>
+            <button type="button" class="btn btn-primary hid-next" data-goto="existing">Proceed with existing customer</button>
+        </div>
+    </div>
+    <div class="hid-footer" data-step="renewal" hidden>
+        <div class="actionbar__hint">Continuing with the same three holders &mdash; <strong>holder 3 will be asked to re-verify inside the normal flow</strong></div>
+        <div style="display:flex;align-items:center;gap:24px">
+            <button type="button" class="btn btn-secondary hid-next" data-goto="result">Back</button>
+            <button type="button" class="btn btn-secondary hid-next" data-goto="search">Cancel renewal</button>
+            <button type="button" class="btn btn-primary hid-next" data-goto="complete">Proceed</button>
+        </div>
+    </div>
+    <div class="hid-footer" data-step="existing" hidden>
+        <div class="actionbar__hint">Record matched and consent already on file &mdash; <strong>this holder needs nothing further</strong></div>
+        <div style="display:flex;align-items:center;gap:24px">
+            <button type="button" class="btn btn-secondary hid-next" data-goto="result">Back</button>
+            <button type="button" class="btn btn-secondary">Clear All</button>
+            <button type="button" class="btn btn-primary hid-next" data-goto="complete">Proceed</button>
+        </div>
+    </div>
+    <div class="hid-footer" data-step="newpan" hidden>
+        <div class="actionbar__hint">Holder 3 &middot; NSDL validation failed &mdash; <strong>correct the name and date of birth, then retry</strong></div>
+        <div style="display:flex;align-items:center;gap:24px">
+            <button type="button" class="btn btn-secondary hid-next" data-goto="existing">Back</button>
+            <button type="button" class="btn btn-secondary">Clear All</button>
+            <button type="button" class="btn btn-primary hid-next" data-goto="consent">Continue to consent</button>
+        </div>
+    </div>
+    <div class="hid-footer" data-step="consent" hidden>
+        <div class="actionbar__hint">Holder 2 &middot; both signed forms must be accepted before the consent OTP is sent &mdash; <strong>1 of 2 accepted</strong></div>
+        <div style="display:flex;align-items:center;gap:24px">
+            <button type="button" class="btn btn-secondary hid-next" data-goto="newpan">Back</button>
+            <button type="button" class="btn btn-secondary">Clear All</button>
+            <button type="button" class="btn btn-primary hid-next" data-goto="complete">Continue</button>
+        </div>
+    </div>
+    <div class="hid-footer" data-step="complete" hidden>
         <div class="actionbar__hint">All three holders are identified and consented &mdash; <strong>ready to move to the documents step</strong></div>
         <div style="display:flex;align-items:center;gap:24px">
             <button type="button" class="btn btn-secondary hid-next" data-goto="consent">Back</button>
             <button type="button" class="btn btn-secondary">Clear All</button>
-            <button type="submit" class="btn btn-primary">Proceed to documents</button>
+            <button type="submit" form="hidForm" class="btn btn-primary">Proceed to documents</button>
         </div>
     </div>
-</section>
-
-</form>
+}
 
 @section Scripts {
     <script src="~/js/holder-identification.js" asp-append-version="true"></script>

@@ -45,6 +45,7 @@
             @RenderBody()
         </div>
     </div>
+    @await RenderSectionAsync("Footer", required: false)
 </div>
 @await RenderSectionAsync("Scripts", required: false)
 @functions {

@@ -4,12 +4,16 @@
 // rather than navigating to a new URL for every intermediate screen.
 (function () {
   var sections = document.querySelectorAll('.hid-section');
+  var footers = document.querySelectorAll('.hid-footer');
   var pills = document.querySelectorAll('.hid-step-pill');
   var stepField = document.getElementById('hidStepField');
 
   function showStep(step) {
     sections.forEach(function (s) {
       s.hidden = s.getAttribute('data-step') !== step;
+    });
+    footers.forEach(function (f) {
+      f.hidden = f.getAttribute('data-step') !== step;
     });
     pills.forEach(function (p) {
       p.classList.toggle('hid-step-pill--active', p.getAttribute('data-goto') === step);
