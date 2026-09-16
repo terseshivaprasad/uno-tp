@@ -5,75 +5,300 @@
     ViewData["Title"] = "Review Summary";
     Layout = "/Pages/Shared/_WizardLayout.cshtml";
     ViewData["WizardStep"] = "review";
-    ViewData["StepLabel"] = "Step 6 of 6";
+
+    var holders = new[]
+    {
+        new {
+            Name = "R•••••• T•••••", Primary = true, Pan = "BISPM4465N", Dob = "10-06-1992", Gender = "Male", Father = "S•••••• T•••••",
+            Typed = true, Count = "10 of 10", Consent = "Digital consent · OTP verified 11:24 · face match passed",
+            Mobile = "8779712676", Email = "TERSESHIVAPRASAD@ICLOUD.COM",
+            Income = "Upto ₹ 5,00,000", Occupation = "Salaried · MMFSL Employee", SubOccupation = "MMFSL Employee", Marital = "Married",
+            Permanent = "704 Kisan Vihar, M G Road, Maharashtra Nagar, Dombivli, Thane 421202",
+            Mailing = "14 Sai Chambers, Andheri East, Mumbai 400069 · own proof verified", MailingSame = false,
+            PoaType = "Passport", PoaRef = "P4471882", PoaExpiry = "11/2032",
+            PoaNote = "All seven fields matched source · separate mailing-address proof also verified"
+        },
+        new {
+            Name = "S•••• T•••••", Primary = false, Pan = "AXKPT8891L", Dob = "22-01-1990", Gender = "Male", Father = "R•••••• T•••••",
+            Typed = false, Count = "8 of 8", Consent = "Digital consent · OTP verified 11:31 · face match passed",
+            Mobile = "9820045512", Email = "S.TERSE@ICLOUD.COM",
+            Income = "₹ 5,00,000 – ₹ 10,00,000", Occupation = "Self-employed", SubOccupation = "Professional", Marital = "Married",
+            Permanent = "14 Sai Chambers, Andheri East, Mumbai, Maharashtra 400069",
+            Mailing = "Same as permanent", MailingSame = true,
+            PoaType = "Driving licence", PoaRef = "MH12 2019 0034471", PoaExpiry = "08/2031",
+            PoaNote = "All seven fields matched the verify-with-source response"
+        },
+        new {
+            Name = "P•••• N•••", Primary = false, Pan = "CDEPN2290F", Dob = "03-11-1996", Gender = "Female", Father = "R•••••• N•••",
+            Typed = false, Count = "8 of 8", Consent = "Offline consent · signed form uploaded · face match passed",
+            Mobile = "9930114427", Email = "P.NAIK@ICLOUD.COM",
+            Income = "₹ 5,00,000 – ₹ 10,00,000", Occupation = "Salaried · private sector", SubOccupation = "Private sector", Marital = "Single",
+            Permanent = "22 Laxmi Niwas, Kalyan West, Thane 421301",
+            Mailing = "Same as permanent", MailingSame = true,
+            PoaType = "Aadhaar", PoaRef = "XXXX XXXX 4417", PoaExpiry = "No expiry",
+            PoaNote = "All seven fields matched the verify-with-source response"
+        }
+    };
+
+    // Done = false draws a dash: the item does not apply to this application.
+    var documents = new[]
+    {
+        (Done: true,  Title: "PAN card · three holders",           Detail: "OCR name and DOB matched CKYC for each"),
+        (Done: true,  Title: "Proof of address · holders 2 and 3", Detail: "verified against source on all seven fields"),
+        (Done: true,  Title: "Proof of address · holder 1",        Detail: "passport · verified against source on all seven fields"),
+        (Done: true,  Title: "Proof of address · holder 1 mailing", Detail: "utility bill · address matched the mailing address on file"),
+        (Done: true,  Title: "Photograph · three holders",         Detail: "face match against POA and PAN passed for each"),
+        (Done: true,  Title: "Payment cheque",                     Detail: "cheque-hdfc-4471.jpg · account, IFSC and name matched"),
+        (Done: true,  Title: "Form 15G · primary holder",          Detail: "required by the TDS exemption claimed on 10"),
+        (Done: false, Title: "Disability certificate",             Detail: "no holder tagged as disabled")
+    };
+
+    var consents = new[]
+    {
+        (Title: "Holder 1 — digital consent", Detail: "OTP verified 14 Sep 2026, 11:24 · purposes: KYC, deposit servicing"),
+        (Title: "Holder 2 — digital consent", Detail: "OTP verified 14 Sep 2026, 11:31"),
+        (Title: "Holder 3 — offline consent", Detail: "signed form collected and uploaded 14 Sep 2026")
+    };
+
+    // The first two are signed as the broker works through the application; the last is signed here.
+    var declarations = new[]
+    {
+        (Signed: true,  Text: "I have met every holder, seen the original documents, and the uploads are true copies of them."),
+        (Signed: true,  Text: "The deposit terms above, including the rate and that it locks on realisation, were read out to the investor."),
+        (Signed: false, Text: "I have not received or promised any cash consideration outside this application.")
+    };
 }
 
-<div class="card__title">Review Summary</div>
-<div class="card__subtitle">Every control point has passed &mdash; the declarations below are the only thing left.</div>
+<div class="rv-page">
+    <div class="inv-page-head">
+        <div style="flex:1;min-width:0">
+            <div class="inv-title">Review Summary</div>
+            <div style="font-size:12px;color:var(--muted);padding-top:4px">Everything captured across the four steps &middot; check before submission</div>
+        </div>
+        <div style="font-size:12.5px;color:var(--muted);flex:none">Application No: <span style="font-weight:600;color:var(--ink)">FBBMFL26F99AAC1</span></div>
+    </div>
 
-<div class="summary-block">
-    <div class="summary-block__title">Holders <a class="action-link" asp-page="/Apps/UnoTp/Application/HolderIdentification">Edit on 02-06</a></div>
-    <dl class="kv-grid">
-        <div class="kv"><dt>Holder 1 &middot; Primary</dt><dd>Priya Sunil Nair &middot; PAN BISPM4465N</dd></div>
-        <div class="kv"><dt>Holder 2</dt><dd>Anita Nair &middot; PAN AXKPT8891L</dd></div>
-        <div class="kv"><dt>Holder 3 &middot; Joint</dt><dd>Rohan Nair &middot; PAN CDEPN2290F</dd></div>
-    </dl>
-    <div class="field-hint">OCR name and DOB matched CKYC for each &middot; face match against POA and PAN passed for each.</div>
-</div>
+    <div class="rv-ready">
+        <div class="rv-ready__text"><strong>Every control point has passed.</strong> All three holders are identified from CKYC and consented under DPDP, every proof of address is verified against source including holder 1&rsquo;s mailing-address proof, face match passed for each holder, the payment cheque matched the account on file, and no field the broker owns is blank. <span class="rv-em">The declarations below are the only thing left.</span></div>
+        <div class="rv-ready__status">Ready to submit</div>
+    </div>
 
-<div class="summary-block">
-    <div class="summary-block__title">Documents <a class="action-link" asp-page="/Apps/UnoTp/Application/UploadDocuments">Edit on 07</a></div>
-    <div class="field-hint">Verified on 07 &middot; verified against source on all seven fields &middot; all uploads for this application passed.</div>
-</div>
+    @* ── Fixed deposit ────────────────────────────────────────────────────────── *@
+    <section class="rv-section">
+        <div class="rv-head">
+            <div class="rv-head__text">
+                <div class="rv-head__title">Fixed deposit</div>
+                <div class="rv-head__desc">Rate is the card rate for a 36-month public deposit as on 14 Sep 2026 &middot; locked on realisation of the cheque, not on submission</div>
+            </div>
+            <a class="rv-head__action" asp-page="/Apps/UnoTp/Application/FdConfiguration">Edit on 10</a>
+        </div>
+        <div class="rv-grid-4">
+            <div><div class="rv-kv__k">Invested amount</div><div class="rv-kv__v rv-kv__v--lg">&#8377; 5,00,000</div><div class="rv-kv__note">five lakh rupees</div></div>
+            <div><div class="rv-kv__k">Category</div><div class="rv-kv__v rv-kv__v--lg">Public</div><div class="rv-kv__note">no senior-citizen uplift &mdash; youngest holder is 30</div></div>
+            <div><div class="rv-kv__k">Scheme</div><div class="rv-kv__v rv-kv__v--lg">Cumulative</div><div class="rv-kv__note">from tenure and payout together</div></div>
+            <div><div class="rv-kv__k">Rate of interest</div><div class="rv-kv__v rv-kv__v--lg rv-kv__v--green">7.85% p.a.</div><div class="rv-kv__note">card rate &middot; not negotiable</div></div>
+            <div><div class="rv-kv__k">Tenure</div><div class="rv-kv__v rv-kv__v--lg">36 months</div></div>
+            <div><div class="rv-kv__k">Interest payout</div><div class="rv-kv__v rv-kv__v--lg">On maturity</div></div>
+            <div><div class="rv-kv__k">Maturity value</div><div class="rv-kv__v rv-kv__v--lg">&#8377; 6,29,300</div></div>
+            <div><div class="rv-kv__k">Matures on</div><div class="rv-kv__v rv-kv__v--lg">14 Sep 2029</div><div class="rv-kv__note">36 months from realisation</div></div>
+        </div>
+        <div class="rv-grid-4 rv-grid-4--divided">
+            <div><div class="rv-kv__k">Auto renewal</div><div class="rv-kv__v">On &middot; principal only</div><div class="rv-kv__note">at the card rate on 14 Sep 2029</div></div>
+            <div><div class="rv-kv__k">TDS</div><div class="rv-kv__v rv-kv__v--amber">Not deducted &mdash; exemption claimed</div><div class="rv-kv__note">Form 15G on file for the primary holder</div></div>
+            <div><div class="rv-kv__k">Delivery type</div><div class="rv-kv__v">E-receipt</div><div class="rv-kv__note rv-wrap">TERSESHIVAPRASAD@ICLOUD.COM</div></div>
+            <div><div class="rv-kv__k">Maturity instruction</div><div class="rv-kv__v">Credit to the repayment account</div><div class="rv-kv__note">HDFC &bull;&bull;&bull;&bull;4471</div></div>
+        </div>
+    </section>
 
-<div class="summary-block">
-    <div class="summary-block__title">Investor Information <a class="action-link" asp-page="/Apps/UnoTp/Application/InvestorInfo">Edit on 08</a></div>
-    <dl class="kv-grid">
-        <div class="kv"><dt>Occupation</dt><dd>Professional</dd></div>
-        <div class="kv"><dt>Marital status</dt><dd>Married</dd></div>
-        <div class="kv"><dt>Annual income</dt><dd>Upto &#8377; 5,00,000</dd></div>
-        <div class="kv"><dt>Nominee</dt><dd>Daughter &middot; captured</dd></div>
-        <div class="kv"><dt>Mailing address</dt><dd>Same as permanent</dd></div>
-        <div class="kv"><dt>FATCA</dt><dd>Not a tax resident of a country other than India</dd></div>
-    </dl>
-</div>
+    @* ── Holders ──────────────────────────────────────────────────────────────── *@
+    <section class="rv-section">
+        <div class="rv-head">
+            <div class="rv-head__text">
+                <div class="rv-head__title">Holders</div>
+                <div class="rv-head__desc">Three holders &middot; added and removed on the search step &middot; every holder&rsquo;s identity is from CKYC and each POA is cross-checked with verify-with-source &middot; one row per holder, carrying everything captured so far &mdash; counters cover every field the broker owns: six More Information, both FATCA answers, and any identity field OCR could not read (two on holder 1)</div>
+            </div>
+            <a class="rv-head__action" asp-page="/Apps/UnoTp/Application/InvestorInfo">Edit on 08</a>
+        </div>
+        <div class="rv-holders">
+            @foreach (var h in holders)
+            {
+                <div class="rv-holder">
+                    <div class="rv-holder__id">
+                        <div class="rv-holder__photo">PHOTO</div>
+                        <div class="rv-holder__id-body">
+                            <div class="rv-holder__name-row">
+                                <div class="rv-holder__name">@h.Name</div>
+                                <div class="rv-role @(h.Primary ? "rv-role--primary" : "")">@(h.Primary ? "Primary" : "Joint")</div>
+                            </div>
+                            <div class="rv-holder__meta">PAN @h.Pan<br />@h.Dob &middot; @h.Gender @if (h.Typed) {<span class="rv-typed">typed &middot; matched source</span>}</div>
+                            <div class="rv-holder__meta">Father @h.Father @if (h.Typed) {<span class="rv-typed">typed &middot; matched source</span>}</div>
+                            <div class="rv-holder__count">
+                                <div class="rv-holder__count-label">@h.Count &middot; complete</div>
+                                <div class="rv-holder__bar"><div></div></div>
+                            </div>
+                            <div class="rv-holder__consent">@h.Consent</div>
+                        </div>
+                    </div>
+                    <div class="rv-holder__col">
+                        <div class="rv-holder__col-head"><div class="rv-holder__col-label">Contact &middot; from search</div></div>
+                        <div class="rv-mini-grid rv-mini-grid--1">
+                            <div><div class="rv-mini__k">Mobile</div><div class="rv-mini__v">@h.Mobile</div></div>
+                            <div><div class="rv-mini__k">E-mail</div><div class="rv-mini__v">@h.Email</div></div>
+                        </div>
+                    </div>
+                    <div class="rv-holder__col">
+                        <div class="rv-holder__col-head"><div class="rv-holder__col-label">More information &middot; broker</div></div>
+                        <div class="rv-mini-grid">
+                            <div><div class="rv-mini__k">Annual income</div><div class="rv-mini__v">@h.Income</div></div>
+                            <div><div class="rv-mini__k">Occupation</div><div class="rv-mini__v">@h.Occupation</div></div>
+                            <div><div class="rv-mini__k">Sub occupation</div><div class="rv-mini__v">@h.SubOccupation</div></div>
+                            <div><div class="rv-mini__k">Marital status</div><div class="rv-mini__v">@h.Marital</div></div>
+                            <div><div class="rv-mini__k">FATCA &middot; tax resident elsewhere</div><div class="rv-mini__v">No</div></div>
+                            <div><div class="rv-mini__k">FATCA &middot; foreign resident</div><div class="rv-mini__v">No</div></div>
+                        </div>
+                    </div>
+                    @* A holder whose mailing address carries its own proof is flagged in pink. *@
+                    <div class="rv-holder__col rv-holder__col--poa @(h.MailingSame ? "" : "rv-holder__col--flag")">
+                        <div class="rv-holder__col-head">
+                            <div class="rv-holder__col-label">Address &amp; proof of address &middot; from 07</div>
+                            <div class="rv-verified">Verified</div>
+                        </div>
+                        <div class="rv-mini-grid">
+                            <div class="rv-mini--wide"><div class="rv-mini__k">Permanent address</div><div class="rv-mini__v">@h.Permanent</div></div>
+                            <div class="rv-mini--wide"><div class="rv-mini__k">Mailing address</div><div class="rv-mini__v @(h.MailingSame ? "rv-mini__v--muted" : "")">@h.Mailing</div></div>
+                            <div><div class="rv-mini__k">POA type</div><div class="rv-mini__v">@h.PoaType</div></div>
+                            <div><div class="rv-mini__k">POA reference</div><div class="rv-mini__v">@h.PoaRef</div></div>
+                            <div><div class="rv-mini__k">POA expiry</div><div class="rv-mini__v">@h.PoaExpiry</div></div>
+                        </div>
+                        <div class="rv-holder__poa-note">@h.PoaNote</div>
+                    </div>
+                </div>
+            }
+        </div>
+        <div class="rv-callout">
+            <div class="rv-callout__text"><strong>Holder 1&rsquo;s mailing address differs from the permanent address</strong> &mdash; 14 Sai Chambers, Andheri East, Mumbai 400069 &mdash; so a second proof of address was required for it; that proof is uploaded and verified. No holder is tagged as disabled, so no additional certificate is required.</div>
+            <a class="rv-callout__status" asp-page="/Apps/UnoTp/Application/UploadDocuments">Verified on 07</a>
+        </div>
+    </section>
 
-<div class="summary-block">
-    <div class="summary-block__title">Bank &amp; Payment <a class="action-link" asp-page="/Apps/UnoTp/Application/BankDetails">Edit on 09</a></div>
-    <dl class="kv-grid">
-        <div class="kv"><dt>Payment account</dt><dd>HDFC Bank &middot; XXXX XXXX 4417</dd></div>
-        <div class="kv"><dt>Repayment account</dt><dd>Same account</dd></div>
-        <div class="kv"><dt>Payment cheque</dt><dd class="text-green">Cheque matched</dd></div>
-    </dl>
-</div>
+    @* ── Nominee ──────────────────────────────────────────────────────────────── *@
+    <section class="rv-section">
+        <div class="rv-head">
+            <div class="rv-head__text">
+                <div class="rv-head__title">Nominee</div>
+                <div class="rv-head__desc">Asked once for the application, not per holder &middot; mandatory before submission</div>
+            </div>
+            <a class="rv-head__action" asp-page="/Apps/UnoTp/Application/InvestorInfo">Edit on 08</a>
+        </div>
+        <div class="rv-grid-4">
+            <div><div class="rv-kv__k">Name</div><div class="rv-kv__v">A&bull;&bull;&bull;&bull; R&bull;&bull;&bull;&bull;&bull;&bull; T&bull;&bull;&bull;&bull;&bull;</div></div>
+            <div><div class="rv-kv__k">Date of birth</div><div class="rv-kv__v">12-12-2020</div></div>
+            <div><div class="rv-kv__k">Relation with primary holder</div><div class="rv-kv__v">Daughter</div></div>
+            <div><div class="rv-kv__k">Guardian</div><div class="rv-kv__v">R&bull;&bull;&bull;&bull;&bull;&bull; T&bull;&bull;&bull;&bull;&bull; &middot; primary holder</div></div>
+        </div>
+        <div class="rv-pass rv-pass--soft"><strong>Nominee captured.</strong> The nominee is a minor, so a guardian and their address are on file &mdash; the guardian is the primary holder, at the permanent address above.</div>
+    </section>
 
-<div class="summary-block">
-    <div class="summary-block__title">FD Configuration <a class="action-link" asp-page="/Apps/UnoTp/Application/FdConfiguration">Edit on 10</a></div>
-    <dl class="kv-grid">
-        <div class="kv"><dt>Invested amount</dt><dd>&#8377; 5,00,000</dd></div>
-        <div class="kv"><dt>Scheme / Category</dt><dd>Public &middot; Cumulative</dd></div>
-        <div class="kv"><dt>Tenure / Rate</dt><dd>44 months &middot; 7.9%</dd></div>
-        <div class="kv"><dt>Maturity value</dt><dd>&#8377; 7,04,120 &middot; matures on 14 Sep 2029</dd></div>
-        <div class="kv"><dt>Auto renewal</dt><dd>renews on maturity at the rate of the day</dd></div>
-        <div class="kv"><dt>TDS</dt><dd>Form 15G on file for the primary holder</dd></div>
-    </dl>
-</div>
+    <div class="rv-split rv-split--wide-left">
+        @* ── Bank & payment ─────────────────────────────────────────────────── *@
+        <section class="rv-section">
+            <div class="rv-head">
+                <div class="rv-head__text">
+                    <div class="rv-head__title">Bank &amp; payment</div>
+                    <div class="rv-head__desc">Read from the payment cheque &middot; both accounts belong to the primary holder</div>
+                </div>
+                <a class="rv-head__action" asp-page="/Apps/UnoTp/Application/BankDetails">Edit on 09</a>
+            </div>
+            <div class="rv-grid-2">
+                <div><div class="rv-kv__k">Payment account</div><div class="rv-kv__v rv-kv__v--lg">HDFC Bank &bull;&bull;&bull;&bull;4471</div><div class="rv-kv__note">Andheri East, Mumbai &middot; IFSC HDFC0000521 &middot; MICR 400240015</div></div>
+                <div><div class="rv-kv__k">Repayment account</div><div class="rv-kv__v rv-kv__v--lg">Same account</div><div class="rv-kv__note">interest and maturity paid to the investor</div></div>
+                <div><div class="rv-kv__k">Cheque</div><div class="rv-kv__v">004512 &middot; 12 Sep 2026</div><div class="rv-kv__note">&#8377; 5,00,000 &mdash; equals the deposit amount</div></div>
+                <div><div class="rv-kv__k">Axis CMS location</div><div class="rv-kv__v">Mumbai &mdash; Andheri</div><div class="rv-kv__note">where the cheque is presented</div></div>
+            </div>
+            <div class="rv-pass"><strong>Cheque matched.</strong> Account number, IFSC and holder name read from cheque-hdfc-4471.jpg agree with what was typed, and the name matches the primary holder. <span class="rv-em">The FD starts and the rate locks on realisation</span> &mdash; typically two working days after presentation.</div>
+        </section>
 
-<div class="summary-block">
-    <div class="summary-block__title">Declarations</div>
-    <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500"><input type="checkbox" checked disabled /> Sourced by sub broker code SB-100002225-14 &mdash; verified</label>
-    <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500"><input type="checkbox" /> One declaration still to sign &mdash; sign the last declaration to submit</label>
+        @* ── Documents ──────────────────────────────────────────────────────── *@
+        <section class="rv-section">
+            <div class="rv-head">
+                <div class="rv-head__text">
+                    <div class="rv-head__title">Documents</div>
+                    <div class="rv-head__desc">All uploads for this application</div>
+                </div>
+                <a class="rv-head__action" asp-page="/Apps/UnoTp/Application/UploadDocuments">Edit on 07</a>
+            </div>
+            <ul class="rv-checks">
+                @foreach (var d in documents)
+                {
+                    <li class="rv-check">
+                        <span class="rv-check__mark @(d.Done ? "" : "rv-check__mark--na")" aria-hidden="true">@(d.Done ? "✓" : "–")</span>
+                        <div class="rv-check__body"><div class="rv-check__title">@d.Title</div><div class="rv-check__detail">@d.Detail</div></div>
+                    </li>
+                }
+            </ul>
+        </section>
+    </div>
+
+    <div class="rv-split">
+        @* ── Consent ────────────────────────────────────────────────────────── *@
+        <section class="rv-section">
+            <div class="rv-head">
+                <div class="rv-head__text">
+                    <div class="rv-head__title">Consent &middot; DPDP</div>
+                    <div class="rv-head__desc">Every holder consents before their data is processed</div>
+                </div>
+                <span class="rv-head__action">Register on 12</span>
+            </div>
+            <ul class="rv-checks">
+                @foreach (var c in consents)
+                {
+                    <li class="rv-check">
+                        <span class="rv-check__mark" aria-hidden="true">&#10003;</span>
+                        <div class="rv-check__body"><div class="rv-check__title">@c.Title</div><div class="rv-check__detail">@c.Detail</div></div>
+                    </li>
+                }
+            </ul>
+        </section>
+
+        @* ── Other details ──────────────────────────────────────────────────── *@
+        <section class="rv-section">
+            <div class="rv-head">
+                <div class="rv-head__text">
+                    <div class="rv-head__title">Other details</div>
+                    <div class="rv-head__desc">Broker&rsquo;s own references &mdash; optional</div>
+                </div>
+            </div>
+            <div class="rv-grid-2">
+                <div><div class="rv-kv__k">Sub broker code</div><div class="rv-kv__v">SB-100002225-14</div><div class="rv-kv__note">earns the payout on this application</div></div>
+                <div><div class="rv-kv__k">Physical application no</div><div class="rv-kv__v rv-kv__v--empty">Not entered</div><div class="rv-kv__note">only where a paper form was signed</div></div>
+                <div><div class="rv-kv__k">Application type</div><div class="rv-kv__v">Purchase</div><div class="rv-kv__note">new deposit, not a renewal</div></div>
+                <div><div class="rv-kv__k">Sourced by</div><div class="rv-kv__v">Shivaprasad Terse &middot; 100002225</div></div>
+            </div>
+        </section>
+    </div>
+
+    @* ── Declarations ─────────────────────────────────────────────────────────── *@
+    <form class="rv-declarations" id="reviewForm" novalidate>
+        <div class="rv-head__title">Declarations</div>
+        @for (var i = 0; i < declarations.Length; i++)
+        {
+            <label class="rv-declaration">
+                <input type="checkbox" name="Declarations" value="@i" class="rv-declaration__box" checked="@declarations[i].Signed" />
+                <span class="rv-declaration__text">@declarations[i].Text <span class="rv-required">Required</span></span>
+            </label>
+        }
+    </form>
 </div>
 
 @section Footer {
     <div class="hid-footer">
         <div class="hid-footer__inner">
-            <div class="actionbar__hint">Every control point passed &middot; 26 of 26 fields, nominee captured, all proofs verified against source &mdash; <strong>sign the last declaration to submit</strong></div>
+            <div class="actionbar__hint" id="rv-footer-hint">Every control point passed &middot; 26 of 26 fields, nominee captured, all proofs verified against source &mdash; <strong>sign the last declaration to submit</strong></div>
             <div style="display:flex;align-items:center;gap:24px">
                 <a class="hid-link" asp-page="/Apps/UnoTp/Application/FdConfiguration"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 6l-6 6 6 6"></path></svg> Back</a>
                 <button type="button" class="hid-link">Download summary</button>
-                <button type="button" class="hid-link">Clear All</button>
-                <button type="button" class="hid-link hid-link--primary" id="openPaymentLinkModal">Submit application <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 6l6 6-6 6"></path></svg></button>
+                <button type="reset" form="reviewForm" class="hid-link">Clear All</button>
+                <button type="button" class="hid-link hid-link--disabled" id="openPaymentLinkModal" disabled>Submit application <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 6l6 6-6 6"></path></svg></button>
             </div>
         </div>
     </div>
@@ -90,10 +315,10 @@
             <div class="card" style="width:100%;text-align:left">
                 <dl class="kv-grid--2">
                     <div class="kv"><dt>Invested amount</dt><dd>&#8377; 5,00,000</dd></div>
-                    <div class="kv"><dt>Tenure / Rate of interest</dt><dd>44 months &middot; 7.9%</dd></div>
+                    <div class="kv"><dt>Tenure / Rate of interest</dt><dd>36 months &middot; 7.85%</dd></div>
                     <div class="kv"><dt>Payment method</dt><dd>Online</dd></div>
                     <div class="kv"><dt>Paid from</dt><dd>Any account in a holder's name</dd></div>
-                    <div class="kv"><dt>Sent to</dt><dd>Primary holder's mobile, captured at search &middot; 98214 40063</dd></div>
+                    <div class="kv"><dt>Sent to</dt><dd>Primary holder's mobile, captured at search &middot; 87797 12676</dd></div>
                     <div class="kv"><dt>Valid for</dt><dd>48 hours</dd></div>
                 </dl>
                 <div class="field-hint" style="margin-top:10px">The broker is the one the investor will call if the link does not work.</div>
@@ -117,11 +342,36 @@
 @section Scripts {
     <script>
         (function () {
+            var form = document.getElementById('reviewForm');
+            var boxes = form.querySelectorAll('.rv-declaration__box');
+            var hint = document.getElementById('rv-footer-hint');
             var modal = document.getElementById('paymentLinkModal');
-            var openBtn = document.getElementById('openPaymentLinkModal');
+            var submit = document.getElementById('openPaymentLinkModal');
             var closeBtn = document.getElementById('closePaymentLinkModal');
-            if (openBtn) openBtn.addEventListener('click', function () { modal.hidden = false; });
-            if (closeBtn) closeBtn.addEventListener('click', function () { modal.hidden = true; });
+            var WORDS = ['', 'the last declaration', 'two declarations', 'all three declarations'];
+
+            // Submit holds until every declaration is signed; unsigned ones carry "Required".
+            function sync() {
+                var unsigned = 0;
+                boxes.forEach(function (box) {
+                    box.closest('.rv-declaration').classList.toggle('rv-declaration--unsigned', !box.checked);
+                    if (!box.checked) unsigned++;
+                });
+                hint.innerHTML = 'Every control point passed &middot; 26 of 26 fields, nominee captured, all proofs verified against source &mdash; '
+                    + (unsigned ? '<strong>sign ' + WORDS[unsigned] + ' to submit</strong>' : '<strong>declarations signed &middot; ready to submit</strong>');
+                submit.disabled = unsigned > 0;
+                submit.classList.toggle('hid-link--primary', !submit.disabled);
+                submit.classList.toggle('hid-link--disabled', submit.disabled);
+            }
+
+            form.addEventListener('change', sync);
+            form.addEventListener('reset', function () {
+                // The reset event fires before the values are restored.
+                setTimeout(sync);
+            });
+            submit.addEventListener('click', function () { if (!submit.disabled) modal.hidden = false; });
+            closeBtn.addEventListener('click', function () { modal.hidden = true; });
+            sync();
         })();
     </script>
 }

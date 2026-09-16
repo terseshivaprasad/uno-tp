@@ -801,6 +801,132 @@ select.inv-control:has(option[value=""]:checked) { color: var(--muted-2); }
   .fd-summary__amount { font-size: 22px; }
 }
 
+/* ===== Review Summary (11) =====
+   Read-only. Each section carries its own "Edit on NN" back to the step that owns
+   it; holders are one four-column row each (identity, contact, More Information,
+   address and POA). Only the declarations take input. */
+.rv-page { display: flex; flex-direction: column; gap: 24px; }
+.rv-em { font-weight: 600; }
+
+.rv-ready { display: flex; align-items: flex-start; gap: 14px; background: #E7F5EC; border-radius: 6px; padding: 14px 16px; color: var(--green); }
+.rv-ready__text { flex: 1; min-width: 0; font-size: 12.5px; line-height: 1.55; }
+.rv-ready__text strong { font-weight: 700; }
+.rv-ready__status { flex: none; font-size: 12.5px; font-weight: 600; }
+
+.rv-section { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.rv-head { display: flex; align-items: flex-end; gap: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--divider-2); }
+.rv-head__text { flex: 1; min-width: 0; }
+.rv-head__title { font-size: 15px; font-weight: 600; color: var(--ink); }
+.rv-head__desc { font-size: 11px; color: var(--muted); padding-top: 3px; line-height: 1.45; }
+.rv-head__action { flex: none; font-size: 12px; font-weight: 600; color: var(--red); }
+
+.rv-grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 18px 24px; }
+.rv-grid-4--divided { border-top: 1px solid #F2F4F7; padding-top: 16px; }
+.rv-grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 16px 20px; }
+.rv-kv__k { font-size: 11px; font-weight: 500; color: var(--muted); line-height: 1.35; }
+.rv-kv__v { font-size: 13.5px; font-weight: 500; padding-top: 4px; color: var(--ink); line-height: 1.4; }
+.rv-kv__v--lg { font-size: 15px; font-weight: 600; }
+.rv-kv__v--green { color: var(--green); }
+.rv-kv__v--amber { color: var(--amber); }
+.rv-kv__v--empty { color: var(--muted-2); }
+.rv-kv__note { font-size: 10.5px; color: var(--muted-2); padding-top: 3px; line-height: 1.4; }
+.rv-wrap { overflow-wrap: anywhere; }
+
+.rv-holders { display: flex; flex-direction: column; gap: 12px; }
+.rv-holder {
+  border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: #fff;
+  display: grid; grid-template-columns: 232px minmax(0,1.05fr) minmax(0,1.15fr) minmax(0,1.25fr);
+}
+.rv-holder__id { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; background: #F7FBF8; border-left: 4px solid var(--green-2); }
+.rv-holder__photo {
+  width: 48px; height: 58px; flex: none; border-radius: 5px; background: #fff; border: 1px solid var(--divider);
+  display: flex; align-items: center; justify-content: center; font-size: 8px; color: var(--muted-2); letter-spacing: .04em;
+}
+.rv-holder__id-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.rv-holder__name-row { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+.rv-holder__name { font-size: 14px; font-weight: 700; color: var(--ink); letter-spacing: -.1px; }
+.rv-role { font-size: 9px; font-weight: 700; color: var(--muted); background: #EEF0F3; border-radius: 3px; padding: 2px 5px; white-space: nowrap; }
+.rv-role--primary { color: var(--blue); background: #E8F1FB; }
+.rv-holder__meta { font-size: 10.5px; color: var(--muted); line-height: 1.5; }
+.rv-typed { font-size: 9px; font-weight: 700; color: var(--amber); background: var(--amber-bg); border: 1px solid #F0D98A; border-radius: 3px; padding: 1px 4px; }
+.rv-holder__count { display: flex; flex-direction: column; gap: 5px; padding-top: 4px; }
+.rv-holder__count-label { font-size: 10.5px; font-weight: 700; color: var(--green); line-height: 1.35; }
+.rv-holder__bar { height: 4px; border-radius: 2px; background: #EEF0F3; overflow: hidden; }
+.rv-holder__bar > div { width: 100%; height: 100%; background: var(--green-2); }
+.rv-holder__consent { font-size: 10px; color: var(--muted-2); line-height: 1.5; padding-top: 1px; }
+
+.rv-holder__col { padding: 14px 16px; border-left: 1px solid #F2F4F7; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.rv-holder__col--poa { background: #F3FAF5; }
+.rv-holder__col--flag { background: var(--pink-bg); }
+.rv-holder__col-head { display: flex; align-items: baseline; gap: 8px; }
+.rv-holder__col-label { flex: 1; min-width: 0; font-size: 9.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted-2); }
+.rv-verified { flex: none; font-size: 10px; font-weight: 700; color: var(--green); background: #fff; border: 1px solid #D9EEE2; border-radius: 3px; padding: 2px 7px; white-space: nowrap; }
+.rv-holder__poa-note { font-size: 10.5px; font-weight: 500; color: var(--green); line-height: 1.5; border-top: 1px solid #D9EEE2; padding-top: 9px; }
+
+.rv-mini-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 11px 14px; }
+.rv-mini-grid--1 { grid-template-columns: minmax(0,1fr); }
+.rv-mini--wide { grid-column: span 2; }
+.rv-mini__k { font-size: 10px; font-weight: 600; color: var(--muted-2); line-height: 1.4; text-transform: uppercase; letter-spacing: .03em; }
+.rv-mini__v { font-size: 12px; font-weight: 500; padding-top: 3px; color: var(--ink); line-height: 1.45; overflow-wrap: anywhere; }
+.rv-mini__v--muted { color: var(--muted); }
+
+.rv-callout {
+  display: flex; align-items: flex-start; gap: 14px; background: #F3FAF5; border-left: 3px solid var(--green-2);
+  border-radius: 0 6px 6px 0; padding: 13px 16px; color: var(--green);
+}
+.rv-callout__text { flex: 1; min-width: 0; font-size: 12px; line-height: 1.55; }
+.rv-callout__text strong { font-weight: 700; }
+.rv-callout__status { flex: none; font-size: 12px; font-weight: 600; color: var(--green); }
+
+.rv-pass { background: #E7F5EC; border-radius: 6px; padding: 12px 15px; font-size: 12px; color: var(--green); line-height: 1.55; }
+.rv-pass--soft { background: #F3FAF5; }
+.rv-pass strong { font-weight: 700; }
+
+.rv-split { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 24px; }
+.rv-split--wide-left { grid-template-columns: minmax(0,1.1fr) minmax(0,1fr); }
+
+.rv-checks { list-style: none; margin: 0; padding: 0; }
+.rv-check { display: flex; align-items: flex-start; gap: 9px; padding: 8px 0; border-top: 1px solid #F2F4F7; }
+.rv-check__mark { width: 13px; flex: none; text-align: center; font-size: 12px; font-weight: 700; color: var(--green); line-height: 1.5; }
+.rv-check__mark--na { color: var(--muted-2); }
+.rv-check__body { flex: 1; min-width: 0; }
+.rv-check__title { font-size: 12px; font-weight: 500; color: var(--ink); line-height: 1.4; }
+.rv-check__detail { font-size: 10.5px; color: var(--muted); padding-top: 2px; line-height: 1.45; }
+
+.rv-declarations { border-top: 1px solid var(--divider-2); padding-top: 20px; display: flex; flex-direction: column; gap: 12px; }
+.rv-declaration { display: flex; align-items: flex-start; gap: 11px; cursor: pointer; }
+.rv-declaration__box {
+  appearance: none; -webkit-appearance: none; margin: 1px 0 0; flex: none; width: 17px; height: 17px;
+  border: 1px solid var(--red); border-radius: 3px; background: #fff; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.rv-declaration__box:checked {
+  background: var(--red) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round'%3E%3Cpath d='M5 12l5 5L20 7'/%3E%3C/svg%3E") center / 11px no-repeat;
+}
+.rv-declaration__box:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.rv-declaration__text { flex: 1; min-width: 0; font-size: 12px; color: var(--text); line-height: 1.55; }
+.rv-required { display: none; color: var(--red-dark); font-weight: 600; }
+.rv-declaration--unsigned .rv-required { display: inline; }
+
+/* Board 11 - Mobile stacks each holder's columns and runs the sections one above another. */
+@media (max-width: 1100px) {
+  .rv-holder { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .rv-holder__col:nth-child(3) { border-left: none; }
+  .rv-holder__col { border-top: 1px solid #F2F4F7; }
+  .rv-holder__col:nth-child(2) { border-top: none; }
+}
+@media (max-width: 900px) {
+  .rv-grid-4 { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .rv-split, .rv-split--wide-left { grid-template-columns: 1fr; }
+}
+@media (max-width: 560px) {
+  .rv-ready, .rv-callout { flex-direction: column; gap: 6px; }
+  .rv-head { flex-wrap: wrap; }
+  .rv-grid-2 { grid-template-columns: 1fr; }
+  .rv-holder { grid-template-columns: 1fr; }
+  .rv-holder__col, .rv-holder__col:nth-child(2) { border-left: none; border-top: 1px solid #F2F4F7; }
+}
+
 /* ===== Uno TP dashboard (Board 01) =====
    Each of the two dashboard columns spaces its cards with flex gap, so the
    .card + .card margin has to be cancelled inside them or the two stack and the
