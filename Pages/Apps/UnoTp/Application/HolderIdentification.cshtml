@@ -458,59 +458,73 @@
 
 @section Footer {
     <div class="hid-footer" data-step="search">
+        <div class="hid-footer__inner">
         <div class="actionbar__hint">Identify the primary holder to continue &mdash; <strong>consent opens once a record is matched</strong></div>
         <div style="display:flex;align-items:center;gap:24px">
             <a class="btn btn-secondary" asp-page="/Apps/UnoTp/Desktop/Dashboard">Back</a>
             <button type="button" class="btn btn-secondary">Clear All</button>
             <button type="button" class="btn btn-primary hid-next" data-goto="result">Proceed</button>
         </div>
+        </div>
     </div>
     <div class="hid-footer" data-step="result" hidden>
+        <div class="hid-footer__inner">
         <div class="actionbar__hint">Pick an intent &mdash; <strong>renew an existing deposit, or start a new FD for this investor</strong></div>
         <div style="display:flex;align-items:center;gap:24px">
             <button type="button" class="btn btn-secondary hid-next" data-goto="search">Back</button>
             <button type="button" class="btn btn-secondary hid-next" data-goto="search">Search again</button>
             <button type="button" class="btn btn-primary hid-next" data-goto="existing">Proceed with existing customer</button>
         </div>
+        </div>
     </div>
     <div class="hid-footer" data-step="renewal" hidden>
+        <div class="hid-footer__inner">
         <div class="actionbar__hint">Continuing with the same three holders &mdash; <strong>holder 3 will be asked to re-verify inside the normal flow</strong></div>
         <div style="display:flex;align-items:center;gap:24px">
             <button type="button" class="btn btn-secondary hid-next" data-goto="result">Back</button>
             <button type="button" class="btn btn-secondary hid-next" data-goto="search">Cancel renewal</button>
             <button type="button" class="btn btn-primary hid-next" data-goto="complete">Proceed</button>
         </div>
+        </div>
     </div>
     <div class="hid-footer" data-step="existing" hidden>
+        <div class="hid-footer__inner">
         <div class="actionbar__hint">Record matched and consent already on file &mdash; <strong>this holder needs nothing further</strong></div>
         <div style="display:flex;align-items:center;gap:24px">
             <button type="button" class="btn btn-secondary hid-next" data-goto="result">Back</button>
             <button type="button" class="btn btn-secondary">Clear All</button>
             <button type="button" class="btn btn-primary hid-next" data-goto="complete">Proceed</button>
         </div>
+        </div>
     </div>
     <div class="hid-footer" data-step="newpan" hidden>
+        <div class="hid-footer__inner">
         <div class="actionbar__hint">Holder 3 &middot; NSDL validation failed &mdash; <strong>correct the name and date of birth, then retry</strong></div>
         <div style="display:flex;align-items:center;gap:24px">
             <button type="button" class="btn btn-secondary hid-next" data-goto="existing">Back</button>
             <button type="button" class="btn btn-secondary">Clear All</button>
             <button type="button" class="btn btn-primary hid-next" data-goto="consent">Continue to consent</button>
         </div>
+        </div>
     </div>
     <div class="hid-footer" data-step="consent" hidden>
+        <div class="hid-footer__inner">
         <div class="actionbar__hint">Holder 2 &middot; both signed forms must be accepted before the consent OTP is sent &mdash; <strong>1 of 2 accepted</strong></div>
         <div style="display:flex;align-items:center;gap:24px">
             <button type="button" class="btn btn-secondary hid-next" data-goto="newpan">Back</button>
             <button type="button" class="btn btn-secondary">Clear All</button>
             <button type="button" class="btn btn-primary hid-next" data-goto="complete">Continue</button>
         </div>
+        </div>
     </div>
     <div class="hid-footer" data-step="complete" hidden>
+        <div class="hid-footer__inner">
         <div class="actionbar__hint">All three holders are identified and consented &mdash; <strong>ready to move to the documents step</strong></div>
         <div style="display:flex;align-items:center;gap:24px">
             <button type="button" class="btn btn-secondary hid-next" data-goto="consent">Back</button>
             <button type="button" class="btn btn-secondary">Clear All</button>
             <button type="submit" form="hidForm" class="btn btn-primary">Proceed to documents</button>
+        </div>
         </div>
     </div>
 }
