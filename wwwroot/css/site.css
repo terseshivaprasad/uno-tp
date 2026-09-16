@@ -209,6 +209,9 @@ h1, h2, h3, p { margin: 0; }
 .radio-toggle__dot--checked::after { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--red); }
 .hid-searchby-opt__label { font-size: 13px; font-weight: 500; color: var(--text); }
 .hid-searchby-opt--active .hid-searchby-opt__label { color: var(--ink); }
+/* .form-grid sets display:grid, which (being an author rule) otherwise beats the
+   browser's default [hidden]{display:none} regardless of specificity. */
+.hid-searchby-fields[hidden] { display: none; }
 
 .seg-toggle { display: inline-flex; border: 1px solid var(--border-3); border-radius: 6px; overflow: hidden; flex: none; }
 .seg-toggle__opt { padding: 8px 20px; font-size: 12.5px; font-weight: 500; background: #fff; color: var(--text); white-space: nowrap; }
