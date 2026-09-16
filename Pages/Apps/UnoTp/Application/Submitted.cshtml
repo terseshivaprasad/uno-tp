@@ -4,51 +4,115 @@
 @{
     ViewData["Title"] = "Application Submitted";
     Layout = "/Pages/Shared/_Layout.cshtml";
+
+    // 11B leads with the state the application is in, then what happens next, then
+    // what the broker can still do. The deposit is the one reviewed on 11.
+    var nextSteps = new[]
+    {
+        (Lead: "Investor pays the link", Detail: " — from any account in a holder’s name. Within 48 hours."),
+        (Lead: "Rate locks on realisation", Detail: " and the FD is booked from that date — not from today."),
+        (Lead: "Operations verifies the documents", Detail: " — 1 working day. The e-receipt is emailed to the investor once booked.")
+    };
 }
 
-<div class="app-shell">
-<div class="center-panel">
-    <div class="success-icon">
-        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#146C34" stroke-width="2.2" stroke-linecap="round"><path d="M20 6L9 17l-5-5"></path></svg>
-    </div>
-    <div>
-        <div style="font-size:20px;font-weight:700;color:var(--ink)">Application submitted</div>
-        <div style="font-size:13px;color:var(--muted);padding-top:6px">FBBMFL26F99AAC1 &middot; waiting on the investor's payment</div>
+<div class="sub-page">
+    <div class="sub-main">
+        <div class="sub-title-row">
+            <div class="sub-tick" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"></path></svg>
+            </div>
+            <div>
+                <h1 class="sub-title">Application submitted</h1>
+                <div class="sub-meta">14 Sep 2026, 5:04 PM &middot; FBBMFL26F99AAC1</div>
+            </div>
+        </div>
+
+        <div class="sub-pending">
+            <div class="sub-pending__head">
+                <div class="sub-pending__title">Waiting on the investor&rsquo;s payment</div>
+                <div class="sub-pending__tag">Payment pending</div>
+            </div>
+            <div class="sub-pending__text" id="sub-pending-text">The link was sent to 8779712676 and expires <strong>16 Sep 2026, 5:04 PM</strong>. Submitted is not booked &mdash; the deposit and its rate are held only until then.</div>
+        </div>
+
+        <div class="sub-box">
+            <div class="sub-box__label">What happens next</div>
+            <ol class="sub-steps">
+                @for (var i = 0; i < nextSteps.Length; i++)
+                {
+                    <li class="sub-step @(i == 0 ? "sub-step--current" : "")">
+                        <span class="sub-step__num">@(i + 1)</span>
+                        <span class="sub-step__text"><strong>@nextSteps[i].Lead</strong>@nextSteps[i].Detail</span>
+                    </li>
+                }
+            </ol>
+        </div>
+
+        <div class="sub-actions">
+            <button type="button" class="btn btn-primary sub-actions__primary" id="sub-resend">Resend payment link</button>
+            <button type="button" class="sub-actions__link">Download acknowledgement</button>
+            <a class="sub-actions__link sub-actions__link--plain" asp-page="/Apps/UnoTp/Desktop/Dashboard">Back to home</a>
+        </div>
+        <div class="sub-note" id="sub-resend-note">One resend is available. The acknowledgement carries the application number, the deposit terms and the document list &mdash; enough for the investor&rsquo;s records, but it is not the FD receipt.</div>
     </div>
 
-    <div class="card" style="width:100%;text-align:left">
-        <div class="summary-block__title" style="border:none;margin:0;padding:0">Payment pending</div>
-        <div class="field-hint" style="padding-top:6px">The link was sent to 9821440063 and expires if unpaid by 16 Sep, 5:04 PM &mdash; held to 16 Sep.</div>
-    </div>
+    <div class="sub-side">
+        <section class="sub-card">
+            <div class="sub-card__head">
+                <div class="sub-card__title">Deposit summary</div>
+                <a class="sub-card__action" asp-page="/Apps/UnoTp/Application/ReviewSummary">View full summary</a>
+            </div>
+            <div class="sub-kv-grid">
+                <div><div class="sub-kv__k">Invested amount</div><div class="sub-kv__v sub-kv__v--lg">&#8377; 5,00,000</div></div>
+                <div><div class="sub-kv__k">Rate of interest</div><div class="sub-kv__v sub-kv__v--lg sub-kv__v--green">7.85% p.a.</div><div class="sub-kv__note">held to 16 Sep</div></div>
+                <div><div class="sub-kv__k">Tenure</div><div class="sub-kv__v">36 months</div></div>
+                <div><div class="sub-kv__k">Scheme</div><div class="sub-kv__v">Cumulative &middot; public</div></div>
+                <div><div class="sub-kv__k">Interest payout</div><div class="sub-kv__v">On maturity</div></div>
+                <div><div class="sub-kv__k">Maturity value</div><div class="sub-kv__v">&#8377; 6,29,300</div><div class="sub-kv__note">if paid by 16 Sep</div></div>
+                <div><div class="sub-kv__k">Auto renewal</div><div class="sub-kv__v">On &middot; principal only</div></div>
+                <div><div class="sub-kv__k">TDS</div><div class="sub-kv__v">Not deducted &middot; 15G on file</div></div>
+                <div><div class="sub-kv__k">Delivery</div><div class="sub-kv__v">E-receipt on booking</div></div>
+            </div>
+            <div class="sub-holders">
+                <div class="sub-holders__label">Holders</div>
+                <div class="sub-holders__names">R&bull;&bull;&bull;&bull;&bull;&bull; T&bull;&bull;&bull;&bull;&bull; <span class="sub-holders__role">primary</span> &middot; S&bull;&bull;&bull;&bull; T&bull;&bull;&bull;&bull;&bull; &middot; P&bull;&bull;&bull;&bull; N&bull;&bull;&bull;</div>
+                <div class="sub-holders__text">All three holders identified from CKYC, consented under DPDP, and every proof of address verified against source before submission. Repayment to HDFC &bull;&bull;&bull;&bull;4471, in the primary holder&rsquo;s name.</div>
+            </div>
+        </section>
 
-    <div class="card" style="width:100%;text-align:left">
-        <div class="summary-block__title" style="border:none;margin:0;padding:0 0 10px">Deposit summary</div>
-        <dl class="kv-grid--2">
-            <div class="kv"><dt>Invested amount</dt><dd>&#8377; 5,00,000</dd></div>
-            <div class="kv"><dt>Rate of interest</dt><dd>7.9%</dd></div>
-            <div class="kv"><dt>Tenure</dt><dd>44 months</dd></div>
-            <div class="kv"><dt>Maturity value</dt><dd>&#8377; 7,04,120 &middot; rate locks on realisation</dd></div>
-            <div class="kv"><dt>Scheme</dt><dd>Public &middot; Cumulative</dd></div>
-            <div class="kv"><dt>Payout / Delivery</dt><dd>On maturity &middot; E-receipt on booking</dd></div>
-            <div class="kv"><dt>Auto renewal</dt><dd>Yes</dd></div>
-            <div class="kv"><dt>Holders</dt><dd>Priya Sunil Nair (primary) + 2</dd></div>
-        </dl>
-    </div>
-
-    <div class="card" style="width:100%;text-align:left">
-        <div class="summary-block__title" style="border:none;margin:0;padding:0 0 10px">What happens next</div>
-        <div class="field-hint">1. Investor pays the link &middot; 2. Operations verifies the documents &middot; 3. TDS/15G and cheque re-checked at booking &middot; 4. Deposit booked and e-receipt issued.</div>
-    </div>
-
-    <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
-        <button type="button" class="btn btn-secondary">Resend payment link</button>
-        <button type="button" class="btn btn-secondary">Download acknowledgement</button>
-        <a class="btn btn-secondary" asp-page="/Apps/UnoTp/Desktop/Dashboard">Track this application</a>
-    </div>
-
-    <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;padding-top:10px;border-top:1px solid var(--divider-2);width:100%">
-        <a class="btn btn-primary" asp-page="/Apps/UnoTp/Application/HolderIdentification">New application</a>
-        <a class="btn btn-secondary" asp-page="/Apps/UnoTp/Desktop/Dashboard">Back to home</a>
+        <section class="sub-card sub-card--padded">
+            <div class="sub-card__title">Start another</div>
+            <div class="sub-tiles">
+                <a class="sub-tile" asp-page="/Apps/UnoTp/Application/HolderIdentification">
+                    <span class="sub-tile__title">New application</span>
+                    <span class="sub-tile__text">A different investor, from the search step.</span>
+                </a>
+                <a class="sub-tile" asp-page="/Apps/UnoTp/Application/FdConfiguration">
+                    <span class="sub-tile__title">Another deposit, same holders</span>
+                    <span class="sub-tile__text">Reuses this CKYC, consent and bank data &mdash; only amount and tenure are asked.</span>
+                </a>
+                <a class="sub-tile" asp-page="/Apps/UnoTp/Desktop/Dashboard">
+                    <span class="sub-tile__title">Track this application</span>
+                    <span class="sub-tile__text">Opens the dashboard filtered to payment-pending.</span>
+                </a>
+            </div>
+        </section>
     </div>
 </div>
-</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var resend = document.getElementById('sub-resend');
+            var note = document.getElementById('sub-resend-note');
+
+            // One resend is allowed; the button stays as a record that it was used.
+            resend.addEventListener('click', function () {
+                resend.disabled = true;
+                resend.textContent = 'Payment link resent';
+                note.innerHTML = 'The link was resent to 8779712676 &mdash; no resends left. It still expires 16 Sep 2026, 5:04 PM. '
+                    + 'The acknowledgement carries the application number, the deposit terms and the document list &mdash; enough for the investor&rsquo;s records, but it is not the FD receipt.';
+            });
+        })();
+    </script>
+}

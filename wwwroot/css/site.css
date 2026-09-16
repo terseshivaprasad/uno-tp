@@ -927,6 +927,156 @@ select.inv-control:has(option[value=""]:checked) { color: var(--muted-2); }
   .rv-holder__col, .rv-holder__col:nth-child(2) { border-left: none; border-top: 1px solid #F2F4F7; }
 }
 
+/* ===== Submit · payment link dialog (11A) =====
+   Opens over Review Summary. Laptop is a centred dialog that answers who the link
+   goes to, for how much, how long it lives and what happens if it is never paid;
+   below 560px it is a bottom sheet with the short copy and stacked buttons. */
+.pl-dialog { max-width: 508px; padding: 0; border-radius: 6px; display: flex; flex-direction: column; }
+.pl-head { display: flex; align-items: center; gap: 9px; padding: 22px 22px 0; }
+.pl-head__icon { flex: none; color: var(--blue); }
+.pl-head__title { font-size: 16px; font-weight: 500; color: var(--ink); }
+.pl-body { padding: 16px 22px 0; display: flex; flex-direction: column; gap: 16px; }
+.pl-intro { font-size: 12px; color: var(--text); line-height: 1.6; }
+.pl-intro strong { font-weight: 700; color: var(--ink); }
+.pl-short, .pl-intro--short, .pl-lapse--short { display: none; }
+
+.pl-terms {
+  margin: 0; background: #FAFBFC; border: 1px solid #F2F4F7; border-radius: 6px; padding: 14px 15px;
+  display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 16px 24px;
+}
+.pl-terms dt { font-size: 10.5px; font-weight: 500; color: var(--muted); }
+.pl-terms dd { margin: 0; font-size: 12.5px; font-weight: 500; color: var(--ink); padding-top: 5px; }
+.pl-terms dd.pl-terms__note { font-size: 9.5px; font-weight: 400; color: var(--muted-2); padding-top: 3px; line-height: 1.5; }
+
+.pl-lapse { border-left: 3px solid #E8A700; background: #FFFBF0; border-radius: 0 6px 6px 0; padding: 12px 14px; font-size: 11.5px; color: var(--amber); line-height: 1.6; }
+.pl-lapse strong { font-weight: 700; }
+.pl-source { border: 1px solid #F2F4F7; border-radius: 6px; padding: 13px 14px; font-size: 11px; color: var(--text); line-height: 1.6; }
+.pl-source strong { font-weight: 700; color: var(--ink); }
+.pl-source a { color: #1084CB; font-weight: 600; }
+.pl-foot { font-size: 10.5px; color: var(--muted); line-height: 1.6; }
+
+.pl-actions { display: flex; align-items: center; justify-content: flex-end; gap: 18px; padding: 18px 22px 20px; }
+.pl-actions__later { background: none; border: 0; padding: 8px 4px; font-family: inherit; font-size: 12.5px; font-weight: 600; color: var(--red); cursor: pointer; }
+.pl-actions__later:hover { text-decoration: underline; }
+.pl-actions__send { padding: 10px 16px; font-size: 12.5px; }
+
+@media (max-width: 560px) {
+  .pl-overlay { align-items: flex-end; padding: 0; }
+  .pl-dialog { max-width: none; max-height: 88vh; border-radius: 14px 14px 0 0; }
+  .pl-head { padding: 18px 16px 0; }
+  .pl-head__title { font-size: 14px; }
+  .pl-body { padding: 12px 16px 0; gap: 12px; }
+  .pl-intro { font-size: 11.5px; }
+  .pl-intro--long, .pl-lapse--long, .pl-terms__note, .pl-source, .pl-foot { display: none; }
+  .pl-intro--short, .pl-lapse--short { display: block; }
+  .pl-short { display: inline; }
+  .pl-terms { grid-template-columns: 1fr; gap: 9px; padding: 12px 13px; }
+  .pl-terms > div { display: grid; grid-template-columns: 72px minmax(0,1fr); align-items: baseline; gap: 8px; }
+  .pl-terms dt { font-size: 10px; }
+  .pl-terms dd { padding-top: 0; font-size: 11.5px; }
+  .pl-lapse { font-size: 10.5px; padding: 10px 12px; }
+  .pl-actions { flex-direction: column-reverse; align-items: stretch; gap: 10px; padding: 16px; }
+  .pl-actions__send { padding: 12px 16px; font-size: 13px; }
+  .pl-actions__later { border: 1px solid var(--border-3); border-radius: 6px; padding: 11px 16px; font-size: 13px; }
+  .pl-actions__later:hover { text-decoration: none; }
+}
+
+/* ===== Application submitted (11B) =====
+   Outside the wizard: one white panel, the application's state and next steps on
+   the left, the deposit it holds and the ways to start another on the right. */
+.sub-page {
+  background: #fff; border-radius: 8px; padding: 24px 20px;
+  display: grid; grid-template-columns: minmax(0,.85fr) minmax(0,1fr); gap: 28px; align-items: start;
+}
+.sub-main, .sub-side { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+
+.sub-title-row { display: flex; align-items: center; gap: 14px; padding: 2px 0 0 0; }
+.sub-tick {
+  width: 36px; height: 36px; flex: none; border-radius: 50%; background: #E7F5EC; color: var(--green-2);
+  display: flex; align-items: center; justify-content: center;
+}
+.sub-title { font-size: 20px; font-weight: 500; color: var(--ink); letter-spacing: -.1px; }
+.sub-meta { font-size: 11.5px; color: var(--muted); padding-top: 2px; }
+
+.sub-pending { border-left: 3px solid #E8A700; background: #FFFBF0; border-radius: 0 6px 6px 0; padding: 13px 16px; display: flex; flex-direction: column; gap: 8px; }
+.sub-pending__head { display: flex; align-items: center; gap: 12px; }
+.sub-pending__title { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 700; color: var(--ink); }
+.sub-pending__tag { flex: none; font-size: 10px; font-weight: 700; color: var(--amber); background: var(--amber-bg); border: 1px solid #F0D98A; border-radius: 3px; padding: 2px 7px; white-space: nowrap; }
+.sub-pending__text { font-size: 11.5px; color: var(--amber); line-height: 1.6; }
+.sub-pending__text strong { font-weight: 700; }
+
+.sub-box { border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.sub-box__label { background: #FAFBFC; border-bottom: 1px solid var(--divider); padding: 9px 13px; font-size: 9.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted-2); }
+.sub-steps { list-style: none; margin: 0; padding: 0 13px; }
+.sub-step { display: flex; align-items: flex-start; gap: 10px; padding: 12px 0; border-top: 1px solid #F2F4F7; }
+.sub-step:first-child { border-top: none; }
+.sub-step__num {
+  width: 17px; height: 17px; flex: none; margin-top: 1px; border-radius: 50%; background: #EEF0F3; color: var(--muted);
+  display: flex; align-items: center; justify-content: center; font-size: 9.5px; font-weight: 700;
+}
+.sub-step--current .sub-step__num { background: var(--amber-bg); color: var(--amber); }
+.sub-step__text { flex: 1; min-width: 0; font-size: 11.5px; color: var(--text); line-height: 1.55; }
+.sub-step__text strong { font-weight: 600; color: var(--ink); }
+
+.sub-actions { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; padding-top: 4px; }
+.sub-actions__primary { padding: 10px 18px; font-size: 12.5px; }
+.sub-actions__link { background: none; border: 0; padding: 0; font-family: inherit; font-size: 12.5px; font-weight: 600; color: var(--red); cursor: pointer; }
+.sub-actions__link:hover { text-decoration: underline; }
+.sub-actions__link--plain { color: var(--ink); }
+.sub-note { font-size: 10.5px; color: var(--muted); line-height: 1.6; margin-top: -4px; }
+
+.sub-card { border: 1px solid var(--border); border-radius: 6px; overflow: hidden; background: #fff; }
+.sub-card--padded { padding: 14px 14px 16px; display: flex; flex-direction: column; gap: 14px; }
+.sub-card__head { display: flex; align-items: center; gap: 12px; background: #FAFBFC; border-bottom: 1px solid var(--divider); padding: 12px 14px; }
+.sub-card__title { flex: 1; min-width: 0; font-size: 13px; font-weight: 600; color: var(--ink); }
+.sub-card__action { flex: none; font-size: 11px; font-weight: 600; color: var(--red); }
+
+.sub-kv-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 22px 20px; padding: 16px 14px 18px; }
+.sub-kv__k { font-size: 10.5px; font-weight: 500; color: var(--muted); }
+.sub-kv__v { font-size: 12.5px; font-weight: 500; color: var(--ink); padding-top: 6px; line-height: 1.4; }
+.sub-kv__v--lg { font-size: 14px; }
+.sub-kv__v--green { color: var(--green); }
+.sub-kv__note { font-size: 9.5px; color: var(--muted-2); padding-top: 3px; }
+
+.sub-holders { border-top: 1px solid var(--divider); padding: 14px 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+.sub-holders__label { font-size: 9.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted-2); }
+.sub-holders__names { font-size: 11.5px; font-weight: 500; color: var(--ink); }
+.sub-holders__role { color: var(--muted-2); font-weight: 400; }
+.sub-holders__text { font-size: 10.5px; color: var(--muted); line-height: 1.6; }
+
+.sub-tiles { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; }
+.sub-tile {
+  display: flex; flex-direction: column; gap: 6px; padding: 12px 13px 16px; min-height: 96px;
+  border: 1px solid var(--border-3); border-radius: 6px; color: var(--ink);
+}
+.sub-tile:hover { border-color: var(--text); text-decoration: none; }
+.sub-tile__title { font-size: 11.5px; font-weight: 600; line-height: 1.35; }
+.sub-tile__text { font-size: 10.5px; color: var(--muted); line-height: 1.55; }
+
+/* Board 11B - Mobile runs one column: state, deposit, next steps, then full-width actions. */
+@media (max-width: 900px) {
+  .sub-page { grid-template-columns: 1fr; gap: 16px; }
+  .sub-main, .sub-side { display: contents; }
+  .sub-title-row { order: 1; }
+  .sub-pending { order: 2; }
+  .sub-side .sub-card:first-child { order: 3; }
+  .sub-box { order: 4; }
+  .sub-actions { order: 5; }
+  .sub-note { order: 6; margin-top: 0; }
+  .sub-card--padded { order: 7; }
+}
+@media (max-width: 560px) {
+  .sub-page { padding: 18px 14px; gap: 14px; }
+  .sub-title-row { flex-direction: column; text-align: center; gap: 10px; }
+  .sub-kv-grid { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px 16px; }
+  .sub-actions { flex-direction: column; align-items: stretch; gap: 10px; }
+  .sub-actions__primary { padding: 12px 18px; }
+  .sub-actions__link { border: 1px solid var(--border-3); border-radius: 6px; padding: 11px 18px; text-align: center; }
+  .sub-actions__link:hover { text-decoration: none; }
+  .sub-tiles { grid-template-columns: 1fr; }
+  .sub-tile { min-height: 0; }
+}
+
 /* ===== Uno TP dashboard (Board 01) =====
    Each of the two dashboard columns spaces its cards with flex gap, so the
    .card + .card margin has to be cancelled inside them or the two stack and the

@@ -306,36 +306,34 @@
 
 @* 11A: Submit / payment link dialog. Overlay on top of Review Summary (11), per the mockup
    ("11A — Submit · payment link dialog") — not a separate routed page. *@
-<div class="modal-overlay" id="paymentLinkModal" hidden>
-    <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="paymentLinkTitle">
-        <div class="center-panel" style="max-width:480px;margin:0 auto">
-            <div id="paymentLinkTitle" class="card__title">Send the payment link</div>
-            <div class="card__subtitle">The deposit is not booked until the investor pays. Unpaid after 48 hours the application lapses.</div>
-
-            <div class="card" style="width:100%;text-align:left">
-                <dl class="kv-grid--2">
-                    <div class="kv"><dt>Invested amount</dt><dd>&#8377; 5,00,000</dd></div>
-                    <div class="kv"><dt>Tenure / Rate of interest</dt><dd>36 months &middot; 7.85%</dd></div>
-                    <div class="kv"><dt>Payment method</dt><dd>Online</dd></div>
-                    <div class="kv"><dt>Paid from</dt><dd>Any account in a holder's name</dd></div>
-                    <div class="kv"><dt>Sent to</dt><dd>Primary holder's mobile, captured at search &middot; 87797 12676</dd></div>
-                    <div class="kv"><dt>Valid for</dt><dd>48 hours</dd></div>
-                </dl>
-                <div class="field-hint" style="margin-top:10px">The broker is the one the investor will call if the link does not work.</div>
-            </div>
-
-            <form method="post" asp-page-handler="Send" style="width:100%">
-                <div class="wizard__actions" style="border-top:none">
-                    <div class="wizard__actions-left">
-                        <button type="button" class="btn btn-secondary" id="closePaymentLinkModal">Back</button>
-                        <button type="button" class="btn btn-secondary">Try later</button>
-                    </div>
-                    <div class="wizard__actions-right">
-                        <button type="submit" class="btn btn-primary">Send payment link</button>
-                    </div>
-                </div>
-            </form>
+<div class="modal-overlay pl-overlay" id="paymentLinkModal" hidden>
+    <div class="modal-dialog pl-dialog" role="dialog" aria-modal="true" aria-labelledby="paymentLinkTitle" aria-describedby="paymentLinkIntro">
+        <div class="pl-head">
+            <svg class="pl-head__icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg>
+            <h2 class="pl-head__title" id="paymentLinkTitle">Send the payment link</h2>
         </div>
+        <div class="pl-body">
+            <p class="pl-intro pl-intro--short">Already clear of blockers and funded online. <strong>The deposit is not booked until the investor pays.</strong></p>
+            <p class="pl-intro pl-intro--long" id="paymentLinkIntro">Everything on this review summary is already clear, which is why Submit is open at all. The investor pays from their own device, so on Proceed the application is submitted and a payment link is sent: <strong>the deposit is not booked until the investor pays it</strong>.</p>
+
+            <dl class="pl-terms">
+                <div><dt>Sent to</dt><dd>8779712676</dd><dd class="pl-terms__note">primary holder&rsquo;s mobile, captured at search</dd></div>
+                <div><dt>Amount</dt><dd>&#8377; 5,00,000<span class="pl-short"> &middot; fixed</span></dd><dd class="pl-terms__note">fixed &mdash; the investor cannot change it</dd></div>
+                <div><dt>Valid for</dt><dd>48 hours<span class="pl-short"> &middot; to 16 Sep, 5:04 PM</span></dd><dd class="pl-terms__note">expires 16 Sep 2026, 5:04 PM</dd></div>
+                <div><dt>Paid from</dt><dd>Any account in a holder&rsquo;s name</dd><dd class="pl-terms__note">the payer&rsquo;s name is matched on receipt &middot; a third-party payment is refunded, not booked</dd></div>
+            </dl>
+
+            <div class="pl-lapse pl-lapse--short"><strong>Unpaid after 48 hours the application lapses</strong> and the rate re-prices on the day payment lands. One resend from the dashboard.</div>
+            <div class="pl-lapse pl-lapse--long"><strong>If the link is not paid in 48 hours the application lapses to Payment pending</strong> and the rate is no longer held &mdash; it re-prices at the card rate on the day payment is received. You can resend the link from the dashboard once, after which the application must be re-submitted.</div>
+
+            <div class="pl-source"><strong>Where the repayment account came from.</strong> It was typed on <a asp-page="/Apps/UnoTp/Application/BankDetails">09</a> &mdash; IFSC search resolving bank, branch and MICR, account number confirmed by re-entry &mdash; and matched against the payment cheque, holder name included. Interest and maturity are paid only to an account in the primary holder&rsquo;s name.</div>
+
+            <p class="pl-foot">Try later keeps everything on this page saved and leaves the application unsubmitted &mdash; nothing is sent to the investor.</p>
+        </div>
+        <form method="post" asp-page-handler="Send" class="pl-actions">
+            <button type="button" class="pl-actions__later" id="closePaymentLinkModal">Try later</button>
+            <button type="submit" class="btn btn-primary pl-actions__send">Submit &amp; send link</button>
+        </form>
     </div>
 </div>
 
@@ -369,8 +367,21 @@
                 // The reset event fires before the values are restored.
                 setTimeout(sync);
             });
-            submit.addEventListener('click', function () { if (!submit.disabled) modal.hidden = false; });
-            closeBtn.addEventListener('click', function () { modal.hidden = true; });
+            function openDialog() {
+                modal.hidden = false;
+                document.body.style.overflow = 'hidden';
+                closeBtn.focus();
+            }
+            // Try later, Escape and a click on the backdrop all leave the application unsubmitted.
+            function closeDialog() {
+                modal.hidden = true;
+                document.body.style.overflow = '';
+                submit.focus();
+            }
+            submit.addEventListener('click', function () { if (!submit.disabled) openDialog(); });
+            closeBtn.addEventListener('click', closeDialog);
+            modal.addEventListener('click', function (e) { if (e.target === modal) closeDialog(); });
+            document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !modal.hidden) closeDialog(); });
             sync();
         })();
     </script>
