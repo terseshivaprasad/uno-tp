@@ -52,4 +52,34 @@
       });
     });
   });
+
+  // Offline/Digital consent toggle on the consent step: both comparison panels stay
+  // visible (matching the prototype), the toggle just changes which is "selected".
+  var consentDetail = {
+    offline: 'two signed forms and a consent OTP',
+    digital: 'one link — no upload, no consent OTP'
+  };
+  document.querySelectorAll('.seg-toggle[id]').forEach(function (toggle) {
+    var opts = toggle.querySelectorAll('.seg-toggle__opt');
+    var scope = toggle.closest('.hid-section') || document;
+    var panels = scope.querySelectorAll('.hid-consent-panel');
+    var modeLabel = scope.querySelector('.hid-consent-mode');
+    var detailLabel = scope.querySelector('.hid-consent-detail');
+    opts.forEach(function (opt) {
+      opt.addEventListener('click', function () {
+        var mode = opt.getAttribute('data-consent');
+        opts.forEach(function (o) {
+          o.classList.toggle('seg-toggle__opt--active', o === opt);
+        });
+        panels.forEach(function (panel) {
+          var selected = panel.getAttribute('data-consent') === mode;
+          panel.classList.toggle('hid-consent-panel--selected', selected);
+          var status = panel.querySelector('.hid-consent-panel__status');
+          if (status) status.textContent = selected ? '· selected for this holder' : '· not selected';
+        });
+        if (modeLabel) modeLabel.textContent = mode === 'offline' ? 'Offline' : 'Digital';
+        if (detailLabel) detailLabel.textContent = consentDetail[mode];
+      });
+    });
+  });
 })();

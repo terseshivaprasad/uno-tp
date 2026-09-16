@@ -92,7 +92,23 @@ h1, h2, h3, p { margin: 0; }
 .btn-secondary { background: #fff; color: var(--text); border-color: var(--border-3); }
 .btn-secondary:hover { text-decoration: none; background: #F5F5F5; }
 .btn-link { background: transparent; color: var(--red); font-weight: 700; padding: 8px 4px; }
+.btn-outline { background: #fff; color: var(--red); border-color: var(--red); }
+.btn-outline:hover { background: #FFF5F6; }
 .btn-sm { padding: 8px 14px; font-size: 12.5px; }
+
+/* Plain text+chevron links used for footer/secondary actions on the holder
+   identification steps — the prototype uses these instead of boxed buttons for
+   everything except the 02B renewal commit. */
+.hid-link {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 13.5px; font-weight: 600; color: var(--text);
+  background: none; border: 0; padding: 0; cursor: pointer; font-family: inherit;
+}
+.hid-link:hover { text-decoration: underline; }
+.hid-link--primary { color: var(--red); }
+.hid-link--disabled { color: var(--muted-2); cursor: not-allowed; }
+.hid-link--disabled:hover { text-decoration: none; }
+.hid-link--sm { font-size: 12.5px; }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
 
 /* ===== Inputs (44px) ===== */
@@ -214,9 +230,14 @@ h1, h2, h3, p { margin: 0; }
 .hid-searchby-fields[hidden] { display: none; }
 
 .seg-toggle { display: inline-flex; border: 1px solid var(--border-3); border-radius: 6px; overflow: hidden; flex: none; }
-.seg-toggle__opt { padding: 8px 20px; font-size: 12.5px; font-weight: 500; background: #fff; color: var(--text); white-space: nowrap; }
+.seg-toggle__opt { padding: 8px 20px; font-size: 12.5px; font-weight: 500; background: #fff; color: var(--text); white-space: nowrap; border: 0; cursor: pointer; font-family: inherit; }
 .seg-toggle__opt + .seg-toggle__opt { border-left: 1px solid var(--border-3); }
 .seg-toggle__opt--active { background: var(--red); color: #fff; font-weight: 600; }
+
+.hid-consent-panel { border-top: 1px solid var(--divider-2); }
+.hid-consent-panel--selected { border-top: 2px solid var(--red); }
+.hid-consent-panel__title { color: var(--text); }
+.hid-consent-panel--selected .hid-consent-panel__title { color: var(--ink); }
 
 .actionbar { border-top: 1px solid var(--divider-2); padding-top: 16px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
 .actionbar__hint { flex: 1; min-width: 220px; font-size: 12.5px; color: var(--muted); line-height: 1.4; }

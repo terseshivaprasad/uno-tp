@@ -100,7 +100,7 @@
             <div class="card__title">Record found</div>
             <div class="card__subtitle" style="padding-top:4px">Searched by PAN &amp; date of birth &middot; one search, both intents</div>
         </div>
-        <button type="button" class="btn btn-secondary btn-sm hid-next" data-goto="search">Search again</button>
+        <button type="button" class="hid-link hid-next" data-goto="search">Search again</button>
     </div>
 
     <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;background:var(--tint);border-radius:8px;padding:16px 18px">
@@ -111,7 +111,7 @@
             </div>
             <div style="font-size:12px;color:var(--muted);padding-top:5px">PAN BISPM4465N &middot; DOB 10/06/1992 &middot; CKYC on file &middot; DPDP consent recorded 12 Mar 2025</div>
         </div>
-        <button type="button" class="btn btn-secondary btn-sm">Create new FD</button>
+        <button type="button" class="btn btn-outline btn-sm">Create new FD</button>
     </div>
 
     <div class="summary-block">
@@ -408,16 +408,16 @@
             <div style="font-size:14px;font-weight:600;color:var(--ink)">Consent collection for this holder <span class="required">*</span></div>
             <div class="field-hint" style="padding-top:3px">Chosen <span style="font-weight:600;color:var(--ink)">per holder</span> &mdash; one holder can sign offline while another accepts a digital link. It can be switched until the first form is uploaded or the link is sent.</div>
         </div>
-        <div class="seg-toggle">
-            <div class="seg-toggle__opt seg-toggle__opt--active">Offline</div>
-            <div class="seg-toggle__opt">Digital</div>
+        <div class="seg-toggle" id="consentSegToggle">
+            <button type="button" class="seg-toggle__opt seg-toggle__opt--active" data-consent="offline">Offline</button>
+            <button type="button" class="seg-toggle__opt" data-consent="digital">Digital</button>
         </div>
-        <div style="font-size:11.5px;color:var(--muted);line-height:1.4;flex:none;width:190px">Holder 2 is set to <span style="font-weight:600;color:var(--ink)">Offline</span> &mdash; two signed forms and a consent OTP.</div>
+        <div style="font-size:11.5px;color:var(--muted);line-height:1.4;flex:none;width:190px">Holder 2 is set to <span class="hid-consent-mode" style="font-weight:600;color:var(--ink)">Offline</span> &mdash; <span class="hid-consent-detail">two signed forms and a consent OTP</span>.</div>
     </div>
 
     <div class="form-grid form-grid--2">
-        <div style="border-top:2px solid var(--red);padding-top:14px;display:flex;flex-direction:column;gap:12px">
-            <div style="display:flex;align-items:center;gap:8px"><div style="font-size:13px;font-weight:700;flex:1;min-width:0">Offline &middot; selected for this holder</div><span class="chip chip--warn">2 forms + OTP</span></div>
+        <div class="hid-consent-panel hid-consent-panel--selected" data-consent="offline" style="padding-top:14px;display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;align-items:center;gap:8px"><div class="hid-consent-panel__title" style="font-size:13px;font-weight:700;flex:1;min-width:0">Offline <span class="hid-consent-panel__status">&middot; selected for this holder</span></div><span class="chip chip--warn">2 forms + OTP</span></div>
             <div class="field-hint">Each consent is a separate form with its own download and its own upload. Both must be accepted before the consent OTP is sent. No CKYC record is pulled here.</div>
 
             <div style="border-top:1px solid var(--divider);padding-top:10px;display:flex;flex-direction:column;gap:8px">
@@ -436,8 +436,8 @@
             </div>
         </div>
 
-        <div style="border-top:1px solid var(--divider-2);padding-top:14px;display:flex;flex-direction:column;gap:10px">
-            <div style="display:flex;align-items:center;gap:8px"><div style="font-size:13px;font-weight:700;flex:1;min-width:0;color:var(--text)">Digital &middot; not selected</div><span class="chip chip--primary">1 link</span></div>
+        <div class="hid-consent-panel" data-consent="digital" style="padding-top:14px;display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:center;gap:8px"><div class="hid-consent-panel__title" style="font-size:13px;font-weight:700;flex:1;min-width:0">Digital <span class="hid-consent-panel__status">&middot; not selected</span></div><span class="chip chip--primary">1 link</span></div>
             <div class="field-hint">One link covering DPDP and CERSAI goes to the registered mobile and email. The holder accepts it &mdash; no upload, no consent OTP. The CKYC download and its OTP come at application completion.</div>
             <button type="button" class="btn btn-secondary btn-sm" disabled>Send consent link</button>
         </div>
@@ -467,14 +467,18 @@
 
 </form>
 
+@{
+    var backIcon = "<svg width=\"13\" height=\"13\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M14 6l-6 6 6 6\"></path></svg>";
+    var fwdIcon = "<svg width=\"13\" height=\"13\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M10 6l6 6-6 6\"></path></svg>";
+}
 @section Footer {
     <div class="hid-footer" data-step="search">
         <div class="hid-footer__inner">
         <div class="actionbar__hint">Identify the primary holder to continue &mdash; <strong>consent opens once a record is matched</strong></div>
         <div style="display:flex;align-items:center;gap:24px">
-            <a class="btn btn-secondary" asp-page="/Apps/UnoTp/Desktop/Dashboard">Back</a>
-            <button type="button" class="btn btn-secondary">Clear All</button>
-            <button type="button" class="btn btn-primary hid-next" data-goto="result">Proceed</button>
+            <a class="hid-link" asp-page="/Apps/UnoTp/Desktop/Dashboard">@Html.Raw(backIcon) Back</a>
+            <button type="button" class="hid-link">Clear All</button>
+            <button type="button" class="hid-link hid-link--disabled">Proceed @Html.Raw(fwdIcon)</button>
         </div>
         </div>
     </div>
@@ -482,9 +486,9 @@
         <div class="hid-footer__inner">
         <div class="actionbar__hint">Pick an intent &mdash; <strong>renew an existing deposit, or start a new FD for this investor</strong></div>
         <div style="display:flex;align-items:center;gap:24px">
-            <button type="button" class="btn btn-secondary hid-next" data-goto="search">Back</button>
-            <button type="button" class="btn btn-secondary hid-next" data-goto="search">Search again</button>
-            <button type="button" class="btn btn-primary hid-next" data-goto="existing">Proceed with existing customer</button>
+            <button type="button" class="hid-link hid-next" data-goto="search">@Html.Raw(backIcon) Back</button>
+            <button type="button" class="hid-link hid-next" data-goto="search">Search again</button>
+            <button type="button" class="hid-link hid-link--disabled">Proceed @Html.Raw(fwdIcon)</button>
         </div>
         </div>
     </div>
@@ -492,9 +496,9 @@
         <div class="hid-footer__inner">
         <div class="actionbar__hint">Continuing with the same three holders &mdash; <strong>holder 3 will be asked to re-verify inside the normal flow</strong></div>
         <div style="display:flex;align-items:center;gap:24px">
-            <button type="button" class="btn btn-secondary hid-next" data-goto="result">Back</button>
-            <button type="button" class="btn btn-secondary hid-next" data-goto="search">Cancel renewal</button>
-            <button type="button" class="btn btn-primary hid-next" data-goto="complete">Proceed</button>
+            <button type="button" class="hid-link hid-next" data-goto="result">@Html.Raw(backIcon) Back</button>
+            <button type="button" class="hid-link hid-next" data-goto="search">Cancel renewal</button>
+            <button type="button" class="btn btn-primary btn-sm hid-next" data-goto="complete">Proceed @Html.Raw(fwdIcon)</button>
         </div>
         </div>
     </div>
@@ -502,9 +506,10 @@
         <div class="hid-footer__inner">
         <div class="actionbar__hint">Record matched and consent already on file &mdash; <strong>this holder needs nothing further</strong></div>
         <div style="display:flex;align-items:center;gap:24px">
-            <button type="button" class="btn btn-secondary hid-next" data-goto="result">Back</button>
-            <button type="button" class="btn btn-secondary">Clear All</button>
-            <button type="button" class="btn btn-primary hid-next" data-goto="complete">Proceed</button>
+            <button type="button" class="hid-link hid-next" data-goto="result">@Html.Raw(backIcon) Back</button>
+            <button type="button" class="hid-link">Clear All</button>
+            <button type="button" class="hid-link hid-link--primary hid-next" data-goto="newpan">+ Add joint holder</button>
+            <button type="button" class="hid-link hid-link--primary hid-next" data-goto="complete">Proceed @Html.Raw(fwdIcon)</button>
         </div>
         </div>
     </div>
@@ -512,9 +517,9 @@
         <div class="hid-footer__inner">
         <div class="actionbar__hint">Holder 3 &middot; NSDL validation failed &mdash; <strong>correct the name and date of birth, then retry</strong></div>
         <div style="display:flex;align-items:center;gap:24px">
-            <button type="button" class="btn btn-secondary hid-next" data-goto="existing">Back</button>
-            <button type="button" class="btn btn-secondary">Clear All</button>
-            <button type="button" class="btn btn-primary hid-next" data-goto="consent">Continue to consent</button>
+            <button type="button" class="hid-link hid-next" data-goto="existing">@Html.Raw(backIcon) Back</button>
+            <button type="button" class="hid-link">Clear All</button>
+            <button type="button" class="hid-link hid-link--disabled">Continue to consent @Html.Raw(fwdIcon)</button>
         </div>
         </div>
     </div>
@@ -522,9 +527,9 @@
         <div class="hid-footer__inner">
         <div class="actionbar__hint">Holder 2 &middot; both signed forms must be accepted before the consent OTP is sent &mdash; <strong>1 of 2 accepted</strong></div>
         <div style="display:flex;align-items:center;gap:24px">
-            <button type="button" class="btn btn-secondary hid-next" data-goto="newpan">Back</button>
-            <button type="button" class="btn btn-secondary">Clear All</button>
-            <button type="button" class="btn btn-primary hid-next" data-goto="complete">Continue</button>
+            <button type="button" class="hid-link hid-next" data-goto="newpan">@Html.Raw(backIcon) Back</button>
+            <button type="button" class="hid-link">Clear All</button>
+            <button type="button" class="hid-link hid-link--disabled">Continue @Html.Raw(fwdIcon)</button>
         </div>
         </div>
     </div>
@@ -532,9 +537,9 @@
         <div class="hid-footer__inner">
         <div class="actionbar__hint">All three holders are identified and consented &mdash; <strong>ready to move to the documents step</strong></div>
         <div style="display:flex;align-items:center;gap:24px">
-            <button type="button" class="btn btn-secondary hid-next" data-goto="consent">Back</button>
-            <button type="button" class="btn btn-secondary">Clear All</button>
-            <button type="submit" form="hidForm" class="btn btn-primary">Proceed to documents</button>
+            <button type="button" class="hid-link hid-next" data-goto="consent">@Html.Raw(backIcon) Back</button>
+            <button type="button" class="hid-link">Clear All</button>
+            <button type="submit" form="hidForm" class="hid-link hid-link--primary">Proceed to documents @Html.Raw(fwdIcon)</button>
         </div>
         </div>
     </div>
