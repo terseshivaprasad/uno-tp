@@ -63,6 +63,13 @@ h1, h2, h3, p { margin: 0; }
 
 .app-shell { max-width: 1536px; margin: 0 auto; padding: 16px; }
 
+/* The thin legal strip that closes Board 00 - Laptop. Sits outside .app-shell so
+   it runs the full width of the viewport, as it does the full width of the frame. */
+.app-footer {
+  height: 34px; background: #fff; border-top: 1px solid var(--divider);
+  display: flex; align-items: center; padding: 0 16px; font-size: 10.5px; color: var(--muted-2);
+}
+
 /* ===== Cards ===== */
 .card {
   background: var(--card-bg);
@@ -70,12 +77,23 @@ h1, h2, h3, p { margin: 0; }
   padding: 18px 20px;
 }
 .card + .card { margin-top: 16px; }
+/* A column of cards spaced by gap rather than by the sibling margin, so the two
+   do not add up. Board 00 sits its cards 14px apart on laptop, 13px on mobile. */
+.card-stack { display: flex; flex-direction: column; gap: 14px; }
+.card-stack--sm { gap: 13px; }
+.card-stack .card + .card { margin-top: 0; }
 .card__header {
   display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap;
   border-bottom: 1px solid var(--divider-2); padding-bottom: 12px; margin-bottom: 14px;
 }
 .card__title { font-size: 16px; font-weight: 500; color: var(--text); flex: 1; min-width: 0; }
 .card__subtitle { font-size: 11.5px; color: var(--muted); }
+
+/* Board 00's console cards title smaller and darker than the wizard cards do. */
+.card--console .card__title { font-size: 14.5px; font-weight: 600; color: var(--ink); }
+.card--console .card__subtitle { font-size: 11px; line-height: 1.45; }
+.card__header--plain { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
+.card__header-actions { display: flex; align-items: center; gap: 10px; flex: none; }
 
 .section-label {
   font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted-2);
@@ -111,6 +129,13 @@ h1, h2, h3, p { margin: 0; }
 .hid-link--sm { font-size: 12.5px; }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
 
+/* Controls that are semantically buttons but must render as plain text in the
+   mock — profile rows, "Edit pinned", "Export", the pagination numbers. */
+.btn-reset {
+  background: none; border: 0; padding: 0; margin: 0;
+  font: inherit; color: inherit; text-align: left; cursor: pointer;
+}
+
 /* ===== Inputs (44px) ===== */
 .field { display: flex; flex-direction: column; gap: 6px; }
 .field label { font-size: 12px; font-weight: 500; color: var(--text); }
@@ -143,7 +168,10 @@ h1, h2, h3, p { margin: 0; }
 .profile-fact { display: flex; align-items: baseline; gap: 10px; }
 .profile-fact dt { font-size: 10.5px; color: var(--muted-2); font-weight: 600; width: 92px; flex: none; }
 .profile-fact dd { margin: 0; min-width: 0; flex: 1; font-size: 12px; font-weight: 600; color: var(--ink); }
-.profile-link-row { display: flex; align-items: center; gap: 11px; padding: 12px 16px; border-top: 1px solid var(--divider); font-size: 12.5px; font-weight: 500; color: var(--ink); }
+.profile-link-row { display: flex; align-items: center; gap: 11px; padding: 12px 16px; border-top: 1px solid var(--divider); font-size: 12.5px; font-weight: 500; color: var(--ink); width: 100%; }
+.profile-link-row__label { flex: 1; min-width: 0; }
+/* On mobile these rows open the card, so the first one has no rule above it. */
+.profile-link-row:first-child { border-top: 0; }
 
 .app-tile-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 11px; }
 .app-tile { border: 1px solid var(--border); border-radius: 8px; background: #fff; padding: 13px 14px; display: flex; flex-direction: column; gap: 9px; min-width: 0; }
@@ -155,11 +183,36 @@ h1, h2, h3, p { margin: 0; }
 .app-tile__desc { font-size: 9.5px; color: var(--muted-2); padding-top: 2px; line-height: 1.4; }
 .app-tile__badge { font-size: 9.5px; font-weight: 700; color: #fff; background: var(--red); border-radius: 9px; padding: 2px 6px; flex: none; }
 .app-tile--disabled .app-tile__title { color: var(--muted-2); }
+/* Board 00 - Mobile: tighter two-up tiles, and the pinned one carries a tint
+   rather than the desktop's white fill. */
+.app-tile--sm { padding: 10px 9px; gap: 6px; }
+.app-tile--sm .app-tile__icon { width: 26px; height: 26px; border-radius: 5px; }
+.app-tile--sm .app-tile__title { font-size: 11px; }
+.app-tile--sm .app-tile__desc { font-size: 9px; line-height: 1.35; }
+.app-tile--pinned.app-tile--sm { background: #FFF8F9; }
+.app-tile[hidden] { display: none; }
+/* A labelled group of tiles. Needs its own rule so [hidden] can take it out when
+   an app search matches nothing in it. */
+.tile-section { display: flex; flex-direction: column; gap: 9px; }
+.tile-section[hidden] { display: none; }
+.tile-section--divided { border-top: 1px solid var(--divider); padding-top: 13px; }
 
 .status-pill { display: inline-flex; align-items: center; gap: 7px; padding: 9px 13px; border-radius: 6px; background: #F2F4F7; white-space: nowrap; font-size: 11.5px; font-weight: 500; color: var(--text); }
 .status-pill--active { background: var(--ink); color: #fff; font-weight: 700; }
 .status-pill__count { font-size: 10.5px; font-weight: 700; border-radius: 9px; padding: 1px 6px; background: #fff; }
 .status-pill--active .status-pill__count { background: rgba(255,255,255,.18); color: #fff; }
+
+/* Board 00 draws one rounded box around the header, the rows and the pagination
+   strip. The table itself drops its border so the frame owns the outline. */
+.table-frame { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.table-frame .data-table { border: 0; border-radius: 0; }
+.table-foot {
+  border-top: 1px solid var(--divider-2); background: #FAFBFC; padding: 10px 13px;
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+}
+.table-foot__summary { min-width: 0; flex: 1; font-size: 11px; color: var(--muted); }
+.table-foot__pager { display: flex; align-items: center; gap: 14px; flex: none; font-size: 11px; font-weight: 600; color: var(--text); }
+.js-page--active { color: var(--ink); font-weight: 700; }
 
 .data-table { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; width: 100%; border-collapse: collapse; font-size: 11px; }
 .data-table thead th { background: #FAFBFC; padding: 9px 13px; border-bottom: 1px solid var(--divider-2); font-size: 9.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted-2); text-align: left; }
@@ -176,6 +229,16 @@ h1, h2, h3, p { margin: 0; }
   height: 34px; border: 1px solid var(--border-3); border-radius: 6px; background: #fff;
   display: flex; align-items: center; gap: 8px; padding: 0 11px; font-size: 11.5px; color: var(--muted-2);
 }
+.search-box--sm { height: 32px; padding: 0 10px; font-size: 11px; }
+.search-box input { border: 0; outline: 0; background: transparent; font: inherit; color: var(--ink); width: 100%; padding: 0; min-width: 0; }
+.search-box input::placeholder { color: var(--muted-2); }
+/* The "This month" period picker: a select-looking box that is inert in the mock. */
+.select-box {
+  height: 34px; border: 1px solid var(--border-3); border-radius: 6px; background: #fff;
+  display: flex; align-items: center; gap: 8px; padding: 0 11px;
+  font-size: 11.5px; font-weight: 500; color: var(--text); white-space: nowrap;
+}
+.select-box__caret { color: #8D8D8D; font-size: 10px; }
 
 /* ===== Wizard ===== */
 .wizard__body { display: grid; grid-template-columns: 240px minmax(0,1fr); gap: 16px; align-items: start; }
@@ -421,6 +484,13 @@ tbody tr[hidden] { display: none; }
   .app-header__nav a { padding: 0 8px; }
 }
 @media (max-width: 560px) {
+  /* Board 00 - Mobile trims the header to the brand and Logout. */
+  .app-header { padding: 0 14px; }
+  .app-header__welcome { display: none; }
+  .app-header__nav { border-left: 0; padding-left: 0; }
+  .app-header__nav a:not(:last-child) { display: none; }
+  .app-header__nav a { border-left: 0; padding: 0; font-size: 11.5px; font-weight: 600; color: var(--text); }
+
   .app-tile-grid, .kv-grid, .kv-grid--2, .kv-grid--4, .form-grid, .form-grid--2 { grid-template-columns: 1fr; }
   .kpi-row { gap: 14px; }
   .wizard__content { padding: 16px; }
@@ -441,4 +511,102 @@ tbody tr[hidden] { display: none; }
   .doc-grid-row__why { padding-left: 22px; }
   .holder-accept { margin-left: 0; text-align: left; }
   .holder-accept__bar { margin-left: 0; }
+}
+
+/* ===== Uno TP dashboard (Board 01) =====
+   Each of the two dashboard columns spaces its cards with flex gap, so the
+   .card + .card margin has to be cancelled inside them or the two stack and the
+   cards drift to 32px apart. */
+.dash-col { display: flex; flex-direction: column; gap: 16px; }
+.dash-col > .card + .card { margin-top: 0; }
+
+/* The dashboard runs its cards a little roomier than the base .card the wizard
+   pages use, so the three paddings the board asks for are modifiers rather than
+   a change to .card itself. */
+.card--hero { padding: 20px 24px; }
+.card--wide { padding: 22px 24px; }
+.card--side { padding: 20px; }
+
+/* "Needs your attention" is a grid, not a .data-table: the board pins the
+   application number, stage, waiting figure and action to fixed widths and lets
+   only the holder and the blocker sentence flex, so a long blocker wraps inside
+   its own column instead of squeezing the action off the end of the row. */
+.dash-attention { display: flex; flex-direction: column; }
+.dash-attention__row {
+  display: grid;
+  grid-template-columns: 112px minmax(0,1.1fr) 150px minmax(0,1.3fr) 68px 108px;
+  gap: 14px;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--divider);
+  font-size: 12.5px;
+}
+.dash-attention__row:last-child { border-bottom: none; }
+.dash-attention__row--head {
+  padding: 0 0 9px;
+  border-bottom: 1px solid var(--divider-2);
+  font-size: 11px; font-weight: 600; letter-spacing: .04em;
+  text-transform: uppercase; color: var(--muted-2);
+}
+.dash-attention__app { min-width: 0; font-weight: 600; overflow-wrap: anywhere; }
+.dash-attention__holder { min-width: 0; font-weight: 600; }
+.dash-attention__tag { font-size: 11px; font-weight: 400; color: var(--muted); padding-top: 2px; }
+.dash-attention__stage { font-size: 11.5px; color: var(--text); }
+.dash-attention__blocker { min-width: 0; font-weight: 600; line-height: 1.4; }
+.dash-attention__waiting { font-size: 11.5px; font-weight: 700; }
+.dash-attention__action { font-size: 12px; font-weight: 600; color: var(--red); }
+/* A row parked with Operations states where it is instead of offering an action. */
+.dash-attention__action--parked { color: var(--muted-2); font-weight: 600; }
+
+/* The board's standing red text link — card actions and the callout's footer. */
+.dash-link { font-size: 12px; font-weight: 600; color: var(--red); }
+
+.dash-tile-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 14px; }
+.dash-tile { border: 1px solid var(--border); border-radius: 8px; padding: 14px 15px; display: flex; flex-direction: column; gap: 5px; }
+.dash-tile__value { font-size: 22px; font-weight: 600; color: var(--ink); }
+.dash-tile__label { font-size: 12px; font-weight: 600; color: var(--text); }
+.dash-tile__detail { font-size: 11px; color: var(--muted); line-height: 1.4; }
+
+/* Sidebar link rows. The portal's .profile-link-row divides with a top rule and
+   pads to the card edge; the dashboard's rows divide with a bottom rule, drop
+   the rule on the last row, and sit flush inside the card's own padding. */
+.dash-row {
+  display: flex; align-items: center; gap: 11px;
+  padding: 11px 0; border-bottom: 1px solid var(--divider);
+  font-size: 12.5px; font-weight: 600; color: var(--ink);
+}
+.dash-row:last-child { border-bottom: none; }
+.dash-row svg { flex: none; }
+.dash-row__title { flex: 1; min-width: 0; }
+.dash-row__open { flex: none; font-size: 11px; font-weight: 700; color: var(--red); }
+.dash-row__detail { flex: none; font-size: 11px; font-weight: 400; color: var(--muted); }
+.dash-row--service { padding: 10px 0; }
+/* Only the "Open" affordance underlines — underlining the whole row would drag
+   the icon and the trailing count into the rule. */
+a.dash-row:hover { text-decoration: none; }
+a.dash-row:hover .dash-row__open { text-decoration: underline; }
+
+/* Numbered checklist and bulleted notes: the marker is its own flex-none column
+   so a wrapped second line stays aligned with the first rather than tucking
+   under the number. */
+.dash-list { display: flex; flex-direction: column; gap: 6px; }
+.dash-list__item { display: flex; gap: 9px; font-size: 12px; color: var(--text); line-height: 1.45; }
+.dash-list__marker { flex: none; color: var(--red); font-weight: 700; }
+.dash-note { display: flex; gap: 9px; font-size: 11.5px; color: var(--muted); line-height: 1.5; }
+.dash-note__marker { flex: none; }
+
+/* Below the two-column breakpoint the attention grid cannot hold six columns;
+   it stacks into a card-per-row with the action on the first line. */
+@media (max-width: 1100px) {
+  .dash-tile-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+}
+@media (max-width: 860px) {
+  .dash-attention__row { grid-template-columns: minmax(0,1fr) auto; gap: 6px 14px; align-items: start; }
+  .dash-attention__row--head { display: none; }
+  .dash-attention__stage, .dash-attention__blocker, .dash-attention__waiting { grid-column: 1 / -1; }
+  .dash-attention__action { text-align: right; }
+}
+@media (max-width: 560px) {
+  .card--hero, .card--wide, .card--side { padding: 14px 16px; }
+  .dash-tile-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
 }

@@ -7,11 +7,8 @@
     ViewData["FirstNavLabel"] = "E-Sarathi Portal";
     ViewData["FirstNavPage"] = "/Mobile/Index";
 
-    var alsoProvisioned = Model.SourcingApps.Where(a => a.Title == "Deposit Servicing" || a.Title == "Service Requests").ToList();
-    var moreCount = Model.SourcingApps.Count + Model.ComplianceApps.Count - alsoProvisioned.Count;
-    var needsYou = Model.Applications.Where(a => a.StatusKey == "needs-you").ToList();
-    var withOperations = Model.Applications.Where(a => a.StatusKey != "needs-you").ToList();
-
+    // Board 00 - Mobile colours the leading dot by how urgent the blocker is,
+    // not by the text colour, so amber reads warmer here than in the table.
     static string DotColor(string statusClass) => statusClass switch
     {
         "text-danger" => "#E31837",
@@ -21,18 +18,18 @@
     };
 }
 
-<div style="display:flex;flex-direction:column;gap:13px">
+<div class="card-stack card-stack--sm">
     <div class="card" style="border-radius:10px;padding:14px;display:flex;align-items:center;gap:12px">
         <div class="profile-avatar" style="width:44px;height:44px;font-size:7.5px;flex:none">PHOTO</div>
         <div style="min-width:0;flex:1">
-            <div style="font-size:13.5px;font-weight:700">Shivaprasad Terse</div>
+            <div style="font-size:13.5px;font-weight:700">@MockData.BrokerName</div>
             <div style="font-size:10px;color:var(--muted);padding-top:2px">@MockData.EntityCode &middot; type 1033 &middot; head office</div>
         </div>
     </div>
 
     <div class="card" style="border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:11px">
         <div style="font-size:13.5px;font-weight:600">Good morning, Shivaprasad</div>
-        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;border-top:1px solid var(--divider);padding-top:11px">
+        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;border-top:1px solid #F2F4F7;padding-top:11px">
             <div><div style="font-size:15px;font-weight:600">&#8377; 84.2 L</div><div style="font-size:9px;color:var(--muted-2);padding-top:2px">booked this month</div></div>
             <div><div style="font-size:15px;font-weight:600">14</div><div style="font-size:9px;color:var(--muted-2);padding-top:2px">in flight</div></div>
             <div><div style="font-size:15px;font-weight:600;color:var(--red-dark)">5</div><div style="font-size:9px;color:var(--muted-2);padding-top:2px">need you</div></div>
@@ -42,87 +39,95 @@
     <div class="card" style="border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:11px">
         <div style="display:flex;align-items:baseline;gap:8px">
             <div style="font-size:13px;font-weight:700;flex:1;min-width:0">Applications <span style="font-weight:500;color:var(--muted-2)">&middot; 12</span></div>
-            <div style="font-size:10.5px;font-weight:600;color:var(--red)">See all</div>
+            <button type="button" class="btn-reset js-stub" style="font-size:10.5px;font-weight:600;color:var(--red)">See all</button>
         </div>
-        <form role="search" class="search-box" style="height:34px" onsubmit="return false">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9AA1AB" stroke-width="2" stroke-linecap="round" style="flex:none"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>
-            <input id="appSearch" type="search" name="q" placeholder="Find an application" aria-label="Find an application" style="border:0;outline:0;background:transparent;font:inherit;color:inherit;width:100%;padding:0" />
+        <form role="search" class="search-box" style="font-size:11px" onsubmit="return false">
+            <partial name="_AppIcon" model='new AppIcon("search", 12, "#9AA1AB")' />
+            <input id="appTileSearch" type="search" name="app" placeholder="Find an application" aria-label="Find an application" />
         </form>
 
-        <div class="section-label">Pinned</div>
-        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px">
-        @foreach (var app in Model.PinnedApps)
-        {
-            var isUnoTp = app.Title == "Uno TP";
-            @if (isUnoTp)
-            {
-                <a class="app-tile app-tile--pinned" style="text-decoration:none;padding:10px 9px;gap:6px" asp-page="/Apps/UnoTp/Mobile/Dashboard">
-                    <div style="display:flex;align-items:flex-start;gap:6px">
-                        <div class="app-tile__icon" style="width:26px;height:26px"></div>
-                        @if (app.Badge is not null)
-                        {
-                            <div class="app-tile__badge" style="margin-left:auto">@app.Badge</div>
-                        }
-                    </div>
-                    <div style="min-width:0"><div class="app-tile__title">@app.Title</div><div class="app-tile__desc">@app.Description</div></div>
-                </a>
-            }
-            else
-            {
-                <button type="button" class="app-tile js-stub" style="text-align:left;padding:10px 9px;gap:6px">
-                    <div style="display:flex;align-items:flex-start;gap:6px"><div class="app-tile__icon" style="width:26px;height:26px"></div></div>
-                    <div style="min-width:0"><div class="app-tile__title">@app.Title</div><div class="app-tile__desc">@app.Description</div></div>
-                </button>
-            }
-        }
+        <div class="tile-section">
+            <div class="section-label" style="font-size:9.5px;letter-spacing:.05em">Pinned</div>
+            <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px">
+                @foreach (var app in Model.PinnedApps)
+                {
+                    var search = $"{app.Title} {app.MobileDescription ?? app.Description}".ToLowerInvariant();
+                    @if (app.Title == "Uno TP")
+                    {
+                        <a class="app-tile app-tile--sm app-tile--pinned" data-search="@search" asp-page="/Apps/UnoTp/Mobile/Dashboard">
+                            <div style="display:flex;align-items:flex-start;gap:6px">
+                                <div class="app-tile__icon"><partial name="_AppIcon" model='new AppIcon(app.Icon, 14, "#E31837")' /></div>
+                                @if (app.Badge is not null)
+                                {
+                                    <div class="app-tile__badge" style="margin-left:auto">@app.Badge</div>
+                                }
+                            </div>
+                            <div style="min-width:0"><div class="app-tile__title">@app.Title</div><div class="app-tile__desc">@(app.MobileDescription ?? app.Description)</div></div>
+                        </a>
+                    }
+                    else
+                    {
+                        <button type="button" class="app-tile app-tile--sm btn-reset js-stub" data-search="@search">
+                            <div style="display:flex;align-items:flex-start;gap:6px">
+                                <div class="app-tile__icon"><partial name="_AppIcon" model="new AppIcon(app.Icon, 14)" /></div>
+                            </div>
+                            <div style="min-width:0"><div class="app-tile__title">@app.Title</div><div class="app-tile__desc">@(app.MobileDescription ?? app.Description)</div></div>
+                        </button>
+                    }
+                }
+            </div>
         </div>
 
-        <div class="section-label">Also provisioned</div>
-        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px">
-        @foreach (var app in alsoProvisioned)
-        {
-            <button type="button" class="app-tile js-stub" style="text-align:left;padding:10px 9px;gap:6px">
-                <div style="display:flex;align-items:flex-start;gap:6px">
-                    <div class="app-tile__icon" style="width:26px;height:26px"></div>
-                    @if (app.Badge is not null)
-                    {
-                        <div class="app-tile__badge" style="margin-left:auto">@app.Badge</div>
-                    }
-                </div>
-                <div style="min-width:0"><div class="app-tile__title">@app.Title</div><div class="app-tile__desc">@app.Description</div></div>
-            </button>
-        }
+        <div class="tile-section">
+            <div class="section-label" style="font-size:9.5px;letter-spacing:.05em">Also provisioned</div>
+            <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px">
+                @foreach (var app in Model.AlsoProvisioned)
+                {
+                    <button type="button" class="app-tile app-tile--sm btn-reset js-stub" data-search="@($"{app.Title} {app.MobileDescription ?? app.Description}".ToLowerInvariant())">
+                        <div style="display:flex;align-items:flex-start;gap:6px">
+                            <div class="app-tile__icon"><partial name="_AppIcon" model="new AppIcon(app.Icon, 14)" /></div>
+                            @if (app.Badge is not null)
+                            {
+                                <div class="app-tile__badge" style="margin-left:auto">@app.Badge</div>
+                            }
+                        </div>
+                        <div style="min-width:0"><div class="app-tile__title">@app.Title</div><div class="app-tile__desc">@(app.MobileDescription ?? app.Description)</div></div>
+                    </button>
+                }
+            </div>
         </div>
-        <div style="font-size:10.5px;color:var(--muted);line-height:1.5">@moreCount more &mdash; calculator, Investor 360, consent register, circulars, training, sub-broker admin &mdash; under See all.</div>
+
+        <div id="appTileEmpty" style="font-size:10.5px;color:var(--muted);line-height:1.5" hidden>No application matches that name.</div>
+        <div style="font-size:10.5px;color:var(--muted);line-height:1.5">@Model.MoreCountWord more &mdash; calculator, Investor 360, consent register, circulars, training, sub-broker admin &mdash; under See all.</div>
     </div>
 
-    <div class="card" style="border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:0">
+    <div class="card" style="border-radius:10px;padding:14px">
         <div style="display:flex;align-items:baseline;gap:8px;padding-bottom:10px">
-            <div style="font-size:13px;font-weight:700;flex:1;min-width:0">Needs you <span style="font-weight:500;color:var(--muted-2)">&middot; @needsYou.Count</span></div>
-            <div style="font-size:10.5px;font-weight:600;color:var(--red)">Filter</div>
+            <div style="font-size:13px;font-weight:700;flex:1;min-width:0">Needs you <span style="font-weight:500;color:var(--muted-2)">&middot; @Model.NeedsYou.Count</span></div>
+            <button type="button" class="btn-reset js-stub" style="font-size:10.5px;font-weight:600;color:var(--red)">Filter</button>
         </div>
-        @foreach (var a in needsYou)
+        @foreach (var a in Model.NeedsYou)
         {
-            <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-top:1px solid var(--divider)">
+            <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-top:1px solid #F2F4F7">
                 <div style="width:6px;height:6px;border-radius:50%;background:@DotColor(a.StatusClass);flex:none;margin-top:5px"></div>
                 <div style="min-width:0;flex:1">
                     <div style="font-size:11.5px;font-weight:600">@a.AppNo &middot; @a.Amount</div>
-                    <div class="@a.StatusClass" style="font-size:10.5px;padding-top:2px;line-height:1.5">@a.Status &middot; @a.StatusDetail</div>
+                    <div style="font-size:10.5px;padding-top:2px;line-height:1.5;color:@(a.StatusClass == "text-danger" ? "var(--red-dark)" : "var(--amber)")">@a.Status &middot; @a.ShortDetail</div>
                 </div>
             </div>
         }
-        <div style="padding:11px 0 2px;border-top:1px solid var(--divider);font-size:11px;font-weight:700;color:var(--red)">See all 14 in flight &rarr;</div>
+        <div style="padding:11px 0 2px;border-top:1px solid #F2F4F7;font-size:11px;font-weight:700;color:var(--red)">See all 14 in flight &rarr;</div>
     </div>
 
-    <div class="card" style="border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:0">
-        <div style="font-size:13px;font-weight:700;padding-bottom:10px">With Operations <span style="font-weight:500;color:var(--muted-2)">&middot; @withOperations.Count, no action from you</span></div>
-        @foreach (var a in withOperations)
+    <div class="card" style="border-radius:10px;padding:14px">
+        <div style="font-size:13px;font-weight:700;padding-bottom:10px">With Operations <span style="font-weight:500;color:var(--muted-2)">&middot; 6, no action from you</span></div>
+        @foreach (var a in Model.WithOperations)
         {
-            <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-top:1px solid var(--divider)">
+            <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-top:1px solid #F2F4F7">
                 <div style="width:6px;height:6px;border-radius:50%;background:@DotColor(a.StatusClass);flex:none;margin-top:5px"></div>
                 <div style="min-width:0;flex:1">
                     <div style="font-size:11.5px;font-weight:600">@a.AppNo &middot; @a.Amount</div>
-                    <div class="@a.StatusClass" style="font-size:10.5px;padding-top:2px;line-height:1.5">@a.Status &mdash; @a.StatusDetail</div>
+                    <div class="@a.StatusClass" style="font-size:10.5px;font-weight:400;padding-top:2px;line-height:1.5">@a.Status @(a.StatusClass == "text-amber" ? "—" : "·") @a.ShortDetail</div>
                 </div>
             </div>
         }
@@ -131,32 +136,16 @@
     <div class="card" style="border-radius:10px;padding:14px">
         <div style="font-size:12.5px;font-weight:600">Notices</div>
         <div style="font-size:10.5px;color:var(--text);padding-top:4px;line-height:1.55">Card rates revised from 12 September &mdash; 36-month public deposits now 7.85%.</div>
-        <button type="button" id="rateCardBtn" class="action-link" style="margin-top:8px;background:none;border:0;cursor:pointer;padding:0">Rate card</button>
     </div>
 
     <div class="card" style="border-radius:10px;padding:4px 14px">
-        <button type="button" class="profile-link-row js-stub" style="width:100%;background:none;border:0;padding:12px 0;text-align:left;cursor:pointer;font:inherit;border-top:0">Change of mobile number</button>
-        <button type="button" class="profile-link-row js-stub" style="width:100%;background:none;border:0;padding:12px 0;text-align:left;cursor:pointer;font:inherit">Change of e-mail ID</button>
-        <button type="button" class="profile-link-row js-stub" style="width:100%;background:none;border:0;padding:12px 0;text-align:left;cursor:pointer;font:inherit">Change password</button>
-        <button type="button" class="profile-link-row js-stub" style="width:100%;background:none;border:0;padding:12px 0;text-align:left;cursor:pointer;font:inherit">Book a service call</button>
-    </div>
-</div>
-
-<div class="modal-overlay" id="rateCardModal" hidden>
-    <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="rateCardTitle">
-        <div id="rateCardTitle" style="font-size:15px;font-weight:600;color:var(--ink)">FD card rates &middot; effective 12 September 2026</div>
-        <table class="data-table" style="margin-top:16px;font-size:10px">
-            <thead><tr><th>Tenure</th><th>General</th><th>Senior citizen</th></tr></thead>
-            <tbody>
-                <tr><td>12 months</td><td>7.25%</td><td>7.50%</td></tr>
-                <tr><td>24 months</td><td>7.60%</td><td>7.85%</td></tr>
-                <tr><td>36 months</td><td>7.85%</td><td>8.10%</td></tr>
-                <tr><td>60 months</td><td>7.75%</td><td>8.00%</td></tr>
-            </tbody>
-        </table>
-        <div style="display:flex;justify-content:flex-end;padding-top:20px">
-            <button type="button" class="btn btn-primary" id="rateCardCloseBtn">Close</button>
-        </div>
+        @foreach (var label in new[] { "Change of mobile number", "Change of e-mail ID", "Change password", "Book a service call" })
+        {
+            <button type="button" class="profile-link-row btn-reset js-stub" style="padding:12px 0;font-size:12px;border-top-color:#F2F4F7">
+                <span class="profile-link-row__label">@label</span>
+                <partial name="_AppIcon" model='new AppIcon("chevron", 13, "#9AA1AB")' />
+            </button>
+        }
     </div>
 </div>
 

@@ -1,14 +1,19 @@
 namespace UnoTp.Models;
 
-public record PinnedApp(string Title, string Description, bool Pinned, int? Badge = null);
+// Icon is the key the _AppIcon partial switches on; MobileDescription is the
+// shorter label Board 00 - Mobile uses on the two-up tiles, where the desktop
+// description would wrap to three lines.
+public record PinnedApp(string Title, string Description, bool Pinned, string Icon, int? Badge = null, string? MobileDescription = null);
 
-public record AppTile(string Title, string Description, int? Badge = null, bool Disabled = false);
+public record AppTile(string Title, string Description, string Icon, int? Badge = null, bool Disabled = false, string? MobileDescription = null);
 
 public record InFlightApplication(
     string AppNo,
     string HolderMask,
     string Status,
     string StatusDetail,
+    // The condensed detail Board 00 - Mobile shows in the single-line list.
+    string ShortDetail,
     string StatusClass,
     string Amount,
     string Step,
@@ -26,7 +31,13 @@ public record NeedsAttentionItem(
     string Blocker,
     string BlockerClass,
     string Waiting,
-    string Action
+    string Action,
+    // The mobile board shortens the action to a single word so it fits beside
+    // the blocker sentence on a 390px row.
+    string ShortAction,
+    // A row that is parked with Operations shows its state in place of an
+    // action, in muted grey rather than as a red link.
+    bool Actionable = true
 );
 
 public record InFlightSummary(int Count, string Label, string Detail);
@@ -43,52 +54,59 @@ public static class MockData
 
     public static List<InFlightApplication> InFlightApplications { get; } = new()
     {
-        new("FBBMFL26F71CD4", "D•••• K•••• +1", "Consent pending", "holder 2 has not completed OTP · re-send or switch to offline", "text-danger", "₹ 1,50,000", "Consent · 06", "3 d", "text-danger", "Open", "needs-you"),
-        new("FBBMFL26F03BBD2", "A•••• D•••••• +1", "Payment link unpaid", "expires tomorrow 5:04 PM · one resend left", "text-danger", "₹ 3,00,000", "Submitted · 11B", "19 h", "text-danger", "Open", "needs-you"),
-        new("FBBMFL26F55QP9", "M•••• S•••", "Re-upload requested", "holder 1's PAN card illegible · Operations asked for a fresh scan", "text-danger", "₹ 10,00,000", "Documents · 07", "6 h", "text-danger", "Open", "needs-you"),
-        new("FBBMFL26F62LK3", "V•••• J•••• +2", "Incomplete", "7 investor fields blank across two holders · nominee not captured", "text-amber", "₹ 2,00,000", "Investor info · 08", "2 d", "text-muted", "Open", "needs-you"),
-        new("FBBMFL26F48TR1", "S•••• B••••", "Incomplete", "bank details not started · cheque uploaded but unread", "text-amber", "₹ 5,00,000", "Bank · 09", "1 d", "text-muted", "Open", "needs-you"),
-        new("FBBMFL26F99AAC1", "R•••••• T••••• +2", "Under review", "holder 3's Aadhaar and the cheque date with Operations", "text-amber", "₹ 5,00,000", "Verification", "1 h", "text-muted", "View", "operations"),
-        new("FBBMFL26E88XZ7", "K•••• P••••", "Verified", "awaiting cheque realisation · books on realisation", "text-success", "₹ 7,50,000", "Realisation", "1 d", "text-muted", "View", "realisation"),
+        new("FBBMFL26F71CD4", "D•••• K•••• +1", "Consent pending", "holder 2 has not completed OTP · re-send or switch to offline", "holder 2 has not completed OTP", "text-danger", "₹ 1,50,000", "Consent · 06", "3 d", "text-danger", "Open", "needs-you"),
+        new("FBBMFL26F03BBD2", "A•••• D•••••• +1", "Payment link unpaid", "expires tomorrow 5:04 PM · one resend left", "expires tomorrow 5:04 PM", "text-danger", "₹ 3,00,000", "Submitted · 11B", "19 h", "text-danger", "Open", "needs-you"),
+        new("FBBMFL26F55QP9", "M•••• S•••", "Re-upload requested", "holder 1’s PAN card illegible · Operations asked for a fresh scan", "holder 1’s PAN illegible", "text-danger", "₹ 10,00,000", "Documents · 07", "6 h", "text-danger", "Open", "needs-you"),
+        new("FBBMFL26F62LK3", "V•••• J•••• +2", "Incomplete", "7 investor fields blank across two holders · nominee not captured", "7 fields blank · nominee missing", "text-amber", "₹ 2,00,000", "Investor info · 08", "2 d", "text-muted", "Open", "needs-you"),
+        new("FBBMFL26F48TR1", "S•••• B••••", "Incomplete", "bank details not started · cheque uploaded but unread", "bank details not started", "text-amber", "₹ 5,00,000", "Bank · 09", "1 d", "text-muted", "Open", "needs-you"),
+        new("FBBMFL26F99AAC1", "R•••••• T••••• +2", "Under review", "holder 3’s Aadhaar and the cheque date with Operations", "Aadhaar and cheque date with Operations", "text-amber", "₹ 5,00,000", "Verification", "1 h", "text-muted", "View", "operations"),
+        new("FBBMFL26E88XZ7", "K•••• P••••", "Verified", "awaiting cheque realisation · books on realisation", "awaiting cheque realisation", "text-success", "₹ 7,50,000", "Realisation", "1 d", "text-muted", "View", "realisation"),
+    };
+
+    // Board 00 - Mobile leads the "Needs you" list with the payment link rather
+    // than the oldest row: it is the only blocker with a hard expiry.
+    public static List<string> MobileNeedsYouOrder { get; } = new()
+    {
+        "FBBMFL26F03BBD2", "FBBMFL26F71CD4", "FBBMFL26F55QP9", "FBBMFL26F62LK3", "FBBMFL26F48TR1",
     };
 
     public static List<NeedsAttentionItem> NeedsAttention { get; } = new()
     {
-        new("F99AAC1", "R•••••• T•••••", "+ 2 joint", "Upload documents", "Proof of address rejected — address does not match source", "text-danger", "2 days", "Fix documents"),
-        new("F76B373", "P•••• N•••", "new customer", "Investor information", "NSDL failed twice — name and DOB do not match PAN", "text-danger", "1 day", "Correct and retry"),
-        new("F41C902", "A•••• D•••••", "joint · holder 2", "DPDP consent", "Consent link expires in 6 hours — not opened yet", "text-amber", "3 days", "Resend link"),
-        new("F38D511", "K•••• I•••••", "primary", "DPDP consent", "Signed CKYC form never uploaded — consent OTP locked", "text-amber", "4 days", "Upload form"),
-        new("F22E084", "M•••• S•••", "primary", "With Operations", "Manual verification after three NSDL failures", "text-muted", "8 days", "Waiting on Ops"),
+        new("F99AAC1", "R•••••• T•••••", "+ 2 joint", "Upload documents", "Proof of address rejected — address does not match source", "text-danger", "2 days", "Fix documents", "Fix"),
+        new("F76B373", "P•••• N•••", "new customer", "Investor information", "NSDL failed twice — name and DOB do not match PAN", "text-danger", "1 day", "Correct and retry", "Retry"),
+        new("F41C902", "A•••• D•••••", "joint · holder 2", "DPDP consent", "Consent link expires in 6 hours — not opened yet", "text-amber", "3 days", "Resend link", "Resend"),
+        new("F38D511", "K•••• I•••••", "primary", "DPDP consent", "Signed CKYC form never uploaded — consent OTP locked", "text-amber", "4 days", "Upload form", "Upload"),
+        new("F22E084", "M•••• S•••", "primary", "With Operations", "Manual verification after three NSDL failures", "text-muted", "8 days", "Waiting on Ops", "With Ops", Actionable: false),
     };
 
     public static List<PinnedApp> PinnedApps { get; } = new()
     {
-        new("Uno TP", "FD sourcing and renewals", true, 5),
-        new("DMS Explorer", "Document repository", false, null),
-        new("OVD Explorer", "Officially valid documents", false, null),
-        new("CP MIS View", "Business and payout MIS", false, null),
+        new("Uno TP", "FD sourcing and renewals", true, "uno-tp", 5, "FD sourcing"),
+        new("DMS Explorer", "Document repository", false, "folder", null, "Documents"),
+        new("OVD Explorer", "Officially valid documents", false, "id-card", null, "Valid documents"),
+        new("CP MIS View", "Business and payout MIS", false, "bars", null, "Business MIS"),
     };
 
     public static List<AppTile> SourcingApps { get; } = new()
     {
-        new("Deposit Servicing", "Renewals, repayments, maturity"),
-        new("Rate & Yield Calculator", "Quote before sourcing"),
-        new("Investor 360", "Holdings across deposits"),
-        new("Service Requests", "Raise and track tickets", Badge: 2),
+        new("Deposit Servicing", "Renewals, repayments, maturity", "rupee", MobileDescription: "Renewals, maturity"),
+        new("Rate & Yield Calculator", "Quote before sourcing", "calculator"),
+        new("Investor 360", "Holdings across deposits", "people"),
+        new("Service Requests", "Raise and track tickets", "ticket", Badge: 2, MobileDescription: "Tickets"),
     };
 
     public static List<AppTile> ComplianceApps { get; } = new()
     {
-        new("DPDP Consent Register", "Consents by holder and purpose"),
-        new("Circulars & Notices", "Rate cards and policy", Badge: 1),
-        new("Training & Certification", "AMFI, KYC refreshers"),
-        new("Sub-broker Admin", "Codes, mapping, payouts"),
+        new("DPDP Consent Register", "Consents by holder and purpose", "shield-check"),
+        new("Circulars & Notices", "Rate cards and policy", "bell", Badge: 1),
+        new("Training & Certification", "AMFI, KYC refreshers", "book"),
+        new("Sub-broker Admin", "Codes, mapping, payouts", "gear"),
     };
 
     public static List<AppTile> RequestableApps { get; } = new()
     {
-        new("Analytics Studio", "Custom reports", Disabled: true),
-        new("Lead Management", "Campaign leads", Disabled: true),
+        new("Analytics Studio", "Custom reports", "bars", Disabled: true),
+        new("Lead Management", "Campaign leads", "people", Disabled: true),
     };
 
     public static List<InFlightSummary> DashboardInFlightSummary { get; } = new()
@@ -130,3 +148,7 @@ public static class MockData
         "Booking is subject to Operations validating the submitted documents.",
     };
 }
+
+// One entry in the Board 00 icon set. Size and Stroke vary by where the icon is
+// used: 18px grey on an app tile, 17px on a profile row, 13px on a chevron.
+public record AppIcon(string Key, int Size = 18, string Stroke = "#6B7280");

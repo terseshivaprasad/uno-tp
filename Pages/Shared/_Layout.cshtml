@@ -15,7 +15,7 @@
             <span class="brand-mahindra">mahindra</span><span class="brand-finance">FINANCE</span>
         </div>
         <div class="app-header__right">
-            <div><span class="welcome-label">Welcome,</span> Shivaprasad Terse <span class="entity-code">100002225</span></div>
+            <div class="app-header__welcome"><span class="welcome-label">Welcome,</span> Shivaprasad Terse <span class="entity-code">100002225</span></div>
             <div class="app-header__nav">
                 <a asp-page="@(ViewData["FirstNavPage"] as string ?? "/Apps/UnoTp/Dashboard")">@(ViewData["FirstNavLabel"] as string ?? "Dashboard")</a>
                 <a asp-page="/Desktop/Index">Home</a>
@@ -26,6 +26,10 @@
     <main class="app-shell">
         @RenderBody()
     </main>
+    @if (ViewData["ShowAppFooter"] is true)
+    {
+        <footer class="app-footer">&copy; 2026 Mahindra Finance &middot; CIN-L65921MH1991PLC059642</footer>
+    }
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

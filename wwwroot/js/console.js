@@ -59,10 +59,8 @@
   var summaryEl = document.getElementById('tableSummary');
   pageButtons.forEach(function (btn) {
     btn.addEventListener('click', function () {
-      pageButtons.forEach(function (b) { b.classList.remove('js-page--active'); b.style.color = 'var(--text)'; b.style.fontWeight = '600'; });
+      pageButtons.forEach(function (b) { b.classList.remove('js-page--active'); });
       btn.classList.add('js-page--active');
-      btn.style.color = 'var(--ink)';
-      btn.style.fontWeight = '700';
       var page = btn.getAttribute('data-page');
       if (page === '2') {
         tbody.querySelectorAll('[data-status]').forEach(function (row) { row.hidden = true; });
@@ -78,6 +76,29 @@
       }
     });
   });
+
+  // App-tile search (Board 00 keeps this separate from the in-flight search):
+  // hides tiles that do not match, and any section left with nothing in it.
+  var tileSearch = document.getElementById('appTileSearch');
+  var tileSections = document.querySelectorAll('.tile-section');
+  var tileEmpty = document.getElementById('appTileEmpty');
+  if (tileSearch) {
+    tileSearch.addEventListener('input', function () {
+      var q = tileSearch.value.trim().toLowerCase();
+      var total = 0;
+      tileSections.forEach(function (section) {
+        var shown = 0;
+        section.querySelectorAll('.app-tile[data-search]').forEach(function (tile) {
+          var match = q === '' || tile.getAttribute('data-search').indexOf(q) !== -1;
+          tile.hidden = !match;
+          if (match) shown += 1;
+        });
+        section.hidden = shown === 0;
+        total += shown;
+      });
+      if (tileEmpty) tileEmpty.hidden = total !== 0;
+    });
+  }
 
   // Edit pinned toggle (cosmetic in this mock — no drag-and-drop persistence yet).
   var editPinnedBtn = document.getElementById('editPinnedBtn');
