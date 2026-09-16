@@ -364,7 +364,7 @@
         <div style="min-width:260px;flex:1">
             <div style="font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">DPDP consent</div>
             <div style="font-size:13.5px;font-weight:600;padding-top:6px">No consent on file &mdash; collection required</div>
-            <div class="field-hint" style="padding-top:4px">Opens once NSDL returns valid. This holder is set to offline, so two signed forms and a consent OTP are collected on screen 05.</div>
+            <div class="field-hint" style="padding-top:4px">Opens once NSDL returns valid. This holder is set to offline, so @Model.Consent.OfflineSummary are collected on screen 05.</div>
         </div>
         <span class="chip chip--warn">Consent pending</span>
     </div>
@@ -386,7 +386,7 @@
             </div>
             <div class="holder-row holder-row--flagged">
                 <div class="holder-num holder-num--current holder-num--sm">2</div>
-                <div style="min-width:0;flex:1"><div style="font-size:13.5px;font-weight:700;color:var(--ink)">Holder 2 &middot; S&bull;&bull;&bull;&bull; T&bull;&bull;&bull;&bull;&bull;</div><div class="field-hint">Joint &middot; offline &mdash; two signed forms and a consent OTP</div></div>
+                <div style="min-width:0;flex:1"><div style="font-size:13.5px;font-weight:700;color:var(--ink)">Holder 2 &middot; S&bull;&bull;&bull;&bull; T&bull;&bull;&bull;&bull;&bull;</div><div class="field-hint">Joint &middot; offline &mdash; @Model.Consent.OfflineSummary</div></div>
                 <span class="text-danger" style="font-size:12px;font-weight:700;white-space:nowrap">Consent required</span>
             </div>
             <div class="holder-row">
@@ -406,41 +406,64 @@
     <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--divider);padding-bottom:16px">
         <div style="min-width:0;flex:1">
             <div style="font-size:14px;font-weight:600;color:var(--ink)">Consent collection for this holder <span class="required">*</span></div>
-            <div class="field-hint" style="padding-top:3px">Chosen <span style="font-weight:600;color:var(--ink)">per holder</span> &mdash; one holder can sign offline while another accepts a digital link. It can be switched until the first form is uploaded or the link is sent.</div>
+            <div class="field-hint" style="padding-top:3px">
+                @if (Model.Consent.DigitalAvailable)
+                {
+                    <text>Chosen <span style="font-weight:600;color:var(--ink)">per holder</span> &mdash; one holder can sign offline while another accepts a digital link. It can be switched until the first form is uploaded or the link is sent.</text>
+                }
+                else
+                {
+                    <text>Collected <span style="font-weight:600;color:var(--ink)">offline</span> for every holder on this application.</text>
+                }
+            </div>
         </div>
-        <div class="seg-toggle" id="consentSegToggle">
-            <button type="button" class="seg-toggle__opt seg-toggle__opt--active" data-consent="offline">Offline</button>
-            <button type="button" class="seg-toggle__opt" data-consent="digital">Digital</button>
-        </div>
-        <div style="font-size:11.5px;color:var(--muted);line-height:1.4;flex:none;width:190px">Holder 2 is set to <span class="hid-consent-mode" style="font-weight:600;color:var(--ink)">Offline</span> &mdash; <span class="hid-consent-detail">two signed forms and a consent OTP</span>.</div>
+        @if (Model.Consent.DigitalAvailable)
+        {
+            <div class="seg-toggle" id="consentSegToggle" data-offline-detail="@Model.Consent.OfflineSummary" data-digital-detail="one link &mdash; no upload, no consent OTP">
+                <button type="button" class="seg-toggle__opt seg-toggle__opt--active" data-consent="offline">Offline</button>
+                <button type="button" class="seg-toggle__opt" data-consent="digital">Digital</button>
+            </div>
+        }
+        <div style="font-size:11.5px;color:var(--muted);line-height:1.4;flex:none;width:190px">Holder 2 is set to <span class="hid-consent-mode" style="font-weight:600;color:var(--ink)">Offline</span> &mdash; <span class="hid-consent-detail">@Model.Consent.OfflineSummary</span>.</div>
     </div>
 
-    <div class="form-grid form-grid--2">
+    <div class="@(Model.Consent.DigitalAvailable ? "form-grid form-grid--2" : "")">
         <div class="hid-consent-panel hid-consent-panel--selected" data-consent="offline" style="padding-top:14px;display:flex;flex-direction:column;gap:12px">
-            <div style="display:flex;align-items:center;gap:8px"><div class="hid-consent-panel__title" style="font-size:13px;font-weight:700;flex:1;min-width:0">Offline <span class="hid-consent-panel__status">&middot; selected for this holder</span></div><span class="chip chip--warn">2 forms + OTP</span></div>
-            <div class="field-hint">Each consent is a separate form with its own download and its own upload. Both must be accepted before the consent OTP is sent. No CKYC record is pulled here.</div>
+            <div style="display:flex;align-items:center;gap:8px"><div class="hid-consent-panel__title" style="font-size:13px;font-weight:700;flex:1;min-width:0">Offline <span class="hid-consent-panel__status">&middot; selected for this holder</span></div><span class="chip chip--warn">@Model.Consent.FormsChip</span></div>
+            <div class="field-hint">@Model.Consent.SeparateFormsNote</div>
 
+@foreach (var (form, i) in Model.Consent.Forms.Select((f, i) => (f, i)))
+{
             <div style="border-top:1px solid var(--divider);padding-top:10px;display:flex;flex-direction:column;gap:8px">
-                <div style="display:flex;align-items:center;gap:8px"><div style="font-size:12.5px;font-weight:700;flex:1;min-width:0">1 &middot; DPDP consent</div><span class="chip chip--success">Uploaded</span></div>
-                <div class="field-hint">Consent to process the holder&rsquo;s personal data. dpdp-holder2.pdf &middot; 1.1 MB &middot; accepted 11:14</div>
-                <div style="display:flex;gap:8px"><button type="button" class="btn btn-secondary btn-sm">Download form</button><button type="button" class="btn btn-secondary btn-sm">Replace upload</button></div>
+                <div style="display:flex;align-items:center;gap:8px"><div style="font-size:12.5px;font-weight:700;flex:1;min-width:0">@(i + 1) &middot; @form.Title</div><span class="@form.StatusChipClass">@form.StatusLabel</span></div>
+                <div class="field-hint">@form.Purpose @form.FileDetail</div>
+                <div style="display:flex;gap:8px">
+                    <button type="button" class="btn btn-secondary btn-sm">Download form</button>
+                    @if (form.State == ConsentState.Accepted)
+                    {
+                        <button type="button" class="btn btn-secondary btn-sm">Replace upload</button>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn btn-primary btn-sm">Upload signed copy</button>
+                    }
+                </div>
             </div>
-            <div style="border-top:1px solid var(--divider);padding-top:10px;display:flex;flex-direction:column;gap:8px">
-                <div style="display:flex;align-items:center;gap:8px"><div style="font-size:12.5px;font-weight:700;flex:1;min-width:0">2 &middot; CKYC (CERSAI) consent</div><span class="chip chip--warn">Awaiting upload</span></div>
-                <div class="field-hint">Authorises the CKYC record download from CERSAI &mdash; the download itself runs at application completion. Form downloaded 11:05 &mdash; signed copy not uploaded yet.</div>
-                <div style="display:flex;gap:8px"><button type="button" class="btn btn-secondary btn-sm">Download form</button><button type="button" class="btn btn-primary btn-sm">Upload signed copy</button></div>
-            </div>
+}
             <div style="border-top:1px solid var(--divider);padding-top:10px;display:flex;align-items:center;gap:10px">
-                <div class="field-hint" style="flex:1">Consent OTP unlocks when both forms are accepted &mdash; 1 of 2 so far.</div>
-                <button type="button" class="btn btn-secondary btn-sm" disabled>Send consent OTP</button>
+                <div class="field-hint" style="flex:1">@Model.Consent.OtpHint</div>
+                <button type="button" class="btn btn-secondary btn-sm" disabled="@(!Model.Consent.OtpUnlocked)">Send consent OTP</button>
             </div>
         </div>
 
+@if (Model.Consent.DigitalAvailable)
+{
         <div class="hid-consent-panel" data-consent="digital" style="padding-top:14px;display:flex;flex-direction:column;gap:10px">
             <div style="display:flex;align-items:center;gap:8px"><div class="hid-consent-panel__title" style="font-size:13px;font-weight:700;flex:1;min-width:0">Digital <span class="hid-consent-panel__status">&middot; not selected</span></div><span class="chip chip--primary">1 link</span></div>
-            <div class="field-hint">One link covering DPDP and CERSAI goes to the registered mobile and email. The holder accepts it &mdash; no upload, no consent OTP. The CKYC download and its OTP come at application completion.</div>
+            <div class="field-hint">@Model.Consent.DigitalNote</div>
             <button type="button" class="btn btn-secondary btn-sm" disabled>Send consent link</button>
         </div>
+}
     </div>
     <div class="field-hint">Registered contacts cannot be edited here.</div>
 
@@ -454,11 +477,11 @@
     </div>
     <div class="card__subtitle">At completion, every holder is either identified with valid CKYC/NSDL or has consent on file &mdash; ready to move to the documents step.</div>
     <table class="data-table">
-        <thead><tr><th>Holder</th><th>Source</th><th>Identification</th><th>DPDP consent</th><th>CKYC</th></tr></thead>
+        <thead><tr><th>Holder</th><th>Source</th><th>Identification</th>@if (Model.Consent.HasDpdp) { <th>DPDP consent</th> }@if (Model.Consent.HasCkyc) { <th>CKYC</th> }</tr></thead>
         <tbody>
-            <tr><td><strong>Holder 1</strong><div class="field-hint">primary &middot; folio MF0051187</div></td><td><span class="chip chip--muted">n/a</span></td><td class="text-green">Existing</td><td class="text-green">On file 12 Mar 2025</td><td class="text-green">On file</td></tr>
-            <tr><td><strong>Holder 2</strong><div class="field-hint">folio MF0051188</div></td><td><span class="chip chip--warn">Offline</span></td><td class="text-green">Existing</td><td class="text-green">Uploaded &middot; OTP verified</td><td style="color:var(--blue);font-weight:600">At completion</td></tr>
-            <tr><td><strong>Holder 3</strong><div class="field-hint">new customer</div></td><td><span class="chip chip--warn">Offline</span></td><td class="text-green">NSDL valid</td><td class="text-green">Uploaded &middot; OTP verified</td><td style="color:var(--blue);font-weight:600">At completion</td></tr>
+            <tr><td><strong>Holder 1</strong><div class="field-hint">primary &middot; folio MF0051187</div></td><td><span class="chip chip--muted">n/a</span></td><td class="text-green">Existing</td>@if (Model.Consent.HasDpdp) { <td class="text-green">On file 12 Mar 2025</td> }@if (Model.Consent.HasCkyc) { <td class="text-green">On file</td> }</tr>
+            <tr><td><strong>Holder 2</strong><div class="field-hint">folio MF0051188</div></td><td><span class="chip chip--warn">Offline</span></td><td class="text-green">Existing</td>@if (Model.Consent.HasDpdp) { <td class="text-green">Uploaded &middot; OTP verified</td> }@if (Model.Consent.HasCkyc) { <td style="color:var(--blue);font-weight:600">At completion</td> }</tr>
+            <tr><td><strong>Holder 3</strong><div class="field-hint">new customer</div></td><td><span class="chip chip--warn">Offline</span></td><td class="text-green">NSDL valid</td>@if (Model.Consent.HasDpdp) { <td class="text-green">Uploaded &middot; OTP verified</td> }@if (Model.Consent.HasCkyc) { <td style="color:var(--blue);font-weight:600">At completion</td> }</tr>
         </tbody>
     </table>
     <div class="field-hint">Consent artefacts &mdash; timestamp, channel, purpose, IP, holder reference &mdash; are stored against the application for audit.</div>
@@ -525,7 +548,7 @@
     </div>
     <div class="hid-footer" data-step="consent" hidden>
         <div class="hid-footer__inner">
-        <div class="actionbar__hint">Holder 2 &middot; both signed forms must be accepted before the consent OTP is sent &mdash; <strong>1 of 2 accepted</strong></div>
+        <div class="actionbar__hint">@Html.Raw(Model.Consent.FooterHint)</div>
         <div style="display:flex;align-items:center;gap:24px">
             <button type="button" class="hid-link hid-next" data-goto="newpan">@Html.Raw(backIcon) Back</button>
             <button type="button" class="hid-link">Clear All</button>

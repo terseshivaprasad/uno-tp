@@ -1,3 +1,5 @@
+using UnoTp.Features;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Render (and most container platforms) assign the listen port via $PORT.
@@ -6,6 +8,18 @@ builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
 // Add services to the container.
 builder.Services.AddRazorPages();
+
+// Feature switches: defaults from appsettings, per-session override via ?ff= (see FeatureSet).
+builder.Services.AddHttpContextAccessor();
+builder.Services.Configure<UnoTp.Features.FeatureFlags>(builder.Configuration.GetSection("Features"));
+builder.Services.AddScoped(sp =>
+{
+    var ctx = sp.GetRequiredService<IHttpContextAccessor>().HttpContext;
+    return ctx?.Items[UnoTp.Features.FeatureSet.ItemKey] as UnoTp.Features.FeatureSet
+        ?? new UnoTp.Features.FeatureSet(
+            sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<UnoTp.Features.FeatureFlags>>().Value);
+});
+builder.Services.AddScoped<UnoTp.Features.ConsentPlan>();
 
 var app = builder.Build();
 
@@ -23,6 +37,9 @@ if (!app.Environment.IsDevelopment())
 // No UseHttpsRedirection: Render terminates TLS at the edge and forwards plain HTTP to the container.
 
 app.UseRouting();
+
+// Must run before the pages so a ?ff= override applies to this render.
+app.UseFeatureOverrides();
 
 app.UseStaticFiles(new StaticFileOptions
 {

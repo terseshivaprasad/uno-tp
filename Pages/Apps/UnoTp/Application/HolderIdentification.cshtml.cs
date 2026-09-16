@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using UnoTp.Features;
 
 namespace UnoTp.Pages.Apps.UnoTpApp.Application;
 
@@ -13,6 +14,11 @@ namespace UnoTp.Pages.Apps.UnoTpApp.Application;
 /// </summary>
 public class HolderIdentificationModel : PageModel
 {
+    public HolderIdentificationModel(ConsentPlan consent) => Consent = consent;
+
+    /// <summary>Which consents this application collects, and the copy that describes them.</summary>
+    public ConsentPlan Consent { get; }
+
     /// <summary>Which internal step to start on: search, result, renewal, existing, newpan, consent, complete.</summary>
     [BindProperty(SupportsGet = true)]
     public string Step { get; set; } = "search";

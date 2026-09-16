@@ -55,11 +55,13 @@
 
   // Offline/Digital consent toggle on the consent step: both comparison panels stay
   // visible (matching the prototype), the toggle just changes which is "selected".
-  var consentDetail = {
-    offline: 'two signed forms and a consent OTP',
-    digital: 'one link — no upload, no consent OTP'
-  };
   document.querySelectorAll('.seg-toggle[id]').forEach(function (toggle) {
+    // The offline summary depends on how many consents are switched on, so the
+    // server renders both strings onto the toggle rather than the script guessing.
+    var consentDetail = {
+      offline: toggle.getAttribute('data-offline-detail') || '',
+      digital: toggle.getAttribute('data-digital-detail') || ''
+    };
     var opts = toggle.querySelectorAll('.seg-toggle__opt');
     var scope = toggle.closest('.hid-section') || document;
     var panels = scope.querySelectorAll('.hid-consent-panel');
