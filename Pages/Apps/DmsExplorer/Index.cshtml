@@ -20,19 +20,19 @@
     var history = Model.ShowHistory;
 }
 
-<nav class="dms-tabs" aria-label="DMS Explorer">
-    <a class="dms-tab dms-tab--active" asp-page="/Apps/DmsExplorer/Index" aria-current="page">View documents</a>
-    <button type="button" class="dms-tab btn-reset js-dms-stub" data-stub="Upload documents opens its own board — not built yet.">Upload documents</button>
-    <button type="button" class="dms-tab btn-reset js-dms-stub" data-stub="The sync queue opens its own board — not built yet.">Sync queue <span class="dms-tab__badge">1</span></button>
-</nav>
+<partial name="_DmsTabs" model='"view"' />
 
 <div class="dms-page">
     <form class="dms-search" method="get" role="search">
         <div class="dms-search__row">
-            <select class="inv-control dms-search__by" name="by" aria-label="Look up by">
-                <option value="control">Control / application no</option>
+            @* The identifiers the upload form captures, so anything uploaded can be found again. *@
+            <select class="inv-control dms-search__by" name="by" id="dmsBy" aria-label="Look up by">
+                @foreach (var l in IndexModel.Lookups)
+                {
+                    <option value="@l.Key" data-placeholder="@l.Placeholder" selected="@(l == Model.By)">@l.Label</option>
+                }
             </select>
-            <input class="inv-control dms-search__no" type="search" name="no" value="@Model.Number" placeholder="Control or application number" aria-label="Control or application number" autocomplete="off">
+            <input class="inv-control dms-search__no" type="search" name="no" id="dmsNo" value="@Model.Number" placeholder="@Model.By.Placeholder" aria-label="@Model.By.Label" autocomplete="off">
             <div class="dms-search__actions">
                 <button type="submit" class="btn btn-primary dms-search__submit">Submit</button>
                 <a class="dms-search__clear" href="?no=">Clear</a>
@@ -59,12 +59,12 @@
         <div class="dms-empty">
             @if (Model.Number.Length == 0)
             {
-                <div class="dms-empty__title">Look up a control or application number</div>
+                <div class="dms-empty__title">Look up a control, application, PAN, folio or FDR number</div>
                 <div class="dms-empty__text">Every document the store holds under that number is listed, grouped by holder type, with its history behind it.</div>
             }
             else
             {
-                <div class="dms-empty__title">Nothing is filed under @Model.Number</div>
+                <div class="dms-empty__title">Nothing is filed under @Model.By.Label.Replace(" no", "") @Model.Number</div>
                 <div class="dms-empty__text">Check the number and look it up again.</div>
             }
         </div>
@@ -79,7 +79,7 @@
             <div class="dms-result__text">
                 <div class="dms-result__title">
                     <span class="dms-result__no">Control @filing.ControlNo</span>
-                    <span class="dms-result__app">application @filing.ApplicationNo</span>
+                    <span class="dms-result__app">application @filing.ApplicationNo@(Model.Folio is null ? "" : " · folio " + Model.Folio)</span>
                     <span class="chip chip--muted">Filed by @filing.FiledBy</span>
                 </div>
                 <div class="dms-result__summary">
@@ -233,11 +233,14 @@
                             <span class="dms-preview__ext" id="dmsExt">@System.IO.Path.GetExtension(open.File).TrimStart('.').ToUpperInvariant()</span>
                         </div>
                     </div>
-                    <dl class="dms-facts">
-                        <dt>Holder type</dt><dd data-field="holder">@open.Holder</dd>
-                        <dt>Class &middot; type</dt><dd data-field="type">@open.Type</dd>
-                        <dt>Doc ref no</dt><dd data-field="ref">@open.Ref</dd>
-                        <dt>Expiry</dt><dd data-field="expiry">@open.Expiry</dd>
+                    @* The upload form's fields for the document's class, then what every document has. *@
+                    <dl class="dms-facts" id="dmsFacts">
+                        @foreach (var f in open.Facts)
+                        {
+                            <dt>@f.Label</dt><dd>@f.Value</dd>
+                        }
+                    </dl>
+                    <dl class="dms-facts dms-facts--common">
                         <dt>Filed by</dt><dd data-field="filed">@open.Filed</dd>
                         <dt>DMS</dt><dd data-field="dms">@open.Dms</dd>
                         <dt>Versions</dt>

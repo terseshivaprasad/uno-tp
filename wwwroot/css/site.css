@@ -1555,7 +1555,8 @@ a.dash-row:hover .dash-row__open { text-decoration: underline; }
   transition: transform .15s ease;
 }
 .dms-preview__ext { font-size: 9.5px; font-weight: 700; letter-spacing: .06em; color: var(--muted-2); }
-.dms-facts { display: grid; grid-template-columns: 82px minmax(0,1fr); gap: 7px 12px; margin: 4px 0 0; font-size: 11px; line-height: 1.4; }
+.dms-facts { display: grid; grid-template-columns: 96px minmax(0,1fr); gap: 7px 12px; margin: 4px 0 0; font-size: 11px; line-height: 1.4; }
+.dms-facts--common { margin-top: -4px; padding-top: 10px; border-top: 1px dashed var(--divider); }
 .dms-facts dt { color: var(--muted); }
 .dms-facts dd { margin: 0; color: var(--ink); overflow-wrap: anywhere; }
 .dms-viewer__nav { display: flex; align-items: center; gap: 16px; border-top: 1px solid var(--divider); padding-top: 12px; }
@@ -1608,4 +1609,91 @@ a.dash-row:hover .dash-row__open { text-decoration: underline; }
   .dms-views .seg-toggle__opt { flex: 1; }
   .dms-preview { height: 240px; }
   .dms-viewer { padding: 14px; }
+}
+
+/* ===== DMS Explorer · upload documents =====
+   The old DMSDocUpload screen's three radios (KYC, FD, plain document) as choice
+   cards over one form that shows only the kind's own fields, beside a panel that
+   names the file the upload will be stored as. */
+.dmsu { display: grid; grid-template-columns: minmax(0,2.3fr) minmax(280px,1fr); gap: 12px; align-items: start; }
+.dmsu-card { background: #fff; border-radius: 8px; padding: 20px; min-width: 0; }
+#dmsuForm, .dmsu-done { display: flex; flex-direction: column; gap: 20px; }
+.dmsu-card[hidden], #dmsuForm[hidden] { display: none; }
+.dmsu-done:focus { outline: none; }
+.dmsu-title { font-size: 16px; font-weight: 600; color: var(--ink); }
+.dmsu-subtitle { font-size: 11.5px; color: var(--muted); padding-top: 4px; line-height: 1.5; max-width: 640px; }
+
+.dmsu-kinds { border: 0; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; min-width: 0; }
+.dmsu-kinds legend { padding: 0 0 8px; }
+.dmsu-kind {
+  position: relative; display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px;
+  border: 1px solid var(--border-3); border-radius: 8px; cursor: pointer; min-width: 0;
+}
+.dmsu-kind:hover { border-color: var(--text); }
+.dmsu-kind input { position: absolute; opacity: 0; pointer-events: none; }
+.dmsu-kind__dot { width: 16px; height: 16px; margin-top: 1px; border-radius: 50%; border: 1px solid var(--border-3); flex: none; display: flex; align-items: center; justify-content: center; background: #fff; }
+.dmsu-kind input:checked + .dmsu-kind__dot { border: 4px solid var(--red); }
+.dmsu-kind:has(input:checked) { border-color: var(--red); background: #FFF8F9; }
+.dmsu-kind:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: 2px; }
+.dmsu-kind__text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.dmsu-kind__title { font-size: 13px; font-weight: 600; color: var(--ink); }
+.dmsu-kind__detail { font-size: 11px; color: var(--muted); line-height: 1.4; }
+
+.dmsu-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 14px 16px; }
+.dmsu-grid .inv-field[hidden] { display: none; }
+.dmsu-grid__wide { grid-column: span 2; }
+#dmsuForm .inv-control { font-size: 13px; }
+#dmsuForm select.inv-control:disabled { background-color: #F7F8FA; color: var(--muted-2); cursor: not-allowed; }
+.dmsu-upper { text-transform: uppercase; }
+.dmsu-upper::placeholder { text-transform: none; }
+
+.dmsu-file-label { font-size: 12px; font-weight: 500; line-height: 22px; color: var(--ink); }
+.dmsu-file {
+  display: flex; align-items: center; gap: 12px; padding: 14px 16px; cursor: pointer;
+  border: 1px dashed var(--border-3); border-radius: 8px; background: var(--tint);
+}
+.dmsu-file:hover, .dmsu-file--over { border-color: var(--red); background: #FFF8F9; }
+.dmsu-file--chosen { border-style: solid; background: #fff; }
+.dmsu-file-field--error .dmsu-file { border-color: var(--red); }
+.dmsu-file input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.dmsu-file:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: 2px; }
+.dmsu-file__icon { width: 36px; height: 36px; border-radius: 6px; background: #fff; border: 1px solid var(--border); color: var(--red); display: flex; align-items: center; justify-content: center; flex: none; }
+.dmsu-file__text { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.dmsu-file__name { font-size: 13px; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
+.dmsu-file__meta { font-size: 11px; color: var(--muted); }
+.dmsu-file__change { font-size: 12px; font-weight: 600; color: var(--red); }
+.dmsu-file__change[hidden] { display: none; }
+
+.dmsu-notice[hidden] { display: none; }
+.dmsu-notice.callout--warn { color: var(--amber); }
+.dmsu-actions { display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--divider); padding-top: 16px; }
+.dmsu-actions--start { justify-content: flex-start; }
+
+.dmsu-aside { position: sticky; top: 60px; display: flex; flex-direction: column; gap: 12px; }
+.dmsu-preview {
+  font-size: 13px; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; line-height: 1.45;
+  padding: 12px 14px; background: var(--tint); border-radius: 6px; font-variant-numeric: tabular-nums;
+}
+.dmsu-aside .dms-facts { margin-top: 0; }
+
+.dmsu-done { align-items: flex-start; }
+.dmsu-done__mark { width: 36px; height: 36px; border-radius: 50%; background: var(--green-2); display: flex; align-items: center; justify-content: center; }
+.dmsu-done .dmsu-subtitle { overflow-wrap: anywhere; }
+.dmsu-done__facts { width: 100%; max-width: 560px; }
+.dmsu-proto { font-size: 11px; color: var(--muted-2); }
+.dmsu-done .dmsu-actions { width: 100%; }
+
+@media (max-width: 1100px) {
+  .dmsu { grid-template-columns: minmax(0,1fr); }
+  .dmsu-aside { position: static; }
+  .dmsu-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+}
+@media (max-width: 760px) {
+  .dmsu-kinds { grid-template-columns: minmax(0,1fr); }
+}
+@media (max-width: 560px) {
+  .dmsu-card { padding: 16px; }
+  .dmsu-grid { grid-template-columns: minmax(0,1fr); }
+  .dmsu-grid__wide { grid-column: auto; }
+  .dmsu-actions .btn { flex: 1; }
 }

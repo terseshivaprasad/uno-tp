@@ -1,0 +1,215 @@
+@page "/Apps/DmsExplorer/Upload"
+@model UnoTp.Pages.Apps.DmsExplorer.UploadModel
+@namespace UnoTp.Pages.Apps.DmsExplorer
+@using System.Text.Json
+@{
+    ViewData["Title"] = "Upload documents · DMS Explorer";
+    ViewData["FirstNavLabel"] = "DMS Explorer";
+    ViewData["FirstNavPage"] = "/Apps/DmsExplorer/Index";
+    ViewData["FirstNavActive"] = true;
+    ViewData["ShowAppFooter"] = true;
+
+    var kinds = new[]
+    {
+        (Key: "kyc", Title: "KYC document", Detail: "Identity proof, proof of address or photograph, for one holder"),
+        (Key: "fd", Title: "FD document", Detail: "Application form, cheque or tax declaration, for the deposit"),
+        (Key: "other", Title: "Other document", Detail: "Anything else, filed under a type you name"),
+    };
+}
+
+<partial name="_DmsTabs" model='"upload"' />
+
+<div class="dms-page">
+    <div class="dmsu">
+        <form class="dmsu-card" id="dmsuForm" novalidate>
+            <div class="dmsu-head">
+                <h1 class="dmsu-title">Upload a document</h1>
+                <p class="dmsu-subtitle">Files one document against a control number. A document of the same holder type and type already on file is replaced, and the version it replaces stays viewable under History.</p>
+            </div>
+
+            <fieldset class="dmsu-kinds">
+                <legend class="section-label">What are you uploading?</legend>
+                @foreach (var k in kinds)
+                {
+                    <label class="dmsu-kind">
+                        <input type="radio" name="kind" value="@k.Key" checked="@(k.Key == "kyc")">
+                        <span class="dmsu-kind__dot" aria-hidden="true"></span>
+                        <span class="dmsu-kind__text">
+                            <span class="dmsu-kind__title">@k.Title</span>
+                            <span class="dmsu-kind__detail">@k.Detail</span>
+                        </span>
+                    </label>
+                }
+            </fieldset>
+
+            <div class="dmsu-grid">
+                <div class="inv-field" data-kinds="kyc fd other">
+                    <label for="dmsuControl">Control no <span class="required">*</span></label>
+                    <input class="inv-control" id="dmsuControl" name="control" inputmode="numeric" autocomplete="off" data-required="Enter the control number">
+                    <div class="inv-field__hint" hidden></div>
+                </div>
+
+                @* KYC *@
+                <div class="inv-field" data-kinds="kyc">
+                    <label for="dmsuApp">Application no <span class="required">*</span></label>
+                    <input class="inv-control" id="dmsuApp" name="application" autocomplete="off" data-required="Enter the application number">
+                    <div class="inv-field__hint" hidden></div>
+                </div>
+                <div class="inv-field" data-kinds="kyc">
+                    <label for="dmsuHolder">Holder type <span class="required">*</span></label>
+                    <select class="inv-control" id="dmsuHolder" name="holder" data-required="Choose the holder type">
+                        <option value="">Select</option>
+                        @foreach (var h in UploadModel.Holders)
+                        {
+                            <option value="@h.Label" data-code="@h.Code">@h.Label</option>
+                        }
+                    </select>
+                    <div class="inv-field__hint" hidden></div>
+                </div>
+                <div class="inv-field" data-kinds="kyc">
+                    <label for="dmsuDocType">Doc type <span class="required">*</span></label>
+                    <select class="inv-control" id="dmsuDocType" name="docType" data-required="Choose the document type">
+                        <option value="">Select</option>
+                        @foreach (var g in UploadModel.KycTypes)
+                        {
+                            <option value="@g.DocType">@g.DocType</option>
+                        }
+                    </select>
+                    <div class="inv-field__hint" hidden></div>
+                </div>
+                <div class="inv-field" data-kinds="kyc">
+                    <label for="dmsuSubType">Doc sub-type <span class="required">*</span></label>
+                    <select class="inv-control" id="dmsuSubType" name="subType" data-required="Choose the sub-type" disabled>
+                        <option value="">Choose a doc type first</option>
+                        @foreach (var g in UploadModel.KycTypes)
+                        {
+                            foreach (var (sub, o) in g.SubTypes)
+                            {
+                                <option value="@sub" data-group="@g.DocType" data-label="@o.Label" data-token="@o.Token" data-ref="@(o.HasRef ? "1" : "0")" data-expiry="@(o.HasExpiry ? "1" : "0")" hidden>@sub</option>
+                            }
+                        }
+                    </select>
+                    <div class="inv-field__hint" hidden></div>
+                </div>
+                <div class="inv-field" data-kinds="kyc" data-needs="ref">
+                    <label for="dmsuRef">Doc ref no</label>
+                    <input class="inv-control" id="dmsuRef" name="ref" autocomplete="off">
+                    <div class="inv-field__hint">Shown masked in View documents</div>
+                </div>
+                <div class="inv-field" data-kinds="kyc" data-needs="expiry">
+                    <label for="dmsuExpiry">Doc expiry date</label>
+                    <input class="inv-control" id="dmsuExpiry" name="expiry" type="date">
+                    <div class="inv-field__hint" hidden></div>
+                </div>
+
+                @* FD *@
+                <div class="inv-field" data-kinds="fd">
+                    <label for="dmsuFdType">Document type <span class="required">*</span></label>
+                    <select class="inv-control" id="dmsuFdType" name="fdType" data-required="Choose the document type">
+                        <option value="">Select</option>
+                        @foreach (var t in UploadModel.FdTypes)
+                        {
+                            <option value="@t.Label" data-token="@t.Token">@t.Label</option>
+                        }
+                    </select>
+                    <div class="inv-field__hint" hidden></div>
+                </div>
+                <div class="inv-field" data-kinds="fd">
+                    <label for="dmsuFinYear">FIN year <span class="required">*</span></label>
+                    <select class="inv-control" id="dmsuFinYear" name="finYear" data-required="Choose the financial year">
+                        <option value="">Select</option>
+                        @foreach (var y in UploadModel.FinYears)
+                        {
+                            <option value="@y">@y</option>
+                        }
+                    </select>
+                    <div class="inv-field__hint" hidden></div>
+                </div>
+                <div class="inv-field" data-kinds="fd">
+                    <label for="dmsuPeriod">Period <span class="required">*</span></label>
+                    <input class="inv-control" id="dmsuPeriod" name="period" autocomplete="off" data-required="Enter the period">
+                    <div class="inv-field__hint" hidden></div>
+                </div>
+                <div class="inv-field" data-kinds="fd">
+                    <label for="dmsuPan">PAN no <span class="required">*</span></label>
+                    <input class="inv-control dmsu-upper" id="dmsuPan" name="pan" maxlength="10" autocomplete="off" data-required="Enter the PAN" data-pattern="^[A-Z]{5}[0-9]{4}[A-Z]$" data-pattern-message="A PAN is five letters, four digits and a letter">
+                    <div class="inv-field__hint" hidden></div>
+                </div>
+                <div class="inv-field" data-kinds="fd">
+                    <label for="dmsuFolio">Folio no <span class="required">*</span></label>
+                    <input class="inv-control dmsu-upper" id="dmsuFolio" name="folio" autocomplete="off" data-required="Enter the folio number">
+                    <div class="inv-field__hint" hidden></div>
+                </div>
+                <div class="inv-field" data-kinds="fd">
+                    <label for="dmsuFdr">FDR no <span class="required">*</span></label>
+                    <input class="inv-control" id="dmsuFdr" name="fdr" autocomplete="off" data-required="Enter the FDR number">
+                    <div class="inv-field__hint" hidden></div>
+                </div>
+
+                @* Other *@
+                <div class="inv-field dmsu-grid__wide" data-kinds="other">
+                    <label for="dmsuOtherType">Document type <span class="required">*</span></label>
+                    <input class="inv-control" id="dmsuOtherType" name="otherType" autocomplete="off" placeholder="e.g. Letter of authority" data-required="Name the document type">
+                    <div class="inv-field__hint">Filed under the Open class with the type as you type it</div>
+                </div>
+            </div>
+
+            <div class="inv-field dmsu-file-field">
+                <span class="dmsu-file-label">Choose document <span class="required">*</span></span>
+                <label class="dmsu-file" id="dmsuDrop">
+                    <input type="file" id="dmsuFile" name="file" accept="@UploadModel.Accept">
+                    <span class="dmsu-file__icon" aria-hidden="true">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5"></path><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"></path></svg>
+                    </span>
+                    <span class="dmsu-file__text">
+                        <span class="dmsu-file__name" id="dmsuFileName">Choose a file or drop it here</span>
+                        <span class="dmsu-file__meta" id="dmsuFileMeta">PDF, JPG, PNG or TIFF &middot; up to @UploadModel.MaxFileMb MB</span>
+                    </span>
+                    <span class="dmsu-file__change" id="dmsuFileChange" hidden>Change</span>
+                </label>
+                <div class="inv-field__hint" hidden></div>
+            </div>
+
+            <div class="callout callout--sm dmsu-notice" id="dmsuNotice" hidden></div>
+
+            <div class="dmsu-actions">
+                <button type="button" class="btn btn-secondary btn-sm" id="dmsuClear">Clear</button>
+                <button type="submit" class="btn btn-primary btn-sm">Upload</button>
+            </div>
+        </form>
+
+        <section class="dmsu-card dmsu-done" id="dmsuDone" tabindex="-1" hidden aria-live="polite">
+            <div class="dmsu-done__mark" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.2 4.2L19 7"></path></svg>
+            </div>
+            <h2 class="dmsu-title">Uploaded</h2>
+            <p class="dmsu-subtitle" id="dmsuDoneText"></p>
+            <dl class="dms-facts dmsu-done__facts" id="dmsuDoneFacts"></dl>
+            <p class="dmsu-proto">Prototype: nothing is sent or stored, so View documents does not list this upload.</p>
+            <div class="dmsu-actions dmsu-actions--start">
+                <button type="button" class="btn btn-primary btn-sm" id="dmsuAgain">Upload another</button>
+                <a class="btn btn-secondary btn-sm" id="dmsuView" asp-page="/Apps/DmsExplorer/Index">View documents</a>
+            </div>
+        </section>
+
+        <aside class="dmsu-card dmsu-aside" aria-label="How it will be filed">
+            <div class="section-label">Files as</div>
+            <div class="dmsu-preview" id="dmsuPreview"></div>
+            <dl class="dms-facts">
+                <dt>Class</dt><dd id="dmsuClass">KYC</dd>
+                <dt>Type</dt><dd id="dmsuType">&mdash;</dd>
+                <dt>Holder type</dt><dd id="dmsuHolderOut">&mdash;</dd>
+                <dt>Version</dt><dd id="dmsuVersion">&mdash;</dd>
+            </dl>
+            <p class="dms-viewer__note">The name is built from the control number, the holder code (00 when the document is not a holder's), the document type and today's date. After upload it waits in the sync queue until DMS takes it.</p>
+        </aside>
+    </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script type="application/json" id="dmsuFiled">@Html.Raw(JsonSerializer.Serialize(Model.Filed, new JsonSerializerOptions(JsonSerializerDefaults.Web)))</script>
+
+@section Scripts {
+    <script src="~/js/dms-upload.js" asp-append-version="true"></script>
+}

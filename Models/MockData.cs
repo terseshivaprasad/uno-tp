@@ -95,8 +95,14 @@ public record DmsDocument(
     string? Note = null,
     string? Remark = null,
     // Versions this one replaced, oldest first. The store never drops a version.
-    List<DmsVersion>? Earlier = null
+    List<DmsVersion>? Earlier = null,
+    // What the FD upload form captured; null for KYC and Open documents.
+    DmsFdDetails? Fd = null
 );
+
+// The FD upload form's fields. Pan is held in full: the view masks it, and a lookup
+// by PAN matches it.
+public record DmsFdDetails(string FinYear, string Period, string Pan, string FolioNo, string FdrNo);
 
 // One filed version of a document. ApplicationNo is set only when it was filed
 // for an earlier application than the one the control number is now on;
@@ -107,7 +113,8 @@ public record DmsVersion(
     DateTime? InDms,
     string? DmsId,
     string? ApplicationNo = null,
-    string? ReplacedBecause = null
+    string? ReplacedBecause = null,
+    DmsFdDetails? Fd = null
 );
 
 public record DmsFiling(string ControlNo, string ApplicationNo, string FiledBy, List<DmsDocument> Documents);
@@ -225,6 +232,10 @@ public static class MockData
         static DateTime At(int day, int hour, int minute) => new(2026, 9, day, hour, minute, 0);
         static DateTime In2025(int hour, int minute) => new(2025, 3, 12, hour, minute, 0);
         const string Earlier = "FBBMFL25C12RT7";
+        // The investor's folio (as the consent register has it) holds both deposits;
+        // each deposit has its own receipt, period and financial year.
+        const string Folio = "MF0051187", InvestorPan = "ABCPT1234D", Joint1Pan = "BCDPT5678E";
+        const string Fdr2025 = "250312007", Fdr2026 = "260914012", Period2025 = "12 months", Period2026 = "36 months";
         const string Investor = "Investor", Joint1 = "Joint holder 1", Joint2 = "Joint holder 2", Shared = "Not holder-specific";
 
         return new()
@@ -240,7 +251,8 @@ public static class MockData
             new(Joint1, "Identity proof · PAN", DmsClass.Kyc, "123456_02_PAN__13092026.tif", At(13, 18, 16), null, null, Ref: "BCDPT••••E", Remark: "Awaiting DMS · 2 h"),
             new(Joint1, "Proof of address · driving licence", DmsClass.Kyc, "123456_02_DrivingLicence__14092026.jpg", At(14, 11, 41), At(14, 11, 42), "DMS-884108", Ref: "MH02••••••044", Expiry: "06/2031"),
             new(Joint1, "Photograph", DmsClass.Kyc, "123456_02_Photograph__13092026.jpg", At(13, 18, 16), At(13, 18, 17), "DMS-883915"),
-            new(Joint1, "Tax declaration · Form 15G", DmsClass.Fd, "123456_02_Form15G__14092026.pdf", At(14, 12, 20), At(14, 12, 21), "DMS-884122", Expiry: "31/03/2027"),
+            new(Joint1, "Tax declaration · Form 15G", DmsClass.Fd, "123456_02_Form15G__14092026.pdf", At(14, 12, 20), At(14, 12, 21), "DMS-884122", Expiry: "31/03/2027",
+                Fd: new("2026-27", Period2026, Joint1Pan, Folio, Fdr2026)),
 
             new(Joint2, "Identity proof · PAN", DmsClass.Kyc, "123456_03_PAN__13092026.tif", At(13, 18, 17), At(13, 18, 18), "DMS-883914", Ref: "CDEPN••••F"),
             new(Joint2, "Proof of address · Aadhaar", DmsClass.Kyc, "123456_03_AadharCard__14092026.jpg", At(14, 11, 36), At(14, 11, 37), "DMS-884120", Ref: "••••2290",
@@ -248,14 +260,21 @@ public static class MockData
                 Earlier: new() { new("123456_03_AadharCard__13092026.jpg", At(13, 18, 17), At(13, 18, 18), "DMS-883913", ReplacedBecause: "address side cropped") }),
             new(Joint2, "Photograph", DmsClass.Kyc, "123456_03_Photograph__13092026.jpg", At(13, 18, 18), At(13, 18, 19), "DMS-883916"),
 
-            new(Shared, "Payment instrument · cheque", DmsClass.Fd, "123456_00_Cheque__14092026.jpg", At(14, 12, 2), At(14, 12, 3), "DMS-884130", Ref: "004512",
+            new(Shared, "Payment instrument · cheque", DmsClass.Fd, "123456_00_Cheque__14092026.jpg", At(14, 12, 2), At(14, 12, 3), "DMS-884130", Ref: "004512", Fd: new("2026-27", Period2026, InvestorPan, Folio, Fdr2026),
                 Earlier: new()
                 {
-                    new("123456_00_Cheque__12032025.jpg", In2025(10, 31), In2025(10, 32), "DMS-612052", Earlier, "cheque for the new deposit"),
-                    new("123456_00_Cheque__13092026.jpg", At(13, 18, 20), At(13, 18, 21), "DMS-883918", ReplacedBecause: "cheque date overwritten · Operations asked for a fresh scan"),
+                    new("123456_00_Cheque__12032025.jpg", In2025(10, 31), In2025(10, 32), "DMS-612052", Earlier, "cheque for the new deposit",
+                        new("2024-25", Period2025, InvestorPan, Folio, Fdr2025)),
+                    new("123456_00_Cheque__13092026.jpg", At(13, 18, 20), At(13, 18, 21), "DMS-883918", ReplacedBecause: "cheque date overwritten · Operations asked for a fresh scan",
+                        Fd: new("2026-27", Period2026, InvestorPan, Folio, Fdr2026)),
                 }),
             new(Shared, "Application form · signed", DmsClass.Fd, "123456_00_FDForm__14092026.pdf", At(14, 16, 58), At(14, 16, 59), "DMS-884144",
-                Earlier: new() { new("123456_00_FDForm__12032025.pdf", In2025(10, 40), In2025(10, 41), "DMS-612058", Earlier, "form for the new application") }),
+                Fd: new("2026-27", Period2026, InvestorPan, Folio, Fdr2026),
+                Earlier: new()
+                {
+                    new("123456_00_FDForm__12032025.pdf", In2025(10, 40), In2025(10, 41), "DMS-612058", Earlier, "form for the new application",
+                        new("2024-25", Period2025, InvestorPan, Folio, Fdr2025)),
+                }),
             new(Shared, "Letter of authority", DmsClass.Open, "123456_00_Authority Letter__14092026.pdf", At(14, 17, 4), At(14, 17, 5), "DMS-884151",
                 Note: "typed type · open class", Remark: "Filed at broker request"),
         };

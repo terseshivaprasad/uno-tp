@@ -9,6 +9,18 @@
     toastTimer = setTimeout(function () { toastEl.classList.remove('toast--visible'); }, 2600);
   }
 
+  // The lookup box describes the number the chosen key expects.
+  var byEl = document.getElementById('dmsBy');
+  var noEl = document.getElementById('dmsNo');
+  if (byEl && noEl) {
+    byEl.addEventListener('change', function () {
+      var option = byEl.options[byEl.selectedIndex];
+      noEl.placeholder = option.getAttribute('data-placeholder');
+      noEl.setAttribute('aria-label', option.textContent);
+      noEl.focus();
+    });
+  }
+
   // The other tabs and Download all belong to boards that are not built yet.
   document.querySelectorAll('.js-dms-stub').forEach(function (btn) {
     btn.addEventListener('click', function () { showToast(btn.getAttribute('data-stub')); });
@@ -105,6 +117,16 @@
     extEl.textContent = v.file.split('.').pop().toUpperCase();
     supersededEl.hidden = v.current;
     openCurrentBtn.hidden = v.current;
+    var factsEl = document.getElementById('dmsFacts');
+    factsEl.innerHTML = '';
+    v.facts.forEach(function (f) {
+      var dt = document.createElement('dt');
+      var dd = document.createElement('dd');
+      dt.textContent = f.label;
+      dd.textContent = f.value;
+      factsEl.appendChild(dt);
+      factsEl.appendChild(dd);
+    });
     viewer.querySelectorAll('[data-field]').forEach(function (el) {
       el.textContent = v[el.getAttribute('data-field')];
     });
@@ -144,8 +166,9 @@
 
     scopeEl.hidden = scope === null;
     if (scope !== null) {
-      var v = versions[currentKeyOf(scope)];
-      scopeNameEl.textContent = v.holder + ' · ' + v.type;
+      var row = panels.current.querySelector('.dms-row[data-doc="' + scope + '"]');
+      scopeNameEl.textContent = row.closest('.dms-group').querySelector('[role="rowheader"]').textContent
+        + ' · ' + row.querySelector('.dms-doc').textContent;
     }
 
     var rows = openable();

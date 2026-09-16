@@ -1,0 +1,7 @@
+@model string
+@* The DMS Explorer tab strip. The model names the active tab: "view" or "upload". *@
+<nav class="dms-tabs" aria-label="DMS Explorer">
+    <a class="dms-tab@(Model == "view" ? " dms-tab--active" : "")" asp-page="/Apps/DmsExplorer/Index" aria-current="@(Model == "view" ? "page" : null)">View documents</a>
+    <a class="dms-tab@(Model == "upload" ? " dms-tab--active" : "")" asp-page="/Apps/DmsExplorer/Upload" aria-current="@(Model == "upload" ? "page" : null)">Upload documents</a>
+    <button type="button" class="dms-tab btn-reset js-dms-stub" data-stub="The sync queue opens its own board — not built yet.">Sync queue <span class="dms-tab__badge">1</span></button>
+</nav>
