@@ -9,6 +9,9 @@ builder.Services.AddRazorPages();
 
 var app = builder.Build();
 
+var staticFileTypeProvider = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider();
+staticFileTypeProvider.Mappings[".drawio"] = "application/octet-stream";
+
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
@@ -21,7 +24,10 @@ if (!app.Environment.IsDevelopment())
 
 app.UseRouting();
 
-app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    ContentTypeProvider = staticFileTypeProvider
+});
 
 app.UseAuthorization();
 
