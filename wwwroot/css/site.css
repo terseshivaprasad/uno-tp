@@ -678,6 +678,39 @@ select.inv-control:has(option[value=""]:checked) { color: var(--muted-2); }
   .inv-ckyc__photo { width: 64px; height: 64px; }
 }
 
+/* ===== Bank Details & Payment (09) =====
+   Builds on the 08 inv-* controls. The board spaces its field grid at 20px and
+   reads the IFSC lookup back in a four-across panel. */
+.bank-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 20px; }
+.bank-lookup {
+  background: #FAFBFC; border: 1px solid #F2F4F7; border-radius: 6px; padding: 13px 16px;
+  display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 14px 24px;
+}
+.bank-lookup[hidden] { display: none; }
+
+.bank-verified { display: flex; align-items: flex-start; gap: 12px; background: #E7F5EC; border-radius: 6px; padding: 13px 15px; color: var(--green); }
+.bank-verified__tick { font-size: 13px; font-weight: 700; flex: none; padding-top: 1px; }
+.bank-verified__text { flex: 1; min-width: 0; font-size: 12.5px; line-height: 1.5; }
+.bank-verified__text strong { font-weight: 600; }
+
+.bank-repayment { border-top: 1px solid var(--divider-2); padding-top: 20px; display: flex; flex-direction: column; gap: 18px; }
+.bank-repayment__head { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.bank-same { display: flex; align-items: center; gap: 10px; flex: none; cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--ink); }
+
+.bank-note {
+  border-left: 3px solid #E8A700; background: #FFFBF0; border-radius: 0 6px 6px 0; padding: 13px 15px;
+  font-size: 12.5px; color: var(--amber); line-height: 1.5;
+}
+.bank-note strong { font-weight: 700; }
+.bank-note a { color: #1084CB; font-weight: 600; }
+
+@media (max-width: 900px) {
+  .bank-grid, .bank-lookup { grid-template-columns: repeat(2, minmax(0,1fr)); }
+}
+@media (max-width: 560px) {
+  .bank-grid, .bank-lookup { grid-template-columns: 1fr; }
+}
+
 /* ===== Uno TP dashboard (Board 01) =====
    Each of the two dashboard columns spaces its cards with flex gap, so the
    .card + .card margin has to be cancelled inside them or the two stack and the
