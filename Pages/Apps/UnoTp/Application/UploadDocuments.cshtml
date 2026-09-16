@@ -7,328 +7,481 @@
     ViewData["WizardStep"] = "docs";
 }
 
-<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap">
-    <div>
-        <div class="card__title">Upload documents</div>
-        <div class="doc-progress-line" style="padding-top:6px">
-            <span>6 of 14 documents accepted &middot; <span class="text-danger">6 need attention</span></span>
-            <div class="doc-progress-bar"><div class="doc-progress-bar__fill" style="width:43%"></div></div>
-        </div>
+<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap">
+    <div style="min-width:0;flex:1">
+        <div class="card__title" style="font-size:19px;font-weight:600;color:var(--ink)">Upload documents</div>
+        <div style="font-size:11.5px;color:var(--muted);padding-top:5px;line-height:1.5">Consent complete for all three holders &middot; 6 of 14 documents accepted &middot; 6 need attention</div>
     </div>
-    <div class="doc-app-meta">
-        <span>Application No <strong>FBBMFL26F99AC1</strong></span>
-        <span class="tag tag--primary">Application type</span>
-        <span class="tag tag--danger">Offline</span>
-        <span class="tag" style="background:var(--ink);color:#fff">Digital</span>
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;flex:none">
+        <div style="font-size:11.5px;color:var(--muted)">Application No: <strong style="color:var(--ink)">FBBMFL26F99AAC1</strong></div>
+        <div style="font-size:11.5px;color:var(--muted)">Application type</div>
+        <div class="seg-toggle">
+            <button type="button" class="seg-toggle__opt seg-toggle__opt--active">Offline</button>
+            <button type="button" class="seg-toggle__opt">Digital</button>
+        </div>
     </div>
 </div>
 
 <div>
     <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
-        <div class="section-label">Application details</div>
-        <div class="card__subtitle">captured once for the application &mdash; these answers decide which documents are requested below</div>
+        <div style="font-size:14.5px;font-weight:700;color:var(--ink)">Application details</div>
+        <div class="card__subtitle">captured once for the application &mdash; these answers decide which documents are required below</div>
     </div>
-    <div class="form-grid" style="padding-top:12px">
+    <div class="form-grid" style="padding-top:14px">
         <div class="field"><label>Payment Mode <span class="required">*</span></label><select><option>Cheque</option><option>NEFT/RTGS</option></select></div>
         <div class="field"><label>Sourcing Mode <span class="required">*</span></label><select><option>MFL-EX</option></select></div>
-        <div class="field"><label>Sourcing Employee Code <span class="required">*</span></label><input value="MFL-EX" readonly style="background:#F7F8FA" /></div>
+        <div class="field"><label>Sourcing Employee Code <span class="required">*</span></label><input value="MFL-EX" /></div>
     </div>
     <div class="form-grid" style="padding-top:16px">
         <div class="field"><label>Deposit Category <span class="required">*</span></label><select><option>EMPLOYEE</option><option>INDIVIDUAL</option></select></div>
-        <div class="field"><label>Broker Code</label><input value="100002225" readonly style="background:#F7F8FA" /></div>
+        <div class="field"><label>Broker Code <span class="required">*</span></label><input value="100002225" /></div>
         <div class="field"><label>Physical Application Form No. <span class="required">*</span></label><input value="PAF-2290417" /></div>
     </div>
 </div>
 
 <div>
     <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
-        <div class="section-label">Employee deposit details</div>
-        <span class="chip chip--muted">EMPLOYEE only</span>
-        <div class="card__subtitle">proof type is set on the employee deposit row &mdash; type belongs to the document</div>
+        <div style="font-size:13.5px;font-weight:700;color:var(--ink)">Employee deposit details</div>
+        <span class="chip chip--primary">EMPLOYEE only</span>
+        <div class="card__subtitle">Proof type is set on the employee proof row below &mdash; type always belongs to the document.</div>
     </div>
-    <div class="form-grid" style="padding-top:12px">
+    <div class="form-grid" style="padding-top:14px">
         <div class="field"><label>Employee Code <span class="required">*</span></label><input value="EMP-44119" /></div>
         <div class="field"><label>Employee Company Name <span class="required">*</span></label><input value="Mahindra &amp; Mahindra Fin." /></div>
         <div class="field"><label>Employee holder <span class="required">*</span></label><select><option>Holder 1</option><option>Holder 2</option><option>Holder 3</option></select></div>
     </div>
-    <div style="font-size:11px;color:var(--muted);padding-top:8px">Employee Name &mdash; <span style="color:var(--red);font-weight:600">S. Terse</span></div>
-    <div class="form-grid form-grid--2" style="padding-top:12px;max-width:600px">
+    <div style="font-size:11px;color:var(--blue);padding-top:8px">Employee Name &mdash; <span style="font-weight:600">S. Terse</span></div>
+    <div class="form-grid" style="padding-top:14px">
         <div class="field"><label>Emp Relation with holder <span class="required">*</span></label><select><option>Self</option><option>Spouse</option><option>Parent</option></select></div>
     </div>
 </div>
 
-<div class="callout">
-    <span style="font-weight:700;color:var(--red-dark)">Verification is mandatory for every proof of address.</span>
-    <span style="font-size:12.5px;line-height:1.55">A POA is accepted only when its OCR values match the verify-with-source response &mdash; name, date of birth, gender, parent or spouse name, address, reference number and expiry date. Until every holder&rsquo;s POA is verified, the document stays rejected and the application cannot proceed.</span>
+<div class="callout callout--mint">
+    <div style="font-size:11.5px;line-height:1.6">
+        <span class="text-danger">Verification is mandatory for every proof of address.</span>
+        <span style="color:var(--text)">A POA is accepted only when its OCR values match the verify-with-source response on all fields &mdash; name, date of birth, gender, parent or spouse name, address, reference number and expiry date. Until every holder&rsquo;s POA is verified, the document stays rejected and the application cannot proceed.</span>
+    </div>
 </div>
 
 <div>
-    <div class="section-label">What is holding this application</div>
-    <div class="holding-list" style="padding-top:8px">
+    <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;padding-bottom:6px">
+        <div style="font-size:14.5px;font-weight:600;color:var(--ink)">What is holding this application</div>
+        <div class="card__subtitle">6 items across holders 1 and 3 &middot; every one has to clear before Proceed opens</div>
+    </div>
+    <div class="holding-list">
         <div class="holding-row">
             <div class="holding-row__holder">Holder 1</div>
             <div class="holding-row__reason"><strong>Proof of address</strong> &mdash; file no longer matches the selected type</div>
-            <div class="holding-row__go">Go to document &rsaquo;</div>
+            <div class="holding-row__go">Go to document</div>
         </div>
         <div class="holding-row">
             <div class="holding-row__holder">Holder 1</div>
             <div class="holding-row__reason"><strong>Proof of address &middot; mailing address</strong> &mdash; mandatory because &ldquo;mailing address differs&rdquo; is answered Yes for this holder</div>
-            <div class="holding-row__go">Go to document &rsaquo;</div>
+            <div class="holding-row__go">Go to document</div>
         </div>
         <div class="holding-row">
             <div class="holding-row__holder">Holder 1</div>
             <div class="holding-row__reason"><strong>Investor&rsquo;s photograph</strong> &mdash; not uploaded</div>
-            <div class="holding-row__go">Go to document &rsaquo;</div>
+            <div class="holding-row__go">Go to document</div>
         </div>
         <div class="holding-row">
             <div class="holding-row__holder">Holder 1</div>
             <div class="holding-row__reason"><strong>Employee proof</strong> &mdash; proof type not selected, so upload is closed</div>
-            <div class="holding-row__go">Go to document &rsaquo;</div>
+            <div class="holding-row__go">Go to document</div>
         </div>
         <div class="holding-row">
             <div class="holding-row__holder">Holder 3</div>
             <div class="holding-row__reason"><strong>Disability certificate</strong> &mdash; mandatory because &ldquo;person with disability&rdquo; is answered Yes for this holder</div>
-            <div class="holding-row__go">Go to document &rsaquo;</div>
+            <div class="holding-row__go">Go to document</div>
         </div>
         <div class="holding-row">
             <div class="holding-row__holder">Holder 3</div>
-            <div class="holding-row__reason"><strong>PAN card</strong> &mdash; upload rejected, image unreadable</div>
-            <div class="holding-row__go">Go to document &rsaquo;</div>
+            <div class="holding-row__reason"><strong>PAN card</strong> &mdash; upload rejected &mdash; image unreadable</div>
+            <div class="holding-row__go">Go to document</div>
         </div>
     </div>
 </div>
 
-<div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
-    <div class="card__title">Documents by holder</div>
-    <div class="card__subtitle">each row states why the document is asked for, what the system read from it, and what to do when a check fails</div>
-</div>
-<div class="doc-legend">
-    <span class="doc-legend__item"><span class="doc-status doc-status--accepted">&#10003;</span> accepted</span>
-    <span class="doc-legend__item"><span class="doc-status doc-status--attention">!</span> needs attention</span>
-    <span class="doc-legend__item"><span class="doc-status doc-status--outstanding"></span> outstanding</span>
-    <span style="margin-left:auto">checks run per document &mdash; identification (what it is), extraction (what it says), verification (does it agree with the record)</span>
+<div>
+    <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;padding-bottom:8px">
+        <div style="font-size:14.5px;font-weight:600;color:var(--ink)">Documents by holder</div>
+        <div class="card__subtitle">each row states why the document is asked for, what the system read from it, and what to do when a check fails</div>
+    </div>
+    <div class="doc-legend">
+        <span class="doc-legend__item"><span class="text-green" style="font-weight:700">&#10003;</span> accepted</span>
+        <span class="doc-legend__item"><span class="doc-status doc-status--attention">!</span> needs attention</span>
+        <span class="doc-legend__item"><span class="doc-status doc-status--outstanding"></span> outstanding</span>
+        <span style="margin-left:auto">Checks run per document &mdash; <strong>identification</strong> (what it is) &middot; <strong>extraction</strong> (what it says) &middot; <strong>verification</strong> (does it agree with the record)</span>
+    </div>
 </div>
 
 <form method="post" id="uploadDocsForm">
 
+@* ── Holder 1 ─────────────────────────────────────────────────────────── *@
 <div class="holder-block">
     <div class="holder-block__head">
         <div class="holder-num holder-num--current holder-num--sm">1</div>
-        <div class="holder-block__title">Holder 1 &middot; R&bull;&bull;&bull;&bull;&bull;&bull; T&bull;&bull;&bull;&bull;&bull; <span class="tag tag--primary">Primary</span></div>
-        <div class="holder-block__meta">
-            <span class="chip chip--danger">3 of 7 accepted</span>
-            <span class="text-green" style="font-size:11.5px;font-weight:700">&#10003; CKYC at application completion</span>
+        <div style="min-width:0;flex:1">
+            <div class="holder-block__title">Holder 1 &middot; R&bull;&bull;&bull;&bull;&bull;&bull; T&bull;&bull;&bull;&bull;&bull; <span class="chip chip--primary">Primary</span></div>
+            <div style="font-size:10.5px;color:var(--muted);padding-top:3px">PAN BISPM4465N &middot; 7 documents required &mdash; mailing address differs &middot; 3 outstanding, 1 rejected</div>
         </div>
+        <div class="holder-accept">
+            <div class="holder-accept__count text-danger">3 of 7 accepted</div>
+            <div class="holder-accept__bar" style="background:var(--red)"></div>
+        </div>
+        <div class="text-green" style="font-size:11px;font-weight:600;flex:none">&#10003; CKYC at application completion</div>
     </div>
-    <div class="holder-block__hint">Both answers are required and neither is pre-selected &mdash; the broker chooses them. Answering Yes to either adds a proof of address or a disability certificate to this holder&rsquo;s documents below.</div>
 
     <div class="holder-toggles">
-        <div class="section-label">Set for this holder</div>
-        <div class="holder-toggle-row">
-            <div class="holder-toggle-row__label">Mailing address differs from permanent? <span class="required">*</span></div>
-            <div class="seg-toggle"><button type="button" class="seg-toggle__opt seg-toggle__opt--active">Yes</button><button type="button" class="seg-toggle__opt">No</button></div>
-            <div class="holder-toggle-row__label">Person with disability? <span class="required">*</span></div>
-            <div class="seg-toggle"><button type="button" class="seg-toggle__opt">Yes</button><button type="button" class="seg-toggle__opt seg-toggle__opt--active">No</button></div>
+        <div class="section-label" style="flex:none">Set for this holder</div>
+        <div class="holder-toggle">
+            <span class="holder-toggle__label">Mailing address differs from permanent <span class="required">*</span></span>
+            <div class="seg-toggle seg-toggle--sm"><button type="button" class="seg-toggle__opt seg-toggle__opt--active">Yes</button><button type="button" class="seg-toggle__opt">No</button></div>
         </div>
+        <div class="holder-toggle">
+            <span class="holder-toggle__label">Person with disability <span class="required">*</span></span>
+            <div class="seg-toggle seg-toggle--sm"><button type="button" class="seg-toggle__opt">Yes</button><button type="button" class="seg-toggle__opt seg-toggle__opt--active">No</button></div>
+        </div>
+        <div class="holder-toggles__note">Both answers are required and neither is pre-selected &mdash; the broker answers them. Answered Yes to a differing mailing address, so a second proof of address is mandatory below.</div>
     </div>
 
-    <div class="doc-card">
-        <div class="doc-card__head">
-            <div class="doc-card__title"><span class="doc-status doc-status--accepted">&#10003;</span> Application form</div>
-            <button type="button" class="btn btn-secondary btn-sm">Replace</button>
+    <div>
+        <div class="doc-grid-row doc-grid-row--head">
+            <div>Document &amp; why it is asked</div><div>Type</div><div>What the system read</div><div></div>
         </div>
-        <div class="doc-card__hint">Mandatory &mdash; physical form signed by the holder</div>
-        <div class="doc-card__body"><div class="field-hint">fd-application-holder1.pdf &middot; 4 pages &middot; stored as-is</div></div>
-    </div>
 
-    <div class="doc-card">
-        <div class="doc-card__head">
-            <div class="doc-card__title"><span class="doc-status doc-status--accepted">&#10003;</span> PAN card</div>
-            <button type="button" class="btn btn-secondary btn-sm">Replace</button>
+        <div class="doc-grid-row">
+            <div>
+            <div class="doc-grid-row__title"><span class="text-green">&#10003;</span> Application form</div>
+            <div class="doc-grid-row__why">Mandatory &middot; physical form signed by the holder</div>
+            </div>
+            <div class="doc-grid-row__type text-muted" style="font-size:10.5px">Not typed</div>
+            <div class="doc-grid-row__read">
+                <span class="doc-grid-row__file">fd-application-holder1.pdf</span>
+                <span>4 pages &middot; 1.8 MB &middot; uploaded 11:26</span>
+                <span class="text-muted">&ndash; stored as-is &ndash; no extraction</span>
+            </div>
+            <button type="button" class="doc-grid-row__action">Replace</button>
         </div>
-        <div class="doc-card__hint">Mandatory for every holder &mdash; identity proof</div>
-        <div class="doc-card__body">
-            <div class="field-hint">pan-bispm4465n.pdf &middot; 1.1 MB &middot; uploaded 11:24</div>
-            <div class="field-hint">5 fields extracted &middot; matched to record</div>
-        </div>
-    </div>
 
-    <div class="doc-card">
-        <div class="doc-card__head">
-            <div class="doc-card__title doc-card__title--attention"><span class="doc-status doc-status--attention">!</span> Proof of address</div>
-            <button type="button" class="btn btn-secondary btn-sm">Re-upload</button>
+        <div class="doc-grid-row">
+            <div>
+            <div class="doc-grid-row__title"><span class="text-green">&#10003;</span> PAN card</div>
+            <div class="doc-grid-row__why">Mandatory for every holder &middot; identity proof</div>
+            </div>
+            <div class="doc-grid-row__type text-muted" style="font-size:10.5px">Not typed</div>
+            <div class="doc-grid-row__read">
+                <span class="doc-grid-row__file">pan-bispm4465n.jpg</span>
+                <span>JPG &middot; 480 KB &middot; uploaded 11:29</span>
+                <span>PAN <strong>BISPM4465N</strong> &nbsp; Name R&bull;&bull;&bull;&bull;&bull;&bull; T&bull;&bull;&bull;&bull;&bull; &nbsp; DOB <strong>10/06/1992</strong></span>
+                <span class="text-green">&#10003; identified as PAN &nbsp; &#10003; 3 fields extracted &nbsp; &#10003; matched to record</span>
+            </div>
+            <button type="button" class="doc-grid-row__action">Replace</button>
         </div>
-        <div class="doc-card__hint">Mandatory &mdash; OCR name, DOB, gender, parent/spouse, address, reference number and expiry date are cross-checked with the verify-with-source response &mdash; not accepted until verification passes</div>
-        <div class="doc-card__body">
-            <div class="field"><label>Type</label><select style="max-width:220px"><option>Passport</option><option>Aadhaar</option><option>Driving licence</option><option>Voter ID</option></select></div>
-            <div class="field-hint">poa-mahesh-modified.pdf &middot; 1.3 MB &middot; uploaded 12:34</div>
-            <table class="data-table">
-                <thead><tr><th></th><th>OCR read</th><th>Verify with source</th><th></th></tr></thead>
-                <tbody>
-                    <tr><td class="text-muted" style="font-weight:600">Name</td><td>R&bull;&bull;&bull;&bull;&bull;&bull; T&bull;&bull;&bull;&bull;&bull;</td><td>R&bull;&bull;&bull;&bull;&bull;&bull; T&bull;&bull;&bull;&bull;&bull;</td><td class="text-green">&#10003;</td></tr>
-                    <tr><td class="text-muted" style="font-weight:600">DOB</td><td>1990-06-10</td><td>1990-06-10</td><td class="text-green">&#10003;</td></tr>
-                    <tr><td class="text-muted" style="font-weight:600">Gender</td><td>Female</td><td>Female</td><td class="text-green">&#10003;</td></tr>
-                    <tr><td class="text-muted" style="font-weight:600">Address</td><td>Nashik 422009</td><td>Pune 411045</td><td class="text-danger">&#10007;</td></tr>
-                    <tr><td class="text-muted" style="font-weight:600">Ref no</td><td colspan="2" class="text-muted">not returned</td><td></td></tr>
-                    <tr><td class="text-muted" style="font-weight:600">Expiry</td><td colspan="2" class="text-muted">not returned</td><td></td></tr>
-                </tbody>
-            </table>
-            <div class="callout callout--sm">
-                <span class="text-danger">&#10007; File does not match the selected type, and the verification does not agree with source.</span> Type on file was Aadhaar &mdash; the cross-check against the verify-with-source response no longer holds, and the address OCR read Nashik 422009 against Pune 411045 on record.
-                <span class="text-danger">What to do &mdash; upload the passport pages, or set the type back to Aadhaar and correct the address.</span>
+
+        <div class="doc-grid-row">
+            <div>
+            <div class="doc-grid-row__title doc-grid-row__title--attention"><span class="doc-status doc-status--attention">!</span> Proof of address</div>
+            <div class="doc-grid-row__why">Mandatory &middot; OCR name, DOB, gender, parent/spouse name, address, reference number and expiry date are cross-checked with the verify-with-source response &middot; <span style="font-weight:600">not accepted until verification passes</span></div>
+            </div>
+            <div class="doc-grid-row__type">
+                <div class="field"><select><option>Passport</option><option>Aadhaar</option><option>Driving licence</option><option>Voter ID</option></select></div>
+                <div class="doc-grid-row__typenote">changed from Aadhaar</div>
+            </div>
+            <div class="doc-grid-row__read">
+                <span class="doc-grid-row__file doc-grid-row__file--rejected">poa-aadhaar-masked.jpg</span>
+                <span>JPG &middot; 1.2 MB &middot; uploaded 11:34</span>
+                <table class="ocr-table" style="margin-top:4px">
+                    <thead><tr><th></th><th>OCR read</th><th>Verify with source</th><th></th></tr></thead>
+                    <tbody>
+                        <tr><td>Name</td><td>R&bull;&bull;&bull;&bull;&bull;&bull; T&bull;&bull;&bull;&bull;&bull;</td><td>R&bull;&bull;&bull;&bull;&bull;&bull; T&bull;&bull;&bull;&bull;&bull;</td><td class="text-green">&#10003;</td></tr>
+                        <tr><td>DOB</td><td>1992-06-10</td><td>1992-06-10</td><td class="text-green">&#10003;</td></tr>
+                        <tr><td>Gender</td><td class="text-muted">not read</td><td>Male</td><td class="text-amber">!</td></tr>
+                        <tr><td>Parent</td><td class="text-muted">not read</td><td>S&bull;&bull;&bull;&bull;&bull; T&bull;&bull;&bull;&bull;</td><td class="text-amber">!</td></tr>
+                        <tr><td>Address</td><td>Nashik 422009</td><td class="text-danger">Pune 411045</td><td class="text-danger">&#10007;</td></tr>
+                        <tr><td>Ref no</td><td class="text-muted">&mdash;</td><td class="text-muted">not returned</td><td class="text-muted">&ndash;</td></tr>
+                        <tr><td>Expiry</td><td class="text-muted">&mdash;</td><td class="text-muted">not returned</td><td class="text-muted">&ndash;</td></tr>
+                    </tbody>
+                </table>
+                <span class="text-amber" style="padding-top:3px">! gender and parent name not extracted</span>
+                <span class="text-danger">&#10007; address does not match source &nbsp; &#10007; type no longer matches</span>
+            </div>
+            <button type="button" class="doc-grid-row__action">Re-upload</button>
+            <div class="doc-grid-row__panel">
+                <div class="callout callout--mint callout--sm">
+                    <span><span class="text-danger">&#10007; File does not match the selected type, and the address does not match source.</span> The stored file was read as an Aadhaar card while the type is now Passport, so the cross-check against the verify-with-source response (name, DOB, gender, address, POA expiry date) no longer holds &mdash; and the address OCR read, Nashik 422009, differs from the source address, Pune 411045. Gender and the parent name were not extracted at all &mdash; they are typed on Investor Information (08).</span>
+                    <span class="text-danger">What to do &mdash; upload the passport pages, or set the type back to Aadhaar and correct the address</span>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div class="doc-card">
-        <div class="doc-card__head">
-            <div class="doc-card__title doc-card__title--attention"><span class="doc-status doc-status--attention">!</span> Investor&rsquo;s photograph</div>
-            <button type="button" class="btn btn-primary btn-sm">Upload</button>
+        <div class="doc-grid-row">
+            <div>
+            <div class="doc-grid-row__title"><span class="doc-status doc-status--outstanding"></span> Investor&rsquo;s photograph</div>
+            <div class="doc-grid-row__why">Mandatory &middot; face must match the PAN card and proof of address photographs</div>
+            </div>
+            <div class="doc-grid-row__type text-muted" style="font-size:10.5px">Not typed</div>
+            <div class="doc-grid-row__read">
+                <span>Not uploaded</span>
+                <span class="text-muted">JPG/JPEG &middot; max 2 MB &middot; face unobstructed</span>
+                <span class="text-danger">Face match against the PAN card and proof of address runs on upload &mdash; both must pass</span>
+            </div>
+            <button type="button" class="doc-grid-row__action">Upload</button>
         </div>
-        <div class="doc-card__hint">Mandatory &mdash; face must match the PAN and proof of address photographs</div>
-        <div class="doc-card__body"><div class="field-hint">Not uploaded</div></div>
-    </div>
 
-    <div class="doc-card">
-        <div class="doc-card__head">
-            <div class="doc-card__title"><span class="doc-status doc-status--accepted">&#10003;</span> Payment cheque copy</div>
-            <button type="button" class="btn btn-secondary btn-sm">Replace</button>
+        <div class="doc-grid-row">
+            <div>
+            <div class="doc-grid-row__title"><span class="text-green">&#10003;</span> Payment cheque copy</div>
+            <div class="doc-grid-row__why">Asked because Payment Mode is <span style="font-weight:600">Cheque</span></div>
+            </div>
+            <div class="doc-grid-row__type text-muted" style="font-size:10.5px">Not typed</div>
+            <div class="doc-grid-row__read">
+                <span class="doc-grid-row__file">cheque-hdfc-4471.jpg</span>
+                <span>JPG &middot; 640 KB &middot; uploaded 11:36</span>
+                <span>A/c <strong>50100&bull;&bull;&bull;4471</strong> &nbsp; IFSC <strong>HDFC0000521</strong></span>
+                <span>Name on cheque <strong>matches</strong></span>
+                <span class="text-green">&#10003; extracted &nbsp; &#10003; matched payout account</span>
+            </div>
+            <button type="button" class="doc-grid-row__action">Replace</button>
         </div>
-        <div class="doc-card__hint">Asked because Payment Mode is Cheque</div>
-        <div class="doc-card__body">
-            <div class="field-hint">cheque-hdfc-4471.jpg &middot; 640 KB &middot; uploaded 12:38</div>
-            <div class="field-hint">A/c 50100&bull;&bull;&bull;&bull;4471 &middot; IFSC HDFC0000521 &middot; extracted &amp; matched to payout account</div>
-        </div>
-    </div>
 
-    <div class="doc-card">
-        <div class="doc-card__head">
-            <div class="doc-card__title doc-card__title--muted"><span class="doc-status doc-status--outstanding"></span> Employee proof</div>
-            <button type="button" class="btn btn-primary btn-sm">Upload</button>
-        </div>
-        <div class="doc-card__hint">Asked because Deposit Category is EMPLOYEE</div>
-        <div class="doc-card__body">
-            <div class="field"><label>Type</label><select style="max-width:220px"><option selected disabled>Select type</option><option>Appointment letter</option><option>Employee ID card</option><option>Payslip</option></select></div>
-            <div class="callout callout--warn callout--sm">
-                <span style="font-weight:600">! Type not selected.</span> The system needs it before the file can be read.
-                <span>What to do &mdash; pick a proof type, then upload.</span>
+        <div class="doc-grid-row">
+            <div>
+            <div class="doc-grid-row__title"><span class="doc-status doc-status--outstanding"></span> Employee proof</div>
+            <div class="doc-grid-row__why">Asked because Deposit Category is <span style="font-weight:600">EMPLOYEE</span></div>
+            </div>
+            <div class="doc-grid-row__type">
+                <div class="field"><select style="border-color:var(--red)"><option selected disabled>Select type</option><option>Appointment letter</option><option>Employee ID card</option><option>Payslip</option></select></div>
+            </div>
+            <div class="doc-grid-row__read">
+                <span>Upload opens once a type is chosen</span>
+                <span class="text-muted">Appointment letter, ID card or payslip</span>
+            </div>
+            <button type="button" class="doc-grid-row__action">Upload</button>
+            <div class="doc-grid-row__panel">
+                <div class="callout callout--warn callout--sm">
+                    <span><span style="font-weight:700">! Type not selected.</span> The system needs the proof type before it can read the document &mdash; extraction rules differ per type.</span>
+                    <span>What to do &mdash; <span style="font-weight:600">pick a proof type, then upload</span></span>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div class="doc-card">
-        <div class="doc-card__head">
-            <div class="doc-card__title doc-card__title--muted"><span class="doc-status doc-status--outstanding"></span> Proof of address &middot; mailing address</div>
-            <button type="button" class="btn btn-primary btn-sm">Upload</button>
-        </div>
-        <div class="doc-card__hint">Mandatory &mdash; &ldquo;mailing address differs&rdquo; is answered Yes for this holder &mdash; not accepted until verification passes</div>
-        <div class="doc-card__body">
-            <div class="field"><label>Type</label><select style="max-width:220px"><option selected disabled>Select type</option><option>Utility bill</option><option>Bank statement</option><option>Rent agreement</option></select></div>
-            <div class="field-hint">valid bill, bank statement or rent agreement</div>
-            <div class="callout callout--warn callout--sm">
-                <span style="font-weight:600">Mailing address on file</span> &mdash; 14 Sai Chambers, Andheri East, Mumbai 400069
-                <span>dated within the last 3 months</span>
+        <div class="doc-grid-row">
+            <div>
+            <div class="doc-grid-row__title"><span class="doc-status doc-status--outstanding"></span> Proof of address &middot; mailing address</div>
+            <div class="doc-grid-row__why"><span class="text-danger">Mandatory &mdash; &ldquo;mailing address differs&rdquo; is answered Yes for this holder.</span> Added by the Yes answer to &ldquo;mailing address differs&rdquo; on this screen. OCR reads the document&rsquo;s reference number, expiry date and address, and the address is checked against the mailing address on file &mdash; <span style="font-weight:600">this proof is not accepted until that verification passes</span></div>
             </div>
+            <div class="doc-grid-row__type">
+                <div class="field"><select style="border-color:var(--red)"><option selected disabled>Select type</option><option>Utility bill</option><option>Bank statement</option><option>Rent agreement</option></select></div>
+                <div class="doc-grid-row__typenote">utility bill, bank statement or rent agreement</div>
+            </div>
+            <div class="doc-grid-row__read">
+                <span>Not uploaded</span>
+                <table class="ocr-table" style="margin-top:4px">
+                    <thead><tr><th></th><th>OCR read</th><th>Mailing address on file</th></tr></thead>
+                    <tbody>
+                        <tr><td>Name</td><td class="text-muted">&mdash;</td><td>R&bull;&bull;&bull;&bull;&bull;&bull; T&bull;&bull;&bull;&bull;&bull;</td></tr>
+                        <tr><td>Address</td><td class="text-muted">&mdash;</td><td>14 Sai Chambers, Andheri East, Mumbai 400069</td></tr>
+                        <tr><td>Ref no</td><td class="text-muted">&mdash;</td><td class="text-muted">read from the document</td></tr>
+                        <tr><td>Expiry</td><td class="text-muted">&mdash;</td><td class="text-muted">read from the document</td></tr>
+                        <tr><td>Dated</td><td class="text-muted">&mdash;</td><td class="text-muted">within the last 3 months</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <button type="button" class="doc-grid-row__action">Upload</button>
         </div>
     </div>
 </div>
 
+@* ── Holder 2 ─────────────────────────────────────────────────────────── *@
 <div class="holder-block holder-block--done">
     <div class="holder-block__head">
         <div class="holder-num holder-num--done holder-num--sm">&#10003;</div>
-        <div class="holder-block__title">Holder 2 &middot; S&bull;&bull;&bull;&bull; T&bull;&bull;&bull;&bull;&bull; <span class="tag tag--optional">Joint</span></div>
-        <div class="holder-block__meta"><span class="chip chip--success">3 of 3 accepted</span></div>
+        <div style="min-width:0;flex:1">
+            <div class="holder-block__title">Holder 2 &middot; S&bull;&bull;&bull;&bull; T&bull;&bull;&bull;&bull;&bull; <span class="chip chip--muted">Joint &middot; optional</span></div>
+            <div style="font-size:10.5px;color:var(--muted);padding-top:3px">PAN AXKPT8891L &middot; 3 documents required &middot; all accepted</div>
+        </div>
+        <div class="holder-accept">
+            <div class="holder-accept__count text-green">3 of 3 accepted</div>
+            <div class="holder-accept__bar" style="background:var(--green-2)"></div>
+        </div>
+        <button type="button" class="doc-grid-row__action" style="flex:none">&#128465; Remove</button>
     </div>
 
-    <div class="doc-card">
-        <div class="doc-card__head">
-            <div class="doc-card__title"><span class="doc-status doc-status--accepted">&#10003;</span> PAN card</div>
-            <button type="button" class="btn btn-secondary btn-sm">Replace</button>
+    <div class="holder-toggles">
+        <div class="section-label" style="flex:none">Set for this holder</div>
+        <div class="holder-toggle">
+            <span class="holder-toggle__label">Mailing address differs from permanent <span class="required">*</span></span>
+            <div class="seg-toggle seg-toggle--sm"><button type="button" class="seg-toggle__opt">Yes</button><button type="button" class="seg-toggle__opt seg-toggle__opt--active">No</button></div>
         </div>
-        <div class="doc-card__hint">Mandatory for every holder &mdash; identity proof</div>
-        <div class="doc-card__body"><div class="field-hint">pan-askpt8891j.jpg &middot; 1.1 MB &middot; uploaded 11:30 &middot; identified &amp; matched</div></div>
+        <div class="holder-toggle">
+            <span class="holder-toggle__label">Person with disability <span class="required">*</span></span>
+            <div class="seg-toggle seg-toggle--sm"><button type="button" class="seg-toggle__opt">Yes</button><button type="button" class="seg-toggle__opt seg-toggle__opt--active">No</button></div>
+        </div>
+        <div class="holder-toggles__note">Answered No to both, so nothing conditional is required. Senior-citizen status is not asked &mdash; it is derived from the date of birth captured at search.</div>
     </div>
 
-    <div class="doc-card">
-        <div class="doc-card__head">
-            <div class="doc-card__title"><span class="doc-status doc-status--accepted">&#10003;</span> Proof of address (Driving licence)</div>
-            <button type="button" class="btn btn-secondary btn-sm">Replace</button>
+    <div>
+        <div class="doc-grid-row doc-grid-row--head">
+            <div>Document &amp; why it is asked</div><div>Type</div><div>What the system read</div><div></div>
         </div>
-        <div class="doc-card__hint">Mandatory &mdash; OCR cross-check with source &mdash; not accepted until verification passes</div>
-        <div class="doc-card__body"><div class="field-hint">poa-dl-mh12.jpg &middot; 1.1 MB &middot; uploaded 11:41 &middot; all seven fields checked</div></div>
-    </div>
 
-    <div class="doc-card">
-        <div class="doc-card__head">
-            <div class="doc-card__title"><span class="doc-status doc-status--accepted">&#10003;</span> Investor&rsquo;s photograph</div>
-            <button type="button" class="btn btn-secondary btn-sm">Replace</button>
+        <div class="doc-grid-row">
+            <div>
+            <div class="doc-grid-row__title"><span class="text-green">&#10003;</span> PAN card</div>
+            <div class="doc-grid-row__why">Mandatory for every holder</div>
+            </div>
+            <div class="doc-grid-row__type text-muted" style="font-size:10.5px">Not typed</div>
+            <div class="doc-grid-row__read">
+                <span class="doc-grid-row__file">pan-axkpt8891l.jpg</span>
+                <span>JPG &middot; 512 KB &middot; uploaded 11:38</span>
+                <span>PAN <strong>AXKPT8891L</strong> &nbsp; DOB <strong>22/01/1990</strong></span>
+                <span class="text-green">&#10003; identified &nbsp; &#10003; extracted &nbsp; &#10003; matched</span>
+            </div>
+            <button type="button" class="doc-grid-row__action">Replace</button>
         </div>
-        <div class="doc-card__hint">Mandatory &mdash; face must match the PAN and proof of address</div>
-        <div class="doc-card__body"><div class="field-hint">photo-holder2.jpg &middot; 220 KB &middot; face match &mdash; PAN 94% &middot; POA 91%</div></div>
+
+        <div class="doc-grid-row">
+            <div>
+            <div class="doc-grid-row__title"><span class="text-green">&#10003;</span> Proof of address</div>
+            <div class="doc-grid-row__why">Mandatory &middot; OCR name, DOB, gender, parent/spouse name, address, reference number and expiry date are cross-checked with the verify-with-source response &middot; <span style="font-weight:600">not accepted until verification passes</span></div>
+            </div>
+            <div class="doc-grid-row__type">
+                <div class="field"><select><option>Driving licence</option><option>Aadhaar</option><option>Passport</option><option>Voter ID</option></select></div>
+            </div>
+            <div class="doc-grid-row__read">
+                <span class="doc-grid-row__file">poa-dl-mh12.jpg</span>
+                <span>JPG &middot; 1.1 MB &middot; uploaded 11:41</span>
+                <table class="ocr-table" style="margin-top:4px">
+                    <thead><tr><th></th><th>OCR read</th><th>Verify with source</th><th></th></tr></thead>
+                    <tbody>
+                        <tr><td>Name</td><td>S&bull;&bull;&bull;&bull; T&bull;&bull;&bull;&bull;&bull;</td><td>S&bull;&bull;&bull;&bull; T&bull;&bull;&bull;&bull;&bull;</td><td class="text-green">&#10003;</td></tr>
+                        <tr><td>DOB</td><td>1990-11-02</td><td>1990-11-02</td><td class="text-green">&#10003;</td></tr>
+                        <tr><td>Gender</td><td>Male</td><td>Male</td><td class="text-green">&#10003;</td></tr>
+                        <tr><td>Parent</td><td>R&bull;&bull;&bull;&bull;&bull; T&bull;&bull;&bull;&bull;</td><td>R&bull;&bull;&bull;&bull;&bull; T&bull;&bull;&bull;&bull;</td><td class="text-green">&#10003;</td></tr>
+                        <tr><td>Address</td><td>Pune 411045</td><td>Pune 411045</td><td class="text-green">&#10003;</td></tr>
+                        <tr><td>Ref no</td><td>MH12 2019 0034471</td><td>MH12 2019 0034471</td><td class="text-green">&#10003;</td></tr>
+                        <tr><td>Expiry</td><td>08/2031</td><td>08/2031 &middot; valid</td><td class="text-green">&#10003;</td></tr>
+                    </tbody>
+                </table>
+                <span class="text-green" style="padding-top:3px">&#10003; identified as DL &nbsp; &#10003; OCR extracted &nbsp; &#10003; all seven fields cross-checked</span>
+            </div>
+            <button type="button" class="doc-grid-row__action">Replace</button>
+        </div>
+
+        <div class="doc-grid-row">
+            <div>
+            <div class="doc-grid-row__title"><span class="text-green">&#10003;</span> Investor&rsquo;s photograph</div>
+            <div class="doc-grid-row__why">Mandatory &middot; face must match the PAN card and proof of address</div>
+            </div>
+            <div class="doc-grid-row__type text-muted" style="font-size:10.5px">Not typed</div>
+            <div class="doc-grid-row__read">
+                <span class="doc-grid-row__file">photo-holder2.jpg</span>
+                <span>JPG &middot; 220 KB &middot; uploaded 11:42</span>
+                <span class="text-green">&#10003; face match &middot; PAN 94% &nbsp; &#10003; face match &middot; POA 91%</span>
+            </div>
+            <button type="button" class="doc-grid-row__action">Replace</button>
+        </div>
     </div>
 </div>
 
+@* ── Holder 3 ─────────────────────────────────────────────────────────── *@
 <div class="holder-block">
     <div class="holder-block__head">
         <div class="holder-num holder-num--current holder-num--sm">3</div>
-        <div class="holder-block__title">Holder 3 &middot; P&bull;&bull;&bull;&bull; N&bull;&bull;&bull; <span class="tag tag--optional">Joint</span></div>
-        <div class="holder-block__meta"><span class="chip chip--danger">0 of 4 accepted</span></div>
+        <div style="min-width:0;flex:1">
+            <div class="holder-block__title">Holder 3 &middot; P&bull;&bull;&bull;&bull; N&bull;&bull;&bull; <span class="chip chip--muted">Joint &middot; optional</span></div>
+            <div style="font-size:10.5px;color:var(--muted);padding-top:3px">PAN CDEPN2290F &middot; 4 documents required &mdash; person with disability &middot; 1 rejected, 3 not uploaded</div>
+        </div>
+        <div class="holder-accept">
+            <div class="holder-accept__count text-danger">0 of 4 accepted</div>
+            <div class="holder-accept__bar" style="background:var(--divider-2)"></div>
+        </div>
+        <button type="button" class="doc-grid-row__action" style="flex:none">&#128465; Remove</button>
     </div>
-    <div class="holder-block__hint">Answered Yes to person with disability &mdash; a disability certificate is required below.</div>
 
     <div class="holder-toggles">
-        <div class="section-label">Set for this holder</div>
-        <div class="holder-toggle-row">
-            <div class="holder-toggle-row__label">Mailing address differs from permanent? <span class="required">*</span></div>
-            <div class="seg-toggle"><button type="button" class="seg-toggle__opt">Yes</button><button type="button" class="seg-toggle__opt seg-toggle__opt--active">No</button></div>
-            <div class="holder-toggle-row__label">Person with disability? <span class="required">*</span></div>
-            <div class="seg-toggle"><button type="button" class="seg-toggle__opt seg-toggle__opt--active">Yes</button><button type="button" class="seg-toggle__opt">No</button></div>
+        <div class="section-label" style="flex:none">Set for this holder</div>
+        <div class="holder-toggle">
+            <span class="holder-toggle__label">Mailing address differs from permanent <span class="required">*</span></span>
+            <div class="seg-toggle seg-toggle--sm"><button type="button" class="seg-toggle__opt">Yes</button><button type="button" class="seg-toggle__opt seg-toggle__opt--active">No</button></div>
         </div>
+        <div class="holder-toggle">
+            <span class="holder-toggle__label">Person with disability <span class="required">*</span></span>
+            <div class="seg-toggle seg-toggle--sm"><button type="button" class="seg-toggle__opt seg-toggle__opt--active">Yes</button><button type="button" class="seg-toggle__opt">No</button></div>
+        </div>
+        <div class="holder-toggles__note">Answered Yes to person with disability, so a disability certificate is mandatory below; switching to No withdraws it.</div>
     </div>
 
-    <div class="doc-card">
-        <div class="doc-card__head">
-            <div class="doc-card__title doc-card__title--attention"><span class="doc-status doc-status--attention">!</span> PAN card</div>
-            <button type="button" class="btn btn-secondary btn-sm">Re-upload</button>
+    <div>
+        <div class="doc-grid-row doc-grid-row--head">
+            <div>Document &amp; why it is asked</div><div>Type</div><div>What the system read</div><div></div>
         </div>
-        <div class="doc-card__hint">Mandatory for every holder &mdash; identity proof</div>
-        <div class="doc-card__body">
-            <div class="field-hint">pan-scan-3.jpg &middot; rejected 11:49</div>
-            <div class="callout callout--sm">
-                <span class="text-danger">&#10007; The image is too unclear to read.</span> Glare across the card and resolution below 300 dpi &mdash; no fields could be extracted.
-                <span class="text-danger">What to do &mdash; re-shoot without flash on a flat surface, or scan at 300 dpi.</span>
+
+        <div class="doc-grid-row">
+            <div>
+            <div class="doc-grid-row__title doc-grid-row__title--attention"><span class="doc-status doc-status--attention">!</span> PAN card</div>
+            <div class="doc-grid-row__why">Mandatory for every holder</div>
+            </div>
+            <div class="doc-grid-row__type text-muted" style="font-size:10.5px">Not typed</div>
+            <div class="doc-grid-row__read">
+                <span class="doc-grid-row__file doc-grid-row__file--rejected">pan-scan-3.jpg</span>
+                <span>JPG &middot; 180 KB &middot; rejected 11:49</span>
+                <span><span class="text-green">&#10003; identified as PAN</span> &nbsp; <span class="text-danger">&#10007; extraction failed</span></span>
+            </div>
+            <button type="button" class="doc-grid-row__action">Re-upload</button>
+            <div class="doc-grid-row__panel">
+                <div class="callout callout--mint callout--sm">
+                    <span><span class="text-danger">&#10007; The image is too unclear to read.</span> Glare across the card and a resolution below 300 dpi &mdash; PAN, name and date of birth could not be extracted.</span>
+                    <span>What to do &mdash; <span style="font-weight:600">re-shoot without flash on a flat surface, or upload a 300 dpi scan</span></span>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div class="doc-card">
-        <div class="doc-card__head">
-            <div class="doc-card__title doc-card__title--muted"><span class="doc-status doc-status--outstanding"></span> Proof of address</div>
-            <button type="button" class="btn btn-primary btn-sm">Upload</button>
+        <div class="doc-grid-row">
+            <div>
+            <div class="doc-grid-row__title"><span class="doc-status doc-status--outstanding"></span> Proof of address</div>
+            <div class="doc-grid-row__why">Mandatory &middot; OCR name, DOB, gender, parent/spouse name, address, reference number and expiry date are cross-checked with the verify-with-source response &middot; <span style="font-weight:600">not accepted until verification passes</span></div>
+            </div>
+            <div class="doc-grid-row__type">
+                <div class="field"><select style="border-color:var(--red)"><option selected disabled>Select type</option><option>Driving licence</option><option>Voter ID</option><option>Passport</option><option>Aadhaar</option></select></div>
+            </div>
+            <div class="doc-grid-row__read">
+                <span>Upload opens once a type is chosen</span>
+                <span class="text-muted">Driving licence, voter ID, passport or Aadhaar</span>
+            </div>
+            <button type="button" class="doc-grid-row__action">Upload</button>
         </div>
-        <div class="doc-card__hint">Mandatory &mdash; OCR cross-check with source &mdash; not accepted until verification passes</div>
-        <div class="doc-card__body">
-            <div class="field"><label>Type</label><select style="max-width:220px"><option selected disabled>Select type</option><option>Aadhaar</option><option>Driving licence</option><option>Voter ID</option><option>Passport</option></select></div>
-            <div class="field-hint">Upload stays closed until a proof type is chosen</div>
-        </div>
-    </div>
 
-    <div class="doc-card">
-        <div class="doc-card__head">
-            <div class="doc-card__title doc-card__title--muted"><span class="doc-status doc-status--outstanding"></span> Investor&rsquo;s photograph</div>
-            <button type="button" class="btn btn-primary btn-sm">Upload</button>
+        <div class="doc-grid-row">
+            <div>
+            <div class="doc-grid-row__title"><span class="doc-status doc-status--outstanding"></span> Investor&rsquo;s photograph</div>
+            <div class="doc-grid-row__why">Mandatory &middot; face must match the PAN card and proof of address</div>
+            </div>
+            <div class="doc-grid-row__type text-muted" style="font-size:10.5px">Not typed</div>
+            <div class="doc-grid-row__read">
+                <span>Not uploaded</span>
+                <span class="text-muted">JPG/JPEG &middot; max 2 MB</span>
+                <span class="text-danger">Face match against PAN and POA runs on upload &mdash; both must pass</span>
+            </div>
+            <button type="button" class="doc-grid-row__action">Upload</button>
         </div>
-        <div class="doc-card__hint">Mandatory &mdash; face must match the PAN and proof of address</div>
-        <div class="doc-card__body"><div class="field-hint">Not uploaded &middot; face match against PAN and POA runs on upload</div></div>
-    </div>
 
-    <div class="doc-card">
-        <div class="doc-card__head">
-            <div class="doc-card__title doc-card__title--muted"><span class="doc-status doc-status--outstanding"></span> Disability certificate</div>
-            <button type="button" class="btn btn-primary btn-sm">Upload</button>
+        <div class="doc-grid-row">
+            <div>
+            <div class="doc-grid-row__title"><span class="doc-status doc-status--outstanding"></span> Disability certificate</div>
+            <div class="doc-grid-row__why"><span class="text-danger">Mandatory &mdash; &ldquo;person with disability&rdquo; is answered Yes for this holder.</span> Answered Yes on this screen; switching to No withdraws the requirement.</div>
+            </div>
+            <div class="doc-grid-row__type">
+                <div class="field"><select style="border-color:var(--red)"><option selected disabled>Select type</option><option>UDID card</option><option>Medical board certificate</option></select></div>
+                <div class="doc-grid-row__typenote">UDID card or medical board certificate</div>
+            </div>
+            <div class="doc-grid-row__read">
+                <span>Upload opens once a type is chosen</span>
+                <span class="text-muted">Name on the certificate is checked against the holder&rsquo;s name; UDID number and issuing authority are read by OCR and stored as-is.</span>
+            </div>
+            <button type="button" class="doc-grid-row__action">Upload</button>
         </div>
-        <div class="doc-card__hint">Mandatory &mdash; &ldquo;person with disability&rdquo; is answered Yes for this holder</div>
-        <div class="doc-card__body"><div class="field-hint">UDID card or medical board certificate</div></div>
     </div>
 </div>
 

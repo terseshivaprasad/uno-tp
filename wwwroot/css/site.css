@@ -202,9 +202,14 @@ h1, h2, h3, p { margin: 0; }
 .holder-block__meta { display: flex; align-items: center; gap: 16px; margin-left: auto; flex: none; }
 .holder-block__hint { font-size: 11.5px; color: var(--muted); line-height: 1.5; }
 
-.holder-toggles { display: flex; flex-direction: column; gap: 10px; }
-.holder-toggle-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-.holder-toggle-row__label { font-size: 12.5px; font-weight: 500; color: var(--text); flex: 1; min-width: 200px; }
+.holder-toggles { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; background: #FAFBFC; border: 1px solid var(--divider); border-radius: 6px; padding: 12px 14px; }
+.holder-toggle { display: flex; align-items: center; gap: 10px; }
+.holder-toggle__label { font-size: 11.5px; font-weight: 500; color: var(--text); }
+.holder-toggles__note { flex: 1; min-width: 160px; font-size: 10px; color: var(--muted); line-height: 1.45; }
+
+.holder-accept { margin-left: auto; text-align: right; flex: none; }
+.holder-accept__count { font-size: 12.5px; font-weight: 700; }
+.holder-accept__bar { height: 2px; width: 74px; border-radius: 2px; margin: 4px 0 0 auto; }
 .tag { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; padding: 2px 8px; border-radius: 9px; }
 .tag--primary { background: #F2F4F7; color: var(--text); }
 .tag--optional { background: #F2F4F7; color: var(--muted); }
@@ -215,7 +220,10 @@ h1, h2, h3, p { margin: 0; }
 .callout { border-left: 3px solid var(--red); background: #FFF8F9; border-radius: 0 8px 8px 0; padding: 16px 18px; display: flex; flex-direction: column; gap: 9px; }
 .callout--info { border-left-color: var(--blue); background: #E8F1FB; color: var(--blue); }
 .callout--warn { border-left-color: var(--amber); background: var(--amber-bg); }
-.callout--sm { padding: 10px 13px; border-radius: 0 6px 6px 0; gap: 4px; font-size: 11.5px; line-height: 1.5; }
+/* Flat mint panel the mockups use for a failed check and its "what to do" line —
+   no accent rule, the red lead sentence carries the signal. */
+.callout--mint { border-left: none; background: #F3FAF5; border-radius: 6px; }
+.callout--sm { padding: 10px 13px; border-radius: 6px; gap: 4px; font-size: 11px; line-height: 1.5; }
 
 /* ===== Holder timeline (numbered/checked circular badges) ===== */
 .holder-num { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 700; flex: none; }
@@ -243,6 +251,7 @@ h1, h2, h3, p { margin: 0; }
 .seg-toggle__opt { padding: 8px 20px; font-size: 12.5px; font-weight: 500; background: #fff; color: var(--text); white-space: nowrap; border: 0; cursor: pointer; font-family: inherit; }
 .seg-toggle__opt + .seg-toggle__opt { border-left: 1px solid var(--border-3); }
 .seg-toggle__opt--active { background: var(--red); color: #fff; font-weight: 600; }
+.seg-toggle--sm .seg-toggle__opt { padding: 6px 15px; font-size: 11.5px; }
 
 .hid-consent-panel { border-top: 1px solid var(--divider-2); }
 .hid-consent-panel--selected { border-top: 2px solid var(--red); }
@@ -297,24 +306,45 @@ h1, h2, h3, p { margin: 0; }
 .doc-row__title { font-weight: 600; color: var(--ink); line-height: 1.35; }
 .doc-row__hint { font-size: 11px; color: var(--muted); padding-top: 3px; line-height: 1.45; }
 
-/* Richer per-document card used on Upload Documents (07) — title/action row on
-   top, then an optional body with type picker, OCR-read table and callouts. */
-.doc-card { display: flex; flex-direction: column; gap: 10px; padding: 14px 0; border-top: 1px solid var(--divider); }
-.doc-card:first-child { border-top: none; }
-.doc-card__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
-.doc-card__title { font-weight: 600; color: var(--ink); line-height: 1.35; display: flex; align-items: center; gap: 8px; }
-.doc-card__title--attention { color: var(--red-dark); }
-.doc-card__title--muted { color: var(--muted); font-weight: 600; }
-.doc-card__hint { font-size: 11px; color: var(--muted); padding-top: 3px; line-height: 1.45; }
-.doc-card__body { display: flex; flex-direction: column; gap: 10px; padding-left: 24px; }
+/* Per-document row on Upload Documents (07): status + why it is asked, the type
+   picker, what the system read, and the action — with any failure panel spanning
+   the full width underneath. Rows repeat the column template rather than using
+   subgrid so the columns stay aligned without relying on subgrid support. */
+.doc-grid-row {
+  display: grid;
+  grid-template-columns: minmax(200px, 2.1fr) 128px minmax(220px, 2.6fr) 84px;
+  gap: 8px 16px;
+  padding: 13px 0;
+  border-top: 1px solid var(--divider);
+  align-items: start;
+}
+.doc-grid-row--head { border-top: none; padding: 0 0 6px; }
+.doc-grid-row--head > div { font-size: 9.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted-2); }
+.doc-grid-row__title { font-size: 12.5px; font-weight: 600; color: var(--ink); display: flex; align-items: center; gap: 7px; line-height: 1.35; }
+.doc-grid-row__title--attention { color: var(--red-dark); }
+.doc-grid-row__why { font-size: 10.5px; color: var(--muted); padding: 3px 0 0 23px; line-height: 1.5; }
+.doc-grid-row__read { font-size: 10.5px; color: var(--text); line-height: 1.6; display: flex; flex-direction: column; gap: 3px; }
+.doc-grid-row__file { font-size: 11px; font-weight: 600; color: var(--blue); }
+.doc-grid-row__file--rejected { color: var(--muted-2); text-decoration: line-through; }
+.doc-grid-row__action { text-align: right; font-size: 11.5px; font-weight: 700; color: var(--red); background: none; border: 0; padding: 0; cursor: pointer; font-family: inherit; justify-self: end; }
+.doc-grid-row__panel { grid-column: 1 / -1; }
+.doc-grid-row .field select { height: 34px; font-size: 11.5px; padding: 0 8px; }
+.doc-grid-row__typenote { font-size: 10px; color: var(--muted); padding-top: 4px; line-height: 1.45; }
 
-.doc-status { width: 16px; height: 16px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex: none; }
+/* Compact OCR read-vs-source table inside a document row. */
+.ocr-table { width: 100%; border-collapse: collapse; font-size: 10px; }
+.ocr-table th { font-size: 8.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted-2); text-align: left; padding: 0 8px 4px 0; }
+.ocr-table td { padding: 2px 8px 2px 0; vertical-align: top; line-height: 1.5; }
+.ocr-table td:first-child { color: var(--muted-2); font-weight: 600; width: 52px; }
+
+.doc-status { width: 15px; height: 15px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 9.5px; font-weight: 700; flex: none; }
 .doc-status--accepted { background: var(--green-2); color: #fff; }
 .doc-status--attention { background: var(--red); color: #fff; }
-.doc-status--outstanding { border: 2px solid var(--border-3); }
+.doc-status--outstanding { border: 1.5px solid var(--red); }
 
-.doc-legend { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; font-size: 11px; color: var(--muted); }
+.doc-legend { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; font-size: 10.5px; color: var(--muted); }
 .doc-legend__item { display: inline-flex; align-items: center; gap: 6px; }
+.doc-legend strong { color: var(--ink); font-weight: 700; }
 
 /* ===== Upload Documents (07) header: app badges + progress ===== */
 .doc-app-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 11.5px; color: var(--muted); }
@@ -324,12 +354,12 @@ h1, h2, h3, p { margin: 0; }
 .doc-progress-bar__fill { height: 100%; background: var(--green-2); border-radius: 3px; }
 
 .holding-list { display: flex; flex-direction: column; }
-.holding-row { display: flex; align-items: baseline; gap: 14px; padding: 10px 0; border-top: 1px solid var(--divider); font-size: 12px; }
+.holding-row { display: flex; align-items: baseline; gap: 24px; padding: 9px 0; border-top: 1px solid var(--divider); font-size: 11.5px; }
 .holding-row:first-child { border-top: none; }
-.holding-row__holder { flex: none; width: 62px; color: var(--muted); font-weight: 600; }
-.holding-row__reason { flex: 1; min-width: 0; color: var(--text); }
-.holding-row__reason strong { color: var(--red-dark); }
-.holding-row__go { flex: none; font-size: 11.5px; font-weight: 700; color: var(--red); white-space: nowrap; }
+.holding-row__holder { flex: none; width: 70px; color: var(--ink); font-weight: 600; }
+.holding-row__reason { flex: 1; min-width: 0; color: var(--text); line-height: 1.5; }
+.holding-row__reason strong { color: var(--ink); font-weight: 700; }
+.holding-row__go { flex: none; font-size: 11px; font-weight: 600; color: var(--red); white-space: nowrap; }
 
 .summary-block { display: flex; flex-direction: column; gap: 8px; }
 .summary-block__title { font-size: 14px; font-weight: 600; color: var(--ink); border-bottom: 1px solid var(--divider-2); padding-bottom: 8px; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; }
@@ -399,7 +429,16 @@ tbody tr[hidden] { display: none; }
   .wizard__actions-left, .wizard__actions-right { justify-content: stretch; }
   .wizard__actions-left .btn, .wizard__actions-right .btn { flex: 1; }
   .holder-block__meta { margin-left: 0; width: 100%; justify-content: space-between; }
-  .holding-row { flex-wrap: wrap; }
+  .holding-row { flex-wrap: wrap; gap: 6px 14px; }
   .holding-row__holder { width: auto; }
-  .doc-card__body { padding-left: 0; }
+}
+/* The document table collapses to stacked rows well before the columns would
+   start truncating the OCR read-out. */
+@media (max-width: 900px) {
+  .doc-grid-row { grid-template-columns: 1fr auto; gap: 8px 12px; }
+  .doc-grid-row--head { display: none; }
+  .doc-grid-row__why, .doc-grid-row__type, .doc-grid-row__read { grid-column: 1 / -1; }
+  .doc-grid-row__why { padding-left: 22px; }
+  .holder-accept { margin-left: 0; text-align: left; }
+  .holder-accept__bar { margin-left: 0; }
 }
