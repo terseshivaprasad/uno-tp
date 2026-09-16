@@ -9,7 +9,7 @@
     toastTimer = setTimeout(function () { toastEl.classList.remove('toast--visible'); }, 2600);
   }
 
-  // Tabs, uploads and downloads belong to boards that are not built yet.
+  // The other tabs and Download all belong to boards that are not built yet.
   document.querySelectorAll('.js-dms-stub').forEach(function (btn) {
     btn.addEventListener('click', function () { showToast(btn.getAttribute('data-stub')); });
   });
@@ -39,7 +39,6 @@
   var zoomIn = document.getElementById('dmsZoomIn');
   var prevBtn = document.getElementById('dmsPrev');
   var nextBtn = document.getElementById('dmsNext');
-  var replaceBtn = document.getElementById('dmsReplace');
   var openCurrentBtn = document.getElementById('dmsOpenCurrent');
   var stacked = window.matchMedia('(max-width: 1200px)');
 
@@ -90,7 +89,7 @@
         var on = row.classList.contains('dms-row--file') && row.getAttribute('data-key') === openKey;
         row.classList.toggle('dms-row--open', on);
         if (!action) return;
-        action.textContent = on ? 'Open •' : row.getAttribute('data-action');
+        action.textContent = on ? 'Open •' : 'View';
         if (on) action.setAttribute('aria-current', 'true');
         else action.removeAttribute('aria-current');
       });
@@ -105,7 +104,6 @@
     fileEl.textContent = v.file;
     extEl.textContent = v.file.split('.').pop().toUpperCase();
     supersededEl.hidden = v.current;
-    replaceBtn.hidden = !v.current;
     openCurrentBtn.hidden = v.current;
     viewer.querySelectorAll('[data-field]').forEach(function (el) {
       el.textContent = v[el.getAttribute('data-field')];
@@ -200,14 +198,7 @@
       var row = e.target.closest('.dms-row--file');
       if (!row) return;
       var key = row.getAttribute('data-key');
-      if (key === openKey) return;
-      if (e.target.closest('.dms-action')) {
-        var verb = row.getAttribute('data-action');
-        var file = versions[key].file;
-        if (verb === 'Retry') { showToast('Sent ' + file + ' to DMS again.'); return; }
-        if (verb === 'Replace') { showToast('Replacing ' + file + ' opens the upload dialog — not built yet.'); return; }
-      }
-      openAndShow(key);
+      if (key !== openKey) openAndShow(key);
     });
   });
 
@@ -253,11 +244,7 @@
 
   viewer.querySelectorAll('.js-dms-file').forEach(function (btn) {
     btn.addEventListener('click', function () {
-      var verb = btn.getAttribute('data-verb');
-      var file = versions[openKey].file;
-      showToast(verb === 'Replace'
-        ? 'Replacing ' + file + ' opens the upload dialog — not built yet.'
-        : verb + ' for ' + file + ' is not built yet.');
+      showToast(btn.getAttribute('data-verb') + ' for ' + versions[openKey].file + ' is not built yet.');
     });
   });
 

@@ -65,8 +65,7 @@
             else
             {
                 <div class="dms-empty__title">Nothing is filed under @Model.Number</div>
-                <div class="dms-empty__text">Check the number, or upload the first document against it.</div>
-                <button type="button" class="dms-link js-dms-stub" data-stub="Upload documents opens its own board — not built yet.">Upload to this number</button>
+                <div class="dms-empty__text">Check the number and look it up again.</div>
             }
         </div>
     }
@@ -93,7 +92,6 @@
                     <button type="button" class="seg-toggle__opt@(history ? " seg-toggle__opt--active" : "")" data-view="history" aria-pressed="@(history ? "true" : "false")">History &middot; @Model.History.Count</button>
                 </div>
                 <button type="button" class="dms-link dms-link--ink js-dms-stub" data-stub="Download all zips the @docs.Count current files under @filing.ControlNo — not built yet.">Download all</button>
-                <button type="button" class="dms-link js-dms-stub" data-stub="Upload documents opens its own board — not built yet.">Upload to this number</button>
             </div>
         </div>
 
@@ -125,8 +123,7 @@
                                 <div class="dms-row dms-row--file@(isOpen ? " dms-row--open" : "")" role="row"
                                      data-class="@d.Class.ToString().ToLowerInvariant()"
                                      data-doc="@entry.DocKey"
-                                     data-key="@entry.Key"
-                                     data-action="@d.Action">
+                                     data-key="@entry.Key">
                                     <div class="dms-cell--doc" role="cell">
                                         <div class="dms-doc">@d.Type</div>
                                         @if (sub.Length > 0)
@@ -141,7 +138,7 @@
                                     <div role="cell" data-label="DMS doc ID">@(d.DmsId ?? "—")</div>
                                     <div class="dms-cell--remark@(d.Remark is null ? " dms-cell--blank" : "")" role="cell" data-label="Remark">@(d.Remark ?? "—")</div>
                                     <div class="dms-cell--action" role="cell">
-                                        <button type="button" class="dms-action" aria-current="@(isOpen ? "true" : null)">@(isOpen ? "Open •" : d.Action)</button>
+                                        <button type="button" class="dms-action" aria-current="@(isOpen ? "true" : null)">@(isOpen ? "Open •" : "View")</button>
                                     </div>
                                 </div>
                             }
@@ -150,7 +147,6 @@
                     <div class="dms-table__empty" hidden>No documents of this class are filed under this number.</div>
                     <div class="dms-table__foot">
                         <p>@IndexModel.CountWord(docs.Count) documents filed under this number &mdash; the version in force of everything the store holds, nothing inferred. Earlier versions stay in the store and are listed under History. A document that was never uploaded does not appear here at all; what an application still requires is answered in the module that owns it.</p>
-                        <button type="button" class="dms-link js-dms-stub" data-stub="Upload documents opens its own board — not built yet.">Upload to this number</button>
                     </div>
                 </div>
 
@@ -183,8 +179,7 @@
                                 <div class="dms-row@(e.IsUpload ? " dms-row--file" : "")@(isOpen ? " dms-row--open" : "")" role="row"
                                      data-class="@e.Document.Class.ToString().ToLowerInvariant()"
                                      data-doc="@e.Version.DocKey"
-                                     data-key="@e.Version.Key"
-                                     data-action="View">
+                                     data-key="@e.Version.Key">
                                     <div class="dms-cell--when" role="cell">@IndexModel.Time(e.At)</div>
                                     <div class="dms-cell--event" role="cell">
                                         <div class="dms-event dms-event--@e.Event.Split(' ')[0].ToLowerInvariant()">@e.Event</div>
@@ -212,7 +207,7 @@
                     }
                     <div class="dms-table__empty" hidden>Nothing of this class has been filed under this number.</div>
                     <div class="dms-table__foot">
-                        <p>Every version filed under this number since @IndexModel.Day(DateOnly.FromDateTime(Model.HistoryFrom)), newest first. The store never drops a version: replacing a document files a newer one, and the one it replaces stays retrievable here.</p>
+                        <p>Every version filed under this number since @IndexModel.Day(DateOnly.FromDateTime(Model.HistoryFrom)), newest first. The store never drops a version, so each one stays viewable here after a newer one is filed.</p>
                     </div>
                 </div>
             </div>
@@ -251,10 +246,9 @@
                     <div class="dms-viewer__nav">
                         <button type="button" class="dms-step" id="dmsPrev">Previous</button>
                         <button type="button" class="dms-step" id="dmsNext">Next</button>
-                        <button type="button" class="dms-link js-dms-file" id="dmsReplace" data-verb="Replace">Replace</button>
                         <button type="button" class="dms-link" id="dmsOpenCurrent" hidden>Open current version</button>
                     </div>
-                    <p class="dms-viewer__note">Replacing files a new version against the same number, holder type and document type; the earlier version stays in the store and stays retrievable.</p>
+                    <p class="dms-viewer__note">This view only reads the store. Documents are filed and replaced under Upload documents; every earlier version stays viewable under History.</p>
                 </aside>
                 <script type="application/json" id="dmsVersions">@Html.Raw(JsonSerializer.Serialize(Model.Viewer, new JsonSerializerOptions(JsonSerializerDefaults.Web)))</script>
             }

@@ -94,7 +94,6 @@ public record DmsDocument(
     // A free line under the type, e.g. "mailing address".
     string? Note = null,
     string? Remark = null,
-    string Action = "View",
     // Versions this one replaced, oldest first. The store never drops a version.
     List<DmsVersion>? Earlier = null
 );
@@ -238,14 +237,14 @@ public static class MockData
             new(Investor, "Photograph", DmsClass.Kyc, "123456_01_Photograph__13092026.jpg", At(13, 18, 14), At(13, 18, 15), "DMS-883912",
                 Earlier: new() { new("123456_01_Photograph__12032025.jpg", In2025(10, 16), In2025(10, 17), "DMS-612045", Earlier, "refiled with the new application") }),
 
-            new(Joint1, "Identity proof · PAN", DmsClass.Kyc, "123456_02_PAN__13092026.tif", At(13, 18, 16), null, null, Ref: "BCDPT••••E", Remark: "Awaiting DMS · 2 h", Action: "Retry"),
+            new(Joint1, "Identity proof · PAN", DmsClass.Kyc, "123456_02_PAN__13092026.tif", At(13, 18, 16), null, null, Ref: "BCDPT••••E", Remark: "Awaiting DMS · 2 h"),
             new(Joint1, "Proof of address · driving licence", DmsClass.Kyc, "123456_02_DrivingLicence__14092026.jpg", At(14, 11, 41), At(14, 11, 42), "DMS-884108", Ref: "MH02••••••044", Expiry: "06/2031"),
             new(Joint1, "Photograph", DmsClass.Kyc, "123456_02_Photograph__13092026.jpg", At(13, 18, 16), At(13, 18, 17), "DMS-883915"),
             new(Joint1, "Tax declaration · Form 15G", DmsClass.Fd, "123456_02_Form15G__14092026.pdf", At(14, 12, 20), At(14, 12, 21), "DMS-884122", Expiry: "31/03/2027"),
 
             new(Joint2, "Identity proof · PAN", DmsClass.Kyc, "123456_03_PAN__13092026.tif", At(13, 18, 17), At(13, 18, 18), "DMS-883914", Ref: "CDEPN••••F"),
             new(Joint2, "Proof of address · Aadhaar", DmsClass.Kyc, "123456_03_AadharCard__14092026.jpg", At(14, 11, 36), At(14, 11, 37), "DMS-884120", Ref: "••••2290",
-                Remark: "Superseded on re-upload", Action: "Replace",
+                Remark: "Superseded on re-upload",
                 Earlier: new() { new("123456_03_AadharCard__13092026.jpg", At(13, 18, 17), At(13, 18, 18), "DMS-883913", ReplacedBecause: "address side cropped") }),
             new(Joint2, "Photograph", DmsClass.Kyc, "123456_03_Photograph__13092026.jpg", At(13, 18, 18), At(13, 18, 19), "DMS-883916"),
 
