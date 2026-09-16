@@ -488,6 +488,18 @@ h1, h2, h3, p { margin: 0; }
 .app-tile--disabled { cursor: default; }
 tbody tr[hidden] { display: none; }
 
+/* ===== Laptop and phone views of one page =====
+   Every screen is one page at one address. Most adapt with media queries alone;
+   where a mobile board is a different design rather than a narrower one, the page
+   carries both, and .view-laptop / .view-phone swap at the 560px phone breakpoint. */
+.view-phone { display: none; }
+@media (max-width: 560px) {
+  .view-laptop { display: none; }
+  .view-phone { display: block; }
+  /* The mobile boards end on their last card, without the legal strip. */
+  .app-footer { display: none; }
+}
+
 /* ===== Responsive / mobile ===== */
 @media (max-width: 900px) {
   .console-grid, .dashboard-grid { grid-template-columns: 1fr; }

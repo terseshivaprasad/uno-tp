@@ -50,4 +50,9 @@ app.UseAuthorization();
 
 app.MapRazorPages();
 
+// Phones get the same page as laptops, with the mobile board as its phone view; the
+// old mobile-only addresses forward there so saved links keep working.
+app.MapGet("/Mobile", () => Results.Redirect("/"));
+app.MapGet("/Apps/UnoTp/Dashboard/Mobile", () => Results.Redirect("/Apps/UnoTp/Dashboard"));
+
 app.Run();

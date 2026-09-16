@@ -78,11 +78,12 @@
   });
 
   // App-tile search (Board 00 keeps this separate from the in-flight search):
-  // hides tiles that do not match, and any section left with nothing in it.
-  var tileSearch = document.getElementById('appTileSearch');
-  var tileSections = document.querySelectorAll('.tile-section');
-  var tileEmpty = document.getElementById('appTileEmpty');
-  if (tileSearch) {
+  // hides tiles that do not match, and any section left with nothing in it. The
+  // laptop and phone views each have their own box, filtering only their own tiles.
+  document.querySelectorAll('.js-tile-search').forEach(function (tileSearch) {
+    var scope = tileSearch.closest('[data-tile-scope]') || document;
+    var tileSections = scope.querySelectorAll('.tile-section');
+    var tileEmpty = scope.querySelector('.js-tile-empty');
     tileSearch.addEventListener('input', function () {
       var q = tileSearch.value.trim().toLowerCase();
       var total = 0;
@@ -98,7 +99,7 @@
       });
       if (tileEmpty) tileEmpty.hidden = total !== 0;
     });
-  }
+  });
 
   // Edit pinned toggle (cosmetic in this mock — no drag-and-drop persistence yet).
   var editPinnedBtn = document.getElementById('editPinnedBtn');

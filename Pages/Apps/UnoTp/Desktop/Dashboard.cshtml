@@ -15,117 +15,178 @@
     };
 }
 
-<div class="dashboard-grid">
-    <div class="dash-col">
-        <div class="card card--hero" style="display:flex;align-items:center;gap:24px;flex-wrap:wrap">
-            <div style="min-width:0;flex:1">
-                <div style="font-size:22px;font-weight:500;color:var(--ink);letter-spacing:-.2px">Good morning, Shivaprasad</div>
-                <div style="font-size:13px;color:var(--muted);padding-top:5px"><span style="font-weight:600;color:var(--red-dark)">5 applications need you today</span> &middot; 11 in flight &middot; 3 booked this week</div>
+@* Board 01 - Laptop *@
+<div class="view-laptop">
+    <div class="dashboard-grid">
+        <div class="dash-col">
+            <div class="card card--hero" style="display:flex;align-items:center;gap:24px;flex-wrap:wrap">
+                <div style="min-width:0;flex:1">
+                    <div style="font-size:22px;font-weight:500;color:var(--ink);letter-spacing:-.2px">Good morning, Shivaprasad</div>
+                    <div style="font-size:13px;color:var(--muted);padding-top:5px"><span style="font-weight:600;color:var(--red-dark)">5 applications need you today</span> &middot; 11 in flight &middot; 3 booked this week</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:18px;flex:none">
+                    <a class="btn btn-primary" asp-page="/Apps/UnoTp/Application/HolderIdentification">Create New FD
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M10 6l6 6-6 6"></path></svg>
+                    </a>
+                    <a href="#" style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap">Resume last application</a>
+                </div>
             </div>
-            <div style="display:flex;align-items:center;gap:18px;flex:none">
-                <a class="btn btn-primary" asp-page="/Apps/UnoTp/Application/HolderIdentification">Create New FD
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M10 6l6 6-6 6"></path></svg>
-                </a>
-                <a href="#" style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap">Resume last application</a>
+
+            <div class="card card--wide">
+                <div class="card__header">
+                    <div class="card__title">Needs your attention</div>
+                    <div class="card__subtitle">oldest first &middot; a blocker older than 7 days is escalated to Operations</div>
+                </div>
+                <div class="dash-attention">
+                    <div class="dash-attention__row dash-attention__row--head">
+                        <div>Application</div><div>Holder</div><div>Stage</div><div>What is blocking it</div><div>Waiting</div><div></div>
+                    </div>
+                @foreach (var n in Model.NeedsAttention)
+                {
+                    <div class="dash-attention__row">
+                        <div class="dash-attention__app">@n.AppNo</div>
+                        <div class="dash-attention__holder">@n.Holder<div class="dash-attention__tag">@n.HolderTag</div></div>
+                        <div class="dash-attention__stage">@n.Stage</div>
+                        <div class="dash-attention__blocker @n.BlockerClass">@n.Blocker</div>
+                        <div class="dash-attention__waiting @n.BlockerClass">@n.Waiting</div>
+                        @if (n.Actionable)
+                        {
+                            <a class="dash-attention__action" asp-page="/Apps/UnoTp/Application/HolderIdentification">@n.Action</a>
+                        }
+                        else
+                        {
+                            <div class="dash-attention__action dash-attention__action--parked">@n.Action</div>
+                        }
+                    </div>
+                }
+                </div>
+            </div>
+
+            <div class="card card--wide">
+                <div class="card__header">
+                    <div class="card__title">In flight</div>
+                    <a class="dash-link" asp-page="/Desktop/Index">View all 11</a>
+                </div>
+                <div class="dash-tile-grid">
+                @foreach (var s in Model.InFlightSummary)
+                {
+                    <div class="dash-tile">
+                        <div class="dash-tile__value">@s.Count</div>
+                        <div class="dash-tile__label">@s.Label</div>
+                        <div class="dash-tile__detail">@s.Detail</div>
+                    </div>
+                }
+                </div>
             </div>
         </div>
 
-        <div class="card card--wide">
-            <div class="card__header">
-                <div class="card__title">Needs your attention</div>
-                <div class="card__subtitle">oldest first &middot; a blocker older than 7 days is escalated to Operations</div>
-            </div>
-            <div class="dash-attention">
-                <div class="dash-attention__row dash-attention__row--head">
-                    <div>Application</div><div>Holder</div><div>Stage</div><div>What is blocking it</div><div>Waiting</div><div></div>
-                </div>
-            @foreach (var n in Model.NeedsAttention)
-            {
-                <div class="dash-attention__row">
-                    <div class="dash-attention__app">@n.AppNo</div>
-                    <div class="dash-attention__holder">@n.Holder<div class="dash-attention__tag">@n.HolderTag</div></div>
-                    <div class="dash-attention__stage">@n.Stage</div>
-                    <div class="dash-attention__blocker @n.BlockerClass">@n.Blocker</div>
-                    <div class="dash-attention__waiting @n.BlockerClass">@n.Waiting</div>
-                    @if (n.Actionable)
+        <div class="dash-col">
+            <div class="card card--side" style="display:flex;flex-direction:column;gap:12px">
+                <div style="font-size:14px;font-weight:600;color:var(--ink)">Start a new FD</div>
+                <div style="display:flex;flex-direction:column">
+                @for (var i = 0; i < Model.QuickActions.Count; i++)
+                {
+                    var q = Model.QuickActions[i];
+                    var icon = Html.Raw(quickActionIcons[i % quickActionIcons.Length]);
+                    if (q.PageLink is not null)
                     {
-                        <a class="dash-attention__action" asp-page="/Apps/UnoTp/Application/HolderIdentification">@n.Action</a>
+                        <a class="dash-row" asp-page="@q.PageLink"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4D4D4F" stroke-width="1.5" stroke-linecap="round">@icon</svg><div class="dash-row__title">@q.Title</div><div class="dash-row__open">Open</div></a>
                     }
                     else
                     {
-                        <div class="dash-attention__action dash-attention__action--parked">@n.Action</div>
+                        <div class="dash-row js-stub"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4D4D4F" stroke-width="1.5" stroke-linecap="round">@icon</svg><div class="dash-row__title">@q.Title</div><div class="dash-row__open">Open</div></div>
                     }
+                }
                 </div>
-            }
             </div>
-        </div>
 
-        <div class="card card--wide">
-            <div class="card__header">
-                <div class="card__title">In flight</div>
-                <a class="dash-link" asp-page="/Desktop/Index">View all 11</a>
-            </div>
-            <div class="dash-tile-grid">
-            @foreach (var s in Model.InFlightSummary)
-            {
-                <div class="dash-tile">
-                    <div class="dash-tile__value">@s.Count</div>
-                    <div class="dash-tile__label">@s.Label</div>
-                    <div class="dash-tile__detail">@s.Detail</div>
+            <div class="card card--side" style="display:flex;flex-direction:column;gap:12px">
+                <div style="font-size:14px;font-weight:600;color:var(--ink)">FD services</div>
+                <div style="display:flex;flex-direction:column">
+                @foreach (var s in Model.Services)
+                {
+                    <div class="dash-row dash-row--service"><div class="dash-row__title">@s.Title</div><div class="dash-row__detail">@s.Detail</div></div>
+                }
                 </div>
+            </div>
+
+            <div class="callout">
+                <div style="font-size:13.5px;font-weight:700;color:var(--ink)">Have these ready before you start</div>
+                <div class="dash-list">
+                @foreach (var c in Model.Checklist)
+                {
+                    <div class="dash-list__item"><span class="dash-list__marker">@c.Step</span><div>@c.Text</div></div>
+                }
+                </div>
+                <div style="font-size:11.5px;color:var(--muted);line-height:1.45">Four steps: documents, investor information, payment, deposit details. Only the primary holder is required &mdash; joint holders are optional, up to two more.</div>
+                <a class="dash-link" href="#">See the full document list</a>
+            </div>
+
+            <div class="card" style="display:flex;flex-direction:column;gap:7px">
+                <div style="font-size:12.5px;font-weight:600;color:var(--ink)">Good to know</div>
+            @foreach (var note in Model.GoodToKnow)
+            {
+                <div class="dash-note"><span class="dash-note__marker">&bull;</span><div>@note</div></div>
             }
             </div>
         </div>
     </div>
+</div>
 
-    <div class="dash-col">
-        <div class="card card--side" style="display:flex;flex-direction:column;gap:12px">
-            <div style="font-size:14px;font-weight:600;color:var(--ink)">Start a new FD</div>
-            <div style="display:flex;flex-direction:column">
-            @for (var i = 0; i < Model.QuickActions.Count; i++)
+@* Board 01 - Mobile: three blockers, the in-flight counts and services as a list *@
+<div class="view-phone">
+    <div style="display:flex;flex-direction:column;gap:13px">
+        <div class="card" style="border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:13px">
+            <div>
+                <div style="font-size:17px;font-weight:500">Good morning, Shivaprasad</div>
+                <div style="font-size:11.5px;color:var(--muted);padding-top:4px"><span style="font-weight:700;color:var(--red-dark)">5 need you today</span> &middot; 11 in flight</div>
+            </div>
+            <a class="btn btn-primary" style="width:100%;border-radius:8px" asp-page="/Apps/UnoTp/Application/HolderIdentification">Create New FD</a>
+            <a href="#" style="font-size:12px;font-weight:600;color:var(--red);text-align:center">Resume last application</a>
+        </div>
+
+        <div class="card" style="border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:11px">
+            <div style="display:flex;align-items:baseline;gap:8px;padding-bottom:10px;border-bottom:1px solid var(--divider)">
+                <div style="font-size:13px;font-weight:700;flex:1;min-width:0">Needs your attention</div>
+                <div style="font-size:11px;font-weight:700;color:var(--red-dark)">@Model.NeedsAttention.Count</div>
+            </div>
+            @foreach (var n in Model.NeedsAttention.Take(3))
             {
-                var q = Model.QuickActions[i];
-                var icon = Html.Raw(quickActionIcons[i % quickActionIcons.Length]);
-                if (q.PageLink is not null)
-                {
-                    <a class="dash-row" asp-page="@q.PageLink"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4D4D4F" stroke-width="1.5" stroke-linecap="round">@icon</svg><div class="dash-row__title">@q.Title</div><div class="dash-row__open">Open</div></a>
-                }
-                else
-                {
-                    <div class="dash-row js-stub"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4D4D4F" stroke-width="1.5" stroke-linecap="round">@icon</svg><div class="dash-row__title">@q.Title</div><div class="dash-row__open">Open</div></div>
-                }
+                <div style="display:flex;gap:10px;align-items:flex-start;padding-bottom:11px;border-bottom:1px solid var(--divider)">
+                    <div style="width:6px;height:6px;border-radius:50%;background:@(n.BlockerClass == "text-danger" ? "#B3132B" : "#D69E2E");flex:none;margin-top:5px"></div>
+                    <div style="min-width:0;flex:1">
+                        <div style="font-size:12px;font-weight:700">@n.AppNo &middot; @n.Holder</div>
+                        <div class="@n.BlockerClass" style="font-size:11px;padding-top:3px;line-height:1.45">@n.Blocker</div>
+                        <div style="font-size:10.5px;color:var(--muted);padding-top:3px">@n.Stage &middot; waiting @n.Waiting</div>
+                    </div>
+                    <a style="flex:none;font-size:11px;font-weight:700;color:var(--red)" asp-page="/Apps/UnoTp/Application/HolderIdentification">@n.ShortAction</a>
+                </div>
+            }
+            <div style="font-size:11.5px;font-weight:700;color:var(--red);text-align:center;padding-top:2px">See all @Model.NeedsAttention.Count</div>
+        </div>
+
+        <div class="card" style="border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:11px">
+            <div style="font-size:13px;font-weight:700;padding-bottom:10px;border-bottom:1px solid var(--divider)">In flight &middot; 11</div>
+            <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
+            @foreach (var s in Model.InFlightSummary)
+            {
+                <div style="border:1px solid var(--border-2);border-radius:8px;padding:11px 12px"><div style="font-size:18px;font-weight:600">@s.Count</div><div style="font-size:11px;font-weight:600;color:var(--text);padding-top:2px">@s.Label</div></div>
             }
             </div>
         </div>
 
-        <div class="card card--side" style="display:flex;flex-direction:column;gap:12px">
-            <div style="font-size:14px;font-weight:600;color:var(--ink)">FD services</div>
-            <div style="display:flex;flex-direction:column">
-            @foreach (var s in Model.Services)
-            {
-                <div class="dash-row dash-row--service"><div class="dash-row__title">@s.Title</div><div class="dash-row__detail">@s.Detail</div></div>
-            }
-            </div>
+        <div class="card" style="border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:2px">
+            <div style="font-size:13px;font-weight:700;padding-bottom:10px;border-bottom:1px solid var(--divider)">Services</div>
+            <div style="display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--divider)"><div style="font-size:12px;font-weight:600;flex:1;min-width:0">Application status</div><div style="font-size:10.5px;color:var(--muted);flex:none">11 open</div></div>
+            <div style="display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--divider)"><div style="font-size:12px;font-weight:600;flex:1;min-width:0">Renew FD</div><div style="font-size:10.5px;color:var(--muted);flex:none">4 maturing</div></div>
+            <div style="display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--divider)"><div style="font-size:12px;font-weight:600;flex:1;min-width:0">DPDP Consent Tracker</div><div style="font-size:10.5px;color:var(--muted);flex:none">2 expiring</div></div>
+            <div style="display:flex;align-items:center;gap:10px;padding:11px 0"><div style="font-size:12px;font-weight:600;flex:1;min-width:0">PIS Generation &mdash; Axis</div></div>
         </div>
 
-        <div class="callout">
-            <div style="font-size:13.5px;font-weight:700;color:var(--ink)">Have these ready before you start</div>
-            <div class="dash-list">
-            @foreach (var c in Model.Checklist)
-            {
-                <div class="dash-list__item"><span class="dash-list__marker">@c.Step</span><div>@c.Text</div></div>
-            }
-            </div>
-            <div style="font-size:11.5px;color:var(--muted);line-height:1.45">Four steps: documents, investor information, payment, deposit details. Only the primary holder is required &mdash; joint holders are optional, up to two more.</div>
-            <a class="dash-link" href="#">See the full document list</a>
-        </div>
-
-        <div class="card" style="display:flex;flex-direction:column;gap:7px">
-            <div style="font-size:12.5px;font-weight:600;color:var(--ink)">Good to know</div>
-        @foreach (var note in Model.GoodToKnow)
-        {
-            <div class="dash-note"><span class="dash-note__marker">&bull;</span><div>@note</div></div>
-        }
+        <div class="callout" style="border-radius:0 8px 8px 0;padding:12px 14px;gap:7px">
+            <div style="font-size:12.5px;font-weight:700">Have these ready before you start</div>
+            <div style="font-size:11.5px;color:var(--text);line-height:1.5">PAN + date of birth (or folio) per holder &middot; PAN image for new customers &middot; signed DPDP and CKYC forms for offline consent &middot; holder&rsquo;s mobile for the consent OTP &middot; bank details and the payment cheque &middot; amount, tenure and scheme.</div>
+            <a class="action-link" href="#">See the full document list</a>
         </div>
     </div>
 </div>
