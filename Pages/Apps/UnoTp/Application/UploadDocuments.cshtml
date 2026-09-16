@@ -7,9 +7,9 @@
     ViewData["WizardStep"] = "docs";
 }
 
-<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap">
+<div class="docs-head" style="display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap">
     <div style="min-width:0;flex:1">
-        <div class="card__title" style="font-size:19px;font-weight:600;color:var(--ink)">Upload documents</div>
+        <div class="card__title laptop-only" style="font-size:19px;font-weight:600;color:var(--ink)">Upload documents</div>
         <div style="font-size:11.5px;color:var(--muted);padding-top:5px;line-height:1.5">Consent complete for all three holders &middot; 6 of 14 documents accepted &middot; 6 need attention</div>
     </div>
     <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;flex:none">
@@ -493,6 +493,7 @@
             <div class="actionbar__hint">Six items need attention across holders 1 and 3 &mdash; <strong>every proof of address must pass verification before Proceed opens</strong></div>
             <div style="display:flex;align-items:center;gap:24px">
                 <a class="hid-link" asp-page="/Apps/UnoTp/Application/HolderIdentification"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 6l-6 6 6 6"></path></svg> Back</a>
+                <span class="hid-footer__count phone-only">6 need attention</span>
                 <button type="submit" form="uploadDocsForm" class="hid-link hid-link--disabled">Proceed <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 6l6 6-6 6"></path></svg></button>
             </div>
         </div>

@@ -78,13 +78,13 @@
         <div style="font-size:12.5px;color:var(--muted);flex:none">Application No: <span style="font-weight:600;color:var(--ink)">FBBMFL26F99AAC1</span></div>
     </div>
 
-    <div class="rv-ready">
+    <div class="rv-ready laptop-only">
         <div class="rv-ready__text"><strong>Every control point has passed.</strong> All three holders are identified from CKYC and consented under DPDP, every proof of address is verified against source including holder 1&rsquo;s mailing-address proof, face match passed for each holder, the payment cheque matched the account on file, and no field the broker owns is blank. <span class="rv-em">The declarations below are the only thing left.</span></div>
         <div class="rv-ready__status">Ready to submit</div>
     </div>
 
     @* ── Fixed deposit ────────────────────────────────────────────────────────── *@
-    <section class="rv-section">
+    <section class="rv-section laptop-only">
         <div class="rv-head">
             <div class="rv-head__text">
                 <div class="rv-head__title">Fixed deposit</div>
@@ -111,7 +111,7 @@
     </section>
 
     @* ── Holders ──────────────────────────────────────────────────────────────── *@
-    <section class="rv-section">
+    <section class="rv-section laptop-only">
         <div class="rv-head">
             <div class="rv-head__text">
                 <div class="rv-head__title">Holders</div>
@@ -182,7 +182,7 @@
     </section>
 
     @* ── Nominee ──────────────────────────────────────────────────────────────── *@
-    <section class="rv-section">
+    <section class="rv-section laptop-only">
         <div class="rv-head">
             <div class="rv-head__text">
                 <div class="rv-head__title">Nominee</div>
@@ -199,7 +199,7 @@
         <div class="rv-pass rv-pass--soft"><strong>Nominee captured.</strong> The nominee is a minor, so a guardian and their address are on file &mdash; the guardian is the primary holder, at the permanent address above.</div>
     </section>
 
-    <div class="rv-split rv-split--wide-left">
+    <div class="rv-split rv-split--wide-left laptop-only">
         @* ── Bank & payment ─────────────────────────────────────────────────── *@
         <section class="rv-section">
             <div class="rv-head">
@@ -239,7 +239,7 @@
         </section>
     </div>
 
-    <div class="rv-split">
+    <div class="rv-split laptop-only">
         @* ── Consent ────────────────────────────────────────────────────────── *@
         <section class="rv-section">
             <div class="rv-head">
@@ -277,6 +277,63 @@
         </section>
     </div>
 
+    @* ── Board 11 - Mobile: the same review, condensed to one card per topic ── *@
+    <div class="rv-phone phone-only">
+        <div class="rv-phone__pass">
+            <div class="rv-phone__pass-title">Every control point passed</div>
+            <div class="rv-phone__pass-text">26 of 26 fields &middot; nominee captured &middot; all proofs verified against source &middot; face match and consent complete for all three holders.</div>
+        </div>
+
+        <div class="deposit-card">
+            <div class="deposit-card__top">
+                <div><div class="deposit-card__k">Invested amount</div><div class="deposit-card__amount">&#8377; 5,00,000</div></div>
+                <div class="deposit-card__rate"><div class="deposit-card__k">Rate</div><div class="deposit-card__rate-v">7.85%</div></div>
+            </div>
+            <div class="deposit-card__grid">
+                <div><div class="deposit-card__k">Tenure</div><div class="deposit-card__v">36 mo</div></div>
+                <div><div class="deposit-card__k">Scheme</div><div class="deposit-card__v">Cumulative</div></div>
+                <div><div class="deposit-card__k">Category</div><div class="deposit-card__v">Public</div></div>
+                <div><div class="deposit-card__k">Maturity</div><div class="deposit-card__v">&#8377; 6,29,300</div></div>
+                <div><div class="deposit-card__k">Matures on</div><div class="deposit-card__v">14 Sep 29</div></div>
+                <div><div class="deposit-card__k">Payout</div><div class="deposit-card__v">On maturity</div></div>
+            </div>
+            <div class="deposit-card__note">Auto renewal on &middot; principal only &middot; TDS not deducted (15G on file) &middot; e-receipt. Rate locks on realisation of the cheque. <a asp-page="/Apps/UnoTp/Application/FdConfiguration">Edit on 10</a></div>
+        </div>
+
+        <section class="rv-phone__card">
+            <div class="rv-phone__head"><div class="rv-phone__title">Holders</div><a asp-page="/Apps/UnoTp/Application/InvestorInfo">3 &middot; edit on 08</a></div>
+            <div class="rv-phone__holder"><div class="rv-phone__holder-name">R&bull;&bull;&bull;&bull;&bull;&bull; T&bull;&bull;&bull;&bull;&bull; &middot; Primary</div><div class="rv-phone__muted">PAN BISPM4465N &middot; DOB 10-06-1992 &middot; gender and parent name typed and matched &middot; salaried</div><div class="rv-phone__ok">Passport POA verified &middot; mailing POA verified</div></div>
+            <div class="rv-phone__holder"><div class="rv-phone__holder-name">S&bull;&bull;&bull;&bull; T&bull;&bull;&bull;&bull;&bull; &middot; Joint</div><div class="rv-phone__muted">PAN AXKPT8891L &middot; DOB 22-01-1990 &middot; DL MH12 2019 0034471 exp 08/2031</div><div class="rv-phone__ok">Verified &middot; all seven fields</div></div>
+            <div class="rv-phone__holder"><div class="rv-phone__holder-name">P&bull;&bull;&bull;&bull; N&bull;&bull;&bull; &middot; Joint</div><div class="rv-phone__muted">PAN CDEPN2290F &middot; DOB 03-11-1996 &middot; Aadhaar XXXX XXXX 4417</div><div class="rv-phone__ok">Verified &middot; all seven fields</div></div>
+        </section>
+
+        <section class="rv-phone__card">
+            <div class="rv-phone__head"><div class="rv-phone__title">Bank &amp; payment</div><a asp-page="/Apps/UnoTp/Application/BankDetails">Edit on 09</a></div>
+            <div class="rv-phone__text">Payment and repayment &mdash; HDFC Bank &bull;&bull;&bull;&bull;4471 &middot; Andheri East &middot; IFSC HDFC0000521</div>
+            <div class="rv-phone__text">Cheque 004512 &middot; 12 Sep 2026 &middot; &#8377; 5,00,000 &mdash; equals the deposit amount &middot; Axis CMS Mumbai &mdash; Andheri</div>
+            <div class="rv-phone__match"><strong>Cheque matched</strong> and the name matches the primary holder. The FD starts on realisation.</div>
+        </section>
+
+        <section class="rv-phone__card">
+            <div class="rv-phone__head"><div class="rv-phone__title">Documents &amp; consent</div><a asp-page="/Apps/UnoTp/Application/UploadDocuments">Edit on 07</a></div>
+            <ul class="rv-checks">
+                @foreach (var (title, detail) in new[] { ("PAN · three holders", ""), ("POA · holders 2 and 3", ""), ("POA · holder 1", "verified"), ("POA · holder 1 mailing", "verified"), ("Photograph · face match", ""), ("Payment cheque", ""), ("Form 15G · primary", ""), ("DPDP consent · all three", "2 digital, 1 offline") })
+                {
+                    <li class="rv-check">
+                        <span class="rv-check__mark" aria-hidden="true">&#10003;</span>
+                        <div class="rv-check__body"><div class="rv-check__title">@title</div>@if (detail != "") {<div class="rv-check__detail">@detail</div>}</div>
+                    </li>
+                }
+            </ul>
+        </section>
+
+        <section class="rv-phone__card">
+            <div class="rv-phone__title rv-phone__head">Other details</div>
+            <div class="rv-phone__text">Sub broker SB-100002225-14 &middot; purchase &middot; physical application no not entered</div>
+            <div class="rv-phone__ok">Nominee captured &mdash; A&bull;&bull;&bull;&bull; T&bull;&bull;&bull;&bull;&bull; &middot; daughter &middot; minor, guardian on file</div>
+        </section>
+    </div>
+
     @* ── Declarations ─────────────────────────────────────────────────────────── *@
     <form class="rv-declarations" id="reviewForm" novalidate>
         <div class="rv-head__title">Declarations</div>
@@ -296,9 +353,10 @@
             <div class="actionbar__hint" id="rv-footer-hint">Every control point passed &middot; 26 of 26 fields, nominee captured, all proofs verified against source &mdash; <strong>sign the last declaration to submit</strong></div>
             <div style="display:flex;align-items:center;gap:24px">
                 <a class="hid-link" asp-page="/Apps/UnoTp/Application/FdConfiguration"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 6l-6 6 6 6"></path></svg> Back</a>
-                <button type="button" class="hid-link">Download summary</button>
-                <button type="reset" form="reviewForm" class="hid-link">Clear All</button>
-                <button type="button" class="hid-link hid-link--disabled" id="openPaymentLinkModal" disabled>Submit application <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 6l6 6-6 6"></path></svg></button>
+                <button type="button" class="hid-link laptop-only">Download summary</button>
+                <button type="reset" form="reviewForm" class="hid-link laptop-only">Clear All</button>
+                <span class="hid-footer__count phone-only" id="rv-footer-count">1 to sign</span>
+                <button type="button" class="hid-link hid-link--disabled" id="openPaymentLinkModal" disabled><span>Submit<span class="laptop-only"> application</span></span> <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 6l6 6-6 6"></path></svg></button>
             </div>
         </div>
     </div>
@@ -357,6 +415,7 @@
                 });
                 hint.innerHTML = 'Every control point passed &middot; 26 of 26 fields, nominee captured, all proofs verified against source &mdash; '
                     + (unsigned ? '<strong>sign ' + WORDS[unsigned] + ' to submit</strong>' : '<strong>declarations signed &middot; ready to submit</strong>');
+                document.getElementById('rv-footer-count').textContent = unsigned ? unsigned + ' to sign' : 'signed';
                 submit.disabled = unsigned > 0;
                 submit.classList.toggle('hid-link--primary', !submit.disabled);
                 submit.classList.toggle('hid-link--disabled', submit.disabled);

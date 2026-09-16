@@ -25,7 +25,7 @@
 <input type="hidden" name="Step" id="hidStepField" value="@Model.Step" />
 
 <!-- 02: Holder search -->
-<section class="hid-section" data-step="search">
+<section class="hid-section" data-step="search" data-phone-title="Investor Identification">
     <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
         <div class="card__title" style="flex:none">Holders</div>
         <div class="card__subtitle">the primary holder is required &middot; up to two joint holders are optional, each added after the previous one is identified</div>
@@ -94,8 +94,8 @@
     </section>
 
 <!-- 02A: Search result -->
-<section class="hid-section" data-step="result" hidden>
-    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--divider-2);padding-bottom:16px">
+<section class="hid-section" data-step="result" data-phone-title="Record found" hidden>
+    <div class="laptop-only" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--divider-2);padding-bottom:16px">
         <div style="min-width:0;flex:1">
             <div class="card__title">Record found</div>
             <div class="card__subtitle" style="padding-top:4px">Searched by PAN &amp; date of birth &middot; one search, both intents</div>
@@ -103,7 +103,7 @@
         <button type="button" class="hid-link hid-next" data-goto="search">Search again</button>
     </div>
 
-    <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;background:var(--tint);border-radius:8px;padding:16px 18px">
+    <div class="hid-stack" style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;background:var(--tint);border-radius:8px;padding:16px 18px">
         <div style="min-width:0;flex:1">
             <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap">
                 <div style="font-size:17px;font-weight:600;color:var(--ink)">R&bull;&bull;&bull;&bull;&bull;&bull; T&bull;&bull;&bull;&bull;&bull;</div>
@@ -119,31 +119,31 @@
             <div class="summary-block__title" style="border:none;padding:0;margin:0;flex:1;min-width:0">Existing deposits</div>
             <div style="font-size:11.5px;color:var(--muted)">renewal opens 30 days before maturity and stays open through the 14-day grace period</div>
         </div>
-        <table class="data-table">
+        <table class="data-table data-table--stack">
             <thead><tr><th>FD number</th><th>Scheme &amp; holders</th><th>Amount</th><th>Rate</th><th>Maturity</th><th></th></tr></thead>
             <tbody>
                 <tr class="attention">
                     <td><strong>FD41120</strong></td>
-                    <td><strong>Samruddhi &middot; cumulative</strong><div class="field-hint">3 holders &middot; Either or Survivor</div></td>
-                    <td><strong>&#8377; 5,00,000</strong></td>
-                    <td><strong>7.85%</strong></td>
-                    <td><span class="text-amber">12 days to maturity</span><div class="field-hint">25 Sep 2026</div></td>
+                    <td data-label="Scheme &amp; holders"><strong>Samruddhi &middot; cumulative</strong><div class="field-hint">3 holders &middot; Either or Survivor</div></td>
+                    <td data-label="Amount"><strong>&#8377; 5,00,000</strong></td>
+                    <td data-label="Rate"><strong>7.85%</strong></td>
+                    <td data-label="Maturity"><span class="text-amber">12 days to maturity</span><div class="field-hint">25 Sep 2026</div></td>
                     <td><button type="button" class="btn btn-sm hid-next" data-goto="renewal" style="background:var(--red);color:#fff;border:0">Renew</button></td>
                 </tr>
                 <tr>
                     <td><strong>FD38904</strong></td>
-                    <td><strong>Samruddhi &middot; non-cumulative</strong><div class="field-hint">single holder &middot; monthly payout</div></td>
-                    <td><strong>&#8377; 2,00,000</strong></td>
-                    <td><strong>7.40%</strong></td>
-                    <td><span class="text-danger">Matured &middot; day 4 of grace</span><div class="field-hint">09 Sep 2026 &middot; 10 days left</div></td>
+                    <td data-label="Scheme &amp; holders"><strong>Samruddhi &middot; non-cumulative</strong><div class="field-hint">single holder &middot; monthly payout</div></td>
+                    <td data-label="Amount"><strong>&#8377; 2,00,000</strong></td>
+                    <td data-label="Rate"><strong>7.40%</strong></td>
+                    <td data-label="Maturity"><span class="text-danger">Matured &middot; day 4 of grace</span><div class="field-hint">09 Sep 2026 &middot; 10 days left</div></td>
                     <td><button type="button" class="btn btn-sm hid-next" data-goto="renewal" style="background:var(--red);color:#fff;border:0">Renew</button></td>
                 </tr>
                 <tr>
                     <td><strong class="text-muted">FD22771</strong></td>
-                    <td class="text-muted"><strong>Samruddhi &middot; cumulative</strong><div class="field-hint">2 holders &middot; Either or Survivor</div></td>
-                    <td class="text-muted"><strong>&#8377; 8,00,000</strong></td>
-                    <td class="text-muted"><strong>7.60%</strong></td>
-                    <td class="text-muted">Not due<div class="field-hint">14 Mar 2028</div></td>
+                    <td class="text-muted" data-label="Scheme &amp; holders"><strong>Samruddhi &middot; cumulative</strong><div class="field-hint">2 holders &middot; Either or Survivor</div></td>
+                    <td class="text-muted" data-label="Amount"><strong>&#8377; 8,00,000</strong></td>
+                    <td class="text-muted" data-label="Rate"><strong>7.60%</strong></td>
+                    <td class="text-muted" data-label="Maturity">Not due<div class="field-hint">14 Mar 2028</div></td>
                     <td><span class="text-muted" style="font-weight:600">Renew</span><div class="field-hint">opens 13 Feb 2028</div></td>
                 </tr>
             </tbody>
@@ -157,10 +157,10 @@
     </section>
 
 <!-- 02B: Renewal decision -->
-<section class="hid-section" data-step="renewal" hidden>
-    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--divider-2);padding-bottom:16px">
+<section class="hid-section" data-step="renewal" data-phone-title="Renewing FD41120" hidden>
+    <div class="hid-stack" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--divider-2);padding-bottom:16px">
         <div style="min-width:0;flex:1">
-            <div class="card__title">Renewing FD41120</div>
+            <div class="card__title laptop-only">Renewing FD41120</div>
             <div class="card__subtitle" style="padding-top:4px">&#8377; 5,00,000 &middot; Samruddhi cumulative &middot; matures 25 Sep 2026 &middot; 3 holders</div>
         </div>
         <div style="font-size:12.5px;font-weight:600;color:var(--text)">Choose a different deposit</div>
@@ -188,7 +188,7 @@
     </div>
 
     <div class="summary-block">
-        <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap">
+        <div class="hid-stack" style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap">
             <div class="summary-block__title" style="border:none;padding:0;margin:0;flex:1;min-width:0">Holders on the folio</div>
             <div style="font-size:11.5px;color:var(--muted)">what each one needs once the decision above is made</div>
         </div>
@@ -241,9 +241,9 @@
     </section>
 
 <!-- 03: Existing customer found -->
-<section class="hid-section" data-step="existing" hidden>
+<section class="hid-section" data-step="existing" data-phone-title="Investor Identification" hidden>
     <div style="display:flex;gap:0;border-bottom:1px solid var(--divider-2);padding-bottom:14px">
-        <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:0">
+        <div class="hid-wrap" style="display:flex;align-items:center;gap:12px;flex:1;min-width:0">
             <div class="holder-num holder-num--done">&#10003;</div>
             <div style="min-width:0;flex:1">
                 <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap">
@@ -271,7 +271,7 @@
         <div class="kv"><dt>Masked Mobile</dt><dd class="text-muted">&bull;&bull;&bull;&bull;&bull; &bull;1122</dd></div>
     </div>
 
-    <div style="border-top:1px solid var(--divider);padding-top:16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+    <div class="hid-yesno" style="border-top:1px solid var(--divider);padding-top:16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
         <div style="font-size:13.5px;font-weight:600;flex:1;min-width:220px">Are the email and mobile correct?</div>
         <div style="padding:10px 24px;border-radius:4px;background:#E7F6EC;border:2px solid #1E9E52;color:var(--green);font-size:13px;font-weight:600;flex:none">&#10003; Yes</div>
         <div style="padding:10px 24px;border-radius:4px;border:1px solid var(--border-3);color:var(--text);font-size:13px;font-weight:500;flex:none">No</div>
@@ -299,7 +299,7 @@
     </section>
 
 <!-- 04: New customer PAN & NSDL -->
-<section class="hid-section" data-step="newpan" hidden>
+<section class="hid-section" data-step="newpan" data-phone-title="Investor Identification" hidden>
     <div style="display:flex;flex-direction:column;gap:10px;border-bottom:1px solid var(--divider-2);padding-bottom:18px">
         <div style="display:flex;align-items:baseline;gap:12px">
             <div class="section-label" style="flex:1;font-size:11.5px">Holders on this application</div>
@@ -332,7 +332,7 @@
         <div class="field"><label>Email ID</label><input value="p.nair@mail.com" /></div>
     </div>
 
-    <div class="doc-row" style="border:1px dashed #C9CFD6;border-radius:10px;padding:14px;border-top:1px dashed #C9CFD6">
+    <div class="doc-row hid-stack" style="border:1px dashed #C9CFD6;border-radius:10px;padding:14px;border-top:1px dashed #C9CFD6">
         <div><div class="doc-row__title">pan-nair.jpg &middot; OCR complete</div></div>
         <div style="display:flex;gap:8px;flex:none">
             <button type="button" class="btn btn-secondary btn-sm">Replace</button>
@@ -372,7 +372,7 @@
     </section>
 
 <!-- 05: DPDP consent -->
-<section class="hid-section" data-step="consent" hidden>
+<section class="hid-section" data-step="consent" data-phone-title="DPDP Consent" hidden>
     <div style="display:flex;flex-direction:column;gap:10px;border-bottom:1px solid var(--divider-2);padding-bottom:18px">
         <div style="display:flex;align-items:baseline;gap:12px">
             <div class="section-label" style="flex:1;font-size:11.5px">Holders on this application</div>
@@ -397,13 +397,13 @@
         </div>
     </div>
 
-    <div style="display:flex;align-items:center;gap:12px">
+    <div class="hid-stack" style="display:flex;align-items:center;gap:12px">
         <div style="font-size:14px;font-weight:600;flex:1;min-width:0">Holder 2 &middot; S&bull;&bull;&bull;&bull; T&bull;&bull;&bull;&bull;&bull; &middot; consent required</div>
         <span class="chip chip--muted">Joint holder</span>
         <button type="button" class="btn btn-secondary btn-sm hid-next" data-goto="newpan">Remove holder</button>
     </div>
 
-    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--divider);padding-bottom:16px">
+    <div class="hid-stack" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--divider);padding-bottom:16px">
         <div style="min-width:0;flex:1">
             <div style="font-size:14px;font-weight:600;color:var(--ink)">Consent collection for this holder <span class="required">*</span></div>
             <div class="field-hint" style="padding-top:3px">
@@ -450,7 +450,7 @@
                 </div>
             </div>
 }
-            <div style="border-top:1px solid var(--divider);padding-top:10px;display:flex;align-items:center;gap:10px">
+            <div class="hid-stack" style="border-top:1px solid var(--divider);padding-top:10px;display:flex;align-items:center;gap:10px">
                 <div class="field-hint" style="flex:1">@Model.Consent.OtpHint</div>
                 <button type="button" class="btn btn-secondary btn-sm" disabled="@(!Model.Consent.OtpUnlocked)">Send consent OTP</button>
             </div>
@@ -470,18 +470,18 @@
     </section>
 
 <!-- 06: All holders complete -->
-<section class="hid-section" data-step="complete" hidden>
+<section class="hid-section" data-step="complete" data-phone-title="Investor Identification" hidden>
     <div style="display:flex;align-items:baseline;gap:12px;border-bottom:1px solid var(--divider-2);padding-bottom:14px">
         <div class="card__title" style="flex:1">All holders complete</div>
         <div style="font-size:12px;color:var(--muted)">Either or Survivor &middot; 3 holders</div>
     </div>
     <div class="card__subtitle">At completion, every holder is either identified with valid CKYC/NSDL or has consent on file &mdash; ready to move to the documents step.</div>
-    <table class="data-table">
+    <table class="data-table data-table--stack">
         <thead><tr><th>Holder</th><th>Source</th><th>Identification</th>@if (Model.Consent.HasDpdp) { <th>DPDP consent</th> }@if (Model.Consent.HasCkyc) { <th>CKYC</th> }</tr></thead>
         <tbody>
-            <tr><td><strong>Holder 1</strong><div class="field-hint">primary &middot; folio MF0051187</div></td><td><span class="chip chip--muted">n/a</span></td><td class="text-green">Existing</td>@if (Model.Consent.HasDpdp) { <td class="text-green">On file 12 Mar 2025</td> }@if (Model.Consent.HasCkyc) { <td class="text-green">On file</td> }</tr>
-            <tr><td><strong>Holder 2</strong><div class="field-hint">folio MF0051188</div></td><td><span class="chip chip--warn">Offline</span></td><td class="text-green">Existing</td>@if (Model.Consent.HasDpdp) { <td class="text-green">Uploaded &middot; OTP verified</td> }@if (Model.Consent.HasCkyc) { <td style="color:var(--blue);font-weight:600">At completion</td> }</tr>
-            <tr><td><strong>Holder 3</strong><div class="field-hint">new customer</div></td><td><span class="chip chip--warn">Offline</span></td><td class="text-green">NSDL valid</td>@if (Model.Consent.HasDpdp) { <td class="text-green">Uploaded &middot; OTP verified</td> }@if (Model.Consent.HasCkyc) { <td style="color:var(--blue);font-weight:600">At completion</td> }</tr>
+            <tr><td><strong>Holder 1</strong><div class="field-hint">primary &middot; folio MF0051187</div></td><td data-label="Source"><span class="chip chip--muted">n/a</span></td><td class="text-green" data-label="Identification">Existing</td>@if (Model.Consent.HasDpdp) { <td class="text-green" data-label="DPDP consent">On file 12 Mar 2025</td> }@if (Model.Consent.HasCkyc) { <td class="text-green" data-label="CKYC">On file</td> }</tr>
+            <tr><td><strong>Holder 2</strong><div class="field-hint">folio MF0051188</div></td><td data-label="Source"><span class="chip chip--warn">Offline</span></td><td class="text-green" data-label="Identification">Existing</td>@if (Model.Consent.HasDpdp) { <td class="text-green" data-label="DPDP consent">Uploaded &middot; OTP verified</td> }@if (Model.Consent.HasCkyc) { <td style="color:var(--blue);font-weight:600" data-label="CKYC">At completion</td> }</tr>
+            <tr><td><strong>Holder 3</strong><div class="field-hint">new customer</div></td><td data-label="Source"><span class="chip chip--warn">Offline</span></td><td class="text-green" data-label="Identification">NSDL valid</td>@if (Model.Consent.HasDpdp) { <td class="text-green" data-label="DPDP consent">Uploaded &middot; OTP verified</td> }@if (Model.Consent.HasCkyc) { <td style="color:var(--blue);font-weight:600" data-label="CKYC">At completion</td> }</tr>
         </tbody>
     </table>
     <div class="field-hint">Consent artefacts &mdash; timestamp, channel, purpose, IP, holder reference &mdash; are stored against the application for audit.</div>
@@ -520,7 +520,7 @@
         <div class="actionbar__hint">Continuing with the same three holders &mdash; <strong>holder 3 will be asked to re-verify inside the normal flow</strong></div>
         <div style="display:flex;align-items:center;gap:24px">
             <button type="button" class="hid-link hid-next" data-goto="result">@Html.Raw(backIcon) Back</button>
-            <button type="button" class="hid-link hid-next" data-goto="search">Cancel renewal</button>
+            <button type="button" class="hid-link hid-next" data-goto="search"><span class="laptop-only">Cancel renewal</span><span class="phone-only">Cancel</span></button>
             <button type="button" class="hid-link hid-link--primary hid-next" data-goto="complete">Proceed @Html.Raw(fwdIcon)</button>
         </div>
         </div>
@@ -530,8 +530,8 @@
         <div class="actionbar__hint">Record matched and consent already on file &mdash; <strong>this holder needs nothing further</strong></div>
         <div style="display:flex;align-items:center;gap:24px">
             <button type="button" class="hid-link hid-next" data-goto="result">@Html.Raw(backIcon) Back</button>
-            <button type="button" class="hid-link">Clear All</button>
-            <button type="button" class="hid-link hid-link--primary hid-next" data-goto="newpan">+ Add joint holder</button>
+            <button type="button" class="hid-link laptop-only">Clear All</button>
+            <button type="button" class="hid-link hid-link--primary hid-next" data-goto="newpan"><span>+ <span class="laptop-only">Add joint holder</span><span class="phone-only">Joint</span></span></button>
             <button type="button" class="hid-link hid-link--primary hid-next" data-goto="complete">Proceed @Html.Raw(fwdIcon)</button>
         </div>
         </div>
@@ -541,8 +541,8 @@
         <div class="actionbar__hint">Holder 3 &middot; NSDL validation failed &mdash; <strong>correct the name and date of birth, then retry</strong></div>
         <div style="display:flex;align-items:center;gap:24px">
             <button type="button" class="hid-link hid-next" data-goto="existing">@Html.Raw(backIcon) Back</button>
-            <button type="button" class="hid-link">Clear All</button>
-            <button type="button" class="hid-link hid-link--disabled">Continue to consent @Html.Raw(fwdIcon)</button>
+            <button type="button" class="hid-link laptop-only">Clear All</button>
+            <button type="button" class="hid-link hid-link--disabled"><span>Continue<span class="laptop-only"> to consent</span></span> @Html.Raw(fwdIcon)</button>
         </div>
         </div>
     </div>
@@ -551,7 +551,7 @@
         <div class="actionbar__hint">@Html.Raw(Model.Consent.FooterHint)</div>
         <div style="display:flex;align-items:center;gap:24px">
             <button type="button" class="hid-link hid-next" data-goto="newpan">@Html.Raw(backIcon) Back</button>
-            <button type="button" class="hid-link">Clear All</button>
+            <button type="button" class="hid-link laptop-only">Clear All</button>
             <button type="button" class="hid-link hid-link--disabled">Continue @Html.Raw(fwdIcon)</button>
         </div>
         </div>
@@ -561,8 +561,8 @@
         <div class="actionbar__hint">All three holders are identified and consented &mdash; <strong>ready to move to the documents step</strong></div>
         <div style="display:flex;align-items:center;gap:24px">
             <button type="button" class="hid-link hid-next" data-goto="consent">@Html.Raw(backIcon) Back</button>
-            <button type="button" class="hid-link">Clear All</button>
-            <button type="submit" form="hidForm" class="hid-link hid-link--primary">Proceed to documents @Html.Raw(fwdIcon)</button>
+            <button type="button" class="hid-link laptop-only">Clear All</button>
+            <button type="submit" form="hidForm" class="hid-link hid-link--primary"><span>Proceed<span class="laptop-only"> to documents</span></span> @Html.Raw(fwdIcon)</button>
         </div>
         </div>
     </div>

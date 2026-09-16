@@ -9,8 +9,13 @@
   var stepField = document.getElementById('hidStepField');
 
   function showStep(step) {
+    var phoneTitle = document.getElementById('wizardPhoneTitle');
     sections.forEach(function (s) {
       s.hidden = s.getAttribute('data-step') !== step;
+      // The phone back bar names the sub-step, as Boards 02-06 - Mobile do.
+      if (!s.hidden && phoneTitle && s.getAttribute('data-phone-title')) {
+        phoneTitle.textContent = s.getAttribute('data-phone-title');
+      }
     });
     footers.forEach(function (f) {
       f.hidden = f.getAttribute('data-step') !== step;

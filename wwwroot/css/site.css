@@ -499,6 +499,83 @@ tbody tr[hidden] { display: none; }
   /* The mobile boards end on their last card, without the legal strip. */
   .app-footer { display: none; }
 }
+/* Laptop-only and phone-only fragments inside one block: a shorter label, a
+   counter, a link the phone footer drops. */
+.phone-only { display: none; }
+@media (max-width: 560px) {
+  .laptop-only { display: none !important; }
+  .phone-only { display: revert; }
+}
+
+/* ===== Wizard on a phone =====
+   Boards 02-11 - Mobile: the step rail folds behind a menu button, a back bar names
+   the screen, the page's own heading is dropped, and the footer is one row of
+   Back, a short counter or secondary action, and the step's primary action. */
+.wizard-phonebar { display: none; }
+@media (max-width: 560px) {
+  .wizard-phonebar {
+    display: flex; align-items: center; gap: 6px; position: sticky; top: 0; z-index: 15;
+    margin: -16px -16px 12px; padding: 8px 6px; background: #fff; border-bottom: 1px solid var(--divider);
+  }
+  .wizard-phonebar__back, .wizard-phonebar__menu {
+    width: 36px; height: 36px; flex: none; display: flex; align-items: center; justify-content: center;
+    color: var(--ink); background: none; border: 0; padding: 0; cursor: pointer; border-radius: 6px;
+  }
+  .wizard-phonebar__back:hover, .wizard-phonebar__menu:hover { background: #F2F4F7; text-decoration: none; }
+  .wizard-phonebar__title { flex: 1; min-width: 0; font-size: 14px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .wizard__body { gap: 12px; }
+  .wizard .wizard__rail { display: none; }
+  .wizard--menu-open .wizard__rail { display: flex; flex-direction: column; overflow: visible; }
+  .wizard--menu-open .rail-item span { white-space: normal; }
+  /* .wizard raises this over the flex display the 08 block sets further down. */
+  .wizard .inv-page-head { display: none; }
+  .wizard .callout--info { font-size: 11.5px; line-height: 1.55; padding: 12px 14px; }
+
+  .hid-footer .actionbar__hint { display: none; }
+  .hid-footer__inner { flex-wrap: nowrap; padding: 12px 16px; }
+  .hid-footer__inner > div:last-child { flex: 1; min-width: 0; justify-content: space-between; gap: 12px !important; }
+  .hid-footer__count { font-size: 12px; font-weight: 500; color: var(--muted); white-space: nowrap; }
+  .hid-link { font-size: 13px; white-space: nowrap; }
+  .wizard { padding-bottom: 72px; }
+
+  /* Upload Documents (07): the application number and type toggle drop under the summary line. */
+  .docs-head { gap: 10px; }
+  .docs-head > div:last-child { flex: 1 1 100% !important; }
+
+  /* Investor Identification (02-06). The sub-step pills scroll in one row. */
+  .hid-steps { flex-wrap: nowrap; overflow-x: auto; margin: 0 -16px 14px; padding: 0 16px 2px; scrollbar-width: none; }
+  .hid-step-pill { flex: none; }
+  /* A row of label and actions stacks, with its buttons full width. */
+  .hid-stack { flex-direction: column; align-items: stretch !important; }
+  .hid-stack > * { width: auto !important; min-width: 0 !important; }
+  .hid-stack > .chip { align-self: flex-start; }
+  .hid-stack .btn { flex: 1; }
+  /* Holder rows keep the marker and name on the first line; status and actions wrap under the name. */
+  .holder-row, .hid-wrap { flex-wrap: wrap; row-gap: 6px; }
+  /* !important: the rows set flex:1 inline for the laptop layout. */
+  .holder-row > :nth-child(2) { flex: 1 1 calc(100% - 40px) !important; }
+  .holder-row > :nth-child(n+3) { margin-left: 36px; }
+  .hid-wrap > :nth-child(2) { flex: 1 1 calc(100% - 44px) !important; }
+  .hid-wrap > :nth-child(n+3) { margin-left: 40px; }
+  .hid-yesno > :nth-child(n+2) { flex: 1 !important; text-align: center; }
+
+  /* A wide table becomes one card per row, each cell labelled from data-label. */
+  .data-table--stack, .data-table--stack tbody { display: flex; flex-direction: column; gap: 10px; border: 0; overflow: visible; }
+  .data-table--stack thead { display: none; }
+  .data-table--stack tbody tr {
+    display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px 14px;
+    border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; background: #fff;
+  }
+  .data-table--stack tbody tr.attention { background: #FFFAFB; border-left: 3px solid var(--red); }
+  .data-table--stack tbody td { border: 0; padding: 0; min-width: 0; }
+  .data-table--stack tbody td:first-child { grid-column: 1 / -1; font-size: 13px; }
+  .data-table--stack tbody td:last-child:not([data-label]) { grid-column: 1 / -1; }
+  .data-table--stack tbody td:last-child:not([data-label]) .btn { width: 100%; }
+  .data-table--stack td[data-label]::before {
+    content: attr(data-label); display: block; padding-bottom: 3px;
+    font-size: 9.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted-2);
+  }
+}
 
 /* ===== Responsive / mobile ===== */
 @media (max-width: 900px) {
@@ -719,8 +796,17 @@ select.inv-control:has(option[value=""]:checked) { color: var(--muted-2); }
 @media (max-width: 900px) {
   .bank-grid, .bank-lookup { grid-template-columns: repeat(2, minmax(0,1fr)); }
 }
+/* Board 09 - Mobile: fields full width except cheque date and number side by side, a
+   compact two-across bank read-out, and the repayment switch without its label. */
 @media (max-width: 560px) {
-  .bank-grid, .bank-lookup { grid-template-columns: 1fr; }
+  .bank-grid { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px 12px; }
+  .bank-grid > .inv-field { grid-column: 1 / -1; }
+  .bank-grid > .inv-field:has(#cheque-date), .bank-grid > .inv-field:has(#cheque-number) { grid-column: auto; }
+  .bank-lookup { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px 14px; padding: 11px 13px; }
+  .bank-lookup .inv-kv__v { font-size: 12.5px; }
+  .bank-repayment__head { flex-wrap: nowrap; align-items: flex-start; }
+  .bank-same span { display: none; }
+  .bank-verified__text, .bank-note { font-size: 11.5px; }
 }
 
 /* ===== FD Configuration (10) =====
@@ -937,6 +1023,41 @@ select.inv-control:has(option[value=""]:checked) { color: var(--muted-2); }
   .rv-grid-2 { grid-template-columns: 1fr; }
   .rv-holder { grid-template-columns: 1fr; }
   .rv-holder__col, .rv-holder__col:nth-child(2) { border-left: none; border-top: 1px solid #F2F4F7; }
+}
+
+/* The dark deposit read-out Boards 10 and 11 - Mobile lead with. */
+.deposit-card { background: var(--ink); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 12px; color: #fff; }
+.deposit-card__top { display: flex; align-items: flex-end; gap: 12px; }
+.deposit-card__top > :first-child { flex: 1; min-width: 0; }
+.deposit-card__k { font-size: 10px; font-weight: 500; color: var(--muted-2); }
+.deposit-card__amount { font-size: 22px; font-weight: 600; padding-top: 2px; }
+.deposit-card__rate { text-align: right; flex: none; }
+.deposit-card__rate-v { font-size: 18px; font-weight: 600; color: #6FCF97; padding-top: 2px; }
+.deposit-card__grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; border-top: 1px solid #3A3739; padding-top: 11px; }
+.deposit-card__v { font-size: 12px; font-weight: 600; padding-top: 2px; }
+.deposit-card__note { font-size: 10px; color: var(--muted-2); line-height: 1.5; border-top: 1px solid #3A3739; padding-top: 10px; }
+.deposit-card__note a { color: #fff; font-weight: 600; }
+
+/* Board 11 - Mobile. Display is set only inside the query so .phone-only keeps it hidden on a laptop. */
+@media (max-width: 560px) {
+  .rv-page { gap: 14px; }
+  .rv-phone { display: flex; flex-direction: column; gap: 14px; }
+  .rv-phone__pass { background: #F3FAF5; border-radius: 10px; padding: 13px 14px; color: var(--green); }
+  .rv-phone__pass-title { font-size: 12px; font-weight: 700; line-height: 1.45; }
+  .rv-phone__pass-text { font-size: 10.5px; padding-top: 4px; line-height: 1.5; }
+  .rv-phone__card { border: 1px solid var(--border); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+  .rv-phone__head { display: flex; align-items: baseline; gap: 8px; padding-bottom: 10px; border-bottom: 1px solid var(--divider); }
+  .rv-phone__head a { flex: none; font-size: 11px; font-weight: 600; color: var(--red); }
+  .rv-phone__title { flex: 1; min-width: 0; font-size: 13px; font-weight: 700; color: var(--ink); }
+  .rv-phone__holder { border-left: 3px solid var(--green-2); padding-left: 11px; }
+  .rv-phone__holder-name { font-size: 12px; font-weight: 700; color: var(--ink); }
+  .rv-phone__muted { font-size: 10.5px; color: var(--muted); padding-top: 3px; line-height: 1.5; }
+  .rv-phone__ok { font-size: 10.5px; font-weight: 600; color: var(--green); padding-top: 3px; line-height: 1.5; }
+  .rv-phone__text { font-size: 11.5px; color: var(--text); line-height: 1.55; }
+  .rv-phone__match { background: #E7F5EC; border-radius: 8px; padding: 10px 12px; font-size: 10.5px; color: var(--green); line-height: 1.5; }
+  .rv-phone__match strong { font-weight: 700; }
+  .rv-phone .rv-check:first-child { border-top: none; }
+  .rv-declarations { padding-top: 14px; }
 }
 
 /* ===== Submit · payment link dialog (11A) =====
