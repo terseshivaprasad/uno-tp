@@ -182,7 +182,6 @@ public class IndexModel : PageModel
                 break;
             case DmsClass.Fd:
                 var fd = version.Fd;
-                facts.Add(new("Holder type", d.HolderType));
                 facts.Add(new("Document type", d.Type));
                 facts.Add(new("FIN year", fd?.FinYear ?? "—"));
                 facts.Add(new("Period", fd?.Period ?? "—"));
@@ -192,7 +191,6 @@ public class IndexModel : PageModel
                 if (d.Expiry is not null) facts.Add(new("Expiry", d.Expiry));
                 break;
             default:
-                facts.Add(new("Holder type", d.HolderType));
                 facts.Add(new("Document type", d.Type + " · typed at upload"));
                 facts.Add(new("Application no", applicationNo));
                 break;

@@ -3,12 +3,8 @@ using UnoTp.Models;
 
 namespace UnoTp.Pages.Apps.DmsExplorer;
 
-/// <summary>
-/// A holder type as the store codes it in a file name: Investor files as 01. A KYC
-/// document always belongs to a holder; an FD or Open document can instead be filed
-/// as not holder-specific (00), as the cheque and the application form are.
-/// </summary>
-public record DmsHolderOption(string Label, string Code, bool KycToo = true);
+/// <summary>A holder type as the store codes it in a file name: Investor files as 01.</summary>
+public record DmsHolderOption(string Label, string Code);
 
 /// <summary>
 /// One document the upload form can file. Label is the type the view shows ("Proof of
@@ -29,7 +25,6 @@ public class UploadModel : PageModel
         new("Investor", "01"),
         new("Joint holder 1", "02"),
         new("Joint holder 2", "03"),
-        new("Not holder-specific", "00", KycToo: false),
     };
 
     // The KYC types and sub-types the old upload screen offered, named as the view

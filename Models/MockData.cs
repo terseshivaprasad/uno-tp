@@ -79,7 +79,9 @@ public record ConsentRecord(
 public enum DmsClass { Kyc, Fd, Open }
 
 // One file the document store holds under a control number. InDms and DmsId stay
-// null while the upload is still waiting to reach DMS.
+// null while the upload is still waiting to reach DMS. Only a KYC document belongs to
+// a holder; FD and Open documents have no holder relation and are always filed as
+// "Not holder-specific" (code 00).
 public record DmsDocument(
     string HolderType,
     string Type,
@@ -234,7 +236,7 @@ public static class MockData
         const string Earlier = "FBBMFL25C12RT7";
         // The investor's folio (as the consent register has it) holds both deposits;
         // each deposit has its own receipt, period and financial year.
-        const string Folio = "MF0051187", InvestorPan = "ABCPT1234D", Joint1Pan = "BCDPT5678E";
+        const string Folio = "MF0051187", InvestorPan = "ABCPT1234D";
         const string Fdr2025 = "250312007", Fdr2026 = "260914012", Period2025 = "12 months", Period2026 = "36 months";
         const string Investor = "Investor", Joint1 = "Joint holder 1", Joint2 = "Joint holder 2", Shared = "Not holder-specific";
 
@@ -251,8 +253,6 @@ public static class MockData
             new(Joint1, "Identity proof · PAN", DmsClass.Kyc, "123456_02_PAN__13092026.tif", At(13, 18, 16), null, null, Ref: "BCDPT••••E", Remark: "Awaiting DMS · 2 h"),
             new(Joint1, "Proof of address · driving licence", DmsClass.Kyc, "123456_02_DrivingLicence__14092026.jpg", At(14, 11, 41), At(14, 11, 42), "DMS-884108", Ref: "MH02••••••044", Expiry: "06/2031"),
             new(Joint1, "Photograph", DmsClass.Kyc, "123456_02_Photograph__13092026.jpg", At(13, 18, 16), At(13, 18, 17), "DMS-883915"),
-            new(Joint1, "Tax declaration · Form 15G", DmsClass.Fd, "123456_02_Form15G__14092026.pdf", At(14, 12, 20), At(14, 12, 21), "DMS-884122", Expiry: "31/03/2027",
-                Fd: new("2026-27", Period2026, Joint1Pan, Folio, Fdr2026)),
 
             new(Joint2, "Identity proof · PAN", DmsClass.Kyc, "123456_03_PAN__13092026.tif", At(13, 18, 17), At(13, 18, 18), "DMS-883914", Ref: "CDEPN••••F"),
             new(Joint2, "Proof of address · Aadhaar", DmsClass.Kyc, "123456_03_AadharCard__14092026.jpg", At(14, 11, 36), At(14, 11, 37), "DMS-884120", Ref: "••••2290",
@@ -275,6 +275,8 @@ public static class MockData
                     new("123456_00_FDForm__12032025.pdf", In2025(10, 40), In2025(10, 41), "DMS-612058", Earlier, "form for the new application",
                         new("2024-25", Period2025, InvestorPan, Folio, Fdr2025)),
                 }),
+            new(Shared, "Tax declaration · Form 15G", DmsClass.Fd, "123456_00_Form15G__14092026.pdf", At(14, 12, 20), At(14, 12, 21), "DMS-884122", Expiry: "31/03/2027",
+                Fd: new("2026-27", Period2026, InvestorPan, Folio, Fdr2026)),
             new(Shared, "Letter of authority", DmsClass.Open, "123456_00_Authority Letter__14092026.pdf", At(14, 17, 4), At(14, 17, 5), "DMS-884151",
                 Note: "typed type · open class", Remark: "Filed at broker request"),
         };

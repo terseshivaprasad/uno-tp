@@ -59,14 +59,6 @@
         else el.disabled = !on;
       });
     });
-
-    // "Not holder-specific" is offered for FD and other documents only; a KYC
-    // document always belongs to a holder.
-    Array.prototype.forEach.call(holder.options, function (o, i) {
-      if (i === 0) return;
-      o.hidden = o.getAttribute('data-kinds').split(' ').indexOf(k) === -1;
-      if (o.hidden && o.selected) holder.value = '';
-    });
   }
 
   function drawSubTypes() {
@@ -92,10 +84,12 @@
   // What the upload would be filed as: class, holder type, type and file name.
   function describe() {
     var k = kind();
-    var h = holder.value ? holder.options[holder.selectedIndex] : null;
-    var d = { cls: 'KYC', holder: h ? h.value : null, code: h ? h.getAttribute('data-code') : '··', type: null, token: null };
+    var d = { cls: 'KYC', holder: null, code: '00', type: null, token: null };
     if (k === 'kyc') {
+      var h = holder.value ? holder.options[holder.selectedIndex] : null;
       var sub = selectedSub();
+      d.holder = h ? h.value : null;
+      d.code = h ? h.getAttribute('data-code') : '··';
       d.type = sub ? sub.getAttribute('data-label') : null;
       d.token = sub ? sub.getAttribute('data-token') : null;
     } else if (k === 'fd') {
@@ -116,12 +110,12 @@
   }
 
   // The document this upload would replace: the same holder type and type under the
-  // same control number, whatever the class.
+  // same control number. FD and Open documents are matched on type alone.
   function existing(d) {
     if (control.value.trim() !== filed.controlNo || !d.type) return null;
     return filed.documents.find(function (doc) {
       if (doc.type.toLowerCase() !== d.type.toLowerCase()) return false;
-      return doc.holder === d.holder;
+      return kind() !== 'kyc' || doc.holder === d.holder;
     }) || null;
   }
 
@@ -131,7 +125,7 @@
     $('dmsuPreview').textContent = d.file;
     $('dmsuClass').textContent = d.cls;
     $('dmsuType').textContent = d.type || '—';
-    $('dmsuHolderOut').textContent = d.holder || '—';
+    $('dmsuHolderOut').textContent = kind() === 'kyc' ? (d.holder || '—') : 'Not holder-specific';
     $('dmsuVersion').textContent = prior
       ? 'version ' + (prior.version + 1) + ' · replaces version ' + prior.version
       : (d.type && control.value.trim() ? 'version 1' : '—');
@@ -142,7 +136,7 @@
     notice.classList.toggle('callout--info', !prior);
     if (prior) {
       notice.textContent = 'Control ' + filed.controlNo + ' already holds ' + d.type
-        + (d.code === '00' ? ', not holder-specific' : ' for ' + d.holder) + ' (' + prior.file + ', version ' + prior.version
+        + (kind() === 'kyc' ? ' for ' + d.holder : '') + ' (' + prior.file + ', version ' + prior.version
         + '). Uploading files version ' + (prior.version + 1) + '; version ' + prior.version + ' stays viewable under History.';
     } else if (known) {
       notice.textContent = 'Control ' + filed.controlNo + ' is on application ' + filed.applicationNo
@@ -272,7 +266,7 @@
       + ' and waits in the sync queue until DMS takes it.';
     var facts = [
       ['Class · type', d.cls + ' · ' + d.type],
-      ['Holder type', d.holder],
+      ['Holder type', kind() === 'kyc' ? d.holder : 'Not holder-specific'],
       ['Version', prior ? (prior.version + 1) + ' · version ' + prior.version + ' kept under History' : '1'],
       ['File', file.name + ' · ' + sizeText(file.size)],
     ];

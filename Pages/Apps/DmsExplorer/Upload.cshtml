@@ -55,13 +55,13 @@
                     <input class="inv-control" id="dmsuApp" name="application" autocomplete="off" data-required="Enter the application number">
                     <div class="inv-field__hint" hidden></div>
                 </div>
-                <div class="inv-field" data-kinds="kyc fd other">
+                <div class="inv-field" data-kinds="kyc">
                     <label for="dmsuHolder">Holder type <span class="required">*</span></label>
                     <select class="inv-control" id="dmsuHolder" name="holder" data-required="Choose the holder type">
                         <option value="">Select</option>
                         @foreach (var h in UploadModel.Holders)
                         {
-                            <option value="@h.Label" data-code="@h.Code" data-kinds="@(h.KycToo ? "kyc fd other" : "fd other")">@h.Label</option>
+                            <option value="@h.Label" data-code="@h.Code">@h.Label</option>
                         }
                     </select>
                     <div class="inv-field__hint" hidden></div>
@@ -201,7 +201,7 @@
                 <dt>Holder type</dt><dd id="dmsuHolderOut">&mdash;</dd>
                 <dt>Version</dt><dd id="dmsuVersion">&mdash;</dd>
             </dl>
-            <p class="dms-viewer__note">The name is built from the control number, the holder code (01 to 03, or 00 when not holder-specific), the document type and today's date. After upload it waits in the sync queue until DMS takes it.</p>
+            <p class="dms-viewer__note">The name is built from the control number, the holder code (00 when the document is not a holder's), the document type and today's date. After upload it waits in the sync queue until DMS takes it.</p>
         </aside>
     </div>
 </div>
