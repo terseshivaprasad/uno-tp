@@ -38,31 +38,10 @@ a:hover { text-decoration: underline; }
 
 h1, h2, h3, p { margin: 0; }
 
-/* ===== Fixed 44px header ===== */
-.app-header {
-  height: 44px;
-  background: #fff;
-  border-bottom: 1px solid var(--divider);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 16px;
-  position: sticky;
-  top: 0;
-  z-index: 50;
-}
-.app-header__brand { display: flex; align-items: baseline; gap: 7px; }
-.brand-mahindra { font-size: 19px; font-weight: 700; color: var(--red); letter-spacing: -.4px; }
-.brand-finance { font-size: 17px; font-weight: 600; color: var(--ink); letter-spacing: .6px; }
-.app-header__right { display: flex; align-items: center; gap: 16px; font-size: 13.6px; color: var(--text); }
-.welcome-label { font-weight: 500; }
-.entity-code { color: var(--red); }
-.app-header__nav { display: flex; border-left: 1px solid #D9D9D9; padding-left: 16px; }
-.app-header__nav a { padding: 0 12px; color: #000; border-left: 1px solid #D9D9D9; }
-.app-header__nav a:first-child { border-left: none; }
-.app-header__nav a.app-header__nav-active { color: var(--red); }
-
-.app-shell { max-width: 1536px; margin: 0 auto; padding: 16px; }
+/* The page is a column the height of the window, so the legal strip closes it at
+   the foot of the window rather than partway up a page short of content. */
+body { min-height: 100vh; display: flex; flex-direction: column; }
+.app-shell { max-width: 1536px; width: 100%; margin: 0 auto; padding: 16px; flex: 1; }
 
 /* The thin legal strip that closes Board 00 - Laptop. Sits outside .app-shell so
    it runs the full width of the viewport, as it does the full width of the frame. */
@@ -582,6 +561,8 @@ tbody tr[hidden] { display: none; }
 /* ===== Responsive / mobile ===== */
 @media (max-width: 900px) {
   .console-grid, .dashboard-grid { grid-template-columns: 1fr; }
+  /* Beats the classic console's narrower rail below, which is :has()-specific. */
+  .console-grid:has(.cconsole) { grid-template-columns: minmax(0,1fr); }
   .app-tile-grid, .kv-grid, .kv-grid--2, .kv-grid--4, .form-grid, .form-grid--2 { grid-template-columns: repeat(2, minmax(0,1fr)); }
   .wizard__body { grid-template-columns: 1fr; }
   /* A grid item defaults to min-width:auto, so the scrolling rail would otherwise
@@ -590,8 +571,6 @@ tbody tr[hidden] { display: none; }
   .wizard__rail { flex-direction: row; overflow-x: auto; }
   .rail-item span { white-space: nowrap; }
   .data-table { font-size: 10px; display: block; overflow-x: auto; }
-  .app-header__right { gap: 8px; font-size: 11.5px; }
-  .app-header__nav a { padding: 0 8px; }
 }
 @media (max-width: 560px) {
   /* Board 02 - Mobile renders "Search By" as a segmented pair of full-width buttons
@@ -609,13 +588,6 @@ tbody tr[hidden] { display: none; }
   .hid-searchby-opt--active .hid-searchby-opt__label { color: var(--red); font-weight: 700; }
   .hid-searchby-check { justify-content: flex-end; padding-bottom: 0; }
   .hid-searchby-check__btn { font-size: 12.5px; font-weight: 700; }
-
-  /* Board 00 - Mobile trims the header to the brand and Logout. */
-  .app-header { padding: 0 14px; }
-  .app-header__welcome { display: none; }
-  .app-header__nav { border-left: 0; padding-left: 0; }
-  .app-header__nav a:not(:last-child) { display: none; }
-  .app-header__nav a { border-left: 0; padding: 0; font-size: 11.5px; font-weight: 600; color: var(--text); }
 
   .app-tile-grid, .kv-grid, .kv-grid--2, .kv-grid--4, .form-grid, .form-grid--2 { grid-template-columns: 1fr; }
   .kpi-row { gap: 14px; }
@@ -1696,4 +1668,949 @@ a.dash-row:hover .dash-row__open { text-decoration: underline; }
   .dmsu-grid { grid-template-columns: minmax(0,1fr); }
   .dmsu-grid__wide { grid-column: auto; }
   .dmsu-actions .btn { flex: 1; }
+}
+
+/* ===== E-Sarathi classic console =====
+   The old WA_FD_ESARATHI_CONSOLE/Default: the profile card the portal already
+   draws, beside one tall white panel carrying the message-centre heading and a
+   flat grey tile per provisioned application. Measured off a full-window capture
+   of the live page at 1470px, where a screen pixel is a CSS pixel: a 104x120
+   tile with a 40px glyph, a 190px rail of 42px rows, hairline rules between
+   tiles, and a 14.5px heading. */
+/* The panel closes on the legal strip rather than partway up the window: the
+   44px header and its rule, the shell's 16px padding top and bottom, and the
+   34px footer and its rule come off the viewport. */
+.cconsole { background: #fff; border: 1px solid var(--border-2); border-radius: 4px; min-height: calc(100vh - 112px); padding: 16px 16px 28px; }
+.cconsole__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+/* The old page headed this panel "Application Message Center: Application View",
+   which named neither the messages it does not carry nor the applications it
+   does. The heading says what is under it, and the line beneath gives the entity
+   the tiles belong to. */
+.cconsole__title { font-size: 15.5px; font-weight: 700; line-height: 1.3; color: var(--ink); }
+.cconsole__sub { padding-top: 4px; font-size: 11.5px; color: var(--muted); }
+/* The document list reads as one control rather than the old page's "Click here"
+   sentence, where only the two blue words looked pressable. */
+.cconsole__docs { font-family: inherit; color: var(--text); }
+
+/* The box that narrows the tiles to one name. Sits under the heading, left, at
+   the width the portal's app search uses. */
+.cconsole__search { padding-top: 16px; }
+.cconsole__search .search-box { width: 240px; }
+
+/* The applications are .classic-tile, the card the Uno TP dashboard draws, at a
+   smaller size here: this panel carries two of them, not the dashboard's row of
+   four, so they sit closer to the heading and take less of the width. Three to a
+   row, so a third application lands beside the two rather than under them, and
+   the rows stay in step however many the entity is provisioned for. */
+.cconsole .cconsole__apps { display: grid; grid-template-columns: repeat(3, 104px); justify-content: start; gap: 18px; padding-top: 18px; }
+.cconsole__apps .classic-tile { width: 104px; height: 104px; padding-top: 15px; gap: 7px; }
+.cconsole__apps .classic-tile__icon { height: 38px; }
+.cconsole__apps .classic-tile__icon svg { width: 38px; height: 38px; }
+.cconsole__apps .classic-tile__title { font-size: 12px; padding-bottom: 11px; }
+/* Runs under the whole row rather than taking a tile's column. */
+.cconsole__none { grid-column: 1 / -1; padding: 6px 0; font-size: 12.5px; color: var(--muted); }
+.cconsole__none[hidden] { display: none; }
+
+/* The profile beside the panel is the portal's card, drawn tighter: the classic
+   console gives the applications the width, not the rail. */
+.console-grid:has(.cconsole) { grid-template-columns: 248px minmax(0,1fr); }
+.console-grid:has(.cconsole) .profile-card__top { padding: 16px 14px 13px; gap: 9px; }
+.console-grid:has(.cconsole) .profile-avatar { width: 58px; height: 58px; }
+.console-grid:has(.cconsole) .profile-card__name { font-size: 13.5px; }
+.console-grid:has(.cconsole) .profile-card__sub { font-size: 10.5px; }
+.console-grid:has(.cconsole) .profile-fact-row { padding: 11px 14px; gap: 8px; }
+.console-grid:has(.cconsole) .profile-fact dt { width: 80px; font-size: 10px; }
+.console-grid:has(.cconsole) .profile-fact dd { font-size: 11.5px; }
+.console-grid:has(.cconsole) .profile-link-row { padding: 9px 14px; gap: 9px; font-size: 11.5px; }
+
+@media (max-width: 560px) {
+  .cconsole { min-height: 0; padding: 16px; }
+  .cconsole__head { gap: 10px; }
+  .cconsole__title { font-size: 15px; }
+  /* The heading and the control stack, so the control runs the width. */
+  .cconsole__docs { width: 100%; }
+  /* Still three to a row on a phone, sharing the width between them. */
+  .cconsole .cconsole__apps { grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; padding-top: 16px; }
+  .cconsole__apps .classic-tile { width: auto; padding-left: 4px; padding-right: 4px; }
+  .cconsole__apps .classic-tile__title { font-size: 11px; }
+  .cconsole__search .search-box { width: 100%; }
+  /* The portal hides the profile card on a phone behind its own board; the classic
+     console keeps it, so its facts stack rather than run off the side. */
+  .console-grid:has(.cconsole) .profile-fact { display: block; }
+  .console-grid:has(.cconsole) .profile-fact dt { width: auto; padding-bottom: 2px; }
+  /* The portal hides the profile card on a phone behind its own board; the classic
+     console keeps it, so its facts stack rather than run off the side. */
+}
+
+/* ===== Uno TP classic dashboard =====
+   The old WA_FD_UNOTP/Dashboard, kept for partners who still work from it: one
+   white panel, the four booking steps down the left and big icon tiles right.
+   Sizes are measured off the live page at 1470px: a 430px step column, 126px
+   tiles 27px apart, and small type, mostly 14-15px, with 12px notes. */
+html:has(.classic), html:has(.classic) body,
+html:has(.csi), html:has(.csi) body { background: #F5F7FA; }
+.classic { background: #fff; border-radius: 8px; padding: 34px 34px 56px; display: grid; grid-template-columns: minmax(0,447px) minmax(0,1fr); }
+.classic-steps { padding-right: 19px; border-right: 1px solid var(--border-2); }
+.classic-steps__title { font-size: 19px; font-weight: 400; line-height: 1.4; color: var(--text); }
+.classic-steps__title strong { font-weight: 600; color: var(--blue); }
+.classic-steps__list { list-style: none; margin: 48px 0 0; padding: 0; display: flex; flex-direction: column; gap: 28px; }
+.classic-step { position: relative; display: flex; align-items: center; gap: 16px; font-size: 15px; line-height: 1.3; color: var(--text); text-shadow: 0 1px 1.5px rgba(0,0,0,.16); }
+.classic-step svg { flex: none; width: 32px; height: 32px; color: #4A4A4A; }
+/* The short rule under each icon that threads the steps into one line. */
+.classic-step + .classic-step::before { content: ""; position: absolute; left: 15.25px; top: -25px; height: 15px; border-left: 1.5px solid #8A8D92; }
+.classic-docs { display: block; width: 100%; margin-top: 28px; padding: 12px; border: 1px dashed #C4C9D0; border-radius: 8px; text-align: center; font-size: 14px; line-height: 1.2; color: var(--ink); cursor: pointer; }
+.classic-docs em { color: #2F7BC6; font-weight: 600; }
+.classic-docs:hover em { text-decoration: underline; }
+/* The note reads at body size on a tinted panel: the old page's 11px grey was
+   too faint to read. */
+.classic-note { margin-top: 14px; padding: 12px 14px; border-radius: 6px; background: var(--tint); border: 1px solid var(--border); font-size: 12px; line-height: 1.5; color: var(--text); }
+.classic-note__title { font-weight: 600; color: var(--ink); }
+.classic-note ul { margin: 4px 0 0; padding-left: 16px; }
+.classic-note li + li { margin-top: 4px; }
+.classic-actions { padding-left: 43px; }
+.classic-actions__title { font-size: 14px; font-weight: 500; line-height: 1.4; padding-top: 3px; color: var(--ink); }
+.classic-actions__rule { border: 0; border-top: 1px solid var(--border-2); margin: 20px 0 32px; }
+.classic-tiles { display: flex; flex-wrap: wrap; gap: 27px; padding-top: 21px; }
+.classic-tile { width: 126px; height: 126px; padding: 20px 6px 0; border: 1px solid #E1E4E8; border-radius: 8px; background: #fff; box-shadow: 0 6px 14px rgba(24,39,75,.07); display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 10px; color: #6B7080; cursor: pointer; text-align: center; font-family: inherit; transition: box-shadow .15s ease, border-color .15s ease; }
+.classic-tile:hover { text-decoration: none; box-shadow: 0 8px 20px rgba(24,39,75,.13); border-color: #D3D8DE; }
+/* A tile the console's search has filtered out: display:flex above would otherwise
+   outrank the browser's own [hidden] rule. */
+.classic-tile[hidden] { display: none; }
+/* A tile that cannot be opened yet: flat, greyed, with the reason under it. */
+.classic-tile--off { background: var(--tint); border-style: dashed; box-shadow: none; color: var(--muted-2); cursor: not-allowed; padding: 14px 6px 10px; gap: 6px; justify-content: center; }
+.classic-tile--off:hover { box-shadow: none; border-color: var(--border); }
+.classic-tile--off .classic-tile__icon { height: auto; }
+.classic-tile--off .classic-tile__title { flex: none; color: var(--muted); padding-bottom: 0; }
+.classic-tile__off { padding: 0; font-size: 10.5px; font-weight: 600; letter-spacing: .02em; text-transform: uppercase; color: var(--amber); }
+.classic-tile__icon { display: flex; align-items: center; justify-content: center; height: 46px; }
+.classic-tile__icon svg { width: 48px; height: 48px; }
+/* Two-line labels ("PIS Generation - Axis") centre on the same line as one-line ones. */
+.classic-tile__title { flex: 1; display: flex; align-items: center; font-size: 13.5px; font-weight: 600; line-height: 1.2; color: #4A4A4A; padding-bottom: 14px; }
+/* Old Bootstrap's lg split: a third for the steps once the four tiles no longer
+   fit beside a full-width step column, then stacked below 992px. */
+@media (max-width: 1180px) {
+  .classic { grid-template-columns: minmax(0,1fr) minmax(0,2fr); }
+  .classic-tiles { gap: 16px; }
+  .classic-tile { width: 118px; height: 118px; padding-top: 16px; }
+}
+@media (max-width: 991px) {
+  .classic { grid-template-columns: minmax(0,1fr); padding: 24px 16px; }
+  .classic-steps { padding: 0 0 24px; border-right: 0; border-bottom: 1px solid var(--border-2); }
+  .classic-actions { padding: 24px 0 0; }
+}
+@media (max-width: 560px) {
+  .classic-steps__list { margin-top: 32px; gap: 24px; }
+  .classic-step + .classic-step::before { top: -22px; height: 12px; }
+  .classic-tiles { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; padding-top: 16px; }
+  .classic-tile { width: auto; }
+}
+
+/* The required-documents dialog behind "Click here": investor types down the
+   side, one type's list beside them, the eSarathi note pinned to the foot. The
+   dialog keeps one height so switching types never makes it jump. */
+.rdocs { max-width: 760px; height: min(620px, calc(100vh - 40px)); max-height: none; padding: 0; overflow: hidden; display: flex; flex-direction: column; color: var(--ink); }
+.rdocs__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 20px 24px 16px; border-bottom: 1px solid var(--divider); }
+.rdocs__title { font-size: 17px; font-weight: 600; line-height: 1.3; }
+.rdocs__sub { font-size: 12.5px; color: var(--muted); padding-top: 3px; }
+.rdocs__close { display: flex; padding: 6px; margin: -4px -8px 0 0; border-radius: 4px; color: var(--text); cursor: pointer; }
+.rdocs__close:hover { background: var(--tint); color: var(--ink); }
+.rdocs__body { flex: 1; min-height: 0; display: grid; grid-template-columns: 224px minmax(0,1fr); }
+.rdocs__types { overflow-y: auto; padding: 10px 0; border-right: 1px solid var(--divider); background: var(--tint); }
+.rdocs__type { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 16px 9px 21px; border-left: 3px solid transparent; font-family: inherit; font-size: 13px; line-height: 1.3; color: var(--text); text-align: left; cursor: pointer; }
+.rdocs__type:hover { background: #EDF1F6; color: var(--ink); }
+.rdocs__type[aria-selected="true"] { background: #fff; border-left-color: var(--red); color: var(--ink); font-weight: 600; }
+.rdocs__type-count { flex: none; min-width: 22px; padding: 1px 6px; border-radius: 10px; background: #E3E8EF; font-size: 11px; font-weight: 600; text-align: center; color: var(--muted); }
+.rdocs__type[aria-selected="true"] .rdocs__type-count { background: var(--pink-bg); color: var(--red-dark); }
+.rdocs__panel { overflow-y: auto; padding: 18px 24px 22px; }
+.rdocs__panel:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
+.rdocs__panel-title { margin: 0; font-size: 15px; font-weight: 600; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.rdocs__panel-title span { font-size: 12px; font-weight: 400; color: var(--muted); }
+.rdocs__list { list-style: none; counter-reset: rdoc; margin: 12px 0 0; padding: 0; }
+.rdocs__list li { counter-increment: rdoc; position: relative; padding: 9px 0 9px 34px; border-bottom: 1px solid var(--divider); font-size: 13px; line-height: 1.45; color: var(--text); }
+.rdocs__list li:last-child { border-bottom: 0; }
+.rdocs__list li::before { content: counter(rdoc); position: absolute; left: 0; top: 8px; width: 22px; height: 22px; border-radius: 50%; background: var(--tint); border: 1px solid var(--border); font-size: 11px; font-weight: 600; line-height: 20px; text-align: center; color: var(--muted); }
+.rdocs__callout { margin: 12px 0 0; padding: 10px 12px; border-radius: 6px; background: var(--amber-bg); font-size: 12.5px; line-height: 1.45; color: var(--amber); }
+.rdocs__foot { display: flex; align-items: flex-start; gap: 8px; padding: 12px 24px; border-top: 1px solid var(--divider); background: #fff; font-size: 12px; line-height: 1.45; color: var(--muted); }
+.rdocs__foot svg { flex: none; margin-top: 1px; color: var(--blue); }
+@media (max-width: 640px) {
+  .modal-overlay:has(.rdocs) { padding: 0; align-items: flex-end; }
+  .rdocs { max-width: none; height: calc(100vh - 24px); border-radius: 12px 12px 0 0; }
+  .rdocs__head { padding: 16px 16px 12px; }
+  .rdocs__body { grid-template-columns: minmax(0,1fr); grid-template-rows: auto minmax(0,1fr); }
+  /* The types become a swipeable chip row. */
+  .rdocs__types { display: flex; gap: 8px; overflow-x: auto; overflow-y: hidden; padding: 10px 16px; border-right: 0; border-bottom: 1px solid var(--divider); background: #fff; scrollbar-width: none; }
+  .rdocs__types::-webkit-scrollbar { display: none; }
+  .rdocs__type { width: auto; flex: none; padding: 6px 10px 6px 12px; border: 1px solid var(--border-2); border-radius: 16px; font-size: 12.5px; white-space: nowrap; }
+  .rdocs__type[aria-selected="true"] { border-color: var(--red); background: var(--pink-bg); color: var(--red-dark); }
+  .rdocs__type[aria-selected="true"] .rdocs__type-count { background: #fff; }
+  .rdocs__panel { padding: 14px 16px 18px; }
+  .rdocs__foot { padding: 10px 16px 14px; }
+}
+
+
+/* ===== Uno TP classic - investor search (the old searchinvestor page) =====
+   The step rail beside one card of fields, over a bar of actions pinned to the
+   foot of the window. Sizes follow the live page at 1470px. */
+.csi { display: grid; grid-template-columns: 222px minmax(0,1fr); gap: 15px; align-items: start; }
+/* The rail stays put under the 44px header while the card beside it scrolls;
+   if the window is too short for it, the rail scrolls inside itself. */
+.csi-rail { position: sticky; top: 60px; max-height: calc(100vh - 128px); overflow-y: auto; background: #fff; border-radius: 8px; padding: 16px 12px; display: flex; flex-direction: column; gap: 12px; }
+.csi-rail__step { display: flex; align-items: center; gap: 12px; color: #4A4A4A; padding: 6px 2px; }
+.csi-rail__step > svg:first-child { flex: none; width: 20px; height: 20px; }
+.csi-rail__label { flex: 1; min-width: 0; font-size: 12px; font-weight: 600; color: var(--ink); }
+/* An empty tick: the step is not complete until the wizard says so. */
+.csi-rail__check { flex: none; width: 12px; height: 12px; color: var(--border-2); }
+/* The step the page is on: tinted row, red label and a red marker. */
+.csi-rail__step--current { background: var(--tint); border-radius: 6px; color: var(--red); }
+.csi-rail__step--current .csi-rail__label { color: var(--red); }
+.csi-rail__dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--red); }
+/* A step already behind the wizard: its tick is filled in. */
+.csi-rail__step--done .csi-rail__check { color: var(--green); }
+
+.csi-card { background: #fff; border-radius: 8px; padding: 20px 22px 26px; margin-bottom: 70px; }
+.csi-card__title { font-size: 16px; font-weight: 500; color: var(--text); padding-bottom: 14px; border-bottom: 1px solid var(--divider); }
+.csi-label { display: block; font-size: 12.5px; font-weight: 600; color: var(--ink); padding: 0 0 6px; }
+
+.csi-searchby { margin: 18px 0 0; padding: 0; border: 0; }
+.csi-searchby .csi-label { padding-bottom: 10px; }
+.csi-radio { display: inline-flex; align-items: center; gap: 8px; margin-right: 26px; font-size: 13px; color: var(--text); cursor: pointer; }
+.csi-radio input {
+  appearance: none; -webkit-appearance: none; margin: 0; width: 17px; height: 17px; flex: none;
+  border: 1.5px solid var(--muted-2); border-radius: 50%; background: #fff; cursor: pointer;
+}
+.csi-radio input:checked { border: 2px solid var(--red); box-shadow: inset 0 0 0 2.5px #fff, inset 0 0 0 9px var(--red); }
+.csi-radio input:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+.csi-fields { display: grid; grid-template-columns: minmax(0,300px) minmax(0,230px) auto; gap: 20px; padding-top: 18px; align-items: end; justify-content: start; }
+.csi-field[hidden] { display: none; }
+.csi-control, .csi-date {
+  width: 100%; height: 36px; padding: 0 10px; border: 1px solid var(--border-3); border-radius: 6px;
+  background: #fff; font-family: inherit; font-size: 13px; color: var(--ink);
+}
+.csi-control:focus, .csi-date:focus-within { outline: none; border-color: var(--muted); }
+.csi-control.is-invalid, .csi-date.is-invalid { border-color: #FF0000; }
+.csi-date { display: flex; align-items: center; gap: 2px; }
+.csi-date__part { width: 38px; border: 0; padding: 0; background: none; font: inherit; color: var(--ink); font-weight: 500; text-align: center; }
+.csi-date__part--year { width: 52px; }
+.csi-date__part::placeholder { color: #8D8D8D; font-weight: 400; }
+.csi-date__part:focus { outline: none; }
+.csi-date__sep { color: var(--muted-2); }
+.csi-error { margin: 5px 0 0; font-size: 11.5px; font-weight: 500; color: #FF0000; }
+.csi-error[hidden] { display: none; }
+
+.csi-note { display: flex; gap: 10px; margin-top: 20px; padding: 13px 15px; border: 1px solid #F0DFA8; border-left: 3px solid var(--amber); border-radius: 6px; background: var(--amber-bg); font-size: 12.5px; line-height: 1.55; color: var(--amber); }
+.csi-note__icon { flex: none; margin-top: 1px; color: var(--amber); }
+.csi-note__body { min-width: 0; }
+.csi-note__title { font-weight: 700; color: var(--amber); }
+.csi-note ul { margin: 3px 0 0; padding-left: 17px; }
+.csi-note li + li { margin-top: 3px; }
+
+/* The actions sit on a bar across the foot of the window, as they do on every
+   old wizard step. */
+.csi-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; background: #fff; border-top: 1px solid var(--divider); }
+.csi-bar__inner { max-width: 1440px; margin: 0 auto; padding: 10px 16px; display: flex; align-items: center; gap: 14px; }
+.csi-bar__hint { flex: 1; min-width: 0; font-size: 12.5px; color: var(--muted); text-align: center; }
+.csi-bar__hint strong { color: var(--ink); font-weight: 600; }
+.csi-bar__right { display: flex; align-items: center; gap: 22px; }
+.csi-btn { display: inline-flex; align-items: center; justify-content: center; height: 34px; padding: 0 22px; border: 1px solid var(--red); border-radius: 4px; font-family: inherit; font-size: 13px; font-weight: 500; cursor: pointer; }
+.csi-btn--back { background: #fff; color: var(--red); }
+.csi-btn--back:hover { background: var(--pink-bg); text-decoration: none; }
+.csi-btn--primary { background: var(--red); color: #fff; }
+.csi-btn--primary:disabled { background: #E7EAEE; border-color: #E7EAEE; color: var(--muted-2); cursor: not-allowed; }
+.csi-link:disabled { color: var(--muted-2); cursor: not-allowed; text-decoration: none; }
+.csi-btn--primary:hover { background: var(--red-dark); border-color: var(--red-dark); }
+.csi-link { border: 0; background: none; padding: 0; font-family: inherit; font-size: 13px; font-weight: 500; color: var(--red); cursor: pointer; }
+.csi-link:hover { text-decoration: underline; }
+
+@media (max-width: 900px) {
+  .csi { grid-template-columns: minmax(0,1fr); }
+  /* The rail lies down over the card and scrolls sideways if it has to. */
+  .csi-rail { position: static; max-height: none; flex-direction: row; gap: 6px; overflow-x: auto; overflow-y: hidden; padding: 10px; }
+  .csi-rail__step { flex: none; gap: 8px; }
+  .csi-rail__label { font-size: 12px; white-space: nowrap; }
+  .csi-rail__check { display: none; }
+}
+@media (max-width: 560px) {
+  .csi-fields { grid-template-columns: minmax(0,1fr); }
+  .csi-card { padding: 16px; }
+  .csi-radio { margin-right: 16px; }
+  .csi-bar__inner { padding: 10px 12px; gap: 10px; }
+  .csi-bar__right { gap: 14px; }
+  .csi-btn { padding: 0 16px; }
+}
+
+/* Holders on the classic search page: one block each, the primary first and a
+   joint holder only after the one before it is identified. */
+.csi-holders-hint { font-size: 12.5px; color: var(--muted); padding-top: 12px; }
+.csi-holder { padding-top: 18px; }
+.csi-holder + .csi-holder { margin-top: 18px; border-top: 1px solid var(--divider); }
+.csi-holder[hidden] { display: none; }
+.csi-holder__head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.csi-holder__no { flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--red); color: #fff; font-size: 11.5px; font-weight: 700; line-height: 22px; text-align: center; }
+.csi-holder__name { font-size: 14px; font-weight: 600; color: var(--ink); }
+.csi-chip { padding: 2px 8px; border-radius: 3px; background: var(--tint); border: 1px solid var(--border); font-size: 10.5px; font-weight: 600; color: var(--muted); }
+.csi-chip--success { background: #E8F5EC; border-color: #CBE7D5; color: var(--green); }
+.csi-status { margin-left: auto; font-size: 12px; font-weight: 600; color: var(--red-dark); }
+.csi-status--ok { color: var(--green); }
+.csi-link--muted { font-weight: 500; color: var(--text); }
+
+.csi-field--check { padding-bottom: 0; }
+.csi-check { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 16px; border: 1px solid var(--red); border-radius: 6px; background: #fff; font-family: inherit; font-size: 13px; font-weight: 600; color: var(--red); cursor: pointer; }
+.csi-check:hover { background: var(--pink-bg); }
+.csi-hint { padding-top: 10px; font-size: 11.5px; color: var(--muted); }
+.csi-hint[hidden] { display: none; }
+
+/* What the check found, in place of the fields it was run from. */
+.csi-result { margin-top: 14px; padding: 14px 16px 16px; border-radius: 8px; background: var(--tint); }
+.csi-result[hidden] { display: none; }
+.csi-result__head { display: flex; align-items: baseline; gap: 18px; flex-wrap: wrap; }
+.csi-result__title { flex: 1; min-width: 240px; display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; font-size: 15px; font-weight: 600; color: var(--ink); }
+.csi-result__detail { padding-top: 5px; font-size: 11.5px; line-height: 1.5; color: var(--muted); }
+
+/* The record itself, as the register holds it. */
+.csi-record { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 22px; margin: 13px 0 0; padding-top: 13px; border-top: 1px solid var(--border); }
+.csi-record__item--wide { grid-column: 1 / -1; }
+.csi-record dt { font-size: 10.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted-2); }
+/* A dd carries a 40px indent of its own, which would step every value away from
+   the label above it. */
+.csi-record dd { margin: 0; padding-top: 3px; font-size: 13px; line-height: 1.5; color: var(--ink); }
+.csi-record__hint { padding-top: 3px; font-size: 11px; line-height: 1.45; color: var(--muted); }
+.csi-record__hint[hidden] { display: none; }
+.csi-record__missing { color: var(--red-dark); font-style: italic; }
+
+/* Establishing a PAN the register does not hold: upload, OCR, then NSDL. */
+.csi-verify { margin-top: 14px; padding-top: 13px; border-top: 1px solid var(--border); }
+.csi-verify[hidden] { display: none; }
+.csi-verify__title { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+.csi-verify__sub { padding: 3px 0 12px; font-size: 11.5px; line-height: 1.5; color: var(--muted); }
+.csi-verify__upload { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.csi-verify__upload[hidden] { display: none; }
+.csi-verify__file { font-size: 12px; font-weight: 600; color: var(--ink); }
+.csi-verify__file[hidden] { display: none; }
+
+/* One line per step, so what the mock did stays readable after it finishes. */
+.csi-verify__log { margin: 0; padding: 0 0 0 16px; font-size: 12px; line-height: 1.7; color: var(--muted); }
+.csi-verify__log[hidden] { display: none; }
+.csi-verify__log li::marker { color: var(--border-2); }
+
+.csi-verify__checks { margin-top: 12px; border: 1px solid var(--border); border-radius: 6px; background: #fff; }
+.csi-verify__checks[hidden] { display: none; }
+.csi-checkrow { display: flex; align-items: baseline; gap: 14px; padding: 9px 13px; font-size: 12.5px; }
+.csi-checkrow + .csi-checkrow { border-top: 1px solid var(--divider); }
+.csi-checkrow__label { flex: none; width: 110px; font-weight: 600; color: var(--muted); }
+.csi-checkrow__value { flex: 1; min-width: 0; color: var(--ink); }
+.csi-checkrow__status { flex: none; padding: 2px 9px; border-radius: 3px; border: 1px solid var(--border); font-size: 10.5px; font-weight: 600; letter-spacing: .02em; }
+.csi-checkrow__status--ok { background: #E8F5EC; border-color: #CBE7D5; color: var(--green); }
+.csi-checkrow__status--bad { background: var(--pink-bg); border-color: #F3C3CB; color: var(--red-dark); }
+
+/* NSDL holds the PAN against another name: it is typed from the card and retried. */
+.csi-verify__fix { margin-top: 14px; }
+.csi-verify__fix[hidden] { display: none; }
+.csi-verify__fixrow { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.csi-verify__fixrow .csi-control { width: 300px; max-width: 100%; text-transform: uppercase; }
+.csi-verify .csi-gap { margin-top: 14px; }
+.csi-verify .csi-gap .csi-link { margin-top: 8px; color: var(--red-dark); }
+
+/* What the register is short of, and where it is asked for again. */
+/* Three colours, three meanings: blue for what is still to be collected (the
+   application can go on), red for a check that failed and stops it, green for a
+   record that is complete. Amber stays with the standing Note below the card, so
+   nothing here is mistaken for it. */
+.csi-gap { display: flex; gap: 10px; margin-top: 14px; padding: 12px 14px; border: 1px solid #CBDFF3; border-left: 3px solid var(--blue); border-radius: 6px; background: #E8F1FB; font-size: 12.5px; line-height: 1.55; color: var(--blue); }
+.csi-gap[hidden] { display: none; }
+.csi-gap__icon { flex: none; margin-top: 2px; }
+.csi-gap__body { min-width: 0; }
+.csi-gap__title { font-weight: 700; }
+.csi-gap ul { margin: 3px 0 0; padding-left: 17px; }
+.csi-gap li + li { margin-top: 2px; }
+.csi-gap p { padding-top: 6px; }
+.csi-gap--ok { border-color: #CBE7D5; border-left-color: var(--green); background: #E8F5EC; color: var(--green); }
+.csi-gap--alert { border-color: #F3C3CB; border-left-color: var(--red); background: var(--pink-bg); color: var(--red-dark); }
+
+.csi-addjoint { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--divider); }
+.csi-addjoint[hidden] { display: none; }
+.csi-addjoint__mark { flex: none; width: 22px; height: 22px; border: 1px dashed var(--border-2); border-radius: 50%; font-size: 13px; line-height: 20px; text-align: center; color: var(--muted-2); }
+.csi-addjoint__text { flex: 1; min-width: 240px; }
+.csi-addjoint__title { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 600; color: var(--ink); }
+.csi-addjoint__text p { padding-top: 3px; font-size: 11.5px; line-height: 1.5; color: var(--muted); }
+
+@media (max-width: 1100px) {
+  .csi-fields { grid-template-columns: repeat(2, minmax(0,260px)); }
+  .csi-field--check { grid-column: 1 / -1; }
+  .csi-record { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .csi-bar__hint { display: none; }
+  .csi-status { margin-left: 0; width: 100%; }
+  .csi-record { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Text only a screen reader needs, such as the header of an action column. */
+.visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* Drafts under the search card: the applications this partner started and can
+   pick up again, in the old page's plain table style. */
+.csi-drafts { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--divider); }
+.csi-drafts__head { padding-bottom: 4px; }
+.csi-drafts__title { font-size: 16px; font-weight: 500; color: var(--text); }
+.csi-drafts__sub { padding: 4px 0 10px; font-size: 11.5px; color: var(--muted); }
+.csi-drafts__table { width: 100%; border-collapse: collapse; font-size: 12.5px; color: var(--text); }
+.csi-drafts__table th { padding: 10px 10px 8px 0; font-size: 10.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted-2); text-align: left; border-bottom: 1px solid var(--divider); }
+.csi-drafts__table td { padding: 11px 10px 11px 0; border-bottom: 1px solid var(--divider); vertical-align: top; }
+.csi-drafts__table tr:last-child td { border-bottom: 0; }
+.csi-drafts__table strong { color: var(--ink); font-weight: 600; }
+.csi-drafts__detail { padding-top: 3px; font-size: 11px; color: var(--muted); }
+.csi-drafts__act { display: flex; justify-content: flex-end; gap: 14px; white-space: nowrap; }
+@media (max-width: 900px) {
+  /* Each row becomes its own block, every cell labelled by its column. */
+  .csi-drafts__table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .csi-drafts__table tr { display: block; padding: 12px 0; border-bottom: 1px solid var(--divider); }
+  .csi-drafts__table tr:last-child { border-bottom: 0; }
+  .csi-drafts__table td { display: flex; gap: 10px; padding: 3px 0; border: 0; }
+  .csi-drafts__table td::before { content: attr(data-label); flex: none; width: 108px; font-size: 11px; color: var(--muted-2); }
+  .csi-drafts__act { justify-content: flex-end; }
+}
+
+/* The test data at the foot of the page: what to type to reach each outcome.
+   Quieter than the drafts above it, since it belongs to the mock and not to the
+   partner's own work. */
+.csi-demo { margin-top: 22px; padding: 16px 18px; border: 1px dashed var(--border-2); border-radius: 8px; background: var(--tint); }
+.csi-demo__title { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+.csi-demo__sub { padding: 3px 0 10px; font-size: 11.5px; color: var(--muted); }
+.csi-demo__sub strong { color: var(--ink); font-weight: 600; }
+.csi-demo__table { width: 100%; border-collapse: collapse; font-size: 12px; color: var(--text); }
+.csi-demo__table th { padding: 8px 12px 7px 0; font-size: 10.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted-2); text-align: left; border-bottom: 1px solid var(--border-2); }
+.csi-demo__table td { padding: 9px 12px 9px 0; border-bottom: 1px solid var(--divider); vertical-align: top; }
+.csi-demo__table tr:last-child td { border-bottom: 0; }
+.csi-demo__table code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; font-weight: 600; letter-spacing: .02em; color: var(--ink); }
+.csi-demo__none { color: var(--muted-2); }
+.csi-demo__no { display: inline-block; min-width: 20px; height: 20px; border-radius: 50%; background: var(--border-2); color: #fff; font-size: 11px; font-weight: 700; line-height: 20px; text-align: center; }
+.csi-demo__notes { margin: 10px 0 0; padding: 10px 0 0 17px; border-top: 1px solid var(--border-2); font-size: 11.5px; line-height: 1.6; color: var(--muted); }
+.csi-demo__notes strong { color: var(--ink); font-weight: 600; }
+@media (max-width: 900px) {
+  /* Each row becomes its own block, every cell labelled by its column. */
+  .csi-demo__table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .csi-demo__table tr { display: block; padding: 10px 0; border-bottom: 1px solid var(--divider); }
+  .csi-demo__table tr:last-child { border-bottom: 0; }
+  .csi-demo__table td { display: flex; gap: 10px; padding: 3px 0; border: 0; }
+  .csi-demo__table td::before { content: attr(data-label); flex: none; width: 108px; font-size: 11px; color: var(--muted-2); }
+}
+
+/* ===== Uno TP classic - Upload Documents =====
+   Three document slots across the top, the one the payment carries under them,
+   and the details the application is sourced under in a card of its own. */
+/* Who the step is for on the left, what it is filed under on the right. */
+.cud-head { display: flex; align-items: flex-start; gap: 20px; flex-wrap: wrap; padding-bottom: 16px; border-bottom: 1px solid var(--divider); }
+.cud-head__who { min-width: 0; }
+.cud-head__step { font-size: 10.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted-2); }
+.cud-head__name { padding-top: 2px; font-size: 16px; font-weight: 600; color: var(--ink); }
+.cud-head__ids { padding-top: 3px; font-size: 12.5px; color: var(--muted); }
+.cud-head__right { margin-left: auto; display: flex; align-items: flex-start; gap: 22px; flex-wrap: wrap; }
+.cud-head__refs { display: flex; gap: 22px; margin: 0; }
+.cud-head__refs dt { font-size: 10.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted-2); }
+.cud-head__refs dd { margin: 0; padding-top: 3px; font-size: 12.5px; font-weight: 600; color: var(--ink); }
+.cud-head__pending { font-weight: 400; font-style: italic; color: var(--muted); }
+.cud-head .csi-link { padding-top: 14px; }
+
+/* Every row on the step shares one grid: three columns across the card, which
+   runs the width of the page. */
+.cud-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; padding-top: 18px; }
+/* Three documents across, as the rest of the step's rows run: the form, the PAN
+   and the address, with the photograph opening the next row. Four abreast left
+   each slot too narrow for its own hint line. */
+/* The photograph opens the second row with nothing beside it, so the band that
+   stands in for a neighbour's select box has nothing to line up with. The class
+   comes off when the mailing proof joins it there, and the rule does not apply at
+   two across, where the address column sits alongside it again. */
+@media (min-width: 1101px) {
+  .cud-grid--docs.is-lone-photo .cud-col:nth-child(4) .cud-col__spacer { display: none; }
+}
+
+/* Whether the investor is written to at the address they are proved at. The
+   answer decides whether a second proof is asked for in the row below. */
+.cud-mailing { border: 0; margin: 0; padding: 20px 0 2px; }
+.cud-mailing .csi-label { padding-bottom: 10px; }
+.cud-grid--payment { padding-top: 22px; }
+.cud-col { min-width: 0; }
+.cud-col__spacer { height: 38px; }
+.cud-optional { font-weight: 400; color: var(--muted-2); }
+.cud-col[hidden] { display: none; }
+/* A field filled from a record rather than typed, and the name behind a code. */
+.csi-control[readonly] { background: var(--tint); color: var(--muted); cursor: default; }
+.cud-resolved { padding-top: 6px; font-size: 11.5px; color: var(--muted); }
+.cud-resolved strong { font-weight: 600; color: var(--ink); }
+.cud-resolved__none { font-weight: 400; font-style: italic; color: var(--muted-2); }
+/* Something worth knowing about a field, in the informational blue the rest of
+   the wizard uses - never the red of something that stops the application. */
+.cud-note { display: flex; gap: 7px; margin-top: 7px; padding: 8px 10px; border-left: 3px solid var(--blue); border-radius: 4px; background: #E8F1FB; font-size: 11.5px; line-height: 1.5; color: var(--blue); }
+.cud-note[hidden] { display: none; }
+.cud-note svg { flex: none; margin-top: 2px; }
+
+/* The arrow is the page's own, so the control matches the text fields beside it. */
+.cud-select { position: relative; }
+.cud-select select { width: 100%; appearance: none; padding-right: 36px; background: #fff; cursor: pointer; }
+.cud-select::after { content: ""; position: absolute; right: 14px; top: 50%; width: 8px; height: 8px; margin-top: -6px; border-right: 1.8px solid var(--muted); border-bottom: 1.8px solid var(--muted); transform: rotate(45deg); pointer-events: none; }
+
+.cud-slot { padding-top: 10px; }
+.cud-slot__tools { display: flex; justify-content: flex-end; gap: 12px; padding-bottom: 7px; }
+.cud-tool { display: inline-flex; padding: 2px; border: 0; background: none; color: var(--red); cursor: pointer; }
+.cud-tool:disabled { color: #F0B9C2; cursor: not-allowed; }
+.cud-tool:not(:disabled):hover { color: var(--red-dark); }
+
+/* The box a file is picked into, and the same box once one is in it. */
+.cud-drop { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 158px; padding: 18px 16px; border: 1px dashed var(--border-2); border-radius: 8px; background: var(--tint); font-family: inherit; text-align: center; cursor: pointer; }
+.cud-drop[hidden] { display: none; }
+.cud-drop:not(:disabled):not(.is-filled):hover, .cud-drop.is-over { border-color: var(--red); background: var(--pink-bg); }
+/* Filled: the frame holds a document rather than asking for one, and clicking it
+   opens what is in it. Solid on white, and a quieter hover than the red of a box
+   still after a file. */
+.cud-drop.is-filled { border-style: solid; background: #fff; cursor: zoom-in; }
+.cud-drop.is-filled:hover { border-color: var(--border-3); background: #FCFCFD; }
+.cud-drop:disabled { cursor: default; }
+.cud-drop__idle, .cud-drop__busy, .cud-drop__done { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.cud-drop__idle[hidden], .cud-drop__busy[hidden], .cud-drop__done[hidden] { display: none; }
+/* While the document is being identified the box takes nothing: it is neither a
+   picker nor a filed document until the check comes back. */
+.cud-drop.is-busy { pointer-events: none; border-style: solid; background: var(--tint); }
+.cud-drop__spinner { width: 22px; height: 22px; margin-bottom: 8px; border: 2px solid var(--pink-bg); border-top-color: var(--red); border-radius: 50%; animation: cud-spin .7s linear infinite; }
+.cud-drop__checking { font-size: 12.5px; color: var(--muted); }
+@keyframes cud-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .cud-drop__spinner { animation-duration: 2.4s; }
+}
+.cud-drop__icon { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; margin-bottom: 6px; border-radius: 50%; background: var(--pink-bg); color: var(--red); }
+.cud-drop__title { font-size: 13px; font-weight: 500; color: var(--text); }
+.cud-drop__hint { font-size: 11px; line-height: 1.5; color: var(--muted-2); }
+.cud-drop__check { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; margin-bottom: 6px; border-radius: 50%; background: #E8F5EC; color: var(--green); }
+.cud-drop__file { font-size: 12.5px; font-weight: 600; color: var(--ink); word-break: break-all; }
+.cud-drop__size { font-size: 11px; color: var(--muted); }
+.cud-drop__swap { padding-top: 4px; font-size: 11px; color: var(--red); }
+/* Nothing left to try: the box stops taking files and the line under it says
+   where the document goes instead. */
+.cud-drop.is-spent { cursor: not-allowed; border-style: solid; background: var(--tint); opacity: .55; }
+.cud-slot.is-invalid .cud-drop { border-color: #FF0000; }
+/* What the application has left for this document, of the three it allows. */
+.cud-slot__tries { padding-top: 6px; font-size: 11px; text-align: center; color: var(--muted-2); }
+.cud-slot__tries[hidden] { display: none; }
+.cud-slot__tries.is-spent { font-weight: 600; color: var(--red-dark); }
+.cud-slot .csi-error { text-align: center; }
+
+/* A slot this application has no use for: the box gives way to a plain panel. */
+.cud-slot__na { display: flex; align-items: center; justify-content: center; min-height: 158px; border-radius: 8px; background: var(--tint); font-size: 11px; font-weight: 600; letter-spacing: .08em; color: var(--muted-2); }
+.cud-slot__na[hidden] { display: none; }
+
+/* ===== What a document was read to say =====
+   Under the pickers, because the pickers are what change it: OCR reads the
+   address off a proof, or the account off a cheque, and whoever stands behind
+   that document is asked to confirm it. The cards keep the same three-column
+   rhythm as the documents above them. */
+.cud-read { padding-top: 26px; }
+.cud-read__title { font-size: 13px; font-weight: 700; color: var(--ink); }
+.cud-read__sub { padding-top: 3px; font-size: 11.5px; line-height: 1.5; color: var(--muted); }
+.cud-read__cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; padding-top: 14px; }
+.cud-read__card { border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; background: #fff; }
+.cud-read__card[hidden] { display: none; }
+.cud-read__head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.cud-read__kind { font-size: 12px; font-weight: 700; color: var(--ink); }
+/* What the check is doing, in the colour of where it got to. */
+.cud-read__state { flex: none; font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted-2); }
+.cud-read__card.is-working { border-color: #C6DCF3; }
+.cud-read__card.is-working .cud-read__state { color: var(--blue); }
+.cud-read__card.is-done { border-color: #BFE3CD; }
+.cud-read__card.is-done .cud-read__state { color: var(--green); }
+.cud-read__card.is-failed { border-color: #F3C9D1; }
+.cud-read__card.is-failed .cud-read__state { color: var(--red-dark); }
+.cud-read__lines { padding-top: 9px; font-size: 12.5px; line-height: 1.55; color: var(--ink); }
+/* The address the proof replaced, kept in sight rather than quietly overwritten. */
+.cud-read__was { padding-top: 6px; font-size: 11px; line-height: 1.5; color: var(--muted-2); text-decoration: line-through; }
+.cud-read__was[hidden] { display: none; }
+.cud-read__from { padding-top: 9px; font-size: 11px; line-height: 1.55; color: var(--muted); }
+
+/* ===== Upload and OCR history =====
+   The card at the foot of the step: one entry per attempt, newest first, with
+   what each check made of the document under it. A refusal that has since been
+   cleared off the box is still readable here, which is the point of it. */
+.cud-log__sub { padding-top: 6px; font-size: 11.5px; line-height: 1.5; color: var(--muted); }
+.cud-log__list { list-style: none; margin: 0; padding: 14px 0 0; }
+.cud-log__none { padding-top: 14px; font-size: 12px; color: var(--muted-2); }
+.cud-log__none[hidden] { display: none; }
+.cud-log__row { padding: 12px 14px; border: 1px solid var(--border); border-left-width: 3px; border-radius: 6px; }
+.cud-log__row + .cud-log__row { margin-top: 10px; }
+.cud-log__row.is-ok { border-left-color: var(--green-2); }
+.cud-log__row.is-warn { border-left-color: var(--amber); }
+.cud-log__row.is-bad { border-left-color: var(--red); }
+.cud-log__top { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.cud-log__doc { font-size: 12.5px; font-weight: 700; color: var(--ink); }
+.cud-log__try { font-size: 11px; color: var(--muted); }
+.cud-log__at { font-size: 11px; color: var(--muted-2); font-variant-numeric: tabular-nums; }
+/* How the attempt ended, in the colour of the outcome. */
+.cud-log__mark { margin-left: auto; font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted-2); }
+.cud-log__row.is-ok .cud-log__mark { color: var(--green); }
+.cud-log__row.is-warn .cud-log__mark { color: var(--amber); }
+.cud-log__row.is-bad .cud-log__mark { color: var(--red-dark); }
+.cud-log__file { padding-top: 4px; font-size: 11.5px; color: var(--text); word-break: break-all; }
+/* What each check said, in the order it said it. */
+.cud-log__stages { list-style: none; margin: 0; padding: 8px 0 0; }
+.cud-log__stage { position: relative; padding: 2px 0 2px 16px; font-size: 11.5px; line-height: 1.5; color: var(--muted); }
+.cud-log__stage::before { content: ""; position: absolute; left: 4px; top: 9px; width: 5px; height: 5px; border-radius: 50%; background: var(--border-2); }
+.cud-log__stage.is-ok { color: var(--text); }
+.cud-log__stage.is-ok::before { background: var(--green-2); }
+.cud-log__stage.is-warn::before { background: var(--amber); }
+.cud-log__stage.is-bad { color: var(--red-dark); }
+.cud-log__stage.is-bad::before { background: var(--red); }
+
+/* The cards stacked beside the rail: the bar at the foot of the page clears the
+   last of them, not each one. */
+.csi-main { min-width: 0; display: flex; flex-direction: column; gap: 15px; margin-bottom: 70px; }
+.csi-main .csi-card { margin-bottom: 0; }
+.cud-extra__title { font-size: 16px; font-weight: 500; color: var(--text); padding-bottom: 14px; border-bottom: 1px solid var(--divider); }
+.cud-grid--details { gap: 18px 24px; }
+
+@media (max-width: 1100px) {
+  .cud-grid, .cud-read__cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 700px) {
+  .cud-grid, .cud-read__cards { grid-template-columns: minmax(0, 1fr); }
+  .cud-col__spacer { display: none; }
+  .cud-head__right { margin-left: 0; width: 100%; }
+}
+
+/* The preview sheet: the document itself, with what to do about it under. */
+.cud-preview { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 24px; background: rgba(35, 31, 32, .55); }
+.cud-preview[hidden] { display: none; }
+.cud-preview__sheet { display: flex; flex-direction: column; width: min(760px, 100%); max-height: min(86vh, 900px); border-radius: 10px; background: #fff; overflow: hidden; }
+.cud-preview__head { display: flex; align-items: flex-start; gap: 16px; padding: 14px 18px; border-bottom: 1px solid var(--divider); }
+.cud-preview__kind { font-size: 10.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted-2); }
+.cud-preview__title { padding-top: 2px; font-size: 14.5px; font-weight: 600; color: var(--ink); word-break: break-all; }
+.cud-preview__close { margin-left: auto; display: inline-flex; padding: 4px; border: 0; background: none; color: var(--muted); cursor: pointer; }
+.cud-preview__close:hover { color: var(--ink); }
+.cud-preview__body { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; padding: 16px; background: var(--tint); }
+.cud-preview__body img { max-width: 100%; max-height: 62vh; border-radius: 6px; }
+.cud-preview__body iframe { width: 100%; height: 62vh; border: 0; border-radius: 6px; background: #fff; }
+.cud-preview__none { padding: 40px 20px; font-size: 12.5px; text-align: center; color: var(--muted); }
+.cud-preview__foot { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding: 12px 18px; border-top: 1px solid var(--divider); }
+.cud-preview__meta { font-size: 11.5px; color: var(--muted); }
+.cud-preview__acts { margin-left: auto; display: flex; gap: 18px; }
+
+
+/* ===== Uno TP classic - Short URL =====
+   The generate form over the links already sent, with the filter, the search
+   and the pages that list needs once it runs past a screenful. */
+.csi-rail--steps { gap: 16px; padding: 18px 16px; }
+.csi-rail__title { font-size: 13px; font-weight: 600; color: var(--ink); }
+.csi-rail__note { display: flex; gap: 12px; color: #4A4A4A; }
+.csi-rail__note svg { flex: none; margin-top: 1px; }
+.csi-rail__note-title { font-size: 12.5px; font-weight: 600; color: var(--ink); }
+.csi-rail__note p { padding-top: 3px; font-size: 11.5px; line-height: 1.5; color: var(--muted); }
+
+/* The page is one table, so the card runs wider than the form pages. */
+.csi--wide { padding-bottom: 20px; }
+.csi-card__title--plain { padding-bottom: 0; border-bottom: 0; }
+
+.su-filters { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 4px 0 12px; }
+.su-pills { display: flex; gap: 8px; flex-wrap: wrap; }
+.su-pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border: 1px solid var(--border-2); border-radius: 15px; background: #fff; font-family: inherit; font-size: 12px; color: var(--text); cursor: pointer; }
+.su-pill:hover { border-color: var(--muted); color: var(--ink); }
+.su-pill--on, .su-pill--on:hover { border-color: var(--red); background: var(--pink-bg); color: var(--red-dark); font-weight: 600; }
+.su-pill__n { font-size: 10.5px; font-weight: 700; color: var(--muted-2); }
+.su-pill--on .su-pill__n { color: var(--red-dark); }
+.su-search { display: flex; align-items: center; gap: 7px; margin-left: auto; padding: 0 10px; height: 32px; border: 1px solid var(--border-3); border-radius: 6px; background: #fff; color: var(--muted-2); }
+.su-search:focus-within { border-color: var(--muted); }
+.su-search input { width: 190px; border: 0; padding: 0; background: none; font-family: inherit; font-size: 12.5px; color: var(--ink); }
+.su-search input:focus { outline: none; }
+
+.su-nolink { color: var(--muted-2); }
+.su-filters { padding-top: 14px; }
+
+/* The cancellation rule, said once and plainly, above the list it governs. */
+.su-notice { display: flex; gap: 11px; margin-top: 14px; padding: 13px 15px; border: 1px solid #F0DFA8; border-left: 3px solid var(--amber); border-radius: 6px; background: var(--amber-bg); color: var(--amber); }
+.su-notice__icon { flex: none; margin-top: 1px; }
+.su-notice__title { font-size: 13px; font-weight: 700; }
+.su-notice p { padding-top: 3px; font-size: 12.5px; line-height: 1.55; max-width: 92ch; }
+.su-notice strong { font-weight: 700; }
+.su-table { width: 100%; table-layout: fixed; border-collapse: collapse; margin-top: 4px; font-size: 12.5px; color: var(--text); }
+.su-table th { padding: 10px 12px 8px 0; font-size: 10.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted-2); text-align: left; border-bottom: 1px solid var(--border); }
+.su-table td { padding: 12px 12px 12px 0; border-bottom: 1px solid var(--divider); vertical-align: middle; overflow-wrap: anywhere; }
+.su-table tr:last-child td { border-bottom: 0; }
+.su-table strong { color: var(--ink); font-weight: 600; }
+.su-table__sub { padding-top: 2px; font-size: 11px; color: var(--muted); }
+/* Close to the automatic cancellation: the row says so in amber. */
+.su-table__sub--urgent { color: var(--amber); font-weight: 600; }
+.su-table__act { padding-right: 0; text-align: right; }
+.su-table tbody tr:hover td { background: var(--tint); }
+
+.su-empty { padding: 26px 0; text-align: center; font-size: 12.5px; color: var(--muted); }
+.su-empty[hidden] { display: none; }
+
+.su-pager { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding-top: 14px; }
+.su-pager[hidden] { display: none; }
+.su-pager__count { flex: 1; min-width: 160px; font-size: 11.5px; color: var(--muted); }
+.su-pager__nav, .su-pager__pages { display: flex; align-items: center; gap: 6px; }
+.su-page { min-width: 30px; height: 30px; padding: 0 8px; border: 1px solid var(--border-2); border-radius: 6px; background: #fff; font-family: inherit; font-size: 12.5px; color: var(--text); cursor: pointer; }
+.su-page:hover:not(:disabled) { border-color: var(--muted); color: var(--ink); }
+.su-page--on, .su-page--on:hover { border-color: var(--red); background: var(--red); color: #fff; font-weight: 600; }
+.su-page:disabled { color: var(--muted-2); cursor: not-allowed; }
+.su-page--step { font-size: 15px; line-height: 1; }
+
+@media (max-width: 900px) {
+  /* Each link becomes its own block, every cell labelled by its column. */
+  .su-table, .su-table tbody, .su-table tr, .su-table td { display: block; width: auto; }
+  .su-table colgroup, .su-table thead { display: none; }
+  .su-table tr { padding: 12px 0; border-bottom: 1px solid var(--divider); }
+  .su-table td { display: flex; gap: 10px; padding: 3px 0; border: 0; }
+  .su-table td::before { content: attr(data-label); flex: none; width: 104px; font-size: 11px; color: var(--muted-2); }
+  .su-table__act { justify-content: flex-end; }
+  .su-table__act::before { content: none; }
+}
+@media (max-width: 640px) {
+  .su-search { margin-left: 0; width: 100%; }
+  .su-search input { width: 100%; }
+  .su-pager__count { text-align: center; }
+  .su-pager__nav { margin: 0 auto; }
+}
+
+/* ===== Uno TP classic - Pay In Slip Generation =====
+   The old PayinSlipGenerationAxis screen, opened on the last fourteen days
+   instead of on an empty form: the CMS branch and the search over the card, the
+   applications under it, and the batch bar across the foot once any are ticked.
+   The list furniture is the Short URL page's - su-table, su-empty and su-pager
+   are shared between the two - so only the form, the tick column and the bar
+   are new here. */
+.pis-form { padding-top: 4px; }
+.pis-form__row { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
+.pis-form__row--search { padding-top: 18px; align-items: flex-end; }
+.pis-field--appno { width: 100%; max-width: 260px; }
+/* The search is the first thing on the card, so its legend needs no gap above. */
+.csi-searchby--first { margin-top: 0; }
+.pis-field--actions { display: flex; align-items: center; gap: 12px; }
+.pis-btn--search { min-width: 96px; }
+#pisError { padding-top: 12px; font-size: 12px; }
+#pisScope { padding-top: 10px; }
+
+
+/* How the application came in. Digital is called out in blue because it is the
+   one that can be held back; physical is the quiet default. */
+.pis-tag { display: inline-block; padding: 2px 7px; border-radius: 3px; border: 1px solid var(--border); background: var(--tint); font-size: 10.5px; font-weight: 600; color: var(--muted); }
+.pis-tag--digital { border-color: #CBDCEC; background: #EDF4FA; color: var(--blue); }
+
+/* What is held back, in one line. The rule itself is in the rail and on each
+   blocked row, so this only carries the count and where to act. */
+.pis-flag { display: flex; align-items: center; gap: 8px; margin-top: 12px; padding: 8px 12px; border-radius: 6px; background: var(--pink-bg); font-size: 12px; line-height: 1.45; color: var(--red-dark); }
+.pis-flag svg { flex: none; color: var(--red); }
+.pis-flag strong { font-weight: 600; }
+
+.pis-table__amt { font-weight: 600; color: var(--ink); white-space: nowrap; }
+.pis-table__slip [data-slip-detail]:empty { display: none; }
+/* The action is one short link per row; it never wraps. */
+.pis-table .su-table__act { white-space: nowrap; }
+
+/* A row whose slip is held back for an acceptance. */
+.pis-table tbody tr[data-blocked="yes"] td { background: #FDF7F8; }
+
+@media (max-width: 900px) {
+  .pis-form__row--search { align-items: flex-start; }
+}
+@media (max-width: 640px) {
+  .pis-field--appno { max-width: none; }
+  .pis-field--actions { width: 100%; }
+  .pis-btn--search, .pis-field--actions .csi-btn { flex: 1; }
+}
+
+
+/* ===== Uno TP classic - View Application =====
+   The old ViewApplication screen, which opened on one empty Application Number
+   box. It now opens on the last fourteen days and searches by number or folio,
+   so the list furniture is the Short URL page's - su-table, su-pill, su-empty
+   and su-pager are shared - and only the folio column and the read-only sheet
+   a row opens are new here. */
+.va-table td[data-label="Folio"] { white-space: nowrap; }
+.va-table .su-table__act { white-space: nowrap; }
+/* An application nobody can act on any more reads a shade quieter. */
+.va-table tbody tr[data-state="cancelled"] td { background: #FDFAFA; }
+
+/* The sheet a row opens: the application's own values, then its history. It is
+   the required-documents dialog's frame, so head and foot are shared with it. */
+.va-sheet { max-width: 720px; height: min(660px, calc(100vh - 40px)); max-height: none; padding: 0; overflow: hidden; display: flex; flex-direction: column; color: var(--ink); }
+.va-sheet__body { flex: 1; min-height: 0; overflow-y: auto; padding: 18px 24px 22px; }
+.va-sheet__body:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
+.va-sheet__grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 18px 20px; }
+.va-sheet__head { margin: 22px 0 0; padding-top: 16px; border-top: 1px solid var(--divider); font-size: 13px; font-weight: 600; }
+
+.va-kv__k { font-size: 11px; font-weight: 500; color: var(--muted); line-height: 1.35; }
+.va-kv__v { font-size: 13.5px; font-weight: 500; padding-top: 4px; color: var(--ink); line-height: 1.4; }
+.va-kv__v--lg { font-size: 15px; font-weight: 600; }
+.va-kv__note { font-size: 10.5px; color: var(--muted-2); padding-top: 3px; line-height: 1.4; }
+
+/* The history: a step the application has taken carries its date, one it has
+   not is greyed and says so. */
+.va-steps { list-style: none; margin: 10px 0 0; padding: 0; }
+.va-step { display: flex; align-items: baseline; gap: 12px; position: relative; padding: 8px 0 8px 26px; border-bottom: 1px solid var(--divider); font-size: 12.5px; color: var(--muted-2); }
+.va-step:last-child { border-bottom: 0; }
+.va-step::before { content: ""; position: absolute; left: 4px; top: 13px; width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid var(--border-2); background: #fff; }
+.va-step--done { color: var(--text); }
+.va-step--done::before { border-color: var(--green); background: var(--green); }
+.va-step__label { flex: 1; min-width: 0; }
+.va-step__when { flex: none; font-size: 11.5px; color: var(--muted); }
+.va-step--done .va-step__when { font-weight: 600; color: var(--ink); }
+
+@media (max-width: 720px) {
+  .va-sheet__grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+}
+@media (max-width: 640px) {
+  .modal-overlay:has(.va-sheet) { padding: 0; align-items: flex-end; }
+  .va-sheet { max-width: none; height: calc(100vh - 24px); border-radius: 12px 12px 0 0; }
+  .va-sheet__body { padding: 14px 16px 18px; }
+}
+
+/* The one line above the list saying how far each search reaches. It is the
+   pay-in slip page's flag in a neutral tone: this one warns of nothing. */
+.va-flag { display: flex; align-items: center; gap: 8px; margin-top: 12px; padding: 8px 12px; border-radius: 6px; background: var(--tint); font-size: 12px; line-height: 1.45; color: var(--muted); }
+.va-flag svg { flex: none; color: var(--blue); }
+.va-flag strong { font-weight: 600; color: var(--ink); }
+
+
+/* ===== Uno TP classic - Console Admin =====
+   The screen behind the console: which features are on, and what the bell tells
+   partners. Two cards of the same list furniture the other classic screens use
+   (su-table, su-empty), with a form under each one. */
+.adm-stack { display: flex; flex-direction: column; gap: 15px; min-width: 0; }
+.adm-stack .csi-card { margin-bottom: 0; }
+.adm-stack .csi-card:last-child { margin-bottom: 70px; }
+
+.adm-table { margin-top: 10px; }
+.adm-table td { vertical-align: top; }
+.adm-table .su-table__act { white-space: nowrap; }
+/* A feature that is off right now, and the window that will take one off. */
+.adm-table tbody tr[data-state="disabled"] td { background: #FDF7F8; }
+.adm-table tbody tr[data-state="off"] td { color: var(--muted-2); }
+
+/* The kind of notice, as a chip rather than a word, so the list can be read down. */
+.adm-kindtag { display: inline-block; padding: 2px 7px; border-radius: 3px; border: 1px solid currentColor; font-size: 10px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; }
+.adm-table--notices strong { font-weight: 600; }
+
+/* The form under each table. It is the wizard's own field furniture - csi-label,
+   csi-control, csi-date - set out in rows. */
+.adm-form__title { margin: 26px 0 0; padding-top: 18px; border-top: 1px solid var(--divider); font-size: 13.5px; font-weight: 600; color: var(--ink); }
+.adm-form { display: flex; flex-direction: column; gap: 16px; padding-top: 16px; }
+.adm-form__row { display: flex; gap: 22px; flex-wrap: wrap; align-items: flex-start; }
+.adm-form__actions { display: flex; gap: 12px; padding-top: 2px; }
+.adm-control--wide { max-width: 560px; }
+.adm-textarea { height: auto; max-width: 560px; padding: 9px 10px; line-height: 1.5; resize: vertical; }
+
+/* One moment: the day in three boxes and the time in two, side by side. */
+.adm-when { display: flex; align-items: center; gap: 8px; }
+.adm-when .csi-date { width: auto; }
+.adm-time { padding: 0 8px; }
+
+.adm-kind { display: flex; align-items: center; height: 36px; }
+
+/* The features a window covers. A feature already in one cannot be picked. */
+.adm-picks { display: flex; flex-wrap: wrap; gap: 8px; }
+.adm-pick { display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; border: 1px solid var(--border-2); border-radius: 16px; font-size: 12.5px; color: var(--text); cursor: pointer; }
+.adm-pick:hover { border-color: var(--muted); color: var(--ink); }
+.adm-pick input { appearance: none; -webkit-appearance: none; margin: 0; width: 14px; height: 14px; flex: none; border: 1.5px solid var(--muted-2); border-radius: 3px; background: #fff; cursor: pointer; }
+.adm-pick input:checked { border-color: var(--red); background: var(--red) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7'/%3E%3C/svg%3E") center / 10px no-repeat; }
+.adm-pick input:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.adm-pick:has(input:checked) { border-color: var(--red); background: var(--pink-bg); color: var(--red-dark); font-weight: 600; }
+.adm-pick--off, .adm-pick--off:hover { border-color: var(--divider); background: var(--tint); color: var(--muted-2); cursor: not-allowed; }
+.adm-pick--off input { cursor: not-allowed; }
+
+@media (max-width: 720px) {
+  .adm-when { flex-wrap: wrap; }
+  .adm-form__row { gap: 14px; }
+}
+
+
+/* ===== E-Sarathi classic login =====
+   The old WA_FD_ESARATHI_LOGIN: the artwork down the left, and on the right the
+   E-Sarathi mark over two pill fields, the LOGIN button and the two forgot
+   links. Nothing else is on the page, and it sits on the flat grey the live page
+   uses rather than the portal's blue-grey. Sizes are read off the live page at
+   1470px: a 356px field 44px tall, 18px apart, a 152x40 button 22px under them,
+   and the forgot links 40px under that. */
+html:has(.clogin), html:has(.clogin) body { background: #E9EAEC; }
+.app-shell:has(.clogin) { max-width: 1280px; }
+.clogin { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); align-items: start; gap: 40px; padding: 86px 0 120px; }
+.clogin__art { display: flex; justify-content: center; }
+.clogin__art img { width: 100%; max-width: 420px; height: auto; }
+.clogin__panel { display: flex; flex-direction: column; align-items: center; }
+
+/* The mark: the red e of E-Sarathi, and सा₹थी beside it with the rupee sign
+   standing in for र. Georama carries no Devanagari, so the wordmark falls to the
+   face the page loads for it, then to whatever the system has. */
+.clogin__mark { display: flex; align-items: baseline; line-height: 1; }
+.clogin__mark-e { font-size: 62px; font-weight: 700; letter-spacing: -.03em; color: var(--red); }
+.clogin__mark-hi { font-family: 'Noto Sans Devanagari', 'Devanagari Sangam MN', 'Nirmala UI', serif; font-size: 44px; font-weight: 700; color: var(--ink); }
+.clogin__mark-r { color: var(--red); }
+
+.clogin__form { display: flex; flex-direction: column; align-items: center; gap: 18px; width: 100%; padding-top: 45px; }
+.clogin__input { width: 356px; max-width: 100%; height: 44px; padding: 0 20px; border: 1px solid var(--border-3); border-radius: 22px; background: #fff; font-family: inherit; font-size: 14px; color: var(--ink); }
+.clogin__input::placeholder { color: #8A8D92; }
+.clogin__input:focus { outline: none; border-color: var(--muted); }
+.clogin__input--bad, .clogin__input--bad:focus { border-color: var(--red); }
+/* Sits above the fields, where the live page puts what it has to say about them. */
+.clogin__error { width: 356px; max-width: 100%; font-size: 12px; line-height: 1.5; color: var(--red); text-align: center; }
+.clogin__submit { margin-top: 4px; width: 152px; height: 40px; border: 0; border-radius: 20px; background: var(--red); color: #fff; font-family: inherit; font-size: 14px; font-weight: 700; letter-spacing: .06em; cursor: pointer; }
+.clogin__submit:hover { background: var(--red-dark); }
+
+.clogin__links { display: flex; align-items: center; gap: 14px; padding-top: 40px; }
+.clogin__link { font-family: inherit; font-size: 14px; color: var(--text); cursor: pointer; }
+.clogin__link:hover { color: var(--red); text-decoration: underline; }
+.clogin__sep { color: var(--border-2); }
+/* Not on the live page: the way into a mock that authenticates nothing. */
+.clogin__mock { max-width: 380px; padding-top: 36px; font-size: 11px; line-height: 1.7; color: var(--muted-2); text-align: center; }
+.clogin__mock strong { font-weight: 600; color: var(--muted); }
+
+/* The OTP the site asks for once the pair checks out. Six boxes, one digit each,
+   and another code to be had after half a minute. */
+.cotp { max-width: 460px; padding: 22px 24px 24px; color: var(--ink); }
+.cotp__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+.cotp__title { font-size: 16px; font-weight: 600; }
+.cotp__sub { padding-top: 6px; font-size: 12px; line-height: 1.55; color: var(--muted); }
+.cotp__sub strong { font-weight: 600; color: var(--text); }
+.cotp__close { display: flex; padding: 4px; margin: -2px -4px 0 0; border-radius: 4px; color: var(--muted); cursor: pointer; }
+.cotp__close:hover { background: var(--tint); color: var(--ink); }
+.cotp__boxes { display: flex; gap: 10px; padding-top: 20px; }
+.cotp__box { width: 46px; height: 52px; border: 1px solid var(--border-3); border-radius: 8px; background: #fff; font-family: inherit; font-size: 20px; font-weight: 600; text-align: center; color: var(--ink); }
+.cotp__box:focus { outline: none; border-color: var(--red); box-shadow: 0 0 0 3px var(--pink-bg); }
+.cotp__box--bad { border-color: var(--red); background: #FFF7F8; }
+.cotp__error { padding-top: 10px; font-size: 12px; color: var(--red); }
+.cotp__foot { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding-top: 20px; }
+.cotp__resend { font-size: 12px; color: var(--muted-2); }
+.cotp__again { font-family: inherit; font-size: 12px; font-weight: 600; color: var(--red); cursor: pointer; }
+.cotp__again:hover { text-decoration: underline; }
+.cotp__actions { display: flex; gap: 10px; margin-left: auto; }
+
+@media (max-width: 900px) {
+  /* The artwork gives up the column and follows the form. */
+  .clogin { grid-template-columns: minmax(0,1fr); gap: 0; padding: 44px 0 64px; }
+  .clogin__panel { order: 1; }
+  .clogin__art { order: 2; padding-top: 36px; }
+  .clogin__art img { max-width: 330px; }
+}
+@media (max-width: 560px) {
+  .clogin__mark-e { font-size: 50px; }
+  .clogin__mark-hi { font-size: 36px; }
+  .clogin__form { padding-top: 32px; }
+}
+@media (max-width: 480px) {
+  .cotp__boxes { gap: 7px; }
+  .cotp__box { width: 100%; height: 48px; font-size: 18px; }
+  .cotp__actions { width: 100%; margin-left: 0; }
+  .cotp__actions .btn { flex: 1; }
+}
+
+
+/* ===== The classic / new view switch =====
+   Above either portal home. It sits over the cards rather than inside one, so
+   neither home's layout has to make room for it. */
+.view-switch { display: flex; align-items: center; gap: 10px; padding: 0 2px 12px; }
+.view-switch__label { font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted-2); }
+.view-switch__set { display: inline-flex; padding: 3px; border: 1px solid var(--border-2); border-radius: 17px; background: #fff; }
+.view-switch__opt { display: inline-flex; align-items: center; padding: 5px 15px; border-radius: 14px; font-size: 12.5px; font-weight: 500; color: var(--text); }
+a.view-switch__opt:hover { background: var(--tint); color: var(--ink); text-decoration: none; }
+.view-switch__opt--on { background: var(--red); color: #fff; font-weight: 600; }
+
+@media (max-width: 560px) {
+  .view-switch { padding-bottom: 10px; }
 }

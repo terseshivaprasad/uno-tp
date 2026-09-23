@@ -8,20 +8,49 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Georama:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/topbar.css" asp-append-version="true" />
+    @await RenderSectionAsync("Head", required: false)
 </head>
 <body>
-    <header class="app-header">
-        <div class="app-header__brand">
-            <span class="brand-mahindra">mahindra</span><span class="brand-finance">FINANCE</span>
-        </div>
+    <header class="app-header @(ViewData["HeaderVariant"] as string == "public" ? "app-header--public" : null)">
+        <a class="app-header__brand" asp-page="/Desktop/ClassicIndex">
+            <img src="~/images/mahindra-finance-logo.svg" asp-append-version="true" width="164" height="12" alt="Mahindra Finance">
+        </a>
+        @if (ViewData["HeaderVariant"] as string == "public")
+        {
+            @* Before a partner has signed in there is no welcome line, no bell and
+               nowhere to log out of: the bar carries the old public site's menu
+               instead, as the login page draws it. *@
+            <nav class="app-header__right pub-nav" aria-label="Site">
+                <span class="pub-nav__link pub-nav__link--on" aria-current="page">Home</span>
+                @foreach (var item in new[] { "Features", "Documentation", "Interest Rates", "About us", "FAQ's" })
+                {
+                    <button type="button" class="pub-nav__link btn-reset js-stub">@item</button>
+                }
+                <button type="button" class="pub-nav__login" data-focus-login>Login</button>
+            </nav>
+        }
+        else
+        {
         <div class="app-header__right">
             <div class="app-header__welcome"><span class="welcome-label">Welcome,</span> Shivaprasad Terse <span class="entity-code">100002225</span></div>
+            <partial name="_Notices" />
             <div class="app-header__nav">
-                <a class="@(ViewData["FirstNavActive"] is true ? "app-header__nav-active" : null)" asp-page="@(ViewData["FirstNavPage"] as string ?? "/Apps/UnoTp/Dashboard")">@(ViewData["FirstNavLabel"] as string ?? "Dashboard")</a>
-                <a asp-page="/Desktop/Index">Home</a>
-                <a asp-page="/Desktop/Index">Logout</a>
+                <a class="@(ViewData["FirstNavActive"] is true ? "app-header__nav-active" : null)" asp-page="@(ViewData["FirstNavPage"] as string ?? "/Apps/UnoTp/Dashboard")">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="8" rx="1.2"></rect><rect x="13.5" y="3.5" width="7" height="5" rx="1.2"></rect><rect x="13.5" y="11.5" width="7" height="9" rx="1.2"></rect><rect x="3.5" y="14.5" width="7" height="6" rx="1.2"></rect></svg>
+                    @(ViewData["FirstNavLabel"] as string ?? "Dashboard")
+                </a>
+                <a asp-page="/Desktop/ClassicIndex">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 10.5L12 3.5l8.5 7"></path><path d="M5.5 9v11h13V9"></path><path d="M10 20v-6h4v6"></path></svg>
+                    Home
+                </a>
+                <a asp-page="/Desktop/ClassicLogin">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4.5H6a1.5 1.5 0 0 0-1.5 1.5v12A1.5 1.5 0 0 0 6 19.5h8"></path><path d="M10.5 12H20.5M17 8.5l3.5 3.5-3.5 3.5"></path></svg>
+                    Logout
+                </a>
             </div>
         </div>
+        }
     </header>
     <main class="app-shell">
         @RenderBody()
@@ -30,6 +59,7 @@
     {
         <footer class="app-footer">&copy; 2026 Mahindra Finance &middot; CIN-L65921MH1991PLC059642</footer>
     }
+    <script src="~/js/notices.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

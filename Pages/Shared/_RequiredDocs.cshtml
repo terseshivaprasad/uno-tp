@@ -1,0 +1,57 @@
+@using UnoTp.Models
+@* The old FdDocModal, one investor type at a time: the types down the side (a
+   swipeable chip row on a phone), the chosen type's documents beside them. Any
+   page that drops this partial in opens it from a #openRequiredDocs trigger and
+   pulls in ~/js/required-docs.js. *@
+<div class="modal-overlay" id="requiredDocsModal" hidden>
+    <div class="modal-dialog rdocs" role="dialog" aria-modal="true" aria-labelledby="requiredDocsTitle">
+        <header class="rdocs__head">
+            <div>
+                <h2 class="rdocs__title" id="requiredDocsTitle">Required documents to book an FD</h2>
+                <p class="rdocs__sub">Choose the investor type to see what to collect.</p>
+            </div>
+            <button type="button" class="rdocs__close btn-reset" id="closeRequiredDocs" aria-label="Close">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19"></path></svg>
+            </button>
+        </header>
+
+        <div class="rdocs__body">
+            <div class="rdocs__types" role="tablist" aria-label="Investor type" aria-orientation="vertical">
+                @for (var i = 0; i < RequiredDocs.Groups.Length; i++)
+                {
+                    var g = RequiredDocs.Groups[i];
+                    var count = g.Items.Count(x => !x.StartsWith("Note:"));
+                    <button type="button" class="rdocs__type btn-reset" role="tab" id="rdocs-tab-@i" aria-controls="rdocs-panel-@i" aria-selected="@(i == 0 ? "true" : "false")" tabindex="@(i == 0 ? "0" : "-1")">
+                        <span class="rdocs__type-name">@g.Title</span>
+                        <span class="rdocs__type-count">@count</span>
+                    </button>
+                }
+            </div>
+
+            @for (var i = 0; i < RequiredDocs.Groups.Length; i++)
+            {
+                var g = RequiredDocs.Groups[i];
+                var docs = g.Items.Where(x => !x.StartsWith("Note:")).ToList();
+                var notes = g.Items.Where(x => x.StartsWith("Note:")).Select(x => x["Note:".Length..].Trim());
+                <section class="rdocs__panel" role="tabpanel" id="rdocs-panel-@i" aria-labelledby="rdocs-tab-@i" tabindex="0" hidden="@(i != 0)">
+                    <h3 class="rdocs__panel-title">@g.Title <span>@docs.Count documents</span></h3>
+                    <ol class="rdocs__list">
+                        @foreach (var d in docs)
+                        {
+                            <li>@d</li>
+                        }
+                    </ol>
+                    @foreach (var n in notes)
+                    {
+                        <p class="rdocs__callout">@n</p>
+                    }
+                </section>
+            }
+        </div>
+
+        <footer class="rdocs__foot">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 11v6"></path><circle cx="12" cy="7.5" r=".6" fill="currentColor"></circle></svg>
+            <span>Currently Esarathi is enabled with individual and sole proprietorship investment only.</span>
+        </footer>
+    </div>
+</div>

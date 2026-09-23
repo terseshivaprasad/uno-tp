@@ -1,4 +1,4 @@
-using UnoTp.Features;
+﻿using UnoTp.Features;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,6 +36,25 @@ if (!app.Environment.IsDevelopment())
 
 // No UseHttpsRedirection: Render terminates TLS at the edge and forwards plain HTTP to the container.
 
+// The pages carry no cache headers of their own, so Safari holds on to a copy and
+// serves old markup against freshly versioned scripts - the script then looks for
+// elements the cached page does not have and the screen stops responding. The
+// markup is rendered from mock data on every request anyway, so none of it is
+// worth caching.
+app.Use(async (context, next) =>
+{
+    context.Response.OnStarting(() =>
+    {
+        if (context.Response.ContentType?.StartsWith("text/html", StringComparison.OrdinalIgnoreCase) == true)
+        {
+            context.Response.Headers.CacheControl = "no-store, no-cache, must-revalidate";
+            context.Response.Headers.Pragma = "no-cache";
+        }
+        return Task.CompletedTask;
+    });
+    await next();
+});
+
 app.UseRouting();
 
 // Must run before the pages so a ?ff= override applies to this render.
@@ -52,7 +71,7 @@ app.MapRazorPages();
 
 // Phones get the same page as laptops, with the mobile board as its phone view; the
 // old mobile-only addresses forward there so saved links keep working.
-app.MapGet("/Mobile", () => Results.Redirect("/"));
+app.MapGet("/Mobile", () => Results.Redirect("/Classic"));
 app.MapGet("/Apps/UnoTp/Dashboard/Mobile", () => Results.Redirect("/Apps/UnoTp/Dashboard"));
 
 app.Run();

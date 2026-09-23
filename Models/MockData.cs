@@ -156,6 +156,7 @@ public static class MockData
 
     public static List<PinnedApp> PinnedApps { get; } = new()
     {
+        // The one Uno TP tile opens either view: the tile itself carries the switch.
         new("Uno TP", "FD sourcing and renewals", true, "uno-tp", 5, "FD sourcing"),
         new("DMS Explorer", "Document repository", false, "folder", null, "Documents", "/Apps/DmsExplorer/Index"),
         new("OVD Explorer", "Officially valid documents", false, "id-card", null, "Valid documents"),

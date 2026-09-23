@@ -1,0 +1,450 @@
+@page "/Apps/UnoTp/Classic/UploadDocuments"
+@model UnoTp.Pages.Apps.UnoTpApp.Desktop.ClassicUploadDocumentsModel
+@namespace UnoTp.Pages.Apps.UnoTpApp.Desktop
+@{
+    ViewData["Title"] = "Upload Documents (classic)";
+    ViewData["FirstNavPage"] = "/Apps/UnoTp/Desktop/ClassicDashboard";
+
+    // The old WA_FD_UNOTP/UploadInvestorDocuments: three documents across the top,
+    // the one the payment carries under them, and the details the application is
+    // sourced under. Nothing is uploaded anywhere - a file is read where it was
+    // picked and named back to the partner.
+}
+
+@functions {
+    // One document slot: its picker, the eye and bin that act on what was picked,
+    // and the box the file lands in. Key names the slot to the script.
+    void Slot(string key, string label, ClassicUploadDocumentsModel.Accepts accepts)
+    {
+        <div class="cud-slot" data-slot="@key">
+            @* View and replace only: a document already on the application is
+               swapped for a better copy, never left empty by this step. *@
+            <div class="cud-slot__tools">
+                <button type="button" class="cud-tool" data-view title="View @label" aria-label="View @label" disabled>
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.8 12S5.5 5.5 12 5.5 22.2 12 22.2 12 18.5 18.5 12 18.5 1.8 12 1.8 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                </button>
+                <button type="button" class="cud-tool" data-replace title="Replace @label" aria-label="Replace @label" disabled>
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 12a8.5 8.5 0 0 1-14.6 5.9"></path><path d="M3.5 12a8.5 8.5 0 0 1 14.6-5.9"></path><path d="M18.5 2.5V7H14"></path><path d="M5.5 21.5V17H10"></path></svg>
+                </button>
+            </div>
+
+            <button type="button" class="cud-drop" data-drop aria-describedby="@(key)Error">
+                <span class="cud-drop__idle">
+                    <span class="cud-drop__icon" aria-hidden="true">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16.5V4.5"></path><path d="M7.5 9L12 4.5 16.5 9"></path><path d="M4.5 15v3.5a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5V15"></path></svg>
+                    </span>
+                    <span class="cud-drop__title">Click to upload @label</span>
+                    <span class="cud-drop__hint">Supported format: @accepts.Label (max. @(accepts.MaxMb) MB)</span>
+                </span>
+                @* While the mock is deciding whether the file is the document
+                   the slot asked for. *@
+                <span class="cud-drop__busy" hidden>
+                    <span class="cud-drop__spinner" aria-hidden="true"></span>
+                    <span class="cud-drop__checking">Identifying the document&hellip;</span>
+                </span>
+                <span class="cud-drop__done" hidden>
+                    <span class="cud-drop__check" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+                    </span>
+                    <span class="cud-drop__file" data-file></span>
+                    <span class="cud-drop__size" data-size></span>
+                    <span class="cud-drop__swap">Click to view &middot; replace above</span>
+                </span>
+            </button>
+            <span class="cud-slot__na" data-na hidden>NOT APPLICABLE</span>
+            <input type="file" data-input accept="@accepts.Mime" hidden>
+            <p class="csi-error" id="@(key)Error" hidden></p>
+            <p class="cud-slot__tries" data-tries hidden></p>
+        </div>
+    }
+}
+
+<div class="csi">
+    <partial name="_ClassicSteps" model="1" />
+
+    @* Both cards share the column beside the rail; the page grid holds two
+       columns, so a card left loose lands under the rail instead. *@
+    <div class="csi-main">
+    <form class="csi-card" id="cudForm" novalidate>
+        <div class="cud-head">
+            <div class="cud-head__who">
+                <p class="cud-head__step">Upload documents</p>
+                <h1 class="cud-head__name">@Model.HolderName</h1>
+                <p class="cud-head__ids">PAN @Model.HolderPan &middot; DOB @Model.HolderDob</p>
+            </div>
+
+            @* What the application is filed under, and the one thing that can be
+               fetched against it. CKYC answers for an application the investor
+               accepts online; a paper one is filed from the forms in front of the
+               partner, so the link goes quiet for it. *@
+            <div class="cud-head__right">
+                <dl class="cud-head__refs">
+                    <div>
+                        <dt>Folio</dt>
+                        <dd class="@(Model.HasFolio ? null : "cud-head__pending")">@Model.HolderFolio</dd>
+                    </div>
+                    <div>
+                        <dt>Application</dt>
+                        <dd>@Model.AppNo</dd>
+                    </div>
+                </dl>
+                <button type="button" class="csi-link" id="cudCkyc">Fetch from CKYC</button>
+            </div>
+        </div>
+
+        @* Address proof is filed against the permanent address. Where the investor
+           is written to somewhere else, that address needs a proof of its own, so
+           the answer here opens a second type and picker below. *@
+        <fieldset class="cud-mailing">
+            <legend class="csi-label">Mailing address same as permanent?</legend>
+            <label class="csi-radio">
+                <input type="radio" name="cudMailing" value="same" checked>
+                <span>Yes</span>
+            </label>
+            <label class="csi-radio">
+                <input type="radio" name="cudMailing" value="other">
+                <span>No &mdash; written to elsewhere</span>
+            </label>
+        </fieldset>
+
+        <div class="cud-grid cud-grid--docs">
+            <div class="cud-col">
+                <label class="csi-label" for="cudAppType">Application Type</label>
+                <div class="cud-select">
+                    <select class="csi-control" id="cudAppType" data-apptype>
+                        @foreach (var t in ClassicUploadDocumentsModel.ApplicationTypes)
+                        {
+                            <option value="@t">@t</option>
+                        }
+                    </select>
+                </div>
+                @{ Slot("form", "Application Form", ClassicUploadDocumentsModel.Form); }
+            </div>
+
+            @* The PAN copy the application is filed with. It comes over already
+               filed when the step before uploaded or matched one, and can still
+               be replaced here. *@
+            <div class="cud-col">
+                <span class="csi-label">PAN Copy</span>
+                <div class="cud-col__spacer" aria-hidden="true"></div>
+                @{ Slot("pan", "PAN copy", ClassicUploadDocumentsModel.Proof); }
+                @if (Model.PanFiled)
+                {
+                    <p class="cud-note" data-panfiled>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 11v6"></path><circle cx="12" cy="7.5" r=".7" fill="currentColor"></circle></svg>
+                        <span>Filed at Investor Identification. Replace it only if a clearer copy is to hand.</span>
+                    </p>
+                }
+            </div>
+
+            <div class="cud-col">
+                <label class="csi-label" for="cudPoaType">Proof of address</label>
+                <div class="cud-select">
+                    <select class="csi-control" id="cudPoaType" data-poatype aria-describedby="cudPoaTypeError">
+                        <option value="">Select</option>
+                        @foreach (var p in ClassicUploadDocumentsModel.ProofsOfAddress)
+                        {
+                            <option value="@p">@p</option>
+                        }
+                    </select>
+                </div>
+                <p class="csi-error" id="cudPoaTypeError" hidden></p>
+                @{ Slot("poa", "POA", ClassicUploadDocumentsModel.Image); }
+            </div>
+
+            <div class="cud-col">
+                <span class="csi-label">Investor's Photo</span>
+                <div class="cud-col__spacer" aria-hidden="true"></div>
+                @{ Slot("photo", "photograph", ClassicUploadDocumentsModel.Image); }
+            </div>
+
+            @* Only where the two addresses part company. Its own type, since the
+               proof that carries the mailing address is rarely the one that
+               carries the permanent one. *@
+            <div class="cud-col" data-when="mailing" hidden>
+                <label class="csi-label" for="cudMailingPoaType">Mailing address proof</label>
+                <div class="cud-select">
+                    <select class="csi-control" id="cudMailingPoaType" data-mailingpoatype aria-describedby="cudMailingPoaTypeError">
+                        <option value="">Select</option>
+                        @foreach (var p in ClassicUploadDocumentsModel.ProofsOfAddress)
+                        {
+                            <option value="@p">@p</option>
+                        }
+                    </select>
+                </div>
+                <p class="csi-error" id="cudMailingPoaTypeError" hidden></p>
+                @{ Slot("mailing", "mailing address proof", ClassicUploadDocumentsModel.Image); }
+            </div>
+        </div>
+
+        @* What the proofs are for. OCR reads the address off the copy uploaded
+           above, the issuer is asked whether that is the address they hold, and
+           only a clean answer replaces what the application carries. *@
+        <section class="cud-read" id="cudAddress">
+            <h2 class="cud-read__title">Address on the application</h2>
+            <p class="cud-read__sub">Read off the proof and checked with the issuer. Nothing here changes until that check comes back clean.</p>
+
+            <div class="cud-read__cards">
+                <article class="cud-read__card" data-read="poa">
+                    <header class="cud-read__head">
+                        <h3 class="cud-read__kind">Permanent address</h3>
+                        <span class="cud-read__state" data-state>On the application</span>
+                    </header>
+                    <p class="cud-read__lines" data-lines>@Model.PermanentAddress</p>
+                    <p class="cud-read__was" data-was hidden></p>
+                    <p class="cud-read__from" data-from>From the folio the application was opened against.</p>
+                </article>
+
+                <article class="cud-read__card" data-read="mailing" hidden>
+                    <header class="cud-read__head">
+                        <h3 class="cud-read__kind">Mailing address</h3>
+                        <span class="cud-read__state" data-state>Not yet proved</span>
+                    </header>
+                    <p class="cud-read__lines" data-lines>Same as the permanent address until a proof is filed for it.</p>
+                    <p class="cud-read__was" data-was hidden></p>
+                    <p class="cud-read__from" data-from>The investor is written to somewhere else, so this address is taken from its own proof.</p>
+                </article>
+            </div>
+        </section>
+
+        <div class="cud-grid cud-grid--payment">
+            <div class="cud-col">
+                <label class="csi-label" for="cudPayMode">Payment Mode</label>
+                <div class="cud-select">
+                    <select class="csi-control" id="cudPayMode" data-paymode aria-describedby="cudPayModeError">
+                        <option value="">Select</option>
+                        @foreach (var m in ClassicUploadDocumentsModel.PaymentModes)
+                        {
+                            <option value="@m.Name" data-document="@m.Document">@m.Name</option>
+                        }
+                    </select>
+                </div>
+                <p class="csi-error" id="cudPayModeError" hidden></p>
+                @{ Slot("payment", "the instrument", ClassicUploadDocumentsModel.Image); }
+            </div>
+        </div>
+        @* A cheque or a draft is read the same way a proof is: OCR takes the
+           account off the copy filed above and the bank it is drawn on is asked
+           to stand behind it. Only a clean answer carries the account forward to
+           Bank Details & Payment. *@
+        <section class="cud-read" data-when="instrument" hidden>
+            <h2 class="cud-read__title">Account on the instrument</h2>
+            <p class="cud-read__sub">Read off the cheque or draft filed above and confirmed with the bank it is drawn on.</p>
+
+            <div class="cud-read__cards">
+                <article class="cud-read__card" data-read="payment">
+                    <header class="cud-read__head">
+                        <h3 class="cud-read__kind">Paid from</h3>
+                        <span class="cud-read__state" data-state>Not yet read</span>
+                    </header>
+                    <p class="cud-read__lines" data-lines>Read off the instrument once a copy is filed.</p>
+                    <p class="cud-read__was" data-was hidden></p>
+                    <p class="cud-read__from" data-from>The account the deposit is paid from. Bank Details &amp; Payment opens with whatever is confirmed here.</p>
+                </article>
+            </div>
+        </section>
+    </form>
+
+    <section class="csi-card cud-extra">
+        <h2 class="cud-extra__title">Additional Details</h2>
+        <div class="cud-grid cud-grid--details">
+            <div class="cud-col">
+                <label class="csi-label" for="cudSourcing">Sourcing Mode</label>
+                <div class="cud-select">
+                    <select class="csi-control" id="cudSourcing" form="cudForm" data-sourcing aria-describedby="cudSourcingError">
+                        <option value="">Select</option>
+                        @foreach (var m in ClassicUploadDocumentsModel.SourcingModes)
+                        {
+                            <option value="@m">@m</option>
+                        }
+                    </select>
+                </div>
+                <p class="csi-error" id="cudSourcingError" hidden></p>
+            </div>
+
+            @* Sourced by the partner: their own code stands in the field and is
+               not theirs to change. Sourced through a broker: the broker's code
+               is typed in its place. *@
+            <div class="cud-col" data-when="sourcing-employee" hidden>
+                <label class="csi-label" for="cudEmpSourceCode">Sourcing Employee Code</label>
+                <input class="csi-control" id="cudEmpSourceCode" form="cudForm" value="@ClassicUploadDocumentsModel.PartnerCode" readonly>
+                <p class="cud-resolved">Sourcing Employee Name &mdash; <strong>@ClassicUploadDocumentsModel.PartnerName</strong></p>
+            </div>
+
+            <div class="cud-col" data-when="sourcing-broker" hidden>
+                <label class="csi-label" for="cudBroker">Broker Code</label>
+                <input class="csi-control" id="cudBroker" form="cudForm" maxlength="12" autocomplete="off" spellcheck="false" aria-describedby="cudBrokerError">
+                <p class="csi-error" id="cudBrokerError" hidden></p>
+            </div>
+
+            <div class="cud-col">
+                <label class="csi-label" for="cudSubBroker">Sub Broker Code <span class="cud-optional">(Non-mandatory)</span></label>
+                <input class="csi-control" id="cudSubBroker" form="cudForm" maxlength="12" autocomplete="off" spellcheck="false">
+            </div>
+
+            <div class="cud-col">
+                <label class="csi-label" for="cudCategory">Deposit Category</label>
+                <div class="cud-select">
+                    <select class="csi-control" id="cudCategory" form="cudForm" data-category aria-describedby="cudCategoryError">
+                        <option value="">Select</option>
+                        @foreach (var c in ClassicUploadDocumentsModel.DepositCategories)
+                        {
+                            <option value="@c">@c</option>
+                        }
+                    </select>
+                </div>
+                <p class="csi-error" id="cudCategoryError" hidden></p>
+            </div>
+
+            @* An employee deposit is booked against a staff record: whose it is,
+               how they are related to the holder, and what proves it. *@
+            <div class="cud-col" data-when="employee" hidden>
+                <label class="csi-label" for="cudEmpCode">Employee Code</label>
+                <input class="csi-control" id="cudEmpCode" form="cudForm" maxlength="10" autocomplete="off" spellcheck="false" aria-describedby="cudEmpCodeError">
+                <p class="cud-resolved">Employee Name &mdash; <strong data-empname>&mdash;</strong></p>
+                @* A code this screen cannot put a name to does not stop the
+                   application; Operations settle it against the staff register. *@
+                <p class="cud-note" data-empunknown hidden>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 11v6"></path><circle cx="12" cy="7.5" r=".7" fill="currentColor"></circle></svg>
+                    <span>No name against this code here. You can still proceed &mdash; Operations check it against the staff register before the deposit is booked.</span>
+                </p>
+                <p class="csi-error" id="cudEmpCodeError" hidden></p>
+            </div>
+
+            <div class="cud-col" data-when="employee" hidden>
+                <label class="csi-label" for="cudEmpCompany">Employee Company Name</label>
+                <input class="csi-control" id="cudEmpCompany" form="cudForm" maxlength="60" autocomplete="off" aria-describedby="cudEmpCompanyError">
+                <p class="csi-error" id="cudEmpCompanyError" hidden></p>
+            </div>
+
+            <div class="cud-col" data-when="employee" hidden>
+                <label class="csi-label" for="cudEmpHolder">Employee holder</label>
+                <div class="cud-select">
+                    <select class="csi-control" id="cudEmpHolder" form="cudForm" aria-describedby="cudEmpHolderError">
+                        <option value="">Select</option>
+                        @foreach (var h in ClassicUploadDocumentsModel.EmployeeHolders)
+                        {
+                            <option value="@h">@h</option>
+                        }
+                    </select>
+                </div>
+                <p class="csi-error" id="cudEmpHolderError" hidden></p>
+            </div>
+
+            <div class="cud-col" data-when="employee" hidden>
+                <label class="csi-label" for="cudEmpRelation">Emp Relation with holder</label>
+                <div class="cud-select">
+                    <select class="csi-control" id="cudEmpRelation" form="cudForm" aria-describedby="cudEmpRelationError">
+                        <option value="">Select</option>
+                        @foreach (var r in ClassicUploadDocumentsModel.EmployeeRelations)
+                        {
+                            <option value="@r">@r</option>
+                        }
+                    </select>
+                </div>
+                <p class="csi-error" id="cudEmpRelationError" hidden></p>
+            </div>
+
+            @* A paper application has to carry its form number; a digital one has
+               no paper, so the field stands but is not asked for. *@
+            <div class="cud-col">
+                <label class="csi-label" for="cudFormNo">Physical Application Form No. <span class="cud-optional" data-formno-optional hidden>(Non-mandatory)</span></label>
+                <input class="csi-control" id="cudFormNo" form="cudForm" maxlength="20" autocomplete="off" spellcheck="false" aria-describedby="cudFormNoError">
+                <p class="csi-error" id="cudFormNoError" hidden></p>
+            </div>
+
+            <div class="cud-col" data-when="employee" hidden>
+                <label class="csi-label" for="cudEmpProofType">Employee Proof</label>
+                <div class="cud-select">
+                    <select class="csi-control" id="cudEmpProofType" form="cudForm" aria-describedby="cudEmpProofTypeError">
+                        <option value="">Select</option>
+                        @foreach (var p in ClassicUploadDocumentsModel.EmployeeProofs)
+                        {
+                            <option value="@p">@p</option>
+                        }
+                    </select>
+                </div>
+                <p class="csi-error" id="cudEmpProofTypeError" hidden></p>
+                @{ Slot("empproof", "Employee Proof", ClassicUploadDocumentsModel.Proof); }
+            </div>
+        </div>
+    </section>
+
+    @* Three attempts stand against the application for each document. What each
+       one was, what OCR read off it and what the issuer said is kept here, so a
+       refusal is never just a red line that has since been cleared away. *@
+    <section class="csi-card cud-log">
+        <h2 class="cud-extra__title">Upload and OCR history</h2>
+        <p class="cud-log__sub">Every attempt against this application, newest first. Three are allowed for each document; Clear All empties the boxes, not the count.</p>
+        <ol class="cud-log__list" id="cudLogList">
+            @foreach (var past in Model.PastAttempts)
+            {
+                <li class="cud-log__row is-@past.Kind">
+                    <div class="cud-log__top">
+                        <span class="cud-log__doc">@past.Document</span>
+                        <span class="cud-log__try">Attempt @past.Attempt of 3</span>
+                        <span class="cud-log__at">@past.When</span>
+                        <span class="cud-log__mark">@past.Mark</span>
+                    </div>
+                    <p class="cud-log__file">@past.File</p>
+                    <ul class="cud-log__stages">
+                        @foreach (var stage in past.Stages)
+                        {
+                            <li class="cud-log__stage @(stage.Kind.Length > 0 ? "is-" + stage.Kind : null)">@stage.Text</li>
+                        }
+                    </ul>
+                </li>
+            }
+        </ol>
+        <p class="cud-log__none" id="cudLogNone" hidden>Nothing uploaded against this application yet.</p>
+    </section>
+    </div>
+</div>
+
+<footer class="csi-bar">
+    <div class="csi-bar__inner">
+        <a class="csi-btn csi-btn--back" asp-page="/Apps/UnoTp/Desktop/ClassicSearchInvestor">Back</a>
+        <p class="csi-bar__hint" id="cudHint"></p>
+        <div class="csi-bar__right">
+            <button type="button" class="csi-link btn-reset" id="cudClear">Clear All</button>
+            <button type="submit" class="csi-btn csi-btn--primary" form="cudForm" id="cudProceed">Proceed</button>
+        </div>
+    </div>
+</footer>
+
+@* What the eye opens: the document itself where the browser can show it, and
+   what to do with it without hunting for the right box again. *@
+<div class="cud-preview" id="cudPreview" hidden>
+    <div class="cud-preview__sheet" role="dialog" aria-modal="true" aria-labelledby="cudPreviewTitle">
+        <header class="cud-preview__head">
+            <div>
+                <p class="cud-preview__kind" data-preview-kind></p>
+                <h2 class="cud-preview__title" id="cudPreviewTitle" data-preview-title></h2>
+            </div>
+            <button type="button" class="cud-preview__close" data-preview-close aria-label="Close">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+            </button>
+        </header>
+        <div class="cud-preview__body" data-preview-body></div>
+        <footer class="cud-preview__foot">
+            <span class="cud-preview__meta" data-preview-meta></span>
+            <div class="cud-preview__acts">
+                <button type="button" class="csi-link" data-preview-replace>Replace</button>
+            </div>
+        </footer>
+    </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+@* The staff the mock can put a name to, so the page and the script hold one
+   list between them. *@
+<script id="cudPanFiled" type="application/json">@(Model.PanFiled ? "true" : "false")</script>
+<script id="cudAttempts" type="application/json">@Html.Raw(Model.AttemptsJson)</script>
+<script id="cudAddresses" type="application/json">@Html.Raw(Model.AddressJson)</script>
+<script id="cudEmployees" type="application/json">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(ClassicUploadDocumentsModel.Employees))</script>
+
+@section Scripts {
+    <script src="~/js/console.js"></script>
+    <script src="~/js/classic-upload-documents.js" asp-append-version="true"></script>
+}

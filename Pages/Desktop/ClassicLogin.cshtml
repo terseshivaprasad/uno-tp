@@ -1,0 +1,113 @@
+@page "/"
+@model UnoTp.Pages.Desktop.ClassicLoginModel
+@namespace UnoTp.Pages.Desktop
+@{
+    ViewData["Title"] = "E-Sarathi Login (classic)";
+    ViewData["HeaderVariant"] = "public";
+    ViewData["ShowAppFooter"] = true;
+
+    // The old WA_FD_ESARATHI_LOGIN as it stands today: the artwork down the left,
+    // and on the right the E-Sarathi mark over two pill fields, the LOGIN button
+    // and the two forgot links. The page has nothing else on it. Sizes are read
+    // off the live page at 1470px: a 356px field 44px tall, 18px apart, a 152px
+    // button 40px tall, and the pair of links 40px under it.
+    //
+    // Signing in is two steps on the live site - the pair is checked, then an OTP
+    // goes to the registered mobile and email and is asked for in a dialog over
+    // this page. The dialog is not from a capture of the live one: it is built
+    // from the OTP steps this project already draws, so the shape is right even
+    // where the wording will not be.
+}
+
+@section Head {
+    @* The mark is set in Devanagari; Georama carries no Devanagari, so the one
+       weight the wordmark needs comes in beside it. *@
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@700&display=swap" rel="stylesheet">
+}
+
+<div class="clogin">
+    <div class="clogin__art" aria-hidden="true">
+        <img src="~/images/esarathi-login.svg" asp-append-version="true" width="420" height="370" alt="">
+    </div>
+
+    <div class="clogin__panel">
+        <p class="clogin__mark">
+            <span class="clogin__mark-e">e</span><span class="clogin__mark-hi">सा<span class="clogin__mark-r">₹</span>थी</span>
+            <span class="visually-hidden">E-Sarathi</span>
+        </p>
+
+        <form class="clogin__form" id="cloginForm" novalidate
+              data-user-id="@UnoTp.Pages.Desktop.ClassicLoginModel.DemoUserId"
+              data-password="@UnoTp.Pages.Desktop.ClassicLoginModel.DemoPassword"
+              data-otp="@UnoTp.Pages.Desktop.ClassicLoginModel.DemoOtp">
+            <p class="clogin__error" id="cloginError" role="alert" hidden></p>
+
+            <label class="visually-hidden" for="cloginUser">User ID</label>
+            <input class="clogin__input" id="cloginUser" name="userId" type="text" placeholder="User ID"
+                   autocomplete="username" autocapitalize="off" spellcheck="false" aria-describedby="cloginError">
+
+            <label class="visually-hidden" for="cloginPass">Password</label>
+            <input class="clogin__input" id="cloginPass" name="password" type="password" placeholder="Password"
+                   autocomplete="current-password" aria-describedby="cloginError">
+
+            <button type="submit" class="clogin__submit" id="cloginSubmit">LOGIN</button>
+        </form>
+
+        <p class="clogin__links">
+            <button type="button" class="btn-reset clogin__link js-stub">Forgot User ID</button>
+            <span class="clogin__sep" aria-hidden="true">|</span>
+            <button type="button" class="btn-reset clogin__link js-stub">Forgot Password</button>
+        </p>
+
+        @* Not on the live page. Without it there is no way into the mock. *@
+        <p class="clogin__mock">
+            Mock &mdash; nothing is authenticated here. Sign in as
+            <strong>@UnoTp.Pages.Desktop.ClassicLoginModel.DemoUserId</strong> /
+            <strong>@UnoTp.Pages.Desktop.ClassicLoginModel.DemoPassword</strong>,
+            then <strong>@UnoTp.Pages.Desktop.ClassicLoginModel.DemoOtp</strong> as the OTP.
+        </p>
+    </div>
+</div>
+
+@* The OTP the site asks for once the pair checks out. It opens over the page,
+   takes six digits, and lets the partner ask for another after 30 seconds. *@
+<div class="modal-overlay" id="cloginOtpModal" hidden>
+    <div class="modal-dialog cotp" role="dialog" aria-modal="true" aria-labelledby="cotpTitle" aria-describedby="cotpSub">
+        <header class="cotp__head">
+            <div>
+                <h2 class="cotp__title" id="cotpTitle">Verify OTP</h2>
+                <p class="cotp__sub" id="cotpSub">
+                    A 6-digit one-time password has been sent to <strong>@UnoTp.Pages.Desktop.ClassicLoginModel.OtpMobile</strong>
+                    and <strong>@UnoTp.Pages.Desktop.ClassicLoginModel.OtpEmail</strong>. It is valid for 10 minutes.
+                </p>
+            </div>
+            <button type="button" class="cotp__close btn-reset" id="cotpClose" aria-label="Close">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19"></path></svg>
+            </button>
+        </header>
+
+        <div class="cotp__boxes" id="cotpBoxes" role="group" aria-labelledby="cotpTitle">
+            @for (var i = 1; i <= 6; i++)
+            {
+                <input class="cotp__box" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1"
+                       autocomplete="one-time-code" aria-label="OTP digit @i" data-otp-box>
+            }
+        </div>
+
+        <p class="cotp__error" id="cotpError" role="alert" hidden></p>
+
+        <div class="cotp__foot">
+            <p class="cotp__resend" id="cotpResend">Resend OTP in <span id="cotpCountdown">00:30</span></p>
+            <div class="cotp__actions">
+                <button type="button" class="btn btn-secondary btn-sm" id="cotpCancel">Cancel</button>
+                <button type="button" class="btn btn-primary btn-sm" id="cotpVerify" disabled>Verify &amp; sign in</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+@section Scripts {
+    <script src="~/js/classic-login.js" asp-append-version="true"></script>
+}

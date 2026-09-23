@@ -1,0 +1,126 @@
+/* ===== Top bar =====
+   The fixed 44px header every page shares (Pages/Shared/_Layout.cshtml): the
+   Mahindra Finance logo, the welcome line, and the first-nav / Home / Logout
+   links, each with its icon. Colour tokens come from site.css, loaded first. */
+.app-header {
+  height: 44px;
+  background: #fff;
+  border-bottom: 1px solid var(--divider);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+/* The logo SVG (wwwroot/images) keeps its 205:15 artwork ratio at every width. */
+.app-header__brand { display: flex; align-items: center; flex: none; }
+.app-header__brand img { display: block; width: 164px; height: auto; }
+.app-header__right { display: flex; align-items: center; gap: 16px; font-size: 13.6px; color: var(--text); }
+.welcome-label { font-weight: 500; }
+.entity-code { color: var(--red); }
+.app-header__nav { display: flex; border-left: 1px solid #D9D9D9; padding-left: 16px; }
+.app-header__nav a { display: inline-flex; align-items: center; gap: 6px; padding: 0 12px; color: #000; border-left: 1px solid #D9D9D9; }
+.app-header__nav a svg { flex: none; }
+.app-header__nav a:first-child { border-left: none; }
+.app-header__nav a.app-header__nav-active { color: var(--red); }
+
+/* ===== Notices =====
+   The bell and the panel it drops, listing what is scheduled to happen. */
+.notices { position: relative; display: flex; align-items: center; }
+.notices__bell { display: flex; align-items: center; gap: 5px; padding: 4px 6px; border: 0; border-radius: 6px; background: none; color: var(--text); cursor: pointer; font-family: inherit; }
+.notices__bell:hover { background: var(--tint); color: var(--ink); }
+.notices__count { min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--red); color: #fff; font-size: 10px; font-weight: 700; line-height: 16px; text-align: center; }
+
+.notices__panel {
+  position: absolute; top: calc(100% + 8px); right: -8px; z-index: 60;
+  width: 372px; max-height: min(520px, 80vh); overflow-y: auto;
+  background: #fff; border: 1px solid var(--border); border-radius: 8px;
+  box-shadow: 0 16px 40px rgba(24,39,75,.16); text-align: left;
+}
+.notices__panel[hidden] { display: none; }
+.notices__head { position: sticky; top: 0; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 14px 16px 12px; border-bottom: 1px solid var(--divider); background: #fff; }
+.notices__title { font-size: 14px; font-weight: 600; color: var(--ink); }
+.notices__sub { padding-top: 2px; font-size: 11.5px; color: var(--muted); }
+.notices__close { display: flex; padding: 4px; margin: -2px -4px 0 0; border-radius: 4px; color: var(--text); cursor: pointer; }
+.notices__close:hover { background: var(--tint); color: var(--ink); }
+
+.notices__list { list-style: none; margin: 0; padding: 0; }
+.notice { padding: 13px 16px; border-bottom: 1px solid var(--divider); }
+.notice:last-child { border-bottom: 0; }
+.notice__top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.notice__kind { font-size: 10.5px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; }
+.notice__away { font-size: 11px; color: var(--muted-2); }
+.notice__title { padding-top: 5px; font-size: 13px; font-weight: 600; line-height: 1.4; color: var(--ink); }
+.notice__when { padding-top: 3px; font-size: 11.5px; font-weight: 500; color: var(--text); }
+.notice__detail { padding-top: 5px; font-size: 11.5px; line-height: 1.5; color: var(--muted); }
+
+@media (max-width: 560px) {
+  /* On a phone the panel is a sheet across the width of the screen. */
+  .notices__panel { position: fixed; top: 44px; left: 8px; right: 8px; width: auto; max-height: calc(100vh - 60px); }
+}
+
+@media (max-width: 900px) {
+  .app-header__right { gap: 8px; font-size: 11.5px; }
+  .app-header__nav a { padding: 0 8px; }
+}
+
+/* Board 00 - Mobile trims the header to the brand and Logout. */
+@media (max-width: 560px) {
+  .app-header { padding: 0 14px; }
+  .app-header__brand img { width: 136px; }
+  .app-header__welcome { display: none; }
+  .app-header__nav { border-left: 0; padding-left: 0; }
+  .app-header__nav a:not(:last-child) { display: none; }
+  .app-header__nav a { border-left: 0; padding: 0; font-size: 11.5px; font-weight: 600; color: var(--text); }
+}
+
+/* ===== The bar before signing in =====
+   ViewData["HeaderVariant"] = "public" swaps the welcome line, the bell and the
+   Home/Logout links for the old public site's menu, which is all the login page
+   has above it, and dresses the bar the way the old public site dresses it: a
+   dark grey band with a white wedge cut into its left for the logo, and the same
+   diagonal carrying on below the bar as a short red rule.
+
+   The wedge is one straight line - 290px along the top of the bar, 150px along
+   its foot - and the rule continues that line to the left edge. Both are drawn
+   against the bar, so the shape holds at any width; the logo clears the diagonal
+   by about 20px at its lowest point. */
+.app-header--public { background: #4D4D4F; border-bottom: 0; }
+.app-header--public::before {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 290px;
+  background: #fff; clip-path: polygon(0 0, 290px 0, 150px 100%, 0 100%);
+}
+.app-header--public::after {
+  content: ""; position: absolute; left: 150px; top: 100%;
+  width: 157px; height: 3px; background: var(--red);
+  transform-origin: 0 0; transform: rotate(162.6deg);
+  pointer-events: none;
+}
+/* The wedge is positioned, so the logo and the menu have to be lifted over it. */
+.app-header--public .app-header__brand, .app-header--public .pub-nav { position: relative; z-index: 1; }
+
+.pub-nav { display: flex; align-items: center; gap: 2px; }
+.pub-nav__link { display: inline-flex; align-items: center; padding: 0 11px; font-family: inherit; font-size: 13.6px; color: rgba(255,255,255,.88); cursor: pointer; }
+.pub-nav__link:hover { color: #fff; }
+.pub-nav__link--on { font-weight: 600; color: #fff; cursor: default; }
+.pub-nav__login { margin-left: 10px; padding: 6px 18px; border: 0; border-radius: 14px; background: var(--red); color: #fff; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.pub-nav__login:hover { background: var(--red-dark); }
+
+@media (max-width: 900px) {
+  .pub-nav__link { padding: 0 7px; font-size: 12px; }
+  .pub-nav__login { padding: 5px 14px; font-size: 12px; }
+}
+@media (max-width: 680px) {
+  /* Only where you are and the way in survive the width. */
+  .pub-nav__link:not(.pub-nav__link--on) { display: none; }
+}
+@media (max-width: 560px) {
+  /* Under the wedge's own width there is no room to cut it, so the bar is
+     plain white with the menu in ink, as the rest of the header goes on a phone. */
+  .app-header--public { background: #fff; border-bottom: 1px solid var(--divider); }
+  .app-header--public::before, .app-header--public::after { content: none; }
+  .app-header--public .pub-nav__link { color: var(--text); }
+  .app-header--public .pub-nav__link:hover, .app-header--public .pub-nav__link--on { color: var(--ink); }
+}

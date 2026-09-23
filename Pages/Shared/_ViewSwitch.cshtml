@@ -1,0 +1,30 @@
+@model string
+@* The console has two homes: the new portal dashboard at "/", and the old
+   E-Sarathi console at "/Classic". Whichever page renders this passes the side it is on, and that
+   side is a plain label rather than a link to where you already are.
+
+   The switch is off the air while the classic console is the only one being
+   shown. Set this back to true to put it in front of partners again; every page
+   that renders the partial picks it up. *@
+@{
+    var showViewSwitch = false;
+}
+@if (!showViewSwitch)
+{
+    return;
+}
+<div class="view-switch">
+    <span class="view-switch__label">View</span>
+    <div class="view-switch__set" role="group" aria-label="Dashboard view">
+        @if (Model == "classic")
+        {
+            <span class="view-switch__opt view-switch__opt--on" aria-current="page">Classic</span>
+            <a class="view-switch__opt" asp-page="/Desktop/Index">New</a>
+        }
+        else
+        {
+            <a class="view-switch__opt" asp-page="/Desktop/ClassicIndex">Classic</a>
+            <span class="view-switch__opt view-switch__opt--on" aria-current="page">New</span>
+        }
+    </div>
+</div>

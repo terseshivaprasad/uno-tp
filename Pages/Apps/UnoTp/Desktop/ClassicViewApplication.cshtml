@@ -1,0 +1,269 @@
+@page "/Apps/UnoTp/Classic/ViewApplication"
+@model UnoTp.Pages.Apps.UnoTpApp.Desktop.ClassicViewApplicationModel
+@namespace UnoTp.Pages.Apps.UnoTpApp.Desktop
+@{
+    ViewData["Title"] = "View Application (classic)";
+    ViewData["FirstNavPage"] = "/Apps/UnoTp/Desktop/ClassicDashboard";
+
+    // The old WA_FD_UNOTP/ViewApplication screen: one Application Number box and
+    // a Proceed button, which showed nothing until you already knew the number.
+    // This one opens on the last fourteen days of applications - every one still
+    // in flight - and keeps the search for reaching a particular application, or
+    // everything under one folio.
+    var earliest = ClassicViewApplicationModel.Earliest;
+    var today = ClassicViewApplicationModel.Today;
+    var listed = ClassicViewApplicationModel.Listed.ToList();
+    var all = listed.Concat(ClassicViewApplicationModel.Older).ToList();
+    var open = listed.Count(r => r.State is "progress" or "awaiting");
+}
+
+<div class="csi csi--wide">
+    <aside class="csi-rail csi-rail--steps">
+        <h2 class="csi-rail__title">What this screen shows</h2>
+        <div class="csi-rail__note">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 6.5V12l3.5 2.5"></path></svg>
+            <div>
+                <div class="csi-rail__note-title">The last @ClassicViewApplicationModel.WindowDays days</div>
+                <p>An unpaid application cancels itself after @ClassicViewApplicationModel.WindowDays days, so everything still in flight was raised inside that window.</p>
+            </div>
+        </div>
+        <div class="csi-rail__note">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M16.5 16.5l4 4"></path></svg>
+            <div>
+                <div class="csi-rail__note-title">By application or by folio</div>
+                <p>An application number finds one application. A folio finds every application that investor has, however old.</p>
+            </div>
+        </div>
+        <div class="csi-rail__note">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"></path><circle cx="12" cy="12" r="2.8"></circle></svg>
+            <div>
+                <div class="csi-rail__note-title">Looking, not editing</div>
+                <p>Every value here is read-only. An application that still needs work is picked up from the dashboard.</p>
+            </div>
+        </div>
+        <div class="csi-rail__note">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>
+            <div>
+                <div class="csi-rail__note-title">Masked identifiers</div>
+                <p>A holder's PAN keeps its first five and last character. Nothing on this screen shows one in full.</p>
+            </div>
+        </div>
+    </aside>
+
+    <div class="csi-card">
+        <div class="csi-drafts__head">
+            <h1 class="csi-card__title csi-card__title--plain">View Application</h1>
+            <p class="csi-drafts__sub">Every application raised in the last @ClassicViewApplicationModel.WindowDays days. @listed.Count listed, @(open == 1 ? "one of them is" : $"{open} of them are") still waiting on someone. Search by number or folio to reach an older one.</p>
+        </div>
+
+        <form class="pis-form" id="vaForm" novalidate>
+            <fieldset class="csi-searchby csi-searchby--first">
+                <legend class="csi-label">Search By</legend>
+                <label class="csi-radio">
+                    <input type="radio" name="vaSearchBy" value="dates" checked>
+                    <span>Application date</span>
+                </label>
+                <label class="csi-radio">
+                    <input type="radio" name="vaSearchBy" value="appno">
+                    <span>Application number</span>
+                </label>
+                <label class="csi-radio">
+                    <input type="radio" name="vaSearchBy" value="folio">
+                    <span>Folio number</span>
+                </label>
+            </fieldset>
+
+            <div class="pis-form__row pis-form__row--search">
+                <div class="csi-field" data-for="dates">
+                    <span class="csi-label" id="vaFromLabel">From Date</span>
+                    @* The three-box control the old wizard steps use. *@
+                    <div class="csi-date" data-date id="vaFrom" role="group" aria-labelledby="vaFromLabel">
+                        <input class="csi-date__part" data-dd inputmode="numeric" maxlength="2" placeholder="DD" aria-label="Day" autocomplete="off" value="@earliest.ToString("dd")">
+                        <span class="csi-date__sep">/</span>
+                        <input class="csi-date__part" data-mm inputmode="numeric" maxlength="2" placeholder="MM" aria-label="Month" autocomplete="off" value="@earliest.ToString("MM")">
+                        <span class="csi-date__sep">/</span>
+                        <input class="csi-date__part csi-date__part--year" data-yyyy inputmode="numeric" maxlength="4" placeholder="YYYY" aria-label="Year" autocomplete="off" value="@earliest.ToString("yyyy")">
+                    </div>
+                </div>
+
+                <div class="csi-field" data-for="dates">
+                    <span class="csi-label" id="vaToLabel">To Date</span>
+                    <div class="csi-date" data-date id="vaTo" role="group" aria-labelledby="vaToLabel">
+                        <input class="csi-date__part" data-dd inputmode="numeric" maxlength="2" placeholder="DD" aria-label="Day" autocomplete="off" value="@today.ToString("dd")">
+                        <span class="csi-date__sep">/</span>
+                        <input class="csi-date__part" data-mm inputmode="numeric" maxlength="2" placeholder="MM" aria-label="Month" autocomplete="off" value="@today.ToString("MM")">
+                        <span class="csi-date__sep">/</span>
+                        <input class="csi-date__part csi-date__part--year" data-yyyy inputmode="numeric" maxlength="4" placeholder="YYYY" aria-label="Year" autocomplete="off" value="@today.ToString("yyyy")">
+                    </div>
+                </div>
+
+                <div class="csi-field pis-field--appno" data-for="appno" hidden>
+                    <label class="csi-label" for="vaAppNo">Application Number</label>
+                    <input class="csi-control" id="vaAppNo" maxlength="18" autocomplete="off" spellcheck="false" placeholder="e.g. FBBMFL26F10000">
+                </div>
+
+                <div class="csi-field pis-field--appno" data-for="folio" hidden>
+                    <label class="csi-label" for="vaFolio">Folio Number</label>
+                    <input class="csi-control" id="vaFolio" maxlength="12" autocomplete="off" spellcheck="false" placeholder="e.g. MF0040000">
+                </div>
+
+                <div class="csi-field csi-field--check pis-field--actions">
+                    <button type="submit" class="csi-btn csi-btn--primary pis-btn--search">Search</button>
+                    <button type="button" class="csi-btn csi-btn--back" id="vaClear">Clear</button>
+                </div>
+            </div>
+
+            <p class="csi-error" id="vaError" hidden></p>
+            <p class="csi-hint" id="vaScope">Showing the last @ClassicViewApplicationModel.WindowDays days &mdash; @earliest.ToString("dd/MM/yyyy") to @today.ToString("dd/MM/yyyy").</p>
+        </form>
+
+        <p class="va-flag">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 11v6"></path><circle cx="12" cy="7.5" r=".7" fill="currentColor"></circle></svg>
+            <span><strong>A date search reaches back @ClassicViewApplicationModel.WindowDays days</strong> &mdash; an older application has booked or cancelled itself. Search by number to reach one, or by folio for everything an investor has. A new customer has no folio until their first deposit books.</span>
+        </p>
+
+        <div class="su-filters">
+            <div class="su-pills" role="group" aria-label="Filter by status">
+                <button type="button" class="su-pill su-pill--on" data-state="all">All <span class="su-pill__n" data-count="all"></span></button>
+                @foreach (var st in ClassicViewApplicationModel.States)
+                {
+                    <button type="button" class="su-pill" data-state="@st.Key">@st.Label <span class="su-pill__n" data-count="@st.Key"></span></button>
+                }
+            </div>
+            <label class="su-search">
+                <span class="visually-hidden">Filter the listed applications</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>
+                <input type="search" id="vaFilter" placeholder="Narrow by investor, scheme or amount" autocomplete="off">
+            </label>
+        </div>
+
+        <table class="su-table va-table">
+            <colgroup>
+                <col style="width:16%"><col style="width:12%"><col style="width:11%"><col style="width:10%">
+                <col style="width:14%"><col style="width:9%"><col style="width:17%"><col style="width:11%">
+            </colgroup>
+            <thead>
+                <tr>
+                    <th scope="col">Application</th>
+                    <th scope="col">Investor</th>
+                    <th scope="col">Folio</th>
+                    <th scope="col">Amount</th>
+                    <th scope="col">Deposit</th>
+                    <th scope="col">Applied</th>
+                    <th scope="col">Status</th>
+                    <th scope="col" class="su-table__act"><span class="visually-hidden">Action</span></th>
+                </tr>
+            </thead>
+            <tbody id="vaRows">
+                @* The older applications are in the table but never listed: only a
+                   search by number or folio reaches them. *@
+                @foreach (var r in all)
+                {
+                    <tr data-state="@r.State" data-appno="@r.AppNo.ToLowerInvariant()" data-folio="@(r.Folio?.ToLowerInvariant() ?? "")"
+                        data-date="@r.Applied.ToString("yyyy-MM-dd")" data-window="@(r.InWindow ? "in" : "out")"
+                        data-search="@($"{r.AppNo} {r.Investor} {r.Folio} {r.Scheme} {r.Tenure} {ClassicViewApplicationModel.Rupees(r.Amount)} {r.Status.Label}".ToLowerInvariant())"
+                        hidden="@(!r.InWindow)">
+                        <td data-label="Application">
+                            <strong>@r.AppNo</strong>
+                            <div class="su-table__sub@(r.Urgent ? " su-table__sub--urgent" : "")">@r.Countdown</div>
+                        </td>
+                        <td data-label="Investor">
+                            @r.Investor
+                            <div class="su-table__sub">@(r.Holders == 1 ? "single holder" : $"{r.Holders} holders")</div>
+                        </td>
+                        <td data-label="Folio">
+                            @r.FolioLabel
+                            <div class="su-table__sub">@r.FolioNote</div>
+                        </td>
+                        <td data-label="Amount" class="pis-table__amt">@ClassicViewApplicationModel.Rupees(r.Amount)</td>
+                        <td data-label="Deposit">
+                            @r.Scheme
+                            <div class="su-table__sub">@r.Tenure &middot; @r.Payout.ToLowerInvariant()</div>
+                        </td>
+                        <td data-label="Applied">@r.Applied.ToString("dd/MM/yyyy")</td>
+                        <td data-label="Status">
+                            <span class="@r.Status.Tone">@r.Status.Text</span>
+                            <div class="su-table__sub">@r.Waiting</div>
+                        </td>
+                        <td class="su-table__act">
+                            <button type="button" class="csi-link" data-view="@r.AppNo">View</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <p class="su-empty" id="vaEmpty" hidden></p>
+
+        <div class="su-pager">
+            <p class="su-pager__count" id="vaCount"></p>
+            <div class="su-pager__nav">
+                <button type="button" class="su-page su-page--step" id="vaPrev" aria-label="Previous page">&lsaquo;</button>
+                <div class="su-pager__pages" id="vaPages"></div>
+                <button type="button" class="su-page su-page--step" id="vaNext" aria-label="Next page">&rsaquo;</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* One read-only sheet per application, kept out of the page until the dialog
+   takes a copy of it. Building them here keeps every value the row's own. *@
+<div hidden id="vaSheets">
+    @foreach (var r in all)
+    {
+        <section data-sheet="@r.AppNo" data-title="@r.AppNo" data-sub="@r.Investor &middot; @r.Status.Text &middot; raised @r.Applied.ToString("dd/MM/yyyy")">
+            <div class="va-sheet__grid">
+                <div class="va-kv"><div class="va-kv__k">Status</div><div class="va-kv__v @r.Status.Tone">@r.Status.Text</div><div class="va-kv__note">@r.Waiting</div></div>
+                <div class="va-kv"><div class="va-kv__k">Came in as</div><div class="va-kv__v"><span class="pis-tag @(r.Digital ? "pis-tag--digital" : "pis-tag--physical")">@r.Tag</span></div><div class="va-kv__note">@(r.Digital ? "accepted online by the investor" : "signed form on file")</div></div>
+                <div class="va-kv"><div class="va-kv__k">Folio</div><div class="va-kv__v">@r.FolioLabel</div><div class="va-kv__note">@r.FolioNote</div></div>
+                <div class="va-kv"><div class="va-kv__k">Investor</div><div class="va-kv__v">@r.Investor</div><div class="va-kv__note">@(r.Holders == 1 ? "single holder" : $"{r.Holders} holders · either or survivor")</div></div>
+                <div class="va-kv"><div class="va-kv__k">PAN</div><div class="va-kv__v">@r.Pan</div><div class="va-kv__note">first holder &middot; masked</div></div>
+                <div class="va-kv"><div class="va-kv__k">Applied</div><div class="va-kv__v">@r.Applied.ToString("dd/MM/yyyy")</div><div class="va-kv__note">@r.Countdown</div></div>
+                <div class="va-kv"><div class="va-kv__k">Amount</div><div class="va-kv__v va-kv__v--lg">@ClassicViewApplicationModel.Rupees(r.Amount)</div></div>
+                <div class="va-kv"><div class="va-kv__k">Scheme</div><div class="va-kv__v">@r.Scheme</div><div class="va-kv__note">interest @r.Payout.ToLowerInvariant()</div></div>
+                <div class="va-kv"><div class="va-kv__k">Tenure</div><div class="va-kv__v">@r.Tenure</div><div class="va-kv__note">@(r.State == "booked" ? $"matures {r.Maturity:dd/MM/yyyy}" : $"would mature {r.Maturity:dd/MM/yyyy}")</div></div>
+                <div class="va-kv"><div class="va-kv__k">Payment</div><div class="va-kv__v">@r.Instrument</div><div class="va-kv__note">@(r.Instrument == "Net banking" ? "paid online" : r.Branch)</div></div>
+                <div class="va-kv"><div class="va-kv__k">FDR</div><div class="va-kv__v">@(r.Fdr ?? "—")</div><div class="va-kv__note">@(r.Fdr is null ? "issued once the deposit books" : "issued")</div></div>
+            </div>
+
+            <h3 class="va-sheet__head">History</h3>
+            <ol class="va-steps">
+                @foreach (var m in r.Timeline)
+                {
+                    <li class="va-step@(m.Done ? " va-step--done" : "")">
+                        <span class="va-step__label">@m.Label</span>
+                        <span class="va-step__when">@m.When</span>
+                    </li>
+                }
+            </ol>
+        </section>
+    }
+</div>
+
+<div class="modal-overlay" id="vaModal" hidden>
+    <div class="modal-dialog va-sheet" role="dialog" aria-modal="true" aria-labelledby="vaModalTitle">
+        <header class="rdocs__head">
+            <div>
+                <h2 class="rdocs__title" id="vaModalTitle"></h2>
+                <p class="rdocs__sub" id="vaModalSub"></p>
+            </div>
+            <button type="button" class="rdocs__close btn-reset" id="vaModalClose" aria-label="Close">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19"></path></svg>
+            </button>
+        </header>
+
+        <div class="va-sheet__body" id="vaModalBody" tabindex="0"></div>
+
+        <footer class="rdocs__foot">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 11v6"></path><circle cx="12" cy="7.5" r=".6" fill="currentColor"></circle></svg>
+            <span>This view is read-only. An application that still needs work is picked up from the dashboard, where it opens on the step it stopped at.</span>
+        </footer>
+    </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+@section Scripts {
+    <script src="~/js/console.js"></script>
+    <script src="~/js/classic-view-application.js" asp-append-version="true"></script>
+}

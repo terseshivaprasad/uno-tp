@@ -8,6 +8,8 @@
     clearTimeout(toastTimer);
     toastTimer = setTimeout(function () { toastEl.classList.remove('toast--visible'); }, 2200);
   }
+  // Other page scripts raise the same toast.
+  window.showToast = showToast;
 
   // Any control explicitly marked as a stub in this mock build.
   document.querySelectorAll('.js-stub').forEach(function (el) {
@@ -98,6 +100,25 @@
         total += shown;
       });
       if (tileEmpty) tileEmpty.hidden = total !== 0;
+    });
+  });
+
+  // The classic console's own application search: one flat set of .classic-tile
+  // links, with a line in their place when nothing matches.
+  document.querySelectorAll('.js-classic-search').forEach(function (search) {
+    var scope = document.querySelector('[data-classic-tile-scope]');
+    if (!scope) return;
+    var tiles = scope.querySelectorAll('.classic-tile[data-search]');
+    var empty = scope.querySelector('.js-classic-empty');
+    search.addEventListener('input', function () {
+      var q = search.value.trim().toLowerCase();
+      var shown = 0;
+      tiles.forEach(function (tile) {
+        var match = q === '' || tile.getAttribute('data-search').indexOf(q) !== -1;
+        tile.hidden = !match;
+        if (match) shown += 1;
+      });
+      if (empty) empty.hidden = shown !== 0;
     });
   });
 

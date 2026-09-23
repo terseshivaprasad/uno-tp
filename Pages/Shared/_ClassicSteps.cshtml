@@ -1,0 +1,31 @@
+@using UnoTp.Pages.Apps.UnoTpApp.Desktop
+@model int
+@* The rail down the left of every classic wizard step. The page passes the step
+   it is on; the ones behind it carry a filled tick, the ones ahead an empty one.
+   One partial so the five steps cannot drift from page to page. *@
+@{
+    // Investor Identification leads the rail with its own glyph; the four booking
+    // steps follow it with the dashboard's.
+    const string investorGlyph = "<circle cx=\"12\" cy=\"7.5\" r=\"4\"></circle><path d=\"M4.5 20.5a7.5 7.5 0 0 1 15 0\"></path>";
+    var glyphs = new[] { investorGlyph }.Concat(ClassicDashboardModel.StepGlyphs).ToArray();
+}
+<aside class="csi-rail">
+    @for (var i = 0; i < ClassicSearchInvestorModel.Steps.Length; i++)
+    {
+        var current = i == Model;
+        var done = i < Model;
+        <div class="csi-rail__step@(current ? " csi-rail__step--current" : "")@(done ? " csi-rail__step--done" : "")" aria-current="@(current ? "step" : null)">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">@Html.Raw(glyphs[i])</svg>
+            <span class="csi-rail__label">@ClassicSearchInvestorModel.Steps[i]</span>
+            @if (current)
+            {
+                <span class="csi-rail__dot" aria-hidden="true"></span>
+            }
+            else
+            {
+                <svg class="csi-rail__check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M8 12.5l2.8 2.8L16.5 9.5"></path></svg>
+                <span class="visually-hidden">@(done ? "Done" : "Not started")</span>
+            }
+        </div>
+    }
+</aside>
