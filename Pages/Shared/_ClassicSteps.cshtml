@@ -10,6 +10,19 @@
     var glyphs = new[] { investorGlyph }.Concat(ClassicDashboardModel.StepGlyphs).ToArray();
 }
 <aside class="csi-rail">
+    @* On a phone the five steps will not fit across the width, and a rail that
+       scrolls sideways hides where you are. The count, the step you are on and a
+       bar take their place; the steps themselves come back with the room. *@
+    @{
+        var stepCount = ClassicSearchInvestorModel.Steps.Length;
+        var through = ((Model + 1) * 100) / stepCount;
+    }
+    <p class="csi-rail__where">
+        <span class="csi-rail__count">Step @(Model + 1) of @stepCount</span>
+        <span class="csi-rail__now">@ClassicSearchInvestorModel.Steps[Model]</span>
+    </p>
+    <span class="csi-rail__bar" aria-hidden="true"><span style="width:@(through)%"></span></span>
+
     @for (var i = 0; i < ClassicSearchInvestorModel.Steps.Length; i++)
     {
         var current = i == Model;

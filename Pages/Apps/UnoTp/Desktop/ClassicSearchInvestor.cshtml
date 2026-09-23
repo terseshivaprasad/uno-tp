@@ -55,9 +55,9 @@
                             @* Three boxes with slashes between, like the old jq-dte control. *@
                             <div class="csi-date" data-date role="group" aria-labelledby="csiDobLabel" aria-describedby="csiDobError">
                                 <input class="csi-date__part" data-dd inputmode="numeric" maxlength="2" placeholder="DD" aria-label="Day" autocomplete="off">
-                                <span class="csi-date__sep">/</span>
+                                <span class="csi-date__sep">-</span>
                                 <input class="csi-date__part" data-mm inputmode="numeric" maxlength="2" placeholder="MM" aria-label="Month" autocomplete="off">
-                                <span class="csi-date__sep">/</span>
+                                <span class="csi-date__sep">-</span>
                                 <input class="csi-date__part csi-date__part--year" data-yyyy inputmode="numeric" maxlength="4" placeholder="YYYY" aria-label="Year" autocomplete="off">
                             </div>
                             <p class="csi-error" id="csiDobError" hidden></p>
@@ -121,7 +121,7 @@
 
                         <div class="csi-verify__upload" data-upload>
                             <label class="csi-check" for="csiPanFile">Upload PAN copy</label>
-                            <input type="file" id="csiPanFile" data-panfile accept="image/png,image/jpeg,application/pdf" hidden>
+                            <input type="file" id="csiPanFile" data-panfile accept="application/pdf,image/jpeg" hidden>
                             <span class="csi-verify__file" data-filename hidden></span>
                         </div>
 
@@ -300,7 +300,8 @@
 
 <footer class="csi-bar">
     <div class="csi-bar__inner">
-        <a class="csi-btn csi-btn--back" asp-page="/Apps/UnoTp/Desktop/ClassicDashboard">Back</a>
+        <a class="csi-btn csi-btn--back" asp-page="/Apps/UnoTp/Desktop/ClassicDashboard"
+           data-loader="Going back to the dashboard">Back</a>
         <p class="csi-bar__hint" id="csiHint">Identify the investor to continue.</p>
         <div class="csi-bar__right">
             <button type="button" class="csi-link btn-reset" id="csiClear">Clear All</button>

@@ -66,14 +66,68 @@
   .app-header__nav a { padding: 0 8px; }
 }
 
-/* Board 00 - Mobile trims the header to the brand and Logout. */
-@media (max-width: 560px) {
+/* ===== The phone menu =====
+   A bar 44px tall cannot hold a welcome line and three links at a phone's width,
+   so below 760px they go behind the hamburger on the right and the bar keeps the
+   brand and the bell. Above it the button is not there at all. */
+.app-menu { position: relative; display: none; }
+.app-menu__btn { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; padding: 0; border: 1px solid var(--border); border-radius: 8px; background: #fff; color: var(--ink); cursor: pointer; }
+.app-menu__btn:hover { background: var(--tint); }
+/* Open, the button is the way out of the panel, so it says so. */
+.app-menu__btn.is-open { background: var(--ink); border-color: var(--ink); color: #fff; }
+.app-menu__cross, .app-menu__btn.is-open .app-menu__bars { display: none; }
+.app-menu__btn.is-open .app-menu__cross { display: block; }
+
+.app-menu__panel {
+  position: absolute; top: calc(100% + 10px); right: -4px; z-index: 60;
+  width: 288px; max-height: calc(100vh - 64px); overflow-y: auto;
+  background: #fff; border: 1px solid var(--border); border-radius: 12px;
+  box-shadow: 0 18px 44px rgba(24,39,75,.18); text-align: left;
+}
+.app-menu__panel[hidden] { display: none; }
+
+/* Who is signed in: the welcome line the bar carries at a wider width, given the
+   room to read as a name rather than a run-on. */
+.app-menu__who { display: flex; align-items: center; gap: 11px; padding: 14px 16px; background: var(--tint); border-bottom: 1px solid var(--divider); border-radius: 11px 11px 0 0; }
+.app-menu__avatar { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; flex: none; border-radius: 50%; background: #fff; border: 1.5px solid var(--red); font-size: 12px; font-weight: 700; letter-spacing: .04em; color: var(--red); }
+.app-menu__whotext { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.app-menu__name { font-size: 13.5px; font-weight: 700; color: var(--ink); }
+.app-menu__code { font-size: 11px; color: var(--muted); }
+
+/* One group per thing the panel is for, each under its own small label: where to
+   go, what the entity is, what can be changed, and the way out. */
+.app-menu__group { padding: 8px 0; border-top: 1px solid var(--divider); }
+.app-menu__group:first-of-type { border-top: 0; }
+.app-menu__label { padding: 4px 16px 6px; font-size: 9.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted-2); }
+
+.app-menu__row { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 16px; font-size: 13px; color: var(--ink); }
+.app-menu__row svg { flex: none; color: var(--muted); }
+.app-menu__row:hover { background: var(--tint); text-decoration: none; }
+.app-menu__row-label { flex: 1; min-width: 0; text-align: left; }
+.app-menu__row--on { color: var(--red); font-weight: 600; }
+.app-menu__row--on svg { color: var(--red); }
+.app-menu__row--out { color: var(--red); font-weight: 600; }
+.app-menu__row--out svg { color: var(--red); }
+
+/* The entity the partner is signed in against: a label beside its value, not a
+   row to press. */
+.app-menu__facts { margin: 0; padding: 2px 16px 6px; display: flex; flex-direction: column; gap: 8px; }
+.app-menu__facts > div { display: flex; align-items: baseline; gap: 12px; }
+.app-menu__facts dt { flex: none; width: 64px; font-size: 11px; color: var(--muted-2); }
+.app-menu__facts dd { margin: 0; min-width: 0; font-size: 12px; font-weight: 600; line-height: 1.45; color: var(--ink); }
+
+@media (max-width: 760px) {
   .app-header { padding: 0 14px; }
   .app-header__brand img { width: 136px; }
-  .app-header__welcome { display: none; }
-  .app-header__nav { border-left: 0; padding-left: 0; }
-  .app-header__nav a:not(:last-child) { display: none; }
-  .app-header__nav a { border-left: 0; padding: 0; font-size: 11.5px; font-weight: 600; color: var(--text); }
+  /* Both go behind the button: the welcome line and every link on the bar. */
+  .app-header__welcome, .app-header__nav { display: none; }
+  .app-menu { display: block; }
+}
+
+@media (max-width: 560px) {
+  .app-header__brand img { width: 124px; }
+  /* At a phone's width the panel hangs from the bar across the screen. */
+  .app-menu__panel { position: fixed; top: 50px; left: 8px; right: 8px; width: auto; max-height: calc(100vh - 66px); }
 }
 
 /* ===== The bar before signing in =====

@@ -311,6 +311,7 @@ a.app-tile:hover { text-decoration: none; }
 .seg-toggle__opt { padding: 8px 20px; font-size: 12.5px; font-weight: 500; background: #fff; color: var(--text); white-space: nowrap; border: 0; cursor: pointer; font-family: inherit; }
 .seg-toggle__opt + .seg-toggle__opt { border-left: 1px solid var(--border-3); }
 .seg-toggle__opt--active { background: var(--red); color: #fff; font-weight: 600; }
+.seg-toggle__opt:disabled { background: var(--tint); color: var(--muted-2); cursor: not-allowed; }
 .seg-toggle--sm .seg-toggle__opt { padding: 6px 15px; font-size: 11.5px; }
 
 .hid-consent-panel { border-top: 1px solid var(--divider-2); }
@@ -561,8 +562,6 @@ tbody tr[hidden] { display: none; }
 /* ===== Responsive / mobile ===== */
 @media (max-width: 900px) {
   .console-grid, .dashboard-grid { grid-template-columns: 1fr; }
-  /* Beats the classic console's narrower rail below, which is :has()-specific. */
-  .console-grid:has(.cconsole) { grid-template-columns: minmax(0,1fr); }
   .app-tile-grid, .kv-grid, .kv-grid--2, .kv-grid--4, .form-grid, .form-grid--2 { grid-template-columns: repeat(2, minmax(0,1fr)); }
   .wizard__body { grid-template-columns: 1fr; }
   /* A grid item defaults to min-width:auto, so the scrolling rail would otherwise
@@ -1712,8 +1711,12 @@ a.dash-row:hover .dash-row__open { text-decoration: underline; }
 .cconsole__none[hidden] { display: none; }
 
 /* The profile beside the panel is the portal's card, drawn tighter: the classic
-   console gives the applications the width, not the rail. */
-.console-grid:has(.cconsole) { grid-template-columns: 248px minmax(0,1fr); }
+   console gives the applications the width, not the rail. The rail is only beside
+   the panel above the breakpoint, and the width is set there so it cannot outrank
+   the one-column rules further down the file. */
+@media (min-width: 901px) {
+  .console-grid:has(.cconsole) { grid-template-columns: 248px minmax(0,1fr); }
+}
 .console-grid:has(.cconsole) .profile-card__top { padding: 16px 14px 13px; gap: 9px; }
 .console-grid:has(.cconsole) .profile-avatar { width: 58px; height: 58px; }
 .console-grid:has(.cconsole) .profile-card__name { font-size: 13.5px; }
@@ -1723,8 +1726,18 @@ a.dash-row:hover .dash-row__open { text-decoration: underline; }
 .console-grid:has(.cconsole) .profile-fact dd { font-size: 11.5px; }
 .console-grid:has(.cconsole) .profile-link-row { padding: 9px 14px; gap: 9px; font-size: 11.5px; }
 
+/* On a phone the profile card is in the menu behind the hamburger, so the panel
+   has the screen to itself: it runs edge to edge between the bar and the strip at
+   the foot, without the shell's gutters or its own rounded corners. */
+@media (max-width: 760px) {
+  .console-grid:has(.cconsole) { gap: 0; }
+  .console-grid:has(.cconsole) .profile-card { display: none; }
+  .cconsole { margin: -16px; border-radius: 0; border-left: 0; border-right: 0; min-height: calc(100vh - 80px); }
+}
+
 @media (max-width: 560px) {
-  .cconsole { min-height: 0; padding: 16px; }
+  /* The legal strip is off on a phone, so the panel closes the window itself. */
+  .cconsole { min-height: calc(100vh - 45px); padding: 16px; }
   .cconsole__head { gap: 10px; }
   .cconsole__title { font-size: 15px; }
   /* The heading and the control stack, so the control runs the width. */
@@ -1866,6 +1879,7 @@ html:has(.csi), html:has(.csi) body { background: #F5F7FA; }
 .csi-rail__dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--red); }
 /* A step already behind the wizard: its tick is filled in. */
 .csi-rail__step--done .csi-rail__check { color: var(--green); }
+.csi-rail__where, .csi-rail__bar { display: none; }
 
 .csi-card { background: #fff; border-radius: 8px; padding: 20px 22px 26px; margin-bottom: 70px; }
 .csi-card__title { font-size: 16px; font-weight: 500; color: var(--text); padding-bottom: 14px; border-bottom: 1px solid var(--divider); }
@@ -1912,6 +1926,10 @@ html:has(.csi), html:has(.csi) body { background: #F5F7FA; }
 .csi-bar__hint { flex: 1; min-width: 0; font-size: 12.5px; color: var(--muted); text-align: center; }
 .csi-bar__hint strong { color: var(--ink); font-weight: 600; }
 .csi-bar__right { display: flex; align-items: center; gap: 22px; }
+/* What the draft holds and when it was put there, beside the button that saved
+   it. Quiet: it is a receipt, not an instruction. */
+.csi-bar__saved { font-size: 11.5px; color: var(--muted-2); white-space: nowrap; }
+.csi-bar__saved[hidden] { display: none; }
 .csi-btn { display: inline-flex; align-items: center; justify-content: center; height: 34px; padding: 0 22px; border: 1px solid var(--red); border-radius: 4px; font-family: inherit; font-size: 13px; font-weight: 500; cursor: pointer; }
 .csi-btn--back { background: #fff; color: var(--red); }
 .csi-btn--back:hover { background: var(--pink-bg); text-decoration: none; }
@@ -1930,12 +1948,35 @@ html:has(.csi), html:has(.csi) body { background: #F5F7FA; }
   .csi-rail__label { font-size: 12px; white-space: nowrap; }
   .csi-rail__check { display: none; }
 }
+/* ===== The wizard on a phone =====
+   Five steps will not go across a phone, and a rail that scrolls sideways hides
+   the one you are on. It becomes a line that says where you are and a bar that
+   shows how far in, which is what the rail was for. */
+@media (max-width: 760px) {
+  .csi-rail { flex-direction: column; gap: 9px; padding: 12px 14px; overflow: visible; }
+  .csi-rail__step { display: none; }
+  .csi-rail__where { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; }
+  .csi-rail__count { font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted-2); }
+  .csi-rail__now { font-size: 14px; font-weight: 700; color: var(--ink); }
+  .csi-rail__bar { display: block; height: 4px; border-radius: 2px; background: var(--divider-2); overflow: hidden; }
+  .csi-rail__bar > span { display: block; height: 100%; border-radius: 2px; background: var(--red); }
+
+  /* The bar at the foot puts its hint on a line of its own rather than squeezing
+     it between the buttons, and Proceed takes the width it is left. */
+  .csi-bar__inner { flex-wrap: wrap; gap: 8px 12px; }
+  .csi-bar__hint { order: -1; flex: 0 0 100%; text-align: left; font-size: 11.5px; line-height: 1.45; }
+  .csi-bar__right { flex: 1; justify-content: flex-end; gap: 16px; }
+  .csi-bar__right .csi-btn--primary { flex: 1; max-width: 200px; }
+  /* Two rows of bar to clear, not one. */
+  .csi-card, .csi-main { margin-bottom: 104px; }
+}
+
 @media (max-width: 560px) {
   .csi-fields { grid-template-columns: minmax(0,1fr); }
   .csi-card { padding: 16px; }
   .csi-radio { margin-right: 16px; }
-  .csi-bar__inner { padding: 10px 12px; gap: 10px; }
-  .csi-bar__right { gap: 14px; }
+  .csi-bar__inner { padding: 10px 12px; gap: 8px 10px; }
+  .csi-bar__right { gap: 12px; }
   .csi-btn { padding: 0 16px; }
 }
 
@@ -2040,7 +2081,8 @@ html:has(.csi), html:has(.csi) body { background: #F5F7FA; }
   .csi-record { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 560px) {
-  .csi-bar__hint { display: none; }
+  /* The hint stands on a phone now that it has a line of its own above the
+     buttons: what is still missing is worth more there than the space it costs. */
   .csi-status { margin-left: 0; width: 100%; }
   .csi-record { grid-template-columns: minmax(0, 1fr); }
 }
@@ -2069,6 +2111,33 @@ html:has(.csi), html:has(.csi) body { background: #F5F7FA; }
   .csi-drafts__table td { display: flex; gap: 10px; padding: 3px 0; border: 0; }
   .csi-drafts__table td::before { content: attr(data-label); flex: none; width: 108px; font-size: 11px; color: var(--muted-2); }
   .csi-drafts__act { justify-content: flex-end; }
+}
+
+/* On a phone a label beside every cell makes five lines of a draft and a screen
+   of scrolling for five drafts. Each one becomes a card instead: what it is and
+   what it is worth on the first line, who it is for under it, and the way back
+   into it at the foot. */
+@media (max-width: 760px) {
+  .csi-drafts__table tr {
+    display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 3px 12px;
+    margin-top: 10px; padding: 12px 14px;
+    border: 1px solid var(--border); border-radius: 8px;
+  }
+  .csi-drafts__table tr:last-child { border-bottom: 1px solid var(--border); }
+  .csi-drafts__table td { display: block; padding: 0; }
+  .csi-drafts__table td::before { content: none; }
+  .csi-drafts__table td:nth-child(1) { grid-column: 1; grid-row: 1; }
+  .csi-drafts__table td:nth-child(1) strong { font-size: 13px; }
+  /* What the application is worth, against its number. */
+  .csi-drafts__table td:nth-child(5) { grid-column: 2; grid-row: 1; font-size: 13px; font-weight: 700; color: var(--ink); text-align: right; }
+  .csi-drafts__table td:nth-child(2) { grid-column: 1 / -1; grid-row: 2; font-size: 12.5px; color: var(--text); }
+  /* The masked identifiers, quieter than the name they belong to. */
+  .csi-drafts__table td:nth-child(3) { grid-column: 1; grid-row: 3; }
+  .csi-drafts__table td:nth-child(4) { grid-column: 2; grid-row: 3; text-align: right; }
+  .csi-drafts__table td:nth-child(3), .csi-drafts__table td:nth-child(4) { font-size: 11.5px; color: var(--muted); }
+  /* Qualified by the table, or the display:block above it would outrank the
+     flex row this cell is, and Continue would sit against the left edge. */
+  .csi-drafts__table .csi-drafts__act { grid-column: 1 / -1; grid-row: 4; display: flex; justify-content: flex-end; padding-top: 6px; }
 }
 
 /* The test data at the foot of the page: what to type to reach each outcome.
@@ -2103,8 +2172,11 @@ html:has(.csi), html:has(.csi) body { background: #F5F7FA; }
 .cud-head { display: flex; align-items: flex-start; gap: 20px; flex-wrap: wrap; padding-bottom: 16px; border-bottom: 1px solid var(--divider); }
 .cud-head__who { min-width: 0; }
 .cud-head__step { font-size: 10.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted-2); }
-.cud-head__name { padding-top: 2px; font-size: 16px; font-weight: 600; color: var(--ink); }
-.cud-head__ids { padding-top: 3px; font-size: 12.5px; color: var(--muted); }
+.cud-head__name { padding-top: 3px; font-size: 16px; font-weight: 600; line-height: 1.25; color: var(--ink); }
+/* The two identifiers read as a pair of facts, each under its own label and set
+   apart by the space between them rather than by a middot inside one line. */
+.cud-head__ids { display: flex; flex-wrap: wrap; gap: 3px 24px; padding-top: 7px; font-size: 12.5px; font-weight: 600; color: var(--ink); }
+.cud-head__ids em { font-style: normal; padding-right: 7px; font-size: 10.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted-2); }
 .cud-head__right { margin-left: auto; display: flex; align-items: flex-start; gap: 22px; flex-wrap: wrap; }
 .cud-head__refs { display: flex; gap: 22px; margin: 0; }
 .cud-head__refs dt { font-size: 10.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted-2); }
@@ -2114,24 +2186,18 @@ html:has(.csi), html:has(.csi) body { background: #F5F7FA; }
 
 /* Every row on the step shares one grid: three columns across the card, which
    runs the width of the page. */
-.cud-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; padding-top: 18px; }
-/* Three documents across, as the rest of the step's rows run: the form, the PAN
-   and the address, with the photograph opening the next row. Four abreast left
-   each slot too narrow for its own hint line. */
-/* The photograph opens the second row with nothing beside it, so the band that
-   stands in for a neighbour's select box has nothing to line up with. The class
-   comes off when the mailing proof joins it there, and the rule does not apply at
-   two across, where the address column sits alongside it again. */
-@media (min-width: 1101px) {
-  .cud-grid--docs.is-lone-photo .cud-col:nth-child(4) .cud-col__spacer { display: none; }
-}
-
+.cud-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px 24px; padding-top: 18px; }
+/* Two rows of three: the application form, the PAN copy and the photograph, then
+   the proof of address, the mailing proof and the instrument the payment carries.
+   Four abreast left each slot too narrow for its own hint line. */
 /* Whether the investor is written to at the address they are proved at. The
    answer decides whether a second proof is asked for in the row below. */
-.cud-mailing { border: 0; margin: 0; padding: 20px 0 2px; }
+.cud-mailing { border: 0; margin: 0; padding: 14px 0 2px; }
 .cud-mailing .csi-label { padding-bottom: 10px; }
-.cud-grid--payment { padding-top: 22px; }
 .cud-col { min-width: 0; }
+/* The label names the box under it, so it stays with it rather than floating
+   halfway between its own box and the row above. */
+.cud-col > .csi-label { padding-bottom: 4px; }
 .cud-col__spacer { height: 38px; }
 .cud-optional { font-weight: 400; color: var(--muted-2); }
 .cud-col[hidden] { display: none; }
@@ -2146,58 +2212,195 @@ html:has(.csi), html:has(.csi) body { background: #F5F7FA; }
 .cud-note[hidden] { display: none; }
 .cud-note svg { flex: none; margin-top: 2px; }
 
+/* How the application arrived, on a row of its own above the documents: the
+   label and the design's segmented toggle side by side, on the same rhythm as
+   the mailing question below it. */
+.cud-apptype { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 18px 0 2px; }
+.cud-apptype .csi-label { padding: 0; }
+.cud-apptype .seg-toggle { height: 32px; }
+.cud-apptype .seg-toggle__opt { display: flex; align-items: center; padding: 0 20px; }
+
 /* The arrow is the page's own, so the control matches the text fields beside it. */
 .cud-select { position: relative; }
 .cud-select select { width: 100%; appearance: none; padding-right: 36px; background: #fff; cursor: pointer; }
 .cud-select::after { content: ""; position: absolute; right: 14px; top: 50%; width: 8px; height: 8px; margin-top: -6px; border-right: 1.8px solid var(--muted); border-bottom: 1.8px solid var(--muted); transform: rotate(45deg); pointer-events: none; }
 
-.cud-slot { padding-top: 10px; }
-.cud-slot__tools { display: flex; justify-content: flex-end; gap: 12px; padding-bottom: 7px; }
-.cud-tool { display: inline-flex; padding: 2px; border: 0; background: none; color: var(--red); cursor: pointer; }
-.cud-tool:disabled { color: #F0B9C2; cursor: not-allowed; }
-.cud-tool:not(:disabled):hover { color: var(--red-dark); }
+.cud-slot { padding-top: 8px; }
+/* The card and the buttons that act on it. Positioned against this rather than
+   against the slot, or an error under the card pushes the slot taller and the
+   buttons land on the words. */
+.cud-slot__frame { position: relative; }
+/* On the card's own corner, not floating in the space above it: they act on the
+   document in the card, so that is where they live. Named as well as drawn - a
+   magnifier and a circular arrow on their own read as zoom and refresh. */
+.cud-slot__tools { position: absolute; bottom: 14px; right: 14px; z-index: 2; display: flex; justify-content: flex-end; gap: 6px; }
+.cud-slot__tools[hidden] { display: none; }
+.cud-tool { display: inline-flex; align-items: center; gap: 5px; padding: 5px 9px; border: 1px solid var(--border-2); border-radius: 6px; background: #fff; font-family: inherit; font-size: 11.5px; font-weight: 600; color: var(--red); cursor: pointer; }
+.cud-tool svg { flex: none; }
+.cud-tool:disabled { border-color: var(--divider); color: var(--muted-2); cursor: not-allowed; }
+.cud-tool:not(:disabled):hover { background: var(--pink-bg); border-color: var(--red); color: var(--red-dark); }
 
-/* The box a file is picked into, and the same box once one is in it. */
-.cud-drop { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 158px; padding: 18px 16px; border: 1px dashed var(--border-2); border-radius: 8px; background: var(--tint); font-family: inherit; text-align: center; cursor: pointer; }
+/* ===== One card per document =====
+   Every slot draws the same card, whatever state it is in: the same frame, the
+   same height, the same 40px mark on the left with what it says beside it. The
+   frame stopped changing shape between states because that is what made a row of
+   six read as six different things; only the fill and the mark change now.
+
+   White is a card there is something to do with - a file to pick, a document to
+   look at. The tint is a card there is nothing to do with yet: not applicable,
+   shut until a type is chosen, being checked, or out of attempts. */
+.cud-drop { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 124px; padding: 16px 14px; border: 1px solid var(--border-2); border-radius: 8px; background: #fff; font-family: inherit; text-align: center; cursor: pointer; }
 .cud-drop[hidden] { display: none; }
-.cud-drop:not(:disabled):not(.is-filled):hover, .cud-drop.is-over { border-color: var(--red); background: var(--pink-bg); }
-/* Filled: the frame holds a document rather than asking for one, and clicking it
-   opens what is in it. Solid on white, and a quieter hover than the red of a box
-   still after a file. */
-.cud-drop.is-filled { border-style: solid; background: #fff; cursor: zoom-in; }
+/* A slot this application has no use for draws the same card as the rest, with
+   the same mark on the left - struck through, because there is nothing to file
+   here - so a row of six stays a row of six. */
+.cud-slot__na { display: flex; align-items: center; justify-content: center; gap: 16px; min-height: 124px; padding: 16px 14px; border: 1px solid var(--border-2); border-radius: 8px; background: var(--tint); text-align: center; color: var(--muted-2); }
+.cud-slot__na-mark {
+  flex: none; width: 36px; height: 36px; border-radius: 50%; background: #EDEFF3;
+  /* The bar of a "no entry" sign, drawn in the panel's own grey. */
+  background-image: linear-gradient(to right, var(--muted-2) 0 100%);
+  background-size: 15px 1.5px; background-repeat: no-repeat; background-position: center;
+}
+.cud-slot__na-text { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.cud-slot__na-title { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted-2); }
+/* Why it is not applicable, which is what a partner looking at a grey card wants
+   to know before they wonder what they have done wrong. */
+.cud-slot__na-why { font-size: 11.5px; font-weight: 400; line-height: 1.5; letter-spacing: 0; color: var(--muted); }
+.cud-slot__na[hidden] { display: none; }
+/* Dashed and red only while a file is over it or a cursor is on it: the box says
+   "drop here" when dropping is what you are doing, not for the whole page. */
+.cud-drop:not(:disabled):not(.is-filled):hover, .cud-drop.is-over { border-color: var(--red); border-style: dashed; background: var(--pink-bg); }
+/* Room at the foot for View and Replace, which sit in that one place at every
+   width: the card's bottom right corner, on the card they act on. The document's
+   name keeps the card's whole width to be read in. */
+.cud-drop.is-filled { cursor: zoom-in; padding-bottom: 46px; }
 .cud-drop.is-filled:hover { border-color: var(--border-3); background: #FCFCFD; }
 .cud-drop:disabled { cursor: default; }
-.cud-drop__idle, .cud-drop__busy, .cud-drop__done { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-.cud-drop__idle[hidden], .cud-drop__busy[hidden], .cud-drop__done[hidden] { display: none; }
+.cud-drop__idle, .cud-drop__busy, .cud-drop__locked, .cud-drop__done { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.cud-drop__idle[hidden], .cud-drop__busy[hidden], .cud-drop__locked[hidden], .cud-drop__done[hidden] { display: none; }
+/* Shut until something above it is answered: a proof cannot be checked before
+   the type says what it is meant to be. */
+.cud-drop.is-locked { cursor: not-allowed; background: var(--tint); }
+.cud-drop.is-locked .cud-drop__lock { width: 36px; height: 36px; border-radius: 50%; background: #EDEFF3; align-items: center; justify-content: center; }
+.cud-drop__lock { display: inline-flex; margin-bottom: 6px; color: var(--muted-2); }
+.cud-drop__locked .cud-drop__title { color: var(--muted); }
 /* While the document is being identified the box takes nothing: it is neither a
    picker nor a filed document until the check comes back. */
-.cud-drop.is-busy { pointer-events: none; border-style: solid; background: var(--tint); }
-.cud-drop__spinner { width: 22px; height: 22px; margin-bottom: 8px; border: 2px solid var(--pink-bg); border-top-color: var(--red); border-radius: 50%; animation: cud-spin .7s linear infinite; }
+.cud-drop.is-busy { pointer-events: none; background: var(--tint); }
+.cud-drop__spinner { width: 20px; height: 20px; margin-bottom: 6px; border: 2px solid var(--pink-bg); border-top-color: var(--red); border-radius: 50%; animation: cud-spin .7s linear infinite; }
 .cud-drop__checking { font-size: 12.5px; color: var(--muted); }
+/* Which of the three checks is running, under the one it is running. Three
+   seconds of an unlabelled spinner is how the same file gets uploaded twice. */
+.cud-drop__step { font-size: 11px; line-height: 1.5; color: var(--muted-2); }
+.cud-drop__step:empty { display: none; }
 @keyframes cud-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) {
   .cud-drop__spinner { animation-duration: 2.4s; }
 }
-.cud-drop__icon { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; margin-bottom: 6px; border-radius: 50%; background: var(--pink-bg); color: var(--red); }
+.cud-drop__icon { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; margin-bottom: 5px; border-radius: 50%; background: var(--pink-bg); color: var(--red); }
 .cud-drop__title { font-size: 13px; font-weight: 500; color: var(--text); }
 .cud-drop__hint { font-size: 11px; line-height: 1.5; color: var(--muted-2); }
-.cud-drop__check { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; margin-bottom: 6px; border-radius: 50%; background: #E8F5EC; color: var(--green); }
-.cud-drop__file { font-size: 12.5px; font-weight: 600; color: var(--ink); word-break: break-all; }
+/* What the document itself has to be, beyond its format. Amber: it is a rule the
+   copy must meet, not an error the partner has already made. */
+.cud-drop__must { font-size: 11px; font-weight: 600; line-height: 1.5; color: var(--amber); }
+.cud-drop__must[hidden] { display: none; }
+/* What happens to the copy once it is picked, and who is asked about it. */
+.cud-drop__with { font-size: 11px; line-height: 1.5; color: var(--muted); }
+.cud-drop__with[hidden] { display: none; }
+.cud-drop__check { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; margin-bottom: 5px; border-radius: 50%; background: #E8F5EC; color: var(--green); }
+.cud-drop__file { max-width: 100%; font-size: 12.5px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cud-drop__size { font-size: 11px; color: var(--muted); }
-.cud-drop__swap { padding-top: 4px; font-size: 11px; color: var(--red); }
 /* Nothing left to try: the box stops taking files and the line under it says
    where the document goes instead. */
-.cud-drop.is-spent { cursor: not-allowed; border-style: solid; background: var(--tint); opacity: .55; }
+.cud-drop.is-spent { cursor: not-allowed; background: var(--tint); opacity: .6; }
+/* A column on a laptop is near 500px wide. Stacked and centred, that leaves a
+   glyph and one line of text adrift in the middle of it with 180px of nothing
+   either side. Given the width, the box reads as a row instead: the mark of what
+   state it is in on the left, and what it says beside it, both on the same
+   baseline a form field would keep. A phone gets the stack back. */
+@media (min-width: 761px) {
+  .cud-drop, .cud-slot__na { height: 138px; min-height: 0; padding: 18px 20px; }
+  .cud-drop { justify-content: flex-start; text-align: left; }
+  .cud-drop__idle, .cud-drop__busy, .cud-drop__locked, .cud-drop__done {
+    display: grid; width: 100%; grid-template-columns: auto minmax(0, 1fr);
+    align-items: center; column-gap: 16px; row-gap: 3px; text-align: left;
+  }
+  .cud-drop__icon, .cud-drop__check, .cud-drop__lock, .cud-drop__spinner {
+    grid-column: 1; grid-row: 1 / -1; margin-bottom: 0;
+  }
+  .cud-drop__idle > :not(.cud-drop__icon),
+  .cud-drop__locked > :not(.cud-drop__lock),
+  .cud-drop__busy > :not(.cud-drop__spinner),
+  .cud-drop__done > :not(.cud-drop__check) { grid-column: 2; }
+  .cud-drop__icon { width: 40px; height: 40px; }
+  .cud-drop__check { width: 38px; height: 38px; }
+  .cud-drop__title { font-size: 13.5px; }
+  /* The panel that stands where a picker would keeps the picker's height, and
+     says so from the same side the boxes speak from. */
+  /* It speaks from the same side as every card that has something in it. */
+  .cud-slot__na { justify-content: flex-start; text-align: left; }
+  .cud-slot__na-mark { width: 40px; height: 40px; }
+  .cud-drop.is-locked .cud-drop__lock { width: 40px; height: 40px; }
+  .cud-slot .csi-error { text-align: left; }
+  .cud-slot__tries { text-align: left; }
+}
+
+/* ----- The wait ------------------------------------------------------------
+   One screen for every wait in the app. It covers what is behind it rather than
+   greying a button, because the thing it is protecting against is a second press
+   on a step that opens applications and files documents. */
+.loader { position: fixed; inset: 0; z-index: 900; display: flex; align-items: center; justify-content: center; padding: 24px; background: rgba(23, 27, 35, .42); backdrop-filter: blur(1.5px); }
+.loader[hidden] { display: none; }
+.loader__box { display: flex; flex-direction: column; align-items: center; gap: 10px; min-width: 232px; max-width: 360px; padding: 26px 30px; border-radius: 12px; background: #fff; box-shadow: 0 18px 44px rgba(16, 24, 40, .22); text-align: center; }
+.loader__spinner { width: 26px; height: 26px; border: 2.5px solid var(--pink-bg); border-top-color: var(--red); border-radius: 50%; animation: cud-spin .7s linear infinite; }
+.loader__what { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+.loader__hint { font-size: 11.5px; line-height: 1.5; color: var(--muted); }
+.loader__hint[hidden] { display: none; }
+body.is-waiting { overflow: hidden; }
+@media (prefers-reduced-motion: reduce) {
+  .loader__spinner { animation-duration: 2.4s; }
+}
+
+/* ----- The code a field is searched for ------------------------------------
+   Nine digits are nine digits: the list carries the name beside every code, and
+   the name of whatever is picked stays under the field. */
+.cud-find { position: relative; }
+.cud-find__list {
+  position: absolute; z-index: 30; top: calc(100% + 3px); left: 0; right: 0;
+  max-height: 220px; margin: 0; padding: 4px; overflow-y: auto; list-style: none;
+  border: 1px solid var(--border-3); border-radius: 8px; background: #fff;
+  box-shadow: 0 8px 22px rgba(16, 24, 40, .12);
+}
+.cud-find__list[hidden] { display: none; }
+.cud-find__row { display: flex; flex-direction: column; gap: 1px; padding: 7px 9px; border-radius: 6px; cursor: pointer; }
+.cud-find__row:hover, .cud-find__row.is-active { background: var(--pink-bg); }
+.cud-find__code { font-size: 12.5px; font-weight: 600; color: var(--ink); }
+.cud-find__name { font-size: 11.5px; color: var(--muted); }
+/* Why there is nothing to pick, which is not a thing to pick. */
+.cud-find__note { padding: 7px 9px; font-size: 11.5px; color: var(--muted-2); }
 .cud-slot.is-invalid .cud-drop { border-color: #FF0000; }
+/* What the register behind the document answered. The copy is filed either way,
+   so this line carries the colour rather than the card: green where somebody
+   stood behind it, amber where there was nobody to ask, red where the answer
+   came back against it. */
+.cud-slot__check { display: flex; gap: 7px; padding-top: 6px; font-size: 11.5px; line-height: 1.5; text-align: left; color: var(--muted); }
+.cud-slot__check[hidden] { display: none; }
+.cud-slot__check::before { content: ''; flex: none; width: 6px; height: 6px; margin-top: 5px; border-radius: 50%; background: currentColor; }
+.cud-slot__check.is-ok { color: var(--green); }
+.cud-slot__check.is-warn { color: var(--amber); }
+.cud-slot__check.is-bad { color: var(--red-dark); }
+/* A tick for a copy nobody confirmed reads as a clean document across the room.
+   The document is filed, so the mark stays - it just stops being green. */
+.cud-slot.is-unconfirmed .cud-drop__check { background: var(--amber-bg); color: var(--amber); }
 /* What the application has left for this document, of the three it allows. */
 .cud-slot__tries { padding-top: 6px; font-size: 11px; text-align: center; color: var(--muted-2); }
 .cud-slot__tries[hidden] { display: none; }
 .cud-slot__tries.is-spent { font-weight: 600; color: var(--red-dark); }
 .cud-slot .csi-error { text-align: center; }
+/* The way from a refusal to the entry that records it. */
+.cud-why { font-family: inherit; font-size: inherit; font-weight: 700; color: var(--red-dark); text-decoration: underline; cursor: pointer; white-space: nowrap; }
 
-/* A slot this application has no use for: the box gives way to a plain panel. */
-.cud-slot__na { display: flex; align-items: center; justify-content: center; min-height: 158px; border-radius: 8px; background: var(--tint); font-size: 11px; font-weight: 600; letter-spacing: .08em; color: var(--muted-2); }
-.cud-slot__na[hidden] { display: none; }
+
 
 /* ===== What a document was read to say =====
    Under the pickers, because the pickers are what change it: OCR reads the
@@ -2208,7 +2411,7 @@ html:has(.csi), html:has(.csi) body { background: #F5F7FA; }
 .cud-read__title { font-size: 13px; font-weight: 700; color: var(--ink); }
 .cud-read__sub { padding-top: 3px; font-size: 11.5px; line-height: 1.5; color: var(--muted); }
 .cud-read__cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; padding-top: 14px; }
-.cud-read__card { border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; background: #fff; }
+.cud-read__card { border: 1px solid var(--border-2); border-radius: 8px; padding: 16px 18px; background: #fff; }
 .cud-read__card[hidden] { display: none; }
 .cud-read__head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .cud-read__kind { font-size: 12px; font-weight: 700; color: var(--ink); }
@@ -2234,11 +2437,13 @@ html:has(.csi), html:has(.csi) body { background: #F5F7FA; }
 .cud-log__list { list-style: none; margin: 0; padding: 14px 0 0; }
 .cud-log__none { padding-top: 14px; font-size: 12px; color: var(--muted-2); }
 .cud-log__none[hidden] { display: none; }
-.cud-log__row { padding: 12px 14px; border: 1px solid var(--border); border-left-width: 3px; border-radius: 6px; }
-.cud-log__row + .cud-log__row { margin-top: 10px; }
+.cud-log__row { padding: 14px 18px; border: 1px solid var(--border-2); border-left-width: 3px; border-radius: 8px; }
+.cud-log__row + .cud-log__row { margin-top: 12px; }
 .cud-log__row.is-ok { border-left-color: var(--green-2); }
 .cud-log__row.is-warn { border-left-color: var(--amber); }
 .cud-log__row.is-bad { border-left-color: var(--red); }
+/* Called for from a refusal above: it says which entry was meant, briefly. */
+.cud-log__row.is-called { background: #FFF8F9; border-color: var(--red); }
 .cud-log__top { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
 .cud-log__doc { font-size: 12.5px; font-weight: 700; color: var(--ink); }
 .cud-log__try { font-size: 11px; color: var(--muted); }
@@ -2276,6 +2481,71 @@ html:has(.csi), html:has(.csi) body { background: #F5F7FA; }
 }
 
 /* The preview sheet: the document itself, with what to do about it under. */
+/* ===== The strip that keeps the application in shot =====
+   Under the top bar once the head has scrolled away. A partner reporting a
+   problem sends a picture of the screen, and a picture with no application
+   number on it cannot be placed by whoever picks it up. */
+.cud-pin { position: fixed; top: 45px; left: 0; right: 0; z-index: 35; background: #fff; border-bottom: 1px solid var(--divider); box-shadow: 0 2px 8px rgba(24,39,75,.06); }
+.cud-pin[hidden] { display: none; }
+.cud-pin__inner { max-width: 1440px; margin: 0 auto; padding: 8px 16px; display: flex; align-items: center; gap: 18px; flex-wrap: wrap; font-size: 12px; }
+.cud-pin__who { font-weight: 700; color: var(--ink); }
+.cud-pin__pan { color: var(--muted); }
+.cud-pin__app { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; font-weight: 700; color: var(--ink); }
+.cud-pin__label { font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted-2); }
+
+/* One press to put the number in a message to support. */
+.cud-copy { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 0; margin-left: 2px; border: 1px solid var(--border-2); border-radius: 5px; background: #fff; color: var(--muted); cursor: pointer; vertical-align: middle; }
+.cud-copy:hover { border-color: var(--red); color: var(--red); }
+.cud-copy.is-copied { border-color: var(--green-2); color: var(--green); }
+.cud-head__ref { display: inline-flex; align-items: center; gap: 6px; }
+
+@media (max-width: 700px) {
+  .cud-pin__pan { display: none; }
+  .cud-pin__app { margin-left: 0; }
+}
+
+/* ===== The KYC route =====
+   On the page rather than behind the button, because what it says decides
+   whether the pickers below are worth filling at all. Informational blue while
+   it is an offer; green once the application is on that route. */
+.cud-route { display: flex; align-items: flex-start; gap: 24px; flex-wrap: wrap; margin-top: 18px; padding: 16px 18px; border: 1px solid #CBDFF3; border-left: 3px solid var(--blue); border-radius: 8px; background: #F4F9FF; }
+.cud-route__text { flex: 1; min-width: 260px; }
+.cud-route__title { font-size: 13px; font-weight: 700; color: var(--blue); }
+.cud-route__p { padding-top: 6px; font-size: 12px; line-height: 1.6; color: var(--text); }
+.cud-route__p strong { color: var(--ink); }
+.cud-route__act { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; text-align: right; }
+.cud-route.is-on { border-color: #CBE7D5; border-left-color: var(--green); background: #F3FAF5; }
+.cud-route.is-on .cud-route__title { color: var(--green); }
+/* Not a route this application can take: a physical one is signed and filed by
+   hand, and CERSAI's consent is given online. */
+.cud-route.is-off { border-color: var(--border-2); border-left-color: var(--border-2); background: var(--tint); }
+.cud-route.is-off .cud-route__title { color: var(--muted); }
+.cud-route.is-off .cud-route__p { color: var(--muted-2); }
+.cud-route.is-off .cud-route__p strong { color: var(--muted); }
+
+/* ===== Asking CKYC for the record =====
+   The dialog the old site puts in front of a partner before the consent link
+   goes out: what the investor has to do, and that nothing filed here counts
+   towards it. Same overlay as the document sheet, in a narrower card. */
+.cud-ckyc { position: fixed; inset: 0; z-index: 61; display: flex; align-items: center; justify-content: center; padding: 24px; background: rgba(35, 31, 32, .55); }
+.cud-ckyc[hidden] { display: none; }
+.cud-ckyc__sheet { width: min(560px, 100%); max-height: min(86vh, 800px); overflow-y: auto; border-radius: 10px; background: #fff; }
+.cud-ckyc__head { display: flex; align-items: center; gap: 11px; padding: 18px 20px 0; }
+.cud-ckyc__mark { display: inline-flex; flex: none; color: var(--blue); }
+.cud-ckyc__title { flex: 1; min-width: 0; font-size: 15.5px; font-weight: 700; color: var(--ink); }
+.cud-ckyc__head .cud-preview__close { margin: 0; }
+.cud-ckyc__body { padding: 12px 20px 4px; }
+.cud-ckyc__body p { font-size: 12.5px; line-height: 1.65; color: var(--text); }
+.cud-ckyc__body p + p { padding-top: 12px; }
+.cud-ckyc__body strong { color: var(--ink); }
+.cud-ckyc__foot { display: flex; align-items: center; justify-content: flex-end; gap: 20px; padding: 18px 20px 20px; }
+.cud-ckyc-btn { font-family: inherit; white-space: nowrap; }
+.cud-ckyc-ask__note { max-width: 220px; font-size: 10.5px; line-height: 1.45; color: var(--muted); }
+.cud-ckyc-ask__note[hidden] { display: none; }
+/* Once it has been asked for, the head says so in place of the link. */
+.cud-ckyc-on { font-size: 12.5px; font-weight: 600; color: var(--green); white-space: nowrap; }
+.cud-ckyc-on[hidden] { display: none; }
+
 .cud-preview { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 24px; background: rgba(35, 31, 32, .55); }
 .cud-preview[hidden] { display: none; }
 .cud-preview__sheet { display: flex; flex-direction: column; width: min(760px, 100%); max-height: min(86vh, 900px); border-radius: 10px; background: #fff; overflow: hidden; }
@@ -2287,10 +2557,12 @@ html:has(.csi), html:has(.csi) body { background: #F5F7FA; }
 .cud-preview__body { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; padding: 16px; background: var(--tint); }
 .cud-preview__body img { max-width: 100%; max-height: 62vh; border-radius: 6px; }
 .cud-preview__body iframe { width: 100%; height: 62vh; border: 0; border-radius: 6px; background: #fff; }
-.cud-preview__none { padding: 40px 20px; font-size: 12.5px; text-align: center; color: var(--muted); }
+/* A document filed before this step has nothing to show. The sheet keeps its
+   size - a dialog that changes shape with its contents reads as a mistake - and
+   the message sits in the middle of it. */
+.cud-preview__none { padding: 56px 24px; font-size: 12.5px; line-height: 1.6; text-align: center; color: var(--muted); }
 .cud-preview__foot { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding: 12px 18px; border-top: 1px solid var(--divider); }
 .cud-preview__meta { font-size: 11.5px; color: var(--muted); }
-.cud-preview__acts { margin-left: auto; display: flex; gap: 18px; }
 
 
 /* ===== Uno TP classic - Short URL =====

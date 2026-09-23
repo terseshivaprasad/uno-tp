@@ -60,7 +60,7 @@
   }
 
   function maskDob(value) {
-    return '\u2022\u2022/\u2022\u2022/' + value.slice(6);
+    return '\u2022\u2022-\u2022\u2022-' + value.slice(6);
   }
 
   function findRecord(by, value, dob) {
@@ -455,7 +455,7 @@
       var okDob = checkDob();
       if (!okPan || !okDob) return (okPan ? dd : pan).focus();
 
-      var dob = pad(dd.value) + '/' + pad(mm.value) + '/' + yyyy.value;
+      var dob = pad(dd.value) + '-' + pad(mm.value) + '-' + yyyy.value;
       var found = findRecord('pan', value, dob);
       if (found) {
         identify(found, 'Existing customer', 'Matched on PAN and date of birth · ' + found.note);
@@ -497,8 +497,22 @@
     (mode() === 'pan' ? pan : folio).focus();
   });
 
+  // Every search that is proceeded from opens an application of its own, so the
+  // number is minted here rather than being the investor's for ever: search the
+  // same PAN twice and there are two applications, each with its own documents,
+  // its own attempts and its own draft. Only a draft picked up from the list
+  // below carries the number it was opened under.
+  function newAppNo() {
+    var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ0123456789';
+    var tail = '';
+    for (var i = 0; i < 6; i++) {
+      tail += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return 'FBBMFL26F' + tail;
+  }
+
   // Proceed carries the holder to the upload step: whichever record the check
-  // settled on, and the application number when one has just been opened.
+  // settled on, and the number the application has just been opened under.
   form.addEventListener('submit', function (e) {
     e.preventDefault();
     if (proceed.disabled) return;
@@ -507,16 +521,22 @@
       ? pending
       : findRecord(mode() === 'folio' ? 'folio' : 'pan',
           mode() === 'folio' ? folio.value.trim() : pan.value.trim(),
-          pad(dd.value) + '/' + pad(mm.value) + '/' + yyyy.value);
+          pad(dd.value) + '-' + pad(mm.value) + '-' + yyyy.value);
     if (!record) return;
 
     var query = '?pan=' + encodeURIComponent(record.pan) + '&dob=' + encodeURIComponent(record.dob)
       + '&name=' + encodeURIComponent(record.name)
       + '&folio=' + encodeURIComponent(record.folio);
-    if (record.appNo) query += '&app=' + encodeURIComponent(record.appNo);
+    var appNo = newAppNo();
+    query += '&app=' + encodeURIComponent(appNo);
     // The PAN copy is already on the application when the register holds one or
     // the PAN was just established from one, so the next step does not ask again.
     if (record.docs && record.docs.pan) query += '&panfiled=true';
+    // The next step is a page away: the wait goes up before the browser leaves,
+    // so Proceed is never a button that looks like it did nothing.
+    if (window.showLoader) {
+      window.showLoader('Opening Upload Documents\u2026', 'Application ' + appNo + ' is open for ' + record.name + '.');
+    }
     window.location.href = '/Apps/UnoTp/Classic/UploadDocuments' + query;
   });
 

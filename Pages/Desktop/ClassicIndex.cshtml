@@ -114,6 +114,35 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+@* On a phone the profile card is not beside the panel - there is no beside -
+   so what it holds goes into the menu behind the hamburger, under the links the
+   bar carries. The card itself is hidden at that width by site.css. *@
+@section MenuExtra {
+    <div class="app-menu__group">
+        <p class="app-menu__label">Entity</p>
+        <dl class="app-menu__facts">
+            <div><dt>Code</dt><dd>@MockData.EntityCode</dd></div>
+            <div><dt>Type</dt><dd>1033</dd></div>
+            <div><dt>Main CP</dt><dd>Mahindra &amp; Mahindra Financial Services Limited</dd></div>
+        </dl>
+    </div>
+
+    <div class="app-menu__group">
+        <p class="app-menu__label">Your account</p>
+        @foreach (var link in profileLinks)
+        {
+            <button type="button" class="app-menu__row btn-reset js-stub">
+                <partial name="_AppIcon" model="new AppIcon(link.Icon, 15)" />
+                <span class="app-menu__row-label">@link.Label</span>
+                @if (link.Menu)
+                {
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#9AA1AB" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9l7 7 7-7"></path></svg>
+                }
+            </button>
+        }
+    </div>
+}
+
 @section Scripts {
     <script src="~/js/console.js" asp-append-version="true"></script>
     <script src="~/js/required-docs.js" asp-append-version="true"></script>

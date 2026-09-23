@@ -20,6 +20,7 @@ public static class RequiredDocs
             "‘Election Commission of India’ Voter identity card",
             "‘NREGA’ Job card, duly signed by an officer of the State Government",
             "‘Unique Identification Authority of India’ letter containing details of name, address and Aadhaar",
+            "Note: an Aadhaar is filed unmasked — all 12 digits must be readable. A masked e-Aadhaar is not accepted.",
             "Number or any document as notified by the Central Government in consultation with the regulator",
             "Note: eSarathi only supports Individual Deposits.",
         }),

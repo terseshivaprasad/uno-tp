@@ -44,7 +44,17 @@ public class ClassicUploadDocumentsModel : PageModel
 
     public string HolderDob => MaskDate(Dob ?? ClassicSearchInvestorModel.DemoDob);
 
-    public string AppNo => string.IsNullOrWhiteSpace(App) ? "FBBMFL26F1CA025" : App;
+    /// <summary>
+    /// The number the application is filed under. Investor Identification mints a
+    /// new one every time a search is proceeded from - search the same PAN twice
+    /// and there are two applications - and passes it here. Reached without one,
+    /// the number is made from the PAN rather than being the same for everybody,
+    /// because everything keyed to an application - the draft, the attempts, the
+    /// history - would otherwise be shared by every investor opened directly.
+    /// </summary>
+    public string AppNo => string.IsNullOrWhiteSpace(App)
+        ? "FBBMFL26F" + (Pan ?? ClassicSearchInvestorModel.Folios[0].Pan)[^5..]
+        : App;
 
     // The same masking the register uses: a PAN keeps its first five and last
     // character, a date of birth only its year.
@@ -52,7 +62,7 @@ public class ClassicUploadDocumentsModel : PageModel
         pan.Length == 10 ? pan[..5] + "••••" + pan[9..] : pan;
 
     private static string MaskDate(string dob) =>
-        dob.Length == 10 ? "••/••/" + dob[6..] : dob;
+        dob.Length == 10 ? "••-••-" + dob[6..] : dob;
 
     /// <summary>What a drop zone takes, and what it says it takes.</summary>
     public record Accepts(string Mime, string Label, int MaxMb);
@@ -75,19 +85,10 @@ public class ClassicUploadDocumentsModel : PageModel
 
     public static readonly PaymentMode[] PaymentModes =
     {
+        new("Online", null),
+        new("RTGS", null),
         new("Cheque", "cheque"),
-        new("Demand Draft", "demand draft"),
-        new("NEFT / RTGS", null),
-        new("UPI", null),
-        new("Net banking", null),
     };
-
-    // Who the application is sourced through. MFL-EX is sourced by the partner
-    // themselves, so the code beside it is their own and is not typed; a broker
-    // application carries the broker's code instead.
-    public const string EmployeeSourcing = "MFL-EX";
-
-    public static readonly string[] SourcingModes = { EmployeeSourcing, "BROKER", "DIRECT" };
 
     // The partner in the top bar, whose code fills the sourcing field.
     public const string PartnerCode = "100002225";
@@ -98,8 +99,105 @@ public class ClassicUploadDocumentsModel : PageModel
     // block of employee fields is for.
     public const string EmployeeCategory = "EMPLOYEE";
 
-    public static readonly string[] DepositCategories =
-        { "INDIVIDUAL", "SENIOR CITIZEN", EmployeeCategory, "TRUST" };
+    // ----- How the application is sourced --------------------------------------
+    // One answer the rest of Additional Details hangs off: what the two code
+    // fields are called, which of them is typed and which the mode fills itself,
+    // whose register the typed one is searched against, and what the deposit may
+    // be booked as. The old screen keys the modes by number and posts them that
+    // way, so they keep their numbers here.
+
+    /// <summary>What the second code field does under a mode.</summary>
+    public static class SubField
+    {
+        /// <summary>Shut and empty: the mode has no sub-broker.</summary>
+        public const string Shut = "shut";
+
+        /// <summary>Shut, carrying the same house code as the field above it.</summary>
+        public const string House = "house";
+
+        /// <summary>There if there is one, empty if there is not.</summary>
+        public const string Free = "free";
+
+        /// <summary>The partner's own code, and theirs to change.</summary>
+        public const string Employee = "employee";
+
+        /// <summary>The partner's own code, and not theirs to change.</summary>
+        public const string EmployeeShut = "employeeShut";
+    }
+
+    /// <summary>Which register a mode searches its typed code against.</summary>
+    public static class Register
+    {
+        public const string None = "";
+        public const string Brokers = "brokers";
+        public const string Employees = "employees";
+    }
+
+    /// <summary>
+    /// A way an application is sourced. <c>House</c> is the code the mode stands
+    /// in the first field itself, where it does; <c>Search</c> names the field
+    /// that is searched - "source" for the first, "sub" for the second - and
+    /// <c>Register</c> what it is searched against.
+    /// </summary>
+    public record SourcingMode(
+        string Code, string Name, string CodeLabel, string NameLabel,
+        string House, string Search, string Register, string Sub, string[] Categories);
+
+    private static readonly string[] RetailAndTrust = { "INDIVIDUAL", "SENIOR CITIZEN", "TRUST" };
+
+    /// <summary>
+    /// The four modes the old screen offers a partner, in its own order. The
+    /// screen posts them by number and hangs everything off that number: BROKER
+    /// is the one where the code is typed, and each of the other three stands its
+    /// own house code in the field and asks for nothing there.
+    /// </summary>
+    public static readonly SourcingMode[] SourcingModes =
+    {
+        new("2", "BROKER", "Broker Code", "Broker Name",
+            "", "source", Register.Brokers, SubField.Free, RetailAndTrust),
+        new("1", "MMFSS - BRANCH", "Sourcing Employee Code", "Sourcing Employee Name",
+            "MFL", "", Register.None, SubField.House, RetailAndTrust),
+        new("5", "MFL-EX", "Sourcing Employee Code", "Sourcing Employee Name",
+            "MFL-EX", "sub", Register.Employees, SubField.Employee, new[] { EmployeeCategory }),
+        new("6", "MFIS/FD", "Sourcing Employee Code", "Sourcing Employee Name",
+            "MIBS", "sub", Register.Employees, SubField.EmployeeShut, RetailAndTrust),
+    };
+
+    /// <summary>A code and the name the register holds against it.</summary>
+    public record Party(string Code, string Name);
+
+    /// <summary>The brokers a broker-sourced application can be filed under. The
+    /// old screen asks the server for these three characters at a time; the mock
+    /// searches the same way against what is here.</summary>
+    public static readonly Party[] Brokers =
+    {
+        new("BR10021", "Sahyadri Investment Services"),
+        new("BR10874", "Deccan Wealth Advisors"),
+        new("BR11250", "Konkan Financial Services"),
+        new("BR11903", "Nagpur Capital Partners"),
+        new("BR12388", "Godavari Securities"),
+    };
+
+    /// <summary>The staff a sub-broker code is searched against, the partner at
+    /// the keyboard among them: an employee-sourced application opens with their
+    /// own code in the field.</summary>
+    public static Party[] Staff =>
+        new[] { new Party(PartnerCode, PartnerName) }
+            .Concat(Employees.Select(e => new Party(e.Key, e.Value)))
+            .ToArray();
+
+    /// <summary>The modes and the two registers, as the script reads them.</summary>
+    public string SourcingJson => System.Text.Json.JsonSerializer.Serialize(
+        new
+        {
+            partner = new Party(PartnerCode, PartnerName),
+            modes = SourcingModes,
+            registers = new { brokers = Brokers, employees = Staff },
+        },
+        new System.Text.Json.JsonSerializerOptions
+        {
+            PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+        });
 
     public static readonly string[] EmployeeHolders = { "First holder", "Second holder", "Third holder" };
 
@@ -118,6 +216,14 @@ public class ClassicUploadDocumentsModel : PageModel
         ["E20915"] = "Sneha Arun Kulkarni",
         ["E31077"] = "Farhan Iqbal Shaikh",
     };
+
+    /// <summary>
+    /// A mailing address that differs from the permanent one is not in this
+    /// release: the question, the proof it asks for and the card it fills are all
+    /// off the page. Set this to true to put them back in front of partners
+    /// again - the step, the script and the checks behind them are whole.
+    /// </summary>
+    public const bool MailingAddress = false;
 
     // ----- The address the application carries ---------------------------------
     // A proof of address is not filed on its own: OCR reads the address off it and
@@ -156,14 +262,37 @@ public class ClassicUploadDocumentsModel : PageModel
 
     public const string InstrumentBank = "HDFC Bank";
 
+    /// <summary>What the register already holds against the folio the application
+    /// was opened on. A document on the folio is not asked for again: the step
+    /// shows it as not applicable and says which folio carries it.</summary>
+    public ClassicSearchInvestorModel.MockDocs? FolioDocs =>
+        HasFolio
+            ? ClassicSearchInvestorModel.Folios.FirstOrDefault(f => f.Folio == Folio)?.Docs
+            : null;
+
+    /// <summary>The same, as the script reads it.</summary>
+    public string HeldJson => System.Text.Json.JsonSerializer.Serialize(
+        new
+        {
+            folio = HasFolio ? Folio : "",
+            pan = FolioDocs?.Pan ?? false,
+            poa = FolioDocs?.Poa ?? false,
+            photo = FolioDocs?.Photo ?? false,
+        });
+
+    /// <summary>Who answers for a PAN, and what the mock reads off the copy.</summary>
+    public const string PanAuthority = "the Income Tax Department";
+
     /// <summary>The same, as the script reads them.</summary>
     public string AddressJson => System.Text.Json.JsonSerializer.Serialize(
         new
         {
             issuers = Issuers,
             bank = InstrumentBank,
+            panAuthority = PanAuthority,
             read = new
             {
+                pan = HolderPan,
                 poa = ReadPermanentAddress,
                 mailing = ReadMailingAddress,
                 payment = ReadInstrument,
@@ -177,9 +306,9 @@ public class ClassicUploadDocumentsModel : PageModel
     // ----- What this application has already been through ----------------------
     // The attempts made before this page was opened: the PAN that came back as
     // someone else's, the copy that stood, and a bill with no register behind it.
-    // They are what the history card opens with, and the count they leave is what
-    // the pickers carry on from, so the three are three against the application
-    // rather than three against this visit to the page.
+    // They are what the history card opens with. They set no count: the three a
+    // document is allowed are three in this session, so an earlier session is on
+    // the record without spending anything the partner has now.
     public record PastStage(string Text, string Kind);
 
     public record PastAttempt(
@@ -195,6 +324,8 @@ public class ClassicUploadDocumentsModel : PageModel
                 new("10:42:05", "PAN copy", "pan", 1, "scan_0417.jpg \u00b7 386 KB", "Refused", "bad", new[]
                 {
                     new PastStage("Not identified as a PAN card.", "bad"),
+                    new PastStage("Copy kept for analysis as REJ-884199 until "
+                        + DateTime.Today.AddDays(7).ToString("dd MMM yyyy") + ", and deleted after.", "warn"),
                 }),
             };
 
@@ -212,27 +343,12 @@ public class ClassicUploadDocumentsModel : PageModel
             {
                 new PastStage("Identified as a proof of address.", "ok"),
                 new PastStage("OCR read: " + ReadPermanentAddress, ""),
-                new PastStage("A utility bill has no issuer to check with.", "warn"),
+                new PastStage("A utility bill has no register behind it to put that address to.", "warn"),
             }));
 
             // Newest first, as the card reads.
             past.Reverse();
             return past.ToArray();
-        }
-    }
-
-    /// <summary>How many of the three each document has already used.</summary>
-    public string AttemptsJson
-    {
-        get
-        {
-            var used = new Dictionary<string, int>();
-            foreach (var attempt in PastAttempts)
-            {
-                used[attempt.Slot] = Math.Max(
-                    used.TryGetValue(attempt.Slot, out var n) ? n : 0, attempt.Attempt);
-            }
-            return System.Text.Json.JsonSerializer.Serialize(used);
         }
     }
 

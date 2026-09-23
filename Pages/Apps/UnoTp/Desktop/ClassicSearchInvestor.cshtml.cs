@@ -43,7 +43,7 @@ public class ClassicSearchInvestorModel : PageModel
     // both written from these lists, so what a demo is told to type is always
     // what the page holds. Every PAN starts XXXX and they share one date of
     // birth, so nothing here can be mistaken for a real one.
-    public const string DemoDob = "14/08/1988";
+    public const string DemoDob = "14-08-1988";
 
     public record MockDocs(bool Pan, bool Photo, bool Poa);
 
