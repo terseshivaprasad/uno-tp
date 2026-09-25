@@ -282,14 +282,13 @@
 
         </div>
 
-        @* What the copies are for. OCR reads each one and whoever stands behind it
-           is asked to confirm what it says. Nothing on the application changes until
-           that answer comes back clean. The same cards stand in the same order
-           whatever was chosen: one with nothing to read says why. *@
+        @* What the PAN was checked with. The addresses stand in the boxes of the
+           proofs above - what a proof was read to say, or what the folio holds -
+           so they have no cards here. *@
         <section class="cud-read">
-            <h2 class="cud-read__title">What the copies were read to say</h2>
-            <p class="cud-read__sub">Read off the documents filed above and checked with whoever stands behind them.</p>
-            <partial name="_ReadCards" model="@(new ReadCardsBlock(Model.ReadsOf(Model.Investor)))" />
+            <h2 class="cud-read__title">What the PAN was checked with</h2>
+            <p class="cud-read__sub">The addresses are in the proof of address boxes above.</p>
+            <partial name="_ReadCards" model="@(new ReadCardsBlock(Model.PanReadsOf(Model.Investor)))" />
         </section>
 
         @* How the deposit is paid is the application's, not the investor's KYC: the

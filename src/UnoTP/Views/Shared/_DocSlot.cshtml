@@ -15,7 +15,22 @@
 }
 <div class="cud-slot @(v.Error is not null ? "is-invalid" : null) @(v.Unconfirmed ? "is-unconfirmed" : null)" id="slot-@key" tabindex="-1">
     <div class="cud-slot__frame">
-        @if (!v.Used)
+        @if (!v.Used && v.Read is { } held)
+        {
+            @* An address the folio already holds stands where its proof would be:
+               on record, so ticked, but nothing on this step confirmed it. *@
+            <div class="cud-drop is-filled is-held">
+                <span class="cud-drop__done">
+                    <span class="cud-drop__check" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+                    </span>
+                    <span class="cud-held__tag">@held.State</span>
+                    <span class="cud-held__lines" title="@held.Lines">@held.Lines</span>
+                    <span class="cud-held__from" title="@held.From">@held.From</span>
+                </span>
+            </div>
+        }
+        else if (!v.Used)
         {
             @* A slot the application has no use for says so, and says why. *@
             <span class="cud-slot__na">
@@ -111,6 +126,11 @@
     @if (filed && v.Doc!.Check.Length > 0)
     {
         <p class="cud-slot__check @(v.Doc.CheckKind.Length > 0 ? "is-" + v.Doc.CheckKind : null)">@v.Doc.Check</p>
+    }
+    @if (filed && v.Read is { } read && v.Def.Key is "poa" or "mail")
+    {
+        @* The address the proof was read to say, now that there is no card for it below. *@
+        <p class="cud-slot__read @read.Kind"><span class="cud-held__tag">@read.State</span> @read.Lines</p>
     }
     @if (v.Tries is not null)
     {
