@@ -91,10 +91,12 @@ public sealed class IdfyClient(HttpClient http, ILogger<IdfyClient> log)
 
     /// <summary>
     /// IDfy's face compare: whether the faces on two images are the same person.
-    /// Both go as Base64, under the same cap as any other image.
+    /// Both go as Base64, under the same cap as any other image. Each has to be
+    /// 150 to 4,096 px on either side, a narrower range than the other endpoints
+    /// take; IDfy turns anything else back, and that is a failed check.
     /// </summary>
     public Task<IdfyTask<FaceCompare>> CompareFacesAsync(UploadFile first, UploadFile second, CancellationToken ct = default) =>
-        Post<FaceCompare>("api/face/compare", new { document1 = Image(first), document2 = Image(second) }, ct);
+        Post<FaceCompare>("api/face/compare", new { document = Image(first), document2 = Image(second) }, ct);
 
     // ----- Plumbing ----------------------------------------------------------
 
@@ -212,10 +214,19 @@ public sealed record AadhaarExtraction(AadhaarCard? ExtractionOutput, AadhaarCar
 
 public sealed record AadhaarCard(string? IdNumber, string? NameOnCard, string? Address, string? Gender = null);
 
-/// <param name="IsAMatch">Whether the two faces are the same person.</param>
-/// <param name="MatchScore">How alike they are, 0 to 100.</param>
-/// <param name="ReviewNeeded">Set when IDfy could not be sure either way.</param>
-public sealed record FaceCompare(bool? IsAMatch, double? MatchScore, bool? ReviewNeeded);
+/// <param name="IsAMatch">IDfy's decision: whether the two faces are the same person.</param>
+/// <param name="MatchScore">How alike they are.</param>
+/// <param name="ReviewRecommended">Set when IDfy recommends a person looks.</param>
+/// <param name="Image1">The first image sent: the PAN copy.</param>
+/// <param name="Image2">The second image sent: the proof of address.</param>
+public sealed record FaceCompare(
+    bool? IsAMatch, int? MatchScore, bool? ReviewRecommended,
+    [property: JsonPropertyName("image_1")] FaceImage? Image1,
+    [property: JsonPropertyName("image_2")] FaceImage? Image2);
+
+/// <param name="FaceDetected">Whether a face was found in the image.</param>
+/// <param name="FaceQuality">How good the face is, in IDfy's words.</param>
+public sealed record FaceImage(bool? FaceDetected, string? FaceQuality);
 
 /// <param name="IdNumberFound">False when there was no Aadhaar number on the copy to mask.</param>
 public sealed record AadhaarMask(bool? IdNumberFound);

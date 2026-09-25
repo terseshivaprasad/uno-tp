@@ -212,17 +212,25 @@ public sealed class IdfyPanAadhaarLink(IdfyClient idfy) : IPanAadhaarLinkService
 }
 
 /// <summary>
-/// The PAN-proof face match by IDfy's face compare. An answer IDfy is unsure of,
-/// or one with no score, is not a match: a person looks at it.
+/// The PAN-proof face match by IDfy's face compare, the PAN copy sent first. No
+/// face found on either copy, or a review IDfy recommends, is no answer either
+/// way: a person looks at it.
 /// </summary>
 public sealed class IdfyFaceMatch(IdfyClient idfy) : IFaceMatchService
 {
     public async Task<FaceMatch> CompareAsync(UploadFile panCopy, UploadFile proof, CancellationToken ct = default)
     {
         var result = (await idfy.CompareFacesAsync(panCopy, proof, ct)).Result!;
-        var score = (int)Math.Round(result.MatchScore ?? 0);
-        return result.ReviewNeeded == true
-            ? new FaceMatch(false, score, "IDfy could not be sure the faces match, so a person has to look")
-            : new FaceMatch(result.IsAMatch == true, score);
+        var score = result.MatchScore ?? 0;
+        if (result.Image1?.FaceDetected == false) return new FaceMatch(false, score, "no face could be found on the PAN copy");
+        if (result.Image2?.FaceDetected == false) return new FaceMatch(false, score, "no face could be found on the proof of address");
+        if (result.ReviewRecommended == true)
+        {
+            var quality = string.Join(", ", new[] { ("PAN copy", result.Image1?.FaceQuality), ("proof", result.Image2?.FaceQuality) }
+                .Where(q => !string.IsNullOrWhiteSpace(q.Item2)).Select(q => $"{q.Item1} face quality {q.Item2}"));
+            return new FaceMatch(result.IsAMatch == true, score,
+                "IDfy recommends a person looks at the faces" + (quality.Length > 0 ? $" ({quality})" : ""));
+        }
+        return new FaceMatch(result.IsAMatch == true, score);
     }
 }
