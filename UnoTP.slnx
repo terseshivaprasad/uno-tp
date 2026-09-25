@@ -1,7 +1,0 @@
-<Solution>
-  <Folder Name="/src/">
-    <Project Path="src/UnoTP/UnoTP.csproj" />
-    <Project Path="src/UnoTP.Backend/UnoTP.Backend.csproj" />
-    <Project Path="src/UnoTP.Backend.Mock/UnoTP.Backend.Mock.csproj" />
-  </Folder>
-</Solution>
