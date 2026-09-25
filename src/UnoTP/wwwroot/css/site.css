@@ -2389,8 +2389,8 @@ body:has(.rdocs:popover-open) { overflow: hidden; }
   .cud-drop.is-held .cud-drop__check, .cud-drop.is-read .cud-drop__check { grid-row: 1 / span 4; align-self: center; width: 40px; height: 40px; }
 }
 .cud-held__tag { display: inline-block; justify-self: start; padding: 2px 7px; border-radius: 4px; background: #FDF3DC; font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--amber); }
-.cud-held__lines { max-width: 100%; font-size: 12.5px; font-weight: 600; line-height: 1.45; color: var(--ink); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
-.cud-held__from { font-size: 11px; line-height: 1.5; color: var(--muted); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.cud-held__lines { max-width: 100%; font-size: 13px; font-weight: 600; line-height: 1.45; color: var(--ink); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.cud-held__from { font-size: 11.5px; line-height: 1.5; color: var(--muted); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
 /* Long addresses end in an ellipsis inside the box, with the whole of it on hover,
    and a long unbroken string breaks rather than running out of the box. */
 .cud-held__lines, .cud-held__from, .cud-slot__na-why, .cud-drop__file, .cud-read__lines { overflow-wrap: anywhere; }
@@ -2400,10 +2400,16 @@ body:has(.rdocs:popover-open) { overflow: hidden; }
 .cud-held__tag.is-failed { background: #FBE9EC; color: var(--red-dark); }
 .cud-held__tag.is-na, .cud-held__tag.is-working { background: var(--tint); color: var(--muted-2); }
 .cud-drop.is-read .cud-drop__done { gap: 3px; }
-.cud-held__id { max-width: 100%; font-size: 11.5px; line-height: 1.5; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* The state first, a breath under it, then what was read: one text size for what
+   was read, one for the detail under it, the same in the boxes and the cards. */
+.cud-drop.is-read .cud-held__tag, .cud-drop.is-held .cud-held__tag { margin-bottom: 3px; }
+.cud-held__lines--one { -webkit-line-clamp: 1; }
+.cud-slot .cud-drop.is-read .cud-drop__check { background: #E8F5EC; color: var(--green); }
+.cud-slot .cud-drop.is-read .cud-drop__check.is-failed, .cud-slot .cud-drop.is-read .cud-drop__check.is-na { background: var(--amber-bg); color: var(--amber); }
+.cud-held__id { max-width: 100%; margin-top: 2px; font-size: 11.5px; line-height: 1.5; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cud-held__expired { color: var(--red-dark); font-weight: 600; }
 /* The PIN code stands on a line of its own, so cutting the address to fit never loses it. */
-.cud-held__pin { font-size: 12.5px; font-weight: 600; line-height: 1.45; color: var(--ink); }
+.cud-held__pin { font-size: 13px; font-weight: 600; line-height: 1.45; color: var(--ink); }
 .cud-held__pin.is-missing { font-weight: 500; color: var(--amber); }
 
 /* Nothing left to try: the box stops taking files and the line under it says
@@ -2527,7 +2533,7 @@ body.is-waiting { overflow: hidden; }
    so this line carries the colour rather than the card: green where somebody
    stood behind it, amber where there was nobody to ask, red where the answer
    came back against it. */
-.cud-slot__check { display: flex; gap: 7px; padding-top: 6px; font-size: 11.5px; line-height: 1.5; text-align: left; color: var(--muted); }
+.cud-slot__check { display: flex; gap: 7px; padding-top: 8px; font-size: 11.5px; line-height: 1.5; text-align: left; color: var(--muted); }
 .cud-slot__check[hidden] { display: none; }
 .cud-slot__check::before { content: ''; flex: none; width: 6px; height: 6px; margin-top: 5px; border-radius: 50%; background: currentColor; }
 .cud-slot__check.is-ok { color: var(--green); }
@@ -2556,7 +2562,7 @@ body.is-waiting { overflow: hidden; }
 .cud-read__sub { padding-top: 3px; font-size: 11.5px; line-height: 1.5; color: var(--muted); }
 .cud-read__cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; padding-top: 14px; }
 
-.cud-read__card { border: 1px solid var(--border-2); border-radius: 8px; padding: 16px 18px; background: #fff; }
+.cud-read__card { border: 1px solid var(--border-2); border-radius: 8px; padding: 18px 20px; background: #fff; }
 .cud-read__card[hidden] { display: none; }
 .cud-read__head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .cud-read__kind { font-size: 12px; font-weight: 700; color: var(--ink); }
@@ -2574,11 +2580,11 @@ body.is-waiting { overflow: hidden; }
 /* An address the folio holds: shown in full, but nothing here confirmed it. */
 .cud-read__card.is-unverified { border-color: #F1DDB0; }
 .cud-read__card.is-unverified .cud-read__state { color: var(--amber); }
-.cud-read__lines { padding-top: 9px; font-size: 12.5px; line-height: 1.55; color: var(--ink); }
+.cud-read__lines { padding-top: 10px; font-size: 13px; font-weight: 600; line-height: 1.45; color: var(--ink); }
 /* The address the proof replaced, kept in sight rather than quietly overwritten. */
 .cud-read__was { padding-top: 6px; font-size: 11px; line-height: 1.5; color: var(--muted-2); text-decoration: line-through; }
 .cud-read__was[hidden] { display: none; }
-.cud-read__from { padding-top: 9px; font-size: 11px; line-height: 1.55; color: var(--muted); }
+.cud-read__from { padding-top: 8px; font-size: 11.5px; line-height: 1.5; color: var(--muted); }
 
 /* ===== Upload and OCR history =====
    The card at the foot of the step: one entry per attempt, newest first, with

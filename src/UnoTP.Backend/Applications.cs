@@ -182,6 +182,9 @@ public sealed class ReadCard
     /// <summary>When the proof runs out, as dd-MM-yyyy, for a passport or a licence.</summary>
     public string Expiry { get; set; } = "";
 
+    /// <summary>The date of birth read off a PAN copy, as dd-MM-yyyy.</summary>
+    public string Dob { get; set; } = "";
+
     /// <summary>How the card opened.</summary>
     public ReadFace Opened { get; set; } = new("", "", "", "");
 

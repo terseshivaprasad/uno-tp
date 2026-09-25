@@ -564,6 +564,7 @@ public class UploadDocumentsViewModel(
             "poa" when doc is not null => s.Reads.GetValueOrDefault(key),
             "mail" when doc is not null => MailReadOf(h),
             "payment" when doc is not null => s.Reads.GetValueOrDefault("payment"),
+            "pan" when doc is not null => PanReadOf(h, doc),
             "poa" when !used && folioAddress => FolioAddress(h, "not checked here."),
             "mail" when !used && folioAddress && !MailCanDiffer(h) => FolioAddress(h, "post goes there."),
             _ => null,
@@ -695,6 +696,32 @@ public class UploadDocumentsViewModel(
         State.Docs.ContainsKey(h.Key("poa")) && State.Reads.TryGetValue(h.Key("face"), out var card) ? card
         : new ReadCard("Not yet compared", "Compared once the PAN copy and the proof of address are both filed.",
             "The photograph on the PAN copy is matched with the one on the proof of address.", "is-na");
+
+    /// <summary>
+    /// What a filed PAN copy was read to say - the name, the PAN and the date of
+    /// birth - under where NSDL stands on it, for its box. A copy filed before this
+    /// step shows the holder as the application has them.
+    /// </summary>
+    private ReadCard PanReadOf(DocHolder h, StoredDoc doc)
+    {
+        var ocr = State.Reads.GetValueOrDefault(h.Key("panocr"));
+        var name = ocr?.Lines is { Length: > 0 } n ? n : h.Who.Name;
+        var pan = ocr?.Number is { Length: > 0 } p ? p : h.Who.Pan;
+        var dob = ocr?.Dob is { Length: > 0 } d ? d : h.Who.Dob;
+        var (state, kind) = doc.Before ? ("On the application", "is-done")
+            : !NsdlApplies(h) ? ("PAN & DOB match", "is-done")
+            : NsdlOf(h) switch
+            {
+                "verified" => ("Verified with NSDL", "is-done"),
+                "name" => ("Name not matched", "is-failed"),
+                "failed" => ("Not verified", "is-failed"),
+                _ => ("Not yet checked", "is-na"),
+            };
+        return new ReadCard(state, name.Length > 0 ? name : "Name not read", "", kind)
+        {
+            Number = $"PAN {Mask(pan)}" + (dob.Length > 0 ? $" · DOB {MaskDate(dob)}" : ""),
+        };
+    }
 
     /// <summary>The number a proof carries, labelled as it is shown: an Aadhaar by its
     /// last four digits only, anything else in full.</summary>
@@ -1462,6 +1489,10 @@ public class UploadDocumentsViewModel(
                 ("It does not match the PAN and date of birth on the application.", "bad"));
             return;
         }
+        // What the PAN copy reads, for its box once it is filed.
+        if (def.Key == "pan")
+            State.Reads[h.Key("panocr")] = new ReadCard("", InvestorIdentificationViewModel.NormaliseName(reading.Name), "")
+                { Number = reading.Pan.Replace(" ", "").ToUpperInvariant(), Dob = reading.Dob };
         if (proof && type == "Aadhaar" && !AadhaarNumbers.IsWhole(reading.IdNumber))
         {
             await RefuseAsync("OCR could not read all 12 digits of the Aadhaar number, so the copy may be masked",

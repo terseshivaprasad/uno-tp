@@ -170,7 +170,7 @@
         @* The addresses are in the panel below, so only the PAN's checks stand here. *@
         <section class="cud-read">
             <h2 class="cud-read__title">What the PAN was checked with</h2>
-            <p class="cud-read__sub">Asked once the PAN copy is filed above. The addresses the proofs give are in the address panel below.</p>
+            <p class="cud-read__sub">Asked once the PAN copy is filed above. The addresses are in the proof of address boxes.</p>
             <partial name="_ReadCards" model="@(new ReadCardsBlock(docs.PanReadsOf(h), Url.Action("JointNsdl", new { n = holder })))" />
         </section>
     }
