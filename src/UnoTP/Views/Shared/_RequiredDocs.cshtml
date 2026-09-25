@@ -5,6 +5,11 @@
    popovertarget="requiredDocsModal" opens it and the browser closes it on Esc or
    a click outside. The types are radio buttons, and the panel for the checked
    one is shown by the rules written below. *@
+@{
+    // What each investor type hands over, and the standing note, from the backend.
+    var reference = await Lookups.ReferenceAsync();
+    var groups = reference.RequiredDocuments;
+}
 <div class="modal-dialog rdocs" id="requiredDocsModal" popover role="dialog" aria-modal="true" aria-labelledby="requiredDocsTitle">
     <header class="rdocs__head">
         <div>
@@ -18,10 +23,10 @@
 
     <div class="rdocs__body">
         <div class="rdocs__types" role="radiogroup" aria-label="Investor type">
-            @for (var i = 0; i < RequiredDocs.Groups.Length; i++)
+            @for (var i = 0; i < groups.Count; i++)
             {
-                var g = RequiredDocs.Groups[i];
-                var count = g.Items.Count(x => !x.StartsWith("Note:"));
+                var g = groups[i];
+                var count = g.Items.Count;
                 <label class="rdocs__type">
                     <input class="visually-hidden" type="radio" name="rdocsType" value="@i" checked="@(i == 0)">
                     <span class="rdocs__type-name">@g.Title</span>
@@ -30,11 +35,11 @@
             }
         </div>
 
-        @for (var i = 0; i < RequiredDocs.Groups.Length; i++)
+        @for (var i = 0; i < groups.Count; i++)
         {
-            var g = RequiredDocs.Groups[i];
-            var docs = g.Items.Where(x => !x.StartsWith("Note:")).ToList();
-            var notes = g.Items.Where(x => x.StartsWith("Note:")).Select(x => x["Note:".Length..].Trim());
+            var g = groups[i];
+            var docs = g.Items;
+            var notes = g.Notes;
             <section class="rdocs__panel" data-panel="@i" aria-label="@g.Title">
                 <h3 class="rdocs__panel-title">@g.Title <span>@docs.Count documents</span></h3>
                 <ol class="rdocs__list">
@@ -51,15 +56,18 @@
         }
     </div>
 
-    <footer class="rdocs__foot">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 11v6"></path><circle cx="12" cy="7.5" r=".6" fill="currentColor"></circle></svg>
-        <span>Currently Esarathi is enabled with individual and sole proprietorship investment only.</span>
-    </footer>
+    @if (reference.DashboardNotes.Count > 0)
+    {
+        <footer class="rdocs__foot">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 11v6"></path><circle cx="12" cy="7.5" r=".6" fill="currentColor"></circle></svg>
+            <span>@reference.DashboardNotes[0]</span>
+        </footer>
+    }
 </div>
 
 @* One rule per type: the panel whose number matches the checked radio is shown. *@
 <style>
-    @for (var i = 0; i < RequiredDocs.Groups.Length; i++)
+    @for (var i = 0; i < groups.Count; i++)
     {
         @:.rdocs__body:has(input[value="@i"]:checked) .rdocs__panel[data-panel="@i"] { display: block; }
     }

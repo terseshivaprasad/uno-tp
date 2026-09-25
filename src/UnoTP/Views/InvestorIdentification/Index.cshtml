@@ -40,7 +40,7 @@
                 <div class="csi-note__body">
                     <div class="csi-note__title">Note</div>
                     <ul>
-                        @foreach (var n in InvestorIdentificationViewModel.Notes)
+                        @foreach (var n in (await Lookups.ReferenceAsync()).IdentificationNotes)
                         {
                             <li>@n</li>
                         }
@@ -53,7 +53,7 @@
     <section class="csi-drafts">
         <div class="csi-drafts__head">
             <h2 class="csi-drafts__title">Continue an incomplete application</h2>
-            <p class="csi-drafts__sub">@Model.Drafts.Count most recent saved and not submitted &middot; identifiers are masked &middot; a draft is kept for 30 days</p>
+            <p class="csi-drafts__sub">@Model.Drafts.Count most recent saved and not submitted &middot; identifiers are masked &middot; a draft is kept for @((await Lookups.ConfigAsync()).DraftDays) days</p>
         </div>
         <table class="csi-drafts__table">
             <thead>

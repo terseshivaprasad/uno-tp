@@ -60,7 +60,7 @@
         <div class="classic-note">
             <div class="classic-note__title">Note</div>
             <ul>
-                @foreach (var n in DashboardViewModel.Notes)
+                @foreach (var n in (await Lookups.ReferenceAsync()).DashboardNotes)
                 {
                     <li>@n</li>
                 }

@@ -24,9 +24,9 @@ public sealed record SearchState(
 /// holder's documents. Each step takes the
 /// holder's search as the session holds it and gives back what to hold next.
 /// </summary>
-public sealed class HolderSearch(IInvestorApi investors)
+public sealed class HolderSearch(IInvestorApi investors, UnoTP.Features.Lookups lookups)
 {
-    public InvestorIdentificationViewModel NewModel() => new(investors);
+    public InvestorIdentificationViewModel NewModel() => new(investors, lookups);
 
     /// <summary>
     /// The holder as the session left them: blank, being filled in, or checked. Gives

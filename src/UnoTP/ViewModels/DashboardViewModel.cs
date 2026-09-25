@@ -27,13 +27,6 @@ public class DashboardViewModel(FeatureSet features, ConsoleBoard board, string?
     public static readonly string[] StepLabels =
         ["Upload documents", "Investor information", "Payment & repayment", "Fixed deposit details"];
 
-    // The standing Note under the steps, as the old dashboard words it.
-    public static readonly string[] Notes =
-    [
-        "Currently Esarathi is enabled with individual and sole proprietorship investment only.",
-        "Verification of the Fixed Deposit is subject to validation of the submitted documents by the Operations team.",
-    ];
-
     // Tile glyphs are drawn solid, as the old site's SVG icons are: slate shapes
     // with white detail knocked out of them.
     // A page with its corner folded over: the body, then the fold.

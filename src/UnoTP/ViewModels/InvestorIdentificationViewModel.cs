@@ -18,7 +18,7 @@ namespace UnoTP.ViewModels;
 /// PAN, date of birth or name reaches a log, the history or a Referer header. The
 /// page drawn after the redirect runs the check again from what the session holds.
 /// </summary>
-public partial class InvestorIdentificationViewModel(IInvestorApi investors)
+public partial class InvestorIdentificationViewModel(IInvestorApi investors, UnoTP.Features.Lookups lookups)
 {
     // The rail down the left of every classic wizard step. This page is the first
     // of them; the ones after it carry an empty check until the wizard fills them.
@@ -30,14 +30,6 @@ public partial class InvestorIdentificationViewModel(IInvestorApi investors)
         "Bank Details & Payment",
         "FD Configuration",
     };
-
-    /// <summary>The standing Note beside the search, worded as the old page words it.</summary>
-    public static readonly string[] Notes =
-    [
-        "Only individual depositors 18 years and above are allowed to make investments.",
-        "We strongly advice the depositor(s) to avail the nomination",
-        "For investment above Rs.5 Cr, please write to fixeddeposit@mahindrafinance.com",
-    ];
 
     /// <summary>
     /// The test data card at the foot of the page, switched in appsettings. It
@@ -156,7 +148,7 @@ public partial class InvestorIdentificationViewModel(IInvestorApi investors)
         Pan = Clean(Pan);
         PanError = Pan.Length == 0 ? "Enter the PAN"
             : PanPattern().IsMatch(Pan) ? null : "Enter a valid PAN, like ABCDE1234F";
-        DobError = DobProblem();
+        DobError = DobProblem((await lookups.ConfigAsync()).MinAge);
         if (PanError is not null || DobError is not null) return false;
 
         var onRecord = await investors.FoliosByPanAsync(Pan);
@@ -216,7 +208,7 @@ public partial class InvestorIdentificationViewModel(IInvestorApi investors)
         At = Stage.Found;
     }
 
-    private string? DobProblem()
+    private string? DobProblem(int minAge)
     {
         Dd = Digits(Dd); Mm = Digits(Mm); Yyyy = Digits(Yyyy);
         if (Dd.Length == 0 || Mm.Length == 0 || Yyyy.Length == 0) return "Enter the date of birth";
@@ -224,8 +216,8 @@ public partial class InvestorIdentificationViewModel(IInvestorApi investors)
         if (!DateTime.TryParseExact(Dob, "dd-MM-yyyy", null, System.Globalization.DateTimeStyles.None, out var when))
             return "Enter a valid date";
         if (when > DateTime.Today) return "The date of birth cannot be in the future";
-        // The note on this page: an investor under 18 cannot hold a deposit.
-        if (when.AddYears(18) > DateTime.Today) return "The depositor must be 18 years or above";
+        // The note on this page: an investor under the minimum age cannot hold a deposit.
+        if (when.AddYears(minAge) > DateTime.Today) return $"The depositor must be {minAge} years or above";
         return null;
     }
 
