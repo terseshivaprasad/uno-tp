@@ -117,7 +117,7 @@ public class UploadDocumentsViewModel(
 
     // Why a holder has no communication address of their own to prove.
     private string MailWhy(DocHolder h) => h.Who.Folio.Length > 0
-        ? $"The address is held against folio {h.Who.Folio}, so post goes there."
+        ? "The address is on the folio, so post goes there."
         : "The communication address comes with the CKYC record, once the investor consents. It is not uploaded here.";
 
     /// <summary>
@@ -490,7 +490,7 @@ public class UploadDocumentsViewModel(
         var key = h.Key(def.Key);
         var proofType = TypeOf(def, h);
         var held = FolioDocsOf(h);
-        string heldWhy = $"Already held against folio {h.Who.Folio}, so it is not filed again.";
+        string heldWhy = "Already on the folio, so it is not filed again.";
         var (used, na) = def.Key switch
         {
             "form" => (s.AppType == Physical, "A digital application is accepted through the investor’s own link, so there is no signed form to file."),
@@ -499,7 +499,7 @@ public class UploadDocumentsViewModel(
             "photo" => held?.Photo == true ? (false, heldWhy) : s.Ckyc && !h.Joint ? (false, CkycWhy) : (true, null),
             // A folio that holds the proof, or the address itself, needs no proof of it.
             "poa" => held?.Poa == true ? (false, heldWhy)
-                : held is not null && h.Who.Address.Length > 0 ? (false, $"The address is held against folio {h.Who.Folio}, so no proof of it is asked for.")
+                : held is not null && h.Who.Address.Length > 0 ? (false, "The address is on the folio, so no proof of it is asked for.")
                 : s.Ckyc && !h.Joint ? (false, CkycWhy) : (true, null),
             "mail" => !MailCanDiffer(h) ? (false, MailWhy(h))
                 : MailDifferentOf(h) ? (true, null) : (false, "Post goes to the permanent address, so there is no other address to prove."),
@@ -544,14 +544,14 @@ public class UploadDocumentsViewModel(
             "poa" when doc is not null => s.Reads.GetValueOrDefault(key),
             "mail" when doc is not null => MailReadOf(h),
             "payment" when doc is not null => s.Reads.GetValueOrDefault("payment"),
-            "poa" when !used && folioAddress => FolioAddress(h, "so no proof of it is asked for."),
-            "mail" when !used && folioAddress && !MailCanDiffer(h) => FolioAddress(h, "and post goes there."),
+            "poa" when !used && folioAddress => FolioAddress(h, "not checked here."),
+            "mail" when !used && folioAddress && !MailCanDiffer(h) => FolioAddress(h, "post goes there."),
             _ => null,
         };
 
         var flash = Shown;
         return new SlotView(def, key, used, used ? null : na, locked, doc,
-            optional ? $"Not mandatory: the holder is on folio {h.Who.Folio}." : null,
+            optional ? "Not mandatory: the holder is on a folio." : null,
             with, s.AttemptsOf(key),
             flash?.Errors.GetValueOrDefault(key), flash?.ErrorLog.GetValueOrDefault(key), optional, read);
     }
@@ -568,8 +568,8 @@ public class UploadDocumentsViewModel(
         [
             ("Permanent address", State.Reads[h.Key("poa")]),
             ("Communication address", MailDifferentOf(h) ? MailReadOf(h)
-                : !MailCanDiffer(h) && h.Who.Folio.Length > 0 && h.Who.Address.Length > 0 ? FolioAddress(h, "and post goes there.")
-                : !MailCanDiffer(h) && h.Who.Folio.Length > 0 ? NotRead("Same as permanent", $"Post goes to the address held against folio {h.Who.Folio}.",
+                : !MailCanDiffer(h) && h.Who.Folio.Length > 0 && h.Who.Address.Length > 0 ? FolioAddress(h, "post goes there.")
+                : !MailCanDiffer(h) && h.Who.Folio.Length > 0 ? NotRead("Same as permanent", "Post goes to the address on the folio.",
                     "The system holds the address, and it is the mailing address too.")
                 : !MailCanDiffer(h) ? NotRead("From CKYC", "The communication address comes with the CKYC record.",
                     "It is fetched once the investor consents, with the permanent address and the photograph.")
@@ -578,7 +578,7 @@ public class UploadDocumentsViewModel(
         ];
         if (h.Joint) cards.Add(NsdlCard(h));
         cards.Add(("PAN–Aadhaar link", LinkApplies(h) ? State.Reads[h.Key("pan")]
-            : NotRead("Not applicable", $"{Mask(h.Who.Pan)} · held against folio {h.Who.Folio}",
+            : NotRead("Not applicable", $"{Mask(h.Who.Pan)} · on the folio",
                 "The PAN–Aadhaar link is asked only for a holder with no folio yet.")));
         return cards;
     }
@@ -606,7 +606,7 @@ public class UploadDocumentsViewModel(
     {
         var pan = Mask(h.Who.Pan);
         if (!NsdlApplies(h))
-            return new("PAN – NSDL", NotRead("Not applicable", $"{pan} · held against folio {h.Who.Folio}", "A holder on a folio is not asked about with NSDL again."));
+            return new("PAN – NSDL", NotRead("Not applicable", $"{pan} · on the folio", "A holder on a folio is not asked about with NSDL again."));
         var j = State.Joint[h.Code];
         var key = h.Key("nsdl");
         return j.Nsdl switch
@@ -624,7 +624,7 @@ public class UploadDocumentsViewModel(
 
     // The address a folio holds, shown as it stands: nothing on this step checked it.
     private static ReadCard FolioAddress(DocHolder h, string then) =>
-        new("Not verified", h.Who.Address, $"Held against folio {h.Who.Folio}, {then}", "is-unverified");
+        new("Not verified", h.Who.Address, $"On the folio, {then}", "is-unverified");
 
     // A card for something there is nothing to read off, saying why. Not kept.
     private static ReadCard NotRead(string state, string lines, string from) => new(state, lines, from, "is-na");
@@ -683,7 +683,7 @@ public class UploadDocumentsViewModel(
             : new ReadCard("Not yet read", "Read off the PAN copy once one is filed here.", LinkWaitsShort);
         // The folio's address is shown as it stands, until a proof filed here is confirmed.
         s.Reads[h.Key("poa")] = h.Who.Address.Length > 0
-            ? FolioAddress(h, "and not checked on this step.")
+            ? FolioAddress(h, "not checked here.")
             : new ReadCard("Not on record", $"No address is held for this {(h.Joint ? "holder" : "investor")} yet.",
                 "Read off the proof of address once one is filed here.");
 
