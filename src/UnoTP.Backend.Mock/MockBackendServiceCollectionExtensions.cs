@@ -25,6 +25,7 @@ public static class MockBackendServiceCollectionExtensions
         services.AddSingleton<IReferenceApi, MockReference>();
         services.AddSingleton<IPartnerApi, MockPartner>();
         services.AddSingleton<IDepositApi, MockDeposits>();
+        services.AddSingleton<IDemoApi, MockDemo>();
 
         // The outside services.
         services.AddSingleton<INsdlService, MockNsdl>();

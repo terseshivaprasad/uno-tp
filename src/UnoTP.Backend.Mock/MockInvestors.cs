@@ -91,3 +91,26 @@ public sealed class MockInvestors : IInvestorApi
     public static readonly string[] OcrNames =
         ["AMIT KUMAR SHARMA", "PRIYA RAMESH IYER", "SUNIL DATTA JOSHI", "MEERA ANAND NAIR"];
 }
+
+/// <summary>The test records above, as the Test data card lists them.</summary>
+public sealed class MockDemo : IDemoApi
+{
+    public Task<DemoCases?> CasesAsync(CancellationToken ct = default)
+    {
+        // One case per PAN: a PAN with two folios is one case, both folios on its row.
+        var cases = MockInvestors.Folios.GroupBy(f => f.Pan)
+            .Select(g => new DemoCase(g.Key, g.First().Dob, g.Select(f => f.Folio).ToList(), g.First().Shows))
+            .Concat(MockInvestors.Pans.Select(p => new DemoCase(p.Pan, p.Dob, [], p.Shows)))
+            .ToList();
+        return Task.FromResult<DemoCases?>(new DemoCases(MockInvestors.DemoDob, cases, Notes));
+    }
+
+    private static readonly string[] Notes =
+    [
+        "A folio can also be searched by its number, with the same result as its PAN.",
+        "One of these PANs with any other date of birth is turned back — the two are always checked together.",
+        "A proof of address whose file name includes \"otherface\" or \"noface\" fails the PAN–POA face match; it is filed anyway.",
+        "A PAN copy whose file name includes \"otherpan\" or \"otherdob\" reads as another PAN or date of birth, and is refused.",
+        "Any other valid PAN still works: its last digit decides the outcome — 0 no such pair, 1 name mismatch, anything else all three match.",
+    ];
+}

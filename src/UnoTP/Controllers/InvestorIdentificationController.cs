@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
 using UnoTP.Backend;
 using UnoTP.Features;
 using UnoTP.ViewModels;
@@ -17,7 +16,7 @@ namespace UnoTP.Controllers;
 [Route("Purchase/InvestorIdentification")]
 public class InvestorIdentificationController(
     FeatureSet features,
-    IOptions<BackendOptions> backend,
+    IDemoApi demo,
     IApplicationApi applications,
     HolderSearch search) : Controller
 {
@@ -34,7 +33,7 @@ public class InvestorIdentificationController(
     public async Task<IActionResult> Index()
     {
         var model = search.NewModel();
-        model.ShowDemoData = features.Flags.DemoData && backend.Value.IsMock;
+        model.Demo = features.Flags.DemoData ? await demo.CasesAsync() : null;
         model.Drafts = await applications.DraftsAsync();
         Saved = await search.ShowAsync(model, Saved);
         return View(model);

@@ -10,7 +10,7 @@ namespace UnoTP.Backend;
 /// </summary>
 public sealed class BackendClient(HttpClient http, IPartner partner)
     : ApiClient(http, partner), IInvestorApi, IApplicationApi, IDocumentApi, ISourcingApi, IPayInSlipApi, ILinkApi, IConsoleApi,
-        IReferenceApi, IPartnerApi, IDepositApi
+        IReferenceApi, IPartnerApi, IDepositApi, IDemoApi
 {
     // ----- Reference, config and the partner -----------------------------------
 
@@ -30,6 +30,9 @@ public sealed class BackendClient(HttpClient http, IPartner partner)
 
     public Task<BankBranch?> BranchAsync(string ifsc, CancellationToken ct = default) =>
         Get<BankBranch>($"ifsc/{Seg(ifsc)}", ct);
+
+    public Task<DemoCases?> CasesAsync(CancellationToken ct = default) =>
+        Get<DemoCases>("demo/cases", ct);
 
     // ----- Investors ---------------------------------------------------------
 

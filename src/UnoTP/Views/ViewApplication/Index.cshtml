@@ -213,7 +213,7 @@
                 <div class="va-kv"><div class="va-kv__k">Status</div><div class="va-kv__v @r.Status.Tone">@r.Status.Text</div><div class="va-kv__note">@r.Waiting</div></div>
                 <div class="va-kv"><div class="va-kv__k">Came in as</div><div class="va-kv__v"><span class="pis-tag @(r.Digital ? "pis-tag--digital" : "pis-tag--physical")">@r.Tag</span></div><div class="va-kv__note">@(r.Digital ? "accepted online by the investor" : "signed form on file")</div></div>
                 <div class="va-kv"><div class="va-kv__k">Folio</div><div class="va-kv__v">@r.FolioLabel</div><div class="va-kv__note">@r.FolioNote</div></div>
-                <div class="va-kv"><div class="va-kv__k">Investor</div><div class="va-kv__v">@r.Investor</div><div class="va-kv__note">@(r.Holders == 1 ? "single holder" : $"{r.Holders} holders · either or survivor")</div></div>
+                <div class="va-kv"><div class="va-kv__k">Investor</div><div class="va-kv__v">@r.Investor</div><div class="va-kv__note">@(r.Holders == 1 ? "single holder" : $"{r.Holders} holders")</div></div>
                 <div class="va-kv"><div class="va-kv__k">PAN</div><div class="va-kv__v">@r.Pan</div><div class="va-kv__note">first holder &middot; masked</div></div>
                 <div class="va-kv"><div class="va-kv__k">Applied</div><div class="va-kv__v">@r.Applied.ToString("dd/MM/yyyy")</div><div class="va-kv__note">@r.Countdown</div></div>
                 <div class="va-kv"><div class="va-kv__k">Amount</div><div class="va-kv__v va-kv__v--lg">@ViewApplicationViewModel.Rupees(r.Amount)</div></div>

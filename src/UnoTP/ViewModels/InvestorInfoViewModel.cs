@@ -31,10 +31,13 @@ public static class InvestorDetailsForm
     {
         string F(string name) => state.Fields.GetValueOrDefault(name, "").Trim();
         var details = new ApplicationDetails();
-        for (var n = 1; n <= InvestorInfoViewModel.MaxHolders; n++)
+        // The holders the form posted fields for, in order: Holder1., Holder2., ...
+        var posted = state.Fields.Keys
+            .Select(k => k.StartsWith("Holder") && k.IndexOf('.') is > 6 and var dot && int.TryParse(k[6..dot], out var at) ? at : 0)
+            .Where(n => n > 0).Distinct().Order();
+        foreach (var n in posted)
         {
             var p = $"Holder{n}.";
-            if (!state.Fields.Keys.Any(k => k.StartsWith(p))) continue;
             details.Holders.Add(new HolderDetails(
                 InvestorInfoViewModel.CodeOf(n),
                 F(p + "Gender"), F(p + "NameType"), F(p + "ParentName"),
@@ -103,9 +106,6 @@ public sealed class InvestorInfoViewModel(InvestorInfoState state, UploadDocumen
 {
     /// <summary>Joint holders the backend's rules allow beside the investor.</summary>
     public int MaxJoint => Docs.Config.MaxJointHolders;
-
-    /// <summary>The most holders any application can carry: the investor and two joint holders, the old screen's limit.</summary>
-    public const int MaxHolders = 3;
 
     /// <summary>What the old screen says when a FATCA question - the investor's card asks them for every holder - is answered Yes.</summary>
     public const string FatcaOffline =

@@ -32,10 +32,10 @@ public partial class InvestorIdentificationViewModel(IInvestorApi investors, Uno
     };
 
     /// <summary>
-    /// The test data card at the foot of the page, switched in appsettings. It
-    /// describes the mock backend, so it is only ever shown while that answers.
+    /// The test data card at the foot of the page, switched in appsettings: the
+    /// cases GET demo/cases returns, or null when the backend holds none.
     /// </summary>
-    public bool ShowDemoData { get; set; }
+    public DemoCases? Demo { get; set; }
 
     // ----- What was typed ------------------------------------------------------
 

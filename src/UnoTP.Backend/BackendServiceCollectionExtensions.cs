@@ -30,6 +30,7 @@ public static class BackendServiceCollectionExtensions
         services.AddTransient<IReferenceApi>(sp => sp.GetRequiredService<BackendClient>());
         services.AddTransient<IPartnerApi>(sp => sp.GetRequiredService<BackendClient>());
         services.AddTransient<IDepositApi>(sp => sp.GetRequiredService<BackendClient>());
+        services.AddTransient<IDemoApi>(sp => sp.GetRequiredService<BackendClient>());
 
         // The outside services, one client each.
         services.External<INsdlService, NsdlClient>(NsdlClient.Name);

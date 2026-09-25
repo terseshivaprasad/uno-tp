@@ -1,6 +1,5 @@
 @model InvestorIdentificationViewModel
 @using Stage = UnoTP.ViewModels.InvestorIdentificationViewModel.Stage
-@using UnoTP.Backend.Mock
 @{
     ViewData["Title"] = "Investor Identification (classic)";
 
@@ -89,26 +88,13 @@
         </table>
     </section>
 
-    @if (Model.ShowDemoData)
+    @if (Model.Demo is { } demo)
     {
-    @* Nothing here is real: every PAN starts XXXX and they all share one date of
-       birth, so the page can be demoed without anybody's own details. The card
-       describes the mock backend, and is shown only while that answers. *@
     <section class="csi-demo">
         <div class="csi-demo__head">
             <h2 class="csi-demo__title">Test data</h2>
-            @{
-                // One case per PAN: a PAN with two folios is one case, both folios on its row.
-                var folioCases = MockInvestors.Folios.GroupBy(f => f.Pan).ToList();
-                var cases = folioCases.Count + MockInvestors.Pans.Length;
-            }
-            <p class="csi-demo__sub">@cases cases, and what each one does &middot; mock records only &middot; every PAN starts <strong>XXXX</strong> &middot; every date of birth on record is <strong>@MockInvestors.DemoDob</strong></p>
+            <p class="csi-demo__sub">@demo.Cases.Count cases, and what each one does &middot; test records only &middot; every date of birth on record is <strong>@demo.Dob</strong></p>
         </div>
-        @{
-            // The cases run on from one another: the folios first, then the PANs the
-            // register does not hold.
-            var caseNo = 0;
-        }
         <table class="csi-demo__table">
             <thead>
                 <tr>
@@ -120,42 +106,27 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach (var g in folioCases)
+                @for (var i = 0; i < demo.Cases.Count; i++)
                 {
-                    caseNo++;
-                    var first = g.First();
+                    var c = demo.Cases[i];
                     <tr>
-                        <td data-label="Case"><span class="csi-demo__no">@caseNo</span></td>
-                        <td data-label="PAN"><code>@g.Key</code></td>
+                        <td data-label="Case"><span class="csi-demo__no">@(i + 1)</span></td>
+                        <td data-label="PAN"><code>@c.Pan</code></td>
                         <td data-label="Date of birth">
-                            @if (first.Dob.Length > 0) { @first.Dob }
+                            @if (c.Dob.Length > 0) { @c.Dob }
                             else { <span class="csi-demo__none">not on record</span> }
                         </td>
                         <td data-label="Folio">
-                            @foreach (var f in g) { <code>@f.Folio</code> }
+                            @if (c.Folios.Count == 0) { <span class="csi-demo__none">no folio</span> }
+                            @foreach (var f in c.Folios) { <code>@f</code> }
                         </td>
-                        <td data-label="What happens">@first.Shows</td>
-                    </tr>
-                }
-                @foreach (var m in MockInvestors.Pans)
-                {
-                    caseNo++;
-                    <tr>
-                        <td data-label="Case"><span class="csi-demo__no">@caseNo</span></td>
-                        <td data-label="PAN"><code>@m.Pan</code></td>
-                        <td data-label="Date of birth">@m.Dob</td>
-                        <td data-label="Folio"><span class="csi-demo__none">no folio</span></td>
-                        <td data-label="What happens">@m.Shows</td>
+                        <td data-label="What happens">@c.Shows</td>
                     </tr>
                 }
             </tbody>
         </table>
         <ul class="csi-demo__notes">
-            <li>A folio can also be searched by its number, with the same result as its PAN.</li>
-            <li>One of these PANs with any other date of birth is turned back &mdash; the two are always checked together.</li>
-            <li>A proof of address named with <strong>otherface</strong> or <strong>noface</strong> fails the PAN&ndash;POA face match; it is filed anyway.</li>
-            <li>A PAN copy named with <strong>otherpan</strong> or <strong>otherdob</strong> reads as another PAN or date of birth, and is refused.</li>
-            <li>Any other valid PAN still works: its last digit decides the outcome &mdash; <strong>0</strong> no such pair, <strong>1</strong> name mismatch, anything else all three match.</li>
+            @foreach (var note in demo.Notes) { <li>@note</li> }
         </ul>
     </section>
     }

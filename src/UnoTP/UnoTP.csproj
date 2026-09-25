@@ -13,4 +13,14 @@
     <ProjectReference Include="..\UnoTP.Backend.Mock\UnoTP.Backend.Mock.csproj" />
   </ItemGroup>
 
+
+  <!-- Every figure and list a page shows comes from the backend. Only Program.cs
+       may name the mock, to wire it in when no backend URL is set. -->
+  <Target Name="GuardMockBackend" BeforeTargets="CoreCompile">
+    <ItemGroup>
+      <_PageSource Include="**/*.cs;**/*.cshtml" Exclude="Program.cs;bin/**;obj/**" />
+      <_MockUse Include="@(_PageSource)" Condition="$([System.IO.File]::ReadAllText('%(_PageSource.FullPath)').Contains('UnoTP.Backend.Mock'))" />
+    </ItemGroup>
+    <Error Condition="'@(_MockUse)' != ''" Text="Pages read the backend, never the mock: @(_MockUse) names UnoTP.Backend.Mock." />
+  </Target>
 </Project>
