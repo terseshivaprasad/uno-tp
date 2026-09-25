@@ -1,8 +1,10 @@
-bin/
-obj/
-.vs/
+**/bin/
+**/obj/
+**/.vs/
+**/*.user
+**/.DS_Store
 .git/
 .gitignore
-*.user
-.DS_Store
+archive/
+docs/
 prototype/
