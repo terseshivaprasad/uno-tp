@@ -152,7 +152,7 @@
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 @section Scripts {
-    <script src="~/js/console.js"></script>
+    <script src="~/js/console.js" asp-append-version="true"></script>
     <script src="~/js/classic-short-url.js" asp-append-version="true"></script>
     @if (ViewData["Toast"] is string toast)
     {

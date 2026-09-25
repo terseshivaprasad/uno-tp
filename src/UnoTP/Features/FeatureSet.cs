@@ -13,7 +13,7 @@ namespace UnoTP.Features;
 /// </summary>
 public sealed class FeatureSet(FeatureFlags flags, IReadOnlyList<string>? overrides = null)
 {
-    public const string CookieName = "unotp_ff";
+    public const string CookieName = "unotp.ff";
     public const string ItemKey = "unotp.features";
     public const string QueryKey = "ff";
 

@@ -1,4 +1,7 @@
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.ResponseCompression;
 using UnoTP;
 using UnoTP.Backend;
 using UnoTP.Backend.Idfy;
@@ -45,12 +48,59 @@ builder.Services.AddScoped<Lookups>();
 
 // Who the partner is and the application they are on (see PartnerSession).
 builder.Services.AddDistributedMemoryCache();
+// The app's cookies all carry its name - unotp.session, unotp.antiforgery and
+// unotp.ff (FeatureSet) - so they are told apart from other apps' on the same host.
 builder.Services.AddSession(options =>
 {
+    options.Cookie.Name = "unotp.session";
     options.Cookie.HttpOnly = true;
-    options.Cookie.SameSite = SameSiteMode.Strict;
+    // Lax, not Strict: the portal opens the app from another site, and a Strict
+    // cookie is withheld on that redirect chain, so the partner would arrive with
+    // no session. Lax still keeps it off cross-site posts; antiforgery guards them too.
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
     options.Cookie.IsEssential = true;
 });
+
+builder.Services.AddAntiforgery(options =>
+{
+    options.Cookie.Name = "unotp.antiforgery";
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+});
+
+// Behind Render's proxy, which ends TLS: the scheme and client address it forwards
+// are taken as the request's own, so the cookie above is Secure in production.
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    // The proxy's address is not fixed, so any is trusted; the app is only ever reached through it.
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
+// The keys that protect the session and antiforgery cookies. Kept at
+// DataProtection:KeysPath when it is set (a persistent disk), so a restart or a
+// second instance does not sign everyone out; without it they last as long as the process.
+var keys = builder.Services.AddDataProtection().SetApplicationName("UnoTP");
+if (builder.Configuration["DataProtection:KeysPath"] is { Length: > 0 } keysPath)
+    keys.PersistKeysToFileSystem(new DirectoryInfo(keysPath));
+
+// Pages, styles, scripts and JSON go compressed - Brotli where the browser takes
+// it, gzip otherwise. Over HTTPS too: the only secret a page carries is the
+// antiforgery token, which is issued afresh with every page, so compression gives
+// nothing away about it (BREACH); the session itself is in a cookie, never a page.
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.Providers.Add<BrotliCompressionProvider>();
+    options.Providers.Add<GzipCompressionProvider>();
+    options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(["image/svg+xml", "application/problem+json"]);
+});
+builder.Services.Configure<BrotliCompressionProviderOptions>(o => o.Level = System.IO.Compression.CompressionLevel.Fastest);
+builder.Services.Configure<GzipCompressionProviderOptions>(o => o.Level = System.IO.Compression.CompressionLevel.Fastest);
+
+// /health, for the host to check the app is up. It asks nothing of the backend.
+builder.Services.AddHealthChecks();
 
 // Who the partner is, from the backend (GET me), once a request.
 builder.Services.AddScoped<CurrentPartner>();
@@ -68,6 +118,11 @@ builder.Services.AddScoped(sp =>
 });
 
 var app = builder.Build();
+
+// First, so everything after it sees the scheme and address the proxy forwarded.
+app.UseForwardedHeaders();
+// Before anything that writes a response, so all of it is compressed.
+app.UseResponseCompression();
 
 // Deployed under a virtual directory (https://server/<dir>/Dashboard), the app is
 // told the directory here and every address it writes carries it. IIS hands the
@@ -113,7 +168,17 @@ app.Use(async (context, next) =>
     await next();
 });
 
-app.UseStaticFiles();
+// A stylesheet or script written with asp-append-version carries ?v= its content
+// hash, so it can be kept for a year: a change is a new address. Anything else is
+// checked with the server each time.
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        if (ctx.Context.Request.Query.ContainsKey("v"))
+            ctx.Context.Response.Headers.CacheControl = "public, max-age=31536000, immutable";
+    },
+});
 
 app.UseRouting();
 
@@ -128,6 +193,7 @@ app.UsePartner();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHealthChecks("/health");
 
 // The portal may open the app at its root: the way in is Home, with whatever it sent.
 app.MapGet("/", (HttpContext ctx) => Results.LocalRedirect("~/Home" + ctx.Request.QueryString));
