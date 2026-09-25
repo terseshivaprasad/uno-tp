@@ -212,7 +212,7 @@ public sealed record PanCard(string? IdNumber, string? NameOnCard, string? DateO
 /// <param name="QrOutput">Decoded from the QR code, which UIDAI signs, when there is one.</param>
 public sealed record AadhaarExtraction(AadhaarCard? ExtractionOutput, AadhaarCard? QrOutput);
 
-public sealed record AadhaarCard(string? IdNumber, string? NameOnCard, string? Address, string? Gender = null);
+public sealed record AadhaarCard(string? IdNumber, string? NameOnCard, string? Address, string? Gender = null, string? DateOfBirth = null);
 
 /// <param name="IsAMatch">IDfy's decision: whether the two faces are the same person.</param>
 /// <param name="MatchScore">How alike they are.</param>
@@ -231,12 +231,12 @@ public sealed record FaceImage(bool? FaceDetected, string? FaceQuality);
 /// <param name="IdNumberFound">False when there was no Aadhaar number on the copy to mask.</param>
 public sealed record AadhaarMask(bool? IdNumberFound);
 
-public sealed record DrivingLicenceCard(string? IdNumber, string? NameOnCard, string? Address);
+public sealed record DrivingLicenceCard(string? IdNumber, string? NameOnCard, string? Address, string? DateOfBirth = null);
 
-public sealed record PassportPage(string? FileNumber, string? NameOnCard, string? Address);
+public sealed record PassportPage(string? FileNumber, string? NameOnCard, string? Address, string? DateOfBirth = null);
 
 /// <param name="IdNumber">The EPIC number, which IDfy may return partly masked, as T*****0275.</param>
-public sealed record VoterIdCard(string? IdNumber, string? NameOnCard, string? Address);
+public sealed record VoterIdCard(string? IdNumber, string? NameOnCard, string? Address, string? DateOfBirth = null);
 
 /// <summary>What a verify-with-source call found.</summary>
 /// <param name="Status">IDfy's id_found or id_not_found.</param>

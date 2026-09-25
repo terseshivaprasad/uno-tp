@@ -5,7 +5,9 @@ namespace UnoTP.Backend.Mock.External;
 /// <summary>
 /// The mock OCR. A PAN card reads as the holder's PAN and date of birth, under
 /// the name the test data says OCR reads - or, named "otherpan" or "otherdob",
-/// as another PAN or date of birth; a proof of address and a cheque read as what the issuer
+/// as another PAN or date of birth; a proof of address reads as the holder's name
+/// and date of birth (a utility bill prints none), unless named "othername" or
+/// "otherdob"; a proof of address and a cheque read as what the issuer
 /// and the bank hold, unless the copy is named as a mismatch. An Aadhaar also reads
 /// as an Aadhaar number no real one can be - they never start with 0 - so the
 /// PAN-Aadhaar link has one to be asked with - unless the copy is named as masked,
@@ -26,7 +28,8 @@ public sealed class MockOcr : IOcrService
                 Name: NameOn(subject.Pan),
                 Dob: MockScans.Named(file, "otherdob") ? OtherDob : subject.Dob),
             DocumentKind.ProofOfAddress => new OcrReading(
-                Name: subject.Name,
+                Name: MockScans.Named(file, "othername") ? "SOMEONE ELSE ENTIRELY" : subject.Name,
+                Dob: type == "Utility bill" ? "" : MockScans.Named(file, "otherdob") ? OtherDob : subject.Dob,
                 Address: MockScans.Misread(file) ? MockScans.MisreadAddress : MockScans.Address,
                 IdNumber: type != "Aadhaar" ? "" : MockScans.Named(file, "masked") && !MockScans.Named(file, "unmasked") ? MaskedNumber : AadhaarNumber,
                 Gender: type != "Aadhaar" ? "" : GenderOn(subject)),

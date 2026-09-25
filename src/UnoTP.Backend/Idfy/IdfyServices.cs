@@ -117,23 +117,24 @@ public sealed class IdfyOcr(
                 var aadhaar = (await idfy.ExtractAadhaarAsync(file, consent, ct)).Result!;
                 var card = AadhaarNumbers.IsWhole(Digits(aadhaar.QrOutput?.IdNumber)) ? aadhaar.QrOutput : aadhaar.ExtractionOutput;
                 return new OcrReading(Name: card?.NameOnCard ?? "", Address: card?.Address ?? "",
-                    IdNumber: Digits(card?.IdNumber), Gender: Genders.Of(card?.Gender ?? aadhaar.ExtractionOutput?.Gender));
+                    IdNumber: Digits(card?.IdNumber), Gender: Genders.Of(card?.Gender ?? aadhaar.ExtractionOutput?.Gender),
+                    Dob: Dobs.Of(card?.DateOfBirth ?? aadhaar.ExtractionOutput?.DateOfBirth));
 
             case "ind_driving_license":
                 var licence = (await idfy.ExtractDrivingLicenceAsync(file, ct)).Result!.ExtractionOutput;
                 return new OcrReading(Name: licence?.NameOnCard ?? "", Address: licence?.Address ?? "",
-                    IdNumber: licence?.IdNumber ?? "");
+                    IdNumber: licence?.IdNumber ?? "", Dob: Dobs.Of(licence?.DateOfBirth));
 
             case "ind_passport":
                 // A passport is verified by its file number, not its passport number.
                 var passport = (await idfy.ExtractPassportAsync(file, ct)).Result!.ExtractionOutput;
                 return new OcrReading(Name: passport?.NameOnCard ?? "", Address: passport?.Address ?? "",
-                    IdNumber: passport?.FileNumber ?? "");
+                    IdNumber: passport?.FileNumber ?? "", Dob: Dobs.Of(passport?.DateOfBirth));
 
             case "ind_voter_id":
                 var voter = (await idfy.ExtractVoterIdAsync(file, ct)).Result!.ExtractionOutput;
                 return new OcrReading(Name: voter?.NameOnCard ?? "", Address: voter?.Address ?? "",
-                    IdNumber: voter?.IdNumber ?? "");
+                    IdNumber: voter?.IdNumber ?? "", Dob: Dobs.Of(voter?.DateOfBirth));
 
             default:
                 return await fallback.ReadAsync(kind, type, file, subject, consent, ct);

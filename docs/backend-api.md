@@ -125,9 +125,11 @@ Each application in these lists carries its `applied` date. The app counts the
 
 The app asks each check separately, in this order: identification, OCR, then
 whoever answers for what was read. Only after that does it file the copy with
-DMS. Once both a holder's PAN copy and their proof of address are filed,
-the faces on them are compared; for now the answer is only shown, and the proof
-stays filed whatever it says. A holder's PAN copy is taken before their proof of
+DMS. The name and date of birth OCR reads off a proof of address are
+matched with the holder's (a name with an initial or a word left out partly
+matches; a utility bill prints no date of birth). Once both a holder's PAN copy
+and their proof of address are filed, the faces on them are compared; for now both answers are only shown,
+and the proof stays filed whatever they say. A holder's PAN copy is taken before their proof of
 address, and the PAN–Aadhaar link card appears only once an Aadhaar is filed as a
 proof.
 

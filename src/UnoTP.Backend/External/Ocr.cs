@@ -20,7 +20,8 @@ public sealed record OcrSubject(string Pan, string Dob, string Name);
 /// <param name="Account">A cheque's account, masked, with its IFSC and branch.</param>
 /// <param name="Bank">The bank a cheque is drawn on.</param>
 /// <param name="Gender">"Male", "Female" or "Transgender", as an Aadhaar prints it; empty otherwise.</param>
-/// <param name="Dob">The date of birth a PAN card prints, as dd-MM-yyyy; empty otherwise.</param>
+/// <param name="Dob">The date of birth the document prints - a PAN card, or a proof of
+/// address that carries one - as dd-MM-yyyy; empty otherwise.</param>
 public sealed record OcrReading(
     string Pan = "", string Name = "", string Address = "",
     string IdNumber = "", string Account = "", string Bank = "", string Gender = "", string Dob = "");

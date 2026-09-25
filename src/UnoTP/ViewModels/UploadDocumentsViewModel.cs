@@ -604,7 +604,11 @@ public class UploadDocumentsViewModel(
             cards.Add(("PAN–Aadhaar link", LinkApplies(h) ? State.Reads[h.Key("pan")]
                 : NotRead("Not applicable", $"{Mask(h.Who.Pan)} · on the folio",
                     "The PAN–Aadhaar link is asked only for a holder with no folio yet.")));
-        if (View(PoaSlot, h).Used) cards.Add(new ReadItem("PAN–POA face match", FaceOf(h), h.Key("face")));
+        if (View(PoaSlot, h).Used)
+        {
+            cards.Add(new ReadItem("PAN–POA name & DOB", DetailsOf(h), h.Key("details")));
+            cards.Add(new ReadItem("PAN–POA face match", FaceOf(h), h.Key("face")));
+        }
         return cards;
     }
 
@@ -612,6 +616,74 @@ public class UploadDocumentsViewModel(
     private bool AadhaarFiled(DocHolder h) =>
         PoaTypeOf(h) == "Aadhaar" && State.Docs.ContainsKey(h.Key("poa"))
         || MailDifferentOf(h) && MailTypeOf(h) == "Aadhaar" && State.Docs.ContainsKey(h.Key("mail"));
+
+    // ----- The PAN-POA name and date of birth ---------------------------------------
+    // The name and date of birth OCR reads off the proof of address are held up to
+    // the holder's own - the name NSDL or the folio gives, and the date of birth
+    // searched on. For now it is only said: a proof is filed whatever it reads.
+
+    /// <summary>What the proof of address was read to say of the holder, or that it waits on one.</summary>
+    public ReadCard DetailsOf(DocHolder h) =>
+        State.Docs.ContainsKey(h.Key("poa")) && State.Reads.TryGetValue(h.Key("details"), out var card) ? card
+        : new ReadCard("Not yet compared", "Compared once the proof of address is filed.",
+            "The name and date of birth read off the proof are matched with the holder's.", "is-na");
+
+    /// <summary>How a name read off a document stands against the holder's:
+    /// "match", "partial" (initials, or a name left out) or "mismatch".</summary>
+    public static string NameMatch(string read, string holder)
+    {
+        static string[] Words(string name) =>
+            System.Text.RegularExpressions.Regex.Replace(name.ToUpperInvariant(), "[^A-Z ]", " ")
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var (a, b) = (Words(read), Words(holder));
+        if (a.Length == 0 || b.Length == 0) return "mismatch";
+        if (a.SequenceEqual(b) || a.Order().SequenceEqual(b.Order())) return "match";
+        // Every word of the shorter name stands in the longer one, whole or as its
+        // initial - KARAN D MEHTA against KARAN DEEPAK MEHTA - and the first and
+        // last names are among them.
+        var (shorter, longer) = a.Length <= b.Length ? (a, b) : (b, a);
+        var left = longer.ToList();
+        foreach (var w in shorter)
+        {
+            var i = left.FindIndex(l => l == w || w.Length == 1 && l[0] == w[0] || l.Length == 1 && w[0] == l[0]);
+            if (i < 0) return "mismatch";
+            left.RemoveAt(i);
+        }
+        return shorter.Any(w => w.Length > 1) ? "partial" : "mismatch";
+    }
+
+    private void Details(DocHolder h, OcrReading reading, string type, LogEntry entry)
+    {
+        var named = Printed(type);
+        string nameSays, dobSays;
+        bool nameOk, dobOk, dobNa = false;
+        var name = reading.Name.Trim();
+        if (h.Who.Name.Length == 0) (nameSays, nameOk) = ("name not compared: the holder's name is not verified yet", false);
+        else if (name.Length == 0) (nameSays, nameOk) = ("name could not be read", false);
+        else
+        {
+            var match = NameMatch(name, h.Who.Name);
+            (nameSays, nameOk) = match switch
+            {
+                "match" => ("name matches", true),
+                "partial" => ($"name partly matches ({name})", false),
+                _ => ($"name does not match ({name})", false),
+            };
+        }
+        if (!HasPhoto(type)) (dobSays, dobOk, dobNa) = ($"no date of birth on a {named}", true, true);
+        else if (reading.Dob.Length == 0) (dobSays, dobOk) = ("date of birth could not be read", false);
+        else if (reading.Dob == h.Who.Dob) (dobSays, dobOk) = ("date of birth matches", true);
+        else (dobSays, dobOk) = ($"date of birth does not match ({MaskDate(reading.Dob)})", false);
+
+        var bad = nameSays.Contains("does not match") || dobSays.Contains("does not match");
+        var (state, kind) = nameOk && dobOk ? (dobNa ? "Name matches" : "Details match", "is-done")
+            : bad ? ("Do not match", "is-failed")
+            : ("Partly match", "is-failed");
+        State.Reads[h.Key("details")] = new ReadCard(state, $"{Cap(nameSays)} · {dobSays}.",
+            kind == "is-done" ? $"Read off the {named} and matched with the holder's name{(dobNa ? "" : " and date of birth")}."
+                : $"Read off the {named}. The proof is filed; Operations check the details.", kind);
+        entry.Add($"Name and date of birth on the {named}: {nameSays}; {dobSays}.", kind == "is-done" ? "ok" : bad ? "bad" : "warn");
+    }
 
     // ----- The PAN-POA face match -------------------------------------------------
     // The photograph on the PAN copy is compared with the one on the proof of
@@ -623,6 +695,9 @@ public class UploadDocumentsViewModel(
         State.Docs.ContainsKey(h.Key("poa")) && State.Reads.TryGetValue(h.Key("face"), out var card) ? card
         : new ReadCard("Not yet compared", "Compared once the PAN copy and the proof of address are both filed.",
             "The photograph on the PAN copy is matched with the one on the proof of address.", "is-na");
+
+    // A proof named as it is printed in a sentence: the Aadhaar, the Voter ID, the utility bill.
+    private static string Printed(string type) => type.Length == 0 ? "proof" : type == "Utility bill" ? "utility bill" : type;
 
     // A proof whose type carries no photograph has no face to compare.
     private static bool HasPhoto(string proofType) => proofType.Length > 0 && proofType != "Utility bill";
@@ -662,8 +737,7 @@ public class UploadDocumentsViewModel(
             entry.Add($"Face match could not answer: {e.Message}", "warn");
             return;
         }
-        // Named as printed: an Aadhaar, a Passport, a Voter ID.
-        var named = type;
+        var named = Printed(type);
         if (answer.Unsure is { } why)
         {
             Say("Not sure", $"Score {answer.Score} of 100", $"{Cap(why)}. The proof is filed; Operations compare the faces.", "is-failed");
@@ -1389,6 +1463,8 @@ public class UploadDocumentsViewModel(
         s.Docs[key] = filed(check, kind);
         // Taken, so whatever was refused before it is behind the partner.
         s.Attempts[key] = 0;
+
+        if (def.Key == "poa") Details(h, reading, type, entry);
 
         // Both copies filed: the faces on them are compared - again, when either is replaced.
         if (def.Key is "poa" or "pan") await FaceAsync(h, entry);
