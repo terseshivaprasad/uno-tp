@@ -296,7 +296,7 @@ public class InvestorInfoController(
     {
         var appNo = HttpContext.Session.CurrentApplication();
         var app = appNo is null ? null : await applications.FindAsync(appNo);
-        return app is null ? null : ActivatorUtilities.CreateInstance<UploadDocumentsViewModel>(services, app, HttpContext.Session);
+        return app is null ? null : await ActivatorUtilities.CreateInstance<UploadDocumentsViewModel>(services, app, HttpContext.Session).ReadyAsync();
     }
 
     // Saved against the version read, then DMS brought in line. A save refused

@@ -1,4 +1,5 @@
 @model IReadOnlyList<UnoTP.Backend.LogEntry>
+@{ var maxAttempts = (await Lookups.ConfigAsync()).MaxAttempts; }
 @* Every attempt, newest first, each as the checks it went through. *@
 <ol class="cud-log__list">
     @foreach (var entry in Model)
@@ -6,7 +7,7 @@
         <li class="cud-log__row @(entry.Kind.Length > 0 ? "is-" + entry.Kind : null)" id="log-@entry.Id">
             <div class="cud-log__top">
                 <span class="cud-log__doc">@entry.Document</span>
-                <span class="cud-log__try">Attempt @entry.Attempt of @UploadDocumentsViewModel.MaxAttempts</span>
+                <span class="cud-log__try">Attempt @entry.Attempt of @maxAttempts</span>
                 <span class="cud-log__at">@entry.At</span>
                 <span class="cud-log__mark">@entry.Mark</span>
             </div>

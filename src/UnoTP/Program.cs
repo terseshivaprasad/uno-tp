@@ -50,8 +50,8 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true;
 });
 
-// Who the partner is until there is a sign-in: agency type and business broker code.
-builder.Services.Configure<PartnerOptions>(builder.Configuration.GetSection(PartnerOptions.Section));
+// Who the partner is, from the backend (GET me), once a request.
+builder.Services.AddScoped<CurrentPartner>();
 
 // Feature switches: defaults from appsettings, per-session override via ?ff= (see FeatureSet).
 builder.Services.AddHttpContextAccessor();

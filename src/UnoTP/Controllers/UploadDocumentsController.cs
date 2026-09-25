@@ -96,7 +96,7 @@ public class UploadDocumentsController(
     {
         var appNo = HttpContext.Session.CurrentApplication();
         var app = appNo is null ? null : await applications.FindAsync(appNo);
-        return app is null ? null : ActivatorUtilities.CreateInstance<UploadDocumentsViewModel>(services, app, HttpContext.Session);
+        return app is null ? null : await ActivatorUtilities.CreateInstance<UploadDocumentsViewModel>(services, app, HttpContext.Session).ReadyAsync();
     }
 
     // Every post reads the application afresh, changes it, and saves it back

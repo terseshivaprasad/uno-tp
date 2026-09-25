@@ -4,4 +4,5 @@
 @using UnoTP.Features
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 @inject UnoTP.AppUrls Apps
-@inject Microsoft.Extensions.Options.IOptions<UnoTP.Features.PartnerOptions> PartnerSettings
+@inject UnoTP.Features.CurrentPartner Partner
+@inject UnoTP.Features.Lookups Lookups

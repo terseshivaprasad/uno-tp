@@ -34,9 +34,10 @@
         <div class="app-header__right">
             @{
                 // Who is signed in, and as what: a 1033 agency, or a broker under their business code.
-                var partner = PartnerSettings.Value;
-                var asWhat = Context.Session.IsSourcingAgency() ? $"Agency {PartnerSession.SourcingAgency}"
-                    : Context.Session.BrokerCode() is { Length: > 0 } broker ? $"Broker {broker}" : $"Agency {Context.Session.AgencyType()}";
+                var partner = await Partner.ProfileAsync();
+                var sourcingAgency = (await Lookups.ConfigAsync()).SourcingAgency;
+                var asWhat = partner.AgencyType == sourcingAgency ? $"Agency {partner.AgencyType}"
+                    : partner.BrokerCode.Length > 0 ? $"Broker {partner.BrokerCode}" : $"Agency {partner.AgencyType}";
                 var initials = string.Concat(partner.Name.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(w => w[0]));
             }
             <div class="app-header__welcome"><span class="welcome-label">Welcome,</span> @partner.Name <span class="entity-code">@partner.Code</span> <span class="app-header__as">@asWhat</span></div>

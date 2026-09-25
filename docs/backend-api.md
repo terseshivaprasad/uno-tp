@@ -19,7 +19,7 @@ change `BackendClient.cs`: the pages depend only on the interfaces.
 | `Backend:External:{Nsdl,Identify,Masking,Ocr,Verification,PanAadhaarLink,FaceMatch}` | Optional address for each outside service. The default is `{Backend:BaseUrl}/external/{name}/`, which means the backend proxies it. |
 | `Idfy:BaseUrl` | Idfy.Api. When set, IDfy handles the checks it has an endpoint for (see below). |
 | `Idfy:TimeoutSeconds` | Default 75. The Idfy.Api guide asks for at least 70. |
-| `Partner:AgencyType`, `Partner:BrokerCode` | Who the partner is until the app has a sign-in. Agency type `1033` chooses the sourcing mode, broker code and deposit category; any other type sources as `BROKER` under its business broker code, with the category set from the holder's date of birth and gender. While `Features:DemoData` is on, `?agency=2001&broker=BR10874` switches the session's partner. |
+| `Backend:ReferenceCacheMinutes` | Minutes the lists and rules (`GET reference`, `GET config`) are kept for. Default 10; 0 asks every time. |
 
 In the environment, use a double underscore, for example `Backend__BaseUrl`.
 
@@ -44,7 +44,7 @@ again; a failed answer is not kept.
 |---|---|---|---|
 | GET | `reference` | | `ReferenceData`: every list the pages offer (see below) |
 | GET | `config` | | `AppConfig`: the limits and rules the pages check |
-| GET | `me` | | `PartnerProfile`: `name`, `code`, `agencyType`, `brokerCode` of the signed-in partner |
+| GET | `me` | | `PartnerProfile`: `name`, `code`, `agencyType`, `brokerCode` of the signed-in partner. The `sourcingAgency` in `config` chooses the sourcing mode, broker code and deposit category; any other type sources as a broker under `brokerCode`, with the category set from the holder's date of birth and gender. While `Features:DemoData` is on, `?agency=2001&broker=BR10874` shows the app as another kind of partner for the session. |
 | POST | `deposits/quote` | `{ amount, tenureMonths, payout, category, startsOn? }` | `DepositQuote`: `rate`, `interestEach`, `maturityAmount`, `maturesOn`, `rateAsOn` |
 | GET | `ifsc/{code}` | | `BankBranch`: `ifsc`, `bank`, `branch`, `micr`, or 404 |
 

@@ -101,7 +101,7 @@
             <div class="cud-select">
                 <select class="csi-control @(error is null ? null : "is-invalid")" id="@key" name="@key" disabled="@(!used)" data-submit="refresh-@h.Code">
                     <option value="">@(used ? "Select" : "Not Applicable")</option>
-                    @foreach (var p in UploadDocumentsViewModel.ProofsOfAddress)
+                    @foreach (var p in Model.Docs.ProofsOfAddress)
                     {
                         <option value="@p" selected="@(type == p)">@p</option>
                     }

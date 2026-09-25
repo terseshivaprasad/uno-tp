@@ -41,7 +41,8 @@ public class UploadDocumentsViewModel(
     IVerificationService verification,
     IPanAadhaarLinkService panLink,
     IFaceMatchService faces,
-    Microsoft.Extensions.Options.IOptions<UnoTP.Features.PartnerOptions> partner)
+    UnoTP.Features.Lookups lookups,
+    UnoTP.Features.CurrentPartner currentPartner)
 {
     /// <summary>The application the session is on, read afresh for every request.</summary>
     public UnoTP.Backend.Application App { get; } = app;
@@ -222,63 +223,64 @@ public class UploadDocumentsViewModel(
     // accepted through the investor's own link instead, so that slot is not used.
     public const string Digital = "DIGITAL";
     public const string Physical = "PHYSICAL";
-    public static readonly string[] ApplicationTypes = { Digital, Physical };
+
+    // ----- What the backend offers, and who is asking ---------------------------
+    // Read before the page is drawn (see ReadyAsync): every list the step offers,
+    // the rules it keeps, and the partner at the keyboard. None of it is written
+    // here.
+
+    /// <summary>Every list the step offers, from the backend.</summary>
+    public ReferenceData Ref { get; private set; } = null!;
+
+    /// <summary>The limits and rules the step keeps, from the backend.</summary>
+    public AppConfig Config { get; private set; } = null!;
+
+    /// <summary>The partner at the keyboard, from the backend.</summary>
+    public PartnerProfile Partner { get; private set; } = null!;
+
+    /// <summary>Reads the lists, the rules and the partner. Every request calls it before the model is used.</summary>
+    public async Task<UploadDocumentsViewModel> ReadyAsync(CancellationToken ct = default)
+    {
+        var (reference, config, partner) = (lookups.ReferenceAsync(ct), lookups.ConfigAsync(ct), currentPartner.ProfileAsync(ct));
+        (Ref, Config, Partner) = (await reference, await config, await partner);
+        return this;
+    }
+
+    public IReadOnlyList<Option> ApplicationTypes => Ref.ApplicationTypes;
 
     /// <summary>What a digital application carries where a paper one carries its form number.</summary>
     public const string DigitalFormNo = "0000";
 
-    public static readonly string[] ProofsOfAddress =
-    {
-        "Aadhaar", "Passport", "Driving Licence", "Voter ID", "Utility bill",
-    };
+    /// <summary>The proofs of address the step takes, by type.</summary>
+    public IReadOnlyList<string> ProofsOfAddress => [.. Ref.ProofsOfAddress.Select(p => p.Type)];
 
     // Only the modes settled by an instrument carry a document; the rest are
     // settled electronically and have nothing to file.
-    public record PaymentMode(string Name, string? Document);
-
-    public static readonly PaymentMode[] PaymentModes =
-    {
-        new("Online", null),
-        new("RTGS", null),
-        new("Cheque", "cheque"),
-    };
+    public IReadOnlyList<PaymentModeOption> PaymentModes => Ref.PaymentModes;
 
     // The partner in the top bar, whose code fills the sourcing field.
-    private string PartnerCode => partner.Value.Code;
+    private string PartnerCode => Partner.Code;
 
     // ----- What a deposit is booked as -------------------------------------------
-    public const string General = "PUBLIC/GENERAL";
-    public const string Women = "WOMEN";
-    public const string Senior = "SR CITIZEN";
-    public const string SeniorWomen = "SR CITIZEN WOMEN";
 
-    // An employee deposit is booked against a staff record, which is what the
-    // block of employee fields is for. Only a 1033 partner books one.
-    public const string EmployeeCategory = "EMPLOYEE";
-    public const string EmployeeWomen = "EMPLOYEE WOMEN";
+    /// <summary>Whether a category is booked against a staff record - which is what
+    /// the block of employee fields is for, and only a sourcing agency books.</summary>
+    public bool IsEmployee(string category) => Ref.Categories.Any(c => c.Code == category && c.Employee);
 
-    public static bool IsEmployee(string category) => category is EmployeeCategory or EmployeeWomen;
-
-    /// <summary>A senior citizen is 60 or over on the day the deposit is booked.</summary>
-    public const int SeniorAge = 60;
+    /// <summary>A category as the backend names it.</summary>
+    public string CategoryName(string code) => Ref.Categories.FirstOrDefault(c => c.Code == code)?.Name ?? code;
 
     /// <summary>
     /// The category the holder's date of birth and gender make them: a senior
-    /// citizen from 60, and the women's category of either for a woman. With no
-    /// gender known yet, the one the date of birth alone gives.
+    /// citizen from the senior age, and the women's category of either for a
+    /// woman. With no gender known yet, the one the date of birth alone gives.
     /// </summary>
-    public static string CategoryFor(string dob, string gender, DateTime today)
+    public string CategoryFor(string dob, string gender, DateTime today)
     {
         var senior = DateTime.TryParseExact(dob, "dd-MM-yyyy", System.Globalization.CultureInfo.InvariantCulture,
-            System.Globalization.DateTimeStyles.None, out var born) && born.AddYears(SeniorAge) <= today.Date;
+            System.Globalization.DateTimeStyles.None, out var born) && born.AddYears(Config.SeniorAge) <= today.Date;
         var woman = gender == Genders.Female;
-        return (senior, woman) switch
-        {
-            (true, true) => SeniorWomen,
-            (true, false) => Senior,
-            (false, true) => Women,
-            _ => General,
-        };
+        return Ref.Categories.FirstOrDefault(c => !c.Employee && c.Senior == senior && c.Women == woman)?.Code ?? "";
     }
 
     // ----- How the application is sourced --------------------------------------
@@ -315,38 +317,11 @@ public class UploadDocumentsViewModel(
         public const string Employees = "employees";
     }
 
-    /// <summary>
-    /// A way an application is sourced. <c>House</c> is the code the mode stands
-    /// in the first field itself, where it does; <c>Search</c> names the field
-    /// that is searched - "source" for the first, "sub" for the second - and
-    /// <c>Register</c> what it is searched against.
-    /// </summary>
-    public record SourcingMode(
-        string Code, string Name, string CodeLabel, string NameLabel,
-        string House, string Search, string Register, string Sub, string[] Categories);
+    /// <summary>The ways an application can be sourced, in the backend's order.</summary>
+    public IReadOnlyList<SourcingModeOption> SourcingModes => Ref.SourcingModes;
 
-    private static readonly string[] Public = { General, Women, Senior, SeniorWomen };
-
-    /// <summary>
-    /// The four modes the old screen offers a partner, in its own order. The
-    /// screen posts them by number and hangs everything off that number: BROKER
-    /// is the one where the code is typed, and each of the other three stands its
-    /// own house code in the field and asks for nothing there.
-    /// </summary>
-    public static readonly SourcingMode[] SourcingModes =
-    {
-        new("2", "BROKER", "Broker Code", "Broker Name",
-            "", "source", Register.Brokers, SubField.Free, Public),
-        new("1", "MMFSS - BRANCH", "Sourcing Employee Code", "Sourcing Employee Name",
-            "MFL", "", Register.None, SubField.House, Public),
-        new("5", "MFL-EX", "Sourcing Employee Code", "Sourcing Employee Name",
-            "MFL-EX", "sub", Register.Employees, SubField.Employee, new[] { EmployeeCategory, EmployeeWomen }),
-        new("6", "MFIS/FD", "Sourcing Employee Code", "Sourcing Employee Name",
-            "MIBS", "sub", Register.Employees, SubField.EmployeeShut, Public),
-    };
-
-    /// <summary>The broker mode, the only one a partner other than 1033 sources under.</summary>
-    public static SourcingMode BrokerMode => SourcingModes[0];
+    /// <summary>The broker mode, the only one a partner other than the sourcing agency sources under.</summary>
+    public SourcingModeOption BrokerMode => SourcingModes.First(m => m.Register == Register.Brokers);
 
     /// <summary>
     /// Whether the partner chooses how the application is sourced and what it is
@@ -354,10 +329,10 @@ public class UploadDocumentsViewModel(
     /// business broker code, and the category follows the holder's date of birth
     /// and gender.
     /// </summary>
-    public bool Chooses => UnoTP.Features.PartnerSession.IsSourcingAgency(session);
+    public bool Chooses => Partner.AgencyType == Config.SourcingAgency;
 
-    /// <summary>The business broker code a partner other than 1033 files under.</summary>
-    public string BusinessBroker => UnoTP.Features.PartnerSession.BrokerCode(session);
+    /// <summary>The business broker code a partner other than the sourcing agency files under.</summary>
+    public string BusinessBroker => Partner.BrokerCode;
 
     /// <summary>The gender the category is set from: the folio's, else an Aadhaar's read here.</summary>
     public string HolderGender => GenderIn(State);
@@ -393,12 +368,11 @@ public class UploadDocumentsViewModel(
     public string? StaffName(string code) =>
         Staff.FirstOrDefault(p => p.Code.Equals(code, StringComparison.OrdinalIgnoreCase))?.Name;
 
-    public static readonly string[] EmployeeHolders = { "First holder", "Second holder", "Third holder" };
+    public IReadOnlyList<string> EmployeeHolders => Ref.EmployeeHolders;
 
-    public static readonly string[] EmployeeRelations = { "Self", "Spouse", "Parent", "Child", "Sibling" };
+    public IReadOnlyList<string> EmployeeRelations => Ref.EmployeeRelations;
 
-    public static readonly string[] EmployeeProofs =
-        { "Employee ID card", "Appointment letter", "Latest salary slip" };
+    public IReadOnlyList<string> EmployeeProofs => Ref.EmployeeProofs;
 
     // ----- The address the application carries ---------------------------------
     // A proof of address is not filed on its own: OCR reads the address off it and
@@ -412,14 +386,7 @@ public class UploadDocumentsViewModel(
     /// <summary>Who stands behind each proof, as the empty box names them before
     /// anything is uploaded. A bill has no register to ask, so it is Operations who
     /// settle it and the address is left as it stands.</summary>
-    public static readonly Dictionary<string, string> Issuers = new()
-    {
-        ["Aadhaar"] = "UIDAI",
-        ["Passport"] = "Passport Seva",
-        ["Driving Licence"] = "Sarathi",
-        ["Voter ID"] = "the Election Commission",
-        ["Utility bill"] = "",
-    };
+    public IReadOnlyDictionary<string, string> Issuers => Ref.ProofsOfAddress.ToDictionary(p => p.Type, p => p.Issuer);
 
     /// <summary>Who answers for a PAN.</summary>
     public const string PanAuthority = "the Income Tax Department";
@@ -469,8 +436,8 @@ public class UploadDocumentsViewModel(
     /// each joint holder on Investor Information. The rest belong to the application.</summary>
     public static readonly SlotDef[] HolderSlots = [PanSlot, PhotoSlot, PoaSlot, MailSlot];
 
-    /// <summary>Three refusals in a row and a document goes to Operations.</summary>
-    public const int MaxAttempts = 3;
+    /// <summary>Refusals in a row before a document goes to Operations, from the backend's rules.</summary>
+    public int MaxAttempts => Config.MaxAttempts;
 
     /// <summary>What a slot shows: whether it is asked for at all, and what is in it.</summary>
     /// <param name="Key">The slot's key for its holder, which its markup and posts carry.</param>
@@ -478,7 +445,7 @@ public class UploadDocumentsViewModel(
     public sealed record SlotView(
         SlotDef Def, string Key, bool Used, string? NotApplicable, string? Locked, StoredDoc? Doc,
         string? Must, string? With, int Attempts, string? Error, string? ErrorLog, bool Optional = false,
-        ReadCard? Read = null, string? LockedHint = null)
+        ReadCard? Read = null, string? LockedHint = null, int MaxAttempts = int.MaxValue)
     {
         /// <summary>Wanted before the step can go on: asked for, not optional, and not in yet.</summary>
         public bool Missing => Used && !Optional && Doc is null;
@@ -576,7 +543,7 @@ public class UploadDocumentsViewModel(
             optional ? "Not mandatory: the holder is on a folio." : null,
             with, s.AttemptsOf(key),
             flash?.Errors.GetValueOrDefault(key), flash?.ErrorLog.GetValueOrDefault(key), optional, read,
-            waitsOnPan ? "The proof is checked against the holder the PAN copy establishes." : null);
+            waitsOnPan ? "The proof is checked against the holder the PAN copy establishes." : null, MaxAttempts);
     }
 
     /// <summary>
@@ -726,7 +693,7 @@ public class UploadDocumentsViewModel(
 
     /// <summary>The number a proof carries, labelled as it is shown: an Aadhaar by its
     /// last four digits only, anything else in full.</summary>
-    public static string ProofNumber(string type, OcrReading reading)
+    public string ProofNumber(string type, OcrReading reading)
     {
         var number = (reading.Number.Length > 0 ? reading.Number : reading.IdNumber).Trim();
         if (number.Length == 0) return "";
@@ -734,7 +701,7 @@ public class UploadDocumentsViewModel(
         {
             "Aadhaar" => number.Replace(" ", "") is { Length: >= 4 } digits ? $"Aadhaar XXXX XXXX {digits[^4..]}" : "",
             "Driving Licence" => "DL " + number,
-            "Utility bill" => "",
+            _ when !HasPhoto(type) => "",
             _ => $"{type} {number}",
         };
     }
@@ -759,10 +726,11 @@ public class UploadDocumentsViewModel(
             System.Globalization.DateTimeStyles.None, out var until) && until < DateTime.Today;
 
     // A proof named as it is printed in a sentence: the Aadhaar, the Voter ID, the utility bill.
-    private static string Printed(string type) => type.Length == 0 ? "proof" : type == "Utility bill" ? "utility bill" : type;
+    // A proof with no photograph is a paper - a bill - named in lower case; an ID keeps its capitals.
+    private string Printed(string type) => type.Length == 0 ? "proof" : HasPhoto(type) ? type : type.ToLowerInvariant();
 
     // A proof whose type carries no photograph has no face to compare.
-    private static bool HasPhoto(string proofType) => proofType.Length > 0 && proofType != "Utility bill";
+    private bool HasPhoto(string proofType) => Ref.ProofsOfAddress.Any(p => p.Type == proofType && p.HasPhoto);
 
     private async Task FaceAsync(DocHolder h, LogEntry entry)
     {
@@ -874,10 +842,10 @@ public class UploadDocumentsViewModel(
     private static ReadCard MailCard() => new("Not yet read", "Read off the communication address proof once one is filed.",
         "Confirmed with whoever issued the proof, as the permanent address is.");
 
-    public static string? DocumentOf(string payMode) =>
+    public string? DocumentOf(string payMode) =>
         PaymentModes.FirstOrDefault(m => m.Name == payMode)?.Document;
 
-    public static SourcingMode? ModeOf(string code) => SourcingModes.FirstOrDefault(m => m.Code == code);
+    public SourcingModeOption? ModeOf(string code) => SourcingModes.FirstOrDefault(m => m.Code == code);
 
     // ===== The state of this application =======================================
 
@@ -1262,11 +1230,11 @@ public class UploadDocumentsViewModel(
         // What a deposit may be booked as belongs to the mode. A mode with one
         // category settles it; otherwise what was chosen stands if the mode allows it.
         var chosen = Posted.Category ?? s.Category;
-        s.Category = mode.Categories.Length == 1 ? mode.Categories[0]
+        s.Category = mode.Categories.Count == 1 ? mode.Categories[0]
             : mode.Categories.Contains(chosen) ? chosen : "";
     }
 
-    public static bool SubRequired(SourcingMode mode) => mode.Sub is SubField.Employee or SubField.EmployeeShut;
+    public static bool SubRequired(SourcingModeOption mode) => mode.Sub is SubField.Employee or SubField.EmployeeShut;
 
     // ===== Taking a document ===================================================
 
@@ -1829,7 +1797,7 @@ public class UploadDocumentsViewModel(
     // ===== What the page says about the rest ===================================
 
     /// <summary>The name a register holds against a code field, or why there is none.</summary>
-    public (string Text, bool Found)? Resolved(SourcingMode? mode, bool sub)
+    public (string Text, bool Found)? Resolved(SourcingModeOption? mode, bool sub)
     {
         var value = sub ? State.SubBroker : State.SourceCode;
         if (mode is null || value.Length == 0) return null;
@@ -1844,7 +1812,7 @@ public class UploadDocumentsViewModel(
     }
 
     /// <summary>What a code field is searched against under the mode, if it is searched at all.</summary>
-    public IReadOnlyList<Party> RegisterOf(SourcingMode? mode, bool sub)
+    public IReadOnlyList<Party> RegisterOf(SourcingModeOption? mode, bool sub)
     {
         if (mode is null || mode.Search != (sub ? "sub" : "source")) return [];
         return mode.Register switch
