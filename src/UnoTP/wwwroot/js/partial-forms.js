@@ -12,6 +12,13 @@
   if (!window.fetch || !window.DOMParser) return;
 
   var busy = false;
+  // A post made while another is on its way: it waits its turn rather than being
+  // dropped, taken as the form stood when it was made. Only the latest waits - it
+  // carries every change before it, since the form holds them all.
+  var waiting = null;
+  // Set while a changed control submits its form, so only such a post waits: a
+  // button pressed twice still goes once.
+  var changing = false;
 
   // A control that reshapes the page submits its form as soon as it changes,
   // through the button it names: a file picked is uploaded, a choice redraws.
@@ -26,7 +33,8 @@
     if (ask && !window.confirm(ask)) { restore(el); return; }
     // Which control changed, so the page can come back to it.
     if (button.name === 'refresh') button.value = el.id || el.name;
-    button.form.requestSubmit(button);
+    changing = true;
+    try { button.form.requestSubmit(button); } finally { changing = false; }
   });
 
   function restore(el) {
@@ -46,7 +54,6 @@
     var form = e.target;
     if (!form.hasAttribute('data-partial') || form.dataset.partialOff) return;
     e.preventDefault();
-    if (busy) return;
 
     var button = e.submitter || null;
     var method = ((button && button.getAttribute('formmethod')) || form.getAttribute('method') || 'get').toLowerCase();
@@ -66,11 +73,16 @@
       init.body = data;
     }
 
-    go(url, init, method === 'get', button, function () {
+    var fallback = function () {
       // Could not reach the server this way: post it the ordinary way instead.
       form.dataset.partialOff = '1';
       form.requestSubmit(button);
-    });
+    };
+    if (busy) {
+      if (changing) waiting = [url, init, method === 'get', button, fallback];
+      return;
+    }
+    go(url, init, method === 'get', button, fallback);
   });
 
   document.addEventListener('click', function (e) {
@@ -98,15 +110,24 @@
         // move to that page, not an update of this one.
         var to = new URL(res.url);
         if (to.pathname !== window.location.pathname) {
+          waiting = null;
           window.location.href = res.url;
           return null;
         }
+        // A newer post is waiting, so this answer is already out of date: drawing
+        // it would put back what the partner has changed since.
+        if (waiting) return null;
         return res.text().then(function (html) { swap(html, res.url, push); });
       })
       .catch(fallback)
       .then(function () {
         busy = false;
         if (window.hideLoader) window.hideLoader();
+        if (waiting) {
+          var next = waiting;
+          waiting = null;
+          go.apply(null, next);
+        }
       });
   }
 

@@ -2311,13 +2311,6 @@ body:has(.rdocs:popover-open) { overflow: hidden; }
    magnifier and a circular arrow on their own read as zoom and refresh. */
 .cud-slot__tools { position: absolute; bottom: 14px; right: 14px; z-index: 2; display: flex; justify-content: flex-end; gap: 6px; }
 .cud-slot__tools[hidden] { display: none; }
-/* What the card is for, at its top left inside the card: a glyph in the brand red
-   and the name beside it. It reads over the card, so a click still lands on it. */
-.cud-slot__head { position: absolute; top: 13px; left: 16px; right: 16px; z-index: 2; display: flex; align-items: center; gap: 7px; min-width: 0; pointer-events: none; }
-.cud-slot__glyph { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 6px; background: var(--pink-bg); color: var(--red); }
-.cud-slot__name { font-size: 12.5px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.cud-slot__head .cud-type { margin-left: 0; flex: none; }
-.cud-slot__head .cud-optional { flex: none; white-space: nowrap; }
 .cud-tool { display: inline-flex; align-items: center; gap: 5px; padding: 5px 9px; border: 1px solid var(--border-2); border-radius: 6px; background: #fff; font-family: inherit; font-size: 11.5px; font-weight: 600; color: var(--red); cursor: pointer; }
 .cud-tool svg { flex: none; }
 .cud-tool:disabled { border-color: var(--divider); color: var(--muted-2); cursor: not-allowed; }
@@ -2442,7 +2435,7 @@ body:has(.rdocs:popover-open) { overflow: hidden; }
 /* Every document box is the same size whatever it holds - empty, filed, locked,
    refused or not applicable - so a row of them lines up. What a box says is held
    to a few lines inside it; the rest is in the note under the box and the history. */
-.cud-drop, .cud-slot__na { height: 236px; min-height: 0; overflow: hidden; padding-top: 48px; }
+.cud-drop, .cud-slot__na { height: 204px; min-height: 0; overflow: hidden; }
 .cud-drop__title, .cud-drop__hint, .cud-drop__with, .cud-drop__must, .cud-slot__na-why {
   display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden;
 }
@@ -2464,6 +2457,8 @@ label.cud-tool { cursor: pointer; }
 
 /* The application type's toggle is a pair of radios: the checked one is lit. */
 label.seg-toggle__opt { display: inline-block; }
+/* A toggle made of radios is lit by the checked radio alone, so a click moves the
+   red at once - never two options lit while the server answers. */
 .seg-toggle__opt:has(input:checked) { background: var(--red); color: #fff; font-weight: 600; }
 .seg-toggle__opt:has(input:focus-visible) { outline: 2px solid var(--blue); outline-offset: -2px; }
 .seg-toggle__opt:has(input:disabled) { background: var(--tint); color: var(--muted-2); cursor: not-allowed; }
@@ -2481,7 +2476,7 @@ label.seg-toggle__opt { display: inline-block; }
    state it is in on the left, and what it says beside it, both on the same
    baseline a form field would keep. A phone gets the stack back. */
 @media (min-width: 761px) {
-  .cud-drop, .cud-slot__na { height: 204px; padding: 50px 20px 18px; }
+  .cud-drop, .cud-slot__na { height: 172px; padding: 18px 20px; }
   .cud-drop { justify-content: flex-start; text-align: left; }
   .cud-drop__idle, .cud-drop__busy, .cud-drop__locked, .cud-drop__done {
     display: grid; width: 100%; grid-template-columns: auto minmax(0, 1fr);
@@ -2506,6 +2501,24 @@ label.seg-toggle__opt { display: inline-block; }
   .cud-slot .csi-error { text-align: left; }
   .cud-slot__tries { text-align: left; }
 }
+
+/* The mark of the card's state - the upload arrow, the tick, the failed or
+   refused mark, the Not applicable dash, the lock - stands at the card's top
+   left at every width, and what the card says runs beside it from the top. */
+.cud-drop, .cud-slot__na { align-items: flex-start; justify-content: flex-start; text-align: left; }
+.cud-drop__idle, .cud-drop__busy, .cud-drop__locked, .cud-drop__done {
+  display: grid; width: 100%; grid-template-columns: auto minmax(0, 1fr);
+  align-items: start; column-gap: 14px; row-gap: 3px; text-align: left;
+}
+.cud-drop__icon, .cud-drop__check, .cud-drop__lock, .cud-drop__spinner {
+  grid-column: 1; grid-row: 1 / -1; align-self: start; margin-bottom: 0;
+}
+.cud-drop__idle > :not(.cud-drop__icon),
+.cud-drop__locked > :not(.cud-drop__lock),
+.cud-drop__busy > :not(.cud-drop__spinner),
+.cud-drop__done > :not(.cud-drop__check) { grid-column: 2; }
+.cud-drop.is-held .cud-drop__check, .cud-drop.is-read .cud-drop__check { align-self: start; }
+.cud-slot__na-mark { align-self: flex-start; }
 
 /* ----- The wait ------------------------------------------------------------
    One screen for every wait in the app. It covers what is behind it rather than
@@ -2555,10 +2568,10 @@ body.is-waiting { overflow: hidden; }
    The document is filed, so the mark stays - it just stops being green. */
 .cud-slot.is-unconfirmed .cud-drop__check { background: var(--amber-bg); color: var(--amber); }
 /* What the application has left for this document, of the three it allows. */
-.cud-slot__tries { padding-top: 6px; font-size: 11px; text-align: center; color: var(--muted-2); }
+.cud-slot__tries { padding-top: 6px; font-size: 11px; text-align: left; color: var(--muted-2); }
 .cud-slot__tries[hidden] { display: none; }
 .cud-slot__tries.is-spent { font-weight: 600; color: var(--red-dark); }
-.cud-slot .csi-error { text-align: center; }
+.cud-slot .csi-error { text-align: left; }
 /* The way from a refusal to the entry that records it. */
 .cud-why { font-family: inherit; font-size: inherit; font-weight: 700; color: var(--red-dark); text-decoration: underline; cursor: pointer; white-space: nowrap; }
 
@@ -3070,9 +3083,9 @@ a.view-switch__opt:hover { background: var(--tint); color: var(--ink); text-deco
 /* Every read card is the size of a document box, whatever it says: what it read
    and where that came from are held to two lines each. Only NSDL asking for the
    name printed on the PAN grows, to take the field. */
-.cud-read__card { height: 236px; overflow: hidden; display: flex; flex-direction: column; }
+.cud-read__card { height: 204px; overflow: hidden; display: flex; flex-direction: column; }
 /* Every box on the step is one height: the cards keep the document boxes' own. */
-@media (min-width: 761px) { .cud-read__card { height: 204px; } }
+@media (min-width: 761px) { .cud-read__card { height: 172px; } }
 .cud-read__card .cud-read__lines, .cud-read__card .cud-read__from {
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; padding-top: 7px;
 }

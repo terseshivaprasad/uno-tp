@@ -52,9 +52,9 @@
     }
 
     // One document slot, drawn by the partial Investor Information shares.
-    async Task Slot(M.SlotView v, string? form = null, string? proofType = null)
+    async Task Slot(M.SlotView v, string? form = null)
     {
-        <partial name="_DocSlot" model="@(new DocSlotBlock(v, Url.Action("Upload")!, form, proofType))" />
+        <partial name="_DocSlot" model="@(new DocSlotBlock(v, Url.Action("Upload")!, form))" />
     }
 }
 
@@ -133,7 +133,7 @@
                     @foreach (var t in Model.ApplicationTypes)
                     {
                         var shut = s.Ckyc && t.Code == M.Physical;
-                        <label class="seg-toggle__opt @(s.AppType == t.Code ? "seg-toggle__opt--active" : null)" title="@(shut ? "A CKYC application is completed online, so it cannot be filed on paper." : null)">
+                        <label class="seg-toggle__opt" title="@(shut ? "A CKYC application is completed online, so it cannot be filed on paper." : null)">
                             <input class="visually-hidden" type="radio" name="appType" id="cudAppType@(t.Code)" value="@t.Code" checked="@(s.AppType == t.Code)" disabled="@shut" data-submit="cudRefresh">@t.Name.ToUpperInvariant()
                         </label>
                     }
@@ -151,7 +151,7 @@
                     {
                         var on = Model.MailDifferentOf(Model.Investor) == (value == "different");
                         var shut = value == "different" && !Model.MailCanDiffer(Model.Investor);
-                        <label class="seg-toggle__opt @(on ? "seg-toggle__opt--active" : null)" title="@(shut ? Model.View(M.MailSlot).NotApplicable : null)">
+                        <label class="seg-toggle__opt" title="@(shut ? Model.View(M.MailSlot).NotApplicable : null)">
                             <input class="visually-hidden" type="radio" name="mailing" id="cudMailing-@value" value="@value" checked="@on" disabled="@shut" data-submit="cudRefresh" data-confirm="@(value == "same" && !on && Model.View(M.MailSlot).Doc is not null ? M.MailDropAsk : null)">@label
                         </label>
                     }
@@ -220,24 +220,31 @@
 
         <div class="cud-grid cud-grid--docs">
             <div class="cud-col">
+                <span class="csi-label">Application form</span>
                 @{ await Slot(views["form"]); }
             </div>
 
             @* The PAN copy the application is filed with. It comes over already
                filed when the step before uploaded or matched one. *@
             <div class="cud-col">
+                <span class="csi-label">PAN @if (views["pan"].Optional) { <span class="cud-optional">(Non-mandatory)</span> }</span>
                 @{ await Slot(views["pan"]); }
             </div>
 
             <div class="cud-col">
+                <span class="csi-label">Photo</span>
                 @{ await Slot(views["photo"]); }
             </div>
 
             <div class="cud-col">
                 @* With document identification, the type is what the copy is identified
-                   as once it is uploaded, shown beside the card's label. Without it, the type is
+                   as once it is uploaded, shown beside the label. Without it, the type is
                    chosen first, and the box waits for it. *@
-                @if (!Model.AutoProofType)
+                @if (Model.AutoProofType)
+                {
+                    <span class="csi-label">Proof of address <partial name="_ProofType" model="@(poaUsed ? s.PoaType : null)" /></span>
+                }
+                else
                 {
                     <label class="csi-label" for="cudPoaType">Proof of address</label>
                     <div class="cud-select">
@@ -251,11 +258,15 @@
                     </div>
                     await FieldError("cudPoaType");
                 }
-                @{ await Slot(views["poa"], proofType: Model.AutoProofType && poaUsed ? s.PoaType : null); }
+                @{ await Slot(views["poa"]); }
             </div>
 
             <div class="cud-col">
-                @if (!Model.AutoProofType)
+                @if (Model.AutoProofType)
+                {
+                    <span class="csi-label">Communication address proof <partial name="_ProofType" model="@(mailUsed ? s.MailPoaType : null)" /></span>
+                }
+                else
                 {
                     <label class="csi-label" for="cudMailType">Communication address proof</label>
                     <div class="cud-select">
@@ -269,7 +280,7 @@
                     </div>
                     await FieldError("cudMailType");
                 }
-                @{ await Slot(views["mail"], proofType: Model.AutoProofType && mailUsed ? s.MailPoaType : null); }
+                @{ await Slot(views["mail"]); }
             </div>
 
         </div>

@@ -87,8 +87,11 @@
     // identified as beside it; without, the drop-down the type is chosen from first.
     private async Task ProofLabel(UploadDocumentsViewModel.DocHolder h, string field, string label, bool used, string type)
     {
-        // With document identification the type stands beside the card's own label.
-        if (!Model.Docs.AutoProofType)
+        if (Model.Docs.AutoProofType)
+        {
+            <span class="csi-label">@label <partial name="_ProofType" model="@(used ? type : null)" /></span>
+        }
+        else
         {
             var key = h.Key(field);
             var error = Model.Docs.Shown?.Errors.GetValueOrDefault(key);
@@ -136,7 +139,7 @@
                     {
                         var on = different == (value == "different");
                         var shut = value == "different" && !canDiffer;
-                        <label class="seg-toggle__opt @(on ? "seg-toggle__opt--active" : null)" title="@(shut ? mail.NotApplicable : null)">
+                        <label class="seg-toggle__opt" title="@(shut ? mail.NotApplicable : null)">
                             <input class="visually-hidden" type="radio" name="@h.Key("mailing")" id="@h.Key("mailing")-@value" value="@value" checked="@on" disabled="@shut" data-submit="refresh-@h.Code" data-confirm="@(value == "same" && !on && mail.Doc is not null ? UploadDocumentsViewModel.MailDropAsk : null)">@label
                         </label>
                     }
@@ -145,18 +148,20 @@
         </div>
         <div class="cud-grid cud-grid--docs">
             <div class="cud-col">
+                <span class="csi-label">PAN @if (pan.Optional) { <span class="cud-optional">(Non-mandatory)</span> }</span>
                 <partial name="_DocSlot" model="@(new DocSlotBlock(pan, upload))" />
             </div>
             <div class="cud-col">
+                <span class="csi-label">Photo</span>
                 <partial name="_DocSlot" model="@(new DocSlotBlock(docs.View(UploadDocumentsViewModel.PhotoSlot, h), upload))" />
             </div>
             <div class="cud-col">
                 @{ await ProofLabel(h, "poaType", "Proof of address", poa.Used, docs.PoaTypeOf(h)); }
-                <partial name="_DocSlot" model="@(new DocSlotBlock(poa, upload, ProofType: Model.Docs.AutoProofType && poa.Used ? docs.PoaTypeOf(h) : null))" />
+                <partial name="_DocSlot" model="@(new DocSlotBlock(poa, upload))" />
             </div>
             <div class="cud-col">
                 @{ await ProofLabel(h, "mailType", "Communication address proof", mail.Used, docs.MailTypeOf(h)); }
-                <partial name="_DocSlot" model="@(new DocSlotBlock(mail, upload, ProofType: Model.Docs.AutoProofType && mail.Used ? docs.MailTypeOf(h) : null))" />
+                <partial name="_DocSlot" model="@(new DocSlotBlock(mail, upload))" />
             </div>
         </div>
 
