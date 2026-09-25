@@ -32,6 +32,26 @@ public sealed class MockApplications(MockStore store, IPartner partner) : IAppli
     public Task<int?> SaveUploadAsync(string appNo, int version, UploadState upload, CancellationToken ct = default) =>
         Task.FromResult(store.SaveUpload(partner.Id, appNo, version, upload));
 
+    public Task<int?> SaveDetailsAsync(string appNo, int version, ApplicationDetails details, CancellationToken ct = default) =>
+        Task.FromResult(store.Save(partner.Id, appNo, version, app => app.Details = details)?.Version);
+
+    public Task<int?> SavePaymentAsync(string appNo, int version, PaymentDetails payment, CancellationToken ct = default) =>
+        Task.FromResult(store.Save(partner.Id, appNo, version, app => app.Payment = payment)?.Version);
+
+    public Task<int?> SaveDepositAsync(string appNo, int version, DepositDetails deposit, CancellationToken ct = default) =>
+        Task.FromResult(store.Save(partner.Id, appNo, version, app => app.Deposit = deposit)?.Version);
+
+    // Submitting sends the investor the payment link, to the mobile number on the
+    // investor's details, open for the hours the rules give a payment link.
+    public Task<Application?> SubmitAsync(string appNo, int version, CancellationToken ct = default) =>
+        Task.FromResult(store.Save(partner.Id, appNo, version, app =>
+        {
+            var mobile = app.Details?.Holders.FirstOrDefault(h => h.Holder == HolderType.Investor)?.Mobile ?? "";
+            var masked = mobile.Length >= 4 ? new string('•', mobile.Length - 4) + mobile[^4..] : mobile;
+            var now = DateTime.Now;
+            app.Submitted = new Submission(now, "payment-pending", masked, now.AddHours(MockReference.PaymentLinkHours));
+        }));
+
     public Task<IReadOnlyList<DraftSummary>> DraftsAsync(CancellationToken ct = default) =>
         Task.FromResult<IReadOnlyList<DraftSummary>>(MockInFlight.Drafts.Select(d => d.Summary).ToList());
 

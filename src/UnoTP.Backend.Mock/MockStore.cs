@@ -57,18 +57,26 @@ public sealed class MockStore(IConfiguration config)
         return entries.TryGetValue(appNo, out var entry) ? Read(entry, owner) : null;
     }
 
-    public int? SaveUpload(string owner, string appNo, int version, UploadState upload)
+    public int? SaveUpload(string owner, string appNo, int version, UploadState upload) =>
+        Save(owner, appNo, version, app => app.Upload = upload)?.Version;
+
+    /// <summary>
+    /// Changes the owner's application, if it is still at <paramref name="version"/>,
+    /// and moves it on a version. The application as saved, or null when it changed
+    /// in between and nothing was saved.
+    /// </summary>
+    public Application? Save(string owner, string appNo, int version, Action<Application> change)
     {
         if (!entries.TryGetValue(appNo, out var entry) || entry.Owner != owner) return null;
         lock (entry.Gate)
         {
             if (entry.Version != version) return null;
             var app = JsonSerializer.Deserialize<Application>(entry.Json, Json)!;
-            app.Upload = upload;
+            change(app);
             app.Version = ++entry.Version;
             entry.Json = JsonSerializer.Serialize(app, Json);
             entry.Seen = DateTime.UtcNow;
-            return entry.Version;
+            return JsonSerializer.Deserialize<Application>(entry.Json, Json);
         }
     }
 

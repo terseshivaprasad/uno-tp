@@ -1,4 +1,6 @@
+using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 using UnoTP.Backend;
 using UnoTP.Features;
 using UnoTP.Models;
@@ -49,6 +51,9 @@ public class InvestorInfoController(
         HttpContext.Session.Write<Flash>(FlashKey(docs), null);
 
         var state = State;
+        // A page opened afresh - a new session, or a new visit - opens on what the
+        // backend holds for it.
+        if (state.Fields.Count == 0 && docs.App.Details is { } saved) InvestorDetailsForm.FromDetails(state, saved);
         Recover(state, docs);
         var model = new InvestorInfoViewModel(state, docs)
         {
@@ -130,10 +135,11 @@ public class InvestorInfoController(
 
     /// <summary>Opens the next joint holder's card, once every one before is added.</summary>
     [HttpPost("joint/add")]
-    public IActionResult JointAdd(IFormCollection form)
+    public async Task<IActionResult> JointAdd(IFormCollection form)
     {
         var state = Keep(form);
-        if (!new InvestorInfoViewModel(state, null).CanAddJoint) return Back(null);
+        if (await LoadAsync() is not { } docs) return Start();
+        if (!new InvestorInfoViewModel(state, docs).CanAddJoint) return Back(null);
         state.Joint.Add(new SearchState("pan", null, null, null, null, null, Checked: false));
         State = state;
         return Back($"holder-{state.Joint.Count + 1}");
@@ -243,6 +249,25 @@ public class InvestorInfoController(
     }
 
     // ----- Keeping what was typed --------------------------------------------
+
+    /// <summary>
+    /// After every post, what the form now holds is saved to the backend as the
+    /// application's details, so the page always opens on what the backend has. The
+    /// details are a part of their own, so a save that meets a newer version reads
+    /// the application again and saves over it.
+    /// </summary>
+    public override async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
+    {
+        await next();
+        if (!HttpMethods.IsPost(Request.Method) || HttpContext.Session.CurrentApplication() is not { } appNo) return;
+        var details = InvestorDetailsForm.ToDetails(State);
+        for (var tries = 0; tries < 2; tries++)
+        {
+            if (await applications.FindAsync(appNo) is not { } app) return;
+            if (JsonSerializer.Serialize(app.Details ?? new()) == JsonSerializer.Serialize(details)) return;
+            if (await applications.SaveDetailsAsync(appNo, app.Version, details) is not null) return;
+        }
+    }
 
     // Every post carries the whole form, so every post keeps it. A joint holder not
     // yet checked keeps what was typed into their search fields too.

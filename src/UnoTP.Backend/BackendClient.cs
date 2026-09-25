@@ -57,6 +57,37 @@ public sealed class BackendClient(HttpClient http, IPartner partner)
         return (await Read<Saved>(response, ct)).Version;
     }
 
+    public Task<int?> SaveDetailsAsync(string appNo, int version, ApplicationDetails details, CancellationToken ct = default) =>
+        PutVersioned($"applications/{Seg(appNo)}/details", version, details, ct);
+
+    public Task<int?> SavePaymentAsync(string appNo, int version, PaymentDetails payment, CancellationToken ct = default) =>
+        PutVersioned($"applications/{Seg(appNo)}/payment", version, payment, ct);
+
+    public Task<int?> SaveDepositAsync(string appNo, int version, DepositDetails deposit, CancellationToken ct = default) =>
+        PutVersioned($"applications/{Seg(appNo)}/deposit", version, deposit, ct);
+
+    public async Task<Application?> SubmitAsync(string appNo, int version, CancellationToken ct = default)
+    {
+        using var request = Request(HttpMethod.Post, $"applications/{Seg(appNo)}/submit", Body(new { }));
+        request.Headers.IfMatch.Add(new EntityTagHeaderValue($"\"{version}\""));
+        using var response = await SendAsync(request, ct);
+        if (response.StatusCode is HttpStatusCode.Conflict or HttpStatusCode.PreconditionFailed) return null;
+        response.EnsureSuccessStatusCode();
+        return await Read<Application>(response, ct);
+    }
+
+    // A part of the application saved against the version it was read at: the new
+    // version, or null when it changed in between and nothing was saved.
+    private async Task<int?> PutVersioned(string path, int version, object body, CancellationToken ct)
+    {
+        using var request = Request(HttpMethod.Put, path, Body(body));
+        request.Headers.IfMatch.Add(new EntityTagHeaderValue($"\"{version}\""));
+        using var response = await SendAsync(request, ct);
+        if (response.StatusCode is HttpStatusCode.Conflict or HttpStatusCode.PreconditionFailed) return null;
+        response.EnsureSuccessStatusCode();
+        return (await Read<Saved>(response, ct)).Version;
+    }
+
     public async Task<IReadOnlyList<DraftSummary>> DraftsAsync(CancellationToken ct = default) =>
         await List<DraftSummary>("applications/drafts", ct);
 

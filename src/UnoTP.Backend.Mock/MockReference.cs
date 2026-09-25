@@ -9,6 +9,9 @@ public sealed class MockReference : IReferenceApi
 {
     public const string SourcingAgency = "1033";
 
+    /// <summary>How long a payment link stays open.</summary>
+    public const int PaymentLinkHours = 48;
+
     private static readonly string[] Public = ["PUBLIC/GENERAL", "WOMEN", "SR CITIZEN", "SR CITIZEN WOMEN"];
 
     private static readonly ReferenceData Data = new(
@@ -182,7 +185,7 @@ public sealed class MockReference : IReferenceApi
         AmountStep: 1_000,
         CancellationDays: MockWindow.Days,
         DraftDays: 30,
-        LinkValidityHours: new Dictionary<string, int> { ["payment"] = 48, ["acceptance"] = 72 });
+        LinkValidityHours: new Dictionary<string, int> { ["payment"] = PaymentLinkHours, ["acceptance"] = 72 });
 
     public Task<ReferenceData> ReferenceAsync(CancellationToken ct = default) => Task.FromResult(Data);
 

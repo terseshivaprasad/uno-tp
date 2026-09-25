@@ -21,6 +21,22 @@ public interface IApplicationApi
     /// </summary>
     Task<int?> SaveUploadAsync(string appNo, int version, UploadState upload, CancellationToken ct = default);
 
+    /// <summary>PUT applications/{appNo}/details: the holders' and the nominee's details, from Investor Information. New version, or null on a conflict.</summary>
+    Task<int?> SaveDetailsAsync(string appNo, int version, ApplicationDetails details, CancellationToken ct = default);
+
+    /// <summary>PUT applications/{appNo}/payment: the accounts and the cheque, from Bank Details &amp; Payment. New version, or null on a conflict.</summary>
+    Task<int?> SavePaymentAsync(string appNo, int version, PaymentDetails payment, CancellationToken ct = default);
+
+    /// <summary>PUT applications/{appNo}/deposit: the deposit as configured. New version, or null on a conflict.</summary>
+    Task<int?> SaveDepositAsync(string appNo, int version, DepositDetails deposit, CancellationToken ct = default);
+
+    /// <summary>
+    /// POST applications/{appNo}/submit: the application is submitted and the
+    /// investor sent the link to pay and consent. Null on a conflict; the
+    /// application, as submitted, otherwise.
+    /// </summary>
+    Task<Application?> SubmitAsync(string appNo, int version, CancellationToken ct = default);
+
     /// <summary>The partner's saved applications that are theirs to finish, newest first.</summary>
     Task<IReadOnlyList<DraftSummary>> DraftsAsync(CancellationToken ct = default);
 
@@ -52,7 +68,88 @@ public sealed class Application
 
     /// <summary>Attempts on record from before the upload step was first opened, newest first.</summary>
     public List<LogEntry> Prior { get; init; } = [];
+
+    /// <summary>The holders' and the nominee's details, null until Investor Information is first saved.</summary>
+    public ApplicationDetails? Details { get; set; }
+
+    /// <summary>The accounts and the cheque, null until Bank Details &amp; Payment is first saved.</summary>
+    public PaymentDetails? Payment { get; set; }
+
+    /// <summary>The deposit, null until FD Configuration is first saved.</summary>
+    public DepositDetails? Deposit { get; set; }
+
+    /// <summary>Set once the application is submitted.</summary>
+    public Submission? Submitted { get; set; }
 }
+
+/// <summary>Investor Information, as saved: each holder's details, and the nominee's.</summary>
+public sealed class ApplicationDetails
+{
+    /// <summary>By holder type: 01 the investor, 02 and 03 the joint holders.</summary>
+    public List<HolderDetails> Holders { get; set; } = [];
+
+    /// <summary>Null when no nominee is named.</summary>
+    public NomineeDetails? Nominee { get; set; }
+}
+
+/// <param name="Pep">"yes", "no", or "" unanswered; the same for <paramref name="PepRelated"/>. Asked only of a holder with no folio.</param>
+/// <param name="FatcaTaxResident">A tax resident of another country: such a holder invests offline.</param>
+public sealed record HolderDetails(
+    string Holder,
+    string Gender = "",
+    string NameType = "",
+    string ParentName = "",
+    string AnnualIncome = "",
+    string Occupation = "",
+    string SubOccupation = "",
+    string MaritalStatus = "",
+    string Mobile = "",
+    string Email = "",
+    bool FatcaTaxResident = false,
+    bool FatcaPermanentResident = false,
+    string Pep = "",
+    string PepRelated = "");
+
+/// <param name="Dob">dd-MM-yyyy. A guardian is named for a nominee under the minimum age.</param>
+public sealed record NomineeDetails(
+    string Name = "",
+    string Dob = "",
+    string Relation = "",
+    string GuardianName = "",
+    string GuardianLine1 = "",
+    string GuardianLine2 = "",
+    string GuardianLine3 = "",
+    string GuardianPinCode = "",
+    string GuardianCity = "");
+
+/// <summary>Bank Details &amp; Payment, as saved.</summary>
+/// <param name="Payment">The account the deposit is paid from.</param>
+/// <param name="Repayment">The account interest and the maturity amount are paid into; the payment account when <paramref name="RepaymentSameAsPayment"/>.</param>
+/// <param name="Cheque">For a deposit paid by cheque; null otherwise.</param>
+public sealed record PaymentDetails(BankAccount? Payment, BankAccount? Repayment, bool RepaymentSameAsPayment, ChequeDetails? Cheque);
+
+/// <param name="AccountNumber">The whole number; masked wherever it is shown.</param>
+public sealed record BankAccount(string Ifsc, string AccountNumber);
+
+/// <param name="Date">dd-MM-yyyy.</param>
+/// <param name="CmsLocation">The Axis CMS location it is presented at.</param>
+public sealed record ChequeDetails(string Number, string Date, string CmsLocation);
+
+/// <summary>FD Configuration, as saved. Codes are the reference lists'.</summary>
+/// <param name="NoTds">Form 15G or 15H is submitted, so no TDS is deducted.</param>
+public sealed record DepositDetails(
+    long Amount,
+    int TenureMonths,
+    string Payout,
+    bool AutoRenewal,
+    string RenewInstruction,
+    bool NoTds,
+    string DeliveryType);
+
+/// <param name="Status">Where the application stands once submitted: "payment-pending", then the backend's own.</param>
+/// <param name="LinkSentTo">The mobile number the link went to, masked.</param>
+/// <param name="LinkValidUntil">When the payment link stops working.</param>
+public sealed record Submission(DateTime At, string Status, string LinkSentTo, DateTime LinkValidUntil);
 
 /// <summary>One application's upload step, as it is saved.</summary>
 public sealed class UploadState

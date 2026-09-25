@@ -1,3 +1,5 @@
+using UnoTP.Backend;
+
 namespace UnoTP.ViewModels;
 
 /// <summary>
@@ -16,6 +18,79 @@ public sealed class InvestorInfoState
 }
 
 /// <summary>
+/// Investor Information's form as the backend keeps it: each holder's details under
+/// their holder type, and the nominee's. The form posts them as "Holder{n}.Field"
+/// and "Nominee.Field"; these carry them to the typed record and back.
+/// </summary>
+public static class InvestorDetailsForm
+{
+    private const string Yes = "on";
+
+    /// <summary>What the form last posted, as the backend saves it.</summary>
+    public static ApplicationDetails ToDetails(InvestorInfoState state)
+    {
+        string F(string name) => state.Fields.GetValueOrDefault(name, "").Trim();
+        var details = new ApplicationDetails();
+        for (var n = 1; n <= InvestorInfoViewModel.MaxHolders; n++)
+        {
+            var p = $"Holder{n}.";
+            if (!state.Fields.Keys.Any(k => k.StartsWith(p))) continue;
+            details.Holders.Add(new HolderDetails(
+                InvestorInfoViewModel.CodeOf(n),
+                F(p + "Gender"), F(p + "NameType"), F(p + "ParentName"),
+                F(p + "AnnualIncome"), F(p + "Occupation"), F(p + "SubOccupation"), F(p + "MaritalStatus"),
+                F(p + "Mobile"), F(p + "Email").ToUpperInvariant(),
+                F(p + "FatcaTaxResident") is Yes or "true", F(p + "FatcaPermanentResident") is Yes or "true",
+                F(p + "Pep"), F(p + "PepRelated")));
+        }
+        if (state.Nominee)
+        {
+            var (dd, mm, yyyy) = (F("Nominee.Dd"), F("Nominee.Mm"), F("Nominee.Yyyy"));
+            details.Nominee = new NomineeDetails(
+                F("Nominee.Name"),
+                dd.Length + mm.Length + yyyy.Length == 0 ? "" : $"{dd.PadLeft(2, '0')}-{mm.PadLeft(2, '0')}-{yyyy}",
+                F("Nominee.Relation"), F("Nominee.GuardianName"),
+                F("Nominee.GuardianAddress.Line1"), F("Nominee.GuardianAddress.Line2"), F("Nominee.GuardianAddress.Line3"),
+                F("Nominee.GuardianAddress.PinCode"), F("Nominee.GuardianAddress.City"));
+        }
+        return details;
+    }
+
+    /// <summary>The form as the backend last saved it, for a page opened afresh.</summary>
+    public static void FromDetails(InvestorInfoState state, ApplicationDetails details)
+    {
+        state.Fields.Clear();
+        foreach (var h in details.Holders)
+        {
+            var p = $"Holder{int.Parse(h.Holder)}.";
+            void Set(string field, string value) { if (value.Length > 0) state.Fields[p + field] = value; }
+            Set("Gender", h.Gender); Set("NameType", h.NameType); Set("ParentName", h.ParentName);
+            Set("AnnualIncome", h.AnnualIncome); Set("Occupation", h.Occupation); Set("SubOccupation", h.SubOccupation);
+            Set("MaritalStatus", h.MaritalStatus); Set("Mobile", h.Mobile); Set("Email", h.Email);
+            if (h.FatcaTaxResident) Set("FatcaTaxResident", Yes);
+            if (h.FatcaPermanentResident) Set("FatcaPermanentResident", Yes);
+            Set("Pep", h.Pep); Set("PepRelated", h.PepRelated);
+        }
+        state.Nominee = details.Nominee is not null;
+        if (details.Nominee is { } n)
+        {
+            var dob = n.Dob.Split('-');
+            state.Fields["Nominee.Name"] = n.Name;
+            state.Fields["Nominee.Dd"] = dob.ElementAtOrDefault(0) ?? "";
+            state.Fields["Nominee.Mm"] = dob.ElementAtOrDefault(1) ?? "";
+            state.Fields["Nominee.Yyyy"] = dob.ElementAtOrDefault(2) ?? "";
+            state.Fields["Nominee.Relation"] = n.Relation;
+            state.Fields["Nominee.GuardianName"] = n.GuardianName;
+            state.Fields["Nominee.GuardianAddress.Line1"] = n.GuardianLine1;
+            state.Fields["Nominee.GuardianAddress.Line2"] = n.GuardianLine2;
+            state.Fields["Nominee.GuardianAddress.Line3"] = n.GuardianLine3;
+            state.Fields["Nominee.GuardianAddress.PinCode"] = n.GuardianPinCode;
+            state.Fields["Nominee.GuardianAddress.City"] = n.GuardianCity;
+        }
+    }
+}
+
+/// <summary>
 /// Investor Information, the old WA_FD_UNOTP/InvestorInformation: a card for the
 /// investor, one for each joint holder, and one for the nominee. A joint holder goes
 /// through Investor Identification's workflow on their card, by PAN and date of birth
@@ -26,8 +101,11 @@ public sealed class InvestorInfoState
 /// </summary>
 public sealed class InvestorInfoViewModel(InvestorInfoState state, UploadDocumentsViewModel? docs)
 {
-    /// <summary>A second and a third holder, beside the investor.</summary>
-    public const int MaxJoint = 2;
+    /// <summary>Joint holders the backend's rules allow beside the investor.</summary>
+    public int MaxJoint => Docs.Config.MaxJointHolders;
+
+    /// <summary>The most holders any application can carry: the investor and two joint holders, the old screen's limit.</summary>
+    public const int MaxHolders = 3;
 
     /// <summary>What the old screen says when a FATCA question - the investor's card asks them for every holder - is answered Yes.</summary>
     public const string FatcaOffline =
@@ -60,21 +138,21 @@ public sealed class InvestorInfoViewModel(InvestorInfoState state, UploadDocumen
     /// </summary>
     public bool CanAddJoint => State.Joint.Count < MaxJoint && State.Joint.All(j => j.Added);
 
-    /// <summary>The age under which a nominee is a minor, and needs a guardian named.</summary>
-    public const int MinorUnder = 18;
+    /// <summary>The age under which a nominee is a minor, and needs a guardian named: the backend's minimum age.</summary>
+    public int MinorUnder => Docs.Config.MinAge;
 
     /// <summary>
     /// Whether the nominee's date of birth, as last posted, makes them a minor. Only
     /// then is a guardian asked for; with no whole date yet, nobody is.
     /// </summary>
-    public bool NomineeMinor => IsMinor(Value("Nominee.Dd"), Value("Nominee.Mm"), Value("Nominee.Yyyy"), DateTime.Today);
+    public bool NomineeMinor => IsMinor(Value("Nominee.Dd"), Value("Nominee.Mm"), Value("Nominee.Yyyy"), DateTime.Today, MinorUnder);
 
-    public static bool IsMinor(string dd, string mm, string yyyy, DateTime today)
+    public static bool IsMinor(string dd, string mm, string yyyy, DateTime today, int minorUnder)
     {
         if (!int.TryParse(dd, out var d) || !int.TryParse(mm, out var m) || !int.TryParse(yyyy, out var y)
             || y < 1900 || m is < 1 or > 12 || d < 1 || d > DateTime.DaysInMonth(y, m)) return false;
         var born = new DateTime(y, m, d);
-        return born <= today && born.AddYears(MinorUnder) > today;
+        return born <= today && born.AddYears(minorUnder) > today;
     }
 
     /// <summary>Set when a FATCA question was answered Yes and Proceed was pressed.</summary>
