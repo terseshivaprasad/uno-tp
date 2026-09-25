@@ -110,6 +110,7 @@ public sealed class MockDemo : IDemoApi
         "A folio can also be searched by its number, with the same result as its PAN.",
         "One of these PANs with any other date of birth is turned back — the two are always checked together.",
         "A proof of address whose file name includes \"otherface\" or \"noface\" fails the PAN–POA face match; it is filed anyway.",
+        "A driving licence whose file name includes \"issuedate\" has its issue date read as the expiry; Sarathi's date replaces it.",
         "A PAN copy whose file name includes \"otherpan\" or \"otherdob\" reads as another PAN or date of birth, and is refused.",
         "Any other valid PAN still works: its last digit decides the outcome — 0 no such pair, 1 name mismatch, anything else all three match.",
     ];

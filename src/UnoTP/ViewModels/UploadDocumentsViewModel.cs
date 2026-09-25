@@ -1541,6 +1541,18 @@ public class UploadDocumentsViewModel(
         var answer = await verification.ConfirmProofAsync(type, reading, h.Who.Dob);
         var issuer = answer.Verifier;
 
+        // The issuer's own validity stands over the one read off the copy, which OCR
+        // can take from the wrong line - a licence's issue date, say.
+        if (answer.Confirmed && answer.Expiry.Length > 0 && answer.Expiry != card.Expiry)
+        {
+            entry.Add(card.Expiry.Length > 0
+                ? $"{Cap(issuer)} holds it valid till {answer.Expiry}; the copy read {card.Expiry}, which is set aside."
+                : $"{Cap(issuer)} holds it valid till {answer.Expiry}; no expiry could be read off the copy.");
+            card.Expiry = answer.Expiry;
+        }
+        if (answer.Confirmed && answer.Standing.Length > 0 && !answer.Standing.Equals("Active", StringComparison.OrdinalIgnoreCase))
+            entry.Add($"{Cap(issuer)} holds it as {answer.Standing}.", "warn");
+
         // An Aadhaar carries the number the PAN-Aadhaar link is asked with, so a PAN
         // already on the application can be asked about now.
         if (type == "Aadhaar" && AadhaarNumbers.IsWhole(reading.IdNumber) && LinkApplies(h))

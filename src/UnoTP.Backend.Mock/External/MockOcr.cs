@@ -41,9 +41,11 @@ public sealed class MockOcr : IOcrService
                     "Voter ID" => "XRT4827613",
                     _ => "",
                 },
-                // A passport or licence named "expired" ran out last year.
+                // A passport or licence named "expired" ran out last year; a licence named
+                // "issuedate" has its issue date read as its validity, as OCR sometimes does.
                 Expiry: type is "Passport" or "Driving Licence"
-                    ? (MockScans.Named(file, "expired") ? DateTime.Today.AddYears(-1) : DateTime.Today.AddYears(6)).ToString("dd-MM-yyyy")
+                    ? type == "Driving Licence" && MockScans.Named(file, "issuedate") ? MockScans.LicenceIssued
+                    : (MockScans.Named(file, "expired") ? DateTime.Today.AddYears(-1) : DateTime.Today.AddYears(6)).ToString("dd-MM-yyyy")
                     : ""),
             _ => new OcrReading(Account: MockScans.Misread(file) ? MockScans.MisreadAccount : MockScans.Account, Bank: MockScans.Bank),
         });

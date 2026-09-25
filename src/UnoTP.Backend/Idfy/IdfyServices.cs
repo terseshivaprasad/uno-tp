@@ -124,7 +124,7 @@ public sealed class IdfyOcr(
                 var licence = (await idfy.ExtractDrivingLicenceAsync(file, ct)).Result!.ExtractionOutput;
                 return new OcrReading(Name: licence?.NameOnCard ?? "", Address: licence?.Address ?? "",
                     IdNumber: licence?.IdNumber ?? "", Dob: Dobs.Of(licence?.DateOfBirth),
-                    Number: licence?.IdNumber ?? "", Expiry: Dobs.Of(licence?.DateOfValidity));
+                    Number: licence?.IdNumber ?? "", Expiry: LicenceExpiry(licence));
 
             case "ind_passport":
                 // A passport is verified by its file number, not its passport number.
@@ -141,6 +141,26 @@ public sealed class IdfyOcr(
             default:
                 return await fallback.ReadAsync(kind, type, file, subject, consent, ct);
         }
+    }
+
+    /// <summary>
+    /// When a licence runs out, as far as the copy tells. OCR sometimes reads an
+    /// issue date as the validity, so a date that is an issue date, or not after the
+    /// latest one, is not taken; the latest date left is. None left is empty, not a
+    /// wrong date: Sarathi's own date replaces it once the licence is found there.
+    /// </summary>
+    internal static string LicenceExpiry(DrivingLicenceCard? card)
+    {
+        if (card is null) return "";
+        static DateOnly? On(string? iso) =>
+            DateOnly.TryParseExact(iso, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var d) ? d : null;
+        var issued = (card.IssueDates?.Values ?? []).Select(On).OfType<DateOnly>().ToList();
+        var latestIssue = issued.Count > 0 ? issued.Max() : (DateOnly?)null;
+        var expiry = new[] { card.DateOfValidity }.Concat(card.Validity?.Values ?? [])
+            .Select(On).OfType<DateOnly>()
+            .Where(d => latestIssue is not { } i || d > i)
+            .DefaultIfEmpty().Max();
+        return expiry == default ? "" : expiry.ToString("dd-MM-yyyy", CultureInfo.InvariantCulture);
     }
 
     // An Aadhaar number is printed in groups of four.
@@ -168,7 +188,7 @@ public sealed class IdfyVerification(
                 number = number.Replace(" ", "").Replace("-", "");
                 if (number.Length == 0) return NotAsked(sarathi, "the licence number could not be read off the copy");
                 if (Dob(holderDob) is not { } licenceDob) return NotAsked(sarathi, "the holder's date of birth is not on record in a form it can be asked with");
-                return Answer((await idfy.VerifyDrivingLicenceAsync(number, licenceDob, ct)).Result!, sarathi);
+                return Licence((await idfy.VerifyDrivingLicenceAsync(number, licenceDob, ct)).Result!.SourceOutput, sarathi);
 
             case "Passport":
                 const string seva = "Passport Seva";
@@ -196,6 +216,18 @@ public sealed class IdfyVerification(
 
     private static Verification Answer(Sourced<SourceStatus> result, string verifier) =>
         new(string.Equals(result.SourceOutput?.Status, "id_found", StringComparison.OrdinalIgnoreCase), verifier);
+
+    // Sarathi's validity is the licence's own, read off no copy: the later of the
+    // non-transport and transport dates it holds.
+    private static Verification Licence(LicenceSource? source, string verifier)
+    {
+        var found = string.Equals(source?.Status, "id_found", StringComparison.OrdinalIgnoreCase);
+        var until = new[] { source?.NtValidityTo, source?.TValidityTo }
+            .Select(d => DateOnly.TryParseExact(d, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var on) ? on : (DateOnly?)null)
+            .OfType<DateOnly>().DefaultIfEmpty().Max();
+        return new(found, verifier, Expiry: found && until != default ? until.ToString("dd-MM-yyyy", CultureInfo.InvariantCulture) : "",
+            Standing: found ? source?.DlStatus ?? "" : "");
+    }
 
     private static Verification NotAsked(string verifier, string why) => new(false, verifier, why);
 

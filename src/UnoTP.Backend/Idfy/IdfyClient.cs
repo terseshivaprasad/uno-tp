@@ -77,8 +77,8 @@ public sealed class IdfyClient(HttpClient http, ILogger<IdfyClient> log)
     // ----- Verification with the source ------------------------------------------
     // The sync forms: the partner is waiting on the page for the answer.
 
-    public Task<IdfyTask<Sourced<SourceStatus>>> VerifyDrivingLicenceAsync(string idNumber, DateOnly dateOfBirth, CancellationToken ct = default) =>
-        Post<Sourced<SourceStatus>>("api/driving-license/verify/sync", new { idNumber, dateOfBirth = Date(dateOfBirth) }, ct);
+    public Task<IdfyTask<Sourced<LicenceSource>>> VerifyDrivingLicenceAsync(string idNumber, DateOnly dateOfBirth, CancellationToken ct = default) =>
+        Post<Sourced<LicenceSource>>("api/driving-license/verify/sync", new { idNumber, dateOfBirth = Date(dateOfBirth) }, ct);
 
     public Task<IdfyTask<Sourced<SourceStatus>>> VerifyPassportAsync(string passportFileNumber, DateOnly dateOfBirth, CancellationToken ct = default) =>
         Post<Sourced<SourceStatus>>("api/passport/verify/sync", new { passportFileNumber, dateOfBirth = Date(dateOfBirth) }, ct);
@@ -231,7 +231,12 @@ public sealed record FaceImage(bool? FaceDetected, string? FaceQuality);
 /// <param name="IdNumberFound">False when there was no Aadhaar number on the copy to mask.</param>
 public sealed record AadhaarMask(bool? IdNumberFound);
 
-public sealed record DrivingLicenceCard(string? IdNumber, string? NameOnCard, string? Address, string? DateOfBirth = null, string? DateOfValidity = null);
+/// <param name="DateOfValidity">When the licence runs out, as OCR read it. On some cards it reads an issue date instead.</param>
+/// <param name="IssueDates">When each vehicle class was issued, keyed by class (LMV, MCWG...).</param>
+/// <param name="Validity">When the licence runs out, keyed by category (non_transport, transport); "" where it has none.</param>
+public sealed record DrivingLicenceCard(
+    string? IdNumber, string? NameOnCard, string? Address, string? DateOfBirth = null, string? DateOfValidity = null,
+    IReadOnlyDictionary<string, string?>? IssueDates = null, IReadOnlyDictionary<string, string?>? Validity = null);
 
 public sealed record PassportPage(string? FileNumber, string? NameOnCard, string? Address, string? DateOfBirth = null, string? PassportNumber = null, string? DateOfExpiry = null);
 
@@ -243,3 +248,10 @@ public sealed record VoterIdCard(string? IdNumber, string? NameOnCard, string? A
 public sealed record SourceStatus(string? Status);
 
 public sealed record PanAadhaarLinkSource(bool? IsLinked);
+
+/// <summary>What Sarathi holds for a driving licence.</summary>
+/// <param name="Status">IDfy's id_found or id_not_found.</param>
+/// <param name="DlStatus">The licence's standing at the source, as Active.</param>
+/// <param name="NtValidityTo">When the non-transport licence runs out; null where there is none.</param>
+/// <param name="TValidityTo">When the transport licence runs out; null where there is none.</param>
+public sealed record LicenceSource(string? Status, string? DlStatus, string? NtValidityTo, string? TValidityTo);

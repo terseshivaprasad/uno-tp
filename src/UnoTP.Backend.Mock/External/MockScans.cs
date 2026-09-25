@@ -11,6 +11,9 @@ internal static class MockScans
     /// <summary>The address the issuers hold, which a clean proof of address reads as.</summary>
     public const string Address = "Flat 12B, Shantiniketan CHS, Baner Road, Balewadi, Pune, Maharashtra 411045";
 
+    /// <summary>The issue date a licence named "issuedate" has read as its validity.</summary>
+    public const string LicenceIssued = "10-06-2011";
+
     public const string MisreadAddress = "Flat 21B, Shantiniketan CHS, Baner Road, Balewadi, Pune, Maharashtra 411054";
 
     /// <summary>The account the bank holds, masked the way the register masks one.</summary>
