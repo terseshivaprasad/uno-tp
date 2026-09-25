@@ -16,7 +16,7 @@ change `BackendClient.cs`: the pages depend only on the interfaces.
 |---|---|
 | `Backend:BaseUrl` | The backend API. If blank, the app runs on the in-memory mock (`src/UnoTP.Backend.Mock`). |
 | `Backend:TimeoutSeconds` | Default 30. |
-| `Backend:External:{Nsdl,Identify,Masking,Ocr,Verification,PanAadhaarLink}` | Optional address for each outside service. The default is `{Backend:BaseUrl}/external/{name}/`, which means the backend proxies it. |
+| `Backend:External:{Nsdl,Identify,Masking,Ocr,Verification,PanAadhaarLink,FaceMatch}` | Optional address for each outside service. The default is `{Backend:BaseUrl}/external/{name}/`, which means the backend proxies it. |
 | `Idfy:BaseUrl` | Idfy.Api. When set, IDfy handles the checks it has an endpoint for (see below). |
 | `Idfy:TimeoutSeconds` | Default 75. The Idfy.Api guide asks for at least 70. |
 | `Partner:AgencyType`, `Partner:BrokerCode` | Who the partner is until the app has a sign-in. Agency type `1033` chooses the sourcing mode, broker code and deposit category; any other type sources as `BROKER` under its business broker code, with the category set from the holder's date of birth and gender. While `Features:DemoData` is on, `?agency=2001&broker=BR10874` switches the session's partner. |
@@ -125,7 +125,11 @@ Each application in these lists carries its `applied` date. The app counts the
 
 The app asks each check separately, in this order: identification, OCR, then
 whoever answers for what was read. Only after that does it file the copy with
-DMS.
+DMS. Once both a holder's PAN copy and their proof of address are filed,
+the faces on them are compared; for now the answer is only shown, and the proof
+stays filed whatever it says. A holder's PAN copy is taken before their proof of
+address, and the PAN–Aadhaar link card appears only once an Aadhaar is filed as a
+proof.
 
 - **An Aadhaar is filed unmasked.** If OCR can't read all 12 digits of its
   number (the copy is masked, or not clear enough), the copy is refused, counts
@@ -140,6 +144,7 @@ DMS.
 | OCR | `IOcrService` | `/api/pan/extract`, `/api/aadhaar/extract` (QR code read first), `/api/driving-license/extract`, `/api/passport/extract`, `/api/voter-id/extract` | `POST read` (multipart `file`, `kind`, `type`, `pan`, `dob`, `name`, `consent`) → `OcrReading` (a PAN card's carries `pan` and `dob` as `dd-MM-yyyy`, which must match the holder's or the copy is refused; an Aadhaar's also carries `gender`). Used for a utility bill or a cheque. |
 | Verification | `IVerificationService` | `/api/driving-license/verify/sync` and `/api/passport/verify/sync` (both with the holder's date of birth), `/api/voter-id/verify/sync`. `id_found` counts as confirmed. | `POST proof { proofType, reading, holderDob }` and `POST account { account, bank }` → `{ confirmed, verifier, notAsked }`. Used for an Aadhaar (IDfy has no UIDAI source check) and for bank accounts. |
 | PAN–Aadhaar link | `IPanAadhaarLinkService` | `/api/pan-aadhaar-link/verify/sync` | `POST check { pan, aadhaarNumber }` → `{ link }` |
+| PAN–POA face match | `IFaceMatchService` | `POST /api/face/compare` with `document1` (the PAN copy) and `document2` (the proof of address) as Base64; reads `is_a_match`, `match_score` and `review_needed` | `POST compare` (multipart `pan`, `proof`) → `{ matched, score, unsure }` |
 
 ### What the app expects from every outside service
 

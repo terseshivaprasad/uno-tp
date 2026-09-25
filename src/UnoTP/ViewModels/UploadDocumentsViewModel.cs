@@ -39,7 +39,8 @@ public class UploadDocumentsViewModel(
     INsdlService nsdl,
     UnoTP.Features.FeatureSet features,
     IVerificationService verification,
-    IPanAadhaarLinkService panLink)
+    IPanAadhaarLinkService panLink,
+    IFaceMatchService faces)
 {
     /// <summary>The application the session is on, read afresh for every request.</summary>
     public UnoTP.Backend.Application App { get; } = app;
@@ -597,10 +598,87 @@ public class UploadDocumentsViewModel(
                     "Choose Different from Permanent to file a proof of another address.")),
         ];
         if (h.Joint || NsdlApplies(h)) cards.Add(NsdlCard(h));
-        cards.Add(("PAN–Aadhaar link", LinkApplies(h) ? State.Reads[h.Key("pan")]
-            : NotRead("Not applicable", $"{Mask(h.Who.Pan)} · on the folio",
-                "The PAN–Aadhaar link is asked only for a holder with no folio yet.")));
+        // The link is asked with the number an Aadhaar carries, so its card stands
+        // only once an Aadhaar is filed as a proof of address.
+        if (AadhaarFiled(h))
+            cards.Add(("PAN–Aadhaar link", LinkApplies(h) ? State.Reads[h.Key("pan")]
+                : NotRead("Not applicable", $"{Mask(h.Who.Pan)} · on the folio",
+                    "The PAN–Aadhaar link is asked only for a holder with no folio yet.")));
+        if (View(PoaSlot, h).Used) cards.Add(new ReadItem("PAN–POA face match", FaceOf(h), h.Key("face")));
         return cards;
+    }
+
+    // Whether an Aadhaar is filed as a holder's proof of address, or of the address post goes to.
+    private bool AadhaarFiled(DocHolder h) =>
+        PoaTypeOf(h) == "Aadhaar" && State.Docs.ContainsKey(h.Key("poa"))
+        || MailDifferentOf(h) && MailTypeOf(h) == "Aadhaar" && State.Docs.ContainsKey(h.Key("mail"));
+
+    // ----- The PAN-POA face match -------------------------------------------------
+    // The photograph on the PAN copy is compared with the one on the proof of
+    // address once both are filed. For now it is only said: a proof is filed
+    // whatever the answer.
+
+    /// <summary>What the face match said, or that it waits on the copies.</summary>
+    public ReadCard FaceOf(DocHolder h) =>
+        State.Docs.ContainsKey(h.Key("poa")) && State.Reads.TryGetValue(h.Key("face"), out var card) ? card
+        : new ReadCard("Not yet compared", "Compared once the PAN copy and the proof of address are both filed.",
+            "The photograph on the PAN copy is matched with the one on the proof of address.", "is-na");
+
+    // A proof whose type carries no photograph has no face to compare.
+    private static bool HasPhoto(string proofType) => proofType.Length > 0 && proofType != "Utility bill";
+
+    private async Task FaceAsync(DocHolder h, LogEntry entry)
+    {
+        var key = h.Key("face");
+        var type = PoaTypeOf(h);
+        void Say(string state, string lines, string from, string kind) => State.Reads[key] = new ReadCard(state, lines, from, kind);
+
+        if (!State.Docs.ContainsKey(h.Key("poa"))) return;
+        if (!HasPhoto(type))
+        {
+            Say("Not applicable", $"A {type.ToLowerInvariant()} carries no photograph.", "There is no face on the proof to compare with the PAN copy.", "is-na");
+            return;
+        }
+        // Only a PAN copy filed on this application can be sent: one the folio holds,
+        // or one filed before this step, is not here to compare with.
+        var pan = State.Docs.GetValueOrDefault(h.Key("pan")) is { Before: false }
+            ? await documents.CopyAsync(AppNo, FiledUnder(PanSlot, h), PanSlot.Key) : null;
+        var proof = await documents.CopyAsync(AppNo, FiledUnder(PoaSlot, h), PoaSlot.Key);
+        if (pan is null || proof is null)
+        {
+            Say("Not compared", "No PAN copy was filed on this application to compare with.",
+                "The PAN copy is on the folio or was filed before this step, so Operations compare the faces.", "is-na");
+            entry.Add("Face match not asked: no PAN copy on this application to compare with.", "warn");
+            return;
+        }
+        FaceMatch answer;
+        try
+        {
+            answer = await faces.CompareAsync(pan, proof);
+        }
+        catch (ExternalServiceException e)
+        {
+            Say("Could not answer", "The face match could not be asked.", $"{e.Message} The proof is filed; Operations compare the faces.", "is-failed");
+            entry.Add($"Face match could not answer: {e.Message}", "warn");
+            return;
+        }
+        // Named as printed: an Aadhaar, a Passport, a Voter ID.
+        var named = type;
+        if (answer.Unsure is { } why)
+        {
+            Say("Not sure", $"Score {answer.Score} of 100", $"{Cap(why)}. The proof is filed; Operations compare the faces.", "is-failed");
+            entry.Add($"Face match not sure: {why}.", "warn");
+        }
+        else if (answer.Matched)
+        {
+            Say("Faces match", $"Score {answer.Score} of 100", $"The photograph on the PAN copy and on the {named} are the same person.", "is-done");
+            entry.Add($"Face match: the PAN copy and the {named} are the same person (score {answer.Score}).", "ok");
+        }
+        else
+        {
+            Say("Faces do not match", $"Score {answer.Score} of 100", $"The photograph on the {named} is not the one on the PAN copy. The proof is filed; Operations look into it.", "is-failed");
+            entry.Add($"Face match: the {named} is not the person on the PAN copy (score {answer.Score}).", "bad");
+        }
     }
 
     /// <summary>
@@ -1311,6 +1389,9 @@ public class UploadDocumentsViewModel(
         s.Docs[key] = filed(check, kind);
         // Taken, so whatever was refused before it is behind the partner.
         s.Attempts[key] = 0;
+
+        // Both copies filed: the faces on them are compared - again, when either is replaced.
+        if (def.Key is "poa" or "pan") await FaceAsync(h, entry);
     }
 
     // A slot holds one copy in DMS: a copy filed before is deleted, then the new

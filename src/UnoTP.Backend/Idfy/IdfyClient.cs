@@ -89,6 +89,13 @@ public sealed class IdfyClient(HttpClient http, ILogger<IdfyClient> log)
     public Task<IdfyTask<Sourced<PanAadhaarLinkSource>>> VerifyPanAadhaarLinkAsync(string panNumber, string aadhaarNumber, CancellationToken ct = default) =>
         Post<Sourced<PanAadhaarLinkSource>>("api/pan-aadhaar-link/verify/sync", new { panNumber, aadhaarNumber }, ct);
 
+    /// <summary>
+    /// IDfy's face compare: whether the faces on two images are the same person.
+    /// Both go as Base64, under the same cap as any other image.
+    /// </summary>
+    public Task<IdfyTask<FaceCompare>> CompareFacesAsync(UploadFile first, UploadFile second, CancellationToken ct = default) =>
+        Post<FaceCompare>("api/face/compare", new { document1 = Image(first), document2 = Image(second) }, ct);
+
     // ----- Plumbing ----------------------------------------------------------
 
     private async Task<IdfyTask<T>> Post<T>(string path, object body, CancellationToken ct) where T : class
@@ -204,6 +211,11 @@ public sealed record PanCard(string? IdNumber, string? NameOnCard, string? DateO
 public sealed record AadhaarExtraction(AadhaarCard? ExtractionOutput, AadhaarCard? QrOutput);
 
 public sealed record AadhaarCard(string? IdNumber, string? NameOnCard, string? Address, string? Gender = null);
+
+/// <param name="IsAMatch">Whether the two faces are the same person.</param>
+/// <param name="MatchScore">How alike they are, 0 to 100.</param>
+/// <param name="ReviewNeeded">Set when IDfy could not be sure either way.</param>
+public sealed record FaceCompare(bool? IsAMatch, double? MatchScore, bool? ReviewNeeded);
 
 /// <param name="IdNumberFound">False when there was no Aadhaar number on the copy to mask.</param>
 public sealed record AadhaarMask(bool? IdNumberFound);

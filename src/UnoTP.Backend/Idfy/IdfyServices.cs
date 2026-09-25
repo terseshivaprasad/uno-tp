@@ -210,3 +210,19 @@ public sealed class IdfyPanAadhaarLink(IdfyClient idfy) : IPanAadhaarLinkService
         return source?.IsLinked == true ? PanAadhaarLink.Linked : PanAadhaarLink.NotLinked;
     }
 }
+
+/// <summary>
+/// The PAN-proof face match by IDfy's face compare. An answer IDfy is unsure of,
+/// or one with no score, is not a match: a person looks at it.
+/// </summary>
+public sealed class IdfyFaceMatch(IdfyClient idfy) : IFaceMatchService
+{
+    public async Task<FaceMatch> CompareAsync(UploadFile panCopy, UploadFile proof, CancellationToken ct = default)
+    {
+        var result = (await idfy.CompareFacesAsync(panCopy, proof, ct)).Result!;
+        var score = (int)Math.Round(result.MatchScore ?? 0);
+        return result.ReviewNeeded == true
+            ? new FaceMatch(false, score, "IDfy could not be sure the faces match, so a person has to look")
+            : new FaceMatch(result.IsAMatch == true, score);
+    }
+}

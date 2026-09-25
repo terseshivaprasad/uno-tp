@@ -46,6 +46,8 @@ public static class IdfyServiceCollectionExtensions
         services.AddTransient<IMaskingService, IdfyMasking>();
         services.Take<IPanAadhaarLinkService>();
         services.AddTransient<IPanAadhaarLinkService, IdfyPanAadhaarLink>();
+        services.Take<IFaceMatchService>();
+        services.AddTransient<IFaceMatchService, IdfyFaceMatch>();
         return services;
     }
 

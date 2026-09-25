@@ -30,6 +30,7 @@ public static class MockBackendServiceCollectionExtensions
         services.AddSingleton<IOcrService, MockOcr>();
         services.AddSingleton<IVerificationService, MockVerification>();
         services.AddSingleton<IPanAadhaarLinkService, MockPanAadhaarLink>();
+        services.AddSingleton<IFaceMatchService, MockFaceMatch>();
         return services;
     }
 }

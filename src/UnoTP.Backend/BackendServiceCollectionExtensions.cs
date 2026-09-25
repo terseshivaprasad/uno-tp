@@ -35,6 +35,7 @@ public static class BackendServiceCollectionExtensions
         services.External<IOcrService, OcrClient>(OcrClient.Name);
         services.External<IVerificationService, VerificationClient>(VerificationClient.Name);
         services.External<IPanAadhaarLinkService, PanAadhaarLinkClient>(PanAadhaarLinkClient.Name);
+        services.External<IFaceMatchService, FaceMatchClient>(FaceMatchClient.Name);
         return services;
     }
 
