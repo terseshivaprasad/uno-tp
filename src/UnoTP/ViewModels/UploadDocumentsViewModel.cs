@@ -483,6 +483,7 @@ public class UploadDocumentsViewModel(
         [
             ("Permanent address", State.Reads[h.Key("poa")]),
             ("Communication address", MailDifferentOf(h) ? MailReadOf(h)
+                : !MailCanDiffer(h) && h.Who.Folio.Length > 0 && h.Who.Address.Length > 0 ? FolioAddress(h, "and post goes there.")
                 : !MailCanDiffer(h) && h.Who.Folio.Length > 0 ? NotRead("Same as permanent", $"Post goes to the address held against folio {h.Who.Folio}.",
                     "The system holds the address, and it is the mailing address too.")
                 : !MailCanDiffer(h) ? NotRead("From CKYC", "The communication address comes with the CKYC record.",
@@ -504,6 +505,15 @@ public class UploadDocumentsViewModel(
     /// </summary>
     public IReadOnlyList<ReadItem> PanReadsOf(DocHolder h) =>
         [.. ReadsOf(h).Where(i => i.Kind is not ("Permanent address" or "Communication address"))];
+
+    /// <summary>
+    /// What the payment instrument was read to say, beside its box. A mode settled
+    /// electronically carries no instrument, and the card says so.
+    /// </summary>
+    public ReadItem PaymentRead() => View(PaymentSlot).Used
+        ? new("Account", State.Reads["payment"], "payment")
+        : new("Account", NotRead("Not applicable", "No instrument is copied for this payment mode.",
+            "An account is read only off a cheque or demand draft."));
 
     // What NSDL said about a joint holder's PAN, and - when it holds the PAN
     // against another name - where the name printed on the card is typed to ask again.
@@ -529,7 +539,7 @@ public class UploadDocumentsViewModel(
 
     // The address a folio holds, shown as it stands: nothing on this step checked it.
     private static ReadCard FolioAddress(DocHolder h, string then) =>
-        new("Not verified", h.Who.Address, $"Held against folio {h.Who.Folio}, {then}", "is-na");
+        new("Not verified", h.Who.Address, $"Held against folio {h.Who.Folio}, {then}", "is-unverified");
 
     // A card for something there is nothing to read off, saying why. Not kept.
     private static ReadCard NotRead(string state, string lines, string from) => new(state, lines, from, "is-na");
@@ -578,9 +588,9 @@ public class UploadDocumentsViewModel(
             ? new ReadCard("Link not checked", pan + " · link with Aadhaar not checked yet",
                 $"PAN confirmed with NSDL. {LinkWaitsShort}")
             : new ReadCard("Not yet read", "Read off the PAN copy once one is filed here.", LinkWaitsShort);
+        // The folio's address is shown as it stands, until a proof filed here is confirmed.
         s.Reads[h.Key("poa")] = h.Who.Address.Length > 0
-            ? new ReadCard("On the application", h.Who.Address,
-                h.Joint ? "From the folio this holder was identified by." : "From the folio the application was opened against.")
+            ? FolioAddress(h, "and not checked on this step.")
             : new ReadCard("Not on record", $"No address is held for this {(h.Joint ? "holder" : "investor")} yet.",
                 "Read off the proof of address once one is filed here.");
 

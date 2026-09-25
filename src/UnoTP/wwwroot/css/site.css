@@ -2546,6 +2546,9 @@ body.is-waiting { overflow: hidden; }
 /* Nothing to read for this card: said, and set back. */
 .cud-read__card.is-na { background: var(--tint); }
 .cud-read__card.is-na .cud-read__lines { color: var(--muted); }
+/* An address the folio holds: shown in full, but nothing here confirmed it. */
+.cud-read__card.is-unverified { border-color: #F1DDB0; }
+.cud-read__card.is-unverified .cud-read__state { color: var(--amber); }
 .cud-read__lines { padding-top: 9px; font-size: 12.5px; line-height: 1.55; color: var(--ink); }
 /* The address the proof replaced, kept in sight rather than quietly overwritten. */
 .cud-read__was { padding-top: 6px; font-size: 11px; line-height: 1.5; color: var(--muted-2); text-decoration: line-through; }
