@@ -176,6 +176,12 @@ public sealed class ReadCard
     public string Kind { get; set; } = "";
     public string Was { get; set; } = "";
 
+    /// <summary>The number read off a proof, as shown - an Aadhaar's last four digits only.</summary>
+    public string Number { get; set; } = "";
+
+    /// <summary>When the proof runs out, as dd-MM-yyyy, for a passport or a licence.</summary>
+    public string Expiry { get; set; } = "";
+
     /// <summary>How the card opened.</summary>
     public ReadFace Opened { get; set; } = new("", "", "", "");
 
@@ -183,7 +189,7 @@ public sealed class ReadCard
     {
         // What a read replaced is on the card's own line: that goes back first.
         Lines = Was.Length > 0 ? Was : Opened.Lines;
-        (State, From, Kind, Was) = (Opened.State, Opened.From, Opened.Kind, "");
+        (State, From, Kind, Was, Number, Expiry) = (Opened.State, Opened.From, Opened.Kind, "", "", "");
     }
 }
 

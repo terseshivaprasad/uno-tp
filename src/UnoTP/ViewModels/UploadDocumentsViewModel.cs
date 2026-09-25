@@ -696,6 +696,26 @@ public class UploadDocumentsViewModel(
         : new ReadCard("Not yet compared", "Compared once the PAN copy and the proof of address are both filed.",
             "The photograph on the PAN copy is matched with the one on the proof of address.", "is-na");
 
+    /// <summary>The number a proof carries, labelled as it is shown: an Aadhaar by its
+    /// last four digits only, anything else in full.</summary>
+    public static string ProofNumber(string type, OcrReading reading)
+    {
+        var number = (reading.Number.Length > 0 ? reading.Number : reading.IdNumber).Trim();
+        if (number.Length == 0) return "";
+        return type switch
+        {
+            "Aadhaar" => number.Replace(" ", "") is { Length: >= 4 } digits ? $"Aadhaar XXXX XXXX {digits[^4..]}" : "",
+            "Driving Licence" => "DL " + number,
+            "Utility bill" => "",
+            _ => $"{type} {number}",
+        };
+    }
+
+    /// <summary>Whether a proof's expiry date has passed.</summary>
+    public static bool Expired(string expiry) =>
+        DateTime.TryParseExact(expiry, "dd-MM-yyyy", System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.None, out var until) && until < DateTime.Today;
+
     // A proof named as it is printed in a sentence: the Aadhaar, the Voter ID, the utility bill.
     private static string Printed(string type) => type.Length == 0 ? "proof" : type == "Utility bill" ? "utility bill" : type;
 
@@ -1492,6 +1512,10 @@ public class UploadDocumentsViewModel(
         var type = TypeOf(def, h);
         var named = type.Length > 0 ? type.ToLowerInvariant() : "proof";
         entry.Add("OCR read: " + reading.Address);
+        // The number the proof carries, and when it runs out, stand in its box. An
+        // Aadhaar shows its last four digits only.
+        (card.Number, card.Expiry) = (ProofNumber(type, reading), reading.Expiry);
+        if (card.Number.Length > 0) entry.Add($"Number read: {card.Number}{(card.Expiry.Length > 0 ? $", valid till {card.Expiry}" : "")}.");
         // The investor's gender, where the folio gives none, sets the category.
         if (!h.Joint && Who.Gender.Length == 0 && reading.Gender.Length > 0 && State.Gender != reading.Gender)
         {

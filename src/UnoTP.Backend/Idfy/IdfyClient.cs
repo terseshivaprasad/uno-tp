@@ -231,9 +231,9 @@ public sealed record FaceImage(bool? FaceDetected, string? FaceQuality);
 /// <param name="IdNumberFound">False when there was no Aadhaar number on the copy to mask.</param>
 public sealed record AadhaarMask(bool? IdNumberFound);
 
-public sealed record DrivingLicenceCard(string? IdNumber, string? NameOnCard, string? Address, string? DateOfBirth = null);
+public sealed record DrivingLicenceCard(string? IdNumber, string? NameOnCard, string? Address, string? DateOfBirth = null, string? DateOfValidity = null);
 
-public sealed record PassportPage(string? FileNumber, string? NameOnCard, string? Address, string? DateOfBirth = null);
+public sealed record PassportPage(string? FileNumber, string? NameOnCard, string? Address, string? DateOfBirth = null, string? PassportNumber = null, string? DateOfExpiry = null);
 
 /// <param name="IdNumber">The EPIC number, which IDfy may return partly masked, as T*****0275.</param>
 public sealed record VoterIdCard(string? IdNumber, string? NameOnCard, string? Address, string? DateOfBirth = null);

@@ -32,7 +32,19 @@ public sealed class MockOcr : IOcrService
                 Dob: type == "Utility bill" ? "" : MockScans.Named(file, "otherdob") ? OtherDob : subject.Dob,
                 Address: MockScans.Misread(file) ? MockScans.MisreadAddress : MockScans.Address,
                 IdNumber: type != "Aadhaar" ? "" : MockScans.Named(file, "masked") && !MockScans.Named(file, "unmasked") ? MaskedNumber : AadhaarNumber,
-                Gender: type != "Aadhaar" ? "" : GenderOn(subject)),
+                Gender: type != "Aadhaar" ? "" : GenderOn(subject),
+                Number: type switch
+                {
+                    "Aadhaar" => MockScans.Named(file, "masked") && !MockScans.Named(file, "unmasked") ? MaskedNumber : AadhaarNumber,
+                    "Passport" => "P4827613",
+                    "Driving Licence" => "MH12 20110048213",
+                    "Voter ID" => "XRT4827613",
+                    _ => "",
+                },
+                // A passport or licence named "expired" ran out last year.
+                Expiry: type is "Passport" or "Driving Licence"
+                    ? (MockScans.Named(file, "expired") ? DateTime.Today.AddYears(-1) : DateTime.Today.AddYears(6)).ToString("dd-MM-yyyy")
+                    : ""),
             _ => new OcrReading(Account: MockScans.Misread(file) ? MockScans.MisreadAccount : MockScans.Account, Bank: MockScans.Bank),
         });
 

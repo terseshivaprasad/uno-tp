@@ -118,23 +118,25 @@ public sealed class IdfyOcr(
                 var card = AadhaarNumbers.IsWhole(Digits(aadhaar.QrOutput?.IdNumber)) ? aadhaar.QrOutput : aadhaar.ExtractionOutput;
                 return new OcrReading(Name: card?.NameOnCard ?? "", Address: card?.Address ?? "",
                     IdNumber: Digits(card?.IdNumber), Gender: Genders.Of(card?.Gender ?? aadhaar.ExtractionOutput?.Gender),
-                    Dob: Dobs.Of(card?.DateOfBirth ?? aadhaar.ExtractionOutput?.DateOfBirth));
+                    Dob: Dobs.Of(card?.DateOfBirth ?? aadhaar.ExtractionOutput?.DateOfBirth), Number: Digits(card?.IdNumber));
 
             case "ind_driving_license":
                 var licence = (await idfy.ExtractDrivingLicenceAsync(file, ct)).Result!.ExtractionOutput;
                 return new OcrReading(Name: licence?.NameOnCard ?? "", Address: licence?.Address ?? "",
-                    IdNumber: licence?.IdNumber ?? "", Dob: Dobs.Of(licence?.DateOfBirth));
+                    IdNumber: licence?.IdNumber ?? "", Dob: Dobs.Of(licence?.DateOfBirth),
+                    Number: licence?.IdNumber ?? "", Expiry: Dobs.Of(licence?.DateOfValidity));
 
             case "ind_passport":
                 // A passport is verified by its file number, not its passport number.
                 var passport = (await idfy.ExtractPassportAsync(file, ct)).Result!.ExtractionOutput;
                 return new OcrReading(Name: passport?.NameOnCard ?? "", Address: passport?.Address ?? "",
-                    IdNumber: passport?.FileNumber ?? "", Dob: Dobs.Of(passport?.DateOfBirth));
+                    IdNumber: passport?.FileNumber ?? "", Dob: Dobs.Of(passport?.DateOfBirth),
+                    Number: passport?.PassportNumber ?? "", Expiry: Dobs.Of(passport?.DateOfExpiry));
 
             case "ind_voter_id":
                 var voter = (await idfy.ExtractVoterIdAsync(file, ct)).Result!.ExtractionOutput;
                 return new OcrReading(Name: voter?.NameOnCard ?? "", Address: voter?.Address ?? "",
-                    IdNumber: voter?.IdNumber ?? "", Dob: Dobs.Of(voter?.DateOfBirth));
+                    IdNumber: voter?.IdNumber ?? "", Dob: Dobs.Of(voter?.DateOfBirth), Number: voter?.IdNumber ?? "");
 
             default:
                 return await fallback.ReadAsync(kind, type, file, subject, consent, ct);

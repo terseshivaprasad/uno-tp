@@ -58,13 +58,32 @@
                     <input type="file" id="file-@key" name="file_@key" accept="@v.Def.Accepts.Mime" hidden data-submit="upload-@key" form="@form">
                 }
             </div>
-            <button type="button" class="cud-drop is-filled" popovertarget="preview-@key">
+            var address = v.Def.Key is "poa" or "mail" ? v.Read : null;
+            <button type="button" class="cud-drop is-filled @(address is not null ? "is-read" : null)" popovertarget="preview-@key">
                 <span class="cud-drop__done">
                     <span class="cud-drop__check" aria-hidden="true">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
                     </span>
-                    <span class="cud-drop__file">@v.Doc!.FileName</span>
-                    <span class="cud-drop__size">@(v.Doc.Before ? "already on the application" : M.SizeOf(v.Doc.Size))</span>
+                    @if (address is not null)
+                    {
+                        @* A proof of address says, in its own box, what it was read to
+                           say and who confirmed it - not what the file was called. *@
+                        <span class="cud-held__tag @address.Kind">@address.State</span>
+                        <span class="cud-held__lines" title="@address.Lines">@address.Lines</span>
+                        @if (address.Number.Length > 0)
+                        {
+                            var expired = M.Expired(address.Expiry);
+                            <span class="cud-held__id">
+                                @address.Number@if (address.Expiry.Length > 0) { <span class="@(expired ? "cud-held__expired" : null)"> &middot; @(expired ? "expired" : "valid till") @address.Expiry</span> }
+                            </span>
+                        }
+                    }
+                    else
+                    {
+                        @* The box says what is filed, not what the file was called. *@
+                        <span class="cud-drop__file">@(char.ToUpperInvariant(v.Title[0]) + v.Title[1..]) filed</span>
+                        <span class="cud-drop__size">@(v.Doc!.Before ? "already on the application" : M.SizeOf(v.Doc.Size))</span>
+                    }
                 </span>
             </button>
         }
@@ -123,14 +142,11 @@
             }
         </p>
     }
-    @if (filed && v.Doc!.Check.Length > 0)
+    @* A proof that says in its box that it was confirmed needs no line to repeat it;
+       one that was not says why here. *@
+    @if (filed && v.Doc!.Check.Length > 0 && !(v.Def.Key is "poa" or "mail" && v.Read is not null && v.Doc.CheckKind == "ok"))
     {
         <p class="cud-slot__check @(v.Doc.CheckKind.Length > 0 ? "is-" + v.Doc.CheckKind : null)">@v.Doc.Check</p>
-    }
-    @if (filed && v.Read is { } read && v.Def.Key is "poa" or "mail")
-    {
-        @* The address the proof was read to say, now that there is no card for it below. *@
-        <p class="cud-slot__read @read.Kind"><span class="cud-held__tag">@read.State</span> @read.Lines</p>
     }
     @if (v.Tries is not null)
     {
