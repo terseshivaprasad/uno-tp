@@ -25,7 +25,9 @@
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
                     </span>
                     <span class="cud-held__tag">@held.State</span>
-                    <span class="cud-held__lines" title="@held.Lines">@held.Lines</span>
+                    @{ var (heldBody, heldPin) = M.SplitPin(held.Lines); }
+                    <span class="cud-held__lines" title="@held.Lines">@heldBody</span>
+                    <span class="cud-held__pin @(heldPin.Length == 0 ? "is-missing" : null)">@(heldPin.Length > 0 ? "PIN " + heldPin : "PIN not on record")</span>
                     <span class="cud-held__from" title="@held.From">@held.From</span>
                 </span>
             </div>
@@ -69,7 +71,9 @@
                         @* A proof of address says, in its own box, what it was read to
                            say and who confirmed it - not what the file was called. *@
                         <span class="cud-held__tag @address.Kind">@address.State</span>
-                        <span class="cud-held__lines" title="@address.Lines">@address.Lines</span>
+                        var (body, pin) = M.SplitPin(address.Lines);
+                        <span class="cud-held__lines" title="@address.Lines">@body</span>
+                        <span class="cud-held__pin @(pin.Length == 0 ? "is-missing" : null)">@(pin.Length > 0 ? "PIN " + pin : "PIN not read")</span>
                         @if (address.Number.Length > 0)
                         {
                             var expired = M.Expired(address.Expiry);

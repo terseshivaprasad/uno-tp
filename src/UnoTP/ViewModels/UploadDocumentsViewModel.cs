@@ -711,6 +711,20 @@ public class UploadDocumentsViewModel(
         };
     }
 
+    /// <summary>
+    /// An address and the PIN code it ends with, apart: the address is cut to fit
+    /// its box, and the PIN has to show whatever the length. Empty PIN when none
+    /// can be found.
+    /// </summary>
+    public static (string Body, string Pin) SplitPin(string address)
+    {
+        var found = System.Text.RegularExpressions.Regex.Matches(address, @"(?<!\d)(\d{3})\s?(\d{3})(?!\d)");
+        if (found.Count == 0) return (address, "");
+        var last = found[^1];
+        var body = (address[..last.Index] + address[(last.Index + last.Length)..]).Trim().TrimEnd(',', '-', ' ');
+        return (body, last.Groups[1].Value + last.Groups[2].Value);
+    }
+
     /// <summary>Whether a proof's expiry date has passed.</summary>
     public static bool Expired(string expiry) =>
         DateTime.TryParseExact(expiry, "dd-MM-yyyy", System.Globalization.CultureInfo.InvariantCulture,

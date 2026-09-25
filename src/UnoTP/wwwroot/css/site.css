@@ -2386,7 +2386,7 @@ body:has(.rdocs:popover-open) { overflow: hidden; }
 .cud-drop.is-held:hover { border-color: var(--border-2); background: #fff; }
 /* The tick spans every line beside it, centred like the Not applicable mark. */
 @media (min-width: 761px) {
-  .cud-drop.is-held .cud-drop__check, .cud-drop.is-read .cud-drop__check { grid-row: 1 / span 3; align-self: center; width: 40px; height: 40px; }
+  .cud-drop.is-held .cud-drop__check, .cud-drop.is-read .cud-drop__check { grid-row: 1 / span 4; align-self: center; width: 40px; height: 40px; }
 }
 .cud-held__tag { display: inline-block; justify-self: start; padding: 2px 7px; border-radius: 4px; background: #FDF3DC; font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--amber); }
 .cud-held__lines { max-width: 100%; font-size: 12.5px; font-weight: 600; line-height: 1.45; color: var(--ink); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
@@ -2402,6 +2402,9 @@ body:has(.rdocs:popover-open) { overflow: hidden; }
 .cud-drop.is-read .cud-drop__done { gap: 3px; }
 .cud-held__id { max-width: 100%; font-size: 11.5px; line-height: 1.5; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cud-held__expired { color: var(--red-dark); font-weight: 600; }
+/* The PIN code stands on a line of its own, so cutting the address to fit never loses it. */
+.cud-held__pin { font-size: 12.5px; font-weight: 600; line-height: 1.45; color: var(--ink); }
+.cud-held__pin.is-missing { font-weight: 500; color: var(--amber); }
 
 /* Nothing left to try: the box stops taking files and the line under it says
    where the document goes instead. */
@@ -2421,7 +2424,7 @@ body:has(.rdocs:popover-open) { overflow: hidden; }
 /* Every document box is the same size whatever it holds - empty, filed, locked,
    refused or not applicable - so a row of them lines up. What a box says is held
    to a few lines inside it; the rest is in the note under the box and the history. */
-.cud-drop, .cud-slot__na { height: 188px; min-height: 0; overflow: hidden; }
+.cud-drop, .cud-slot__na { height: 204px; min-height: 0; overflow: hidden; }
 .cud-drop__title, .cud-drop__hint, .cud-drop__with, .cud-drop__must, .cud-slot__na-why {
   display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden;
 }
@@ -2460,7 +2463,7 @@ label.seg-toggle__opt { display: inline-block; }
    state it is in on the left, and what it says beside it, both on the same
    baseline a form field would keep. A phone gets the stack back. */
 @media (min-width: 761px) {
-  .cud-drop, .cud-slot__na { height: 156px; padding: 18px 20px; }
+  .cud-drop, .cud-slot__na { height: 172px; padding: 18px 20px; }
   .cud-drop { justify-content: flex-start; text-align: left; }
   .cud-drop__idle, .cud-drop__busy, .cud-drop__locked, .cud-drop__done {
     display: grid; width: 100%; grid-template-columns: auto minmax(0, 1fr);
@@ -3049,9 +3052,9 @@ a.view-switch__opt:hover { background: var(--tint); color: var(--ink); text-deco
 /* Every read card is the size of a document box, whatever it says: what it read
    and where that came from are held to two lines each. Only NSDL asking for the
    name printed on the PAN grows, to take the field. */
-.cud-read__card { height: 188px; overflow: hidden; display: flex; flex-direction: column; }
+.cud-read__card { height: 204px; overflow: hidden; display: flex; flex-direction: column; }
 /* Every box on the step is one height: the cards keep the document boxes' own. */
-@media (min-width: 761px) { .cud-read__card { height: 156px; } }
+@media (min-width: 761px) { .cud-read__card { height: 172px; } }
 .cud-read__card .cud-read__lines, .cud-read__card .cud-read__from {
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; padding-top: 7px;
 }
