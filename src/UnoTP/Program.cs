@@ -37,6 +37,9 @@ else builder.Services.AddMockBackend();
 if (IdfyOptions.Configured(builder.Configuration)) builder.Services.AddIdfy();
 // The console's schedule, read once per request for the gate, the tiles and the bell.
 builder.Services.AddScoped<UnoTP.Models.ConsoleState>();
+// The backend's lists and rules, kept for a few minutes (see Lookups).
+builder.Services.AddMemoryCache();
+builder.Services.AddScoped<Lookups>();
 
 // Who the partner is and the application they are on (see PartnerSession).
 builder.Services.AddDistributedMemoryCache();

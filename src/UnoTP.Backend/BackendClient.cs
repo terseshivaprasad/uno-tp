@@ -9,8 +9,28 @@ namespace UnoTP.Backend;
 /// The outside services each have a client of their own (see the External folder).
 /// </summary>
 public sealed class BackendClient(HttpClient http, IPartner partner)
-    : ApiClient(http, partner), IInvestorApi, IApplicationApi, IDocumentApi, ISourcingApi, IPayInSlipApi, ILinkApi, IConsoleApi
+    : ApiClient(http, partner), IInvestorApi, IApplicationApi, IDocumentApi, ISourcingApi, IPayInSlipApi, ILinkApi, IConsoleApi,
+        IReferenceApi, IPartnerApi, IDepositApi
 {
+    // ----- Reference, config and the partner -----------------------------------
+
+    public async Task<ReferenceData> ReferenceAsync(CancellationToken ct = default) =>
+        await Get<ReferenceData>("reference", ct) ?? throw new HttpRequestException("GET reference answered 404.");
+
+    public async Task<AppConfig> ConfigAsync(CancellationToken ct = default) =>
+        await Get<AppConfig>("config", ct) ?? throw new HttpRequestException("GET config answered 404.");
+
+    public async Task<PartnerProfile> MeAsync(CancellationToken ct = default) =>
+        await Get<PartnerProfile>("me", ct) ?? throw new HttpRequestException("GET me answered 404.");
+
+    // ----- Deposits ------------------------------------------------------------
+
+    public Task<DepositQuote> QuoteAsync(QuoteRequest request, CancellationToken ct = default) =>
+        Send<DepositQuote>(HttpMethod.Post, "deposits/quote", Body(request), ct);
+
+    public Task<BankBranch?> BranchAsync(string ifsc, CancellationToken ct = default) =>
+        Get<BankBranch>($"ifsc/{Seg(ifsc)}", ct);
+
     // ----- Investors ---------------------------------------------------------
 
     public async Task<IReadOnlyList<FolioRecord>> FoliosByPanAsync(string pan, CancellationToken ct = default) =>

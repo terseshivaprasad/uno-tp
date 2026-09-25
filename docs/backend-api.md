@@ -33,6 +33,42 @@ In the environment, use a double underscore, for example `Backend__BaseUrl`.
 - **Not found:** `404` means not found wherever a route below says "or 404".
   Any other failure status is treated as an error.
 
+## Lists, rules and the partner
+
+The pages hold no data of their own: every list they offer, every limit they
+check, and who is signed in come from these routes. The lists and the rules are
+kept for `Backend:ReferenceCacheMinutes` (default 10) before they are asked for
+again; a failed answer is not kept.
+
+| Method | Route | Body | Returns |
+|---|---|---|---|
+| GET | `reference` | | `ReferenceData`: every list the pages offer (see below) |
+| GET | `config` | | `AppConfig`: the limits and rules the pages check |
+| GET | `me` | | `PartnerProfile`: `name`, `code`, `agencyType`, `brokerCode` of the signed-in partner |
+| POST | `deposits/quote` | `{ amount, tenureMonths, payout, category, startsOn? }` | `DepositQuote`: `rate`, `interestEach`, `maturityAmount`, `maturesOn`, `rateAsOn` |
+| GET | `ifsc/{code}` | | `BankBranch`: `ifsc`, `bank`, `branch`, `micr`, or 404 |
+
+- **`ReferenceData`:** `applicationTypes` and `renewInstructions` and
+  `deliveryTypes` as `{ code, name }`; `categories` as `{ code, name, employee,
+  women, senior }`; `paymentModes` as `{ name, document }` (`document` is the
+  instrument a copy is filed for, or null); `sourcingModes` as `{ code, name,
+  codeLabel, nameLabel, house, search, register, sub, categories }`;
+  `proofsOfAddress` as `{ type, issuer, hasPhoto }`; `payouts` as `{ code, name,
+  perYear, each }` (`perYear` 0 is cumulative); `tenures` in months;
+  `requiredDocuments` as `{ title, items, notes }`; and plain lists for
+  `employeeHolders`, `employeeRelations`, `employeeProofs`, `incomeBands`,
+  `occupations`, `subOccupations`, `maritalStatuses`, `genders`, `nameTypes`,
+  `nomineeRelations`, `cmsLocations`, `identificationNotes` and `dashboardNotes`.
+  Codes are what the app posts and saves.
+- **`AppConfig`:** `sourcingAgency` (the agency type that chooses how an
+  application is sourced), `minAge`, `seniorAge`, `maxJointHolders`,
+  `maxAttempts`, `minAmount`, `maxAmount`, `amountStep` (rupees),
+  `cancellationDays`, `draftDays`, and `linkValidityHours` by purpose
+  (`payment`, `acceptance`). The backend checks the same rules again on save.
+- **Quote:** the rate is the card rate for the tenure and category, locked
+  when the application is submitted. The mock compounds a cumulative deposit
+  half-yearly and pays simple interest per period otherwise.
+
 ## Investors
 
 | Method | Route | Body | Returns |

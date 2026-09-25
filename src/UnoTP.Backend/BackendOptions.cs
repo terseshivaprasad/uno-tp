@@ -18,6 +18,9 @@ public sealed class BackendOptions
 
     public int TimeoutSeconds { get; set; } = 30;
 
+    /// <summary>Minutes the backend's lists and rules (GET reference, GET config) are kept for. 0 asks every time.</summary>
+    public int ReferenceCacheMinutes { get; set; } = 10;
+
     /// <summary>Addresses for outside services, by name, where one is not reached through the backend.</summary>
     public Dictionary<string, string> External { get; set; } = [];
 
