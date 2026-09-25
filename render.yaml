@@ -2,8 +2,25 @@ services:
   - type: web
     name: uno-tp
     runtime: docker
-    dockerfilePath: ./Dockerfile
+    dockerContext: ./src
+    dockerfilePath: ./src/UnoTP/Dockerfile
     plan: free
     envVars:
       - key: ASPNETCORE_ENVIRONMENT
         value: Production
+      # Addresses of the other eSarathi apps (see AppUrls.cs). Until they are
+      # deployed, links out to the login, console and explorers stay plain paths.
+      # - key: Apps__eSarathiLogin
+      #   value: https://<login-service>.onrender.com
+      # - key: Apps__eSarathiConsole
+      #   value: https://<console-service>.onrender.com
+      # - key: Apps__DmsExplorer
+      #   value: https://<dms-service>.onrender.com
+      # - key: Apps__OvdExplorer
+      #   value: https://<ovd-service>.onrender.com
+      # The backend API all data comes from (see UnoTP.Backend/BackendOptions.cs),
+      # and Idfy.Api for the document checks. Left out, the app runs on the mock.
+      # - key: Backend__BaseUrl
+      #   value: https://<backend-service>
+      # - key: Idfy__BaseUrl
+      #   value: https://<idfy-api-host>

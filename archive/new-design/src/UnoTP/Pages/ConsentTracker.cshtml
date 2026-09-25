@@ -1,0 +1,187 @@
+@page "/Apps/UnoTp/ConsentTracker"
+@model UnoTP.Pages.ConsentTrackerModel
+@namespace UnoTP.Pages
+@using UnoTP.Models
+@{
+    ViewData["Title"] = "DPDP Consent Tracker";
+
+    static string BucketKey(ConsentBucket b) => b switch
+    {
+        ConsentBucket.OnFile => "onfile",
+        ConsentBucket.AwaitingAcceptance => "awaiting",
+        ConsentBucket.UploadPending => "upload",
+        ConsentBucket.ExpiringSoon => "expiring",
+        _ => "declined",
+    };
+
+    static string Tone(ConsentTone t) => "ct-status ct-status--" + t.ToString().ToLowerInvariant();
+
+    var tiles = new[]
+    {
+        (Key: "onfile", Label: "On file", Count: Model.Count(ConsentBucket.OnFile), Tone: "ink"),
+        (Key: "awaiting", Label: "Awaiting acceptance", Count: Model.Count(ConsentBucket.AwaitingAcceptance), Tone: "blue"),
+        (Key: "upload", Label: "Upload pending", Count: Model.Count(ConsentBucket.UploadPending), Tone: "amber"),
+        (Key: "expiring", Label: "Expiring ≤ 30 days", Count: Model.Count(ConsentBucket.ExpiringSoon), Tone: "amber"),
+        (Key: "declined", Label: "Declined / expired", Count: Model.Count(ConsentBucket.DeclinedOrExpired), Tone: "red"),
+    };
+    var total = Model.Records.Count;
+}
+
+<div class="ct-layout">
+    <nav class="wizard__rail ct-menu" aria-label="Uno TP">
+        <div class="section-label ct-menu__label">Menu</div>
+        <a class="rail-item" asp-page="/Dashboard">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="6.5" height="6.5" rx="1"></rect><rect x="13.5" y="4" width="6.5" height="6.5" rx="1"></rect><rect x="4" y="13.5" width="6.5" height="6.5" rx="1"></rect><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1"></rect></svg>
+            <span>Dashboard</span>
+        </a>
+        <a class="rail-item" asp-page="/Application/HolderIdentification">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V7z"></path><path d="M14 3v4h4"></path></svg>
+            <span>Create New FD</span>
+        </a>
+        <a class="rail-item" href="@Apps.Url("/New")">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>
+            <span>Application status</span>
+        </a>
+        <a class="rail-item rail-item--active" asp-page="/ConsentTracker" aria-current="page">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5.5c0 4.3-2.9 7.7-7 9-4.1-1.3-7-4.7-7-9V6z"></path><path d="M9 12l2.2 2.2L15.5 10"></path></svg>
+            <span>DPDP Consent Tracker</span>
+        </a>
+    </nav>
+
+    <section class="ct-main">
+        <div class="ct-head">
+            <div class="ct-head__text">
+                <h1 class="ct-title">DPDP Consent Tracking</h1>
+                <div class="ct-subtitle">@total consent records &middot; DPDP Act, 2023@(Model.ShowCersai ? " · CERSAI authorisation tracked alongside" : "")</div>
+            </div>
+            <div class="ct-head__actions">
+                <button type="button" class="btn btn-outline btn-sm" id="ctExport">Export register</button>
+                <button type="button" class="btn btn-primary btn-sm js-ct-dialog" data-dialog="New consent request">+ New consent request</button>
+            </div>
+        </div>
+
+        <div class="ct-kpis" id="ctKpis">
+        @foreach (var t in tiles)
+        {
+            <button type="button" class="ct-kpi btn-reset" data-bucket="@t.Key" aria-pressed="false">
+                <span class="ct-kpi__label">@t.Label</span>
+                <span class="ct-kpi__value ct-kpi__value--@t.Tone">@t.Count</span>
+            </button>
+        }
+        </div>
+
+        <div class="ct-filters">
+            <div class="inv-field">
+                <label for="ctSearch">Search</label>
+                <input class="inv-control" id="ctSearch" type="search" placeholder="Name, PAN, folio or application number" autocomplete="off">
+            </div>
+            <div class="inv-field">
+                <label for="ctSource">Source</label>
+                <select class="inv-control" id="ctSource">
+                    <option value="all">All</option>
+                    <option value="digital">Digital</option>
+                    <option value="offline">Offline</option>
+                </select>
+            </div>
+            <div class="inv-field">
+                <label for="ctStatus">Consent status</label>
+                <select class="inv-control" id="ctStatus">
+                    <option value="all">All</option>
+                    <option value="attention">Needs attention</option>
+                    @foreach (var t in tiles)
+                    {
+                        <option value="@t.Key">@t.Label</option>
+                    }
+                </select>
+            </div>
+            <div class="inv-field">
+                <label for="ctRequested">Requested</label>
+                <select class="inv-control" id="ctRequested">
+                    <option value="any">Any time</option>
+                    <option value="7">Last 7 days</option>
+                    <option value="30">Last 30 days</option>
+                    <option value="90">Last 90 days</option>
+                </select>
+            </div>
+            <button type="button" class="btn btn-secondary ct-clear" id="ctClear">Clear</button>
+        </div>
+
+        <div class="ct-table@(Model.ShowCersai ? "" : " ct-table--no-cersai")" role="table" aria-label="Consent register">
+            <div class="ct-row ct-row--head" role="row">
+                <div role="columnheader">Holder</div>
+                <div role="columnheader">Application</div>
+                <div role="columnheader">Source</div>
+                <div role="columnheader">DPDP consent</div>
+                @if (Model.ShowCersai)
+                {
+                    <div role="columnheader">CERSAI &middot; CKYC</div>
+                }
+                <div role="columnheader">Valid till</div>
+                <div role="columnheader">Action</div>
+            </div>
+            <div id="ctRows">
+            @for (var i = 0; i < total; i++)
+            {
+                var r = Model.Records[i];
+                var source = r.Source == ConsentSource.Digital ? "digital" : "offline";
+                var search = $"{r.Holder} {r.Pan} {r.Reference} {r.AppNo}".ToLowerInvariant();
+                <div class="ct-row" role="row" data-bucket="@BucketKey(r.Bucket)" data-source="@source" data-days="@r.RequestedDaysAgo" data-search="@search" hidden="@(i >= ConsentTrackerModel.PageSize)">
+                    <div class="ct-cell--holder" role="cell">
+                        <div class="ct-holder">@r.Holder</div>
+                        <div class="ct-sub">@r.Pan &middot; @r.Reference</div>
+                    </div>
+                    <div role="cell" data-label="Application">
+                        @if (r.AppNo is null)
+                        {
+                            <span class="ct-app ct-app--none">No application</span>
+                        }
+                        else
+                        {
+                            <span class="ct-app">@r.AppNo</span>
+                        }
+                    </div>
+                    <div role="cell" data-label="Source">
+                        <span class="chip @(r.Source == ConsentSource.Digital ? "chip--primary" : "chip--warn")">@r.Source</span>
+                    </div>
+                    <div class="ct-cell--dpdp" role="cell" data-label="DPDP consent">
+                        <div class="@Tone(r.DpdpTone)">@r.Dpdp</div>
+                        <div class="ct-sub">@r.DpdpDetail</div>
+                    </div>
+                    @if (Model.ShowCersai)
+                    {
+                        <div role="cell" data-label="CERSAI · CKYC">
+                            <div class="@Tone(r.CersaiTone)">@r.Cersai</div>
+                            <div class="ct-sub">@r.CersaiDetail</div>
+                        </div>
+                    }
+                    <div role="cell" data-label="Valid till">
+                        @if (r.ValidTill is null)
+                        {
+                            <span class="ct-valid ct-valid--none">&mdash;</span>
+                        }
+                        else
+                        {
+                            <span class="ct-valid">@r.ValidTill</span>
+                        }
+                    </div>
+                    <div class="ct-cell--action" role="cell">
+                        <button type="button" class="ct-action js-ct-dialog" data-dialog="@r.Action" data-app="@(r.AppNo ?? r.Reference)">@r.Action</button>
+                    </div>
+                </div>
+            }
+            </div>
+            <div class="ct-empty" id="ctEmpty" hidden>No consent records match these filters.</div>
+        </div>
+
+        <div class="ct-foot">
+            <div class="ct-foot__summary" id="ctSummary">Showing @Math.Min(ConsentTrackerModel.PageSize, total) of @total records</div>
+            <div class="ct-pager" id="ctPager" data-page-size="@ConsentTrackerModel.PageSize"></div>
+        </div>
+    </section>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+@section Scripts {
+    <script src="~/js/consent-tracker.js" asp-append-version="true"></script>
+}

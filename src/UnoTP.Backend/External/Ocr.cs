@@ -1,0 +1,35 @@
+namespace UnoTP.Backend.External;
+
+/// <summary>OCR: what a document says.</summary>
+public interface IOcrService
+{
+    /// <param name="type">What it is within its kind - the proof of address type -
+    /// or empty.</param>
+    /// <param name="subject">Whose document it is expected to be, sent along so the
+    /// reading is matched and logged against the holder.</param>
+    /// <param name="consent">Whether the holder has consented to their Aadhaar
+    /// being processed; an Aadhaar is not read without it.</param>
+    Task<OcrReading> ReadAsync(DocumentKind kind, string type, UploadFile file, OcrSubject subject, bool consent, CancellationToken ct = default);
+}
+
+public sealed record OcrSubject(string Pan, string Dob, string Name);
+
+/// <summary>What was read. Only the fields the document carries are filled.</summary>
+/// <param name="IdNumber">The document's own number: an Aadhaar or licence number,
+/// a passport file number, a voter ID. An Aadhaar number is never stored.</param>
+/// <param name="Account">A cheque's account, masked, with its IFSC and branch.</param>
+/// <param name="Bank">The bank a cheque is drawn on.</param>
+public sealed record OcrReading(
+    string Pan = "", string Name = "", string Address = "",
+    string IdNumber = "", string Account = "", string Bank = "");
+
+/// <summary>POST read (multipart: file, kind, type, pan, dob, name, consent) → OcrReading.</summary>
+public sealed class OcrClient(HttpClient http, IPartner partner) : ExternalClient(http, partner, "OCR"), IOcrService
+{
+    public const string Name = "Ocr";
+
+    public Task<OcrReading> ReadAsync(DocumentKind kind, string type, UploadFile file, OcrSubject subject, bool consent, CancellationToken ct = default) =>
+        Ask(() => Send<OcrReading>(HttpMethod.Post, "read",
+            Form(file, ("kind", kind.ToString()), ("type", type), ("pan", subject.Pan), ("dob", subject.Dob),
+                ("name", subject.Name), ("consent", consent ? "true" : "false")), ct), ct);
+}

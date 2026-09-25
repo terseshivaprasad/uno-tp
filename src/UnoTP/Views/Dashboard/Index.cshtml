@@ -1,0 +1,89 @@
+@model DashboardViewModel
+@{
+    ViewData["Title"] = "Uno TP Dashboard (classic)";
+    ViewData["FirstNavActive"] = true;
+
+    // The old WA_FD_UNOTP/Dashboard as it stands today: four steps down the left,
+    // two rows of big icon tiles on the right. The tiles and whether each is on
+    // come from the view model, which reads the switches in appsettings.
+    var steps = DashboardViewModel.StepLabels.Zip(DashboardViewModel.StepGlyphs, (label, glyph) => (Label: label, Glyph: glyph));
+}
+
+@functions {
+    // One big grey tile: a link while its feature is on, a greyed card saying why
+    // while it is off. Nothing on this page needs a script.
+    async Task Tile(DashboardTile t)
+    {
+        var icon = $"<svg width=\"48\" height=\"48\" viewBox=\"0 0 24 24\" fill=\"none\" aria-hidden=\"true\">{t.Glyph}</svg>";
+        if (t.Off is not null || t.Controller is null)
+        {
+            <div class="classic-tile classic-tile--off" aria-disabled="true">
+                <span class="classic-tile__icon">@Html.Raw(icon)</span>
+                <span class="classic-tile__title">@t.Title</span>
+                <span class="classic-tile__off">@t.Off</span>
+            </div>
+        }
+        else
+        {
+            <a class="classic-tile" asp-controller="@t.Controller" asp-action="Index"><span class="classic-tile__icon">@Html.Raw(icon)</span><span class="classic-tile__title">@t.Title</span></a>
+        }
+        await Task.CompletedTask;
+    }
+}
+
+@if (Model.Closed is not null)
+{
+    @* FeatureGate sent the partner back here from a page that is closed. *@
+    <div class="classic-closed" role="status">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 7v6"></path><circle cx="12" cy="16.8" r=".6" fill="currentColor"></circle></svg>
+        <span>@Model.Closed</span>
+    </div>
+}
+
+<div class="classic">
+    <section class="classic-steps">
+        <h1 class="classic-steps__title">Book a FD in just <strong>4 easy steps....</strong></h1>
+        <ol class="classic-steps__list">
+            @foreach (var s in steps)
+            {
+                <li class="classic-step">
+                    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">@Html.Raw(s.Glyph)</svg>
+                    <span>@s.Label</span>
+                </li>
+            }
+        </ol>
+        @* Opens the dialog in _RequiredDocs through the browser's popover, so it needs no script. *@
+        <button type="button" class="classic-docs btn-reset" popovertarget="requiredDocsModal" aria-haspopup="dialog"><em>Click here</em> to see the list of required documents</button>
+        <div class="classic-note">
+            <div class="classic-note__title">Note</div>
+            <ul>
+                @foreach (var n in DashboardViewModel.Notes)
+                {
+                    <li>@n</li>
+                }
+            </ul>
+        </div>
+    </section>
+
+    <section class="classic-actions">
+        <h2 class="classic-actions__title">Apply for a new FD</h2>
+        <div class="classic-tiles">
+            @foreach (var t in Model.NewFd) { await Tile(t); }
+        </div>
+        <hr class="classic-actions__rule">
+        <h2 class="classic-actions__title">FD Services</h2>
+        <div class="classic-tiles">
+            @foreach (var t in Model.Services) { await Tile(t); }
+        </div>
+        @if (Model.Admin.Count > 0)
+        {
+            <hr class="classic-actions__rule">
+            <h2 class="classic-actions__title">Administration</h2>
+            <div class="classic-tiles">
+                @foreach (var t in Model.Admin) { await Tile(t); }
+            </div>
+        }
+    </section>
+</div>
+
+<partial name="_RequiredDocs" />

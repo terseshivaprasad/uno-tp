@@ -1,0 +1,66 @@
+@* The old FdDocModal, one investor type at a time: the types down the side (a
+   swipeable chip row on a phone), the chosen type's documents beside them.
+
+   No script: the dialog is a popover, so any button on the page carrying
+   popovertarget="requiredDocsModal" opens it and the browser closes it on Esc or
+   a click outside. The types are radio buttons, and the panel for the checked
+   one is shown by the rules written below. *@
+<div class="modal-dialog rdocs" id="requiredDocsModal" popover role="dialog" aria-modal="true" aria-labelledby="requiredDocsTitle">
+    <header class="rdocs__head">
+        <div>
+            <h2 class="rdocs__title" id="requiredDocsTitle">Required documents to book an FD</h2>
+            <p class="rdocs__sub">Choose the investor type to see what to collect.</p>
+        </div>
+        <button type="button" class="rdocs__close btn-reset" popovertarget="requiredDocsModal" popovertargetaction="hide" aria-label="Close">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19"></path></svg>
+        </button>
+    </header>
+
+    <div class="rdocs__body">
+        <div class="rdocs__types" role="radiogroup" aria-label="Investor type">
+            @for (var i = 0; i < RequiredDocs.Groups.Length; i++)
+            {
+                var g = RequiredDocs.Groups[i];
+                var count = g.Items.Count(x => !x.StartsWith("Note:"));
+                <label class="rdocs__type">
+                    <input class="visually-hidden" type="radio" name="rdocsType" value="@i" checked="@(i == 0)">
+                    <span class="rdocs__type-name">@g.Title</span>
+                    <span class="rdocs__type-count">@count</span>
+                </label>
+            }
+        </div>
+
+        @for (var i = 0; i < RequiredDocs.Groups.Length; i++)
+        {
+            var g = RequiredDocs.Groups[i];
+            var docs = g.Items.Where(x => !x.StartsWith("Note:")).ToList();
+            var notes = g.Items.Where(x => x.StartsWith("Note:")).Select(x => x["Note:".Length..].Trim());
+            <section class="rdocs__panel" data-panel="@i" aria-label="@g.Title">
+                <h3 class="rdocs__panel-title">@g.Title <span>@docs.Count documents</span></h3>
+                <ol class="rdocs__list">
+                    @foreach (var d in docs)
+                    {
+                        <li>@d</li>
+                    }
+                </ol>
+                @foreach (var n in notes)
+                {
+                    <p class="rdocs__callout">@n</p>
+                }
+            </section>
+        }
+    </div>
+
+    <footer class="rdocs__foot">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 11v6"></path><circle cx="12" cy="7.5" r=".6" fill="currentColor"></circle></svg>
+        <span>Currently Esarathi is enabled with individual and sole proprietorship investment only.</span>
+    </footer>
+</div>
+
+@* One rule per type: the panel whose number matches the checked radio is shown. *@
+<style>
+    @for (var i = 0; i < RequiredDocs.Groups.Length; i++)
+    {
+        @:.rdocs__body:has(input[value="@i"]:checked) .rdocs__panel[data-panel="@i"] { display: block; }
+    }
+</style>

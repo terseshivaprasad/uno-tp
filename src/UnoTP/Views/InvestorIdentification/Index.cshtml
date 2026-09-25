@@ -1,0 +1,191 @@
+@model InvestorIdentificationViewModel
+@using Stage = UnoTP.ViewModels.InvestorIdentificationViewModel.Stage
+@using UnoTP.Backend.Mock
+@{
+    ViewData["Title"] = "Investor Identification (classic)";
+
+    // The old WA_FD_UNOTP/searchinvestor, carrying the new Investor Identification
+    // screen's working parts. No script: every step is a form the controller
+    // answers, and what it found is written into the page.
+}
+
+@* Nothing typed travels in an address or a hidden field: every form below posts
+   to the controller, which keeps the search in the session and redirects back to
+   the bare page. *@
+
+<div class="csi">
+    <partial name="_ClassicSteps" model="0" />
+
+    <div class="csi-card">
+        <h1 class="csi-card__title">Enter Basic Information</h1>
+
+        @* On a wide screen the Note stands beside the investor rather than under
+           it, so the drafts come up by its height; narrower, it drops back below. *@
+        <div class="csi-split">
+        <section class="csi-holder csi-split__main">
+            <div class="csi-holder__head">
+                <span class="csi-holder__no">1</span>
+                <span class="csi-holder__name">Investor</span>
+                <span class="csi-chip">Primary holder</span>
+                <span class="csi-status @(Model.Identified ? "csi-status--ok" : null)">@(Model.Identified ? "Identified" : "Not identified")</span>
+            </div>
+
+            <partial name="_HolderIdentification" model="@(new HolderIdentificationBlock(Model, "csi", step => Url.Action(step)!))" />
+        </section>
+
+        <aside class="csi-split__side">
+            <div class="csi-note">
+                <svg class="csi-note__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 11v6"></path><circle cx="12" cy="7.5" r=".7" fill="currentColor"></circle></svg>
+                <div class="csi-note__body">
+                    <div class="csi-note__title">Note</div>
+                    <ul>
+                        @foreach (var n in InvestorIdentificationViewModel.Notes)
+                        {
+                            <li>@n</li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </aside>
+        </div>
+
+    <section class="csi-drafts">
+        <div class="csi-drafts__head">
+            <h2 class="csi-drafts__title">Continue an incomplete application</h2>
+            <p class="csi-drafts__sub">@Model.Drafts.Count most recent saved and not submitted &middot; identifiers are masked &middot; a draft is kept for 30 days</p>
+        </div>
+        <table class="csi-drafts__table">
+            <thead>
+                <tr>
+                    <th scope="col">Application</th>
+                    <th scope="col">Name</th>
+                    <th scope="col">PAN</th>
+                    <th scope="col">Date of birth</th>
+                    <th scope="col">Amount</th>
+                    <th scope="col"><span class="visually-hidden">Action</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var d in Model.Drafts)
+                {
+                    <tr>
+                        <td data-label="Application"><strong>@d.AppNo</strong></td>
+                        <td data-label="Name">@d.Name</td>
+                        <td data-label="PAN">@d.Pan</td>
+                        <td data-label="Date of birth">@d.Dob</td>
+                        <td data-label="Amount">@PayInSlipViewModel.Rupees(d.Amount)</td>
+                        <td class="csi-drafts__act">
+                            @* Picked up under the number it was opened with, holder in full. *@
+                            @* Only the draft's number is posted, and the server checks it is one of this partner's. *@
+                            <form method="post" asp-action="Continue" data-partial>
+                                <input type="hidden" name="draft" value="@d.AppNo">
+                                <button type="submit" class="csi-link btn-reset" data-loader="Opening Upload Documents…" data-loader-hint="Application @d.AppNo">Continue <span aria-hidden="true">&rsaquo;</span></button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </section>
+
+    @if (Model.ShowDemoData)
+    {
+    @* Nothing here is real: every PAN starts XXXX and they all share one date of
+       birth, so the page can be demoed without anybody's own details. The card
+       describes the mock backend, and is shown only while that answers. *@
+    <section class="csi-demo">
+        <div class="csi-demo__head">
+            <h2 class="csi-demo__title">Test data</h2>
+            @{
+                // One case per PAN: a PAN with two folios is one case, both folios on its row.
+                var folioCases = MockInvestors.Folios.GroupBy(f => f.Pan).ToList();
+                var cases = folioCases.Count + MockInvestors.Pans.Length;
+            }
+            <p class="csi-demo__sub">@cases cases, and what each one does &middot; mock records only &middot; every PAN starts <strong>XXXX</strong> &middot; every date of birth on record is <strong>@MockInvestors.DemoDob</strong></p>
+        </div>
+        @{
+            // The cases run on from one another: the folios first, then the PANs the
+            // register does not hold.
+            var caseNo = 0;
+        }
+        <table class="csi-demo__table">
+            <thead>
+                <tr>
+                    <th scope="col"><span class="visually-hidden">Case</span></th>
+                    <th scope="col">PAN</th>
+                    <th scope="col">Date of birth</th>
+                    <th scope="col">Folio</th>
+                    <th scope="col">What happens</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var g in folioCases)
+                {
+                    caseNo++;
+                    var first = g.First();
+                    <tr>
+                        <td data-label="Case"><span class="csi-demo__no">@caseNo</span></td>
+                        <td data-label="PAN"><code>@g.Key</code></td>
+                        <td data-label="Date of birth">
+                            @if (first.Dob.Length > 0) { @first.Dob }
+                            else { <span class="csi-demo__none">not on record</span> }
+                        </td>
+                        <td data-label="Folio">
+                            @foreach (var f in g) { <code>@f.Folio</code> }
+                        </td>
+                        <td data-label="What happens">@first.Shows</td>
+                    </tr>
+                }
+                @foreach (var m in MockInvestors.Pans)
+                {
+                    caseNo++;
+                    <tr>
+                        <td data-label="Case"><span class="csi-demo__no">@caseNo</span></td>
+                        <td data-label="PAN"><code>@m.Pan</code></td>
+                        <td data-label="Date of birth">@m.Dob</td>
+                        <td data-label="Folio"><span class="csi-demo__none">no folio</span></td>
+                        <td data-label="What happens">@m.Shows</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <ul class="csi-demo__notes">
+            <li>A folio can also be searched by its number, with the same result as its PAN.</li>
+            <li>One of these PANs with any other date of birth is turned back &mdash; the two are always checked together.</li>
+            <li>Any other valid PAN still works: its last digit decides the outcome &mdash; <strong>0</strong> no such pair, <strong>1</strong> name mismatch, anything else all three match.</li>
+        </ul>
+    </section>
+    }
+    </div>
+</div>
+
+@* Proceed re-checks everything on the server and opens the application. *@
+<form id="csiProceedForm" method="post" asp-action="Proceed" data-partial hidden></form>
+<form id="csiClearForm" method="post" asp-action="Clear" data-partial hidden></form>
+
+<footer class="csi-bar">
+    <div class="csi-bar__inner">
+        <a class="csi-btn csi-btn--back" asp-controller="Dashboard" asp-action="Index"
+           data-loader="Going back to the dashboard">Back</a>
+        <p class="csi-bar__hint">
+            @if (Model.Identified)
+            {
+                @:Investor identified &mdash; <strong>ready to proceed</strong>
+            }
+            else
+            {
+                @:Identify the investor to continue &mdash; <strong>check the record once the fields are filled</strong>
+            }
+        </p>
+        <div class="csi-bar__right">
+            <button type="submit" class="csi-link btn-reset" form="csiClearForm">Clear All</button>
+            <button type="submit" class="csi-btn csi-btn--primary" form="csiProceedForm" disabled="@(!Model.Identified)"
+                    data-loader="Opening Upload Documents…">Proceed</button>
+        </div>
+    </div>
+</footer>
+
+@* Every form and link above posts or fetches without the page reloading. *@
+@section Scripts {
+    <script src="~/js/partial-forms.js" asp-append-version="true"></script>
+}

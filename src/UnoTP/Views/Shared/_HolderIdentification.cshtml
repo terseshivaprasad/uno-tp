@@ -1,0 +1,329 @@
+@model HolderIdentificationBlock
+@using Stage = UnoTP.ViewModels.InvestorIdentificationViewModel.Stage
+@* Investor Identification's search and result for one holder: the primary on
+   Investor Identification, and each joint holder on Investor Information. Every
+   step posts to the server, which checks the holder against the register and, for
+   a PAN with no folio, reads the PAN copy and asks NSDL (see HolderSearch). *@
+@{
+    var m = Model.Search;
+    var ids = Model.Ids;
+    var r = m.Record;
+    var newPan = r is not null && r.Folio.Length == 0;
+
+    // The field that needs looking at first takes the caret when the page comes back.
+    var focus = m.PanError is not null ? ids + "Pan"
+        : m.DobError is not null ? ids + "Dd"
+        : m.FolioError is not null ? ids + "Folio"
+        : m.CopyError is not null ? ids + "PanFile"
+        : m.At == Stage.NameMismatch && Model.NameRetry ? ids + "NsdlName"
+        : null;
+}
+
+@functions {
+    // A button that posts one step: through the step's own form, or the page's form.
+    private async Task Step(string step, string css, string label, string? loader = null)
+    {
+        if (Model.Embedded)
+        {
+            <button type="submit" class="@css" formaction="@Model.Url(step)" formnovalidate data-loader="@loader">@Html.Raw(label)</button>
+        }
+        else
+        {
+            <button type="submit" class="@css" data-loader="@loader">@Html.Raw(label)</button>
+        }
+        await Task.CompletedTask;
+    }
+
+    // Search again: a form of its own, or a button in the page's form.
+    private async Task Again(string css, string label)
+    {
+        if (Model.Locked) return;
+        if (Model.Embedded)
+        {
+            await Step("Again", css, label);
+        }
+        else
+        {
+            <form method="post" action="@Model.Url("Again")" asp-antiforgery="true" data-partial>
+                @{ await Step("Again", css, label); }
+            </form>
+        }
+    }
+
+    private async Task SearchFields(InvestorIdentificationViewModel m, string ids, string? focus)
+    {
+        if (Model.FolioSearch)
+        {
+            <fieldset class="csi-searchby">
+                <legend class="csi-label">Search By</legend>
+                <label class="csi-radio">
+                    <input type="radio" name="@Model.Name("By")" value="pan" checked="@(m.By != "folio")">
+                    <span>PAN &amp; Date of Birth</span>
+                </label>
+                <label class="csi-radio">
+                    <input type="radio" name="@Model.Name("By")" value="folio" checked="@(m.By == "folio")">
+                    <span>Folio Number</span>
+                </label>
+            </fieldset>
+        }
+        else
+        {
+            <input type="hidden" name="@Model.Name("By")" value="pan">
+        }
+
+        <div class="csi-fields">
+            <div class="csi-field" data-for="pan">
+                <label class="csi-label" for="@(ids)Pan">Enter PAN</label>
+                <input class="csi-control csi-control--caps @(m.PanError is not null ? "is-invalid" : null)" id="@(ids)Pan" name="@Model.Name("Pan")" value="@m.Pan"
+                       maxlength="10" autocomplete="off" spellcheck="false" aria-describedby="@(ids)PanError"
+                       aria-invalid="@(m.PanError is not null ? "true" : null)" autofocus="@(focus == ids + "Pan")">
+                <p class="csi-error" id="@(ids)PanError" hidden="@(m.PanError is null)">@m.PanError</p>
+            </div>
+
+            <div class="csi-field" data-for="pan">
+                <span class="csi-label" id="@(ids)DobLabel">Date Of Birth</span>
+                @* Three boxes with slashes between, like the old jq-dte control. *@
+                <div class="csi-date @(m.DobError is not null ? "is-invalid" : null)" role="group" aria-labelledby="@(ids)DobLabel" aria-describedby="@(ids)DobError">
+                    <input class="csi-date__part" id="@(ids)Dd" name="@Model.Name("Dd")" value="@m.Dd" inputmode="numeric" maxlength="2" placeholder="DD" aria-label="Day" autocomplete="off" autofocus="@(focus == ids + "Dd")">
+                    <span class="csi-date__sep">-</span>
+                    <input class="csi-date__part" name="@Model.Name("Mm")" value="@m.Mm" inputmode="numeric" maxlength="2" placeholder="MM" aria-label="Month" autocomplete="off">
+                    <span class="csi-date__sep">-</span>
+                    <input class="csi-date__part csi-date__part--year" name="@Model.Name("Yyyy")" value="@m.Yyyy" inputmode="numeric" maxlength="4" placeholder="YYYY" aria-label="Year" autocomplete="off">
+                </div>
+                <p class="csi-error" id="@(ids)DobError" hidden="@(m.DobError is null)">@m.DobError</p>
+            </div>
+
+            @if (Model.FolioSearch)
+            {
+                <div class="csi-field" data-for="folio">
+                    <label class="csi-label" for="@(ids)Folio">Enter Folio Number</label>
+                    <input class="csi-control csi-control--caps @(m.FolioError is not null ? "is-invalid" : null)" id="@(ids)Folio" name="@Model.Name("Folio")" value="@m.Folio"
+                           maxlength="16" autocomplete="off" spellcheck="false" aria-describedby="@(ids)FolioError"
+                           aria-invalid="@(m.FolioError is not null ? "true" : null)" autofocus="@(focus == ids + "Folio")">
+                    <p class="csi-error" id="@(ids)FolioError" hidden="@(m.FolioError is null)">@m.FolioError</p>
+                </div>
+            }
+
+            <div class="csi-field csi-field--check">
+                @{ await Step("Check", "csi-check", "Check record <span aria-hidden=\"true\">&rsaquo;</span>"); }
+            </div>
+        </div>
+
+        @if (m.OpsError is not null)
+        {
+            @* Nothing the partner can type fixes this, so it says who can. *@
+            <div class="csi-gap csi-gap--alert csi-ops" role="alert">
+                <svg class="csi-gap__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"></circle><path d="M5.5 20a6.5 6.5 0 0 1 13 0"></path><path d="M18.5 4.5l2 2M20.5 4.5l-2 2"></path></svg>
+                <div class="csi-gap__body">
+                    <div class="csi-gap__title">Connect with the Operations team</div>
+                    <p>@m.OpsError</p>
+                </div>
+            </div>
+        }
+
+        <p class="csi-hint" data-for="pan">Both fields are required &mdash; a PAN-only search is not permitted.</p>
+        @if (Model.FolioSearch)
+        {
+            <p class="csi-hint" data-for="folio">The folio number alone is enough &mdash; it returns the same record as the PAN search.</p>
+        }
+    }
+}
+
+@if (r is null)
+{
+    @if (Model.Embedded)
+    {
+        <div class="csi-search">
+            @{ await SearchFields(m, ids, focus); }
+        </div>
+    }
+    else
+    {
+        <form class="csi-search" method="post" action="@Model.Url("Check")" asp-antiforgery="true" data-partial novalidate>
+            @{ await SearchFields(m, ids, focus); }
+        </form>
+    }
+}
+else
+{
+    @* The record, laid out on the page. The old site put the match behind a
+       "Please make a selection" dialog. *@
+    <div class="csi-result">
+        <div class="csi-result__head">
+            <span class="csi-avatar @(r.Initials.Length > 0 ? "csi-avatar--initials" : null)" aria-hidden="true">
+                <svg class="csi-avatar__figure" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="4"></circle><path d="M4.5 20.5a7.5 7.5 0 0 1 15 0"></path></svg>
+                <span class="csi-avatar__initials">@r.Initials</span>
+            </span>
+            <div class="csi-result__who">
+                <div class="csi-result__name">@r.Heading</div>
+                <div class="csi-result__meta">
+                    @if (r.Id is not null)
+                    {
+                        <span class="csi-result__id">@r.Id</span>
+                    }
+                    <span class="csi-chip @(m.Kind switch { "Existing customer" => "csi-chip--success", "New investor" => "csi-chip--new", _ => null })">@m.Kind</span>
+                    <span class="csi-result__detail">@m.Detail</span>
+                </div>
+            </div>
+            @* Back to the fields, still holding what was typed. *@
+            @{ await Again("csi-again", "<svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"10.5\" cy=\"10.5\" r=\"6.5\"></circle><path d=\"M15.5 15.5L20 20\"></path></svg> Search again"); }
+        </div>
+
+        <dl class="csi-record">
+            <div class="csi-record__item"><dt>PAN</dt><dd>@r.MaskedPan</dd></div>
+            <div class="csi-record__item"><dt>Date of birth</dt><dd>@r.MaskedDob</dd></div>
+            @* Gender is held against the folio and is not the partner's to change
+               here, so the card says where a correction comes from. *@
+            @if (r.Gender.Length > 0)
+            {
+                <div class="csi-record__item">
+                    <dt>
+                        Gender
+                        <svg class="csi-record__lock" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9.5" rx="1.5"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>
+                    </dt>
+                    <dd>@r.Gender</dd>
+                    <p class="csi-record__hint">Held on the folio &mdash; Operations can correct it</p>
+                </div>
+            }
+            @if (r.Note.Length > 0)
+            {
+                <div class="csi-record__item"><dt>KYC</dt><dd>@r.Note</dd></div>
+            }
+        </dl>
+
+        @if (newPan)
+        {
+            @* A PAN with no folio is established here: the PAN copy is uploaded, read
+               by OCR, and the PAN, date of birth and name are put to NSDL - all of it
+               answered by the backend services. *@
+            <div class="csi-verify">
+                <div class="csi-verify__head">
+                    <h3 class="csi-verify__title">Establish this PAN</h3>
+                    <p class="csi-verify__sub">Upload the PAN copy. It is read by OCR, then the PAN, date of birth and name are verified with NSDL.</p>
+                </div>
+
+                @if (m.Log.Count == 0)
+                {
+                    if (Model.Embedded)
+                    {
+                        <div class="csi-verify__upload">
+                            <input class="csi-file @(m.CopyError is not null ? "is-invalid" : null)" type="file" id="@(ids)PanFile" name="@Model.Name("Copy")" accept="application/pdf,image/jpeg"
+                                   aria-label="PAN copy" aria-describedby="@(ids)PanFileError" autofocus="@(focus == ids + "PanFile")">
+                            @{ await Step("Verify", "csi-check", "Upload and verify", "Reading the PAN copy and asking NSDL…"); }
+                            <p class="csi-error csi-verify__error" id="@(ids)PanFileError" hidden="@(m.CopyError is null)">@m.CopyError</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <form class="csi-verify__upload" method="post" action="@Model.Url("Verify")" asp-antiforgery="true" enctype="multipart/form-data" data-partial novalidate>
+                            <input class="csi-file @(m.CopyError is not null ? "is-invalid" : null)" type="file" id="@(ids)PanFile" name="@Model.Name("Copy")" accept="application/pdf,image/jpeg"
+                                   aria-label="PAN copy" aria-describedby="@(ids)PanFileError" autofocus="@(focus == ids + "PanFile")">
+                            @{ await Step("Verify", "csi-check", "Upload and verify", "Reading the PAN copy and asking NSDL…"); }
+                            <p class="csi-error csi-verify__error" id="@(ids)PanFileError" hidden="@(m.CopyError is null)">@m.CopyError</p>
+                        </form>
+                    }
+                }
+                else
+                {
+                    <p class="csi-verify__file">@m.CopyName</p>
+                    <ol class="csi-verify__log">
+                        @foreach (var line in m.Log)
+                        {
+                            <li>@line</li>
+                        }
+                    </ol>
+
+                    @* The three NSDL results, each carrying what was put to it. *@
+                    <div class="csi-verify__checks">
+                        @foreach (var row in m.Rows)
+                        {
+                            <div class="csi-checkrow">
+                                <span class="csi-checkrow__label">@row.Label</span>
+                                <span class="csi-checkrow__value">@row.Value</span>
+                                <span class="csi-checkrow__status @(row.Ok ? "csi-checkrow__status--ok" : "csi-checkrow__status--bad")">@(row.Ok ? "Matched" : "Not matched")</span>
+                            </div>
+                        }
+                    </div>
+                }
+
+                @if (m.At == Stage.NameMismatch && Model.NameRetry)
+                {
+                    @* NSDL holds the PAN against another name, so the name is typed from
+                       the card and put to NSDL again. *@
+                    <form class="csi-verify__fix" method="post" action="@Model.Url("Retry")" asp-antiforgery="true" data-partial novalidate>
+                        <label class="csi-label" for="@(ids)NsdlName">Enter the name exactly as printed on the PAN</label>
+                        <div class="csi-verify__fixrow">
+                            <input class="csi-control csi-control--caps @(m.NameError is not null ? "is-invalid" : null)" id="@(ids)NsdlName" name="@Model.Name("NsdlName")" value="@m.NsdlName"
+                                   maxlength="60" autocomplete="off" spellcheck="false" aria-describedby="@(ids)NsdlNameError" autofocus="@(focus == ids + "NsdlName")">
+                            @{ await Step("Retry", "csi-check", "Retry NSDL verification", "Asking NSDL again…"); }
+                        </div>
+                        <p class="csi-error" id="@(ids)NsdlNameError" hidden="@(m.NameError is null)">@m.NameError</p>
+                    </form>
+                }
+                else if (m.At == Stage.NameMismatch)
+                {
+                    @* No name is typed in for this holder: the PAN has to be searched again. *@
+                    <div class="csi-gap csi-gap--alert" role="alert">
+                        <svg class="csi-gap__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M15 9l-6 6"></path><path d="M9 9l6 6"></path></svg>
+                        <div class="csi-gap__body">
+                            <div class="csi-gap__title">NSDL did not match the name</div>
+                            <p>NSDL does not hold PAN @m.Pan against the name read off this copy. Search again, and upload a clearer copy of the PAN card.</p>
+                            @{ await Again("csi-link btn-reset", "Search again"); }
+                        </div>
+                    </div>
+                }
+
+                @if (m.At == Stage.NsdlFailed)
+                {
+                    <div class="csi-gap csi-gap--alert" role="alert">
+                        <svg class="csi-gap__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M15 9l-6 6"></path><path d="M9 9l6 6"></path></svg>
+                        <div class="csi-gap__body">
+                            <div class="csi-gap__title">NSDL could not verify this PAN</div>
+                            <p>@m.FailText</p>
+                            @{ await Again("csi-link btn-reset", "Search again"); }
+                        </div>
+                    </div>
+                }
+
+                @if (m.At == Stage.Established)
+                {
+                    <div class="csi-gap csi-gap--ok" role="status">
+                        <svg class="csi-gap__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M8 12.5l2.8 2.8L16.5 9.5"></path></svg>
+                        <div class="csi-gap__body">
+                            <div class="csi-gap__title">Verified with NSDL</div>
+                            <p>The PAN, date of birth and name all match. The application can go on.</p>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
+        @if (m.Identified)
+        {
+            @* What the register holds against this record, item by item. Anything
+               missing is asked for again during entry, so it is said here rather
+               than left for the upload step to spring. *@
+            <div class="csi-onrecord @(r.Missing == 0 ? "csi-onrecord--complete" : null)">
+                <div class="csi-onrecord__label">@r.OnRecordTitle</div>
+                <ul class="csi-onrecord__list">
+                    @foreach (var item in r.OnRecord)
+                    {
+                        <li class="csi-onrecord__item @(item.Held ? null : "csi-onrecord__item--missing")">
+                            @if (item.Held)
+                            {
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"></path></svg>
+                            }
+                            else
+                            {
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M12 6v7"></path><circle cx="12" cy="18" r=".6" fill="currentColor"></circle></svg>
+                            }
+                            <span>@item.Label</span>
+                            <span class="visually-hidden">, @(item.Held ? "available with us" : "not available with us")</span>
+                        </li>
+                    }
+                </ul>
+                <p class="csi-onrecord__foot">@r.OnRecordFoot</p>
+            </div>
+        }
+    </div>
+}

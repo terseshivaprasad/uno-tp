@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>14</LangVersion>
+  </PropertyGroup>
+
+  <!-- All data comes from the backend API (UnoTP.Backend). The mock stands in for
+       it while Backend:BaseUrl is blank. -->
+  <ItemGroup>
+    <ProjectReference Include="..\UnoTP.Backend\UnoTP.Backend.csproj" />
+    <ProjectReference Include="..\UnoTP.Backend.Mock\UnoTP.Backend.Mock.csproj" />
+  </ItemGroup>
+
+</Project>
