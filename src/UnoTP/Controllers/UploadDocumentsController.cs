@@ -77,6 +77,11 @@ public class UploadDocumentsController(
     public Task<IActionResult> Upload(UploadForm form) =>
         ChangeAsync(form, model => model.UploadAsync(Request.Form.Files));
 
+    /// <summary>The name typed from the investor's PAN card, put to NSDL again.</summary>
+    [HttpPost("nsdl")]
+    public Task<IActionResult> Nsdl(UploadForm form) =>
+        ChangeAsync(form, model => model.RetryNsdlAsync(model.Investor, Request.Form["nsdlName"]));
+
     [HttpPost("ckyc")]
     public Task<IActionResult> Ckyc(UploadForm form) => Change(form, model => model.Ckyc());
 

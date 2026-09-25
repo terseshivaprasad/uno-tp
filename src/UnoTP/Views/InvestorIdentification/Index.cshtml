@@ -27,10 +27,11 @@
                 <span class="csi-holder__no">1</span>
                 <span class="csi-holder__name">Investor</span>
                 <span class="csi-chip">Primary holder</span>
-                <span class="csi-status @(Model.Identified ? "csi-status--ok" : null)">@(Model.Identified ? "Identified" : "Not identified")</span>
+                <span class="csi-status @(Model.CanProceed ? "csi-status--ok" : null)">@(Model.Identified ? "Identified" : Model.CanProceed ? "New investor" : "Not identified")</span>
             </div>
 
-            <partial name="_HolderIdentification" model="@(new HolderIdentificationBlock(Model, "csi", step => Url.Action(step)!))" />
+            <partial name="_HolderIdentification" model="@(new HolderIdentificationBlock(Model, "csi", step => Url.Action(step)!,
+                NewPanNote: "No folio against this PAN: a new application opens, and the PAN copy is checked with NSDL on Upload Documents."))" />
         </section>
 
         <aside class="csi-split__side">
@@ -173,6 +174,10 @@
             {
                 @:Investor identified &mdash; <strong>ready to proceed</strong>
             }
+            else if (Model.CanProceed)
+            {
+                @:New investor &mdash; <strong>the PAN copy is uploaded and checked next</strong>
+            }
             else
             {
                 @:Identify the investor to continue &mdash; <strong>check the record once the fields are filled</strong>
@@ -180,7 +185,7 @@
         </p>
         <div class="csi-bar__right">
             <button type="submit" class="csi-link btn-reset" form="csiClearForm">Clear All</button>
-            <button type="submit" class="csi-btn csi-btn--primary" form="csiProceedForm" disabled="@(!Model.Identified)"
+            <button type="submit" class="csi-btn csi-btn--primary" form="csiProceedForm" disabled="@(!Model.CanProceed)"
                     data-loader="Opening Upload Documents…">Proceed</button>
         </div>
     </div>

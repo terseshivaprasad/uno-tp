@@ -9,31 +9,28 @@ public sealed record SearchForm(string? By, string? Pan, string? Dd, string? Mm,
 
 /// <summary>
 /// One holder's search as the session holds it between a post and the page after it.
-/// <see cref="Checked"/> is false while the fields are being filled in or corrected;
-/// <see cref="Ocr"/> is the name OCR read off the PAN copy, and <see cref="Tried"/>
-/// the name last typed for NSDL, null while it is OCR's reading that stands. The two
-/// errors are said once and then dropped. <see cref="Added"/> is set once a joint
-/// holder who was identified is added to the application.
+/// <see cref="Checked"/> is false while the fields are being filled in or corrected.
+/// <see cref="Added"/> is set once a joint holder who was found is added to the application.
 /// </summary>
 public sealed record SearchState(
     string By, string? Pan, string? Dd, string? Mm, string? Yyyy, string? Folio,
-    bool Checked, string? CopyName = null, string? Ocr = null, string? Tried = null,
-    string? CopyError = null, string? NameError = null, bool Added = false);
+    bool Checked, bool Added = false);
 
 /// <summary>
 /// Investor Identification's workflow, step by step, for any holder: the primary on
 /// Investor Identification, and each joint holder on Investor Information. The
 /// register is asked for the PAN and date of birth or the folio; a PAN with no folio
-/// is established from its PAN copy, read by OCR and put to NSDL. Each step takes the
+/// goes on as it stands, and is put to NSDL once its PAN copy is filed with the
+/// holder's documents. Each step takes the
 /// holder's search as the session holds it and gives back what to hold next.
 /// </summary>
-public sealed class HolderSearch(IInvestorApi investors, INsdlService nsdl, IOcrService ocr)
+public sealed class HolderSearch(IInvestorApi investors)
 {
-    public InvestorIdentificationViewModel NewModel() => new(investors, nsdl);
+    public InvestorIdentificationViewModel NewModel() => new(investors);
 
     /// <summary>
     /// The holder as the session left them: blank, being filled in, or checked. Gives
-    /// back the search to hold from now on, with the errors that were said once gone.
+    /// back the search to hold from now on.
     /// </summary>
     public async Task<SearchState?> ShowAsync(InvestorIdentificationViewModel model, SearchState? saved)
     {
@@ -42,18 +39,7 @@ public sealed class HolderSearch(IInvestorApi investors, INsdlService nsdl, IOcr
         if (!saved.Checked) return saved;
 
         await model.CheckAsync();
-        if (model.At == Stage.Pending && saved.CopyName is not null)
-        {
-            model.CopyName = saved.CopyName;
-            model.NsdlName = saved.Tried;
-            await model.RunNsdlAsync(saved.Tried ?? saved.Ocr ?? "", typed: saved.Tried is not null);
-        }
-        model.CopyError = saved.CopyError;
-        model.NameError = saved.NameError ?? model.NameError;
-        // Said once: a reload after it shows the page as it stands.
-        return saved.CopyError is not null || saved.NameError is not null
-            ? saved with { CopyError = null, NameError = null }
-            : saved;
+        return saved;
     }
 
     /// <summary>Check record: what was typed is kept, and the page checks it.</summary>
@@ -62,77 +48,13 @@ public sealed class HolderSearch(IInvestorApi investors, INsdlService nsdl, IOcr
 
     /// <summary>Search again: back to the fields, still holding what was typed.</summary>
     public static SearchState? Again(SearchState? saved) =>
-        saved is null ? null : saved with { Checked = false, CopyName = null, Tried = null, CopyError = null, NameError = null, Added = false };
+        saved is null ? null : saved with { Checked = false, Added = false };
 
     /// <summary>
-    /// The PAN copy is checked here for what it is as a file, and then read by OCR for
-    /// the name on it; the file itself goes no further than that.
-    /// </summary>
-    public async Task<SearchState?> VerifyAsync(SearchState? saved, IFormFile? copy)
-    {
-        var model = NewModel();
-        if (!await RestoreAsync(model, saved) || model.At != Stage.Pending) return saved;
-        string? problem = null;
-        byte[] bytes = [];
-        if (copy is null || copy.Length == 0) problem = "Choose the PAN copy to upload";
-        else if (Path.GetExtension(copy.FileName).ToLowerInvariant() is not (".pdf" or ".jpg" or ".jpeg"))
-            problem = "Upload the PAN copy as a PDF or a JPEG";
-        else
-        {
-            bytes = await UploadDocumentsViewModel.ReadAllAsync(copy);
-            if (!UploadDocumentsViewModel.LooksLike(bytes, copy)) problem = "That file is not a readable PDF or JPEG";
-        }
-        if (problem is not null) return saved! with { CopyError = problem };
-
-        var name = Path.GetFileName(copy!.FileName);
-        try
-        {
-            var reading = await ocr.ReadAsync(DocumentKind.PanCard, "", new UploadFile(name, copy.ContentType, bytes),
-                new OcrSubject(model.Pan!, model.Dob, ""), consent: false);
-            // The PAN and date of birth searched are fixed: a copy that reads as any
-            // other is not this holder's, and another is asked for.
-            if (UploadDocumentsViewModel.PanCopyMismatch(reading, model.Pan!, model.Dob) is { } notTheirs)
-                return saved! with { CopyName = null, CopyError = $"{notTheirs}. Upload the PAN card of the PAN searched, clear enough to read." };
-            return saved! with { CopyName = name, Ocr = reading.Name, Tried = null, CopyError = null };
-        }
-        catch (ExternalServiceException e)
-        {
-            return saved! with { CopyError = e.Message };
-        }
-    }
-
-    /// <summary>The name typed from the PAN card, put to NSDL in place of OCR's reading.</summary>
-    public async Task<SearchState?> RetryAsync(SearchState? saved, string? typedName)
-    {
-        var model = NewModel();
-        if (!await RestoreAsync(model, saved) || model.At != Stage.Pending || saved!.CopyName is null) return saved;
-        var typed = InvestorIdentificationViewModel.NormaliseName(typedName);
-        return typed.Length < 3
-            ? saved with { NameError = "Enter the name as printed on the PAN" }
-            : saved with { Tried = typed, NameError = null };
-    }
-
-    /// <summary>
-    /// The holder, checked again from the session before they go on: a record found,
-    /// or a PAN that NSDL still matches against the name it was established with.
-    /// Null unless they are identified.
-    /// </summary>
-    public async Task<InvestorIdentificationViewModel?> IdentifiedAsync(SearchState? saved)
-    {
-        var model = NewModel();
-        if (!await RestoreAsync(model, saved)) return null;
-        if (model.At == Stage.Pending && saved!.CopyName is not null)
-        {
-            model.CopyName = saved.CopyName;
-            await model.RunNsdlAsync(saved.Tried ?? saved.Ocr ?? "", typed: saved.Tried is not null);
-        }
-        return model.Identified && model.Record is not null ? model : null;
-    }
-
-    /// <summary>
-    /// A joint holder found by their search, checked again from the session: a folio
-    /// the register holds, or a PAN with no folio - which is put to NSDL once their
-    /// PAN copy is filed, so they are added on it as it stands. Null otherwise.
+    /// A holder found by their search, checked again from the session: a folio the
+    /// register holds, or a PAN with no folio - which is put to NSDL once their PAN
+    /// copy is filed, so they go on as it stands. Null otherwise. The investor
+    /// proceeds on it, and a joint holder is added on it.
     /// </summary>
     public async Task<InvestorIdentificationViewModel?> FoundAsync(SearchState? saved)
     {

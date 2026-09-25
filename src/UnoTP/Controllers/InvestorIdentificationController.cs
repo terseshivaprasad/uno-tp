@@ -14,8 +14,6 @@ namespace UnoTP.Controllers;
 /// reaches a log, the history or a Referer header.
 /// </summary>
 [RequiresFeature("new-fd")]
-[RequestSizeLimit(12 * 1024 * 1024)]
-[RequestFormLimits(MultipartBodyLengthLimit = 12 * 1024 * 1024)]
 [Route("Purchase/InvestorIdentification")]
 public class InvestorIdentificationController(
     FeatureSet features,
@@ -66,29 +64,16 @@ public class InvestorIdentificationController(
         return Back();
     }
 
-    [HttpPost("verify")]
-    public async Task<IActionResult> Verify(IFormFile? copy)
-    {
-        Saved = await search.VerifyAsync(Saved, copy);
-        return Back();
-    }
-
-    [HttpPost("retry")]
-    public async Task<IActionResult> Retry(string? nsdlName)
-    {
-        Saved = await search.RetryAsync(Saved, nsdlName);
-        return Back();
-    }
-
     /// <summary>
-    /// Opens the application and carries the holder to the upload step, once they are
-    /// identified. The application is held on the server; the upload step finds it
+    /// Opens the application and carries the holder to the upload step, once the
+    /// register has found them or holds no folio against their PAN - whose PAN copy
+    /// is then filed and put to NSDL on the upload step. The application is held on the server; the upload step finds it
     /// through the session.
     /// </summary>
     [HttpPost("proceed")]
     public async Task<IActionResult> Proceed()
     {
-        if (await search.IdentifiedAsync(Saved) is not { Record: { } record }) return Back();
+        if (await search.FoundAsync(Saved) is not { Record: { } record }) return Back();
 
         // Every search that is proceeded from opens an application of its own, and
         // the backend gives it its number. A PAN copy already on it is not asked again.

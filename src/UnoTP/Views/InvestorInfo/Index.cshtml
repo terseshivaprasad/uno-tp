@@ -217,7 +217,7 @@
                     </div>
                 }
                 <div class="cii-identify">
-                    <partial name="_HolderIdentification" model="@(new HolderIdentificationBlock(search, $"j{holder}", step => Url.Action("Joint" + step, new { n = holder })!, Prefix: $"Joint{holder}.", FolioSearch: false, NameRetry: false, Locked: true, EstablishHere: false))" />
+                    <partial name="_HolderIdentification" model="@(new HolderIdentificationBlock(search, $"j{holder}", step => Url.Action("Joint" + step, new { n = holder })!, Prefix: $"Joint{holder}.", FolioSearch: false, Locked: true))" />
                 </div>
             }
             else

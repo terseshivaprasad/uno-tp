@@ -70,6 +70,16 @@ public sealed class UploadState
     /// holder the folio gives none for. It sets the deposit category where the
     /// partner does not choose it.</summary>
     public string Gender { get; set; } = "";
+
+    /// <summary>Where NSDL stands on an investor with no folio: empty until their PAN
+    /// copy is filed, then "verified", "name" or "failed".</summary>
+    public string Nsdl { get; set; } = "";
+
+    /// <summary>The name last put to NSDL: read off the PAN copy, or typed from it.</summary>
+    public string NsdlName { get; set; } = "";
+
+    /// <summary>The investor's name as NSDL verified it, for one who came with no folio.</summary>
+    public string Name { get; set; } = "";
     public string EmpCode { get; set; } = "";
     public string EmpCompany { get; set; } = "";
     public string EmpHolder { get; set; } = "";

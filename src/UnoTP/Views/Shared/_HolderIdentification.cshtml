@@ -2,8 +2,9 @@
 @using Stage = UnoTP.ViewModels.InvestorIdentificationViewModel.Stage
 @* Investor Identification's search and result for one holder: the primary on
    Investor Identification, and each joint holder on Investor Information. Every
-   step posts to the server, which checks the holder against the register and, for
-   a PAN with no folio, reads the PAN copy and asks NSDL (see HolderSearch). *@
+   step posts to the server, which checks the holder against the register (see
+   HolderSearch). A PAN with no folio goes on as it stands: its PAN copy is read and
+   put to NSDL once it is filed with the holder's documents. *@
 @{
     var m = Model.Search;
     var ids = Model.Ids;
@@ -14,8 +15,6 @@
     var focus = m.PanError is not null ? ids + "Pan"
         : m.DobError is not null ? ids + "Dd"
         : m.FolioError is not null ? ids + "Folio"
-        : m.CopyError is not null ? ids + "PanFile"
-        : m.At == Stage.NameMismatch && Model.NameRetry ? ids + "NsdlName"
         : null;
 }
 
@@ -162,11 +161,10 @@ else
                         <span class="csi-result__id">@r.Id</span>
                     }
                     @{
-                        var joinedNew = newPan && !Model.EstablishHere;
-                        var kind = joinedNew ? "New investor" : m.Kind;
+                        var kind = newPan ? "New investor" : m.Kind;
                     }
                     <span class="csi-chip @(kind switch { "Existing customer" => "csi-chip--success", "New investor" => "csi-chip--new", _ => null })">@kind</span>
-                    <span class="csi-result__detail">@(joinedNew ? "No folio against this PAN: it is checked with NSDL once the PAN copy is filed under Documents." : m.Detail)</span>
+                    <span class="csi-result__detail">@(newPan ? Model.NewPanNote : m.Detail)</span>
                 </div>
             </div>
             @* Back to the fields, still holding what was typed. *@
@@ -194,113 +192,6 @@ else
                 <div class="csi-record__item"><dt>KYC</dt><dd>@r.Note</dd></div>
             }
         </dl>
-
-        @if (newPan && Model.EstablishHere)
-        {
-            @* A PAN with no folio is established here: the PAN copy is uploaded, read
-               by OCR, and the PAN, date of birth and name are put to NSDL - all of it
-               answered by the backend services. *@
-            <div class="csi-verify">
-                <div class="csi-verify__head">
-                    <h3 class="csi-verify__title">Establish this PAN</h3>
-                    <p class="csi-verify__sub">Upload the PAN copy. It is read by OCR, then the PAN, date of birth and name are verified with NSDL.</p>
-                </div>
-
-                @if (m.Log.Count == 0)
-                {
-                    if (Model.Embedded)
-                    {
-                        <div class="csi-verify__upload">
-                            <input class="csi-file @(m.CopyError is not null ? "is-invalid" : null)" type="file" id="@(ids)PanFile" name="@Model.Name("Copy")" accept="application/pdf,image/jpeg"
-                                   aria-label="PAN copy" aria-describedby="@(ids)PanFileError" autofocus="@(focus == ids + "PanFile")">
-                            @{ await Step("Verify", "csi-check", "Upload and verify", "Reading the PAN copy and asking NSDL…"); }
-                            <p class="csi-error csi-verify__error" id="@(ids)PanFileError" hidden="@(m.CopyError is null)">@m.CopyError</p>
-                        </div>
-                    }
-                    else
-                    {
-                        <form class="csi-verify__upload" method="post" action="@Model.Url("Verify")" asp-antiforgery="true" enctype="multipart/form-data" data-partial novalidate>
-                            <input class="csi-file @(m.CopyError is not null ? "is-invalid" : null)" type="file" id="@(ids)PanFile" name="@Model.Name("Copy")" accept="application/pdf,image/jpeg"
-                                   aria-label="PAN copy" aria-describedby="@(ids)PanFileError" autofocus="@(focus == ids + "PanFile")">
-                            @{ await Step("Verify", "csi-check", "Upload and verify", "Reading the PAN copy and asking NSDL…"); }
-                            <p class="csi-error csi-verify__error" id="@(ids)PanFileError" hidden="@(m.CopyError is null)">@m.CopyError</p>
-                        </form>
-                    }
-                }
-                else
-                {
-                    <p class="csi-verify__file">@m.CopyName</p>
-                    <ol class="csi-verify__log">
-                        @foreach (var line in m.Log)
-                        {
-                            <li>@line</li>
-                        }
-                    </ol>
-
-                    @* The three NSDL results, each carrying what was put to it. *@
-                    <div class="csi-verify__checks">
-                        @foreach (var row in m.Rows)
-                        {
-                            <div class="csi-checkrow">
-                                <span class="csi-checkrow__label">@row.Label</span>
-                                <span class="csi-checkrow__value">@row.Value</span>
-                                <span class="csi-checkrow__status @(row.Ok ? "csi-checkrow__status--ok" : "csi-checkrow__status--bad")">@(row.Ok ? "Matched" : "Not matched")</span>
-                            </div>
-                        }
-                    </div>
-                }
-
-                @if (m.At == Stage.NameMismatch && Model.NameRetry)
-                {
-                    @* NSDL holds the PAN against another name, so the name is typed from
-                       the card and put to NSDL again. *@
-                    <form class="csi-verify__fix" method="post" action="@Model.Url("Retry")" asp-antiforgery="true" data-partial novalidate>
-                        <label class="csi-label" for="@(ids)NsdlName">Enter the name exactly as printed on the PAN</label>
-                        <div class="csi-verify__fixrow">
-                            <input class="csi-control csi-control--caps @(m.NameError is not null ? "is-invalid" : null)" id="@(ids)NsdlName" name="@Model.Name("NsdlName")" value="@m.NsdlName"
-                                   maxlength="60" autocomplete="off" spellcheck="false" aria-describedby="@(ids)NsdlNameError" autofocus="@(focus == ids + "NsdlName")">
-                            @{ await Step("Retry", "csi-check", "Retry NSDL verification", "Asking NSDL again…"); }
-                        </div>
-                        <p class="csi-error" id="@(ids)NsdlNameError" hidden="@(m.NameError is null)">@m.NameError</p>
-                    </form>
-                }
-                else if (m.At == Stage.NameMismatch)
-                {
-                    @* No name is typed in for this holder: the PAN has to be searched again. *@
-                    <div class="csi-gap csi-gap--alert" role="alert">
-                        <svg class="csi-gap__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M15 9l-6 6"></path><path d="M9 9l6 6"></path></svg>
-                        <div class="csi-gap__body">
-                            <div class="csi-gap__title">NSDL did not match the name</div>
-                            <p>NSDL does not hold PAN @m.Pan against the name read off this copy. Search again, and upload a clearer copy of the PAN card.</p>
-                            @{ await Again("csi-link btn-reset", "Search again"); }
-                        </div>
-                    </div>
-                }
-
-                @if (m.At == Stage.NsdlFailed)
-                {
-                    <div class="csi-gap csi-gap--alert" role="alert">
-                        <svg class="csi-gap__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M15 9l-6 6"></path><path d="M9 9l6 6"></path></svg>
-                        <div class="csi-gap__body">
-                            <div class="csi-gap__title">NSDL could not verify this PAN</div>
-                            <p>@m.FailText</p>
-                            @{ await Again("csi-link btn-reset", "Search again"); }
-                        </div>
-                    </div>
-                }
-
-                @if (m.At == Stage.Established)
-                {
-                    <div class="csi-gap csi-gap--ok" role="status">
-                        <svg class="csi-gap__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M8 12.5l2.8 2.8L16.5 9.5"></path></svg>
-                        <div class="csi-gap__body">
-                            <div class="csi-gap__title">Verified with NSDL</div>
-                            <p>The PAN, date of birth and name all match. The application can go on.</p>
-                        </div>
-                    </div>
-                }
-            </div>
-        }
 
         @if (m.Identified)
         {

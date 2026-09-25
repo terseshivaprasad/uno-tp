@@ -44,9 +44,12 @@ public class UploadDocumentsViewModel(
     /// <summary>The application the session is on, read afresh for every request.</summary>
     public UnoTP.Backend.Application App { get; } = app;
 
-    private Holder Who => App.Holder;
+    // The investor as the application was opened on them, under the name NSDL has
+    // since verified where they came with no folio. Read off the saved state, not
+    // State, which is built from this.
+    private Holder Who => App.Upload is { Name.Length: > 0 } u ? App.Holder with { Name = u.Name } : App.Holder;
 
-    public string HolderName => Who.Name;
+    public string HolderName => Who.Name.Length > 0 ? Who.Name : "Name read off the PAN copy";
 
     // A PAN established at the step before has no folio yet: one opens with the
     // application, and the head of the page says so rather than leaving a blank.
@@ -121,15 +124,27 @@ public class UploadDocumentsViewModel(
         : "The communication address comes with the CKYC record, once the investor consents. It is not uploaded here.";
 
     /// <summary>
-    /// Whether NSDL is asked about a holder's PAN when their PAN copy is filed: a
-    /// joint holder with no folio, who is added on their PAN and date of birth
-    /// alone. OCR reads the name off the copy, and NSDL is asked for all three. The
-    /// investor's PAN is established on Investor Identification instead.
+    /// Whether NSDL is asked about a holder's PAN when their PAN copy is filed: any
+    /// holder with no folio - the investor or a joint holder - who comes to this
+    /// step on their PAN and date of birth alone. OCR reads the name off the copy,
+    /// and NSDL is asked for all three. An application whose PAN was established
+    /// before it was opened is past it.
     /// </summary>
-    public static bool NsdlApplies(DocHolder h) => h.Joint && h.Who.Folio.Length == 0;
+    public static bool NsdlApplies(DocHolder h) => h.Who.Folio.Length == 0 && !h.Who.PanFiled;
 
-    /// <summary>Where NSDL stands on a joint holder: empty until asked, "verified", "name" or "failed".</summary>
-    public string NsdlOf(DocHolder h) => h.Joint ? State.Joint[h.Code].Nsdl : "";
+    /// <summary>Where NSDL stands on a holder: empty until asked, "verified", "name" or "failed".</summary>
+    public string NsdlOf(DocHolder h) => h.Joint ? State.Joint[h.Code].Nsdl : State.Nsdl;
+
+    private string NsdlNameOf(DocHolder h) => h.Joint ? State.Joint[h.Code].NsdlName : State.NsdlName;
+
+    // The holder as the state now has them, after NSDL may have named them.
+    private DocHolder Again(DocHolder h) => h.Joint ? JointHolder(h.Code)! : Investor;
+
+    // What NSDL failing means for the holder: a joint holder is removed, and an
+    // investor the application was opened on is searched for again.
+    private static string NsdlFailedNext(DocHolder h) => h.Joint
+        ? "Remove this holder and search again."
+        : "Start again from Investor Identification with the right PAN and date of birth.";
 
     /// <summary>
     /// Whether the PAN-Aadhaar link is asked for a holder: only one with no folio
@@ -461,7 +476,7 @@ public class UploadDocumentsViewModel(
     public sealed record SlotView(
         SlotDef Def, string Key, bool Used, string? NotApplicable, string? Locked, StoredDoc? Doc,
         string? Must, string? With, int Attempts, string? Error, string? ErrorLog, bool Optional = false,
-        ReadCard? Read = null)
+        ReadCard? Read = null, string? LockedHint = null)
     {
         /// <summary>Wanted before the step can go on: asked for, not optional, and not in yet.</summary>
         public bool Missing => Used && !Optional && Doc is null;
@@ -508,9 +523,12 @@ public class UploadDocumentsViewModel(
             _ => (true, (string?)null),
         };
 
-        // A proof is checked as whatever type was chosen above it, so there is
+        // A proof of address is read and checked against the holder the PAN copy
+        // establishes, so it waits for that copy wherever one is needed. And a
+        // proof is checked as whatever type was chosen above it, so there is
         // nothing to check it as until one is.
-        string? locked = !used ? null : def.Key switch
+        var waitsOnPan = used && def.Key is "poa" or "mail" && PanWanted(h);
+        string? locked = !used ? null : waitsOnPan ? "Upload the PAN copy first" : def.Key switch
         {
             "poa" when !AutoProofType && proofType.Length == 0 => "Choose the proof of address first",
             "mail" when !AutoProofType && proofType.Length == 0 => "Choose the communication address proof first",
@@ -520,6 +538,7 @@ public class UploadDocumentsViewModel(
 
         string? with = def.Key switch
         {
+            "pan" when NsdlApplies(h) => Run + "the PAN, date of birth and name are checked with NSDL.",
             "pan" => Run + $"checked with {PanAuthority}.",
             "payment" => Run + "the account is confirmed with the bank it is drawn on.",
             "poa" or "mail" when Issuers.TryGetValue(proofType, out var issuer) => issuer.Length > 0
@@ -553,7 +572,8 @@ public class UploadDocumentsViewModel(
         return new SlotView(def, key, used, used ? null : na, locked, doc,
             optional ? "Not mandatory: the holder is on a folio." : null,
             with, s.AttemptsOf(key),
-            flash?.Errors.GetValueOrDefault(key), flash?.ErrorLog.GetValueOrDefault(key), optional, read);
+            flash?.Errors.GetValueOrDefault(key), flash?.ErrorLog.GetValueOrDefault(key), optional, read,
+            waitsOnPan ? "The proof is checked against the holder the PAN copy establishes." : null);
     }
 
     /// <summary>
@@ -576,7 +596,7 @@ public class UploadDocumentsViewModel(
                 : NotRead("Same as permanent", "Post goes to the permanent address, so there is no other address to read.",
                     "Choose Different from Permanent to file a proof of another address.")),
         ];
-        if (h.Joint) cards.Add(NsdlCard(h));
+        if (h.Joint || NsdlApplies(h)) cards.Add(NsdlCard(h));
         cards.Add(("PAN–Aadhaar link", LinkApplies(h) ? State.Reads[h.Key("pan")]
             : NotRead("Not applicable", $"{Mask(h.Who.Pan)} · on the folio",
                 "The PAN–Aadhaar link is asked only for a holder with no folio yet.")));
@@ -607,16 +627,16 @@ public class UploadDocumentsViewModel(
         var pan = Mask(h.Who.Pan);
         if (!NsdlApplies(h))
             return new("PAN – NSDL", NotRead("Not applicable", $"{pan} · on the folio", "A holder on a folio is not asked about with NSDL again."));
-        var j = State.Joint[h.Code];
+        var (nsdlState, nsdlName) = (NsdlOf(h), NsdlNameOf(h));
         var key = h.Key("nsdl");
-        return j.Nsdl switch
+        return nsdlState switch
         {
             "verified" => new("PAN – NSDL", new ReadCard("Verified with NSDL", $"{pan} · {h.Who.Name}", "The PAN, date of birth and name read off the PAN copy all match.", "is-done"), key),
-            "name" => new("PAN – NSDL", new ReadCard("Name not matched", $"Put to NSDL: {j.NsdlName}",
+            "name" => new("PAN – NSDL", new ReadCard("Name not matched", $"Put to NSDL: {nsdlName}",
                 "NSDL holds the PAN and date of birth, but not against that name. Type the name exactly as printed on the PAN card, and NSDL is asked again.", "is-failed"), key,
-                new NameRetry(h.Key("nsdlName"), j.NsdlName, Shown?.Errors.GetValueOrDefault(key))),
+                new NameRetry(h.Key("nsdlName"), nsdlName, Shown?.Errors.GetValueOrDefault(key))),
             "failed" => new("PAN – NSDL", new ReadCard("Not verified", $"No record of {pan} against {MaskDate(h.Who.Dob)}",
-                "NSDL holds no such PAN and date of birth, so this holder cannot go on. Remove them and search again.", "is-failed"), key),
+                $"NSDL holds no such PAN and date of birth, so this {(h.Joint ? "holder" : "application")} cannot go on. {NsdlFailedNext(h)}", "is-failed"), key),
             _ => new("PAN – NSDL", new ReadCard("Not yet checked", "Checked once the PAN copy is filed above.",
                 "OCR reads the name off the PAN copy, and NSDL is asked whether it holds the PAN, the date of birth and that name."), key),
         };
@@ -853,6 +873,12 @@ public class UploadDocumentsViewModel(
             flash.Errors[slot.Key] = "This document is required";
             flash.Focus ??= "slot-" + slot.Key;
         }
+        // An investor with no folio goes on only once NSDL has verified their PAN.
+        if (NsdlUnsettled(Investor))
+        {
+            flash.Errors["nsdl"] = NsdlNeed(Investor);
+            flash.Focus ??= "read-nsdl";
+        }
 
         if (flash.Errors.Count == 0)
         {
@@ -884,8 +910,7 @@ public class UploadDocumentsViewModel(
             if (!AutoProofType && View(MailSlot, h).Used && MailTypeOf(h).Length == 0) Need(h.Key("mailType"), "Choose the communication address proof");
             foreach (var v in HolderSlots.Select(d => View(d, h)).Where(v => v.Missing))
                 Need(v.Key, "This document is required", "slot-" + v.Key);
-            if (NsdlApplies(h) && State.Docs.ContainsKey(h.Key("pan")) && NsdlOf(h) != "verified")
-                Need(h.Key("nsdl"), NsdlOf(h) == "failed" ? "NSDL holds no such PAN and date of birth: remove this holder and search again" : "Type the name as printed on the PAN, and ask NSDL again", "read-" + h.Key("nsdl"));
+            if (NsdlUnsettled(h)) Need(h.Key("nsdl"), NsdlNeed(h), "read-" + h.Key("nsdl"));
         }
         if (flash.Errors.Count == 0 && flash.Banner is null) Said = null;
         return flash.Focus;
@@ -1264,7 +1289,7 @@ public class UploadDocumentsViewModel(
         if (def.Key == "pan" && NsdlApplies(h))
         {
             await NsdlAsync(h, InvestorIdentificationViewModel.NormaliseName(reading.Name), entry, typed: false);
-            h = JointHolder(h.Code)!;
+            h = Again(h);
         }
 
         if (detect)
@@ -1409,7 +1434,7 @@ public class UploadDocumentsViewModel(
             entry.Add("The PAN-Aadhaar link waits until NSDL verifies the PAN.", "warn");
             entry.End("Filed, not verified", NsdlOf(h) == "failed" ? "bad" : "warn");
             return NsdlOf(h) == "failed"
-                ? ("Filed, but NSDL holds no record of this PAN against the date of birth searched. Remove this holder and search again.", "bad")
+                ? ($"Filed, but NSDL holds no record of this PAN against the date of birth searched. {NsdlFailedNext(h)}", "bad")
                 : ("Filed, but NSDL does not hold this PAN against the name read off it. Type the name as printed on the card, in the NSDL card below.", "warn");
         }
         if (!LinkApplies(h))
@@ -1443,14 +1468,22 @@ public class UploadDocumentsViewModel(
     // the name is theirs from here on.
     private async Task NsdlAsync(DocHolder h, string name, LogEntry entry, bool typed)
     {
-        var j = State.Joint[h.Code];
         var answer = await nsdl.VerifyAsync(h.Who.Pan, h.Who.Dob, name);
-        j.NsdlName = name;
-        j.Nsdl = !answer.PairOk ? "failed" : answer.NameOk ? "verified" : "name";
+        var result = !answer.PairOk ? "failed" : answer.NameOk ? "verified" : "name";
+        if (h.Joint)
+        {
+            var j = State.Joint[h.Code];
+            (j.NsdlName, j.Nsdl) = (name, result);
+            if (result == "verified") j.Holder = j.Holder with { Name = name };
+        }
+        else
+        {
+            (State.NsdlName, State.Nsdl) = (name, result);
+            if (result == "verified") State.Name = name;
+        }
         entry.Add(answer.PairOk ? "NSDL holds the PAN against the date of birth." : "NSDL holds no such PAN and date of birth.", answer.PairOk ? "ok" : "bad");
         if (answer.PairOk)
             entry.Add(answer.NameOk ? $"NSDL holds it against {name}{(typed ? ", as typed" : "")}." : $"NSDL does not hold it against {name}{(typed ? ", as typed" : "")}.", answer.NameOk ? "ok" : "warn");
-        if (j.Nsdl == "verified") j.Holder = j.Holder with { Name = name };
     }
 
     /// <summary>
@@ -1482,7 +1515,7 @@ public class UploadDocumentsViewModel(
             Say().Errors[key] = e.Message;
             return "read-" + key;
         }
-        h = JointHolder(h.Code)!;
+        h = Again(h);
         if (NsdlOf(h) != "verified")
         {
             entry.End("Not verified", "warn");
@@ -1498,6 +1531,10 @@ public class UploadDocumentsViewModel(
     }
 
     private bool PanOnApplication(DocHolder h) => h.Who.PanFiled || State.Docs.ContainsKey(h.Key("pan"));
+
+    // A PAN copy the holder needs and has not filed yet: not one the folio holds,
+    // nor one a holder on a folio may leave out.
+    private bool PanWanted(DocHolder h) => !PanOnApplication(h) && View(PanSlot, h) is { Used: true, Optional: false };
 
     // The Aadhaar arrived after the PAN: the link is asked now, and the PAN's card
     // and what its copy says both follow the answer.
@@ -1592,6 +1629,13 @@ public class UploadDocumentsViewModel(
     }
 
     /// <summary>What Proceed would ask for, in the order it asks, so the footer can say what is next.</summary>
+    // A PAN copy filed for a holder NSDL has not verified.
+    private bool NsdlUnsettled(DocHolder h) => NsdlApplies(h) && State.Docs.ContainsKey(h.Key("pan")) && NsdlOf(h) != "verified";
+
+    private string NsdlNeed(DocHolder h) => NsdlOf(h) == "failed"
+        ? $"NSDL holds no such PAN and date of birth. {NsdlFailedNext(h)}"
+        : "Type the name as printed on the PAN, and ask NSDL again";
+
     public List<string> Outstanding()
     {
         var s = State;
@@ -1601,6 +1645,7 @@ public class UploadDocumentsViewModel(
 
         if (Missing(FormSlot)) left.Add("the application form");
         if (Missing(PanSlot)) left.Add("the PAN copy");
+        if (NsdlUnsettled(Investor)) left.Add("the PAN verified with NSDL");
         if (!AutoProofType && View(PoaSlot).Used && s.PoaType.Length == 0) left.Add("the proof of address type");
         if (Missing(PoaSlot)) left.Add("the proof of address");
         if (Missing(PhotoSlot)) left.Add("the photograph");

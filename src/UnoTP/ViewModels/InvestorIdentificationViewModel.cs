@@ -7,9 +7,10 @@ namespace UnoTP.ViewModels;
 /// <summary>
 /// Investor Identification: the investor is checked against the register before
 /// the application can go on, and Proceed waits for that match. Everything is
-/// answered on the server - the register lookup through the backend, the PAN copy
-/// through OCR, the PAN through NSDL, and the checks on what was typed here - so
-/// the page needs no script of its own.
+/// answered on the server - the register lookup through the backend and the checks
+/// on what was typed here - so the page needs no script of its own. A PAN with no
+/// folio goes on as it stands: its PAN copy is read by OCR and put to NSDL on
+/// Upload Documents, as a joint holder's is.
 ///
 /// Every step is a post, and every post redirects back to the bare page address
 /// (see <see cref="Controllers.InvestorIdentificationController"/>): what was typed
@@ -17,7 +18,7 @@ namespace UnoTP.ViewModels;
 /// PAN, date of birth or name reaches a log, the history or a Referer header. The
 /// page drawn after the redirect runs the check again from what the session holds.
 /// </summary>
-public partial class InvestorIdentificationViewModel(IInvestorApi investors, INsdlService nsdl)
+public partial class InvestorIdentificationViewModel(IInvestorApi investors)
 {
     // The rail down the left of every classic wizard step. This page is the first
     // of them; the ones after it carry an empty check until the wizard fills them.
@@ -59,12 +60,6 @@ public partial class InvestorIdentificationViewModel(IInvestorApi investors, INs
 
     public string? Folio { get; set; }
 
-    /// <summary>The name typed from the PAN card when NSDL does not hold OCR's reading.</summary>
-    public string? NsdlName { get; set; }
-
-    /// <summary>The PAN copy's file name, once one has been read.</summary>
-    public string? CopyName { get; set; }
-
     // ----- What the page shows -------------------------------------------------
 
     public enum Stage
@@ -73,25 +68,21 @@ public partial class InvestorIdentificationViewModel(IInvestorApi investors, INs
         Search,
         /// <summary>A folio the register holds.</summary>
         Found,
-        /// <summary>A PAN with no folio, waiting on its PAN copy.</summary>
+        /// <summary>A PAN with no folio: a new investor, put to NSDL on Upload Documents.</summary>
         Pending,
-        /// <summary>NSDL holds no such PAN and date of birth.</summary>
-        NsdlFailed,
-        /// <summary>NSDL holds the PAN against another name.</summary>
-        NameMismatch,
-        /// <summary>A PAN with no folio that NSDL has verified.</summary>
-        Established,
     }
 
     public Stage At { get; private set; } = Stage.Search;
 
-    public bool Identified => At is Stage.Found or Stage.Established;
+    /// <summary>Found on the register.</summary>
+    public bool Identified => At is Stage.Found;
+
+    /// <summary>Whether Proceed opens: a folio found, or a PAN with no folio.</summary>
+    public bool CanProceed => At is Stage.Found or Stage.Pending && Record is not null;
 
     public string? PanError { get; private set; }
     public string? DobError { get; private set; }
     public string? FolioError { get; private set; }
-    public string? CopyError { get; set; }
-    public string? NameError { get; set; }
 
     /// <summary>
     /// Set when the register holds the investor in a way only Operations can fix -
@@ -108,14 +99,6 @@ public partial class InvestorIdentificationViewModel(IInvestorApi investors, INs
 
     /// <summary>How the record was found, or what happens next for a new PAN.</summary>
     public string Detail { get; private set; } = "";
-
-    /// <summary>What was done with the PAN copy, one line per step.</summary>
-    public List<string> Log { get; } = [];
-
-    /// <summary>What went to NSDL and whether each matched.</summary>
-    public List<NsdlRow> Rows { get; } = [];
-
-    public string? FailText { get; private set; }
 
     /// <summary>The date of birth as the register keeps it, dd-MM-yyyy.</summary>
     public string Dob => $"{Pad(Dd)}-{Pad(Mm)}-{Yyyy}";
@@ -135,8 +118,6 @@ public partial class InvestorIdentificationViewModel(IInvestorApi investors, INs
         if (By == "folio") FolioError = why; else PanError = why;
         Record = null;
         At = Stage.Search;
-        Log.Clear();
-        Rows.Clear();
     }
 
     /// <summary>A name typed from the PAN card, the way NSDL is sent it.</summary>
@@ -217,8 +198,8 @@ public partial class InvestorIdentificationViewModel(IInvestorApi investors, INs
         }
 
         Record = new Holder(Pan, Dob, "", "", "", "", new DocsOnRecord(false, false, false), "");
-        Kind = "Not identified";
-        Detail = "No folio against this PAN — a new application opens once the PAN is established below.";
+        Kind = "New investor";
+        Detail = "No folio against this PAN: a new application opens, and the PAN copy is checked with NSDL on Upload Documents.";
         At = Stage.Pending;
         return true;
     }
@@ -248,57 +229,11 @@ public partial class InvestorIdentificationViewModel(IInvestorApi investors, INs
         return null;
     }
 
-    // PAN and date of birth always go to NSDL as typed; the name comes from OCR
-    // the first time and from the field after that.
-    public async Task RunNsdlAsync(string name, bool typed)
-    {
-        bool pairOk, nameOk;
-        try
-        {
-            (pairOk, nameOk) = await nsdl.VerifyAsync(Pan!, Dob, name);
-        }
-        catch (ExternalServiceException e)
-        {
-            // Nothing was verified, so Proceed stays shut until NSDL answers.
-            FailText = $"NSDL could not be reached to check PAN {Pan}: {e.Message}";
-            At = Stage.NsdlFailed;
-            return;
-        }
-
-        Log.Add($"PAN copy received — {CopyName}");
-        Log.Add("OCR read the PAN, the date of birth and the name from the document");
-        if (typed) Log.Add("The name was typed from the PAN card and sent again");
-        Log.Add("NSDL responded");
-
-        Rows.Add(new NsdlRow("PAN", Pan!, pairOk));
-        Rows.Add(new NsdlRow("Date of birth", Dob, pairOk));
-        Rows.Add(new NsdlRow("Name", name, nameOk));
-
-        if (!pairOk)
-        {
-            FailText = $"NSDL holds no record of PAN {Pan} against {Dob}. The application cannot go on with these details.";
-            At = Stage.NsdlFailed;
-        }
-        else if (!nameOk)
-        {
-            // The first miss is OCR's; a second is the name that was typed.
-            NameError = typed ? $"NSDL does not hold PAN {Pan} against that name" : null;
-            At = Stage.NameMismatch;
-        }
-        else
-        {
-            // The PAN copy is now on the application, so only the rest is outstanding.
-            Record = Record! with { Name = name, Docs = Record.Docs with { Pan = true } };
-            Kind = "New investor";
-            At = Stage.Established;
-        }
-    }
-
     // ----- The record on the card ----------------------------------------------
 
     /// <summary>
     /// The investor the card shows. A PAN with no folio has no name, gender or
-    /// address until NSDL establishes it.
+    /// address until its PAN copy is read and NSDL verifies it.
     /// </summary>
     public sealed record Holder(string Pan, string Dob, string Folio, string Name, string Gender, string Address, DocsOnRecord Docs, string Note)
     {
@@ -356,8 +291,6 @@ public partial class InvestorIdentificationViewModel(IInvestorApi investors, INs
             }
         }
     }
-
-    public record NsdlRow(string Label, string Value, bool Ok);
 
     private static string Clean(string? value) => NotAlphanumeric().Replace((value ?? "").ToUpperInvariant(), "");
 

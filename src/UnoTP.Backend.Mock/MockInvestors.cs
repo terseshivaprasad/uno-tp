@@ -74,13 +74,13 @@ public sealed class MockInvestors : IInvestorApi
     public static readonly MockPan[] Pans =
     {
         new("XXXXC1003C", DemoDob, "ANJALI VIKRAM PATIL", "ANJALI VIKRAM PATIL", "all",
-            "No folio, so a new application number opens. Upload the PAN copy, OCR reads it, NSDL matches all three, and Proceed opens."),
+            "No folio, so Proceed opens a new application. On Upload Documents the PAN copy comes first: OCR reads it, NSDL matches all three, and the proof of address opens."),
 
         new("XXXXD1004D", DemoDob, "KARAN DEEPAK MEHTA", "KARAN D MEHTA", "name",
-            "PAN and date of birth match, but OCR misreads the name as KARAN D MEHTA. Type KARAN DEEPAK MEHTA and retry, and Proceed opens."),
+            "No folio. On Upload Documents OCR misreads the name on the PAN copy as KARAN D MEHTA: type KARAN DEEPAK MEHTA in the NSDL card and retry."),
 
         new("XXXXE1005E", DemoDob, "", "ROHIT SANJAY KULKARNI", "pan-dob",
-            "NSDL holds no such PAN and date of birth. The check stops there, Proceed stays shut, and the only way on is to search again."),
+            "No folio. On Upload Documents NSDL holds no such PAN and date of birth, so the application cannot go on: start again with the right details."),
     };
 
     /// <summary>
