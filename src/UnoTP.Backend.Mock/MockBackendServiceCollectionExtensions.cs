@@ -21,11 +21,13 @@ public static class MockBackendServiceCollectionExtensions
         services.AddSingleton<ISourcingApi, MockSourcing>();
         services.AddSingleton<IPayInSlipApi, MockPayInSlips>();
         services.AddSingleton<ILinkApi, MockLinks>();
-        services.AddSingleton<IConsoleApi, MockConsole>();
+        services.AddScoped<IConsoleApi, MockConsole>();
         services.AddSingleton<IReferenceApi, MockReference>();
-        services.AddSingleton<IPartnerApi, MockPartner>();
+        services.AddScoped<IPartnerApi, MockPartner>();
         services.AddSingleton<IDepositApi, MockDeposits>();
         services.AddSingleton<IDemoApi, MockDemo>();
+        services.AddScoped<ISessionApi, MockSessions>();
+        services.AddSingleton<IDecryptionService, MockDecryption>();
 
         // The outside services.
         services.AddSingleton<INsdlService, MockNsdl>();

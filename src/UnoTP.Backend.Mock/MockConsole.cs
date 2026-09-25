@@ -1,7 +1,7 @@
 namespace UnoTP.Backend.Mock;
 
 /// <summary>What the console's administrator has on the books.</summary>
-public sealed class MockConsole : IConsoleApi
+public sealed class MockConsole(IPartnerApi partners) : IConsoleApi
 {
     private const string Administrator = "Shivaprasad Terse";
 
@@ -46,7 +46,7 @@ public sealed class MockConsole : IConsoleApi
 
     public async Task<WindowRecord> AddWindowAsync(NewWindow window, CancellationToken ct = default)
     {
-        var by = (await new MockPartner().MeAsync(ct)).Name;
+        var by = (await partners.MeAsync(ct)).Name;
         lock (AddedWindows)
         {
             var record = new WindowRecord($"W-{window.From:ddMM}-{++addedSeq:D2}", window.Features, window.From, window.To, window.Notice, by, DateTime.Now);
@@ -57,7 +57,7 @@ public sealed class MockConsole : IConsoleApi
 
     public async Task<AnnouncementRecord> AddAnnouncementAsync(NewAnnouncement announcement, CancellationToken ct = default)
     {
-        var by = (await new MockPartner().MeAsync(ct)).Name;
+        var by = (await partners.MeAsync(ct)).Name;
         lock (AddedAnnouncements)
         {
             var record = new AnnouncementRecord($"N-{announcement.At:ddMM}-{++addedSeq:D2}", announcement.Kind, announcement.Title, announcement.At, announcement.Detail, by, DateTime.Now);

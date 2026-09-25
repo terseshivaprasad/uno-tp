@@ -1,0 +1,19 @@
+@model string
+@{
+    Layout = "_StatusLayout";
+    ViewData["Title"] = "You do not have access";
+}
+@section Mark {
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10.5" width="14" height="9.5" rx="1.6"></rect><path d="M8.5 10.5V7.8a3.5 3.5 0 0 1 7 0v2.7"></path></svg>
+}
+<p class="status-card__text">@Model</p>
+@section Actions {
+    @if (Context.Session.SignedIn())
+    {
+        <a class="btn btn-primary" asp-controller="Dashboard" asp-action="Index">Back to the dashboard</a>
+    }
+    else
+    {
+        <a class="btn btn-primary" href="@Apps.Url("/")">Go to the portal</a>
+    }
+}

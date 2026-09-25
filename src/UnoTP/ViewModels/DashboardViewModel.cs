@@ -87,6 +87,7 @@ public class DashboardViewModel(FeatureSet features, ConsoleBoard board, string?
     private static string? ClosedLine(FeatureSet features, ConsoleBoard board, string? off)
     {
         if (off is null) return null;
+        if (features.NotInMenu.Contains(off)) return $"{ConsoleAdmin.NameOf(off)} is not in your menu.";
         var reason = board.OffLabel(off, features.Flags);
         // The feature may have come back on between the redirect and this page.
         if (reason is null) return null;
@@ -101,5 +102,7 @@ public class DashboardViewModel(FeatureSet features, ConsoleBoard board, string?
     // A tile with no page behind it yet cannot open even when its feature is on,
     // so it reads as coming rather than as a button that does nothing.
     private DashboardTile Tile(string key, string title, string glyph, string? controller) =>
-        new(key, title, glyph, controller, Board.OffLabel(key, features.Flags) ?? (controller is null ? "Coming soon" : null));
+        new(key, title, glyph, controller,
+            (features.NotInMenu.Contains(key) ? "Not in your menu" : null)
+            ?? Board.OffLabel(key, features.Flags) ?? (controller is null ? "Coming soon" : null));
 }

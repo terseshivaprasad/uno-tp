@@ -9,4 +9,7 @@ namespace UnoTP.Backend;
 public interface IPartner
 {
     string Id { get; }
+
+    /// <summary>The backend session the user came in with, when there is one.</summary>
+    string? SessionId => null;
 }

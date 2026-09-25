@@ -16,22 +16,39 @@ change `BackendClient.cs`: the pages depend only on the interfaces.
 |---|---|
 | `Backend:BaseUrl` | The backend API. If blank, the app runs on the in-memory mock (`src/UnoTP.Backend.Mock`). |
 | `Backend:TimeoutSeconds` | Default 30. |
-| `Backend:External:{Nsdl,Identify,Masking,Ocr,Verification,PanAadhaarLink,FaceMatch}` | Optional address for each outside service. The default is `{Backend:BaseUrl}/external/{name}/`, which means the backend proxies it. |
+| `Backend:External:{Nsdl,Identify,Masking,Ocr,Verification,PanAadhaarLink,FaceMatch,Decrypt}` | Optional address for each outside service. The default is `{Backend:BaseUrl}/external/{name}/`, which means the backend proxies it. |
 | `Idfy:BaseUrl` | Idfy.Api. When set, IDfy handles the checks it has an endpoint for (see below). |
 | `Idfy:TimeoutSeconds` | Default 75. The Idfy.Api guide asks for at least 70. |
+| `Entry:DemoUserId`, `Entry:DemoSysCode` | The user the demo comes in as when the app is opened without the portal's values. Used only while `Features:DemoData` is on; leave empty in production. |
 | `Backend:ReferenceCacheMinutes` | Minutes the lists and rules (`GET reference`, `GET config`) are kept for. Default 10; 0 asks every time. |
 
 In the environment, use a double underscore, for example `Backend__BaseUrl`.
 
 ## Common to every backend call
 
-- **Partner:** every request carries `X-Partner-Id`, the partner the call is
-  made for. The backend must return only that partner's applications, and
-  answer `404` for anyone else's. The header stands in for a signed-in
-  partner's token until the app has a sign-in.
+- **Partner:** every request carries `X-Partner-Id`, the user the portal sent
+  in, and `X-Session-Id`, the session the backend started for them. The backend
+  must return only that user's applications, and answer `404` for anyone
+  else's. A `401` on any call means the session has ended: the app shows
+  Session Expired.
 - **JSON:** camelCase in both directions.
 - **Not found:** `404` means not found wherever a route below says "or 404".
   Any other failure status is treated as an error.
+
+## Entry
+
+The portal opens the app at `/Home?UserId=...&Syscode=...` (or at `/` with the
+same query), both values encrypted. The app decrypts each with the portal's
+decryption service, starts a session, reads the user's menu, keeps all three in
+the server session, and redirects to the Dashboard, so neither value stays in
+the address. Every other page needs that session; without one, or once it has
+ended, the partner sees Session Expired. A refused entry shows Unauthorized.
+
+| Method | Route | Body | Returns |
+|---|---|---|---|
+| POST | `external/decrypt/decrypt` (or `Backend:External:Decrypt`) | `{ value }` | `{ value }` in plain text, or `400` when it cannot be decrypted |
+| POST | `sessions` | `{ userId, sysCode }` | `UserSession`: `sessionId`, `userId`, `expiresAt`. `401`, `403` or `404` when the user or system code is refused. |
+| GET | `menu` | | `MenuItem[]` (`key`, `name`) for the session's user. `key` is a console feature: `new-fd`, `pis`, `view-app`, `short-url`, `app-status`, `renew` or `admin`. A feature the menu leaves out is closed, and its address shows Unauthorized. An empty menu refuses entry. |
 
 ## Lists, rules and the partner
 

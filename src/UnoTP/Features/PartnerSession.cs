@@ -16,11 +16,14 @@ public static class PartnerSession
 {
     private const string OwnerKey = "partner";
     private const string ApplicationKey = "application";
+    private const string SessionIdKey = "entry.session";
+    private const string ExpiresKey = "entry.expires";
+    private const string MenuKey = "entry.menu";
 
     /// <summary>
-    /// Whose applications this browser may open. With no sign-in in this mock it
-    /// is a random id kept for the session; behind a real login it is the
-    /// signed-in partner's own code, so an application only ever opens for them.
+    /// Whose applications this browser may open: the user the portal sent in (see
+    /// HomeController), so an application only ever opens for them. Before anyone
+    /// has come in, a random id nobody's applications are held under.
     /// </summary>
     public static string Owner(this ISession session)
     {
@@ -32,6 +35,33 @@ public static class PartnerSession
         }
         return owner;
     }
+
+    /// <summary>
+    /// Keeps the user the portal sent in, the backend session started for them and
+    /// the menus they may open. Whatever the browser held before goes: a session is
+    /// never carried over from one user to another.
+    /// </summary>
+    public static void SignIn(this ISession session, UserSession user, IEnumerable<string> menu)
+    {
+        session.Clear();
+        session.SetString(OwnerKey, user.UserId);
+        session.SetString(SessionIdKey, user.SessionId);
+        session.SetString(ExpiresKey, user.ExpiresAt.ToString("o"));
+        session.SetString(MenuKey, JsonSerializer.Serialize(menu.Distinct().ToList()));
+    }
+
+    /// <summary>Whether a user came in from the portal and their backend session has not ended.</summary>
+    public static bool SignedIn(this ISession session) =>
+        session.GetString(SessionIdKey) is not null
+        && DateTime.TryParse(session.GetString(ExpiresKey), null, System.Globalization.DateTimeStyles.RoundtripKind, out var until)
+        && until > DateTime.Now;
+
+    /// <summary>The backend session the user came in with; null before anyone has.</summary>
+    public static string? BackendSession(this ISession session) => session.GetString(SessionIdKey);
+
+    /// <summary>The console feature keys the user's menu opens; null before anyone has come in.</summary>
+    public static IReadOnlySet<string>? Menu(this ISession session) =>
+        session.GetString(MenuKey) is { } json ? JsonSerializer.Deserialize<HashSet<string>>(json) : null;
 
     private const string DemoAgencyKey = "partner.demo.agency";
     private const string DemoBrokerKey = "partner.demo.broker";
@@ -72,7 +102,11 @@ public static class PartnerSession
 /// <summary>The partner the backend is asked on behalf of: the session's owner.</summary>
 public sealed class SessionPartner(IHttpContextAccessor http) : IPartner
 {
-    public string Id => (http.HttpContext ?? throw new InvalidOperationException("No request to take the partner from.")).Session.Owner();
+    private ISession Session => (http.HttpContext ?? throw new InvalidOperationException("No request to take the partner from.")).Session;
+
+    public string Id => Session.Owner();
+
+    public string? SessionId => Session.BackendSession();
 }
 
 /// <summary>

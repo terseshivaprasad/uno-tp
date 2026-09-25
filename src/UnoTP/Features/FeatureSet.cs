@@ -39,6 +39,22 @@ public sealed class FeatureSet(FeatureFlags flags, IReadOnlyList<string>? overri
 
     public bool IsOverridden => Overrides.Count > 0;
 
+    /// <summary>The features the user's menu does not open. They are off whatever else says.</summary>
+    public IReadOnlySet<string> NotInMenu { get; private init; } = new HashSet<string>();
+
+    /// <summary>The console's own features, which the user's menu opens or not.</summary>
+    public static readonly string[] MenuKeys = ["new-fd", "pis", "view-app", "short-url", "app-status", "renew", "admin"];
+
+    /// <summary>These features, with the ones the user's menu does not open switched off.</summary>
+    public FeatureSet WithMenu(IReadOnlySet<string> menu)
+    {
+        var missing = MenuKeys.Where(k => !menu.Contains(k)).ToHashSet();
+        if (missing.Count == 0) return this;
+        var flags = Flags.Clone();
+        foreach (var key in missing) Switches[key](flags, false);
+        return new FeatureSet(flags, Overrides) { NotInMenu = missing };
+    }
+
     /// <summary>
     /// Builds the request's feature set and, when ?ff= is present, persists the new
     /// override set to the cookie. Returns null for "reset" so the caller can clear it.

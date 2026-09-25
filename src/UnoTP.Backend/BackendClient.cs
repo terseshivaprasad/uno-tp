@@ -10,7 +10,7 @@ namespace UnoTP.Backend;
 /// </summary>
 public sealed class BackendClient(HttpClient http, IPartner partner)
     : ApiClient(http, partner), IInvestorApi, IApplicationApi, IDocumentApi, ISourcingApi, IPayInSlipApi, ILinkApi, IConsoleApi,
-        IReferenceApi, IPartnerApi, IDepositApi, IDemoApi
+        IReferenceApi, IPartnerApi, IDepositApi, IDemoApi, ISessionApi
 {
     // ----- Reference, config and the partner -----------------------------------
 
@@ -33,6 +33,22 @@ public sealed class BackendClient(HttpClient http, IPartner partner)
 
     public Task<DemoCases?> CasesAsync(CancellationToken ct = default) =>
         Get<DemoCases>("demo/cases", ct);
+
+    // ----- Entry -------------------------------------------------------------
+
+    // A refused user or system code is no session, not a failure.
+    public async Task<UserSession?> StartAsync(string userId, string sysCode, CancellationToken ct = default)
+    {
+        using var request = Request(HttpMethod.Post, "sessions", Body(new { userId, sysCode }));
+        using var response = await SendAsync(request, ct);
+        if (response.StatusCode is System.Net.HttpStatusCode.Unauthorized or System.Net.HttpStatusCode.Forbidden or System.Net.HttpStatusCode.NotFound)
+            return null;
+        response.EnsureSuccessStatusCode();
+        return await Read<UserSession>(response, ct);
+    }
+
+    public async Task<IReadOnlyList<MenuItem>> MenuAsync(CancellationToken ct = default) =>
+        await List<MenuItem>("menu", ct);
 
     // ----- Investors ---------------------------------------------------------
 

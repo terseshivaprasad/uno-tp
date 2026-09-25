@@ -216,10 +216,18 @@ public sealed class MockReference : IReferenceApi
 }
 
 /// <summary>The partner signed in, as the backend would know them from their sign-in.</summary>
-public sealed class MockPartner : IPartnerApi
+public sealed class MockPartner(IPartner partner) : IPartnerApi
 {
+    // The users MockSessions starts sessions for: a 1033 partner, and two brokers.
+    private static readonly Dictionary<string, PartnerProfile> Profiles = new()
+    {
+        ["100002225"] = new("Shivaprasad Terse", "100002225", MockReference.SourcingAgency, "BR10021"),
+        ["100002226"] = new("Rohan Deshmukh", "100002226", "2001", "BR10874"),
+        ["100002227"] = new("Kavita Rao", "100002227", "2001", "BR10877"),
+    };
+
     public Task<PartnerProfile> MeAsync(CancellationToken ct = default) =>
-        Task.FromResult(new PartnerProfile("Shivaprasad Terse", "100002225", MockReference.SourcingAgency, "BR10021"));
+        Task.FromResult(Profiles.GetValueOrDefault(partner.Id) ?? Profiles["100002225"]);
 }
 
 /// <summary>

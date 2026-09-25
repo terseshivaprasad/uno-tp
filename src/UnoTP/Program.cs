@@ -18,6 +18,8 @@ builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 // the form tag helper writes.
 builder.Services.AddControllersWithViews(options =>
 {
+    // Nobody reaches a page without a session from Home (see SessionAuthenticationFilter).
+    options.Filters.Add(new SessionAuthenticationFilter());
     options.Filters.Add(new FeatureGate());
     options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
 });
@@ -56,6 +58,7 @@ builder.Services.AddScoped<CurrentPartner>();
 // Feature switches: defaults from appsettings, per-session override via ?ff= (see FeatureSet).
 builder.Services.AddHttpContextAccessor();
 builder.Services.Configure<FeatureFlags>(builder.Configuration.GetSection("Features"));
+builder.Services.Configure<EntryOptions>(builder.Configuration.GetSection(EntryOptions.Section));
 builder.Services.AddScoped(sp =>
 {
     var ctx = sp.GetRequiredService<IHttpContextAccessor>().HttpContext;
@@ -78,9 +81,13 @@ if (!string.IsNullOrWhiteSpace(pathBase))
 }
 
 // Configure the HTTP request pipeline.
-if (!app.Environment.IsDevelopment())
+// Whatever a page lets through is logged and shown as the error page, or as
+// Session Expired when the backend has ended the session (see GlobalExceptionMiddleware).
+// Development keeps the developer page, which shows the exception itself.
+if (app.Environment.IsDevelopment()) app.UseDeveloperExceptionPage();
+else
 {
-    app.UseExceptionHandler("/Error");
+    app.UseMiddleware<GlobalExceptionMiddleware>();
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
@@ -122,7 +129,8 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-app.MapGet("/", () => Results.LocalRedirect("~/Dashboard"));
+// The portal may open the app at its root: the way in is Home, with whatever it sent.
+app.MapGet("/", (HttpContext ctx) => Results.LocalRedirect("~/Home" + ctx.Request.QueryString));
 
 // Old addresses, kept for saved links and the other apps' tiles. A search
 // bookmarked under the old address keeps its query, so it lands on its result.

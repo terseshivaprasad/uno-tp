@@ -51,7 +51,7 @@
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 10.5L12 3.5l8.5 7"></path><path d="M5.5 9v11h13V9"></path><path d="M10 20v-6h4v6"></path></svg>
                     Home
                 </a>
-                <a href="@Apps.Url("/")">
+                <a asp-controller="Home" asp-action="Logout">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4.5H6a1.5 1.5 0 0 0-1.5 1.5v12A1.5 1.5 0 0 0 6 19.5h8"></path><path d="M10.5 12H20.5M17 8.5l3.5 3.5-3.5 3.5"></path></svg>
                     Logout
                 </a>
@@ -94,7 +94,7 @@
 
                     @* Last, and on its own: nothing else on the panel signs you out. *@
                     <div class="app-menu__group">
-                        <a class="app-menu__row app-menu__row--out" href="@Apps.Url("/")">
+                        <a class="app-menu__row app-menu__row--out" asp-controller="Home" asp-action="Logout">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4.5H6a1.5 1.5 0 0 0-1.5 1.5v12A1.5 1.5 0 0 0 6 19.5h8"></path><path d="M10.5 12H20.5M17 8.5l3.5 3.5-3.5 3.5"></path></svg>
                             <span class="app-menu__row-label">Logout</span>
                         </a>

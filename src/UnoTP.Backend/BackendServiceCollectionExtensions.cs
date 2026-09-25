@@ -31,6 +31,7 @@ public static class BackendServiceCollectionExtensions
         services.AddTransient<IPartnerApi>(sp => sp.GetRequiredService<BackendClient>());
         services.AddTransient<IDepositApi>(sp => sp.GetRequiredService<BackendClient>());
         services.AddTransient<IDemoApi>(sp => sp.GetRequiredService<BackendClient>());
+        services.AddTransient<ISessionApi>(sp => sp.GetRequiredService<BackendClient>());
 
         // The outside services, one client each.
         services.External<INsdlService, NsdlClient>(NsdlClient.Name);
@@ -40,6 +41,7 @@ public static class BackendServiceCollectionExtensions
         services.External<IVerificationService, VerificationClient>(VerificationClient.Name);
         services.External<IPanAadhaarLinkService, PanAadhaarLinkClient>(PanAadhaarLinkClient.Name);
         services.External<IFaceMatchService, FaceMatchClient>(FaceMatchClient.Name);
+        services.External<IDecryptionService, DecryptionClient>(DecryptionClient.Name);
         return services;
     }
 

@@ -13,6 +13,8 @@ public static class FeatureMiddleware
         {
             var defaults = ctx.RequestServices.GetRequiredService<IOptions<FeatureFlags>>().Value;
             var features = FeatureSet.Resolve(ctx, defaults, out var clearCookie);
+            // What the user's menu does not open stays shut, whatever appsettings or ?ff= say.
+            if (ctx.Session.Menu() is { } menu) features = features.WithMenu(menu);
             ctx.Items[FeatureSet.ItemKey] = features;
 
             if (clearCookie)

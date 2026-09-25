@@ -1,0 +1,26 @@
+@inject UnoTP.AppUrls Urls
+@{
+    // The pages shown with no session, or when something went wrong: no partner to
+    // name and nothing asked of the backend, so they render whatever state it is in.
+    var tone = ViewData["Tone"] as string ?? "red";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] · Uno TP</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body class="status-page">
+    <main class="status-card" role="main">
+        <div class="status-card__mark status-card__mark--@tone" aria-hidden="true">@RenderSection("Mark")</div>
+        <h1 class="status-card__title">@ViewData["Title"]</h1>
+        @RenderBody()
+        <div class="status-card__actions">
+            @if (IsSectionDefined("Actions")) { @RenderSection("Actions") }
+            else { <a class="btn btn-primary" href="@Urls.Url("/")">Go to the portal</a> }
+        </div>
+    </main>
+</body>
+</html>

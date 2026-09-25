@@ -3097,3 +3097,16 @@ a.view-switch__opt:hover { background: var(--tint); color: var(--ink); text-deco
 
 /* A joint holder's address panel and manual entry, under their documents. */
 .cii-record--after { margin-top: 24px; }
+
+/* ----- Status pages -------------------------------------------------------
+   Session Expired, Unauthorized and the error page: one card, what happened and
+   the way on. They ask nothing of the backend, so they show whatever its state. */
+.status-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; margin: 0; padding: 16px; background: var(--page-bg); }
+.status-card { width: min(460px, 100%); padding: 32px 28px; border: 1px solid var(--border-2); border-radius: 10px; background: #fff; text-align: center; }
+.status-card__mark { display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; margin-bottom: 14px; border-radius: 50%; background: var(--pink-bg); color: var(--red); }
+.status-card__mark--amber { background: #FFF6E0; color: #9A6700; }
+.status-card__title { margin: 0 0 10px; font-size: 18px; font-weight: 600; color: var(--ink); }
+.status-card__text { margin: 0 0 10px; font-size: 13.5px; line-height: 1.55; color: var(--muted); }
+.status-card__ref { margin: 4px 0 0; font-size: 12px; color: var(--muted); }
+.status-card__ref code { font-size: 12px; }
+.status-card__actions { margin-top: 20px; }

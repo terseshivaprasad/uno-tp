@@ -18,12 +18,16 @@ public abstract class ApiClient(HttpClient http, IPartner partner)
     /// </summary>
     public const string PartnerHeader = "X-Partner-Id";
 
+    /// <summary>The session the backend started for the user when they came in from the portal.</summary>
+    public const string SessionHeader = "X-Session-Id";
+
     protected static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
     protected HttpRequestMessage Request(HttpMethod method, string path, HttpContent? content = null)
     {
         var request = new HttpRequestMessage(method, path) { Content = content };
         request.Headers.Add(PartnerHeader, partner.Id);
+        if (partner.SessionId is { Length: > 0 } session) request.Headers.Add(SessionHeader, session);
         return request;
     }
 
