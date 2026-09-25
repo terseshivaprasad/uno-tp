@@ -212,9 +212,40 @@ public class UploadDocumentsViewModel(
     // The partner in the top bar, whose code fills the sourcing field.
     public const string PartnerCode = "100002225";
 
+    // ----- What a deposit is booked as -------------------------------------------
+    public const string General = "PUBLIC/GENERAL";
+    public const string Women = "WOMEN";
+    public const string Senior = "SR CITIZEN";
+    public const string SeniorWomen = "SR CITIZEN WOMEN";
+
     // An employee deposit is booked against a staff record, which is what the
-    // block of employee fields is for.
+    // block of employee fields is for. Only a 1033 partner books one.
     public const string EmployeeCategory = "EMPLOYEE";
+    public const string EmployeeWomen = "EMPLOYEE WOMEN";
+
+    public static bool IsEmployee(string category) => category is EmployeeCategory or EmployeeWomen;
+
+    /// <summary>A senior citizen is 60 or over on the day the deposit is booked.</summary>
+    public const int SeniorAge = 60;
+
+    /// <summary>
+    /// The category the holder's date of birth and gender make them: a senior
+    /// citizen from 60, and the women's category of either for a woman. With no
+    /// gender known yet, the one the date of birth alone gives.
+    /// </summary>
+    public static string CategoryFor(string dob, string gender, DateTime today)
+    {
+        var senior = DateTime.TryParseExact(dob, "dd-MM-yyyy", System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.None, out var born) && born.AddYears(SeniorAge) <= today.Date;
+        var woman = gender == Genders.Female;
+        return (senior, woman) switch
+        {
+            (true, true) => SeniorWomen,
+            (true, false) => Senior,
+            (false, true) => Women,
+            _ => General,
+        };
+    }
 
     // ----- How the application is sourced --------------------------------------
     // One answer the rest of Additional Details hangs off: what the two code
@@ -260,7 +291,7 @@ public class UploadDocumentsViewModel(
         string Code, string Name, string CodeLabel, string NameLabel,
         string House, string Search, string Register, string Sub, string[] Categories);
 
-    private static readonly string[] RetailAndTrust = { "INDIVIDUAL", "SENIOR CITIZEN", "TRUST" };
+    private static readonly string[] Public = { General, Women, Senior, SeniorWomen };
 
     /// <summary>
     /// The four modes the old screen offers a partner, in its own order. The
@@ -271,14 +302,51 @@ public class UploadDocumentsViewModel(
     public static readonly SourcingMode[] SourcingModes =
     {
         new("2", "BROKER", "Broker Code", "Broker Name",
-            "", "source", Register.Brokers, SubField.Free, RetailAndTrust),
+            "", "source", Register.Brokers, SubField.Free, Public),
         new("1", "MMFSS - BRANCH", "Sourcing Employee Code", "Sourcing Employee Name",
-            "MFL", "", Register.None, SubField.House, RetailAndTrust),
+            "MFL", "", Register.None, SubField.House, Public),
         new("5", "MFL-EX", "Sourcing Employee Code", "Sourcing Employee Name",
-            "MFL-EX", "sub", Register.Employees, SubField.Employee, new[] { EmployeeCategory }),
+            "MFL-EX", "sub", Register.Employees, SubField.Employee, new[] { EmployeeCategory, EmployeeWomen }),
         new("6", "MFIS/FD", "Sourcing Employee Code", "Sourcing Employee Name",
-            "MIBS", "sub", Register.Employees, SubField.EmployeeShut, RetailAndTrust),
+            "MIBS", "sub", Register.Employees, SubField.EmployeeShut, Public),
     };
+
+    /// <summary>The broker mode, the only one a partner other than 1033 sources under.</summary>
+    public static SourcingMode BrokerMode => SourcingModes[0];
+
+    /// <summary>
+    /// Whether the partner chooses how the application is sourced and what it is
+    /// booked as: agency type 1033. Anyone else sources as a broker under their own
+    /// business broker code, and the category follows the holder's date of birth
+    /// and gender.
+    /// </summary>
+    public bool Chooses => UnoTP.Features.PartnerSession.IsSourcingAgency(session);
+
+    /// <summary>The business broker code a partner other than 1033 files under.</summary>
+    public string BusinessBroker => UnoTP.Features.PartnerSession.BrokerCode(session);
+
+    /// <summary>The gender the category is set from: the folio's, else an Aadhaar's read here.</summary>
+    public string HolderGender => GenderIn(State);
+
+    // Read off the state handed in, not State, which settles through here.
+    private string GenderIn(UploadState s) => Who.Gender.Length > 0 ? Who.Gender : s.Gender;
+
+    /// <summary>Why the category stands as it does, for a partner who does not choose it.</summary>
+    public string SetCategoryWhy =>
+        (Who.Dob.Length == 0 ? "No date of birth is on record" : "Set from the date of birth")
+        + (HolderGender.Length > 0 ? $" and gender ({HolderGender.ToLowerInvariant()})."
+            : ". The gender is read off an Aadhaar filed as the proof of address; until then a women's category cannot be given.");
+
+    // A partner other than 1033 has nothing to choose: broker mode, their own
+    // code, and the category the holder's details set. Kept whenever the state is
+    // read, so a saved state from before holds to it too.
+    private void Settle(UploadState s)
+    {
+        if (Chooses) return;
+        s.Sourcing = BrokerMode.Code;
+        s.SourceCode = BusinessBroker;
+        s.Category = CategoryFor(Who.Dob, GenderIn(s), DateTime.Today);
+    }
 
     /// <summary>The brokers a broker-sourced application can be filed under, from the backend.</summary>
     public IReadOnlyList<Party> Brokers { get; set; } = [];
@@ -419,7 +487,7 @@ public class UploadDocumentsViewModel(
             "mail" => !MailCanDiffer(h) ? (false, MailWhy(h))
                 : MailDifferentOf(h) ? (true, null) : (false, "Post goes to the permanent address, so there is no other address to prove."),
             "payment" => (DocumentOf(s.PayMode) is not null, $"{(s.PayMode.Length > 0 ? s.PayMode : "This mode")} is settled electronically, so there is no instrument to copy."),
-            "empproof" => (s.Category == EmployeeCategory, "Only a deposit booked against a staff record carries an employee proof."),
+            "empproof" => (IsEmployee(s.Category), "Only a deposit booked against a staff record carries an employee proof."),
             _ => (true, (string?)null),
         };
 
@@ -563,7 +631,15 @@ public class UploadDocumentsViewModel(
     // ===== The state of this application =======================================
 
     /// <summary>What the step holds against this application, opened on first sight.</summary>
-    public UploadState State => App.Upload ??= Open();
+    public UploadState State
+    {
+        get
+        {
+            var s = App.Upload ??= Open();
+            Settle(s);
+            return s;
+        }
+    }
 
     // A new application opens with the reads as the step before left them, the
     // PAN copy that came over with it, and the attempts the backend has on record
@@ -743,7 +819,7 @@ public class UploadDocumentsViewModel(
             if (SubRequired(mode)) Need(s.SubBroker.Length > 0, "cudSubBroker", "Enter the sub broker code");
         }
         Need(s.Category.Length > 0, "cudCategory", "Choose the deposit category");
-        if (s.Category == EmployeeCategory)
+        if (IsEmployee(s.Category))
         {
             // A code this screen cannot put a name to is not a reason to stop:
             // the staff register is Operations' to check.
@@ -873,7 +949,7 @@ public class UploadDocumentsViewModel(
 
         KeepSourcing(s);
 
-        if (s.Category == EmployeeCategory)
+        if (IsEmployee(s.Category))
         {
             if (Posted.EmpCode is not null) s.EmpCode = Posted.EmpCode.Trim().ToUpperInvariant();
             if (Posted.EmpCompany is not null) s.EmpCompany = Posted.EmpCompany.Trim();
@@ -894,6 +970,13 @@ public class UploadDocumentsViewModel(
     // goes, the way the old screen empties both fields before it fills them.
     private void KeepSourcing(UploadState s)
     {
+        // Nothing here is a partner's other than 1033 to choose; the sub broker is.
+        if (!Chooses)
+        {
+            if (Posted.SubBroker is not null) s.SubBroker = Posted.SubBroker.Trim().ToUpperInvariant();
+            Settle(s);
+            return;
+        }
         if (Posted.Sourcing is null) return;
         var mode = ModeOf(Posted.Sourcing);
         var fresh = Posted.Sourcing != s.Sourcing;
@@ -1201,6 +1284,12 @@ public class UploadDocumentsViewModel(
         var type = TypeOf(def, h);
         var named = type.Length > 0 ? type.ToLowerInvariant() : "proof";
         entry.Add("OCR read: " + reading.Address);
+        // The investor's gender, where the folio gives none, sets the category.
+        if (!h.Joint && Who.Gender.Length == 0 && reading.Gender.Length > 0 && State.Gender != reading.Gender)
+        {
+            State.Gender = reading.Gender;
+            entry.Add($"Gender read: {reading.Gender}.");
+        }
         var answer = await verification.ConfirmProofAsync(type, reading, h.Who.Dob);
         var issuer = answer.Verifier;
 
@@ -1500,7 +1589,7 @@ public class UploadDocumentsViewModel(
             if (SubRequired(mode) && s.SubBroker.Length == 0) left.Add("the sub broker code");
         }
         if (s.Category.Length == 0) left.Add("the deposit category");
-        if (s.Category == EmployeeCategory)
+        if (IsEmployee(s.Category))
         {
             if (s.EmpCode.Length == 0) left.Add("the employee code");
             if (s.EmpCompany.Length == 0) left.Add("the employee company");

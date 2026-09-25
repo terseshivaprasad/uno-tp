@@ -15,7 +15,10 @@
     var physical = s.AppType == M.Physical;
     var poaUsed = views["poa"].Used;
     var mailUsed = views["mail"].Used;
-    var employee = s.Category == M.EmployeeCategory;
+    var employee = M.IsEmployee(s.Category);
+    // Agency type 1033 chooses the mode, the code and the category; anyone else
+    // sources as a broker under their own code, booked as the holder's details say.
+    var chooses = Model.Chooses;
     var left = Model.Outstanding();
 
     string? Err(string key) => flash?.Errors.GetValueOrDefault(key);
@@ -24,12 +27,12 @@
 
     var sourceRegister = Model.RegisterOf(mode, sub: false);
     var subRegister = Model.RegisterOf(mode, sub: true);
-    var sourceShut = mode is null || mode.House.Length > 0;
+    var sourceShut = !chooses || mode is null || mode.House.Length > 0;
     var subShut = mode is null || mode.Sub is M.SubField.House or M.SubField.Shut or M.SubField.EmployeeShut;
     var subRequired = mode is not null && M.SubRequired(mode);
     var sourceName = Model.Resolved(mode, sub: false);
     var subName = Model.Resolved(mode, sub: true);
-    var categories = mode?.Categories ?? [];
+    var categories = chooses ? mode?.Categories ?? [] : new[] { s.Category };
     var empName = Model.StaffName(s.EmpCode);
 }
 
@@ -326,7 +329,7 @@
             <div class="cud-col">
                 <label class="csi-label" for="cudSourcing">Sourcing Mode</label>
                 <div class="cud-select">
-                    <select class="csi-control @Invalid("cudSourcing")" id="cudSourcing" name="sourcing" form="cudForm" data-submit="cudRefresh" autofocus="@Focus("cudSourcing")">
+                    <select class="csi-control @Invalid("cudSourcing")" id="cudSourcing" name="sourcing" form="cudForm" data-submit="cudRefresh" disabled="@(!chooses)" autofocus="@Focus("cudSourcing")">
                         <option value="">Select</option>
                         @foreach (var m in M.SourcingModes)
                         {
@@ -334,6 +337,13 @@
                         }
                     </select>
                 </div>
+                @if (!chooses)
+                {
+                    <p class="cud-note">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 11v6"></path><circle cx="12" cy="7.5" r=".7" fill="currentColor"></circle></svg>
+                        <span>Sourced as a broker under your business broker code.</span>
+                    </p>
+                }
                 @{ await FieldError("cudSourcing"); }
             </div>
 
@@ -380,7 +390,7 @@
             <div class="cud-col">
                 <label class="csi-label" for="cudCategory">Deposit Category</label>
                 <div class="cud-select">
-                    <select class="csi-control @Invalid("cudCategory")" id="cudCategory" name="category" form="cudForm" disabled="@(mode is null)" data-submit="cudRefresh" autofocus="@Focus("cudCategory")">
+                    <select class="csi-control @Invalid("cudCategory")" id="cudCategory" name="category" form="cudForm" disabled="@(!chooses || mode is null)" data-submit="cudRefresh" autofocus="@Focus("cudCategory")">
                         <option value="">Select</option>
                         @foreach (var c in categories)
                         {
@@ -388,7 +398,14 @@
                         }
                     </select>
                 </div>
-                @if (categories.Length == 1)
+                @if (!chooses)
+                {
+                    <p class="cud-note">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 11v6"></path><circle cx="12" cy="7.5" r=".7" fill="currentColor"></circle></svg>
+                        <span>@Model.SetCategoryWhy</span>
+                    </p>
+                }
+                else if (categories.Length == 1)
                 {
                     <p class="cud-note">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 11v6"></path><circle cx="12" cy="7.5" r=".7" fill="currentColor"></circle></svg>

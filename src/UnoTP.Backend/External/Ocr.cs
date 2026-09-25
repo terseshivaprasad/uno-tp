@@ -19,9 +19,27 @@ public sealed record OcrSubject(string Pan, string Dob, string Name);
 /// a passport file number, a voter ID. An Aadhaar number is never stored.</param>
 /// <param name="Account">A cheque's account, masked, with its IFSC and branch.</param>
 /// <param name="Bank">The bank a cheque is drawn on.</param>
+/// <param name="Gender">"Male", "Female" or "Transgender", as an Aadhaar prints it; empty otherwise.</param>
 public sealed record OcrReading(
     string Pan = "", string Name = "", string Address = "",
-    string IdNumber = "", string Account = "", string Bank = "");
+    string IdNumber = "", string Account = "", string Bank = "", string Gender = "");
+
+/// <summary>A gender however a register or a card spells it, as the app names it.</summary>
+public static class Genders
+{
+    public const string Male = "Male";
+    public const string Female = "Female";
+    public const string Transgender = "Transgender";
+
+    /// <summary>"F", "FEMALE" or "Female" read as <see cref="Female"/>, and so on; empty when unknown.</summary>
+    public static string Of(string? value) => (value ?? "").Trim().ToUpperInvariant() switch
+    {
+        "F" or "FEMALE" => Female,
+        "M" or "MALE" => Male,
+        "T" or "TRANSGENDER" => Transgender,
+        _ => "",
+    };
+}
 
 /// <summary>POST read (multipart: file, kind, type, pan, dob, name, consent) → OcrReading.</summary>
 public sealed class OcrClient(HttpClient http, IPartner partner) : ExternalClient(http, partner, "OCR"), IOcrService

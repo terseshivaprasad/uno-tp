@@ -24,9 +24,19 @@ public sealed class MockOcr : IOcrService
             DocumentKind.ProofOfAddress => new OcrReading(
                 Name: subject.Name,
                 Address: MockScans.Misread(file) ? MockScans.MisreadAddress : MockScans.Address,
-                IdNumber: type != "Aadhaar" ? "" : MockScans.Named(file, "masked") && !MockScans.Named(file, "unmasked") ? MaskedNumber : AadhaarNumber),
+                IdNumber: type != "Aadhaar" ? "" : MockScans.Named(file, "masked") && !MockScans.Named(file, "unmasked") ? MaskedNumber : AadhaarNumber,
+                Gender: type != "Aadhaar" ? "" : GenderOn(subject)),
             _ => new OcrReading(Account: MockScans.Misread(file) ? MockScans.MisreadAccount : MockScans.Account, Bank: MockScans.Bank),
         });
+
+    /// <summary>The gender an Aadhaar prints: the folio's where there is one, else
+    /// by the first name the test data gives the holder.</summary>
+    internal static string GenderOn(OcrSubject subject) =>
+        Genders.Of(MockInvestors.Folios.FirstOrDefault(f => f.Pan == subject.Pan)?.Gender) is { Length: > 0 } g ? g
+        : WomensNames.Contains(subject.Name.Split(' ')[0]) ? Genders.Female : Genders.Male;
+
+    private static readonly HashSet<string> WomensNames =
+        new(["ANJALI", "PRIYA", "MEERA", "NEHA", "SNEHA"], StringComparer.OrdinalIgnoreCase);
 
     /// <summary>The name OCR reads off a PAN card: the test data's, or one made up from the PAN.</summary>
     internal static string NameOn(string pan) =>

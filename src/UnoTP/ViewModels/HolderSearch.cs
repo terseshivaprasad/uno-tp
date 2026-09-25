@@ -146,7 +146,7 @@ public sealed class HolderSearch(IInvestorApi investors, INsdlService nsdl, IOcr
     {
         var onFolio = record.Folio.Length > 0;
         return new Holder(record.Pan, record.Dob, record.Name, record.Folio, record.Docs.Pan,
-            record.Address, onFolio ? record.Docs : null);
+            record.Address, onFolio ? record.Docs : null, Genders.Of(record.Gender));
     }
 
     // The search as the session holds it, checked again. False with nothing checked.

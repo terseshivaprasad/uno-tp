@@ -47,6 +47,9 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true;
 });
 
+// Who the partner is until there is a sign-in: agency type and business broker code.
+builder.Services.Configure<PartnerOptions>(builder.Configuration.GetSection(PartnerOptions.Section));
+
 // Feature switches: defaults from appsettings, per-session override via ?ff= (see FeatureSet).
 builder.Services.AddHttpContextAccessor();
 builder.Services.Configure<FeatureFlags>(builder.Configuration.GetSection("Features"));
@@ -108,6 +111,9 @@ app.UseSession();
 
 // Must run before the pages so a ?ff= override applies to this render.
 app.UseFeatureOverrides();
+
+// After the features, so ?agency= is honoured only while the demo data is on.
+app.UsePartner();
 
 app.UseAuthorization();
 

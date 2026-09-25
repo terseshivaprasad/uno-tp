@@ -33,6 +33,32 @@ public static class PartnerSession
         return owner;
     }
 
+    private const string AgencyKey = "partner.agency";
+    private const string BrokerKey = "partner.broker";
+
+    /// <summary>The agency type that sources through any mode and books any category.</summary>
+    public const string SourcingAgency = "1033";
+
+    /// <summary>
+    /// The partner's agency type. 1033 chooses how an application is sourced and
+    /// what it is booked as; every other type sources as a broker under its own
+    /// business broker code. Set at sign-in; until the app has one, it comes from
+    /// the "Partner" settings, or from ?agency= while the demo data is on.
+    /// </summary>
+    public static string AgencyType(this ISession session) => session.GetString(AgencyKey) ?? "";
+
+    /// <summary>The partner's business broker code, which every application a
+    /// non-1033 partner sources is filed under.</summary>
+    public static string BrokerCode(this ISession session) => session.GetString(BrokerKey) ?? "";
+
+    public static bool IsSourcingAgency(this ISession session) => session.AgencyType() == SourcingAgency;
+
+    public static void SetPartner(this ISession session, string agencyType, string brokerCode)
+    {
+        session.SetString(AgencyKey, agencyType.Trim());
+        session.SetString(BrokerKey, brokerCode.Trim().ToUpperInvariant());
+    }
+
     /// <summary>The application the partner is working on, by number.</summary>
     public static string? CurrentApplication(this ISession session) => session.GetString(ApplicationKey);
 
@@ -56,4 +82,38 @@ public static class PartnerSession
 public sealed class SessionPartner(IHttpContextAccessor http) : IPartner
 {
     public string Id => (http.HttpContext ?? throw new InvalidOperationException("No request to take the partner from.")).Session.Owner();
+}
+
+/// <summary>Who the partner is until the app has a sign-in, from the "Partner" settings.</summary>
+public sealed class PartnerOptions
+{
+    public const string Section = "Partner";
+
+    public string AgencyType { get; set; } = PartnerSession.SourcingAgency;
+
+    public string BrokerCode { get; set; } = "";
+}
+
+public static class PartnerMiddleware
+{
+    /// <summary>
+    /// Gives a session with no partner yet the configured one. While the demo data
+    /// is on, ?agency=1033 or ?agency=2001&amp;broker=BR10874 switches the partner, so
+    /// both kinds can be shown in one sitting.
+    /// </summary>
+    public static IApplicationBuilder UsePartner(this IApplicationBuilder app) =>
+        app.Use(async (ctx, next) =>
+        {
+            var session = ctx.Session;
+            var options = ctx.RequestServices.GetRequiredService<Microsoft.Extensions.Options.IOptions<PartnerOptions>>().Value;
+            if (session.GetString("partner.agency") is null) session.SetPartner(options.AgencyType, options.BrokerCode);
+
+            var demo = ctx.Items[FeatureSet.ItemKey] is FeatureSet { Flags.DemoData: true };
+            if (demo && ctx.Request.Query.TryGetValue("agency", out var agency) && agency.ToString().Trim().Length > 0)
+            {
+                var broker = ctx.Request.Query.TryGetValue("broker", out var b) && b.ToString().Trim().Length > 0 ? b.ToString() : options.BrokerCode;
+                session.SetPartner(agency.ToString(), broker);
+            }
+            await next();
+        });
 }

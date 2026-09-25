@@ -203,7 +203,7 @@ public sealed record PanCard(string? IdNumber, string? NameOnCard);
 /// <param name="QrOutput">Decoded from the QR code, which UIDAI signs, when there is one.</param>
 public sealed record AadhaarExtraction(AadhaarCard? ExtractionOutput, AadhaarCard? QrOutput);
 
-public sealed record AadhaarCard(string? IdNumber, string? NameOnCard, string? Address);
+public sealed record AadhaarCard(string? IdNumber, string? NameOnCard, string? Address, string? Gender = null);
 
 /// <param name="IdNumberFound">False when there was no Aadhaar number on the copy to mask.</param>
 public sealed record AadhaarMask(bool? IdNumberFound);

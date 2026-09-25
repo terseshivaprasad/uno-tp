@@ -32,9 +32,10 @@ public interface IApplicationApi
 /// <param name="PanFiled">Set when a PAN copy is on the application already.</param>
 /// <param name="Address">The address on record, or empty for an investor with none yet.</param>
 /// <param name="OnRecord">What the folio already holds, for an application opened on one.</param>
+/// <param name="Gender">As the folio holds it, or empty for an investor with no folio.</param>
 public sealed record Holder(
     string Pan, string Dob, string Name, string Folio, bool PanFiled,
-    string Address = "", DocsOnRecord? OnRecord = null);
+    string Address = "", DocsOnRecord? OnRecord = null, string Gender = "");
 
 /// <summary>One application: who it is for, and the upload step's state.</summary>
 public sealed class Application
@@ -64,6 +65,11 @@ public sealed class UploadState
     public string SourceCode { get; set; } = "";
     public string SubBroker { get; set; } = "";
     public string Category { get; set; } = "";
+
+    /// <summary>The investor's gender as read off an Aadhaar on this step, for a
+    /// holder the folio gives none for. It sets the deposit category where the
+    /// partner does not choose it.</summary>
+    public string Gender { get; set; } = "";
     public string EmpCode { get; set; } = "";
     public string EmpCompany { get; set; } = "";
     public string EmpHolder { get; set; } = "";

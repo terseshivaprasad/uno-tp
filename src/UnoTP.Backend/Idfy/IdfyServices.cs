@@ -117,7 +117,7 @@ public sealed class IdfyOcr(
                 var aadhaar = (await idfy.ExtractAadhaarAsync(file, consent, ct)).Result!;
                 var card = AadhaarNumbers.IsWhole(Digits(aadhaar.QrOutput?.IdNumber)) ? aadhaar.QrOutput : aadhaar.ExtractionOutput;
                 return new OcrReading(Name: card?.NameOnCard ?? "", Address: card?.Address ?? "",
-                    IdNumber: Digits(card?.IdNumber));
+                    IdNumber: Digits(card?.IdNumber), Gender: Genders.Of(card?.Gender ?? aadhaar.ExtractionOutput?.Gender));
 
             case "ind_driving_license":
                 var licence = (await idfy.ExtractDrivingLicenceAsync(file, ct)).Result!.ExtractionOutput;

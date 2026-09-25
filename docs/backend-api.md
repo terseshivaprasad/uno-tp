@@ -19,6 +19,7 @@ change `BackendClient.cs`: the pages depend only on the interfaces.
 | `Backend:External:{Nsdl,Identify,Masking,Ocr,Verification,PanAadhaarLink}` | Optional address for each outside service. The default is `{Backend:BaseUrl}/external/{name}/`, which means the backend proxies it. |
 | `Idfy:BaseUrl` | Idfy.Api. When set, IDfy handles the checks it has an endpoint for (see below). |
 | `Idfy:TimeoutSeconds` | Default 75. The Idfy.Api guide asks for at least 70. |
+| `Partner:AgencyType`, `Partner:BrokerCode` | Who the partner is until the app has a sign-in. Agency type `1033` chooses the sourcing mode, broker code and deposit category; any other type sources as `BROKER` under its business broker code, with the category set from the holder's date of birth and gender. While `Features:DemoData` is on, `?agency=2001&broker=BR10874` switches the session's partner. |
 
 In the environment, use a double underscore, for example `Backend__BaseUrl`.
 
@@ -53,14 +54,15 @@ In the environment, use a double underscore, for example `Backend__BaseUrl`.
 | GET | `applications/drafts` | | `DraftSummary[]`: saved applications that are still the partner's to finish, with identifiers masked |
 | GET | `applications` | | `ApplicationRecord[]`: the partner's applications, including older ones |
 
-- **`holder`:** `pan`, `dob`, `name`, `folio`, `panFiled`, `address`, and
-  `onRecord { pan, photo, poa }` or null.
+- **`holder`:** `pan`, `dob`, `name`, `folio`, `panFiled`, `address`,
+  `onRecord { pan, photo, poa }` or null, and `gender` (the folio's, or `""`).
 - **`Application`:** `appNo`, `holder`, `version`, `upload` (an `UploadState`,
   or null until first saved), and `prior` (attempts on record from before the
   upload step, newest first, as `LogEntry[]`).
 - **`UploadState`:** the upload step as a whole. That covers the choices made
   (`appType`, `poaType`, `payMode`, `sourcing`, `sourceCode`, `subBroker`,
-  `category`, the `emp*` fields, `formNo`, `typedFormNo`, `ckyc`, `savedAt`),
+  `category`, the `emp*` fields, `formNo`, `typedFormNo`, `ckyc`, `savedAt`,
+  and `gender` as read off an Aadhaar for a holder the folio gives none for),
   plus `docs`, `attempts`, `reads` and `log`. See `Applications.cs` for every
   field. It never contains a file or an Aadhaar number.
 - **Joint holders:** `joint` maps a holder type (`02` the second holder, `03`
@@ -70,6 +72,10 @@ In the environment, use a double underscore, for example `Backend__BaseUrl`.
   joint holder's, and `removed` once that holder is taken off. CKYC (`ckyc`)
   is fetched for the investor only, so it never takes a joint holder's
   photograph or proof of address off.
+
+**Deposit categories:** `PUBLIC/GENERAL`, `WOMEN`, `SR CITIZEN` and `SR CITIZEN
+WOMEN` (60 or over), plus `EMPLOYEE` and `EMPLOYEE WOMEN`, which only a 1033
+partner can book, under MFL-EX.
 
 ## Documents (DMS)
 
@@ -131,7 +137,7 @@ DMS.
 | NSDL | `INsdlService` | Not covered by IDfy | `POST verify { pan, dob, name }` → `{ pairOk, nameOk }` |
 | Identification | `IDocumentIdentifier` | `POST /api/documents/validate`: with `docType` for a PAN; with no `docType` for a proof of address, whose `detected_doc_type` says which proof it is (Aadhaar, passport, driving licence or voter ID) | `POST identify` (multipart `file`, `expected`, `type`) → `{ matches, hint, type }`. Used for a cheque, and for a proof of address IDfy does not know (a utility bill). For a proof of address `type` is sent empty and the answer's `type` says which proof it is: `Aadhaar`, `Passport`, `Driving Licence`, `Voter ID` or `Utility bill`. That becomes the proof's type on the application: it is never chosen. |
 | Masking | `IMaskingService` | `POST /api/aadhaar/mask`. A copy with no number to mask (`id_number_found: false`) is already masked. | `POST check` (multipart `file`, `consent`) → `{ masked }`. Not called by the upload step, which relies on OCR reading the whole number instead. |
-| OCR | `IOcrService` | `/api/pan/extract`, `/api/aadhaar/extract` (QR code read first), `/api/driving-license/extract`, `/api/passport/extract`, `/api/voter-id/extract` | `POST read` (multipart `file`, `kind`, `type`, `pan`, `dob`, `name`, `consent`) → `OcrReading`. Used for a utility bill or a cheque. |
+| OCR | `IOcrService` | `/api/pan/extract`, `/api/aadhaar/extract` (QR code read first), `/api/driving-license/extract`, `/api/passport/extract`, `/api/voter-id/extract` | `POST read` (multipart `file`, `kind`, `type`, `pan`, `dob`, `name`, `consent`) → `OcrReading` (an Aadhaar's also carries `gender`). Used for a utility bill or a cheque. |
 | Verification | `IVerificationService` | `/api/driving-license/verify/sync` and `/api/passport/verify/sync` (both with the holder's date of birth), `/api/voter-id/verify/sync`. `id_found` counts as confirmed. | `POST proof { proofType, reading, holderDob }` and `POST account { account, bank }` → `{ confirmed, verifier, notAsked }`. Used for an Aadhaar (IDfy has no UIDAI source check) and for bank accounts. |
 | PAN–Aadhaar link | `IPanAadhaarLinkService` | `/api/pan-aadhaar-link/verify/sync` | `POST check { pan, aadhaarNumber }` → `{ link }` |
 
