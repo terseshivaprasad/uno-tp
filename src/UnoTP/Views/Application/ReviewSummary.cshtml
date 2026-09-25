@@ -1,218 +1,206 @@
+@model ReviewViewModel
 @{
     ViewData["Title"] = "Review Summary";
     Layout = "_WizardLayout";
     ViewData["WizardStep"] = "review";
 
-    var holders = new[]
-    {
-        new {
-            Name = "R•••••• T•••••", Primary = true, Pan = "BISPM4465N", Dob = "10-06-1992", Gender = "Male", Father = "S•••••• T•••••",
-            Typed = true, Count = "10 of 10", Consent = "Digital consent · OTP verified 11:24 · face match passed",
-            Mobile = "8779712676", Email = "TERSESHIVAPRASAD@ICLOUD.COM",
-            Income = "Upto ₹ 5,00,000", Occupation = "Salaried · MMFSL Employee", SubOccupation = "MMFSL Employee", Marital = "Married",
-            Permanent = "704 Kisan Vihar, M G Road, Maharashtra Nagar, Dombivli, Thane 421202",
-            Mailing = "14 Sai Chambers, Andheri East, Mumbai 400069 · own proof verified", MailingSame = false,
-            PoaType = "Passport", PoaRef = "P4471882", PoaExpiry = "11/2032",
-            PoaNote = "All seven fields matched source · separate mailing-address proof also verified"
-        },
-        new {
-            Name = "S•••• T•••••", Primary = false, Pan = "AXKPT8891L", Dob = "22-01-1990", Gender = "Male", Father = "R•••••• T•••••",
-            Typed = false, Count = "8 of 8", Consent = "Digital consent · OTP verified 11:31 · face match passed",
-            Mobile = "9820045512", Email = "S.TERSE@ICLOUD.COM",
-            Income = "₹ 5,00,000 – ₹ 10,00,000", Occupation = "Self-employed", SubOccupation = "Professional", Marital = "Married",
-            Permanent = "14 Sai Chambers, Andheri East, Mumbai, Maharashtra 400069",
-            Mailing = "Same as permanent", MailingSame = true,
-            PoaType = "Driving licence", PoaRef = "MH12 2019 0034471", PoaExpiry = "08/2031",
-            PoaNote = "All seven fields matched the verify-with-source response"
-        },
-        new {
-            Name = "P•••• N•••", Primary = false, Pan = "CDEPN2290F", Dob = "03-11-1996", Gender = "Female", Father = "R•••••• N•••",
-            Typed = false, Count = "8 of 8", Consent = "Offline consent · signed form uploaded · face match passed",
-            Mobile = "9930114427", Email = "P.NAIK@ICLOUD.COM",
-            Income = "₹ 5,00,000 – ₹ 10,00,000", Occupation = "Salaried · private sector", SubOccupation = "Private sector", Marital = "Single",
-            Permanent = "22 Laxmi Niwas, Kalyan West, Thane 421301",
-            Mailing = "Same as permanent", MailingSame = true,
-            PoaType = "Aadhaar", PoaRef = "XXXX XXXX 4417", PoaExpiry = "No expiry",
-            PoaNote = "All seven fields matched the verify-with-source response"
-        }
-    };
+    // Everything the application holds, as the backend has it: what each step
+    // saved, the documents filed, and the backend's quote for the deposit.
+    var d = Model.Deposit;
+    var q = Model.Quote;
+    var payment = Model.Payment;
+    var docs = Model.Docs;
+    var blockers = Model.Blockers;
+    var mode = docs.ModeOf(docs.State.Sourcing);
+    var sourceName = docs.Resolved(mode, sub: false);
+    var holdersText = Model.Holders.Count == 1 ? "One holder" : $"{Model.Holders.Count} holders";
+    string Or(string value, string empty = "Not entered") => value.Length > 0 ? value : empty;
+    string Account(BankAccount? a, BankBranch? b) => a is null || a.AccountNumber.Length == 0 ? "Not entered"
+        : $"{b?.Bank ?? a.Ifsc} {Money.MaskAccount(a.AccountNumber)}";
+}
 
-    // Done = false draws a dash: the item does not apply to this application.
-    var documents = new[]
+@functions {
+    private async Task Kv(string key, string value, string? note = null, string? css = null)
     {
-        (Done: true,  Title: "PAN card · three holders",           Detail: "OCR name and DOB matched CKYC for each"),
-        (Done: true,  Title: "Proof of address · holders 2 and 3", Detail: "verified against source on all seven fields"),
-        (Done: true,  Title: "Proof of address · holder 1",        Detail: "passport · verified against source on all seven fields"),
-        (Done: true,  Title: "Proof of address · holder 1 mailing", Detail: "utility bill · address matched the mailing address on file"),
-        (Done: true,  Title: "Photograph · three holders",         Detail: "face match against POA and PAN passed for each"),
-        (Done: true,  Title: "Payment cheque",                     Detail: "cheque-hdfc-4471.jpg · account, IFSC and name matched"),
-        (Done: true,  Title: "Form 15G · primary holder",          Detail: "required by the TDS exemption claimed on 10"),
-        (Done: false, Title: "Disability certificate",             Detail: "no holder tagged as disabled")
-    };
-
-    var consents = new[]
-    {
-        (Title: "Holder 1 — digital consent", Detail: "OTP verified 14 Sep 2026, 11:24 · purposes: KYC, deposit servicing"),
-        (Title: "Holder 2 — digital consent", Detail: "OTP verified 14 Sep 2026, 11:31"),
-        (Title: "Holder 3 — offline consent", Detail: "signed form collected and uploaded 14 Sep 2026")
-    };
-
-    // The first two are signed as the broker works through the application; the last is signed here.
-    var declarations = new[]
-    {
-        (Signed: true,  Text: "I have met every holder, seen the original documents, and the uploads are true copies of them."),
-        (Signed: true,  Text: "The deposit terms above, including the rate and that it locks on realisation, were read out to the investor."),
-        (Signed: false, Text: "I have not received or promised any cash consideration outside this application.")
-    };
+        <div><div class="rv-kv__k">@key</div><div class="rv-kv__v @css">@value</div>@if (note is not null) { <div class="rv-kv__note">@note</div> }</div>
+        await Task.CompletedTask;
+    }
 }
 
 <div class="rv-page">
     <div class="inv-page-head">
         <div style="flex:1;min-width:0">
             <div class="inv-title">Review Summary</div>
-            <div style="font-size:12px;color:var(--muted);padding-top:4px">Everything captured across the four steps &middot; check before submission</div>
+            <div style="font-size:12px;color:var(--muted);padding-top:4px">Everything captured across the steps &middot; check before submission</div>
         </div>
-        <div style="font-size:12.5px;color:var(--muted);flex:none">Application No: <span style="font-weight:600;color:var(--ink)">FBBMFL26F99AAC1</span></div>
+        <div style="font-size:12.5px;color:var(--muted);flex:none">Application No: <span style="font-weight:600;color:var(--ink)">@docs.AppNo</span></div>
     </div>
 
-    <div class="rv-ready laptop-only">
-        <div class="rv-ready__text"><strong>Every control point has passed.</strong> All three holders are identified from CKYC and consented under DPDP, every proof of address is verified against source including holder 1&rsquo;s mailing-address proof, face match passed for each holder, the payment cheque matched the account on file, and no field the broker owns is blank. <span class="rv-em">The declarations below are the only thing left.</span></div>
-        <div class="rv-ready__status">Ready to submit</div>
-    </div>
+    @if (Model.Refused is { } refused)
+    {
+        <div class="cud-banner" role="alert"><span>@refused</span></div>
+    }
+
+    @if (blockers.Count == 0)
+    {
+        <div class="rv-ready">
+            <div class="rv-ready__text"><strong>Nothing is missing.</strong> Every step is complete. <span class="rv-em">The declarations below are the only thing left.</span></div>
+            <div class="rv-ready__status">Ready to submit</div>
+        </div>
+    }
+    else
+    {
+        <div class="rv-callout">
+            <div class="rv-callout__text">
+                <strong>@blockers.Count thing@(blockers.Count == 1 ? " is" : "s are") still missing before this can be submitted:</strong>
+                @string.Join("; ", blockers.Select(b => $"{b.What} ({b.Step})")).
+            </div>
+        </div>
+    }
 
     @* ── Fixed deposit ────────────────────────────────────────────────────────── *@
-    <section class="rv-section laptop-only">
+    <section class="rv-section">
         <div class="rv-head">
             <div class="rv-head__text">
                 <div class="rv-head__title">Fixed deposit</div>
-                <div class="rv-head__desc">Rate is the card rate for a 36-month public deposit as on 14 Sep 2026 &middot; locked on realisation of the cheque, not on submission</div>
+                <div class="rv-head__desc">@(q is null ? "Quoted once the deposit is configured" : $"Card rate as on {Money.Day(q.RateAsOn)} · locked when the application is submitted")</div>
             </div>
-            <a class="rv-head__action" asp-controller="Application" asp-action="FdConfiguration">Edit on 10</a>
+            <a class="rv-head__action" asp-controller="Application" asp-action="FdConfiguration">Edit</a>
         </div>
-        <div class="rv-grid-4">
-            <div><div class="rv-kv__k">Invested amount</div><div class="rv-kv__v rv-kv__v--lg">&#8377; 5,00,000</div><div class="rv-kv__note">five lakh rupees</div></div>
-            <div><div class="rv-kv__k">Category</div><div class="rv-kv__v rv-kv__v--lg">Public</div><div class="rv-kv__note">no senior-citizen uplift &mdash; youngest holder is 30</div></div>
-            <div><div class="rv-kv__k">Scheme</div><div class="rv-kv__v rv-kv__v--lg">Cumulative</div><div class="rv-kv__note">from tenure and payout together</div></div>
-            <div><div class="rv-kv__k">Rate of interest</div><div class="rv-kv__v rv-kv__v--lg rv-kv__v--green">7.85% p.a.</div><div class="rv-kv__note">card rate &middot; not negotiable</div></div>
-            <div><div class="rv-kv__k">Tenure</div><div class="rv-kv__v rv-kv__v--lg">36 months</div></div>
-            <div><div class="rv-kv__k">Interest payout</div><div class="rv-kv__v rv-kv__v--lg">On maturity</div></div>
-            <div><div class="rv-kv__k">Maturity value</div><div class="rv-kv__v rv-kv__v--lg">&#8377; 6,29,300</div></div>
-            <div><div class="rv-kv__k">Matures on</div><div class="rv-kv__v rv-kv__v--lg">14 Sep 2029</div><div class="rv-kv__note">36 months from realisation</div></div>
-        </div>
-        <div class="rv-grid-4 rv-grid-4--divided">
-            <div><div class="rv-kv__k">Auto renewal</div><div class="rv-kv__v">On &middot; principal only</div><div class="rv-kv__note">at the card rate on 14 Sep 2029</div></div>
-            <div><div class="rv-kv__k">TDS</div><div class="rv-kv__v rv-kv__v--amber">Not deducted &mdash; exemption claimed</div><div class="rv-kv__note">Form 15G on file for the primary holder</div></div>
-            <div><div class="rv-kv__k">Delivery type</div><div class="rv-kv__v">E-receipt</div><div class="rv-kv__note rv-wrap">TERSESHIVAPRASAD@ICLOUD.COM</div></div>
-            <div><div class="rv-kv__k">Maturity instruction</div><div class="rv-kv__v">Credit to the repayment account</div><div class="rv-kv__note">HDFC &bull;&bull;&bull;&bull;4471</div></div>
-        </div>
+        @if (d is null || d.Amount == 0)
+        {
+            <p class="rv-kv__v rv-kv__v--empty">Not configured yet.</p>
+        }
+        else
+        {
+            <div class="rv-grid-4">
+                @{ await Kv("Invested amount", Money.Rupees(d.Amount), Money.InWords(d.Amount).ToLowerInvariant(), "rv-kv__v--lg"); }
+                @{ await Kv("Category", docs.State.Category.Length > 0 ? docs.CategoryName(docs.State.Category) : "Not chosen", null, "rv-kv__v--lg"); }
+                @{ await Kv("Scheme", Model.Payout?.PerYear == 0 ? "Cumulative" : "Non-cumulative", null, "rv-kv__v--lg"); }
+                @{ await Kv("Rate of interest", q is null ? "—" : $"{q.Rate:0.00}% p.a.", null, "rv-kv__v--lg rv-kv__v--green"); }
+                @{ await Kv("Tenure", $"{d.TenureMonths} months", null, "rv-kv__v--lg"); }
+                @{ await Kv("Interest payout", Model.Payout?.Name ?? d.Payout, q is not null && q.InterestEach > 0 ? $"{Money.Rupees(q.InterestEach)} each {Model.Payout?.Each}" : null, "rv-kv__v--lg"); }
+                @{ await Kv("Maturity value", q is null ? "—" : Money.Rupees(q.MaturityAmount), null, "rv-kv__v--lg"); }
+                @{ await Kv("Matures on", q is null ? "—" : Money.Day(q.MaturesOn), null, "rv-kv__v--lg"); }
+            </div>
+            <div class="rv-grid-4 rv-grid-4--divided">
+                @{ await Kv("Auto renewal", d.AutoRenewal ? $"On · {Model.Option(Model.Ref.RenewInstructions, d.RenewInstruction)}" : "Off"); }
+                @{ await Kv("TDS", d.NoTds ? "Not deducted — exemption claimed" : "Deducted at the applicable rate", null, d.NoTds ? "rv-kv__v--amber" : null); }
+                @{ await Kv("Delivery type", Model.Option(Model.Ref.DeliveryTypes, d.DeliveryType), Or(Model.DetailsOf(docs.Investor).Email, "")); }
+                @{ await Kv("Maturity instruction", "Credit to the repayment account", payment?.Repayment is { AccountNumber.Length: > 0 } r ? Account(r, Model.RepaymentBranch) : null); }
+            </div>
+        }
     </section>
 
     @* ── Holders ──────────────────────────────────────────────────────────────── *@
-    <section class="rv-section laptop-only">
+    <section class="rv-section">
         <div class="rv-head">
             <div class="rv-head__text">
                 <div class="rv-head__title">Holders</div>
-                <div class="rv-head__desc">Three holders &middot; added and removed on the search step &middot; every holder&rsquo;s identity is from CKYC and each POA is cross-checked with verify-with-source &middot; one row per holder, carrying everything captured so far &mdash; counters cover every field the broker owns: six More Information, both FATCA answers, and any identity field OCR could not read (two on holder 1)</div>
+                <div class="rv-head__desc">@holdersText &middot; one row per holder, carrying everything captured so far</div>
             </div>
-            <a class="rv-head__action" asp-controller="InvestorInfo" asp-action="Index">Edit on 08</a>
+            <a class="rv-head__action" asp-controller="InvestorInfo" asp-action="Index">Edit</a>
         </div>
         <div class="rv-holders">
-            @foreach (var h in holders)
+            @foreach (var h in Model.Holders)
             {
+                var who = h.Holder.Who;
+                var det = h.Details;
+                var gender = det.Gender.Length > 0 ? det.Gender : who.Gender;
                 <div class="rv-holder">
                     <div class="rv-holder__id">
-                        <div class="rv-holder__photo">PHOTO</div>
                         <div class="rv-holder__id-body">
                             <div class="rv-holder__name-row">
-                                <div class="rv-holder__name">@h.Name</div>
-                                <div class="rv-role @(h.Primary ? "rv-role--primary" : "")">@(h.Primary ? "Primary" : "Joint")</div>
+                                <div class="rv-holder__name">@Or(who.Name, "Name not verified yet")</div>
+                                <div class="rv-role @(h.Holder.Joint ? "" : "rv-role--primary")">@(h.Holder.Joint ? "Joint" : "Primary")</div>
                             </div>
-                            <div class="rv-holder__meta">PAN @h.Pan<br />@h.Dob &middot; @h.Gender @if (h.Typed) {<span class="rv-typed">typed &middot; matched source</span>}</div>
-                            <div class="rv-holder__meta">Father @h.Father @if (h.Typed) {<span class="rv-typed">typed &middot; matched source</span>}</div>
-                            <div class="rv-holder__count">
-                                <div class="rv-holder__count-label">@h.Count &middot; complete</div>
-                                <div class="rv-holder__bar"><div></div></div>
-                            </div>
-                            <div class="rv-holder__consent">@h.Consent</div>
+                            <div class="rv-holder__meta">PAN @UploadDocumentsViewModel.Mask(who.Pan)<br />@UploadDocumentsViewModel.MaskDate(who.Dob) &middot; @Or(gender, "gender not entered")</div>
+                            <div class="rv-holder__meta">@Or(det.NameType, "Parent") @Or(det.ParentName)</div>
+                            <div class="rv-holder__meta">Folio @Or(who.Folio, "opens with this application")</div>
                         </div>
                     </div>
                     <div class="rv-holder__col">
-                        <div class="rv-holder__col-head"><div class="rv-holder__col-label">Contact &middot; from search</div></div>
+                        <div class="rv-holder__col-head"><div class="rv-holder__col-label">Contact</div></div>
                         <div class="rv-mini-grid rv-mini-grid--1">
-                            <div><div class="rv-mini__k">Mobile</div><div class="rv-mini__v">@h.Mobile</div></div>
-                            <div><div class="rv-mini__k">E-mail</div><div class="rv-mini__v">@h.Email</div></div>
+                            <div><div class="rv-mini__k">Mobile</div><div class="rv-mini__v">@Or(det.Mobile)</div></div>
+                            <div><div class="rv-mini__k">E-mail</div><div class="rv-mini__v">@Or(det.Email)</div></div>
                         </div>
                     </div>
                     <div class="rv-holder__col">
-                        <div class="rv-holder__col-head"><div class="rv-holder__col-label">More information &middot; broker</div></div>
+                        <div class="rv-holder__col-head"><div class="rv-holder__col-label">More information</div></div>
                         <div class="rv-mini-grid">
-                            <div><div class="rv-mini__k">Annual income</div><div class="rv-mini__v">@h.Income</div></div>
-                            <div><div class="rv-mini__k">Occupation</div><div class="rv-mini__v">@h.Occupation</div></div>
-                            <div><div class="rv-mini__k">Sub occupation</div><div class="rv-mini__v">@h.SubOccupation</div></div>
-                            <div><div class="rv-mini__k">Marital status</div><div class="rv-mini__v">@h.Marital</div></div>
-                            <div><div class="rv-mini__k">FATCA &middot; tax resident elsewhere</div><div class="rv-mini__v">No</div></div>
-                            <div><div class="rv-mini__k">FATCA &middot; foreign resident</div><div class="rv-mini__v">No</div></div>
+                            <div><div class="rv-mini__k">Annual income</div><div class="rv-mini__v">@Or(det.AnnualIncome)</div></div>
+                            <div><div class="rv-mini__k">Occupation</div><div class="rv-mini__v">@Or(det.Occupation)</div></div>
+                            <div><div class="rv-mini__k">Sub occupation</div><div class="rv-mini__v">@Or(det.SubOccupation)</div></div>
+                            <div><div class="rv-mini__k">Marital status</div><div class="rv-mini__v">@Or(det.MaritalStatus)</div></div>
+                            @if (!h.Holder.Joint)
+                            {
+                                <div><div class="rv-mini__k">FATCA &middot; tax resident elsewhere</div><div class="rv-mini__v">@(det.FatcaTaxResident ? "Yes" : "No")</div></div>
+                                <div><div class="rv-mini__k">FATCA &middot; foreign resident</div><div class="rv-mini__v">@(det.FatcaPermanentResident ? "Yes" : "No")</div></div>
+                            }
                         </div>
                     </div>
-                    @* A holder whose mailing address carries its own proof is flagged in pink. *@
-                    <div class="rv-holder__col rv-holder__col--poa @(h.MailingSame ? "" : "rv-holder__col--flag")">
+                    <div class="rv-holder__col rv-holder__col--poa @(h.Mailing == "Same as permanent" ? "" : "rv-holder__col--flag")">
                         <div class="rv-holder__col-head">
-                            <div class="rv-holder__col-label">Address &amp; proof of address &middot; from 07</div>
-                            <div class="rv-verified">Verified</div>
+                            <div class="rv-holder__col-label">Address &amp; proof of address</div>
+                            <div class="rv-verified">@h.Permanent.State</div>
                         </div>
                         <div class="rv-mini-grid">
-                            <div class="rv-mini--wide"><div class="rv-mini__k">Permanent address</div><div class="rv-mini__v">@h.Permanent</div></div>
-                            <div class="rv-mini--wide"><div class="rv-mini__k">Mailing address</div><div class="rv-mini__v @(h.MailingSame ? "rv-mini__v--muted" : "")">@h.Mailing</div></div>
-                            <div><div class="rv-mini__k">POA type</div><div class="rv-mini__v">@h.PoaType</div></div>
-                            <div><div class="rv-mini__k">POA reference</div><div class="rv-mini__v">@h.PoaRef</div></div>
-                            <div><div class="rv-mini__k">POA expiry</div><div class="rv-mini__v">@h.PoaExpiry</div></div>
+                            <div class="rv-mini--wide"><div class="rv-mini__k">Permanent address</div><div class="rv-mini__v">@h.Permanent.Lines</div></div>
+                            <div class="rv-mini--wide"><div class="rv-mini__k">Mailing address</div><div class="rv-mini__v">@h.Mailing @(h.MailingState.Length > 0 ? $"· {h.MailingState}" : "")</div></div>
+                            <div><div class="rv-mini__k">POA type</div><div class="rv-mini__v">@Or(h.PoaType, "—")</div></div>
+                            <div><div class="rv-mini__k">POA reference</div><div class="rv-mini__v">@Or(h.Permanent.Number, "—")</div></div>
+                            <div><div class="rv-mini__k">POA expiry</div><div class="rv-mini__v">@Or(h.Permanent.Expiry, "—")</div></div>
                         </div>
-                        <div class="rv-holder__poa-note">@h.PoaNote</div>
                     </div>
                 </div>
             }
         </div>
-        <div class="rv-callout">
-            <div class="rv-callout__text"><strong>Holder 1&rsquo;s mailing address differs from the permanent address</strong> &mdash; 14 Sai Chambers, Andheri East, Mumbai 400069 &mdash; so a second proof of address was required for it; that proof is uploaded and verified. No holder is tagged as disabled, so no additional certificate is required.</div>
-            <a class="rv-callout__status" asp-controller="UploadDocuments" asp-action="Index">Verified on 07</a>
-        </div>
     </section>
 
     @* ── Nominee ──────────────────────────────────────────────────────────────── *@
-    <section class="rv-section laptop-only">
+    <section class="rv-section">
         <div class="rv-head">
             <div class="rv-head__text">
                 <div class="rv-head__title">Nominee</div>
-                <div class="rv-head__desc">Asked once for the application, not per holder &middot; mandatory before submission</div>
+                <div class="rv-head__desc">Asked once for the application, not per holder</div>
             </div>
-            <a class="rv-head__action" asp-controller="InvestorInfo" asp-action="Index">Edit on 08</a>
+            <a class="rv-head__action" asp-controller="InvestorInfo" asp-action="Index">Edit</a>
         </div>
-        <div class="rv-grid-4">
-            <div><div class="rv-kv__k">Name</div><div class="rv-kv__v">A&bull;&bull;&bull;&bull; R&bull;&bull;&bull;&bull;&bull;&bull; T&bull;&bull;&bull;&bull;&bull;</div></div>
-            <div><div class="rv-kv__k">Date of birth</div><div class="rv-kv__v">12-12-2020</div></div>
-            <div><div class="rv-kv__k">Relation with primary holder</div><div class="rv-kv__v">Daughter</div></div>
-            <div><div class="rv-kv__k">Guardian</div><div class="rv-kv__v">R&bull;&bull;&bull;&bull;&bull;&bull; T&bull;&bull;&bull;&bull;&bull; &middot; primary holder</div></div>
-        </div>
-        <div class="rv-pass rv-pass--soft"><strong>Nominee captured.</strong> The nominee is a minor, so a guardian and their address are on file &mdash; the guardian is the primary holder, at the permanent address above.</div>
+        @if (Model.Nominee is { } n)
+        {
+            <div class="rv-grid-4">
+                @{ await Kv("Name", Or(n.Name)); }
+                @{ await Kv("Date of birth", Or(n.Dob)); }
+                @{ await Kv("Relation with primary holder", Or(n.Relation)); }
+                @{ await Kv("Guardian", Or(n.GuardianName, "Not needed")); }
+            </div>
+        }
+        else
+        {
+            <p class="rv-kv__v rv-kv__v--empty">No nominee named.</p>
+        }
     </section>
 
-    <div class="rv-split rv-split--wide-left laptop-only">
+    <div class="rv-split rv-split--wide-left">
         @* ── Bank & payment ─────────────────────────────────────────────────── *@
         <section class="rv-section">
             <div class="rv-head">
                 <div class="rv-head__text">
                     <div class="rv-head__title">Bank &amp; payment</div>
-                    <div class="rv-head__desc">Read from the payment cheque &middot; both accounts belong to the primary holder</div>
+                    <div class="rv-head__desc">Paid by @Or(docs.State.PayMode, "a mode not chosen yet")</div>
                 </div>
-                <a class="rv-head__action" asp-controller="Application" asp-action="BankDetails">Edit on 09</a>
+                <a class="rv-head__action" asp-controller="Application" asp-action="BankDetails">Edit</a>
             </div>
             <div class="rv-grid-2">
-                <div><div class="rv-kv__k">Payment account</div><div class="rv-kv__v rv-kv__v--lg">HDFC Bank &bull;&bull;&bull;&bull;4471</div><div class="rv-kv__note">Andheri East, Mumbai &middot; IFSC HDFC0000521 &middot; MICR 400240015</div></div>
-                <div><div class="rv-kv__k">Repayment account</div><div class="rv-kv__v rv-kv__v--lg">Same account</div><div class="rv-kv__note">interest and maturity paid to the investor</div></div>
-                <div><div class="rv-kv__k">Cheque</div><div class="rv-kv__v">004512 &middot; 12 Sep 2026</div><div class="rv-kv__note">&#8377; 5,00,000 &mdash; equals the deposit amount</div></div>
-                <div><div class="rv-kv__k">Axis CMS location</div><div class="rv-kv__v">Mumbai &mdash; Andheri</div><div class="rv-kv__note">where the cheque is presented</div></div>
+                @{ await Kv("Payment account", Account(payment?.Payment, Model.PaymentBranch), Model.PaymentBranch is { } pb ? $"{pb.Branch} · IFSC {pb.Ifsc} · MICR {pb.Micr}" : null, "rv-kv__v--lg"); }
+                @{ await Kv("Repayment account", payment is null ? "Not entered" : payment.RepaymentSameAsPayment ? "Same account" : Account(payment.Repayment, Model.RepaymentBranch), "interest and maturity paid to the investor", "rv-kv__v--lg"); }
+                @if (payment?.Cheque is { } c)
+                {
+                    await Kv("Cheque", $"{Or(c.Number)} · {Or(c.Date)}");
+                    await Kv("Axis CMS location", Or(c.CmsLocation), "where the cheque is presented");
+                }
             </div>
-            <div class="rv-pass"><strong>Cheque matched.</strong> Account number, IFSC and holder name read from cheque-hdfc-4471.jpg agree with what was typed, and the name matches the primary holder. <span class="rv-em">The FD starts and the rate locks on realisation</span> &mdash; typically two working days after presentation.</div>
         </section>
 
         @* ── Documents ──────────────────────────────────────────────────────── *@
@@ -220,175 +208,85 @@
             <div class="rv-head">
                 <div class="rv-head__text">
                     <div class="rv-head__title">Documents</div>
-                    <div class="rv-head__desc">All uploads for this application</div>
+                    <div class="rv-head__desc">Every document the application carries</div>
                 </div>
-                <a class="rv-head__action" asp-controller="UploadDocuments" asp-action="Index">Edit on 07</a>
+                <a class="rv-head__action" asp-controller="UploadDocuments" asp-action="Index">Edit</a>
             </div>
             <ul class="rv-checks">
-                @foreach (var d in documents)
+                @foreach (var doc in Model.Documents)
                 {
                     <li class="rv-check">
-                        <span class="rv-check__mark @(d.Done ? "" : "rv-check__mark--na")" aria-hidden="true">@(d.Done ? "✓" : "–")</span>
-                        <div class="rv-check__body"><div class="rv-check__title">@d.Title</div><div class="rv-check__detail">@d.Detail</div></div>
+                        <span class="rv-check__mark @(doc.Done ? "" : "rv-check__mark--na")" aria-hidden="true">@(doc.Done ? "✓" : "–")</span>
+                        <div class="rv-check__body"><div class="rv-check__title">@doc.Title</div><div class="rv-check__detail">@doc.Detail</div></div>
                     </li>
                 }
             </ul>
         </section>
     </div>
 
-    <div class="rv-split laptop-only">
-        @* ── Consent ────────────────────────────────────────────────────────── *@
-        <section class="rv-section">
-            <div class="rv-head">
-                <div class="rv-head__text">
-                    <div class="rv-head__title">Consent &middot; DPDP</div>
-                    <div class="rv-head__desc">Every holder consents before their data is processed</div>
-                </div>
-                <span class="rv-head__action">Register on 12</span>
+    @* ── Other details ──────────────────────────────────────────────────────── *@
+    <section class="rv-section">
+        <div class="rv-head">
+            <div class="rv-head__text">
+                <div class="rv-head__title">Other details</div>
+                <div class="rv-head__desc">How the application is sourced, from Upload Documents</div>
             </div>
-            <ul class="rv-checks">
-                @foreach (var c in consents)
-                {
-                    <li class="rv-check">
-                        <span class="rv-check__mark" aria-hidden="true">&#10003;</span>
-                        <div class="rv-check__body"><div class="rv-check__title">@c.Title</div><div class="rv-check__detail">@c.Detail</div></div>
-                    </li>
-                }
-            </ul>
-        </section>
-
-        @* ── Other details ──────────────────────────────────────────────────── *@
-        <section class="rv-section">
-            <div class="rv-head">
-                <div class="rv-head__text">
-                    <div class="rv-head__title">Other details</div>
-                    <div class="rv-head__desc">Broker&rsquo;s own references &mdash; optional</div>
-                </div>
-            </div>
-            <div class="rv-grid-2">
-                <div><div class="rv-kv__k">Sub broker code</div><div class="rv-kv__v">SB-100002225-14</div><div class="rv-kv__note">earns the payout on this application</div></div>
-                <div><div class="rv-kv__k">Physical application no</div><div class="rv-kv__v rv-kv__v--empty">Not entered</div><div class="rv-kv__note">only where a paper form was signed</div></div>
-                <div><div class="rv-kv__k">Application type</div><div class="rv-kv__v">Purchase</div><div class="rv-kv__note">new deposit, not a renewal</div></div>
-                <div><div class="rv-kv__k">Sourced by</div><div class="rv-kv__v">Shivaprasad Terse &middot; 100002225</div></div>
-            </div>
-        </section>
-    </div>
-
-    @* ── Board 11 - Mobile: the same review, condensed to one card per topic ── *@
-    <div class="rv-phone phone-only">
-        <div class="rv-phone__pass">
-            <div class="rv-phone__pass-title">Every control point passed</div>
-            <div class="rv-phone__pass-text">26 of 26 fields &middot; nominee captured &middot; all proofs verified against source &middot; face match and consent complete for all three holders.</div>
+            <a class="rv-head__action" asp-controller="UploadDocuments" asp-action="Index">Edit</a>
         </div>
-
-        <div class="deposit-card">
-            <div class="deposit-card__top">
-                <div><div class="deposit-card__k">Invested amount</div><div class="deposit-card__amount">&#8377; 5,00,000</div></div>
-                <div class="deposit-card__rate"><div class="deposit-card__k">Rate</div><div class="deposit-card__rate-v">7.85%</div></div>
-            </div>
-            <div class="deposit-card__grid">
-                <div><div class="deposit-card__k">Tenure</div><div class="deposit-card__v">36 mo</div></div>
-                <div><div class="deposit-card__k">Scheme</div><div class="deposit-card__v">Cumulative</div></div>
-                <div><div class="deposit-card__k">Category</div><div class="deposit-card__v">Public</div></div>
-                <div><div class="deposit-card__k">Maturity</div><div class="deposit-card__v">&#8377; 6,29,300</div></div>
-                <div><div class="deposit-card__k">Matures on</div><div class="deposit-card__v">14 Sep 29</div></div>
-                <div><div class="deposit-card__k">Payout</div><div class="deposit-card__v">On maturity</div></div>
-            </div>
-            <div class="deposit-card__note">Auto renewal on &middot; principal only &middot; TDS not deducted (15G on file) &middot; e-receipt. Rate locks on realisation of the cheque. <a asp-controller="Application" asp-action="FdConfiguration">Edit on 10</a></div>
+        <div class="rv-grid-4">
+            @{ await Kv("Sourcing mode", mode?.Name ?? "Not chosen"); }
+            @{ await Kv(mode?.CodeLabel ?? "Code", Or(docs.State.SourceCode), sourceName?.Text); }
+            @{ await Kv("Sub broker code", Or(docs.State.SubBroker)); }
+            @{ await Kv("Application type", Model.Option(Model.Ref.ApplicationTypes, docs.State.AppType), docs.State.AppType == UploadDocumentsViewModel.Physical ? $"form no {Or(docs.State.TypedFormNo)}" : null); }
+            @{ await Kv("Sourced by", $"{docs.Partner.Name} · {docs.Partner.Code}"); }
         </div>
-
-        <section class="rv-phone__card">
-            <div class="rv-phone__head"><div class="rv-phone__title">Holders</div><a asp-controller="InvestorInfo" asp-action="Index">3 &middot; edit on 08</a></div>
-            <div class="rv-phone__holder"><div class="rv-phone__holder-name">R&bull;&bull;&bull;&bull;&bull;&bull; T&bull;&bull;&bull;&bull;&bull; &middot; Primary</div><div class="rv-phone__muted">PAN BISPM4465N &middot; DOB 10-06-1992 &middot; gender and parent name typed and matched &middot; salaried</div><div class="rv-phone__ok">Passport POA verified &middot; mailing POA verified</div></div>
-            <div class="rv-phone__holder"><div class="rv-phone__holder-name">S&bull;&bull;&bull;&bull; T&bull;&bull;&bull;&bull;&bull; &middot; Joint</div><div class="rv-phone__muted">PAN AXKPT8891L &middot; DOB 22-01-1990 &middot; DL MH12 2019 0034471 exp 08/2031</div><div class="rv-phone__ok">Verified &middot; all seven fields</div></div>
-            <div class="rv-phone__holder"><div class="rv-phone__holder-name">P&bull;&bull;&bull;&bull; N&bull;&bull;&bull; &middot; Joint</div><div class="rv-phone__muted">PAN CDEPN2290F &middot; DOB 03-11-1996 &middot; Aadhaar XXXX XXXX 4417</div><div class="rv-phone__ok">Verified &middot; all seven fields</div></div>
-        </section>
-
-        <section class="rv-phone__card">
-            <div class="rv-phone__head"><div class="rv-phone__title">Bank &amp; payment</div><a asp-controller="Application" asp-action="BankDetails">Edit on 09</a></div>
-            <div class="rv-phone__text">Payment and repayment &mdash; HDFC Bank &bull;&bull;&bull;&bull;4471 &middot; Andheri East &middot; IFSC HDFC0000521</div>
-            <div class="rv-phone__text">Cheque 004512 &middot; 12 Sep 2026 &middot; &#8377; 5,00,000 &mdash; equals the deposit amount &middot; Axis CMS Mumbai &mdash; Andheri</div>
-            <div class="rv-phone__match"><strong>Cheque matched</strong> and the name matches the primary holder. The FD starts on realisation.</div>
-        </section>
-
-        <section class="rv-phone__card">
-            <div class="rv-phone__head"><div class="rv-phone__title">Documents &amp; consent</div><a asp-controller="UploadDocuments" asp-action="Index">Edit on 07</a></div>
-            <ul class="rv-checks">
-                @foreach (var (title, detail) in new[] { ("PAN · three holders", ""), ("POA · holders 2 and 3", ""), ("POA · holder 1", "verified"), ("POA · holder 1 mailing", "verified"), ("Photograph · face match", ""), ("Payment cheque", ""), ("Form 15G · primary", ""), ("DPDP consent · all three", "2 digital, 1 offline") })
-                {
-                    <li class="rv-check">
-                        <span class="rv-check__mark" aria-hidden="true">&#10003;</span>
-                        <div class="rv-check__body"><div class="rv-check__title">@title</div>@if (detail != "") {<div class="rv-check__detail">@detail</div>}</div>
-                    </li>
-                }
-            </ul>
-        </section>
-
-        <section class="rv-phone__card">
-            <div class="rv-phone__title rv-phone__head">Other details</div>
-            <div class="rv-phone__text">Sub broker SB-100002225-14 &middot; purchase &middot; physical application no not entered</div>
-            <div class="rv-phone__ok">Nominee captured &mdash; A&bull;&bull;&bull;&bull; T&bull;&bull;&bull;&bull;&bull; &middot; daughter &middot; minor, guardian on file</div>
-        </section>
-    </div>
+    </section>
 
     @* ── Declarations ─────────────────────────────────────────────────────────── *@
-    <form class="rv-declarations" id="reviewForm" novalidate>
+    <form method="post" asp-action="Send" class="rv-declarations" id="reviewForm" novalidate>
         <div class="rv-head__title">Declarations</div>
-        @for (var i = 0; i < declarations.Length; i++)
+        @for (var i = 0; i < Model.Ref.Declarations.Count; i++)
         {
             <label class="rv-declaration">
-                <input type="checkbox" name="Declarations" value="@i" class="rv-declaration__box" checked="@declarations[i].Signed" />
-                <span class="rv-declaration__text">@declarations[i].Text <span class="rv-required">Required</span></span>
+                <input type="checkbox" name="declarations" value="@i" class="rv-declaration__box" />
+                <span class="rv-declaration__text">@Model.Ref.Declarations[i] <span class="rv-required">Required</span></span>
             </label>
         }
     </form>
 </div>
 
 @section Footer {
-    @* The classic wizard's bar, as Upload Documents has it. *@
     <footer class="csi-bar">
         <div class="csi-bar__inner">
             <a class="csi-btn csi-btn--back" asp-controller="Application" asp-action="FdConfiguration" data-loader="Going back to FD Configuration">Back</a>
-            <p class="csi-bar__hint" id="rv-footer-hint">Every control point passed &middot; 26 of 26 fields, nominee captured, all proofs verified against source &mdash; <strong>sign the last declaration to submit</strong></p>
+            <p class="csi-bar__hint" id="rv-footer-hint">@(Model.Ready ? "Nothing missing · sign every declaration to submit" : $"{blockers.Count} thing{(blockers.Count == 1 ? "" : "s")} still missing before submitting")</p>
             <div class="csi-bar__right">
-                <button type="button" class="csi-link btn-reset">Download summary</button>
-                <button type="reset" form="reviewForm" class="csi-link btn-reset">Clear All</button>
                 <button type="button" class="csi-btn csi-btn--primary" id="openPaymentLinkModal" disabled>Submit application</button>
             </div>
         </div>
     </footer>
 }
 
-@* 11A: Submit / payment link dialog. Overlay on top of Review Summary (11), per the mockup
-   ("11A — Submit · payment link dialog") — not a separate routed page. *@
+@* The submit dialog: what is sent to the investor once the application is submitted. *@
 <div class="modal-overlay pl-overlay" id="paymentLinkModal" hidden>
     <div class="modal-dialog pl-dialog" role="dialog" aria-modal="true" aria-labelledby="paymentLinkTitle" aria-describedby="paymentLinkIntro">
         <div class="pl-head">
-            <svg class="pl-head__icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg>
             <h2 class="pl-head__title" id="paymentLinkTitle">Send the payment link</h2>
         </div>
         <div class="pl-body">
-            <p class="pl-intro pl-intro--short">Already clear of blockers and funded online. <strong>The deposit is not booked until the investor pays.</strong></p>
-            <p class="pl-intro pl-intro--long" id="paymentLinkIntro">Everything on this review summary is already clear, which is why Submit is open at all. The investor pays from their own device, so on Proceed the application is submitted and a payment link is sent: <strong>the deposit is not booked until the investor pays it</strong>.</p>
-
+            <p class="pl-intro pl-intro--long" id="paymentLinkIntro">On Submit the application is submitted and a payment link is sent to the investor: <strong>the deposit is not booked until the investor pays it</strong>.</p>
             <dl class="pl-terms">
-                <div><dt>Sent to</dt><dd>8779712676</dd><dd class="pl-terms__note">primary holder&rsquo;s mobile, captured at search</dd></div>
-                <div><dt>Amount</dt><dd>&#8377; 5,00,000<span class="pl-short"> &middot; fixed</span></dd><dd class="pl-terms__note">fixed &mdash; the investor cannot change it</dd></div>
-                <div><dt>Valid for</dt><dd>48 hours<span class="pl-short"> &middot; to 16 Sep, 5:04 PM</span></dd><dd class="pl-terms__note">expires 16 Sep 2026, 5:04 PM</dd></div>
-                <div><dt>Paid from</dt><dd>Any account in a holder&rsquo;s name</dd><dd class="pl-terms__note">the payer&rsquo;s name is matched on receipt &middot; a third-party payment is refunded, not booked</dd></div>
+                <div><dt>Sent to</dt><dd>@Or(Model.InvestorMobile)</dd><dd class="pl-terms__note">the primary holder&rsquo;s mobile, from Investor Information</dd></div>
+                <div><dt>Amount</dt><dd>@(d is null ? "—" : Money.Rupees(d.Amount))</dd><dd class="pl-terms__note">fixed &mdash; the investor cannot change it</dd></div>
+                <div><dt>Valid for</dt><dd>@Model.PaymentLinkHours hours</dd><dd class="pl-terms__note">from when it is sent</dd></div>
             </dl>
-
-            <div class="pl-lapse pl-lapse--short"><strong>Unpaid after 48 hours the application lapses</strong> and the rate re-prices on the day payment lands. One resend from the dashboard.</div>
-            <div class="pl-lapse pl-lapse--long"><strong>If the link is not paid in 48 hours the application lapses to Payment pending</strong> and the rate is no longer held &mdash; it re-prices at the card rate on the day payment is received. You can resend the link from the dashboard once, after which the application must be re-submitted.</div>
-
-            <div class="pl-source"><strong>Where the repayment account came from.</strong> It was typed on <a asp-controller="Application" asp-action="BankDetails">09</a> &mdash; IFSC search resolving bank, branch and MICR, account number confirmed by re-entry &mdash; and matched against the payment cheque, holder name included. Interest and maturity are paid only to an account in the primary holder&rsquo;s name.</div>
-
-            <p class="pl-foot">Try later keeps everything on this page saved and leaves the application unsubmitted &mdash; nothing is sent to the investor.</p>
+            <div class="pl-lapse pl-lapse--long"><strong>If the link is not paid in @Model.PaymentLinkHours hours the application lapses</strong> and the rate is no longer held.</div>
+            <p class="pl-foot">Try later keeps everything saved and leaves the application unsubmitted &mdash; nothing is sent to the investor.</p>
         </div>
-        <form method="post" asp-action="Send" class="pl-actions">
+        <div class="pl-actions">
             <button type="button" class="pl-actions__later" id="closePaymentLinkModal">Try later</button>
-            <button type="submit" class="btn btn-primary pl-actions__send">Submit &amp; send link</button>
-        </form>
+            <button type="submit" form="reviewForm" class="btn btn-primary pl-actions__send" data-loader="Submitting&hellip;">Submit &amp; send link</button>
+        </div>
     </div>
 </div>
 
@@ -397,40 +295,23 @@
         (function () {
             var form = document.getElementById('reviewForm');
             var boxes = form.querySelectorAll('.rv-declaration__box');
-            var hint = document.getElementById('rv-footer-hint');
             var modal = document.getElementById('paymentLinkModal');
             var submit = document.getElementById('openPaymentLinkModal');
             var closeBtn = document.getElementById('closePaymentLinkModal');
-            var WORDS = ['', 'the last declaration', 'two declarations', 'all three declarations'];
+            var ready = @(Model.Ready ? "true" : "false");
 
-            // Submit holds until every declaration is signed; unsigned ones carry "Required".
+            // Submit holds until nothing is missing and every declaration is signed.
             function sync() {
                 var unsigned = 0;
                 boxes.forEach(function (box) {
                     box.closest('.rv-declaration').classList.toggle('rv-declaration--unsigned', !box.checked);
                     if (!box.checked) unsigned++;
                 });
-                hint.innerHTML = 'Every control point passed &middot; 26 of 26 fields, nominee captured, all proofs verified against source &mdash; '
-                    + (unsigned ? '<strong>sign ' + WORDS[unsigned] + ' to submit</strong>' : '<strong>declarations signed &middot; ready to submit</strong>');
-                submit.disabled = unsigned > 0;
+                submit.disabled = !ready || unsigned > 0;
             }
-
+            function openDialog() { modal.hidden = false; document.body.style.overflow = 'hidden'; closeBtn.focus(); }
+            function closeDialog() { modal.hidden = true; document.body.style.overflow = ''; submit.focus(); }
             form.addEventListener('change', sync);
-            form.addEventListener('reset', function () {
-                // The reset event fires before the values are restored.
-                setTimeout(sync);
-            });
-            function openDialog() {
-                modal.hidden = false;
-                document.body.style.overflow = 'hidden';
-                closeBtn.focus();
-            }
-            // Try later, Escape and a click on the backdrop all leave the application unsubmitted.
-            function closeDialog() {
-                modal.hidden = true;
-                document.body.style.overflow = '';
-                submit.focus();
-            }
             submit.addEventListener('click', function () { if (!submit.disabled) openDialog(); });
             closeBtn.addEventListener('click', closeDialog);
             modal.addEventListener('click', function (e) { if (e.target === modal) closeDialog(); });

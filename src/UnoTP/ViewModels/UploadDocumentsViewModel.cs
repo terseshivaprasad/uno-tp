@@ -42,7 +42,8 @@ public class UploadDocumentsViewModel(
     IPanAadhaarLinkService panLink,
     IFaceMatchService faces,
     UnoTP.Features.Lookups lookups,
-    UnoTP.Features.CurrentPartner currentPartner)
+    UnoTP.Features.CurrentPartner currentPartner,
+    ISourcingApi sourcing)
 {
     /// <summary>The application the session is on, read afresh for every request.</summary>
     public UnoTP.Backend.Application App { get; } = app;
@@ -207,7 +208,7 @@ public class UploadDocumentsViewModel(
     public static string Mask(string pan) =>
         pan.Length == 10 ? pan[..5] + "••••" + pan[9..] : pan;
 
-    private static string MaskDate(string dob) =>
+    public static string MaskDate(string dob) =>
         dob.Length == 10 ? "••-••-" + dob[6..] : dob;
 
     // ===== What the page offers ================================================
@@ -238,11 +239,12 @@ public class UploadDocumentsViewModel(
     /// <summary>The partner at the keyboard, from the backend.</summary>
     public PartnerProfile Partner { get; private set; } = null!;
 
-    /// <summary>Reads the lists, the rules and the partner. Every request calls it before the model is used.</summary>
+    /// <summary>Reads the lists, the rules, the partner and the sourcing registers. Every request calls it before the model is used.</summary>
     public async Task<UploadDocumentsViewModel> ReadyAsync(CancellationToken ct = default)
     {
         var (reference, config, partner) = (lookups.ReferenceAsync(ct), lookups.ConfigAsync(ct), currentPartner.ProfileAsync(ct));
-        (Ref, Config, Partner) = (await reference, await config, await partner);
+        var (brokers, staff) = (sourcing.BrokersAsync(ct), sourcing.StaffAsync(ct));
+        (Ref, Config, Partner, Brokers, Staff) = (await reference, await config, await partner, await brokers, await staff);
         return this;
     }
 
@@ -358,11 +360,11 @@ public class UploadDocumentsViewModel(
     }
 
     /// <summary>The brokers a broker-sourced application can be filed under, from the backend.</summary>
-    public IReadOnlyList<Party> Brokers { get; set; } = [];
+    public IReadOnlyList<Party> Brokers { get; private set; } = [];
 
     /// <summary>The staff a sub-broker or employee code is searched against, the
     /// partner at the keyboard among them, from the backend.</summary>
-    public IReadOnlyList<Party> Staff { get; set; } = [];
+    public IReadOnlyList<Party> Staff { get; private set; } = [];
 
     /// <summary>The name the staff register holds against a code, or null.</summary>
     public string? StaffName(string code) =>

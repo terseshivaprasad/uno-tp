@@ -58,7 +58,8 @@ again; a failed answer is not kept.
   `requiredDocuments` as `{ title, items, notes }`; and plain lists for
   `employeeHolders`, `employeeRelations`, `employeeProofs`, `incomeBands`,
   `occupations`, `subOccupations`, `maritalStatuses`, `genders`, `nameTypes`,
-  `nomineeRelations`, `cmsLocations`, `identificationNotes` and `dashboardNotes`.
+  `nomineeRelations`, `cmsLocations`, `identificationNotes`, `dashboardNotes`
+  and `declarations` (signed on Review Summary before submitting).
   Codes are what the app posts and saves.
 - **`AppConfig`:** `sourcingAgency` (the agency type that chooses how an
   application is sourced), `minAge`, `seniorAge`, `maxJointHolders`,
@@ -87,6 +88,11 @@ again; a failed answer is not kept.
 | POST | `applications` | `{ holder }` | `Application`. The backend mints the application number. |
 | GET | `applications/{appNo}` | | `Application`, or 404. Drafts included. |
 | PUT | `applications/{appNo}/upload` | `UploadState`, with header `If-Match: "{version}"` | `{ version }`, or `409`/`412` if the application changed since that version was read. Nothing is saved in that case. |
+| PUT | `applications/{appNo}/details` | `ApplicationDetails`, with `If-Match` | `{ version }`, or `409`/`412` |
+| PUT | `applications/{appNo}/payment` | `PaymentDetails`, with `If-Match` | `{ version }`, or `409`/`412` |
+| PUT | `applications/{appNo}/deposit` | `DepositDetails`, with `If-Match` | `{ version }`, or `409`/`412` |
+| POST | `applications/{appNo}/submit` | with `If-Match` | `Application` as submitted, or `409`/`412`. Sends the investor the payment link. |
+| POST | `applications/{appNo}/resend-link` | | `Submission`, or `404`/`409` when there is no link to resend |
 | GET | `applications/drafts` | | `DraftSummary[]`: saved applications that are still the partner's to finish, with identifiers masked |
 | GET | `applications` | | `ApplicationRecord[]`: the partner's applications, including older ones |
 
@@ -95,6 +101,20 @@ again; a failed answer is not kept.
 - **`Application`:** `appNo`, `holder`, `version`, `upload` (an `UploadState`,
   or null until first saved), and `prior` (attempts on record from before the
   upload step, newest first, as `LogEntry[]`).
+- **`ApplicationDetails`:** Investor Information: `holders` (one per holder
+  type: `holder` 01/02/03, `gender`, `nameType`, `parentName`, `annualIncome`,
+  `occupation`, `subOccupation`, `maritalStatus`, `mobile`, `email`,
+  `fatcaTaxResident`, `fatcaPermanentResident`, `pep`, `pepRelated`) and
+  `nominee` (`name`, `dob`, `relation`, `guardianName`, `guardianLine1`-`3`,
+  `guardianPinCode`, `guardianCity`) or null.
+- **`PaymentDetails`:** `payment` and `repayment` as `{ ifsc, accountNumber }`,
+  `repaymentSameAsPayment`, and `cheque` as `{ number, date, cmsLocation }` or
+  null.
+- **`DepositDetails`:** `amount`, `tenureMonths`, `payout`, `autoRenewal`,
+  `renewInstruction`, `noTds`, `deliveryType`, as the reference lists code them.
+- **`Submission`:** `at`, `status`, `linkSentTo` (masked), `linkValidUntil`,
+  `resendsLeft`. `Application` carries it as `submitted`, with `details`,
+  `payment` and `deposit`.
 - **`UploadState`:** the upload step as a whole. That covers the choices made
   (`appType`, `poaType`, `payMode`, `sourcing`, `sourceCode`, `subBroker`,
   `category`, the `emp*` fields, `formNo`, `typedFormNo`, `ckyc`, `savedAt`,

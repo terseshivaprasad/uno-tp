@@ -49,8 +49,15 @@ public sealed class MockApplications(MockStore store, IPartner partner) : IAppli
             var mobile = app.Details?.Holders.FirstOrDefault(h => h.Holder == HolderType.Investor)?.Mobile ?? "";
             var masked = mobile.Length >= 4 ? new string('•', mobile.Length - 4) + mobile[^4..] : mobile;
             var now = DateTime.Now;
-            app.Submitted = new Submission(now, "payment-pending", masked, now.AddHours(MockReference.PaymentLinkHours));
+            app.Submitted = new Submission(now, "payment-pending", masked, now.AddHours(MockReference.PaymentLinkHours), ResendsLeft: 1);
         }));
+
+    // One resend, which does not move the link's expiry.
+    public Task<Submission?> ResendLinkAsync(string appNo, CancellationToken ct = default)
+    {
+        if (store.Get(partner.Id, appNo) is not { Submitted: { ResendsLeft: > 0 } } app) return Task.FromResult<Submission?>(null);
+        return Task.FromResult(store.Save(partner.Id, appNo, app.Version, a => a.Submitted = a.Submitted! with { ResendsLeft = a.Submitted.ResendsLeft - 1 })?.Submitted);
+    }
 
     public Task<IReadOnlyList<DraftSummary>> DraftsAsync(CancellationToken ct = default) =>
         Task.FromResult<IReadOnlyList<DraftSummary>>(MockInFlight.Drafts.Select(d => d.Summary).ToList());

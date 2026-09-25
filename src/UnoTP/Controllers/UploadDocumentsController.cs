@@ -24,7 +24,6 @@ namespace UnoTP.Controllers;
 public class UploadDocumentsController(
     IApplicationApi applications,
     IDocumentApi documents,
-    ISourcingApi sourcing,
     IServiceProvider services) : Controller
 {
     [HttpGet("")]
@@ -34,8 +33,6 @@ public class UploadDocumentsController(
         // Said once: a reload after it shows the page as it stands.
         model.Shown = HttpContext.Session.Read<Flash>(FlashKey(model));
         HttpContext.Session.Write<Flash>(FlashKey(model), null);
-        model.Brokers = await sourcing.BrokersAsync();
-        model.Staff = await sourcing.StaffAsync();
         return View(model);
     }
 

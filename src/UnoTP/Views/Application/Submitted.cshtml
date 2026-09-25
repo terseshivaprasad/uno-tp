@@ -1,14 +1,20 @@
+@model ReviewViewModel
 @{
     ViewData["Title"] = "Application Submitted";
     Layout = "_Layout";
 
-    // 11B leads with the state the application is in, then what happens next, then
-    // what the broker can still do. The deposit is the one reviewed on 11.
+    // The application as the backend has it once submitted: when, where the
+    // payment link went and until when, and the deposit it carries.
+    var sub = Model.App.Submitted!;
+    var d = Model.Deposit;
+    var q = Model.Quote;
+    var hours = Model.PaymentLinkHours;
+    var payout = Model.Payout;
     var nextSteps = new[]
     {
-        (Lead: "Investor pays the link", Detail: " — from any account in a holder’s name. Within 48 hours."),
+        (Lead: "Investor pays the link", Detail: $" — from any account in a holder’s name. Within {hours} hours."),
         (Lead: "Rate locks on realisation", Detail: " and the FD is booked from that date — not from today."),
-        (Lead: "Operations verifies the documents", Detail: " — 1 working day. The e-receipt is emailed to the investor once booked.")
+        (Lead: "Operations verifies the documents", Detail: " — the e-receipt is e-mailed to the investor once booked."),
     };
 }
 
@@ -20,16 +26,21 @@
             </div>
             <div>
                 <h1 class="sub-title">Application submitted</h1>
-                <div class="sub-meta">14 Sep 2026, 5:04 PM &middot; FBBMFL26F99AAC1</div>
+                <div class="sub-meta">@Money.Day(sub.At) &middot; @Model.Docs.AppNo</div>
             </div>
         </div>
+
+        @if (Model.Refused is { } refused)
+        {
+            <div class="cud-banner" role="alert"><span>@refused</span></div>
+        }
 
         <div class="sub-pending">
             <div class="sub-pending__head">
                 <div class="sub-pending__title">Waiting on the investor&rsquo;s payment</div>
-                <div class="sub-pending__tag">Payment pending</div>
+                <div class="sub-pending__tag">@(sub.Status == "payment-pending" ? "Payment pending" : sub.Status)</div>
             </div>
-            <div class="sub-pending__text" id="sub-pending-text">The link was sent to 8779712676 and expires <strong>16 Sep 2026, 5:04 PM</strong>. Submitted is not booked &mdash; the deposit and its rate are held only until then.</div>
+            <div class="sub-pending__text">The link was sent to @sub.LinkSentTo and expires <strong>@Money.Day(sub.LinkValidUntil)</strong>. Submitted is not booked &mdash; the deposit and its rate are held only until then.</div>
         </div>
 
         <div class="sub-box">
@@ -45,35 +56,41 @@
             </ol>
         </div>
 
-        <div class="sub-actions">
-            <button type="button" class="btn btn-primary sub-actions__primary" id="sub-resend">Resend payment link</button>
-            <button type="button" class="sub-actions__link">Download acknowledgement</button>
+        <form method="post" asp-action="Resend" class="sub-actions">
+            <button type="submit" class="btn btn-primary sub-actions__primary" disabled="@(sub.ResendsLeft == 0)" data-loader="Sending the link again&hellip;">@(sub.ResendsLeft == 0 ? "Payment link resent" : "Resend payment link")</button>
             <a class="sub-actions__link sub-actions__link--plain" asp-controller="Dashboard" asp-action="Index">Back to home</a>
-        </div>
-        <div class="sub-note" id="sub-resend-note">One resend is available. The acknowledgement carries the application number, the deposit terms and the document list &mdash; enough for the investor&rsquo;s records, but it is not the FD receipt.</div>
+        </form>
+        <div class="sub-note">@(sub.ResendsLeft == 0 ? $"No resends left. The link still expires {Money.Day(sub.LinkValidUntil)}." : $"{sub.ResendsLeft} resend{(sub.ResendsLeft == 1 ? " is" : "s are")} available.")</div>
     </div>
 
     <div class="sub-side">
         <section class="sub-card">
             <div class="sub-card__head">
                 <div class="sub-card__title">Deposit summary</div>
-                <a class="sub-card__action" asp-controller="Application" asp-action="ReviewSummary">View full summary</a>
             </div>
-            <div class="sub-kv-grid">
-                <div><div class="sub-kv__k">Invested amount</div><div class="sub-kv__v sub-kv__v--lg">&#8377; 5,00,000</div></div>
-                <div><div class="sub-kv__k">Rate of interest</div><div class="sub-kv__v sub-kv__v--lg sub-kv__v--green">7.85% p.a.</div><div class="sub-kv__note">held to 16 Sep</div></div>
-                <div><div class="sub-kv__k">Tenure</div><div class="sub-kv__v">36 months</div></div>
-                <div><div class="sub-kv__k">Scheme</div><div class="sub-kv__v">Cumulative &middot; public</div></div>
-                <div><div class="sub-kv__k">Interest payout</div><div class="sub-kv__v">On maturity</div></div>
-                <div><div class="sub-kv__k">Maturity value</div><div class="sub-kv__v">&#8377; 6,29,300</div><div class="sub-kv__note">if paid by 16 Sep</div></div>
-                <div><div class="sub-kv__k">Auto renewal</div><div class="sub-kv__v">On &middot; principal only</div></div>
-                <div><div class="sub-kv__k">TDS</div><div class="sub-kv__v">Not deducted &middot; 15G on file</div></div>
-                <div><div class="sub-kv__k">Delivery</div><div class="sub-kv__v">E-receipt on booking</div></div>
-            </div>
+            @if (d is not null)
+            {
+                <div class="sub-kv-grid">
+                    <div><div class="sub-kv__k">Invested amount</div><div class="sub-kv__v sub-kv__v--lg">@Money.Rupees(d.Amount)</div></div>
+                    <div><div class="sub-kv__k">Rate of interest</div><div class="sub-kv__v sub-kv__v--lg sub-kv__v--green">@(q is null ? "—" : $"{q.Rate:0.00}% p.a.")</div></div>
+                    <div><div class="sub-kv__k">Tenure</div><div class="sub-kv__v">@d.TenureMonths months</div></div>
+                    <div><div class="sub-kv__k">Scheme</div><div class="sub-kv__v">@(payout?.PerYear == 0 ? "Cumulative" : "Non-cumulative") &middot; @Model.Docs.CategoryName(Model.Docs.State.Category)</div></div>
+                    <div><div class="sub-kv__k">Interest payout</div><div class="sub-kv__v">@(payout?.Name ?? d.Payout)</div></div>
+                    <div><div class="sub-kv__k">Maturity value</div><div class="sub-kv__v">@(q is null ? "—" : Money.Rupees(q.MaturityAmount))</div></div>
+                    <div><div class="sub-kv__k">Auto renewal</div><div class="sub-kv__v">@(d.AutoRenewal ? $"On · {Model.Option(Model.Ref.RenewInstructions, d.RenewInstruction)}" : "Off")</div></div>
+                    <div><div class="sub-kv__k">TDS</div><div class="sub-kv__v">@(d.NoTds ? "Not deducted" : "Deducted")</div></div>
+                    <div><div class="sub-kv__k">Delivery</div><div class="sub-kv__v">@Model.Option(Model.Ref.DeliveryTypes, d.DeliveryType)</div></div>
+                </div>
+            }
             <div class="sub-holders">
                 <div class="sub-holders__label">Holders</div>
-                <div class="sub-holders__names">R&bull;&bull;&bull;&bull;&bull;&bull; T&bull;&bull;&bull;&bull;&bull; <span class="sub-holders__role">primary</span> &middot; S&bull;&bull;&bull;&bull; T&bull;&bull;&bull;&bull;&bull; &middot; P&bull;&bull;&bull;&bull; N&bull;&bull;&bull;</div>
-                <div class="sub-holders__text">All three holders identified from CKYC, consented under DPDP, and every proof of address verified against source before submission. Repayment to HDFC &bull;&bull;&bull;&bull;4471, in the primary holder&rsquo;s name.</div>
+                <div class="sub-holders__names">
+                    @for (var i = 0; i < Model.Holders.Count; i++)
+                    {
+                        var h = Model.Holders[i];
+                        @(i > 0 ? " · " : "")@h.Holder.Who.Name @if (!h.Holder.Joint) { <span class="sub-holders__role">primary</span> }
+                    }
+                </div>
             </div>
         </section>
 
@@ -84,32 +101,11 @@
                     <span class="sub-tile__title">New application</span>
                     <span class="sub-tile__text">A different investor, from the search step.</span>
                 </a>
-                <a class="sub-tile" asp-controller="Application" asp-action="FdConfiguration">
-                    <span class="sub-tile__title">Another deposit, same holders</span>
-                    <span class="sub-tile__text">Reuses this CKYC, consent and bank data &mdash; only amount and tenure are asked.</span>
-                </a>
-                <a class="sub-tile" asp-controller="Dashboard" asp-action="Index">
+                <a class="sub-tile" asp-controller="ViewApplication" asp-action="Index">
                     <span class="sub-tile__title">Track this application</span>
-                    <span class="sub-tile__text">Opens the dashboard filtered to payment-pending.</span>
+                    <span class="sub-tile__text">Find it among the partner&rsquo;s applications.</span>
                 </a>
             </div>
         </section>
     </div>
 </div>
-
-@section Scripts {
-    <script>
-        (function () {
-            var resend = document.getElementById('sub-resend');
-            var note = document.getElementById('sub-resend-note');
-
-            // One resend is allowed; the button stays as a record that it was used.
-            resend.addEventListener('click', function () {
-                resend.disabled = true;
-                resend.textContent = 'Payment link resent';
-                note.innerHTML = 'The link was resent to 8779712676 &mdash; no resends left. It still expires 16 Sep 2026, 5:04 PM. '
-                    + 'The acknowledgement carries the application number, the deposit terms and the document list &mdash; enough for the investor&rsquo;s records, but it is not the FD receipt.';
-            });
-        })();
-    </script>
-}

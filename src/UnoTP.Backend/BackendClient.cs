@@ -76,6 +76,15 @@ public sealed class BackendClient(HttpClient http, IPartner partner)
         return await Read<Application>(response, ct);
     }
 
+    public async Task<Submission?> ResendLinkAsync(string appNo, CancellationToken ct = default)
+    {
+        using var request = Request(HttpMethod.Post, $"applications/{Seg(appNo)}/resend-link", Body(new { }));
+        using var response = await SendAsync(request, ct);
+        if (response.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.Conflict) return null;
+        response.EnsureSuccessStatusCode();
+        return await Read<Submission>(response, ct);
+    }
+
     // A part of the application saved against the version it was read at: the new
     // version, or null when it changed in between and nothing was saved.
     private async Task<int?> PutVersioned(string path, int version, object body, CancellationToken ct)

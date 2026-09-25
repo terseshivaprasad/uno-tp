@@ -172,6 +172,12 @@ public sealed class MockReference : IReferenceApi
         [
             "Currently Esarathi is enabled with individual and sole proprietorship investment only.",
             "Verification of the Fixed Deposit is subject to validation of the submitted documents by the Operations team.",
+        ],
+        Declarations:
+        [
+            "I have met every holder, seen the original documents, and the uploads are true copies of them.",
+            "The deposit terms above, including the rate and that it locks on realisation, were read out to the investor.",
+            "I have not received or promised any cash consideration outside this application.",
         ]);
 
     private static readonly AppConfig Config = new(

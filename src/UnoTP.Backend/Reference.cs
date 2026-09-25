@@ -50,7 +50,8 @@ public sealed record PayoutOption(string Code, string Name, int PerYear, string 
 /// <summary>What an investor type hands over, and the notes that go with it.</summary>
 public sealed record RequiredDocumentGroup(string Title, IReadOnlyList<string> Items, IReadOnlyList<string> Notes);
 
-/// <summary>Every list the pages offer. Codes are what is posted and saved.</summary>
+/// <summary>Every list the pages offer. Codes are what is posted and saved. <c>Declarations</c> are
+/// what the partner signs on Review Summary before an application is submitted.</summary>
 public sealed record ReferenceData(
     IReadOnlyList<Option> ApplicationTypes,
     IReadOnlyList<CategoryOption> Categories,
@@ -74,7 +75,8 @@ public sealed record ReferenceData(
     IReadOnlyList<string> CmsLocations,
     IReadOnlyList<RequiredDocumentGroup> RequiredDocuments,
     IReadOnlyList<string> IdentificationNotes,
-    IReadOnlyList<string> DashboardNotes);
+    IReadOnlyList<string> DashboardNotes,
+    IReadOnlyList<string> Declarations);
 
 /// <summary>The limits and rules the pages check against. The backend checks them again on save.</summary>
 /// <param name="SourcingAgency">The agency type that chooses how an application is sourced.</param>

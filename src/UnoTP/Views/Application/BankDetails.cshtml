@@ -1,66 +1,118 @@
+@model BankDetailsViewModel
 @{
     ViewData["Title"] = "Bank Details & Payment";
     Layout = "_WizardLayout";
     ViewData["WizardStep"] = "bank";
+
+    // The accounts and the cheque as the backend holds them for this application,
+    // the branch each IFSC names, and the cheque as Upload Documents read it.
+    var f = Model.Form;
+    var same = f.Repayment.SameAsPayment;
+    var banner = Model.Problem("banner");
+    string? Error(string key) => Model.Problem(key);
+    string? Invalid(string key) => Error(key) is null ? null : "inv-control--error";
+}
+
+@functions {
+    // The bank a looked-up IFSC names, or why there is none to show.
+    private async Task Branch(BankBranch? branch, string ifsc, string id)
+    {
+        <div class="bank-lookup" id="@id">
+            @if (branch is not null)
+            {
+                <div class="inv-kv"><div class="inv-kv__k">Bank name</div><div class="inv-kv__v">@branch.Bank</div></div>
+                <div class="inv-kv"><div class="inv-kv__k">Branch name</div><div class="inv-kv__v">@branch.Branch</div></div>
+                <div class="inv-kv"><div class="inv-kv__k">IFSC</div><div class="inv-kv__v">@branch.Ifsc</div></div>
+                <div class="inv-kv"><div class="inv-kv__k">MICR</div><div class="inv-kv__v">@branch.Micr</div></div>
+            }
+            else
+            {
+                <div class="inv-kv inv-kv--wide"><div class="inv-kv__k">Bank and branch</div><div class="inv-kv__v inv-kv__v--unread">@(ifsc.Length == 0 ? "Found once the IFSC is entered" : "No branch has this IFSC — check it against the cheque")</div></div>
+            }
+        </div>
+        await Task.CompletedTask;
+    }
+
+    private async Task FieldError(string key)
+    {
+        if (Model.Problem(key) is { } message)
+        {
+            <div class="inv-field__hint inv-field__hint--error" role="alert">@message</div>
+        }
+        await Task.CompletedTask;
+    }
 }
 
 <div class="inv-page-head">
     <div style="flex:1;min-width:0">
         <div class="inv-title">Payment Bank Details</div>
-        <div style="font-size:12px;color:var(--muted);padding-top:4px">The account the deposit is funded from &middot; verified against the payment cheque on 07</div>
+        <div style="font-size:12px;color:var(--muted);padding-top:4px">The account the deposit is paid from &middot; paid by @(Model.PayMode.Length > 0 ? Model.PayMode : "the mode chosen on Upload Documents")</div>
     </div>
-    <div style="font-size:12.5px;color:var(--muted);flex:none">Application No: <span style="font-weight:600;color:var(--ink)">FBBMFL26F99AAC1</span></div>
+    <div style="font-size:12.5px;color:var(--muted);flex:none">Application No: <span style="font-weight:600;color:var(--ink)">@Model.Docs.AppNo</span></div>
 </div>
 
-<form method="post" id="bankDetailsForm" class="inv-form" novalidate>
+@if (banner is not null)
+{
+    <div class="cud-banner" role="status"><span>@banner</span></div>
+}
+
+<form method="post" id="bankDetailsForm" class="inv-form" data-partial novalidate>
 
     @* ── Payment account ──────────────────────────────────────────────────── *@
     <div class="bank-grid">
         <div class="inv-field">
-            <label for="pay-ifsc">Bank Name &mdash; search IFSC / branch / location <span class="required">*</span></label>
-            <input id="pay-ifsc" name="Payment.Ifsc" class="inv-control" value="HDFC0000521" autocomplete="off" />
+            <label for="pay-ifsc">IFSC of the paying account <span class="required">*</span></label>
+            <input id="pay-ifsc" name="Payment.Ifsc" class="inv-control @Invalid("Payment.Ifsc")" value="@f.Payment.Ifsc" maxlength="11" autocomplete="off" data-submit="bank-find-payment" />
+            @{ await FieldError("Payment.Ifsc"); }
+            <button type="submit" class="csi-link btn-reset" id="bank-find-payment" name="Find" value="payment" formnovalidate>Find the branch</button>
         </div>
         <div class="inv-field">
             <label for="pay-account">Account Number <span class="required">*</span></label>
-            <input id="pay-account" name="Payment.AccountNumber" class="inv-control" value="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;4471" autocomplete="off" />
+            <input id="pay-account" name="Payment.AccountNumber" class="inv-control @Invalid("Payment.AccountNumber")" value="@f.Payment.AccountNumber" inputmode="numeric" autocomplete="off" />
+            @{ await FieldError("Payment.AccountNumber"); }
         </div>
         <div class="inv-field">
             <label for="pay-account-confirm">Re-enter Account Number <span class="required">*</span></label>
-            <input id="pay-account-confirm" name="Payment.AccountNumberConfirm" class="inv-control" value="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;4471" autocomplete="off" />
-            <div class="inv-field__hint" id="pay-account-match">matches</div>
+            <input id="pay-account-confirm" name="Payment.AccountNumberConfirm" class="inv-control @Invalid("Payment.AccountNumberConfirm")" value="@f.Payment.AccountNumberConfirm" inputmode="numeric" autocomplete="off" />
+            @{ await FieldError("Payment.AccountNumberConfirm"); }
         </div>
-        <div class="inv-field">
-            <label for="cheque-date">Cheque Date <span class="required">*</span></label>
-            <input id="cheque-date" name="Cheque.Date" class="inv-control" value="12 / 09 / 2026" placeholder="DD / MM / YYYY" />
-        </div>
-        <div class="inv-field">
-            <label for="cheque-number">Cheque Number <span class="required">*</span></label>
-            <input id="cheque-number" name="Cheque.Number" class="inv-control" value="004512" inputmode="numeric" maxlength="6" />
-        </div>
-        <div class="inv-field">
-            <label for="cms-location">Axis CMS Location <span class="required">*</span></label>
-            <select id="cms-location" name="Cheque.CmsLocation" class="inv-control">
-                <option value="">Select</option>
-                <option selected>Mumbai &mdash; Andheri</option>
-                <option>Mumbai &mdash; Fort</option>
-                <option>Thane &mdash; Naupada</option>
-                <option>Pune &mdash; Shivajinagar</option>
-            </select>
-            <div class="inv-field__hint">the Axis branch the cheque is presented at &mdash; pick the one nearest the investor</div>
-        </div>
+        @if (Model.ByCheque)
+        {
+            <div class="inv-field">
+                <label for="cheque-date">Cheque Date <span class="required">*</span></label>
+                <input id="cheque-date" name="Cheque.Date" class="inv-control @Invalid("Cheque.Date")" value="@f.Cheque.Date" placeholder="DD / MM / YYYY" />
+                @{ await FieldError("Cheque.Date"); }
+            </div>
+            <div class="inv-field">
+                <label for="cheque-number">Cheque Number <span class="required">*</span></label>
+                <input id="cheque-number" name="Cheque.Number" class="inv-control @Invalid("Cheque.Number")" value="@f.Cheque.Number" inputmode="numeric" maxlength="6" />
+                @{ await FieldError("Cheque.Number"); }
+            </div>
+            <div class="inv-field">
+                <label for="cms-location">Axis CMS Location <span class="required">*</span></label>
+                <select id="cms-location" name="Cheque.CmsLocation" class="inv-control @Invalid("Cheque.CmsLocation")">
+                    <option value="">Select</option>
+                    @foreach (var location in Model.CmsLocations)
+                    {
+                        <option value="@location" selected="@(f.Cheque.CmsLocation == location)">@location</option>
+                    }
+                </select>
+                @{ await FieldError("Cheque.CmsLocation"); }
+                <div class="inv-field__hint">the Axis branch the cheque is presented at &mdash; pick the one nearest the investor</div>
+            </div>
+        }
     </div>
 
-    <div class="bank-lookup">
-        <div class="inv-kv"><div class="inv-kv__k">Bank name</div><div class="inv-kv__v">HDFC Bank</div></div>
-        <div class="inv-kv"><div class="inv-kv__k">Branch name</div><div class="inv-kv__v">Andheri East, Mumbai</div></div>
-        <div class="inv-kv"><div class="inv-kv__k">IFSC</div><div class="inv-kv__v">HDFC0000521</div></div>
-        <div class="inv-kv"><div class="inv-kv__k">MICR</div><div class="inv-kv__v">400240015</div></div>
-    </div>
+    @{ await Branch(Model.PaymentBranch, f.Payment.CleanIfsc, "pay-lookup"); }
 
-    <div class="bank-verified">
-        <div class="bank-verified__tick">&check;</div>
-        <div class="bank-verified__text"><strong>Matches the payment cheque on file.</strong> Account number, IFSC and the account holder name read from cheque-hdfc-4471.jpg agree with what is typed here, and the name matches the primary holder R&bull;&bull;&bull;&bull;&bull;&bull; T&bull;&bull;&bull;&bull;&bull;. The account itself is not verified with the bank &mdash; the cheque is the evidence.</div>
-    </div>
+    @if (Model.ChequeRead is { } cheque)
+    {
+        @* What Upload Documents read off the cheque, to type the account against. *@
+        <div class="bank-verified">
+            <div class="bank-verified__tick">&check;</div>
+            <div class="bank-verified__text"><strong>@cheque.State.</strong> Read off the cheque filed on <a asp-controller="UploadDocuments" asp-action="Index">Upload Documents</a>: @cheque.Lines</div>
+        </div>
+    }
 
     @* ── Repayment account ────────────────────────────────────────────────── *@
     <section class="bank-repayment">
@@ -71,39 +123,40 @@
             </div>
             <label class="bank-same" for="repay-same">
                 <span>Same as the payment account</span>
-                <input type="checkbox" id="repay-same" name="Repayment.SameAsPayment" value="true" class="inv-switch" aria-label="Same as the payment account" checked />
+                @* The hidden false goes after the box, so an unticked box still posts, and a ticked one binds first. *@
+                <input type="checkbox" id="repay-same" name="Repayment.SameAsPayment" value="true" class="inv-switch" aria-label="Same as the payment account" checked="@same" data-submit="bank-find-repayment" />
+                <input type="hidden" name="Repayment.SameAsPayment" value="false" />
             </label>
         </div>
 
-        <div class="bank-grid">
-            <div class="inv-field">
-                <label for="repay-ifsc">Search IFSC / branch / location</label>
-                <input id="repay-ifsc" name="Repayment.Ifsc" class="inv-control" value="HDFC0000521" autocomplete="off" readonly />
-                <div class="inv-field__hint" data-same="copied from the payment account" data-own="search the IFSC printed on the repayment cheque">copied from the payment account</div>
+        @if (!same)
+        {
+            <div class="bank-grid">
+                <div class="inv-field">
+                    <label for="repay-ifsc">IFSC of the repayment account <span class="required">*</span></label>
+                    <input id="repay-ifsc" name="Repayment.Ifsc" class="inv-control @Invalid("Repayment.Ifsc")" value="@f.Repayment.Ifsc" maxlength="11" autocomplete="off" data-submit="bank-find-repayment" />
+                    @{ await FieldError("Repayment.Ifsc"); }
+                </div>
+                <div class="inv-field">
+                    <label for="repay-account">Account Number <span class="required">*</span></label>
+                    <input id="repay-account" name="Repayment.AccountNumber" class="inv-control @Invalid("Repayment.AccountNumber")" value="@f.Repayment.AccountNumber" inputmode="numeric" autocomplete="off" />
+                    @{ await FieldError("Repayment.AccountNumber"); }
+                </div>
+                <div class="inv-field">
+                    <label for="repay-account-confirm">Re-enter Account Number <span class="required">*</span></label>
+                    <input id="repay-account-confirm" name="Repayment.AccountNumberConfirm" class="inv-control @Invalid("Repayment.AccountNumberConfirm")" value="@f.Repayment.AccountNumberConfirm" inputmode="numeric" autocomplete="off" />
+                    @{ await FieldError("Repayment.AccountNumberConfirm"); }
+                </div>
             </div>
-            <div class="inv-field">
-                <label for="repay-account">Account Number</label>
-                <input id="repay-account" name="Repayment.AccountNumber" class="inv-control" value="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;4471" autocomplete="off" readonly />
-            </div>
-            <div class="inv-field">
-                <label for="repay-account-confirm">Re-enter Account Number</label>
-                <input id="repay-account-confirm" name="Repayment.AccountNumberConfirm" class="inv-control" placeholder="not needed" autocomplete="off" readonly />
-                <div class="inv-field__hint" data-same="skipped while the accounts are the same" data-own="type the account number again">skipped while the accounts are the same</div>
-            </div>
-        </div>
-
-        <div class="bank-lookup" id="repay-lookup">
-            <div class="inv-kv"><div class="inv-kv__k">Bank name</div><div class="inv-kv__v">HDFC Bank</div></div>
-            <div class="inv-kv"><div class="inv-kv__k">Branch name</div><div class="inv-kv__v">Andheri East, Mumbai</div></div>
-            <div class="inv-kv"><div class="inv-kv__k">IFSC</div><div class="inv-kv__v">HDFC0000521</div></div>
-            <div class="inv-kv"><div class="inv-kv__k">MICR</div><div class="inv-kv__v">400240015</div></div>
-        </div>
+            await Branch(Model.RepaymentBranch, f.Repayment.CleanIfsc, "repay-lookup");
+        }
+        <button type="submit" class="visually-hidden" id="bank-find-repayment" name="Find" value="repayment" formnovalidate tabindex="-1">Find the repayment branch</button>
 
         <div class="bank-note">
-            <strong>Both the payment and the repayment account must belong to a holder on this application.</strong> A third-party account is rejected by Operations at either end. Interest and maturity are paid to the same HDFC account the deposit is funded from &mdash; the cheque already verified on <a asp-controller="UploadDocuments" asp-action="Index">07</a>. Turning the toggle off opens these fields, and a separate repayment account then needs its own cheque there before the application can proceed.
+            <strong>Both the payment and the repayment account must belong to a holder on this application.</strong> A third-party account is rejected by Operations at either end.
+            @(same ? "Interest and the maturity amount are paid to the account the deposit is paid from." : "Interest and the maturity amount are paid to the account above.")
         </div>
     </section>
-
 </form>
 
 @section Footer {
@@ -111,72 +164,14 @@
     <footer class="csi-bar">
         <div class="csi-bar__inner">
             <a class="csi-btn csi-btn--back" asp-controller="InvestorInfo" asp-action="Index" data-loader="Going back to Investor Information">Back</a>
-            <p class="csi-bar__hint" id="bank-footer-hint">Payment and repayment both on the account read from the payment cheque &middot; <strong>nothing outstanding on this step</strong></p>
+            <p class="csi-bar__hint">@(Model.Problems.Count(p => p.Key != "banner") is var n && n > 0 ? $"{n} thing{(n == 1 ? "" : "s")} still to fix on this step" : "Saved as you go · Proceed checks the accounts")</p>
             <div class="csi-bar__right">
-                <button type="reset" form="bankDetailsForm" class="csi-link btn-reset">Clear All</button>
-                <button type="submit" form="bankDetailsForm" class="csi-btn csi-btn--primary" id="bank-proceed">Proceed</button>
+                <button type="submit" form="bankDetailsForm" class="csi-btn csi-btn--primary" id="bank-proceed" data-loader="Saving the accounts&hellip;">Proceed</button>
             </div>
         </div>
     </footer>
 }
 
 @section Scripts {
-    <script>
-        (function () {
-            var form = document.getElementById('bankDetailsForm');
-            var payIfsc = document.getElementById('pay-ifsc');
-            var payAccount = document.getElementById('pay-account');
-            var payConfirm = document.getElementById('pay-account-confirm');
-            var matchHint = document.getElementById('pay-account-match');
-            var same = document.getElementById('repay-same');
-            var repayIfsc = document.getElementById('repay-ifsc');
-            var repayAccount = document.getElementById('repay-account');
-            var repayConfirm = document.getElementById('repay-account-confirm');
-            var repayLookup = document.getElementById('repay-lookup');
-            var footerHint = document.getElementById('bank-footer-hint');
-            var proceed = document.getElementById('bank-proceed');
-
-            // The re-entered number is checked against the first as it is typed.
-            function checkMatch() {
-                var typed = payConfirm.value.trim() !== '';
-                var matches = typed && payConfirm.value === payAccount.value;
-                matchHint.textContent = !typed ? '' : matches ? 'matches' : 'does not match the account number';
-                matchHint.classList.toggle('inv-field__hint--error', typed && !matches);
-                payConfirm.classList.toggle('inv-control--error', typed && !matches);
-            }
-
-            // While the toggle is on the repayment fields mirror the payment account and are locked;
-            // off, they open empty and the step waits on a separate repayment cheque.
-            function syncRepayment(clearOnOpen) {
-                var isSame = same.checked;
-                [repayIfsc, repayAccount, repayConfirm].forEach(function (control) { control.readOnly = isSame; });
-                if (isSame) {
-                    repayIfsc.value = payIfsc.value;
-                    repayAccount.value = payAccount.value;
-                    repayConfirm.value = '';
-                    repayConfirm.placeholder = 'not needed';
-                } else {
-                    if (clearOnOpen) { repayIfsc.value = ''; repayAccount.value = ''; repayConfirm.value = ''; }
-                    repayConfirm.placeholder = '';
-                }
-                document.querySelectorAll('.bank-repayment [data-same]').forEach(function (hint) {
-                    hint.textContent = isSame ? hint.dataset.same : hint.dataset.own;
-                });
-                repayLookup.hidden = !isSame;
-                footerHint.innerHTML = isSame
-                    ? 'Payment and repayment both on the account read from the payment cheque &middot; <strong>nothing outstanding on this step</strong>'
-                    : 'Repayment goes to a separate account &middot; <strong>its cheque has to be uploaded on 07 before Save &amp; Proceed opens</strong>';
-                proceed.disabled = !isSame;
-            }
-
-            payAccount.addEventListener('input', function () { checkMatch(); if (same.checked) syncRepayment(false); });
-            payConfirm.addEventListener('input', checkMatch);
-            payIfsc.addEventListener('input', function () { if (same.checked) syncRepayment(false); });
-            same.addEventListener('change', function () { syncRepayment(true); });
-            form.addEventListener('reset', function () {
-                // The reset event fires before the values are restored.
-                setTimeout(function () { checkMatch(); syncRepayment(false); });
-            });
-        })();
-    </script>
+    <script src="~/js/partial-forms.js" asp-append-version="true"></script>
 }

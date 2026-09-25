@@ -37,6 +37,13 @@ public interface IApplicationApi
     /// </summary>
     Task<Application?> SubmitAsync(string appNo, int version, CancellationToken ct = default);
 
+    /// <summary>
+    /// POST applications/{appNo}/resend-link: sends a submitted application's payment
+    /// link again, while a resend is left. The submission as it now stands, or null
+    /// when there is none to resend.
+    /// </summary>
+    Task<Submission?> ResendLinkAsync(string appNo, CancellationToken ct = default);
+
     /// <summary>The partner's saved applications that are theirs to finish, newest first.</summary>
     Task<IReadOnlyList<DraftSummary>> DraftsAsync(CancellationToken ct = default);
 
@@ -149,7 +156,8 @@ public sealed record DepositDetails(
 /// <param name="Status">Where the application stands once submitted: "payment-pending", then the backend's own.</param>
 /// <param name="LinkSentTo">The mobile number the link went to, masked.</param>
 /// <param name="LinkValidUntil">When the payment link stops working.</param>
-public sealed record Submission(DateTime At, string Status, string LinkSentTo, DateTime LinkValidUntil);
+/// <param name="ResendsLeft">Times the link can still be sent again.</param>
+public sealed record Submission(DateTime At, string Status, string LinkSentTo, DateTime LinkValidUntil, int ResendsLeft);
 
 /// <summary>One application's upload step, as it is saved.</summary>
 public sealed class UploadState
