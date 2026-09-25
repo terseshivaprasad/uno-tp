@@ -40,7 +40,8 @@ public class UploadDocumentsViewModel(
     UnoTP.Features.FeatureSet features,
     IVerificationService verification,
     IPanAadhaarLinkService panLink,
-    IFaceMatchService faces)
+    IFaceMatchService faces,
+    Microsoft.Extensions.Options.IOptions<UnoTP.Features.PartnerOptions> partner)
 {
     /// <summary>The application the session is on, read afresh for every request.</summary>
     public UnoTP.Backend.Application App { get; } = app;
@@ -243,7 +244,7 @@ public class UploadDocumentsViewModel(
     };
 
     // The partner in the top bar, whose code fills the sourcing field.
-    public const string PartnerCode = "100002225";
+    private string PartnerCode => partner.Value.Code;
 
     // ----- What a deposit is booked as -------------------------------------------
     public const string General = "PUBLIC/GENERAL";

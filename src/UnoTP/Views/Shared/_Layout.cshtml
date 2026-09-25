@@ -32,7 +32,14 @@
         else
         {
         <div class="app-header__right">
-            <div class="app-header__welcome"><span class="welcome-label">Welcome,</span> Shivaprasad Terse <span class="entity-code">100002225</span></div>
+            @{
+                // Who is signed in, and as what: a 1033 agency, or a broker under their business code.
+                var partner = PartnerSettings.Value;
+                var asWhat = Context.Session.IsSourcingAgency() ? $"Agency {PartnerSession.SourcingAgency}"
+                    : Context.Session.BrokerCode() is { Length: > 0 } broker ? $"Broker {broker}" : $"Agency {Context.Session.AgencyType()}";
+                var initials = string.Concat(partner.Name.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(w => w[0]));
+            }
+            <div class="app-header__welcome"><span class="welcome-label">Welcome,</span> @partner.Name <span class="entity-code">@partner.Code</span> <span class="app-header__as">@asWhat</span></div>
             <partial name="_Notices" />
             <div class="app-header__nav">
                 <a class="@(ViewData["FirstNavActive"] is true ? "app-header__nav-active" : null)" asp-controller="Dashboard" asp-action="Index">
@@ -61,10 +68,10 @@
                     @* Who is signed in, since the welcome line the bar carries is
                        not there at this width. *@
                     <div class="app-menu__who">
-                        <span class="app-menu__avatar" aria-hidden="true">ST</span>
+                        <span class="app-menu__avatar" aria-hidden="true">@initials</span>
                         <span class="app-menu__whotext">
-                            <span class="app-menu__name">Shivaprasad Terse</span>
-                            <span class="app-menu__code">Channel partner &middot; 100002225</span>
+                            <span class="app-menu__name">@partner.Name</span>
+                            <span class="app-menu__code">@asWhat &middot; @partner.Code</span>
                         </span>
                     </div>
 

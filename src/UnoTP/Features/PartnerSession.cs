@@ -89,6 +89,12 @@ public sealed class PartnerOptions
 {
     public const string Section = "Partner";
 
+    /// <summary>The partner at the keyboard, as the top bar greets them.</summary>
+    public string Name { get; set; } = "";
+
+    /// <summary>Their own code: the top bar's, and the one a staff-sourced application opens with.</summary>
+    public string Code { get; set; } = "";
+
     public string AgencyType { get; set; } = PartnerSession.SourcingAgency;
 
     public string BrokerCode { get; set; } = "";

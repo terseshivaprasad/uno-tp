@@ -36,7 +36,7 @@ public sealed class MockConsole : IConsoleApi
 
         new("W-2709-01", ["new-fd", "short-url"],
             Today.AddDays(4).AddHours(23), Today.AddDays(5).AddHours(2),
-            "New FD booking and investor links are unavailable on Sunday night",
+            $"New FD booking and investor links are unavailable on {Today.AddDays(4).ToString("dddd", System.Globalization.CultureInfo.InvariantCulture)} night",
             Administrator, Today.AddDays(-2).AddHours(11)),
 
         new("W-0310-01", ["pis"],

@@ -20,6 +20,8 @@
 .app-header__right { display: flex; align-items: center; gap: 16px; font-size: 13.6px; color: var(--text); }
 .welcome-label { font-weight: 500; }
 .entity-code { color: var(--red); }
+/* What the partner signs in as: a 1033 agency, or a broker under their code. */
+.app-header__as { display: inline-block; margin-left: 6px; padding: 2px 7px; border-radius: 4px; background: #F1F3F6; font-size: 11px; font-weight: 600; color: #4B5563; vertical-align: 1px; }
 .app-header__nav { display: flex; border-left: 1px solid #D9D9D9; padding-left: 16px; }
 .app-header__nav a { display: inline-flex; align-items: center; gap: 6px; padding: 0 12px; color: #000; border-left: 1px solid #D9D9D9; }
 .app-header__nav a svg { flex: none; }

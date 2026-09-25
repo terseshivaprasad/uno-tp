@@ -3,7 +3,7 @@ namespace UnoTP.Models;
 public record RequiredDocGroup(string Title, string[] Items);
 
 /// <summary>
-/// The old site's FdDocModal, word for word: what each kind of investor has to
+/// The old site's FdDocModal: what each kind of investor has to
 /// hand over to book an FD. Both classic pages that offer "Click here to see the
 /// list of required documents" - the console and the Uno TP dashboard - show this
 /// one list.
@@ -19,10 +19,9 @@ public static class RequiredDocs
             "Permanent Account Number (PAN) card",
             "‘Election Commission of India’ Voter identity card",
             "‘NREGA’ Job card, duly signed by an officer of the State Government",
-            "‘Unique Identification Authority of India’ letter containing details of name, address and Aadhaar",
-            "Note: an Aadhaar is filed unmasked — all 12 digits must be readable. A masked e-Aadhaar is not accepted.",
-            "Number or any document as notified by the Central Government in consultation with the regulator",
-            "Note: eSarathi only supports Individual Deposits.",
+            "‘Unique Identification Authority of India’ letter containing details of name, address and Aadhaar Number, or any document as notified by the Central Government in consultation with the regulator",
+            "Note: The PAN copy is collected first, before any proof of address.",
+            "Note: An Aadhaar is filed unmasked — all 12 digits must be readable. A masked e-Aadhaar is not accepted.",
         }),
         new("Sole Proprietorship", new[]
         {
