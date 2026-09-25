@@ -32,12 +32,24 @@ variable, never hardcode the hex, so a future palette change is a one-line edit.
 | `--green` / `--green-2` | `#146C34` / `#1E9E52` | Success text / success icon-fill (e.g. done badges) |
 | `--blue` | `#1063A8` | Informational accent (info callouts, "primary holder" chip) |
 | `--pink-bg` | `#FDECEF` | Danger chip background |
+| `--green-bg` / `--green-border` | `#E8F5EC` / `#CBE7D5` | Success panels and "verified" tags |
+| `--blue-bg` / `--blue-border` | `#E8F1FB` / `#CBDFF3` | Info panels and chips |
+| `--pink-tint` / `--pink-border` | `#FFF8F9` / `#F3C9D1` | A row or card being pointed at; refused copies |
+| `--amber-tint` / `--amber-border` / `--amber-accent` | `#FFFBF0` / `#F0D98A` / `#E8A700` | Warning panels, their outline, and their left rule |
+
+The tints were added when every raw hex in `site.css` and `topbar.css` was
+replaced by a token: near-duplicates (a dozen greys, five greens, six pinks) were
+folded into the nearest token. There is no raw hex left outside `:root`; keep it
+that way.
 
 **`--page-bg` vs `--tint`:** these look similar but are not interchangeable.
 `--page-bg` (`#E9EDF2`) is the body background behind every card. `--tint`
 (`#F5F8FB`) is a lighter panel used *inside* white cards to highlight a block of
 content without a border (confirmed via Board 02A's "record found" panel). Getting
 this backwards was a real bug caught in this project — don't reintroduce it.
+The classic pages (dashboard, Investor Identification, Upload Documents, Investor
+Information and the list pages) once set their own `#F5F7FA`; every page now sits
+on `--page-bg`.
 
 ## Typography
 
@@ -88,11 +100,14 @@ Both come in the same semantic variants: `--primary`/`--muted` (or `--optional`)
 - Card-to-card gap: `16px` vertical.
 - Grid gaps: `16px` (form grids, wizard body), `11px` (app tile grid), `12px 20px`
   (kv-grid).
-- Border radius: **8px** for cards/panels, **6px** for buttons/pills/rail items,
-  **3px** for chips, **9px** for tag pills, **50%** for avatars/circular badges.
+- Border radius: **8px** for cards/panels/dialogs/sheets, **6px** for buttons and
+  icon buttons, **3px** for chips (the agency badge, a card's status tag), **9px**
+  for tag pills, **999px** for a full capsule (toggles, filter pills), **50%** for
+  avatars/circular badges. Nothing else: 10px, 12px and 14px cards were folded into 8px.
   There is no 4px radius anywhere in the current design — if you see one, it's a
   leftover bug (this project had one on `.btn` that's since been fixed).
-- Buttons: `padding: 12px 22px` (default), `8px 14px` (`.btn-sm`).
+- Buttons: `padding: 12px 22px` (default), `8px 14px` (`.btn-sm`). A `<button>`
+  inherits Georama from `.btn`; without it a browser draws the button in Arial.
 
 ## Layout chrome
 
