@@ -36,7 +36,7 @@ public class PayInSlipController(IPayInSlipApi slips, ILinkApi links, Lookups lo
     public async Task<IActionResult> SendAcceptance(string appNo)
     {
         TempData["toast"] = await links.SendAsync(appNo, "acceptance") is { } link
-            ? $"Acceptance link sent to {link.Contact}. The slip can be generated once the investor accepts."
+            ? $"Acceptance link sent to {SentTo.Both(link.Mobile, link.Email)}. The slip can be generated once the investor accepts."
             : "The acceptance link could not be sent for this application.";
         return RedirectToAction(nameof(Index));
     }

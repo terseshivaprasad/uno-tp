@@ -154,10 +154,11 @@ public sealed record DepositDetails(
     string DeliveryType);
 
 /// <param name="Status">Where the application stands once submitted: "payment-pending", then the backend's own.</param>
-/// <param name="LinkSentTo">The mobile number the link went to, masked.</param>
+/// <param name="LinkSentTo">The mobile number the link went to by SMS, masked.</param>
+/// <param name="LinkEmailedTo">The e-mail address it went to as well, masked; empty when there is none.</param>
 /// <param name="LinkValidUntil">When the payment link stops working.</param>
 /// <param name="ResendsLeft">Times the link can still be sent again.</param>
-public sealed record Submission(DateTime At, string Status, string LinkSentTo, DateTime LinkValidUntil, int ResendsLeft);
+public sealed record Submission(DateTime At, string Status, string LinkSentTo, DateTime LinkValidUntil, int ResendsLeft, string LinkEmailedTo = "");
 
 /// <summary>One application's upload step, as it is saved.</summary>
 public sealed class UploadState

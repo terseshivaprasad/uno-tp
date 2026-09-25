@@ -41,15 +41,15 @@ public sealed class MockApplications(MockStore store, IPartner partner) : IAppli
     public Task<int?> SaveDepositAsync(string appNo, int version, DepositDetails deposit, CancellationToken ct = default) =>
         Task.FromResult(store.Save(partner.Id, appNo, version, app => app.Deposit = deposit)?.Version);
 
-    // Submitting sends the investor the payment link, to the mobile number on the
-    // investor's details, open for the hours the rules give a payment link.
+    // Submitting sends the investor the payment link, to the mobile number and the
+    // e-mail on the investor's details, open for the hours the rules give a payment link.
     public Task<Application?> SubmitAsync(string appNo, int version, CancellationToken ct = default) =>
         Task.FromResult(store.Save(partner.Id, appNo, version, app =>
         {
-            var mobile = app.Details?.Holders.FirstOrDefault(h => h.Holder == HolderType.Investor)?.Mobile ?? "";
-            var masked = mobile.Length >= 4 ? new string('•', mobile.Length - 4) + mobile[^4..] : mobile;
+            var investor = app.Details?.Holders.FirstOrDefault(h => h.Holder == HolderType.Investor);
             var now = DateTime.Now;
-            app.Submitted = new Submission(now, "payment-pending", masked, now.AddHours(MockReference.PaymentLinkHours), ResendsLeft: 1);
+            app.Submitted = new Submission(now, "payment-pending", Masks.Mobile(investor?.Mobile ?? ""),
+                now.AddHours(MockReference.PaymentLinkHours), ResendsLeft: 1, LinkEmailedTo: Masks.Email(investor?.Email ?? ""));
         }));
 
     // One resend, which does not move the link's expiry.
@@ -126,4 +126,16 @@ public sealed class MockApplications(MockStore store, IPartner partner) : IAppli
         Task.FromResult(store.Copy(partner.Id, appNo, holder + "/" + slot));
 
     private static DateTime InAWeek => DateTime.Today.AddDays(7);
+}
+
+/// <summary>How the backend masks where a link went.</summary>
+internal static class Masks
+{
+    /// <summary>9876543210 as ••••••3210.</summary>
+    public static string Mobile(string mobile) =>
+        mobile.Length >= 4 ? new string('•', mobile.Length - 4) + mobile[^4..] : mobile;
+
+    /// <summary>investor@example.com as in••••@example.com.</summary>
+    public static string Email(string email) =>
+        email.IndexOf('@') is > 0 and var at ? email[..Math.Min(2, at)].ToLowerInvariant() + "••••" + email[at..].ToLowerInvariant() : "";
 }

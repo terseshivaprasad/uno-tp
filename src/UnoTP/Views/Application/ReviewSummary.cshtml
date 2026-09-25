@@ -276,7 +276,8 @@
         <div class="pl-body">
             <p class="pl-intro pl-intro--long" id="paymentLinkIntro">On Submit the application is submitted and a payment link is sent to the investor: <strong>the deposit is not booked until the investor pays it</strong>.</p>
             <dl class="pl-terms">
-                <div><dt>Sent to</dt><dd>@Or(Model.InvestorMobile)</dd><dd class="pl-terms__note">the primary holder&rsquo;s mobile, from Investor Information</dd></div>
+                <div><dt>SMS to</dt><dd>@Or(Model.InvestorMobile)</dd><dd class="pl-terms__note">the primary holder&rsquo;s mobile, from Investor Information</dd></div>
+                <div><dt>E-mail to</dt><dd class="pl-terms__email">@Or(Model.InvestorEmail.ToLowerInvariant())</dd><dd class="pl-terms__note">the primary holder&rsquo;s e-mail, from Investor Information</dd></div>
                 <div><dt>Amount</dt><dd>@(d is null ? "—" : Money.Rupees(d.Amount))</dd><dd class="pl-terms__note">fixed &mdash; the investor cannot change it</dd></div>
                 <div><dt>Valid for</dt><dd>@Model.PaymentLinkHours hours</dd><dd class="pl-terms__note">from when it is sent</dd></div>
             </dl>

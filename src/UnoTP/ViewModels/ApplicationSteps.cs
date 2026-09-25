@@ -4,6 +4,14 @@ using UnoTP.Backend;
 namespace UnoTP.ViewModels;
 
 /// <summary>Rupees as the old screens write them: Indian grouping, and in words.</summary>
+/// <summary>Where a link went: by SMS and by e-mail, as the backend masked them.</summary>
+public static class SentTo
+{
+    /// <summary>"98••••1000 and ab••••@gmail.com", or the one there is.</summary>
+    public static string Both(string mobile, string email) =>
+        string.Join(" and ", new[] { mobile, email }.Where(s => !string.IsNullOrWhiteSpace(s)));
+}
+
 public static class Money
 {
     /// <summary>"₹ 5,00,000".</summary>
@@ -370,8 +378,11 @@ public sealed class ReviewViewModel(UploadDocumentsViewModel docs, DepositQuote?
 
     public int PaymentLinkHours => Config.LinkValidityHours.GetValueOrDefault("payment");
 
-    /// <summary>The investor's mobile, where the payment link goes.</summary>
+    /// <summary>The investor's mobile, where the payment link goes by SMS.</summary>
     public string InvestorMobile => DetailsOf(Docs.Investor).Mobile;
+
+    /// <summary>The investor's e-mail, where the payment link goes as well.</summary>
+    public string InvestorEmail => DetailsOf(Docs.Investor).Email;
 
     private static string Cap(string s) => s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s[1..];
 }

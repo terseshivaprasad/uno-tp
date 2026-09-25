@@ -40,7 +40,7 @@
                 <div class="sub-pending__title">Waiting on the investor&rsquo;s payment</div>
                 <div class="sub-pending__tag">@(sub.Status == "payment-pending" ? "Payment pending" : sub.Status)</div>
             </div>
-            <div class="sub-pending__text">The link was sent to @sub.LinkSentTo and expires <strong>@Money.Day(sub.LinkValidUntil)</strong>. Submitted is not booked &mdash; the deposit and its rate are held only until then.</div>
+            <div class="sub-pending__text">The link was sent by SMS to <strong>@sub.LinkSentTo</strong>@if (sub.LinkEmailedTo.Length > 0) {<text> and by e-mail to <strong>@sub.LinkEmailedTo</strong></text>}, and expires <strong>@Money.Day(sub.LinkValidUntil)</strong>. Submitted is not booked &mdash; the deposit and its rate are held only until then.</div>
         </div>
 
         <div class="sub-box">

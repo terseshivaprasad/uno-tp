@@ -29,7 +29,8 @@ public class ShortUrlViewModel(IReadOnlyList<SentLinkRecord> sent, IReadOnlyList
         new("expired", "Expired", "Expired · resend to reopen", "text-danger"),
     };
 
-    // A short link is one row: who it went to, what it asks for, and where it got to.
+    // A short link is one row: who it went to (the mobile and the e-mail it was
+    // sent to), what it asks for, and where it got to.
     public record SentLink(string AppNo, string Investor, string Contact, string Purpose, string Sent, string Expires, string State, string Status, string Tone, int AppDays, int EligibleDays, string PurposeKey)
     {
         public int DaysLeft => EligibleDays - AppDays;
@@ -58,7 +59,7 @@ public class ShortUrlViewModel(IReadOnlyList<SentLinkRecord> sent, IReadOnlyList
             _ => Left((int)Math.Round((l.ExpiresAt - now).TotalHours)),
         };
         return new SentLink(
-            l.AppNo, l.Investor, l.Contact, purpose.Label,
+            l.AppNo, l.Investor, string.Join(" · ", new[] { l.Mobile, l.Email }.Where(s => s.Length > 0)), purpose.Label,
             Ago((int)Math.Round((now - l.SentAt).TotalHours)), expires, state.Key,
             state.Key == "done" ? (purpose.Key == "payment" ? "Paid" : "Accepted") : state.Text,
             state.Tone, (Today - l.Applied.Date).Days, EligibleDays, purpose.Key);
@@ -87,14 +88,17 @@ public class ShortUrlViewModel(IReadOnlyList<SentLinkRecord> sent, IReadOnlyList
     // can neither carry a link nor stay in the list.
     public int EligibleDays { get; } = config.CancellationDays;
 
-    // A pending application, with the mobile the link would go to. It comes from
+    // A pending application, with the mobile and e-mail the link would go to. They come from
     // the application itself, masked: the partner never types it and never sees
     // it in full.
-    public record PendingApplication(string AppNo, string Investor, int DaysOld, string Mobile, string Due);
+    public record PendingApplication(string AppNo, string Investor, int DaysOld, string Mobile, string Due, string Email = "")
+    {
+        public string Contact => string.Join(" · ", new[] { Mobile, Email }.Where(s => s.Length > 0));
+    }
 
     /// <summary>The applications waiting on the investor that can still carry a link.</summary>
     public IReadOnlyList<PendingApplication> EligibleApplications { get; } = pending
-        .Select(p => new PendingApplication(p.AppNo, p.Investor, (Today - p.Applied.Date).Days, p.Mobile, p.Due))
+        .Select(p => new PendingApplication(p.AppNo, p.Investor, (Today - p.Applied.Date).Days, p.Mobile, p.Due, p.Email))
         .Where(p => p.DaysOld <= config.CancellationDays)
         .ToList();
 
@@ -109,7 +113,7 @@ public class ShortUrlViewModel(IReadOnlyList<SentLinkRecord> sent, IReadOnlyList
         EligibleApplications
             .Where(a => !Sent.Any(s => s.AppNo == a.AppNo))
             .Select(a => new SentLink(
-                a.AppNo, a.Investor, a.Mobile,
+                a.AppNo, a.Investor, a.Contact,
                 a.Due == "payment" ? Purposes[0].Label : Purposes[1].Label,
                 "\u2014", "\u2014", "none", "No link sent", "text-muted", a.DaysOld, EligibleDays, a.Due == "payment" ? Purposes[0].Key : Purposes[1].Key))
             .Concat(Sent.Where(s => s.AppDays <= EligibleDays))

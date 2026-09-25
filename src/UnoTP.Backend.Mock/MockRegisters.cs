@@ -144,9 +144,8 @@ public sealed class MockLinks : ILinkApi
             var sentHoursAgo = 3 + i * 7;
             var state = hours - sentHoursAgo <= 0 ? "expired" : Live[i % 3];
 
-            var contact = i % 3 == 0
-                ? $"{char.ToLowerInvariant(first[i % first.Length])}{char.ToLowerInvariant(last[i % last.Length])}••••@{(i % 2 == 0 ? "gmail.com" : "outlook.com")}"
-                : $"{90 + i % 10}••••{1000 + i * 137}";
+            var mobile = $"{90 + i % 10}••••{1000 + i * 137}";
+            var email = $"{char.ToLowerInvariant(first[i % first.Length])}{char.ToLowerInvariant(last[i % last.Length])}••••@{(i % 2 == 0 ? "gmail.com" : "outlook.com")}";
 
             // The application is a little older than the link raised against it.
             var appDays = 1 + (sentHoursAgo / 24) + i % 4;
@@ -155,7 +154,8 @@ public sealed class MockLinks : ILinkApi
             links.Add(new SentLinkRecord(
                 $"FBBMFL26F{(i * 7919 % 90000) + 10000:D5}",
                 $"{first[i % first.Length]}•••• {last[(i * 3) % last.Length]}•••••",
-                contact,
+                mobile,
+                email,
                 purpose,
                 sent,
                 sent.AddHours(hours),
@@ -171,9 +171,9 @@ public sealed class MockLinks : ILinkApi
             var i = links.FindIndex(l => l.AppNo == appNo);
             if (i >= 0) links[i] = links[i] with { Purpose = purpose, SentAt = at, ExpiresAt = at.AddHours(hours), State = "open" };
             else if (pending.FirstOrDefault(p => p.AppNo == appNo) is { } p)
-                links.Add(new SentLinkRecord(appNo, p.Investor, p.Mobile, purpose, at, at.AddHours(hours), "open", p.Applied));
+                links.Add(new SentLinkRecord(appNo, p.Investor, p.Mobile, p.Email, purpose, at, at.AddHours(hours), "open", p.Applied));
             else if (AwaitingAcceptance(appNo) is { } slip)
-                links.Add(new SentLinkRecord(appNo, slip.Investor, "mobile on the application", purpose, at, at.AddHours(hours), "open", slip.Applied));
+                links.Add(new SentLinkRecord(appNo, slip.Investor, $"98••••{appNo[^4..]}", $"{slip.Investor[..1].ToLowerInvariant()}••••@gmail.com", purpose, at, at.AddHours(hours), "open", slip.Applied));
         }
         return Task.FromResult<IReadOnlyList<SentLinkRecord>>(links);
     }
@@ -204,7 +204,8 @@ public sealed class MockLinks : ILinkApi
                 a.HolderMask,
                 DateTime.Today.AddDays(-(1 + i * 3)),
                 $"{90 + i % 10}••••{1000 + i * 137}",
-                i % 2 == 0 ? "payment" : "acceptance"))
+                i % 2 == 0 ? "payment" : "acceptance",
+                $"{a.HolderMask[..1].ToLowerInvariant()}••••@{(i % 2 == 0 ? "gmail.com" : "yahoo.co.in")}"))
             .ToList());
 }
 

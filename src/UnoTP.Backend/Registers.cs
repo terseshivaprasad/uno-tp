@@ -63,17 +63,19 @@ public interface ILinkApi
     Task<SentLinkRecord?> SendAsync(string appNo, string purpose, CancellationToken ct = default);
 }
 
-/// <summary>A link sent. The link itself is never returned: it goes to the investor and nowhere else.</summary>
+/// <summary>A link sent, by SMS and e-mail both. The link itself is never returned: it goes to the investor and nowhere else.</summary>
+/// <param name="Mobile">The mobile number it went to, masked.</param>
+/// <param name="Email">The e-mail address it went to, masked; empty when the application has none.</param>
 /// <param name="Purpose">payment or acceptance.</param>
 /// <param name="State">open, opened, done or expired.</param>
 /// <param name="Applied">When the application the link was raised against was created.</param>
 public sealed record SentLinkRecord(
-    string AppNo, string Investor, string Contact, string Purpose,
+    string AppNo, string Investor, string Mobile, string Email, string Purpose,
     DateTime SentAt, DateTime ExpiresAt, string State, DateTime Applied);
 
-/// <summary>An application waiting on the investor, with the mobile a link would go to, masked.</summary>
+/// <summary>An application waiting on the investor, with the mobile and e-mail a link would go to, masked.</summary>
 /// <param name="Due">payment or acceptance: what the investor has still to do.</param>
-public sealed record PendingRecord(string AppNo, string Investor, DateTime Applied, string Mobile, string Due);
+public sealed record PendingRecord(string AppNo, string Investor, DateTime Applied, string Mobile, string Due, string Email = "");
 
 /// <summary>What the console's administrator has scheduled.</summary>
 public interface IConsoleApi

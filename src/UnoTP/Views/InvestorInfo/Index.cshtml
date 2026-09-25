@@ -87,11 +87,8 @@
     // identified as beside it; without, the drop-down the type is chosen from first.
     private async Task ProofLabel(UploadDocumentsViewModel.DocHolder h, string field, string label, bool used, string type)
     {
-        if (Model.Docs.AutoProofType)
-        {
-            <span class="csi-label">@label <partial name="_ProofType" model="@(used ? type : null)" /></span>
-        }
-        else
+        // With document identification the type stands beside the card's own label.
+        if (!Model.Docs.AutoProofType)
         {
             var key = h.Key(field);
             var error = Model.Docs.Shown?.Errors.GetValueOrDefault(key);
@@ -148,20 +145,18 @@
         </div>
         <div class="cud-grid cud-grid--docs">
             <div class="cud-col">
-                <span class="csi-label">PAN @if (pan.Optional) { <span class="cud-optional">(Non-mandatory)</span> }</span>
                 <partial name="_DocSlot" model="@(new DocSlotBlock(pan, upload))" />
             </div>
             <div class="cud-col">
-                <span class="csi-label">Photo</span>
                 <partial name="_DocSlot" model="@(new DocSlotBlock(docs.View(UploadDocumentsViewModel.PhotoSlot, h), upload))" />
             </div>
             <div class="cud-col">
                 @{ await ProofLabel(h, "poaType", "Proof of address", poa.Used, docs.PoaTypeOf(h)); }
-                <partial name="_DocSlot" model="@(new DocSlotBlock(poa, upload))" />
+                <partial name="_DocSlot" model="@(new DocSlotBlock(poa, upload, ProofType: Model.Docs.AutoProofType && poa.Used ? docs.PoaTypeOf(h) : null))" />
             </div>
             <div class="cud-col">
                 @{ await ProofLabel(h, "mailType", "Communication address proof", mail.Used, docs.MailTypeOf(h)); }
-                <partial name="_DocSlot" model="@(new DocSlotBlock(mail, upload))" />
+                <partial name="_DocSlot" model="@(new DocSlotBlock(mail, upload, ProofType: Model.Docs.AutoProofType && mail.Used ? docs.MailTypeOf(h) : null))" />
             </div>
         </div>
 

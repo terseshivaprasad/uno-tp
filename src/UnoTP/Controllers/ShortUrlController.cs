@@ -26,7 +26,7 @@ public class ShortUrlController(ILinkApi links, Lookups lookups) : Controller
     public async Task<IActionResult> Send(string appNo, string purpose)
     {
         TempData["toast"] = await links.SendAsync(appNo, purpose) is { } link
-            ? $"Link sent to {link.Contact} — any link sent before stops working."
+            ? $"Link sent to {SentTo.Both(link.Mobile, link.Email)} — any link sent before stops working."
             : "No link could be sent for this application.";
         return RedirectToAction(nameof(Index));
     }

@@ -92,7 +92,7 @@ again; a failed answer is not kept.
 | PUT | `applications/{appNo}/details` | `ApplicationDetails`, with `If-Match` | `{ version }`, or `409`/`412` |
 | PUT | `applications/{appNo}/payment` | `PaymentDetails`, with `If-Match` | `{ version }`, or `409`/`412` |
 | PUT | `applications/{appNo}/deposit` | `DepositDetails`, with `If-Match` | `{ version }`, or `409`/`412` |
-| POST | `applications/{appNo}/submit` | with `If-Match` | `Application` as submitted, or `409`/`412`. Sends the investor the payment link. |
+| POST | `applications/{appNo}/submit` | with `If-Match` | `Application` as submitted, or `409`/`412`. Sends the investor the payment link by SMS and e-mail both. |
 | POST | `applications/{appNo}/resend-link` | | `Submission`, or `404`/`409` when there is no link to resend |
 | GET | `applications/drafts` | | `DraftSummary[]`: saved applications that are still the partner's to finish, with identifiers masked |
 | GET | `applications` | | `ApplicationRecord[]`: the partner's applications, including older ones, each with its `scheme` name and `milestones` (`{ step, at }`, in order) for the View Application timeline |
@@ -113,8 +113,8 @@ again; a failed answer is not kept.
   null.
 - **`DepositDetails`:** `amount`, `tenureMonths`, `payout`, `autoRenewal`,
   `renewInstruction`, `noTds`, `deliveryType`, as the reference lists code them.
-- **`Submission`:** `at`, `status`, `linkSentTo` (masked), `linkValidUntil`,
-  `resendsLeft`. `Application` carries it as `submitted`, with `details`,
+- **`Submission`:** `at`, `status`, `linkSentTo` (the mobile, masked), `linkValidUntil`,
+  `resendsLeft`, `linkEmailedTo` (the e-mail, masked; empty when there is none). `Application` carries it as `submitted`, with `details`,
   `payment` and `deposit`.
 - **`UploadState`:** the upload step as a whole. That covers the choices made
   (`appType`, `poaType`, `payMode`, `sourcing`, `sourceCode`, `subBroker`,
@@ -171,8 +171,8 @@ A slot holds one copy:
 | GET | `sourcing/brokers` | `Party[]` (`code`, `name`) |
 | GET | `sourcing/staff` | `Party[]`. Includes the partner at the keyboard. |
 | GET | `payin-slips` | `SlipRecord[]`: every application paying by cheque or DD, cancelled ones included |
-| GET | `links` | `SentLinkRecord[]`: links sent to investors. The link itself is never returned. |
-| GET | `links/pending` | `PendingRecord[]`: applications waiting on the investor (`appNo`, `investor`, `applied`, masked `mobile`, `due`) |
+| GET | `links` | `SentLinkRecord[]`: links sent to investors, each by SMS and e-mail, with the masked `mobile` and `email` it went to. The link itself is never returned. |
+| GET | `links/pending` | `PendingRecord[]`: applications waiting on the investor (`appNo`, `investor`, `applied`, masked `mobile` and `email`, `due`) |
 | GET | `console/schedule` | `{ windows: WindowRecord[], announcements: AnnouncementRecord[] }` |
 
 Each application in these lists carries its `applied` date. The app counts the
@@ -185,7 +185,7 @@ application. Field lists are in `Registers.cs`.
 | Method | Route | Body | Returns |
 |---|---|---|---|
 | POST | `payin-slips/{appNo}` | | `SlipRecord` with its new `slipNo`: the slip, or a fresh one for a reprint. 404 when the application is not found, is cancelled, or is digital and not yet accepted. |
-| POST | `links` | `{ appNo, purpose }` | `SentLinkRecord`: `purpose` is `payment` or `acceptance`. Any link sent before stops working. The validity is `linkValidityHours` for the purpose. 404 when the application cannot carry that link. |
+| POST | `links` | `{ appNo, purpose }` | `SentLinkRecord`: `purpose` is `payment` or `acceptance`. It goes to the investor's mobile and e-mail both. Any link sent before stops working. The validity is `linkValidityHours` for the purpose. 404 when the application cannot carry that link. |
 | POST | `console/windows` | `{ features, from, to, notice }` | `WindowRecord`. The backend mints the `id` and records `setBy` and `setOn`. An empty `notice` leaves partners untold. |
 | POST | `console/announcements` | `{ kind, title, at, detail }` | `AnnouncementRecord`. `kind` is one of `noticeKinds` in `reference`. |
 | POST | `console/windows/{id}/end` | | 204. Ends a window that is on, or cancels one still to come, with its notice. 404 when there is none. |
