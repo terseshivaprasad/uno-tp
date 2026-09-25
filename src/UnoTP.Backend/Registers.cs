@@ -18,9 +18,18 @@ public interface IPayInSlipApi
 {
     /// <summary>Every application paying by cheque or DD, cancelled ones included.</summary>
     Task<IReadOnlyList<SlipRecord>> SlipsAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// POST payin-slips/{appNo}: issues the application's pay-in slip - or a fresh
+    /// one, for a reprint - and returns the row as it now stands. Null when the
+    /// application cannot have a slip: not found, cancelled, or digital and not
+    /// yet accepted.
+    /// </summary>
+    Task<SlipRecord?> GenerateAsync(string appNo, CancellationToken ct = default);
 }
 
 /// <param name="State">pending, generated, deposited or lapsed.</param>
+/// <param name="AcceptedOn">When the investor accepted a digital application; null until they do.</param>
 /// <param name="Digital">Accepted online rather than signed on paper.</param>
 /// <param name="Accepted">Whether the investor has accepted the deposit.</param>
 public sealed record SlipRecord(
@@ -35,7 +44,8 @@ public sealed record SlipRecord(
     bool Digital,
     bool Accepted,
     string State,
-    string? SlipNo);
+    string? SlipNo,
+    DateTime? AcceptedOn = null);
 
 /// <summary>The short links sent to investors, and the applications that can carry one.</summary>
 public interface ILinkApi
@@ -44,6 +54,13 @@ public interface ILinkApi
 
     /// <summary>The partner's applications waiting on the investor.</summary>
     Task<IReadOnlyList<PendingRecord>> PendingAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// POST links { appNo, purpose }: sends the investor a link - payment or
+    /// acceptance - replacing any sent before, which stops working. The link as
+    /// sent, or null when the application cannot carry one.
+    /// </summary>
+    Task<SentLinkRecord?> SendAsync(string appNo, string purpose, CancellationToken ct = default);
 }
 
 /// <summary>A link sent. The link itself is never returned: it goes to the investor and nowhere else.</summary>
@@ -62,7 +79,24 @@ public sealed record PendingRecord(string AppNo, string Investor, DateTime Appli
 public interface IConsoleApi
 {
     Task<ConsoleSchedule> ScheduleAsync(CancellationToken ct = default);
+
+    /// <summary>POST console/windows: takes features off for a window. The backend mints its id and records who set it.</summary>
+    Task<WindowRecord> AddWindowAsync(NewWindow window, CancellationToken ct = default);
+
+    /// <summary>POST console/announcements: a notice every partner sees in the bell.</summary>
+    Task<AnnouncementRecord> AddAnnouncementAsync(NewAnnouncement announcement, CancellationToken ct = default);
+
+    /// <summary>POST console/windows/{id}/end: ends a window that is on now, or cancels one still to come. False when there is none.</summary>
+    Task<bool> EndWindowAsync(string id, CancellationToken ct = default);
+
+    /// <summary>DELETE console/announcements/{id}: takes a notice out of the bell. False when there is none.</summary>
+    Task<bool> RemoveAnnouncementAsync(string id, CancellationToken ct = default);
 }
+
+/// <param name="Notice">The line partners are shown in the bell; empty to leave them untold.</param>
+public sealed record NewWindow(IReadOnlyList<string> Features, DateTime From, DateTime To, string Notice);
+
+public sealed record NewAnnouncement(string Kind, string Title, DateTime At, string Detail);
 
 public sealed record ConsoleSchedule(IReadOnlyList<WindowRecord> Windows, IReadOnlyList<AnnouncementRecord> Announcements);
 

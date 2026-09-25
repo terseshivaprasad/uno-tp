@@ -148,6 +148,22 @@ public sealed class BackendClient(HttpClient http, IPartner partner)
     public async Task<IReadOnlyList<SlipRecord>> SlipsAsync(CancellationToken ct = default) =>
         await List<SlipRecord>("payin-slips", ct);
 
+    public Task<SlipRecord?> GenerateAsync(string appNo, CancellationToken ct = default) =>
+        SendOrNull<SlipRecord>(HttpMethod.Post, $"payin-slips/{Seg(appNo)}", Body(new { }), ct);
+
+    public Task<SentLinkRecord?> SendAsync(string appNo, string purpose, CancellationToken ct = default) =>
+        SendOrNull<SentLinkRecord>(HttpMethod.Post, "links", Body(new { appNo, purpose }), ct);
+
+    // An action the backend may turn down: its answer, or null for 404, 409 or 422.
+    private async Task<T?> SendOrNull<T>(HttpMethod method, string path, HttpContent content, CancellationToken ct) where T : class
+    {
+        using var request = Request(method, path, content);
+        using var response = await SendAsync(request, ct);
+        if (response.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.Conflict or HttpStatusCode.UnprocessableEntity) return null;
+        response.EnsureSuccessStatusCode();
+        return await Read<T>(response, ct);
+    }
+
     public async Task<IReadOnlyList<SentLinkRecord>> SentAsync(CancellationToken ct = default) =>
         await List<SentLinkRecord>("links", ct);
 
@@ -156,4 +172,26 @@ public sealed class BackendClient(HttpClient http, IPartner partner)
 
     public async Task<ConsoleSchedule> ScheduleAsync(CancellationToken ct = default) =>
         await Get<ConsoleSchedule>("console/schedule", ct) ?? new ConsoleSchedule([], []);
+
+    public Task<WindowRecord> AddWindowAsync(NewWindow window, CancellationToken ct = default) =>
+        Send<WindowRecord>(HttpMethod.Post, "console/windows", Body(window), ct);
+
+    public Task<AnnouncementRecord> AddAnnouncementAsync(NewAnnouncement announcement, CancellationToken ct = default) =>
+        Send<AnnouncementRecord>(HttpMethod.Post, "console/announcements", Body(announcement), ct);
+
+    public Task<bool> EndWindowAsync(string id, CancellationToken ct = default) =>
+        Done(HttpMethod.Post, $"console/windows/{Seg(id)}/end", Body(new { }), ct);
+
+    public Task<bool> RemoveAnnouncementAsync(string id, CancellationToken ct = default) =>
+        Done(HttpMethod.Delete, $"console/announcements/{Seg(id)}", null, ct);
+
+    // An action with nothing to return: false when there was nothing to act on.
+    private async Task<bool> Done(HttpMethod method, string path, HttpContent? content, CancellationToken ct)
+    {
+        using var request = Request(method, path, content);
+        using var response = await SendAsync(request, ct);
+        if (response.StatusCode == HttpStatusCode.NotFound) return false;
+        response.EnsureSuccessStatusCode();
+        return true;
+    }
 }

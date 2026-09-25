@@ -58,8 +58,8 @@ again; a failed answer is not kept.
   `requiredDocuments` as `{ title, items, notes }`; and plain lists for
   `employeeHolders`, `employeeRelations`, `employeeProofs`, `incomeBands`,
   `occupations`, `subOccupations`, `maritalStatuses`, `genders`, `nameTypes`,
-  `nomineeRelations`, `cmsLocations`, `identificationNotes`, `dashboardNotes`
-  and `declarations` (signed on Review Summary before submitting).
+  `nomineeRelations`, `cmsLocations`, `identificationNotes`, `dashboardNotes`,
+  `noticeKinds` (for Console Admin) and `declarations` (signed on Review Summary before submitting).
   Codes are what the app posts and saves.
 - **`AppConfig`:** `sourcingAgency` (the agency type that chooses how an
   application is sourced), `minAge`, `seniorAge`, `maxJointHolders`,
@@ -94,7 +94,7 @@ again; a failed answer is not kept.
 | POST | `applications/{appNo}/submit` | with `If-Match` | `Application` as submitted, or `409`/`412`. Sends the investor the payment link. |
 | POST | `applications/{appNo}/resend-link` | | `Submission`, or `404`/`409` when there is no link to resend |
 | GET | `applications/drafts` | | `DraftSummary[]`: saved applications that are still the partner's to finish, with identifiers masked |
-| GET | `applications` | | `ApplicationRecord[]`: the partner's applications, including older ones |
+| GET | `applications` | | `ApplicationRecord[]`: the partner's applications, including older ones, each with its `scheme` name and `milestones` (`{ step, at }`, in order) for the View Application timeline |
 
 - **`holder`:** `pan`, `dob`, `name`, `folio`, `panFiled`, `address`,
   `onRecord { pan, photo, poa }` or null, and `gender` (the folio's, or `""`).
@@ -175,7 +175,23 @@ A slot holds one copy:
 | GET | `console/schedule` | `{ windows: WindowRecord[], announcements: AnnouncementRecord[] }` |
 
 Each application in these lists carries its `applied` date. The app counts the
-14-day cancellation window from that date. Field lists are in `Registers.cs`.
+cancellation window (`cancellationDays` in `config`) from that date. A
+`SlipRecord` carries `acceptedOn` once the investor accepts a digital
+application. Field lists are in `Registers.cs`.
+
+### Actions on the lists
+
+| Method | Route | Body | Returns |
+|---|---|---|---|
+| POST | `payin-slips/{appNo}` | | `SlipRecord` with its new `slipNo`: the slip, or a fresh one for a reprint. 404 when the application is not found, is cancelled, or is digital and not yet accepted. |
+| POST | `links` | `{ appNo, purpose }` | `SentLinkRecord`: `purpose` is `payment` or `acceptance`. Any link sent before stops working. The validity is `linkValidityHours` for the purpose. 404 when the application cannot carry that link. |
+| POST | `console/windows` | `{ features, from, to, notice }` | `WindowRecord`. The backend mints the `id` and records `setBy` and `setOn`. An empty `notice` leaves partners untold. |
+| POST | `console/announcements` | `{ kind, title, at, detail }` | `AnnouncementRecord`. `kind` is one of `noticeKinds` in `reference`. |
+| POST | `console/windows/{id}/end` | | 204. Ends a window that is on, or cancels one still to come, with its notice. 404 when there is none. |
+| DELETE | `console/announcements/{id}` | | 204. 404 when there is none. |
+
+The page checks each action before sending it (a tile picked, `from` in the
+future and before `to`, a heading), and the backend checks again.
 
 ## Outside services
 

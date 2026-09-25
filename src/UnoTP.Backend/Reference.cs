@@ -76,7 +76,8 @@ public sealed record ReferenceData(
     IReadOnlyList<RequiredDocumentGroup> RequiredDocuments,
     IReadOnlyList<string> IdentificationNotes,
     IReadOnlyList<string> DashboardNotes,
-    IReadOnlyList<string> Declarations);
+    IReadOnlyList<string> Declarations,
+    IReadOnlyList<string> NoticeKinds);
 
 /// <summary>The limits and rules the pages check against. The backend checks them again on save.</summary>
 /// <param name="SourcingAgency">The agency type that chooses how an application is sourced.</param>

@@ -348,4 +348,9 @@ public sealed record ApplicationRecord(
     string Branch,
     string State,
     string? Fdr,
-    string Step);
+    string Step,
+    string Scheme = "",
+    IReadOnlyList<MilestoneRecord>? Milestones = null);
+
+/// <summary>A step in an application's history, and when it was reached; <c>At</c> is null for one not reached yet.</summary>
+public sealed record MilestoneRecord(string Step, DateTime? At);

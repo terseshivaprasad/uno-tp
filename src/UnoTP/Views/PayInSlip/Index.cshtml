@@ -6,7 +6,7 @@
     // and made you search before it would show anything; this one opens on the
     // last fourteen days of applications, which is every one a slip can still be
     // made for, and keeps the search for narrowing that down.
-    var earliest = PayInSlipViewModel.Earliest;
+    var earliest = Model.Earliest;
     var today = PayInSlipViewModel.Today;
     var listed = Model.Listed.ToList();
     var pending = listed.Count(r => r.State == "pending" && !r.Blocked);
@@ -26,7 +26,7 @@
         <div class="csi-rail__note">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 6.5V12l3.5 2.5"></path></svg>
             <div>
-                <div class="csi-rail__note-title">Raised in the last @PayInSlipViewModel.WindowDays days</div>
+                <div class="csi-rail__note-title">Raised in the last @Model.WindowDays days</div>
                 <p>An older application has cancelled itself, so its cheque can no longer be paid in against it.</p>
             </div>
         </div>
@@ -49,7 +49,7 @@
     <div class="csi-card">
         <div class="csi-drafts__head">
             <h1 class="csi-card__title csi-card__title--plain">Pay In Slip Generation &mdash; Axis</h1>
-            <p class="csi-drafts__sub">Every application raised in the last @PayInSlipViewModel.WindowDays days whose money is coming by cheque or DD. @pending of @listed.Count @(pending == 1 ? "is" : "are") ready for a slip@(blocked > 0 ? $", and {blocked} {(blocked == 1 ? "is" : "are")} held back for acceptance" : "").</p>
+            <p class="csi-drafts__sub">Every application raised in the last @Model.WindowDays days whose money is coming by cheque or DD. @pending of @listed.Count @(pending == 1 ? "is" : "are") ready for a slip@(blocked > 0 ? $", and {blocked} {(blocked == 1 ? "is" : "are")} held back for acceptance" : "").</p>
         </div>
 
         <form class="pis-form" id="pisForm" novalidate>
@@ -101,7 +101,7 @@
             </div>
 
             <p class="csi-error" id="pisError" hidden></p>
-            <p class="csi-hint" id="pisScope">Showing the last @PayInSlipViewModel.WindowDays days &mdash; @earliest.ToString("dd/MM/yyyy") to @today.ToString("dd/MM/yyyy").</p>
+            <p class="csi-hint" id="pisScope">Showing the last @Model.WindowDays days &mdash; @earliest.ToString("dd/MM/yyyy") to @today.ToString("dd/MM/yyyy").</p>
         </form>
 
         @if (blocked > 0)
@@ -162,15 +162,24 @@
                         <td class="su-table__act">
                             @if (r.Blocked)
                             {
-                                <button type="button" class="csi-link" data-chase>Send link</button>
+                                <form method="post" asp-action="SendAcceptance">
+                                    <input type="hidden" name="appNo" value="@r.AppNo" />
+                                    <button type="submit" class="csi-link" data-loader="Sending the acceptance link&hellip;">Send link</button>
+                                </form>
                             }
                             else if (r.State == "pending")
                             {
-                                <button type="button" class="csi-link" data-make>Generate</button>
+                                <form method="post" asp-action="Generate">
+                                    <input type="hidden" name="appNo" value="@r.AppNo" />
+                                    <button type="submit" class="csi-link" data-loader="Generating the slip&hellip;">Generate</button>
+                                </form>
                             }
                             else if (r.State == "generated")
                             {
-                                <button type="button" class="csi-link" data-make>Reprint</button>
+                                <form method="post" asp-action="Generate">
+                                    <input type="hidden" name="appNo" value="@r.AppNo" />
+                                    <button type="submit" class="csi-link" data-loader="Reprinting the slip&hellip;">Reprint</button>
+                                </form>
                             }
                             else
                             {
@@ -200,4 +209,9 @@
 @section Scripts {
     <script src="~/js/console.js"></script>
     <script src="~/js/classic-payin-slip.js" asp-append-version="true"></script>
+    @if (ViewData["Toast"] is string toast)
+    {
+        @* What the last post came to, said once. *@
+        <script>window.showToast(@Json.Serialize(toast));</script>
+    }
 }

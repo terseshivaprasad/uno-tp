@@ -178,7 +178,8 @@ public sealed class MockReference : IReferenceApi
             "I have met every holder, seen the original documents, and the uploads are true copies of them.",
             "The deposit terms above, including the rate and that it locks on realisation, were read out to the investor.",
             "I have not received or promised any cash consideration outside this application.",
-        ]);
+        ],
+        NoticeKinds: ["Rate change", "Maintenance"]);
 
     private static readonly AppConfig Config = new(
         SourcingAgency: SourcingAgency,

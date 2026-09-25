@@ -7,7 +7,7 @@
     // This one opens on the last fourteen days of applications - every one still
     // in flight - and keeps the search for reaching a particular application, or
     // everything under one folio.
-    var earliest = ViewApplicationViewModel.Earliest;
+    var earliest = Model.Earliest;
     var today = ViewApplicationViewModel.Today;
     var listed = Model.Listed.ToList();
     var all = listed.Concat(Model.Older).ToList();
@@ -20,8 +20,8 @@
         <div class="csi-rail__note">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 6.5V12l3.5 2.5"></path></svg>
             <div>
-                <div class="csi-rail__note-title">The last @ViewApplicationViewModel.WindowDays days</div>
-                <p>An unpaid application cancels itself after @ViewApplicationViewModel.WindowDays days, so everything still in flight was raised inside that window.</p>
+                <div class="csi-rail__note-title">The last @Model.WindowDays days</div>
+                <p>An unpaid application cancels itself after @Model.WindowDays days, so everything still in flight was raised inside that window.</p>
             </div>
         </div>
         <div class="csi-rail__note">
@@ -50,7 +50,7 @@
     <div class="csi-card">
         <div class="csi-drafts__head">
             <h1 class="csi-card__title csi-card__title--plain">View Application</h1>
-            <p class="csi-drafts__sub">Every application raised in the last @ViewApplicationViewModel.WindowDays days. @listed.Count listed, @(open == 1 ? "one of them is" : $"{open} of them are") still waiting on someone. Search by number or folio to reach an older one.</p>
+            <p class="csi-drafts__sub">Every application raised in the last @Model.WindowDays days. @listed.Count listed, @(open == 1 ? "one of them is" : $"{open} of them are") still waiting on someone. Search by number or folio to reach an older one.</p>
         </div>
 
         <form class="pis-form" id="vaForm" novalidate>
@@ -111,12 +111,12 @@
             </div>
 
             <p class="csi-error" id="vaError" hidden></p>
-            <p class="csi-hint" id="vaScope">Showing the last @ViewApplicationViewModel.WindowDays days &mdash; @earliest.ToString("dd/MM/yyyy") to @today.ToString("dd/MM/yyyy").</p>
+            <p class="csi-hint" id="vaScope">Showing the last @Model.WindowDays days &mdash; @earliest.ToString("dd/MM/yyyy") to @today.ToString("dd/MM/yyyy").</p>
         </form>
 
         <p class="va-flag">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 11v6"></path><circle cx="12" cy="7.5" r=".7" fill="currentColor"></circle></svg>
-            <span><strong>A date search reaches back @ViewApplicationViewModel.WindowDays days</strong> &mdash; an older application has booked or cancelled itself. Search by number to reach one, or by folio for everything an investor has. A new customer has no folio until their first deposit books.</span>
+            <span><strong>A date search reaches back @Model.WindowDays days</strong> &mdash; an older application has booked or cancelled itself. Search by number to reach one, or by folio for everything an investor has. A new customer has no folio until their first deposit books.</span>
         </p>
 
         <div class="su-filters">

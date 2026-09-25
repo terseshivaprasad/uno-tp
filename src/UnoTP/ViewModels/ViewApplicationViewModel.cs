@@ -3,19 +3,20 @@ using UnoTP.Backend;
 namespace UnoTP.ViewModels;
 
 /// <summary>View Application: the partner's applications, to look one up.</summary>
-public class ViewApplicationViewModel(IReadOnlyList<ApplicationRecord> applications)
+public class ViewApplicationViewModel(IReadOnlyList<ApplicationRecord> applications, int windowDays)
 {
     // The old ViewApplication screen asked for an application number before it
     // would show anything, and had no way to reach an investor's other
     // applications at all. This one opens on the last fourteen days - every
     // application still in flight, because one that goes unpaid for that long
     // cancels itself - and searches by application number or by folio.
-    public const int WindowDays = ShortUrlViewModel.EligibleDays;
+    // The backend's cancellation window (GET config).
+    public int WindowDays { get; } = windowDays;
 
     public static DateTime Today => DateTime.Today;
 
     // The oldest application day the list opens on.
-    public static DateTime Earliest => Today.AddDays(-(WindowDays - 1));
+    public DateTime Earliest => Today.AddDays(-(WindowDays - 1));
 
     // Where an application has got to. The key drives the filter; the label is
     // what the pill says and the text what the row's status cell says.
@@ -55,7 +56,10 @@ public class ViewApplicationViewModel(IReadOnlyList<ApplicationRecord> applicati
         string State,
         string? Fdr,
         // The wizard step an unfinished application stopped on.
-        string Step)
+        string Step,
+        int WindowDays,
+        string SchemeName,
+        IReadOnlyList<MilestoneRecord> Milestones)
     {
         public DateTime Applied => Today.AddDays(-DaysOld);
 
@@ -65,7 +69,7 @@ public class ViewApplicationViewModel(IReadOnlyList<ApplicationRecord> applicati
 
         public AppState Status => States.First(s => s.Key == State);
 
-        public string Scheme => $"Samruddhi · {(Cumulative ? "cumulative" : "non-cumulative")}";
+        public string Scheme => $"{SchemeName} · {(Cumulative ? "cumulative" : "non-cumulative")}";
 
         public string Tenure => Months % 12 == 0 ? $"{Months / 12} year{(Months == 12 ? "" : "s")}" : $"{Months} months";
 
@@ -100,60 +104,22 @@ public class ViewApplicationViewModel(IReadOnlyList<ApplicationRecord> applicati
 
         public string Tag => Digital ? "Digital" : "Physical";
 
-        // How far down the six milestones the application has come. Everything
-        // the dialog shows about its progress follows from this one number.
-        private int Reached => State switch
-        {
-            "progress" => 2,
-            "awaiting" => Digital ? 3 : 4,
-            "review" => 5,
-            "booked" => 6,
-            _ => 3,
-        };
-
-        // The application's own history, as far as it goes. A step not yet
-        // reached carries no date, and a cancelled application ends on the
-        // cancellation rather than on a step it never took.
-        public List<Milestone> Timeline
-        {
-            get
-            {
-                var reached = Reached;
-                List<Milestone> steps = [];
-
-                void Step(int n, string label, int dayOffset) =>
-                    steps.Add(new Milestone(
-                        label,
-                        reached >= n ? Applied.AddDays(dayOffset).ToString("dd/MM/yyyy") : "pending",
-                        reached >= n));
-
-                Step(1, "Application raised", 0);
-                Step(2, "Documents uploaded", 0);
-                Step(3, "Submitted for verification", 1);
-                Step(4, Digital ? "Investor accepted the deposit" : "Signed application received", 2);
-                Step(5, "Payment received", 3);
-                Step(6, "Booked · FDR issued", 4);
-
-                if (State == "cancelled")
-                {
-                    steps.Add(new Milestone(
-                        $"Cancelled · unpaid for {WindowDays} days",
-                        Applied.AddDays(WindowDays).ToString("dd/MM/yyyy"),
-                        true));
-                }
-
-                return steps;
-            }
-        }
+        // The application's own history, as the backend dates it. A step not yet
+        // reached carries no date.
+        public List<Milestone> Timeline =>
+            [.. Milestones.Select(m => new Milestone(m.Step, m.At?.ToString("dd/MM/yyyy") ?? "pending", m.At is not null))];
     }
 
     /// <summary>The partner's applications, from the backend.</summary>
-    public IReadOnlyList<ApplicationRow> Rows { get; } = applications.Select(ToRow).ToList();
+    public IReadOnlyList<ApplicationRow> Rows => rows ??= applications.Select(ToRow).ToList();
+
+    private List<ApplicationRow>? rows;
 
     // The backend dates each application; the page counts its days against the window.
-    private static ApplicationRow ToRow(ApplicationRecord r) => new(
+    private ApplicationRow ToRow(ApplicationRecord r) => new(
         r.AppNo, r.Folio, r.Investor, r.Pan, r.Amount, r.Cumulative, r.Months, r.Payout, r.Holders,
-        (Today - r.Applied.Date).Days, r.Digital, r.Instrument, r.Branch, r.State, r.Fdr, r.Step);
+        (Today - r.Applied.Date).Days, r.Digital, r.Instrument, r.Branch, r.State, r.Fdr, r.Step,
+        WindowDays, r.Scheme, r.Milestones ?? []);
 
     // The list the page opens on: everything raised inside the window, newest
     // first, with the applications that still need someone at the top of each day.

@@ -22,7 +22,7 @@
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 2.5H14l5 5v13a1 1 0 0 1-1 1H6.5a1.5 1.5 0 0 1-1.5-1.5V4a1.5 1.5 0 0 1 1.5-1.5z"></path><path d="M14 2.5v5h5"></path></svg>
             <div>
                 <div class="csi-rail__note-title">A pending application</div>
-                <p>Started in the last @ShortUrlViewModel.EligibleDays days and waiting on the investor.</p>
+                <p>Started in the last @Model.EligibleDays days and waiting on the investor.</p>
             </div>
         </div>
         <div class="csi-rail__note">
@@ -53,11 +53,11 @@
         <div class="su-notice">
             <svg class="su-notice__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 7v6"></path><circle cx="12" cy="16.8" r=".8" fill="currentColor"></circle></svg>
             <div>
-                <div class="su-notice__title">An unpaid application is cancelled after @ShortUrlViewModel.EligibleDays days</div>
+                <div class="su-notice__title">An unpaid application is cancelled after @Model.EligibleDays days</div>
                 <p>
-                    The investor has @ShortUrlViewModel.EligibleDays days from the day the application is created to pay for and accept the FD.
+                    The investor has @Model.EligibleDays days from the day the application is created to pay for and accept the FD.
                     If they have not by then, the application cancels itself and a new one has to be started &mdash; so only applications
-                    from the last @ShortUrlViewModel.EligibleDays days are listed here, and each row says how long it has left.
+                    from the last @Model.EligibleDays days are listed here, and each row says how long it has left.
                     @if (urgent > 0)
                     {
                         <strong>@urgent @(urgent == 1 ? "application has" : "applications have") 3 days or fewer left.</strong>
@@ -100,7 +100,7 @@
             <tbody id="suRows">
                 @foreach (var l in Model.Rows)
                 {
-                    <tr data-state="@l.State" data-validity="@ShortUrlViewModel.Purposes.First(x => x.Label == l.Purpose).Validity"
+                    <tr data-state="@l.State" data-validity="@Model.Purposes.First(x => x.Key == l.PurposeKey).Validity"
                         data-search="@($"{l.AppNo} {l.Investor} {l.Contact} {l.Purpose} {l.Status}".ToLowerInvariant())">
                         <td data-label="Application">
                             <strong>@l.AppNo</strong>
@@ -114,7 +114,10 @@
                         <td class="su-table__act">
                             @if (l.State == "none")
                             {
-                                <button type="button" class="csi-link" data-send>Send link</button>
+                                <form method="post" asp-action="Send">
+                                    <input type="hidden" name="appNo" value="@l.AppNo" /><input type="hidden" name="purpose" value="@l.PurposeKey" />
+                                    <button type="submit" class="csi-link" data-loader="Sending the link&hellip;">Send link</button>
+                                </form>
                             }
                             else if (l.State == "done")
                             {
@@ -122,7 +125,10 @@
                             }
                             else
                             {
-                                <button type="button" class="csi-link" data-send>Regenerate</button>
+                                <form method="post" asp-action="Send">
+                                    <input type="hidden" name="appNo" value="@l.AppNo" /><input type="hidden" name="purpose" value="@l.PurposeKey" />
+                                    <button type="submit" class="csi-link" data-loader="Sending a new link&hellip;">Regenerate</button>
+                                </form>
                             }
                         </td>
                     </tr>
@@ -148,4 +154,9 @@
 @section Scripts {
     <script src="~/js/console.js"></script>
     <script src="~/js/classic-short-url.js" asp-append-version="true"></script>
+    @if (ViewData["Toast"] is string toast)
+    {
+        @* What the last post came to, said once. *@
+        <script>window.showToast(@Json.Serialize(toast));</script>
+    }
 }

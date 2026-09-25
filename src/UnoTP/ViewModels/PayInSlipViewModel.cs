@@ -4,18 +4,18 @@ using UnoTP.Backend;
 namespace UnoTP.ViewModels;
 
 /// <summary>Pay In Slip Generation: the applications paying on paper, and their slips.</summary>
-public class PayInSlipViewModel(IReadOnlyList<SlipRecord> slips)
+public class PayInSlipViewModel(IReadOnlyList<SlipRecord> slips, int windowDays)
 {
     // The window the page works to. It is the Short URL page's rule seen from the
     // other side: an application that goes unpaid for this long cancels itself, so
     // a slip can only be made for one raised inside it. The list therefore opens on
     // the last fourteen days rather than on nothing.
-    public const int WindowDays = ShortUrlViewModel.EligibleDays;
+    public int WindowDays { get; } = windowDays;
 
     public static DateTime Today => DateTime.Today;
 
     // The earliest application date a slip can still be made for.
-    public static DateTime Earliest => Today.AddDays(-(WindowDays - 1));
+    public DateTime Earliest => Today.AddDays(-(WindowDays - 1));
 
     // Where the slip for an application has got to. A lapsed application has no
     // slip and never will; it is listed only when someone searches for it by
@@ -47,7 +47,9 @@ public class PayInSlipViewModel(IReadOnlyList<SlipRecord> slips)
         bool Digital,
         bool Accepted,
         string State,
-        string? SlipNo)
+        string? SlipNo,
+        DateTime? AcceptedOn,
+        int WindowDays)
     {
         public DateTime Applied => Today.AddDays(-DaysOld);
 
@@ -68,7 +70,7 @@ public class PayInSlipViewModel(IReadOnlyList<SlipRecord> slips)
         // application has nothing to wait for.
         public string TagNote => !Digital
             ? "signed form on file"
-            : Accepted ? $"accepted {Applied.AddDays(1):dd/MM}" : "acceptance pending";
+            : AcceptedOn is { } on ? $"accepted {on:dd/MM}" : Accepted ? "accepted" : "acceptance pending";
 
         // A blocked row says so where its slip would be, so the reason it cannot
         // be ticked is next to the tick that is missing.
@@ -88,12 +90,14 @@ public class PayInSlipViewModel(IReadOnlyList<SlipRecord> slips)
     }
 
     /// <summary>Every application paying on paper, from the backend.</summary>
-    public IReadOnlyList<SlipRow> Rows { get; } = slips.Select(ToRow).ToList();
+    public IReadOnlyList<SlipRow> Rows => rows ??= slips.Select(ToRow).ToList();
+
+    private List<SlipRow>? rows;
 
     // The backend dates each application; the page counts its days against the window.
-    private static SlipRow ToRow(SlipRecord r) => new(
+    private SlipRow ToRow(SlipRecord r) => new(
         r.AppNo, r.Investor, r.Amount, r.Instrument, r.InstrumentNo, r.DrawnOn,
-        (Today - r.Applied.Date).Days, r.Branch, r.Digital, r.Accepted, r.State, r.SlipNo);
+        (Today - r.Applied.Date).Days, r.Branch, r.Digital, r.Accepted, r.State, r.SlipNo, r.AcceptedOn, WindowDays);
 
     // The list the page opens on: everything raised inside the window, newest
     // first, with the slips still to be made at the top of each day.

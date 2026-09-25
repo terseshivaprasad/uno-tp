@@ -3,17 +3,18 @@ using UnoTP.Backend;
 namespace UnoTP.ViewModels;
 
 /// <summary>Short URL: the links sent to investors, and the applications that can carry one.</summary>
-public class ShortUrlViewModel(IReadOnlyList<SentLinkRecord> sent, IReadOnlyList<PendingRecord> pending)
+public class ShortUrlViewModel(IReadOnlyList<SentLinkRecord> sent, IReadOnlyList<PendingRecord> pending, AppConfig config)
 {
     // What the investor is asked to do once the link opens. The purpose decides
     // how long the link stays valid, so the two travel together.
     public record LinkPurpose(string Key, string Label, string Detail, string Validity);
 
-    public static readonly LinkPurpose[] Purposes =
-    {
-        new("payment", "Pay for the FD", "The payment link for an application awaiting money", "48 hours"),
-        new("acceptance", "Accept the FD", "The investor confirms the deposit's terms and the FDR", "72 hours"),
-    };
+    // How long each stays open is the backend's rule (GET config).
+    public IReadOnlyList<LinkPurpose> Purposes { get; } =
+    [
+        new("payment", "Pay for the FD", "The payment link for an application awaiting money", $"{config.LinkValidityHours.GetValueOrDefault("payment")} hours"),
+        new("acceptance", "Accept the FD", "The investor confirms the deposit's terms and the FDR", $"{config.LinkValidityHours.GetValueOrDefault("acceptance")} hours"),
+    ];
 
     // Where a link got to. The key drives the filter; the label and tone are what
     // the row shows.
@@ -29,7 +30,7 @@ public class ShortUrlViewModel(IReadOnlyList<SentLinkRecord> sent, IReadOnlyList
     };
 
     // A short link is one row: who it went to, what it asks for, and where it got to.
-    public record SentLink(string AppNo, string Investor, string Contact, string Purpose, string Sent, string Expires, string State, string Status, string Tone, int AppDays)
+    public record SentLink(string AppNo, string Investor, string Contact, string Purpose, string Sent, string Expires, string State, string Status, string Tone, int AppDays, int EligibleDays, string PurposeKey)
     {
         public int DaysLeft => EligibleDays - AppDays;
 
@@ -44,7 +45,7 @@ public class ShortUrlViewModel(IReadOnlyList<SentLinkRecord> sent, IReadOnlyList
 
     // A link as the backend reports it, written the way the row says it. The link
     // itself is never held here - it goes to the investor and nowhere else.
-    private static SentLink ToRow(SentLinkRecord l)
+    private SentLink ToRow(SentLinkRecord l)
     {
         var purpose = Purposes.FirstOrDefault(p => p.Key == l.Purpose) ?? Purposes[0];
         var state = States.FirstOrDefault(s => s.Key == l.State) ?? States[1];
@@ -60,7 +61,7 @@ public class ShortUrlViewModel(IReadOnlyList<SentLinkRecord> sent, IReadOnlyList
             l.AppNo, l.Investor, l.Contact, purpose.Label,
             Ago((int)Math.Round((now - l.SentAt).TotalHours)), expires, state.Key,
             state.Key == "done" ? (purpose.Key == "payment" ? "Paid" : "Accepted") : state.Text,
-            state.Tone, (Today - l.Applied.Date).Days);
+            state.Tone, (Today - l.Applied.Date).Days, EligibleDays, purpose.Key);
     }
 
     private static DateTime Today => DateTime.Today;
@@ -84,24 +85,23 @@ public class ShortUrlViewModel(IReadOnlyList<SentLinkRecord> sent, IReadOnlyList
     // application, so it never reaches the picker.
     // An application that goes unpaid for this long is cancelled by itself, so it
     // can neither carry a link nor stay in the list.
-    public const int EligibleDays = 14;
+    public int EligibleDays { get; } = config.CancellationDays;
 
     // A pending application, with the mobile the link would go to. It comes from
     // the application itself, masked: the partner never types it and never sees
     // it in full.
-    public record PendingApplication(string AppNo, string Investor, int DaysOld, string Mobile, string Due)
-    {
-        public bool Eligible => DaysOld <= EligibleDays;
-    }
+    public record PendingApplication(string AppNo, string Investor, int DaysOld, string Mobile, string Due);
 
     /// <summary>The applications waiting on the investor that can still carry a link.</summary>
     public IReadOnlyList<PendingApplication> EligibleApplications { get; } = pending
         .Select(p => new PendingApplication(p.AppNo, p.Investor, (Today - p.Applied.Date).Days, p.Mobile, p.Due))
-        .Where(p => p.Eligible)
+        .Where(p => p.DaysOld <= config.CancellationDays)
         .ToList();
 
     /// <summary>The links already sent, from the backend.</summary>
-    public IReadOnlyList<SentLink> Sent { get; } = sent.Select(ToRow).ToList();
+    public IReadOnlyList<SentLink> Sent => sentRows ??= sent.Select(ToRow).ToList();
+
+    private List<SentLink>? sentRows;
 
     // The list the page shows: every eligible application still without a link,
     // then the links already sent.
@@ -111,7 +111,7 @@ public class ShortUrlViewModel(IReadOnlyList<SentLinkRecord> sent, IReadOnlyList
             .Select(a => new SentLink(
                 a.AppNo, a.Investor, a.Mobile,
                 a.Due == "payment" ? Purposes[0].Label : Purposes[1].Label,
-                "\u2014", "\u2014", "none", "No link sent", "text-muted", a.DaysOld))
+                "\u2014", "\u2014", "none", "No link sent", "text-muted", a.DaysOld, EligibleDays, a.Due == "payment" ? Purposes[0].Key : Purposes[1].Key))
             .Concat(Sent.Where(s => s.AppDays <= EligibleDays))
             .OrderBy(r => r.State == "done")
             .ThenByDescending(r => r.DaysLeft);

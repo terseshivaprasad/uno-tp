@@ -11,6 +11,9 @@ public class AdminViewModel(FeatureSet features, ConsoleBoard board)
 
     public FeatureFlags Flags => features.Flags;
 
+    /// <summary>The kinds a notice can be, from the backend.</summary>
+    public IReadOnlyList<string> NoticeKinds { get; init; } = [];
+
     // The windows that still matter: the one running now and the ones to come.
     // An ended window is kept in the model but not listed; it explains nothing
     // the partner can still run into.

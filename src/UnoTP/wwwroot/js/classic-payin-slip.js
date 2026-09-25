@@ -25,7 +25,6 @@
   var WINDOW = { from: read(from), to: read(to) };
   var filter = { mode: 'dates', from: WINDOW.from, to: WINDOW.to, appNo: '' };
   var page = 1;
-  var made = 0;
 
   // ---- The date boxes ------------------------------------------------------
   // Three parts read as one yyyy-mm-dd, or as null while any part is unfilled or
@@ -180,43 +179,8 @@
   prev.addEventListener('click', function () { if (page > 1) { page--; render(); } });
   next.addEventListener('click', function () { page++; render(); });
 
-  // ---- Generating ----------------------------------------------------------
-  // The row takes the slip number; the branch is the application's own and does
-  // not change. A row that already had a slip keeps its place and gets a fresh
-  // number.
-  function generate(row) {
-    made++;
-    var slip = 'AXPIS' + ('000' + ((made * 137 + 4100) % 9000 + 1000)).slice(-4);
-    row.dataset.state = 'generated';
-    var status = row.querySelector('[data-status]');
-    status.textContent = 'Generated';
-    status.className = 'text-muted';
-    row.querySelector('[data-slip-detail]').textContent = slip;
-    var act = row.querySelector('[data-make]');
-    if (act) act.textContent = 'Reprint';
-  }
-
-  // One row, one slip.
-  rows.forEach(function (r) {
-    var act = r.querySelector('[data-make]');
-    if (!act) return;
-    act.addEventListener('click', function () {
-      var reprint = r.dataset.state === 'generated';
-      generate(r);
-      window.showToast((reprint ? 'Pay-in slip reprinted for ' : 'Pay-in slip generated for ') + r.dataset.branch + '.');
-    });
-  });
-
-  // A digital application with no acceptance yet cannot have a slip, so its row
-  // offers the acceptance link instead. Once the investor accepts, the row turns
-  // into an ordinary one waiting for its slip.
-  rows.forEach(function (r) {
-    var chase = r.querySelector('[data-chase]');
-    if (!chase) return;
-    chase.addEventListener('click', function () {
-      window.showToast('Acceptance link sent. The slip can be generated once the investor accepts.');
-    });
-  });
+  // Generating a slip and sending the acceptance link are posts: the backend
+  // issues the slip number and sends the link, and the page comes back with them.
 
   syncMode();
   render();

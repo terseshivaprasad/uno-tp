@@ -137,10 +137,12 @@
                                         <span class="su-nolink">&mdash;</span>
                                         break;
                                     case "disabled":
-                                        <button type="button" class="csi-link" data-end>End now</button>
+                                        <form method="post" asp-action="EndWindow"><input type="hidden" name="id" value="@w!.Id" /><input type="hidden" name="live" value="true" />
+                                            <button type="submit" class="csi-link" data-loader="Ending the window&hellip;">End now</button></form>
                                         break;
                                     case "scheduled":
-                                        <button type="button" class="csi-link" data-cancel>Cancel</button>
+                                        <form method="post" asp-action="EndWindow"><input type="hidden" name="id" value="@w!.Id" /><input type="hidden" name="live" value="false" />
+                                            <button type="submit" class="csi-link" data-loader="Cancelling the window&hellip;">Cancel</button></form>
                                         break;
                                     default:
                                         <button type="button" class="csi-link" data-schedule>Disable&hellip;</button>
@@ -153,14 +155,17 @@
             </table>
 
             <h2 class="adm-form__title" id="admScheduleTitle">Disable a tile for a window</h2>
-            <form class="adm-form" id="admWindowForm" novalidate aria-labelledby="admScheduleTitle">
+            <form class="adm-form" id="admWindowForm" method="post" asp-action="AddWindow" novalidate aria-labelledby="admScheduleTitle">
+                @* The two moments, as the script reads them off the boxes below. *@
+                <input type="hidden" name="from" id="admFromValue" />
+                <input type="hidden" name="to" id="admToValue" />
                 <div class="csi-field">
                     <span class="csi-label">Tiles to disable</span>
                     <div class="adm-picks" id="admPicks">
                         @foreach (var f in Model.Features.Where(f => Model.Flags.IsOn(f.Key)))
                         {
                             <label class="adm-pick" data-pick="@f.Key">
-                                <input type="checkbox" value="@f.Key">
+                                <input type="checkbox" name="features" value="@f.Key">
                                 <span>@f.Name</span>
                             </label>
                         }
@@ -181,7 +186,7 @@
 
                 <div class="csi-field">
                     <label class="csi-label" for="admTitle">Notice to partners</label>
-                    <input class="csi-control adm-control--wide" id="admTitle" maxlength="90" autocomplete="off" placeholder="e.g. New FD booking is unavailable on Sunday night">
+                    <input class="csi-control adm-control--wide" id="admTitle" name="notice" maxlength="90" autocomplete="off" placeholder="e.g. New FD booking is unavailable on Sunday night">
                     <p class="csi-hint">Shown in the bell until the window ends, with the tiles it affects. Leave it blank for a short window and only the greyed tile will say anything.</p>
                 </div>
 
@@ -247,7 +252,8 @@
                                 }
                                 else
                                 {
-                                    <button type="button" class="csi-link" data-remove>Remove</button>
+                                    <form method="post" asp-action="RemoveNotice"><input type="hidden" name="id" value="@n.Id" />
+                                        <button type="submit" class="csi-link" data-loader="Removing the notice&hellip;">Remove</button></form>
                                 }
                             </td>
                         </tr>
@@ -258,7 +264,8 @@
             <p class="su-empty" id="admNoticesEmpty" hidden>Nothing in the bell. Partners see no notices at all.</p>
 
             <h2 class="adm-form__title" id="admNoticeTitle">Add a notification</h2>
-            <form class="adm-form" id="admNoticeForm" novalidate aria-labelledby="admNoticeTitle">
+            <form class="adm-form" id="admNoticeForm" method="post" asp-action="AddNotice" novalidate aria-labelledby="admNoticeTitle">
+                <input type="hidden" name="at" id="admAtValue" />
                 <p class="va-flag">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 11v6"></path><circle cx="12" cy="7.5" r=".7" fill="currentColor"></circle></svg>
                     <span><strong>This tells, it does not disable.</strong> Use it for a rate change, or for a service behind the wizard such as DMS. To take a classic tile off the air, set a window above.</span>
@@ -268,14 +275,13 @@
                     <div class="csi-field">
                         <span class="csi-label">Kind</span>
                         <div class="adm-kind">
-                            <label class="csi-radio">
-                                <input type="radio" name="admNoticeKind" value="Rate change" checked>
-                                <span>Rate change</span>
-                            </label>
-                            <label class="csi-radio">
-                                <input type="radio" name="admNoticeKind" value="Maintenance">
-                                <span>Maintenance</span>
-                            </label>
+                            @for (var k = 0; k < Model.NoticeKinds.Count; k++)
+                            {
+                                <label class="csi-radio">
+                                    <input type="radio" name="kind" value="@Model.NoticeKinds[k]" checked="@(k == 0)">
+                                    <span>@Model.NoticeKinds[k]</span>
+                                </label>
+                            }
                         </div>
                     </div>
                     <div class="csi-field">
@@ -286,12 +292,12 @@
 
                 <div class="csi-field">
                     <label class="csi-label" for="admNoticeHead">Notice</label>
-                    <input class="csi-control adm-control--wide" id="admNoticeHead" maxlength="90" autocomplete="off" placeholder="e.g. FD rates change from 1 October">
+                    <input class="csi-control adm-control--wide" id="admNoticeHead" name="title" maxlength="90" autocomplete="off" placeholder="e.g. FD rates change from 1 October">
                 </div>
 
                 <div class="csi-field">
                     <label class="csi-label" for="admNoticeDetail">What it means for work in flight</label>
-                    <textarea class="csi-control adm-textarea" id="admNoticeDetail" rows="2" maxlength="260" placeholder="e.g. An application booked and paid before the change keeps the old rate card."></textarea>
+                    <textarea class="csi-control adm-textarea" id="admNoticeDetail" name="detail" rows="2" maxlength="260" placeholder="e.g. An application booked and paid before the change keeps the old rate card."></textarea>
                 </div>
 
                 <p class="csi-error" id="admNoticeError" hidden></p>
@@ -310,4 +316,9 @@
 @section Scripts {
     <script src="~/js/console.js"></script>
     <script src="~/js/classic-admin.js" asp-append-version="true"></script>
+    @if (ViewData["Toast"] is string toast)
+    {
+        @* What the last post came to, said once. *@
+        <script>window.showToast(@Json.Serialize(toast));</script>
+    }
 }

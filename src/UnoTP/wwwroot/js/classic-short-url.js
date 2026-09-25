@@ -33,31 +33,8 @@
 
   search.addEventListener('input', function () { page = 1; render(); });
 
-  // Regenerating a link in the list swaps its code, restarts its clock and puts
-  // it back to not opened; the pill counts follow.
-  function recount() {
-    pills.forEach(function (pill) {
-      var key = pill.dataset.state;
-      var n = key === 'all' ? rows.length : rows.filter(function (r) { return r.dataset.state === key; }).length;
-      pill.querySelector('.su-pill__n').textContent = n;
-    });
-  }
-
-  rows.forEach(function (row) {
-    var regen = row.querySelector('[data-regen]');
-    if (!regen) return;
-    regen.addEventListener('click', function () {
-      row.querySelector('[data-label="Sent"]').textContent = 'just now';
-      row.querySelector('[data-label="Expires"]').textContent = 'in ' + regen.dataset.validity;
-      var state = row.querySelector('[data-label="State"]');
-      state.textContent = 'Not opened';
-      state.className = 'text-muted';
-      row.dataset.state = 'open';
-      recount();
-      render();
-      window.showToast('New link generated — the old one stops working.');
-    });
-  });
+  // Sending and regenerating a link are posts: the backend sends it, and the
+  // page comes back with the link as it now stands.
 
   function matches(row) {
     var q = search.value.trim().toLowerCase();

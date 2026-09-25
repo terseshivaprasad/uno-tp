@@ -44,8 +44,24 @@ internal static class MockWindow
 
 public sealed class MockPayInSlips : IPayInSlipApi
 {
+    // The slips issued while the app runs, by application: they stand over the
+    // generated list, the way the backend's own records would.
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string> Issued = new();
+    private static int slipSeq = 5100;
+
     public Task<IReadOnlyList<SlipRecord>> SlipsAsync(CancellationToken ct = default) =>
         Task.FromResult<IReadOnlyList<SlipRecord>>(Build());
+
+    // A slip is issued only for an application still inside the window, paid on
+    // paper, and - for a digital one - accepted. A reprint issues a fresh number.
+    public Task<SlipRecord?> GenerateAsync(string appNo, CancellationToken ct = default)
+    {
+        var row = Build().FirstOrDefault(r => r.AppNo == appNo);
+        if (row is null || row.State is not ("pending" or "generated") || row.Digital && !row.Accepted) return Task.FromResult<SlipRecord?>(null);
+        var slip = $"AXPIS{Interlocked.Increment(ref slipSeq):D4}";
+        Issued[appNo] = slip;
+        return Task.FromResult<SlipRecord?>(row with { State = "generated", SlipNo = slip });
+    }
 
     // Two dozen applications paying by paper, every value derived from the row
     // number so the list is the same on every load. Twenty sit inside the window
@@ -78,9 +94,11 @@ public sealed class MockPayInSlips : IPayInSlipApi
             // too; among the rest it is the newest digital ones still waiting.
             var digital = i % 3 != 0;
             var accepted = !digital || made || daysOld > 4;
+            var appNo = $"FBBMFL26F{i * 6421 % 90000 + 10000:D5}";
+            var issued = Issued.GetValueOrDefault(appNo);
 
             rows.Add(new SlipRecord(
-                $"FBBMFL26F{i * 6421 % 90000 + 10000:D5}",
+                appNo,
                 $"{first[i % first.Length]}•••• {last[i * 3 % last.Length]}•••••",
                 amounts[i % amounts.Length],
                 i % 5 == 0 ? "DD" : "Cheque",
@@ -90,8 +108,10 @@ public sealed class MockPayInSlips : IPayInSlipApi
                 MockBranches.Names[i % MockBranches.Names.Length],
                 digital,
                 accepted,
-                state,
-                made ? $"AXPIS{i * 317 % 9000 + 1000:D4}" : null));
+                issued is not null ? "generated" : state,
+                issued ?? (made ? $"AXPIS{i * 317 % 9000 + 1000:D4}" : null),
+                // A digital application is accepted the day after it is raised.
+                digital && accepted ? DateTime.Today.AddDays(-daysOld + 1) : null));
         }
 
         return rows;
@@ -100,6 +120,10 @@ public sealed class MockPayInSlips : IPayInSlipApi
 
 public sealed class MockLinks : ILinkApi
 {
+    // The links sent while the app runs, by application and purpose: each stands
+    // over the generated list, and the one before it stops working.
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<(string AppNo, string Purpose), DateTime> Sent = new();
+
     // How long a link stays valid, by what it asks for.
     private static readonly (string Key, int Hours)[] Purposes = [("payment", 48), ("acceptance", 72)];
 
@@ -139,7 +163,35 @@ public sealed class MockLinks : ILinkApi
                 DateTime.Today.AddDays(-appDays)));
         }
 
+        // What was sent here since stands over what the list says.
+        var pending = PendingAsync().Result;
+        foreach (var ((appNo, purpose), at) in Sent)
+        {
+            var hours = Purposes.First(p => p.Key == purpose).Hours;
+            var i = links.FindIndex(l => l.AppNo == appNo);
+            if (i >= 0) links[i] = links[i] with { Purpose = purpose, SentAt = at, ExpiresAt = at.AddHours(hours), State = "open" };
+            else if (pending.FirstOrDefault(p => p.AppNo == appNo) is { } p)
+                links.Add(new SentLinkRecord(appNo, p.Investor, p.Mobile, purpose, at, at.AddHours(hours), "open", p.Applied));
+            else if (AwaitingAcceptance(appNo) is { } slip)
+                links.Add(new SentLinkRecord(appNo, slip.Investor, "mobile on the application", purpose, at, at.AddHours(hours), "open", slip.Applied));
+        }
         return Task.FromResult<IReadOnlyList<SentLinkRecord>>(links);
+    }
+
+    // A digital application paying on paper that the investor has still to accept.
+    private static SlipRecord? AwaitingAcceptance(string appNo) =>
+        new MockPayInSlips().SlipsAsync().Result.FirstOrDefault(s => s.AppNo == appNo && s.Digital && !s.Accepted);
+
+    // A link goes out only for a purpose there is one for, against an application
+    // that is waiting on the investor or already carries a link.
+    public async Task<SentLinkRecord?> SendAsync(string appNo, string purpose, CancellationToken ct = default)
+    {
+        if (Purposes.All(p => p.Key != purpose)) return null;
+        var known = (await PendingAsync(ct)).Any(p => p.AppNo == appNo) || (await SentAsync(ct)).Any(l => l.AppNo == appNo)
+            || purpose == "acceptance" && AwaitingAcceptance(appNo) is not null;
+        if (!known) return null;
+        Sent[(appNo, purpose)] = DateTime.Now;
+        return (await SentAsync(ct)).FirstOrDefault(l => l.AppNo == appNo);
     }
 
     // The in-flight applications, aged off their position in the list so the
@@ -214,9 +266,35 @@ internal static class MockApplicationList
                 MockBranches.Names[i % MockBranches.Names.Length],
                 state,
                 state == "booked" ? $"FD25{i * 4931 % 900000 + 100000:D6}" : null,
-                steps[i % steps.Length]));
+                steps[i % steps.Length],
+                "Samruddhi",
+                Milestones(state, i % 3 != 0, DateTime.Today.AddDays(-daysOld))));
         }
 
         return rows;
+    }
+
+    // How far an application has come, step by step, each dated as it was
+    // reached. A cancelled application ends on its cancellation.
+    private static List<MilestoneRecord> Milestones(string state, bool digital, DateTime applied)
+    {
+        var reached = state switch
+        {
+            "progress" => 2,
+            "awaiting" => digital ? 3 : 4,
+            "review" => 5,
+            "booked" => 6,
+            _ => 3,
+        };
+        List<MilestoneRecord> steps = [];
+        void Step(int n, string label, int day) => steps.Add(new MilestoneRecord(label, reached >= n ? applied.AddDays(day) : null));
+        Step(1, "Application raised", 0);
+        Step(2, "Documents uploaded", 0);
+        Step(3, "Submitted for verification", 1);
+        Step(4, digital ? "Investor accepted the deposit" : "Signed application received", 2);
+        Step(5, "Payment received", 3);
+        Step(6, "Booked · FDR issued", 4);
+        if (state == "cancelled") steps.Add(new MilestoneRecord($"Cancelled · unpaid for {MockWindow.Days} days", applied.AddDays(MockWindow.Days)));
+        return steps;
     }
 }
