@@ -63,17 +63,34 @@ In the environment, use a double underscore, for example `Backend__BaseUrl`.
   `category`, the `emp*` fields, `formNo`, `typedFormNo`, `ckyc`, `savedAt`),
   plus `docs`, `attempts`, `reads` and `log`. See `Applications.cs` for every
   field. It never contains a file or an Aadhaar number.
+- **Joint holders:** `joint` maps a holder type (`02` the second holder, `03`
+  the third) to `{ holder, poaType }`, added on Investor Information. Their
+  documents sit in `docs`, `attempts` and `reads` under keys that begin with it
+  (`h02-pan`, `h03-poa`). A log entry carries `holder` (`02`, `03`) when it is a
+  joint holder's, and `removed` once that holder is taken off. CKYC (`ckyc`)
+  is fetched for the investor only, so it never takes a joint holder's
+  photograph or proof of address off.
 
 ## Documents (DMS)
 
 | Method | Route | Body | Returns |
 |---|---|---|---|
-| POST | `applications/{appNo}/documents/{slot}` | multipart `file` | `2xx`. Files the copy against the slot. |
-| DELETE | `applications/{appNo}/documents/{slot}` | | `2xx`, or 404 if there is no copy (the app treats that as done) |
-| POST | `applications/{appNo}/documents/{slot}/refused` | multipart `file` | `{ ref, keptUntil }`. Keeps a refused copy aside for analysis, off the application. |
-| GET | `applications/{appNo}/documents/{slot}` | | The copy, with `Content-Type` and `Content-Disposition`, or 404 |
+| POST | `applications/{appNo}/documents/{holder}/{slot}` | multipart `file` | `2xx`. Files the copy against the holder's slot. |
+| DELETE | `applications/{appNo}/documents/{holder}/{slot}` | | `2xx`, or 404 if there is no copy (the app treats that as done) |
+| POST | `applications/{appNo}/documents/{holder}/{slot}/refused` | multipart `file` | `{ ref, keptUntil }`. Keeps a refused copy aside for analysis, off the application. |
+| GET | `applications/{appNo}/documents/{holder}/{slot}` | | The copy, with `Content-Type` and `Content-Disposition`, or 404 |
 
-Slots are `form`, `pan`, `photo`, `poa`, `payment` and `empproof`.
+`{holder}` is the holder type DMS files under:
+
+| Code | Holder | Slots |
+|---|---|---|
+| `00` | Not holder-specific | `form`, `payment`, `empproof` |
+| `01` | Investor | `pan`, `photo`, `poa` |
+| `02` | Second holder | `pan`, `photo`, `poa` |
+| `03` | Third holder | `pan`, `photo`, `poa` |
+
+A holder never changes type: the second holder can only be removed once there
+is no third, so a third never becomes the second.
 
 A slot holds one copy:
 
@@ -100,15 +117,20 @@ Each application in these lists carries its `applied` date. The app counts the
 
 ## Outside services
 
-The app asks each check separately, in this order: identification, masking (for
-an Aadhaar only), OCR, then whoever answers for what was read. Only after that
-does it file the copy with DMS.
+The app asks each check separately, in this order: identification, OCR, then
+whoever answers for what was read. Only after that does it file the copy with
+DMS.
+
+- **An Aadhaar is filed unmasked.** If OCR can't read all 12 digits of its
+  number (the copy is masked, or not clear enough), the copy is refused, counts
+  as an attempt, and is kept aside like any other refusal. The masking service
+  is not called by the upload step.
 
 | Service | Interface | With Idfy.Api | Without IDfy (`external/{name}/`) |
 |---|---|---|---|
 | NSDL | `INsdlService` | Not covered by IDfy | `POST verify { pan, dob, name }` → `{ pairOk, nameOk }` |
-| Identification | `IDocumentIdentifier` | `POST /api/documents/validate` with `docType`, for a PAN, Aadhaar, passport, driving licence or voter ID | `POST identify` (multipart `file`, `expected`, `type`) → `{ matches, hint }`. Used for a cheque or a utility bill. |
-| Masking | `IMaskingService` | `POST /api/aadhaar/mask`. A copy with no number to mask (`id_number_found: false`) is already masked. | `POST check` (multipart `file`, `consent`) → `{ masked }` |
+| Identification | `IDocumentIdentifier` | `POST /api/documents/validate`: with `docType` for a PAN; with no `docType` for a proof of address, whose `detected_doc_type` says which proof it is (Aadhaar, passport, driving licence or voter ID) | `POST identify` (multipart `file`, `expected`, `type`) → `{ matches, hint, type }`. Used for a cheque, and for a proof of address IDfy does not know (a utility bill). For a proof of address `type` is sent empty and the answer's `type` says which proof it is: `Aadhaar`, `Passport`, `Driving Licence`, `Voter ID` or `Utility bill`. That becomes the proof's type on the application: it is never chosen. |
+| Masking | `IMaskingService` | `POST /api/aadhaar/mask`. A copy with no number to mask (`id_number_found: false`) is already masked. | `POST check` (multipart `file`, `consent`) → `{ masked }`. Not called by the upload step, which relies on OCR reading the whole number instead. |
 | OCR | `IOcrService` | `/api/pan/extract`, `/api/aadhaar/extract` (QR code read first), `/api/driving-license/extract`, `/api/passport/extract`, `/api/voter-id/extract` | `POST read` (multipart `file`, `kind`, `type`, `pan`, `dob`, `name`, `consent`) → `OcrReading`. Used for a utility bill or a cheque. |
 | Verification | `IVerificationService` | `/api/driving-license/verify/sync` and `/api/passport/verify/sync` (both with the holder's date of birth), `/api/voter-id/verify/sync`. `id_found` counts as confirmed. | `POST proof { proofType, reading, holderDob }` and `POST account { account, bank }` → `{ confirmed, verifier, notAsked }`. Used for an Aadhaar (IDfy has no UIDAI source check) and for bank accounts. |
 | PAN–Aadhaar link | `IPanAadhaarLinkService` | `/api/pan-aadhaar-link/verify/sync` | `POST check { pan, aadhaarNumber }` → `{ link }` |
@@ -124,6 +146,8 @@ does it file the copy with DMS.
   (it is on the last page), an unreadable licence number, or a voter ID EPIC
   number that IDfy returned partly masked. The copy is filed and Operations
   settle the address.
+- **The link is asked only for a holder with no folio.** A holder on a folio
+  never has the PAN–Aadhaar link asked, whatever they file.
 - **The link check never costs a copy.** If the PAN–Aadhaar link can't be
   asked, the PAN or Aadhaar that prompted it is still filed. The link is
   marked "not checked" and asked again when an Aadhaar is next filed.

@@ -91,13 +91,8 @@ public class InvestorIdentificationController(
         if (await search.IdentifiedAsync(Saved) is not { Record: { } record }) return Back();
 
         // Every search that is proceeded from opens an application of its own, and
-        // the backend gives it its number. The PAN copy is on it already when the
-        // register holds one or the PAN was established from one, so the next step
-        // does not ask again.
-        var onFolio = record.Folio.Length > 0;
-        var holder = new Holder(record.Pan, record.Dob, record.Name, record.Folio, record.Docs.Pan,
-            record.Address, onFolio ? record.Docs : null);
-        return Opened(await applications.OpenAsync(holder));
+        // the backend gives it its number. A PAN copy already on it is not asked again.
+        return Opened(await applications.OpenAsync(HolderSearch.ApplicationHolder(record)));
     }
 
     /// <summary>A draft picked up again, under the number it was opened with.</summary>
@@ -115,7 +110,7 @@ public class InvestorIdentificationController(
     private IActionResult Opened(Application? app)
     {
         if (app is null) return Back();
-        HttpContext.Session.CurrentApplication = app.AppNo;
+        HttpContext.Session.SetCurrentApplication(app.AppNo);
         Saved = null;
         return RedirectToAction(nameof(UploadDocumentsController.Index), "UploadDocuments");
     }

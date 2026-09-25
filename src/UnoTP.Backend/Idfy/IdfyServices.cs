@@ -28,6 +28,16 @@ internal static class IdfyDocTypes
         _ => null,
     };
 
+    /// <summary>The proof of address a type IDfy detected is, or null for any other document.</summary>
+    public static string? ProofOf(string? docType) => docType?.ToLowerInvariant() switch
+    {
+        "ind_aadhaar" => "Aadhaar",
+        "ind_passport" => "Passport",
+        "ind_driving_license" => "Driving Licence",
+        "ind_voter_id" => "Voter ID",
+        _ => null,
+    };
+
     public static string Named(string docType) => docType switch
     {
         "ind_pan" => "a PAN card",
@@ -39,13 +49,31 @@ internal static class IdfyDocTypes
     };
 }
 
-/// <summary>Identification by IDfy's document validation: readable, and the kind of document expected.</summary>
+/// <summary>
+/// Identification by IDfy's document validation: readable, and the kind of document
+/// expected. A proof of address is validated against no type at all, and IDfy says
+/// which it is; one IDfy does not know - a utility bill - goes to the service before it.
+/// </summary>
 public sealed class IdfyDocumentIdentifier(
     IdfyClient idfy,
     [FromKeyedServices(IdfyServiceCollectionExtensions.Fallback)] IDocumentIdentifier fallback) : IDocumentIdentifier
 {
+    public const string NotAProof = "It reads as a PAN card, which is not a proof of address. Upload an Aadhaar, passport, driving licence, voter ID or utility bill.";
+
     public async Task<Identification> IdentifyAsync(DocumentKind expected, string type, UploadFile file, CancellationToken ct = default)
     {
+        if (expected == DocumentKind.ProofOfAddress && type.Length == 0)
+        {
+            var found = (await idfy.ValidateAsync(file, null, ct)).Result!;
+            // A PAN card is an identity document IDfy knows, but proves no address.
+            if (string.Equals(found.DetectedDocType, IdfyDocTypes.Pan, StringComparison.OrdinalIgnoreCase))
+                return new Identification(false, NotAProof);
+            if (IdfyDocTypes.ProofOf(found.DetectedDocType) is not { } proof) return await fallback.IdentifyAsync(expected, type, file, ct);
+            return found.IsReadable == true
+                ? new Identification(true, Type: proof)
+                : new Identification(false, $"It reads as {IdfyDocTypes.Named(found.DetectedDocType!)}, but could not be read. Upload a sharper scan, with the whole card in view.");
+        }
+
         var docType = IdfyDocTypes.Of(expected, type);
         if (docType is null) return await fallback.IdentifyAsync(expected, type, file, ct);
 

@@ -14,6 +14,10 @@ namespace UnoTP.ViewModels;
 /// <param name="FolioSearch">Whether the holder can be searched by folio as well as by PAN and date of birth.</param>
 /// <param name="NameRetry">Whether a name NSDL does not match can be typed from the PAN card and tried again.</param>
 /// <param name="Locked">Once a joint holder is added, the record only: no searching again.</param>
+/// <param name="EstablishHere">Whether a PAN with no folio is established in the block,
+/// from its PAN copy. A joint holder's is put to NSDL once the copy is filed under
+/// their documents instead, and the block only says so.</param>
+/// <param name="KnownName">The name the holder goes by now, where NSDL has since verified one.</param>
 public sealed record HolderIdentificationBlock(
     InvestorIdentificationViewModel Search,
     string Ids,
@@ -21,7 +25,9 @@ public sealed record HolderIdentificationBlock(
     string? Prefix = null,
     bool FolioSearch = true,
     bool NameRetry = true,
-    bool Locked = false)
+    bool Locked = false,
+    bool EstablishHere = true,
+    string? KnownName = null)
 {
     public bool Embedded => Prefix is not null;
 

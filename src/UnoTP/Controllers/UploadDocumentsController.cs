@@ -48,8 +48,8 @@ public class UploadDocumentsController(
     {
         if (await LoadAsync() is not { } model) return NotFound();
         var doc = model.State.Docs.GetValueOrDefault(slot);
-        if (doc is null || doc.Before) return NotFound();
-        var copy = await documents.CopyAsync(model.AppNo, slot);
+        if (doc is null || doc.Before || model.DmsOf(slot) is not { } at) return NotFound();
+        var copy = await documents.CopyAsync(model.AppNo, at.Holder, at.Slot);
         if (copy is null) return NotFound();
         Response.Headers.CacheControl = "no-store";
         Response.Headers["X-Content-Type-Options"] = "nosniff";
@@ -89,7 +89,7 @@ public class UploadDocumentsController(
     // the session that is not theirs finds nothing.
     private async Task<UploadDocumentsViewModel?> LoadAsync()
     {
-        var appNo = HttpContext.Session.CurrentApplication;
+        var appNo = HttpContext.Session.CurrentApplication();
         var app = appNo is null ? null : await applications.FindAsync(appNo);
         return app is null ? null : ActivatorUtilities.CreateInstance<UploadDocumentsViewModel>(services, app, HttpContext.Session);
     }
@@ -110,7 +110,7 @@ public class UploadDocumentsController(
         }
         else
         {
-            foreach (var slot in model.Dropped) await documents.DeleteAsync(model.AppNo, slot);
+            await model.SettleAsync();
         }
         if (model.Said is not null) HttpContext.Session.Write(FlashKey(model), model.Said);
         return model.Complete && model.Said is null

@@ -79,9 +79,7 @@ public sealed class HolderSearch(IInvestorApi investors, INsdlService nsdl, IOcr
             problem = "Upload the PAN copy as a PDF or a JPEG";
         else
         {
-            using var ms = new MemoryStream();
-            await copy.CopyToAsync(ms);
-            bytes = ms.ToArray();
+            bytes = await UploadDocumentsViewModel.ReadAllAsync(copy);
             if (!UploadDocumentsViewModel.LooksLike(bytes, copy)) problem = "That file is not a readable PDF or JPEG";
         }
         if (problem is not null) return saved! with { CopyError = problem };
@@ -125,6 +123,30 @@ public sealed class HolderSearch(IInvestorApi investors, INsdlService nsdl, IOcr
             await model.RunNsdlAsync(saved.Tried ?? saved.Ocr ?? "", typed: saved.Tried is not null);
         }
         return model.Identified && model.Record is not null ? model : null;
+    }
+
+    /// <summary>
+    /// A joint holder found by their search, checked again from the session: a folio
+    /// the register holds, or a PAN with no folio - which is put to NSDL once their
+    /// PAN copy is filed, so they are added on it as it stands. Null otherwise.
+    /// </summary>
+    public async Task<InvestorIdentificationViewModel?> FoundAsync(SearchState? saved)
+    {
+        var model = NewModel();
+        if (!await RestoreAsync(model, saved)) return null;
+        return model.At is Stage.Found or Stage.Pending && model.Record is not null ? model : null;
+    }
+
+    /// <summary>
+    /// The holder an application carries, from the record that identified them. The
+    /// PAN copy is on it already when the register holds one or the PAN was
+    /// established from one; what the folio holds is carried only for a holder on one.
+    /// </summary>
+    public static Holder ApplicationHolder(InvestorIdentificationViewModel.Holder record)
+    {
+        var onFolio = record.Folio.Length > 0;
+        return new Holder(record.Pan, record.Dob, record.Name, record.Folio, record.Docs.Pan,
+            record.Address, onFolio ? record.Docs : null);
     }
 
     // The search as the session holds it, checked again. False with nothing checked.

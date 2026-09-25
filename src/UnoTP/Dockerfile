@@ -1,5 +1,5 @@
 # Built from src/ (see render.yaml): the app and the two backend libraries it references.
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
 COPY UnoTP/UnoTP.csproj UnoTP/
@@ -10,7 +10,7 @@ RUN dotnet restore UnoTP/UnoTP.csproj
 COPY . .
 RUN dotnet publish UnoTP/UnoTP.csproj -c Release -o /app --no-restore
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 COPY --from=build /app .
 

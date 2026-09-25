@@ -155,14 +155,18 @@ else
                 <span class="csi-avatar__initials">@r.Initials</span>
             </span>
             <div class="csi-result__who">
-                <div class="csi-result__name">@r.Heading</div>
+                <div class="csi-result__name">@(Model.KnownName is { Length: > 0 } known ? known : r.Heading)</div>
                 <div class="csi-result__meta">
                     @if (r.Id is not null)
                     {
                         <span class="csi-result__id">@r.Id</span>
                     }
-                    <span class="csi-chip @(m.Kind switch { "Existing customer" => "csi-chip--success", "New investor" => "csi-chip--new", _ => null })">@m.Kind</span>
-                    <span class="csi-result__detail">@m.Detail</span>
+                    @{
+                        var joinedNew = newPan && !Model.EstablishHere;
+                        var kind = joinedNew ? "New investor" : m.Kind;
+                    }
+                    <span class="csi-chip @(kind switch { "Existing customer" => "csi-chip--success", "New investor" => "csi-chip--new", _ => null })">@kind</span>
+                    <span class="csi-result__detail">@(joinedNew ? "No folio against this PAN: it is checked with NSDL once the PAN copy is filed under Documents." : m.Detail)</span>
                 </div>
             </div>
             @* Back to the fields, still holding what was typed. *@
@@ -191,7 +195,7 @@ else
             }
         </dl>
 
-        @if (newPan)
+        @if (newPan && Model.EstablishHere)
         {
             @* A PAN with no folio is established here: the PAN copy is uploaded, read
                by OCR, and the PAN, date of birth and name are put to NSDL - all of it

@@ -79,24 +79,24 @@ public sealed class MockApplications(MockStore store, IPartner partner) : IAppli
 
     // ----- Documents ---------------------------------------------------------
 
-    public Task FileAsync(string appNo, string slot, UploadFile file, CancellationToken ct = default)
+    public Task FileAsync(string appNo, string holder, string slot, UploadFile file, CancellationToken ct = default)
     {
-        store.File(partner.Id, appNo, slot, file);
+        store.File(partner.Id, appNo, holder + "/" + slot, file);
         return Task.CompletedTask;
     }
 
-    public Task DeleteAsync(string appNo, string slot, CancellationToken ct = default)
+    public Task DeleteAsync(string appNo, string holder, string slot, CancellationToken ct = default)
     {
-        store.Delete(partner.Id, appNo, slot);
+        store.Delete(partner.Id, appNo, holder + "/" + slot);
         return Task.CompletedTask;
     }
 
     // Kept aside for a week under a reference of its own; the mock keeps nothing.
-    public Task<RefusedCopy> KeepRefusedAsync(string appNo, string slot, UploadFile file, CancellationToken ct = default) =>
+    public Task<RefusedCopy> KeepRefusedAsync(string appNo, string holder, string slot, UploadFile file, CancellationToken ct = default) =>
         Task.FromResult(new RefusedCopy(store.NextRejectRef(), InAWeek));
 
-    public Task<UploadFile?> CopyAsync(string appNo, string slot, CancellationToken ct = default) =>
-        Task.FromResult(store.Copy(partner.Id, appNo, slot));
+    public Task<UploadFile?> CopyAsync(string appNo, string holder, string slot, CancellationToken ct = default) =>
+        Task.FromResult(store.Copy(partner.Id, appNo, holder + "/" + slot));
 
     private static DateTime InAWeek => DateTime.Today.AddDays(7);
 }

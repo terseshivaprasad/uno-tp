@@ -1,0 +1,14 @@
+@model string?
+@*
+    What a proof of address was identified as, beside its label: the type once a
+    copy is taken, or that it will be set from the upload. Nothing where the proof
+    is not asked for (a null model).
+*@
+@if (Model is { Length: > 0 })
+{
+    <span class="cud-type">@Model</span>
+}
+else if (Model is not null)
+{
+    <span class="cud-optional">(set from the upload)</span>
+}

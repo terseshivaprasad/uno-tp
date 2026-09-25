@@ -100,6 +100,8 @@ app.Use(async (context, next) =>
     await next();
 });
 
+app.UseStaticFiles();
+
 app.UseRouting();
 
 app.UseSession();
@@ -109,9 +111,7 @@ app.UseFeatureOverrides();
 
 app.UseAuthorization();
 
-app.MapStaticAssets();
-app.MapControllers()
-   .WithStaticAssets();
+app.MapControllers();
 
 app.MapGet("/", () => Results.LocalRedirect("~/Dashboard"));
 

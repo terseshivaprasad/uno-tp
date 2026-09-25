@@ -2,7 +2,7 @@
 
 The new-design screens of Uno TP, set aside so the solution builds and serves only
 the classic pages. Nothing here is compiled, served or deployed: it sits outside
-`src/UnoTP`, which is the only project in `UnoTP.slnx` and the only folder the
+`src/UnoTP`, which is the only project in `UnoTP.sln` and the only folder the
 Dockerfile builds from.
 
 Paths mirror the repository, so a file goes back by moving it to the same path

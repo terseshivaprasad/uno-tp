@@ -29,6 +29,7 @@ public sealed class FeatureSet(FeatureFlags flags, IReadOnlyList<string>? overri
             ["renew"] = (f, on) => f.RenewFd = on,
             ["admin"] = (f, on) => f.Admin = on,
             ["demo"] = (f, on) => f.DemoData = on,
+            ["doc-identify"] = (f, on) => f.DocIdentification = on,
         };
 
     public FeatureFlags Flags { get; } = flags;

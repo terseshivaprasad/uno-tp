@@ -47,23 +47,23 @@ public sealed class BackendClient(HttpClient http, IPartner partner)
 
     // ----- Documents ---------------------------------------------------------
 
-    public Task FileAsync(string appNo, string slot, UploadFile file, CancellationToken ct = default) =>
-        Send(HttpMethod.Post, $"applications/{Seg(appNo)}/documents/{Seg(slot)}", Form(file), ct);
+    public Task FileAsync(string appNo, string holder, string slot, UploadFile file, CancellationToken ct = default) =>
+        Send(HttpMethod.Post, Doc(appNo, holder, slot), Form(file), ct);
 
     // Deleting a copy that is not there is not a failure.
-    public async Task DeleteAsync(string appNo, string slot, CancellationToken ct = default)
+    public async Task DeleteAsync(string appNo, string holder, string slot, CancellationToken ct = default)
     {
-        using var request = Request(HttpMethod.Delete, $"applications/{Seg(appNo)}/documents/{Seg(slot)}");
+        using var request = Request(HttpMethod.Delete, Doc(appNo, holder, slot));
         using var response = await SendAsync(request, ct);
         if (response.StatusCode != HttpStatusCode.NotFound) response.EnsureSuccessStatusCode();
     }
 
-    public Task<RefusedCopy> KeepRefusedAsync(string appNo, string slot, UploadFile file, CancellationToken ct = default) =>
-        Send<RefusedCopy>(HttpMethod.Post, $"applications/{Seg(appNo)}/documents/{Seg(slot)}/refused", Form(file), ct);
+    public Task<RefusedCopy> KeepRefusedAsync(string appNo, string holder, string slot, UploadFile file, CancellationToken ct = default) =>
+        Send<RefusedCopy>(HttpMethod.Post, Doc(appNo, holder, slot) + "/refused", Form(file), ct);
 
-    public async Task<UploadFile?> CopyAsync(string appNo, string slot, CancellationToken ct = default)
+    public async Task<UploadFile?> CopyAsync(string appNo, string holder, string slot, CancellationToken ct = default)
     {
-        using var request = Request(HttpMethod.Get, $"applications/{Seg(appNo)}/documents/{Seg(slot)}");
+        using var request = Request(HttpMethod.Get, Doc(appNo, holder, slot));
         using var response = await SendAsync(request, ct);
         if (response.StatusCode == HttpStatusCode.NotFound) return null;
         response.EnsureSuccessStatusCode();
@@ -73,6 +73,9 @@ public sealed class BackendClient(HttpClient http, IPartner partner)
             content.Headers.ContentType?.MediaType ?? "application/octet-stream",
             await content.ReadAsByteArrayAsync(ct));
     }
+
+    private static string Doc(string appNo, string holder, string slot) =>
+        $"applications/{Seg(appNo)}/documents/{Seg(holder)}/{Seg(slot)}";
 
     // ----- Registers ---------------------------------------------------------
 

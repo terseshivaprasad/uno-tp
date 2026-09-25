@@ -41,7 +41,9 @@ public class DashboardViewModel(FeatureSet features, ConsoleBoard board, string?
     private const string White = "stroke=\"#fff\" stroke-linecap=\"round\" stroke-linejoin=\"round\"";
     private const string Slate = "stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\"";
 
-    public IReadOnlyList<DashboardTile> NewFd => field ??=
+    private IReadOnlyList<DashboardTile>? newFd;
+
+    public IReadOnlyList<DashboardTile> NewFd => newFd ??=
     [
         // A new page with a plus.
         Tile("new-fd", "Create New FD", Sheet + $"<path d=\"M13 11.5v8M9 15.5h8\" {White} stroke-width=\"2.4\"></path>", "InvestorIdentification"),
@@ -54,7 +56,9 @@ public class DashboardViewModel(FeatureSet features, ConsoleBoard board, string?
         Tile("short-url", "Short URL", $"<g {Slate} stroke-width=\"2.8\"><path d=\"M10 14a4.5 4.5 0 0 0 6.4 0l3.2-3.2a4.5 4.5 0 0 0-6.4-6.4L11.6 6\"></path><path d=\"M14 10a4.5 4.5 0 0 0-6.4 0l-3.2 3.2a4.5 4.5 0 0 0 6.4 6.4l1.6-1.6\"></path></g>", "ShortUrl"),
     ];
 
-    public IReadOnlyList<DashboardTile> Services => field ??=
+    private IReadOnlyList<DashboardTile>? services;
+
+    public IReadOnlyList<DashboardTile> Services => services ??=
     [
         // Where an application stands: a clipboard with a tick.
         Tile("app-status", "Application status", "<rect x=\"4.5\" y=\"3.5\" width=\"15\" height=\"19\" rx=\"2\" fill=\"currentColor\"></rect><rect x=\"8.5\" y=\"1.5\" width=\"7\" height=\"4\" rx=\"1\" fill=\"currentColor\" stroke=\"#fff\" stroke-width=\"1.4\"></rect>"
@@ -65,7 +69,9 @@ public class DashboardViewModel(FeatureSet features, ConsoleBoard board, string?
     ];
 
     /// <summary>Console Admin, shown only while the Admin feature is on.</summary>
-    public IReadOnlyList<DashboardTile> Admin => field ??= features.Flags.Admin
+    private IReadOnlyList<DashboardTile>? admin;
+
+    public IReadOnlyList<DashboardTile> Admin => admin ??= features.Flags.Admin
         ?
         [
             // Sliders: three settings, each with its own knob.

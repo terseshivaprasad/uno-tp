@@ -1,0 +1,29 @@
+@model ReadCardsBlock
+@* What copies were read to say, and who confirmed it: a card per thing read, all
+   of one size. Where NSDL holds a PAN against another name, the name printed on
+   the card is typed in a row of its own under them and put to NSDL again. *@
+<div class="cud-read__cards">
+    @foreach (var item in Model.Items)
+    {
+        <partial name="_ReadCard" model="@(new ReadCardBlock(item))" />
+    }
+</div>
+@foreach (var item in Model.Items.Where(i => i.Retry is not null && Model.RetryUrl is not null))
+{
+    var retry = item.Retry!;
+    <div class="cud-retry @(retry.Error is null ? null : "is-invalid")" role="group" aria-labelledby="@(retry.Field)Label">
+        <div class="cud-retry__say">
+            <span class="cud-retry__title" id="@(retry.Field)Label">NSDL did not match the name</span>
+            <span class="cud-retry__text">Type the name exactly as printed on the PAN card, and NSDL is asked again.</span>
+        </div>
+        <div class="cud-retry__ask">
+            <input class="csi-control csi-control--caps @(retry.Error is null ? null : "is-invalid")" id="@retry.Field" name="@retry.Field" value="@retry.Value"
+                   maxlength="60" autocomplete="off" spellcheck="false" aria-label="Name exactly as printed on the PAN" aria-describedby="@(retry.Field)Error">
+            <button type="submit" class="csi-btn csi-btn--primary" formaction="@Model.RetryUrl" formnovalidate data-loader="Asking NSDL again&hellip;">Retry NSDL</button>
+        </div>
+        @if (retry.Error is not null)
+        {
+            <p class="csi-error cud-retry__error" id="@(retry.Field)Error" role="alert">@retry.Error</p>
+        }
+    </div>
+}

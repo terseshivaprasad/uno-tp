@@ -1,0 +1,158 @@
+@model DocSlotBlock
+@using M = UnoTP.ViewModels.UploadDocumentsViewModel
+@*
+    One document slot, the investor's on Upload Documents or a joint holder's on
+    Investor Information. Empty, the box is a label over the file picker, so a
+    click or a dropped file picks it; picked, the form posts through the slot's
+    Upload button. Filed, the box opens the copy and Replace picks another. A slot
+    standing outside its form names it, so its picker still posts with it.
+*@
+@{
+    var v = Model.View;
+    var form = Model.Form;
+    var key = v.Key;
+    var filed = v.Doc is not null;
+}
+<div class="cud-slot @(v.Error is not null ? "is-invalid" : null) @(v.Unconfirmed ? "is-unconfirmed" : null)" id="slot-@key" tabindex="-1">
+    <div class="cud-slot__frame">
+        @if (!v.Used)
+        {
+            @* A slot the application has no use for says so, and says why. *@
+            <span class="cud-slot__na">
+                <span class="cud-slot__na-mark" aria-hidden="true"></span>
+                <span class="cud-slot__na-text">
+                    <span class="cud-slot__na-title">Not applicable</span>
+                    <span class="cud-slot__na-why">@v.NotApplicable</span>
+                </span>
+            </span>
+        }
+        else if (filed)
+        {
+            <div class="cud-slot__tools">
+                <button type="button" class="cud-tool" popovertarget="preview-@key" title="View @v.Def.Label">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.8 12S5.5 5.5 12 5.5 22.2 12 22.2 12 18.5 18.5 12 18.5 1.8 12 1.8 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                    <span>View</span>
+                </button>
+                @* Three refused in a row and a filed document cannot be swapped here either. *@
+                @if (!v.Spent)
+                {
+                    <label class="cud-tool" for="file-@key" title="Replace @v.Def.Label">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 12a8.5 8.5 0 0 1-14.6 5.9"></path><path d="M3.5 12a8.5 8.5 0 0 1 14.6-5.9"></path><path d="M18.5 2.5V7H14"></path><path d="M5.5 21.5V17H10"></path></svg>
+                        <span>Replace</span>
+                    </label>
+                    <input type="file" id="file-@key" name="file_@key" accept="@v.Def.Accepts.Mime" hidden data-submit="upload-@key" form="@form">
+                }
+            </div>
+            <button type="button" class="cud-drop is-filled" popovertarget="preview-@key">
+                <span class="cud-drop__done">
+                    <span class="cud-drop__check" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+                    </span>
+                    <span class="cud-drop__file">@v.Doc!.FileName</span>
+                    <span class="cud-drop__size">@(v.Doc.Before ? "already on the application" : M.SizeOf(v.Doc.Size))</span>
+                </span>
+            </button>
+        }
+        else
+        {
+            <label class="cud-drop @(v.Locked is not null ? "is-locked" : null) @(v.Spent ? "is-spent" : null)" for="file-@key">
+                @if (v.Locked is not null)
+                {
+                    @* Nothing can be picked here yet, and what is in the way. *@
+                    <span class="cud-drop__locked">
+                        <span class="cud-drop__lock" aria-hidden="true">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10.5" width="14" height="9.5" rx="1.6"></rect><path d="M8.5 10.5V7.8a3.5 3.5 0 0 1 7 0v2.7"></path></svg>
+                        </span>
+                        <span class="cud-drop__title">@v.Locked</span>
+                        <span class="cud-drop__hint">The type decides what the copy is checked as, and with whom.</span>
+                    </span>
+                }
+                else
+                {
+                    <span class="cud-drop__idle">
+                        <span class="cud-drop__icon" aria-hidden="true">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16.5V4.5"></path><path d="M7.5 9L12 4.5 16.5 9"></path><path d="M4.5 15v3.5a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5V15"></path></svg>
+                        </span>
+                        <span class="cud-drop__title">Click to upload @v.Title</span>
+                        <span class="cud-drop__hint">Supported format: @v.Def.Accepts.Label (max. @(v.Def.Accepts.MaxMb) MB)</span>
+                        @if (v.Must is not null)
+                        {
+                            <span class="cud-drop__must">@v.Must</span>
+                        }
+                        @if (v.With is not null)
+                        {
+                            <span class="cud-drop__with">@v.With</span>
+                        }
+                    </span>
+                }
+                @* Over the whole box, so a click opens the picker and a file dropped on it lands in it. *@
+                <input class="cud-drop__input" type="file" id="file-@key" name="file_@key" accept="@v.Def.Accepts.Mime"
+                       disabled="@(v.Locked is not null || v.Spent)" aria-describedby="@(key)Error" data-submit="upload-@key" form="@form">
+            </label>
+        }
+        @* Shown only without a script; with one, picking a file presses it. *@
+        @if (v.Used && !v.Spent)
+        {
+            <button type="submit" class="csi-check cud-upload" id="upload-@key" name="slot" value="@key" formaction="@Model.UploadUrl" form="@form"
+                    data-loader="Checking the @v.Def.Label&hellip;" data-loader-hint="Identified, read by OCR, then checked with whoever stands behind it">Upload</button>
+        }
+    </div>
+    @if (v.Error is not null)
+    {
+        <p class="csi-error" id="@(key)Error" role="alert">
+            @v.Error
+            @if (v.ErrorLog is not null)
+            {
+                @* The history holds what the checks said, and the page is long. *@
+                <a class="cud-why" href="#log-@v.ErrorLog">See the history</a>
+            }
+        </p>
+    }
+    @if (filed && v.Doc!.Check.Length > 0)
+    {
+        <p class="cud-slot__check @(v.Doc.CheckKind.Length > 0 ? "is-" + v.Doc.CheckKind : null)">@v.Doc.Check</p>
+    }
+    @if (v.Tries is not null)
+    {
+        <p class="cud-slot__tries @(v.Spent ? "is-spent" : null)">@v.Tries</p>
+    }
+</div>
+
+@if (filed)
+{
+    @* The copy itself, where the browser can show it. *@
+    <div class="cud-sheet cud-preview-pop" id="preview-@key" popover role="dialog" aria-modal="true" aria-labelledby="preview-@(key)-title">
+        <div class="cud-preview__sheet">
+            <header class="cud-preview__head">
+                <div>
+                    <p class="cud-preview__kind">@v.Def.Label</p>
+                    <h2 class="cud-preview__title" id="preview-@(key)-title">@v.Doc!.FileName</h2>
+                </div>
+                <button type="button" class="cud-preview__close" popovertarget="preview-@key" popovertargetaction="hide" aria-label="Close">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+                </button>
+            </header>
+            <div class="cud-preview__body">
+                @if (v.Doc.Before)
+                {
+                    <p class="cud-preview__none">This copy was filed before this step, so there is nothing here to show.</p>
+                }
+                else
+                {
+                    var src = Url.Action("Copy", "UploadDocuments", new { slot = key, v = v.Doc.GetHashCode() });
+                    if (v.Doc.ContentType.StartsWith("image/"))
+                    {
+                        <img src="@src" alt="@v.Def.Label" loading="lazy">
+                    }
+                    else
+                    {
+                        <iframe src="@src" title="@v.Def.Label" loading="lazy"></iframe>
+                    }
+                }
+            </div>
+            <footer class="cud-preview__foot">
+                <span class="cud-preview__meta">@(v.Doc.Before ? "Already on the application" : $"{M.SizeOf(v.Doc.Size)} · {v.Doc.ContentType}")</span>
+            </footer>
+        </div>
+    </div>
+}

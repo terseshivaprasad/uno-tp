@@ -77,6 +77,13 @@ public sealed class UploadState
     /// <summary>Set once the KYC is to come from CERSAI; it cannot be taken back.</summary>
     public bool Ckyc { get; set; }
 
+    /// <summary>Set when the investor's post goes to an address other than the
+    /// permanent one, which is then proved with a copy of its own.</summary>
+    public bool MailDifferent { get; set; }
+
+    /// <summary>What the investor's mailing address is proved with.</summary>
+    public string MailPoaType { get; set; } = "";
+
     public DateTime? SavedAt { get; set; }
 
     // ----- Documents
@@ -91,7 +98,39 @@ public sealed class UploadState
     /// <summary>Every attempt, newest first.</summary>
     public List<LogEntry> Log { get; init; } = [];
 
+    /// <summary>
+    /// The joint holders added on Investor Information, by holder type: 02 the second
+    /// holder, 03 the third. Their documents are in <see cref="Docs"/>,
+    /// <see cref="Attempts"/> and <see cref="Reads"/> under keys that start with it
+    /// ("h02-pan"), and filed with DMS under it.
+    /// </summary>
+    public Dictionary<string, JointHolder> Joint { get; init; } = [];
+
     public int AttemptsOf(string key) => Attempts.GetValueOrDefault(key);
+}
+
+/// <summary>A joint holder on the application: who they are, and the proofs of address chosen for them.</summary>
+public sealed class JointHolder
+{
+    /// <summary>Who they are; a holder with no folio takes their name once NSDL verifies it.</summary>
+    public required Holder Holder { get; set; }
+
+    /// <summary>
+    /// Where NSDL stands on a holder with no folio, asked once their PAN copy is
+    /// filed: empty until then, "verified", "name" when it holds the PAN and date of
+    /// birth against another name, or "failed" when it holds no such pair.
+    /// </summary>
+    public string Nsdl { get; set; } = "";
+
+    /// <summary>The name last put to NSDL: OCR's reading, or the one typed after it.</summary>
+    public string NsdlName { get; set; } = "";
+
+    public string PoaType { get; set; } = "";
+
+    /// <summary>Set when their post goes to an address other than the permanent one.</summary>
+    public bool MailDifferent { get; set; }
+
+    public string MailPoaType { get; set; } = "";
 }
 
 /// <summary>
@@ -143,6 +182,10 @@ public sealed class LogEntry(string id, string document, int attempt, string at,
     public int Attempt { get; } = attempt;
     public string At { get; } = at;
     public string File { get; } = file;
+    /// <summary>Whose document it was: a joint holder's type (02, 03), "removed" once
+    /// that holder was taken off, or empty for the investor's and the application's own.</summary>
+    public string Holder { get; set; } = "";
+
     public string Mark { get; set; } = "Checking";
     public string Kind { get; set; } = "";
     public List<LogStage> Stages { get; init; } = [];

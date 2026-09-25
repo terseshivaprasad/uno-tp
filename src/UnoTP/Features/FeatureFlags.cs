@@ -37,6 +37,13 @@ public sealed class FeatureFlags
     /// <summary>The test data card at the foot of Investor Identification. Off in production.</summary>
     public bool DemoData { get; set; } = true;
 
+    /// <summary>
+    /// Document identification says which proof of address a copy is, and that
+    /// sets its type after the upload. Off, the type is chosen from a drop-down
+    /// first, and identification only checks the copy is that proof.
+    /// </summary>
+    public bool DocIdentification { get; set; } = true;
+
     /// <summary>The switch behind a console feature key, as ?ff= and the tiles name it.</summary>
     public bool IsOn(string key) => key switch
     {

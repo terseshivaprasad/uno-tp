@@ -14,7 +14,7 @@
     var views = M.Slots.ToDictionary(d => d.Key, Model.View);
     var physical = s.AppType == M.Physical;
     var poaUsed = views["poa"].Used;
-    var paymentUsed = views["payment"].Used;
+    var mailUsed = views["mail"].Used;
     var employee = s.Category == M.EmployeeCategory;
     var left = Model.Outstanding();
 
@@ -34,6 +34,9 @@
 }
 
 @functions {
+    // .NET 8 Razor leaves the body of a tag helper inside a helper below async with
+    // nothing to await (fixed in Razor 9); nothing runs differently for it.
+#pragma warning disable CS1998
     // A field's error line, when the last post left one.
     async Task FieldError(string key)
     {
@@ -45,158 +48,10 @@
         await Task.CompletedTask;
     }
 
-    // One document slot. Empty, the box is a label over the file picker, so a
-    // click or a dropped file picks it; picked, the form posts through the slot's
-    // Upload button. Filed, the box opens the copy and Replace picks another.
-    // A slot standing outside the form names it, so its picker still posts with it.
+    // One document slot, drawn by the partial Investor Information shares.
     async Task Slot(M.SlotView v, string? form = null)
     {
-        var key = v.Key;
-        var filed = v.Doc is not null;
-        <div class="cud-slot @(v.Error is not null ? "is-invalid" : null) @(v.Unconfirmed ? "is-unconfirmed" : null)" id="slot-@key" tabindex="-1">
-            <div class="cud-slot__frame">
-                @if (!v.Used)
-                {
-                    @* A slot the application has no use for says so, and says why. *@
-                    <span class="cud-slot__na">
-                        <span class="cud-slot__na-mark" aria-hidden="true"></span>
-                        <span class="cud-slot__na-text">
-                            <span class="cud-slot__na-title">Not applicable</span>
-                            <span class="cud-slot__na-why">@v.NotApplicable</span>
-                        </span>
-                    </span>
-                }
-                else if (filed)
-                {
-                    <div class="cud-slot__tools">
-                        <button type="button" class="cud-tool" popovertarget="preview-@key" title="View @v.Def.Label">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.8 12S5.5 5.5 12 5.5 22.2 12 22.2 12 18.5 18.5 12 18.5 1.8 12 1.8 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                            <span>View</span>
-                        </button>
-                        @* Three refused in a row and a filed document cannot be swapped here either. *@
-                        @if (!v.Spent)
-                        {
-                            <label class="cud-tool" for="file-@key" title="Replace @v.Def.Label">
-                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 12a8.5 8.5 0 0 1-14.6 5.9"></path><path d="M3.5 12a8.5 8.5 0 0 1 14.6-5.9"></path><path d="M18.5 2.5V7H14"></path><path d="M5.5 21.5V17H10"></path></svg>
-                                <span>Replace</span>
-                            </label>
-                            <input type="file" id="file-@key" name="file_@key" accept="@v.Def.Accepts.Mime" hidden data-submit="upload-@key" form="@form">
-                        }
-                    </div>
-                    <button type="button" class="cud-drop is-filled" popovertarget="preview-@key">
-                        <span class="cud-drop__done">
-                            <span class="cud-drop__check" aria-hidden="true">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
-                            </span>
-                            <span class="cud-drop__file">@v.Doc!.FileName</span>
-                            <span class="cud-drop__size">@(v.Doc.Before ? "already on the application" : M.SizeOf(v.Doc.Size))</span>
-                        </span>
-                    </button>
-                }
-                else
-                {
-                    <label class="cud-drop @(v.Locked is not null ? "is-locked" : null) @(v.Spent ? "is-spent" : null)" for="file-@key">
-                        @if (v.Locked is not null)
-                        {
-                            @* Nothing can be picked here yet, and what is in the way. *@
-                            <span class="cud-drop__locked">
-                                <span class="cud-drop__lock" aria-hidden="true">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10.5" width="14" height="9.5" rx="1.6"></rect><path d="M8.5 10.5V7.8a3.5 3.5 0 0 1 7 0v2.7"></path></svg>
-                                </span>
-                                <span class="cud-drop__title">@v.Locked</span>
-                                <span class="cud-drop__hint">The type decides what the copy is checked as, and with whom.</span>
-                            </span>
-                        }
-                        else
-                        {
-                            <span class="cud-drop__idle">
-                                <span class="cud-drop__icon" aria-hidden="true">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16.5V4.5"></path><path d="M7.5 9L12 4.5 16.5 9"></path><path d="M4.5 15v3.5a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5V15"></path></svg>
-                                </span>
-                                <span class="cud-drop__title">Click to upload @v.Title</span>
-                                <span class="cud-drop__hint">Supported format: @v.Def.Accepts.Label (max. @(v.Def.Accepts.MaxMb) MB)</span>
-                                @if (v.Must is not null)
-                                {
-                                    <span class="cud-drop__must">@v.Must</span>
-                                }
-                                @if (v.With is not null)
-                                {
-                                    <span class="cud-drop__with">@v.With</span>
-                                }
-                            </span>
-                        }
-                        @* Over the whole box, so a click opens the picker and a file dropped on it lands in it. *@
-                        <input class="cud-drop__input" type="file" id="file-@key" name="file_@key" accept="@v.Def.Accepts.Mime"
-                               disabled="@(v.Locked is not null || v.Spent)" aria-describedby="@(key)Error" data-submit="upload-@key" form="@form">
-                    </label>
-                }
-                @* Shown only without a script; with one, picking a file presses it. *@
-                @if (v.Used && !v.Spent)
-                {
-                    <button type="submit" class="csi-check cud-upload" id="upload-@key" name="slot" value="@key" asp-action="Upload" form="@form"
-                            data-loader="Checking the @v.Def.Label&hellip;" data-loader-hint="Identified, read by OCR, then checked with whoever stands behind it">Upload</button>
-                }
-            </div>
-            @if (v.Error is not null)
-            {
-                <p class="csi-error" id="@(key)Error" role="alert">
-                    @v.Error
-                    @if (v.ErrorLog is not null)
-                    {
-                        @* The history holds what the checks said, and the page is long. *@
-                        <a class="cud-why" href="#log-@v.ErrorLog">See the history</a>
-                    }
-                </p>
-            }
-            @if (filed && v.Doc!.Check.Length > 0)
-            {
-                <p class="cud-slot__check @(v.Doc.CheckKind.Length > 0 ? "is-" + v.Doc.CheckKind : null)">@v.Doc.Check</p>
-            }
-            @if (v.Tries is not null)
-            {
-                <p class="cud-slot__tries @(v.Spent ? "is-spent" : null)">@v.Tries</p>
-            }
-        </div>
-
-        @if (filed)
-        {
-            @* The copy itself, where the browser can show it. *@
-            <div class="cud-sheet cud-preview-pop" id="preview-@key" popover role="dialog" aria-modal="true" aria-labelledby="preview-@(key)-title">
-                <div class="cud-preview__sheet">
-                    <header class="cud-preview__head">
-                        <div>
-                            <p class="cud-preview__kind">@v.Def.Label</p>
-                            <h2 class="cud-preview__title" id="preview-@(key)-title">@v.Doc!.FileName</h2>
-                        </div>
-                        <button type="button" class="cud-preview__close" popovertarget="preview-@key" popovertargetaction="hide" aria-label="Close">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
-                        </button>
-                    </header>
-                    <div class="cud-preview__body">
-                        @if (v.Doc.Before)
-                        {
-                            <p class="cud-preview__none">This copy was filed before this step, so there is nothing here to show.</p>
-                        }
-                        else
-                        {
-                            var src = Url.Action("Copy", "UploadDocuments", new { slot = key, v = v.Doc.GetHashCode() });
-                            if (v.Doc.ContentType.StartsWith("image/"))
-                            {
-                                <img src="@src" alt="@v.Def.Label" loading="lazy">
-                            }
-                            else
-                            {
-                                <iframe src="@src" title="@v.Def.Label" loading="lazy"></iframe>
-                            }
-                        }
-                    </div>
-                    <footer class="cud-preview__foot">
-                        <span class="cud-preview__meta">@(v.Doc.Before ? "Already on the application" : $"{M.SizeOf(v.Doc.Size)} · {v.Doc.ContentType}")</span>
-                    </footer>
-                </div>
-            </div>
-        }
-        await Task.CompletedTask;
+        <partial name="_DocSlot" model="@(new DocSlotBlock(v, Url.Action("Upload")!, form))" />
     }
 }
 
@@ -265,18 +120,39 @@
             </div>
         </div>
 
-        @* How the application arrived. Two ways and no third, so it is the
-           segmented toggle the new design uses for exactly this. *@
+        @* How the application arrived, and where the investor's post goes. Two ways
+           each and no third, so both are the segmented toggle the new design uses
+           for exactly this. *@
         <div class="cud-apptype">
-            <span class="csi-label" id="cudAppTypeLabel">Application Type</span>
-            <div class="seg-toggle" role="radiogroup" aria-labelledby="cudAppTypeLabel">
-                @foreach (var t in M.ApplicationTypes)
-                {
-                    var shut = s.Ckyc && t == M.Physical;
-                    <label class="seg-toggle__opt @(s.AppType == t ? "seg-toggle__opt--active" : null)" title="@(shut ? "A CKYC application is completed online, so it cannot be filed on paper." : null)">
-                        <input class="visually-hidden" type="radio" name="appType" id="cudAppType@(t)" value="@t" checked="@(s.AppType == t)" disabled="@shut" data-submit="cudRefresh">@t
-                    </label>
-                }
+            <div class="cud-apptype__group">
+                <span class="csi-label" id="cudAppTypeLabel">Application Type</span>
+                <div class="seg-toggle" role="radiogroup" aria-labelledby="cudAppTypeLabel">
+                    @foreach (var t in M.ApplicationTypes)
+                    {
+                        var shut = s.Ckyc && t == M.Physical;
+                        <label class="seg-toggle__opt @(s.AppType == t ? "seg-toggle__opt--active" : null)" title="@(shut ? "A CKYC application is completed online, so it cannot be filed on paper." : null)">
+                            <input class="visually-hidden" type="radio" name="appType" id="cudAppType@(t)" value="@t" checked="@(s.AppType == t)" disabled="@shut" data-submit="cudRefresh">@t
+                        </label>
+                    }
+                </div>
+            </div>
+            @* Post going anywhere but the permanent address is proved with a copy of
+               its own, in the box beside the proof of address below. Only where a
+               proof of address is asked for - a folio that holds the address has it
+               as the mailing address too - and not once CKYC is fetched, whose
+               record brings it. *@
+            <div class="cud-apptype__group">
+                <span class="csi-label" id="cudMailingLabel">Communication Address</span>
+                <div class="seg-toggle" role="radiogroup" aria-labelledby="cudMailingLabel">
+                    @foreach (var (value, label) in new[] { ("same", "Same as Permanent"), ("different", "Different from Permanent") })
+                    {
+                        var on = Model.MailDifferentOf(Model.Investor) == (value == "different");
+                        var shut = value == "different" && !Model.MailCanDiffer(Model.Investor);
+                        <label class="seg-toggle__opt @(on ? "seg-toggle__opt--active" : null)" title="@(shut ? Model.View(M.MailSlot).NotApplicable : null)">
+                            <input class="visually-hidden" type="radio" name="mailing" id="cudMailing-@value" value="@value" checked="@on" disabled="@shut" data-submit="cudRefresh" data-confirm="@(value == "same" && !on && Model.View(M.MailSlot).Doc is not null ? M.MailDropAsk : null)">@label
+                        </label>
+                    }
+                </div>
             </div>
         </div>
 
@@ -290,13 +166,13 @@
                     {
                         <h2 class="cud-route__title">KYC from CERSAI</h2>
                         <p class="cud-route__p">The investor is asked for consent once the application is completed online: a link goes to their registered mobile number and email address, and they enter the OTP sent to the CERSAI-registered mobile number.</p>
-                        <p class="cud-route__p"><strong>The address and the photograph are CERSAI&rsquo;s to send.</strong> They are not uploaded here, and the record cannot be fetched again. The PAN copy is still filed below.</p>
+                        <p class="cud-route__p"><strong>The addresses &mdash; permanent and communication &mdash; and the photograph are CERSAI&rsquo;s to send.</strong> They are not uploaded here, and the record cannot be fetched again. The PAN copy is still filed below, and joint holders file their own documents on Investor Information.</p>
                     }
                     else
                     {
                         <h2 class="cud-route__title">Fetch the KYC from CERSAI</h2>
                         <p class="cud-route__p">If the record is fetched, the investor would be asked for consent once the application is completed online: a link goes to their registered mobile number and email address, and they enter the OTP sent to the CERSAI-registered mobile number.</p>
-                        <p class="cud-route__p">The address and the photograph would then come from CERSAI instead of being filed here, and anything uploaded for them would not be used. The PAN copy is filed here either way. <strong>Nothing changes until the record is fetched.</strong></p>
+                        <p class="cud-route__p">The addresses &mdash; permanent and communication &mdash; and the photograph would then come from CERSAI instead of being filed here, and anything uploaded for them would not be used. The PAN copy is filed here either way, and it is fetched for the investor only: joint holders file their own documents on Investor Information. <strong>Nothing changes until the record is fetched.</strong></p>
                     }
                 </div>
                 <div class="cud-route__act">
@@ -328,7 +204,7 @@
                         </button>
                     </header>
                     <div class="cud-ckyc__body">
-                        <p>The address and the photograph will come from the CERSAI record instead of being filed here, and the investor will be asked for OTP consent once the application is completed online.</p>
+                        <p>The addresses &mdash; permanent and communication &mdash; and the photograph will come from the CERSAI record instead of being filed here, and the investor will be asked for OTP consent once the application is completed online.</p>
                         <p><strong>This cannot be undone on this application:</strong> the record cannot be fetched twice, and the application can no longer be filed as a physical one &mdash; consent is given online.</p>
                     </div>
                     <footer class="cud-ckyc__foot">
@@ -348,7 +224,7 @@
             @* The PAN copy the application is filed with. It comes over already
                filed when the step before uploaded or matched one. *@
             <div class="cud-col">
-                <span class="csi-label">PAN</span>
+                <span class="csi-label">PAN @if (views["pan"].Optional) { <span class="cud-optional">(Non-mandatory)</span> }</span>
                 @{ await Slot(views["pan"]); }
             </div>
 
@@ -358,83 +234,91 @@
             </div>
 
             <div class="cud-col">
-                <label class="csi-label" for="cudPoaType">Proof of address</label>
-                <div class="cud-select">
-                    <select class="csi-control @Invalid("cudPoaType")" id="cudPoaType" name="poaType" disabled="@(!poaUsed)" data-submit="cudRefresh" autofocus="@Focus("cudPoaType")">
-                        <option value="">@(poaUsed ? "Select" : "Not Applicable")</option>
-                        @foreach (var p in M.ProofsOfAddress)
-                        {
-                            <option value="@p" selected="@(s.PoaType == p)">@p</option>
-                        }
-                    </select>
-                </div>
-                @{ await FieldError("cudPoaType"); }
+                @* With document identification, the type is what the copy is identified
+                   as once it is uploaded, shown beside the label. Without it, the type is
+                   chosen first, and the box waits for it. *@
+                @if (Model.AutoProofType)
+                {
+                    <span class="csi-label">Proof of address <partial name="_ProofType" model="@(poaUsed ? s.PoaType : null)" /></span>
+                }
+                else
+                {
+                    <label class="csi-label" for="cudPoaType">Proof of address</label>
+                    <div class="cud-select">
+                        <select class="csi-control @Invalid("cudPoaType")" id="cudPoaType" name="poaType" disabled="@(!poaUsed)" data-submit="cudRefresh" autofocus="@Focus("cudPoaType")">
+                            <option value="">@(poaUsed ? "Select" : "Not Applicable")</option>
+                            @foreach (var p in M.ProofsOfAddress)
+                            {
+                                <option value="@p" selected="@(s.PoaType == p)">@p</option>
+                            }
+                        </select>
+                    </div>
+                    await FieldError("cudPoaType");
+                }
                 @{ await Slot(views["poa"]); }
             </div>
 
             <div class="cud-col">
-                <label class="csi-label" for="cudPayMode">Payment Mode</label>
-                <div class="cud-select">
-                    <select class="csi-control @Invalid("cudPayMode")" id="cudPayMode" name="payMode" data-submit="cudRefresh" autofocus="@Focus("cudPayMode")">
-                        <option value="">Select</option>
-                        @foreach (var m in M.PaymentModes)
-                        {
-                            <option value="@m.Name" selected="@(s.PayMode == m.Name)">@m.Name</option>
-                        }
-                    </select>
-                </div>
-                @{ await FieldError("cudPayMode"); }
-                @{ await Slot(views["payment"]); }
+                @if (Model.AutoProofType)
+                {
+                    <span class="csi-label">Communication address proof <partial name="_ProofType" model="@(mailUsed ? s.MailPoaType : null)" /></span>
+                }
+                else
+                {
+                    <label class="csi-label" for="cudMailType">Communication address proof</label>
+                    <div class="cud-select">
+                        <select class="csi-control @Invalid("cudMailType")" id="cudMailType" name="mailType" disabled="@(!mailUsed)" data-submit="cudRefresh" autofocus="@Focus("cudMailType")">
+                            <option value="">@(mailUsed ? "Select" : "Not Applicable")</option>
+                            @foreach (var p in M.ProofsOfAddress)
+                            {
+                                <option value="@p" selected="@(s.MailPoaType == p)">@p</option>
+                            }
+                        </select>
+                    </div>
+                    await FieldError("cudMailType");
+                }
+                @{ await Slot(views["mail"]); }
             </div>
+
         </div>
 
         @* What the copies are for. OCR reads each one and whoever stands behind it
            is asked to confirm what it says. Nothing on the application changes until
-           that answer comes back clean. *@
+           that answer comes back clean. The same cards stand in the same order
+           whatever was chosen: one with nothing to read says why. *@
         <section class="cud-read">
             <h2 class="cud-read__title">What the copies were read to say</h2>
             <p class="cud-read__sub">Read off the documents filed above and checked with whoever stands behind them.</p>
-            <div class="cud-read__cards">
-                @foreach (var (key, kind) in new[] { ("pan", "PAN and Aadhaar"), ("poa", "Permanent address") })
-                {
-                    var card = s.Reads[key];
-                    <article class="cud-read__card @card.Kind">
-                        <header class="cud-read__head">
-                            <h3 class="cud-read__kind">@kind</h3>
-                            <span class="cud-read__state">@card.State</span>
-                        </header>
-                        <p class="cud-read__lines">@card.Lines</p>
-                        @if (card.Was.Length > 0)
-                        {
-                            <p class="cud-read__was">Was: @card.Was</p>
-                        }
-                        <p class="cud-read__from">@card.From</p>
-                    </article>
-                }
-            </div>
+            <partial name="_ReadCards" model="@(new ReadCardsBlock(Model.ReadsOf(Model.Investor)))" />
         </section>
 
-        @* A cheque is read the same way: OCR takes the account off the copy and the
-           bank it is drawn on is asked to stand behind it. Online and RTGS settle
-           electronically and carry nothing. *@
-        @if (paymentUsed)
-        {
-            var card = s.Reads["payment"];
-            <section class="cud-read">
-                <h2 class="cud-read__title">Account on the instrument</h2>
-                <p class="cud-read__sub">Read off the cheque filed above and confirmed with the bank it is drawn on.</p>
-                <div class="cud-read__cards">
-                    <article class="cud-read__card @card.Kind">
-                        <header class="cud-read__head">
-                            <h3 class="cud-read__kind">Paid from</h3>
-                            <span class="cud-read__state">@card.State</span>
-                        </header>
-                        <p class="cud-read__lines">@card.Lines</p>
-                        <p class="cud-read__from">@card.From</p>
-                    </article>
+        @* How the deposit is paid is the application's, not the investor's KYC: the
+           mode, the instrument it carries and what that was read to say stand in a
+           row of their own under the KYC documents. *@
+        <section class="cud-read cud-pay" id="cudPayment">
+            <h2 class="cud-read__title">Payment</h2>
+            <p class="cud-read__sub">A cheque is read by OCR and the account confirmed with the bank it is drawn on. Online and RTGS settle electronically and carry nothing.</p>
+            @* The mode above its box, and the card beside the box, level with it. *@
+            <div class="cud-pay__grid">
+                <div class="cud-pay__mode">
+                    <label class="csi-label" for="cudPayMode">Payment Mode</label>
+                    <div class="cud-select">
+                        <select class="csi-control @Invalid("cudPayMode")" id="cudPayMode" name="payMode" data-submit="cudRefresh" autofocus="@Focus("cudPayMode")">
+                            <option value="">Select</option>
+                            @foreach (var m in M.PaymentModes)
+                            {
+                                <option value="@m.Name" selected="@(s.PayMode == m.Name)">@m.Name</option>
+                            }
+                        </select>
+                    </div>
+                    @{ await FieldError("cudPayMode"); }
                 </div>
-            </section>
-        }
+                <div class="cud-pay__slot">@{ await Slot(views["payment"]); }</div>
+                <div class="cud-pay__card">
+                    <partial name="_ReadCard" model="@(new ReadCardBlock(Model.PaymentRead()))" />
+                </div>
+            </div>
+        </section>
     </form>
 
     <section class="csi-card cud-extra">
@@ -600,26 +484,7 @@
         }
         else
         {
-            <ol class="cud-log__list">
-                @foreach (var entry in s.Log)
-                {
-                    <li class="cud-log__row @(entry.Kind.Length > 0 ? "is-" + entry.Kind : null)" id="log-@entry.Id">
-                        <div class="cud-log__top">
-                            <span class="cud-log__doc">@entry.Document</span>
-                            <span class="cud-log__try">Attempt @entry.Attempt of @M.MaxAttempts</span>
-                            <span class="cud-log__at">@entry.At</span>
-                            <span class="cud-log__mark">@entry.Mark</span>
-                        </div>
-                        <p class="cud-log__file">@entry.File</p>
-                        <ul class="cud-log__stages">
-                            @foreach (var stage in entry.Stages)
-                            {
-                                <li class="cud-log__stage @(stage.Kind.Length > 0 ? "is-" + stage.Kind : null)">@stage.Text</li>
-                            }
-                        </ul>
-                    </li>
-                }
-            </ol>
+            <partial name="_DocLog" model="@s.Log" />
         }
     </section>
     </div>
@@ -638,7 +503,7 @@
             }
             else
             {
-                @(left.Count) @(left.Count == 1 ? "thing" : "things")@: still to go &mdash; <strong>@left[0]</strong>@(left.Count > 1 ? " first" : "")
+                @:@left.Count @(left.Count == 1 ? "thing" : "things") still to go &mdash; <strong>@left[0]</strong>@(left.Count > 1 ? " first" : "")
             }
         </p>
         <div class="csi-bar__right">

@@ -20,10 +20,27 @@
     if (!el) return;
     var button = document.getElementById(el.getAttribute('data-submit'));
     if (!button || !button.form) return;
+    // A change that takes something off is asked about first; cancelled, the
+    // control goes back to what the page drew it with.
+    var ask = el.getAttribute('data-confirm');
+    if (ask && !window.confirm(ask)) { restore(el); return; }
     // Which control changed, so the page can come back to it.
     if (button.name === 'refresh') button.value = el.id || el.name;
     button.form.requestSubmit(button);
   });
+
+  function restore(el) {
+    if (el.type === 'radio') {
+      var group = el.form ? el.form.elements[el.name] : [el];
+      Array.prototype.forEach.call(group.length === undefined ? [group] : group, function (r) { r.checked = r.defaultChecked; });
+    } else if (el.type === 'checkbox') {
+      el.checked = el.defaultChecked;
+    } else if (el.options) {
+      Array.prototype.forEach.call(el.options, function (o) { o.selected = o.defaultSelected; });
+    } else {
+      el.value = el.defaultValue;
+    }
+  }
 
   document.addEventListener('submit', function (e) {
     var form = e.target;

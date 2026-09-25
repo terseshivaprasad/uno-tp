@@ -1,0 +1,15 @@
+@model ReadCardBlock
+@* One card of what a copy was read to say, and who confirmed it. Every card is
+   the same size: what does not fit is there in full on hover. *@
+@{
+    var item = Model.Item;
+    var card = item.Card;
+}
+<article class="cud-read__card @card.Kind" id="@(item.Id is null ? null : "read-" + item.Id)" tabindex="@(item.Id is null ? null : "-1")">
+    <header class="cud-read__head">
+        <h3 class="cud-read__kind">@item.Kind</h3>
+        <span class="cud-read__state">@card.State</span>
+    </header>
+    <p class="cud-read__lines" title="@card.Lines">@card.Lines</p>
+    <p class="cud-read__from" title="@card.From">@card.From</p>
+</article>

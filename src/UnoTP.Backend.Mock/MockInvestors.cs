@@ -51,6 +51,10 @@ public sealed class MockInvestors : IInvestorApi
             "", new DocsOnRecord(true, false, false), "CKYC available with us",
             "Folio found, but the photograph, proof of address and address are missing. They are listed as collected later, and Proceed still opens."),
 
+        new("XXXXH1008H", DemoDob, "MF0084456", "MEERA ANIL JOSHI", "Female",
+            "9 Gulmohar Apartments, Aundh, Pune, Maharashtra 411007", new DocsOnRecord(false, true, true), "CKYC available with us",
+            "Folio found, but it holds no PAN copy. For a holder on a folio the PAN copy is not mandatory: the box is there for one, and Proceed opens without it."),
+
         // Two folios against one PAN: refused by PAN, found by either folio number.
         new("XXXXF1006F", DemoDob, "MF0062210", "NEHA SURESH KULKARNI", "Female",
             "22 Sai Residency, Kothrud, Pune, Maharashtra 411038",

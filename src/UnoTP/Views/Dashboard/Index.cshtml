@@ -10,6 +10,9 @@
 }
 
 @functions {
+    // .NET 8 Razor leaves the body of a tag helper inside a helper below async with
+    // nothing to await (fixed in Razor 9); nothing runs differently for it.
+#pragma warning disable CS1998
     // One big grey tile: a link while its feature is on, a greyed card saying why
     // while it is off. Nothing on this page needs a script.
     async Task Tile(DashboardTile t)

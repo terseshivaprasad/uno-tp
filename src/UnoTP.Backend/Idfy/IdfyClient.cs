@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
@@ -41,7 +41,9 @@ public sealed class IdfyClient(HttpClient http, ILogger<IdfyClient> log)
     // ----- Document validation ------------------------------------------------
 
     /// <param name="docType">ind_pan, ind_aadhaar, ind_voter_id, ind_driving_license or ind_passport.</param>
-    public Task<IdfyTask<ValidateResult>> ValidateAsync(UploadFile file, string docType, CancellationToken ct = default) =>
+    /// <param name="docType">The type to check it against, or null to have IDfy say
+    /// what it is (in <c>detected_doc_type</c>) without checking it against anything.</param>
+    public Task<IdfyTask<ValidateResult>> ValidateAsync(UploadFile file, string? docType, CancellationToken ct = default) =>
         Post<ValidateResult>("api/documents/validate", new { document = Image(file), docType }, ct);
 
     // ----- OCR ---------------------------------------------------------------
@@ -95,8 +97,10 @@ public sealed class IdfyClient(HttpClient http, ILogger<IdfyClient> log)
         try
         {
             // Sent whole, with its length: the image is in memory already, and a
-            // streamed body is one more thing for a proxy in the way to refuse.
-            using var content = new StringContent(JsonSerializer.Serialize(body, RequestJson), Encoding.UTF8, "application/json");
+            // streamed body is one more thing for a proxy in the way to refuse. Written
+            // straight to UTF-8, so a 4 MB image is not held as a string twice its size too.
+            using var content = new ByteArrayContent(JsonSerializer.SerializeToUtf8Bytes(body, RequestJson));
+            content.Headers.ContentType = new MediaTypeHeaderValue("application/json") { CharSet = "utf-8" };
             response = await http.PostAsync(path, content, ct);
         }
         catch (HttpRequestException e)
