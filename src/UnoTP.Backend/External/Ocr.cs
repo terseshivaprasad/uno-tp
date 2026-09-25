@@ -20,9 +20,21 @@ public sealed record OcrSubject(string Pan, string Dob, string Name);
 /// <param name="Account">A cheque's account, masked, with its IFSC and branch.</param>
 /// <param name="Bank">The bank a cheque is drawn on.</param>
 /// <param name="Gender">"Male", "Female" or "Transgender", as an Aadhaar prints it; empty otherwise.</param>
+/// <param name="Dob">The date of birth a PAN card prints, as dd-MM-yyyy; empty otherwise.</param>
 public sealed record OcrReading(
     string Pan = "", string Name = "", string Address = "",
-    string IdNumber = "", string Account = "", string Bank = "", string Gender = "");
+    string IdNumber = "", string Account = "", string Bank = "", string Gender = "", string Dob = "");
+
+/// <summary>Dates of birth however a card or a service writes them, as the app keeps them.</summary>
+public static class Dobs
+{
+    private static readonly string[] Formats = ["dd-MM-yyyy", "dd/MM/yyyy", "yyyy-MM-dd", "dd.MM.yyyy", "d-M-yyyy", "d/M/yyyy"];
+
+    /// <summary>The date as dd-MM-yyyy, or empty when it cannot be read as a date.</summary>
+    public static string Of(string? value) =>
+        DateTime.TryParseExact((value ?? "").Trim(), Formats, System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.None, out var date) ? date.ToString("dd-MM-yyyy") : "";
+}
 
 /// <summary>A gender however a register or a card spells it, as the app names it.</summary>
 public static class Genders

@@ -109,7 +109,7 @@ public sealed class IdfyOcr(
         {
             case "ind_pan":
                 var pan = (await idfy.ExtractPanAsync(file, ct)).Result!.ExtractionOutput;
-                return new OcrReading(Pan: pan?.IdNumber ?? "", Name: pan?.NameOnCard ?? "");
+                return new OcrReading(Pan: pan?.IdNumber ?? "", Name: pan?.NameOnCard ?? "", Dob: Dobs.Of(pan?.DateOfBirth));
 
             case "ind_aadhaar":
                 // What the QR code says is what UIDAI signed, so it is read first -

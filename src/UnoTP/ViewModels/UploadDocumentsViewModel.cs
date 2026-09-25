@@ -169,6 +169,23 @@ public class UploadDocumentsViewModel(
 
     // The same masking the register uses: a PAN keeps its first five and last
     // character, a date of birth only its year.
+    /// <summary>
+    /// Why a PAN copy is not the holder's, or null when it is. The PAN and date of
+    /// birth were settled before any copy was asked for and cannot be changed, so
+    /// the copy has to read as both: another PAN or date of birth, or one OCR could
+    /// not read, and it is refused.
+    /// </summary>
+    public static string? PanCopyMismatch(OcrReading reading, string pan, string dob)
+    {
+        var read = reading.Pan.Replace(" ", "").ToUpperInvariant();
+        if (read.Length == 0) return "OCR could not read the PAN number on it";
+        if (read != pan.ToUpperInvariant()) return $"The PAN on it reads as {Mask(read)}, not {Mask(pan)}";
+        if (dob.Length == 0) return null;
+        if (reading.Dob.Length == 0) return "OCR could not read the date of birth on it";
+        if (reading.Dob != dob) return $"The date of birth on it does not match the one entered ({MaskDate(dob)})";
+        return null;
+    }
+
     public static string Mask(string pan) =>
         pan.Length == 10 ? pan[..5] + "••••" + pan[9..] : pan;
 
@@ -1225,6 +1242,15 @@ public class UploadDocumentsViewModel(
         // 2. OCR. An Aadhaar is filed unmasked: one OCR cannot read all 12 digits of
         // the number off - masked, or too unclear - is not taken.
         var reading = await ocr.ReadAsync(rule.Kind, type, copy, new OcrSubject(h.Who.Pan, h.Who.Dob, h.Who.Name), AadhaarConsent);
+        // A PAN copy has to be the holder's own: the PAN and date of birth it reads
+        // as are the ones already on the application, which cannot be changed here.
+        if (def.Key == "pan" && PanCopyMismatch(reading, h.Who.Pan, h.Who.Dob) is { } notTheirs)
+        {
+            await RefuseAsync(notTheirs, $"Upload {(h.Joint ? "this holder's" : "the investor's")} own PAN card, clear enough to read.",
+                ($"OCR read: PAN {(reading.Pan.Length > 0 ? Mask(reading.Pan) : "none")}, date of birth {(reading.Dob.Length > 0 ? MaskDate(reading.Dob) : "none")}.", ""),
+                ("It does not match the PAN and date of birth on the application.", "bad"));
+            return;
+        }
         if (proof && type == "Aadhaar" && !AadhaarNumbers.IsWhole(reading.IdNumber))
         {
             await RefuseAsync("OCR could not read all 12 digits of the Aadhaar number, so the copy may be masked",

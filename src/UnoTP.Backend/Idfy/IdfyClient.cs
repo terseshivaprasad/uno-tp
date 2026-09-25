@@ -198,7 +198,7 @@ public sealed record Extracted<T>(T? ExtractionOutput);
 
 public sealed record Sourced<T>(T? SourceOutput);
 
-public sealed record PanCard(string? IdNumber, string? NameOnCard);
+public sealed record PanCard(string? IdNumber, string? NameOnCard, string? DateOfBirth = null);
 
 /// <param name="QrOutput">Decoded from the QR code, which UIDAI signs, when there is one.</param>
 public sealed record AadhaarExtraction(AadhaarCard? ExtractionOutput, AadhaarCard? QrOutput);

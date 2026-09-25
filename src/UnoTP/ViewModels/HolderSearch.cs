@@ -89,6 +89,10 @@ public sealed class HolderSearch(IInvestorApi investors, INsdlService nsdl, IOcr
         {
             var reading = await ocr.ReadAsync(DocumentKind.PanCard, "", new UploadFile(name, copy.ContentType, bytes),
                 new OcrSubject(model.Pan!, model.Dob, ""), consent: false);
+            // The PAN and date of birth searched are fixed: a copy that reads as any
+            // other is not this holder's, and another is asked for.
+            if (UploadDocumentsViewModel.PanCopyMismatch(reading, model.Pan!, model.Dob) is { } notTheirs)
+                return saved! with { CopyName = null, CopyError = $"{notTheirs}. Upload the PAN card of the PAN searched, clear enough to read." };
             return saved! with { CopyName = name, Ocr = reading.Name, Tried = null, CopyError = null };
         }
         catch (ExternalServiceException e)
