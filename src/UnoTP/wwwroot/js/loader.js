@@ -22,8 +22,16 @@
     document.body.classList.remove('is-waiting');
   }
 
+  // What is under way changes while the wait lasts: an upload's progress, then
+  // what the server is doing with the file.
+  function setLoaderHint(note) {
+    hint.textContent = note || '';
+    hint.hidden = !note;
+  }
+
   window.showLoader = showLoader;
   window.hideLoader = hideLoader;
+  window.setLoaderHint = setLoaderHint;
 
   // Anything that leaves the page can say so by carrying the words itself: the
   // wait belongs to the press, not to the script of whatever page it is on. One

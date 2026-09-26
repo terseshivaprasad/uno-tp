@@ -57,7 +57,8 @@
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 12a8.5 8.5 0 0 1-14.6 5.9"></path><path d="M3.5 12a8.5 8.5 0 0 1 14.6-5.9"></path><path d="M18.5 2.5V7H14"></path><path d="M5.5 21.5V17H10"></path></svg>
                         <span>Replace</span>
                     </label>
-                    <input type="file" id="file-@key" name="file_@key" accept="@v.Def.Accepts.Mime" hidden data-submit="upload-@key" form="@form">
+                    <input type="file" id="file-@key" name="file_@key" accept="@v.Def.Accepts.Mime" hidden data-submit="upload-@key" form="@form"
+                           data-shrink="@(v.Def.Key == UploadDocumentsViewModel.FormSlot.Key ? null : "2560")">
                 }
             </div>
             // A proof of address or a PAN copy says in its box what it was read to say.
@@ -134,7 +135,10 @@
                     </span>
                 }
                 @* Over the whole box, so a click opens the picker and a file dropped on it lands in it. *@
+                @* A photo is made smaller before it goes (image-shrink.js) - but never the
+                   application form, a page of small print OCR has to read in full. *@
                 <input class="cud-drop__input" type="file" id="file-@key" name="file_@key" accept="@v.Def.Accepts.Mime"
+                       data-shrink="@(v.Def.Key == UploadDocumentsViewModel.FormSlot.Key ? null : "2560")"
                        disabled="@(v.Locked is not null || v.Spent)" aria-describedby="@(key)Error" data-submit="upload-@key" form="@form">
             </label>
         }

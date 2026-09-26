@@ -71,6 +71,10 @@
       url = query.toString();
     } else {
       init.body = data;
+      // Which page this is: a post that only comes back to it is answered with the
+      // page itself, in one round trip rather than a redirect and a second request
+      // (see PartialFollow on the server).
+      init.headers = { 'X-Partial-Page': window.location.pathname };
     }
 
     var fallback = function () {
@@ -100,35 +104,88 @@
     busy = true;
     var words = from && from.getAttribute('data-loader');
     if (words && window.showLoader) window.showLoader(words, from.getAttribute('data-loader-hint') || '');
+    // Anything else - a toggle, a drop-down - says it is on its way with a thin bar
+    // across the top, and leaves the page to be used meanwhile.
+    else document.documentElement.classList.add('is-saving');
 
-    fetch(url, init)
+    // A file on its way says how far it has got - on a slow connection the send is
+    // most of the wait - and then what the server is doing with it.
+    var bytes = filesIn(init.body);
+    var onProgress = bytes > 0 && words && window.setLoaderHint ? function (sent, total) {
+      window.setLoaderHint(sent < total
+        ? 'Uploading ' + Math.floor(sent * 100 / total) + '% of ' + size(bytes)
+        : from.getAttribute('data-loader-hint') || '');
+    } : null;
+
+    send(url, init, onProgress)
       .then(function (res) {
         // Anything but a page to show - a refused post, a server error - goes the
         // ordinary way, so it is seen as it would be without this script.
         if (res.ok === false) { fallback(); return null; }
+        // Where the answer stands: the page the server followed on to, or where
+        // the browser was redirected.
+        var at = res.headers.get('X-Partial-Url');
+        var answered = at ? new URL(at, window.location.href).href : res.url;
         // A post that ends on another page - Proceed to the next step - is a
         // move to that page, not an update of this one.
-        var to = new URL(res.url);
+        var to = new URL(answered);
         if (to.pathname !== window.location.pathname) {
           waiting = null;
-          window.location.href = res.url;
+          window.location.href = answered;
           return null;
         }
         // A newer post is waiting, so this answer is already out of date: drawing
         // it would put back what the partner has changed since.
         if (waiting) return null;
-        return res.text().then(function (html) { swap(html, res.url, push); });
+        return res.text().then(function (html) { swap(html, answered, push); });
       })
       .catch(fallback)
       .then(function () {
         busy = false;
         if (window.hideLoader) window.hideLoader();
+        document.documentElement.classList.remove('is-saving');
         if (waiting) {
           var next = waiting;
           waiting = null;
           go.apply(null, next);
         }
       });
+  }
+
+  // The size of the files a post carries.
+  function filesIn(body) {
+    var total = 0;
+    if (body && body.forEach) body.forEach(function (value) { if (value instanceof File) total += value.size; });
+    return total;
+  }
+
+  function size(n) {
+    return n < 1024 * 1024 ? Math.max(1, Math.round(n / 1024)) + ' KB' : (n / 1024 / 1024).toFixed(1) + ' MB';
+  }
+
+  // fetch, but for a post carrying a file: XMLHttpRequest, which alone reports
+  // how much of the body has gone. It answers with the little of a Response the
+  // caller reads.
+  function send(url, init, onProgress) {
+    if (!onProgress) return fetch(url, init);
+    return new Promise(function (resolve, reject) {
+      var xhr = new XMLHttpRequest();
+      xhr.open(init.method || 'POST', url);
+      xhr.withCredentials = true;
+      Object.keys(init.headers || {}).forEach(function (name) { xhr.setRequestHeader(name, init.headers[name]); });
+      xhr.upload.onprogress = function (e) { if (e.lengthComputable) onProgress(e.loaded, e.total); };
+      xhr.upload.onload = function () { onProgress(1, 1); };
+      xhr.onload = function () {
+        resolve({
+          ok: xhr.status >= 200 && xhr.status < 300,
+          url: xhr.responseURL,
+          headers: { get: function (name) { return xhr.getResponseHeader(name); } },
+          text: function () { return Promise.resolve(xhr.responseText); }
+        });
+      };
+      xhr.onerror = xhr.onabort = function () { reject(new Error('Network')); };
+      xhr.send(init.body);
+    });
   }
 
   function swap(html, url, push) {

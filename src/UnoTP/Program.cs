@@ -201,8 +201,6 @@ app.UseStaticFiles(new StaticFileOptions
     },
 });
 
-app.UseRouting();
-
 app.UseSession();
 
 // Must run before the pages so a ?ff= override applies to this render.
@@ -210,6 +208,12 @@ app.UseFeatureOverrides();
 
 // After the features, so ?agency= is honoured only while the demo data is on.
 app.UsePartner();
+
+// A change posted from a page comes back as that page in one round trip, not two
+// (see PartialFollow). Before routing, so the page it follows on to is routed afresh.
+app.UsePartialFollow();
+
+app.UseRouting();
 
 app.UseAuthorization();
 
