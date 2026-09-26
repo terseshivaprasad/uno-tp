@@ -75,6 +75,7 @@
             <div class="cud-col bank-search">
                 <label class="csi-label" for="@(id)-ifsc">Bank &mdash; search by name, branch, IFSC or MICR</label>
                 <input class="csi-control @Invalid(key + ".Ifsc")" id="@(id)-ifsc" name="@(key).Ifsc" value="@account.Ifsc" maxlength="60" autocomplete="off" spellcheck="false" placeholder="e.g. HDFC Andheri or HDFC0000521"
+                       data-required="Search for the bank and pick its branch"
                        role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="@(id)-suggest"
                        data-bank-search="@Url.Action("Branches")" data-find="bank-find-@(key.ToLowerInvariant())"
                        aria-invalid="@InvalidAria(key + ".Ifsc")" aria-describedby="@DescribedBy(key + ".Ifsc", id + "-ifsc")">
@@ -83,13 +84,13 @@
             </div>
             <div class="cud-col">
                 <label class="csi-label" for="@(id)-account">Account Number</label>
-                <input class="csi-control @Invalid(key + ".AccountNumber")" id="@(id)-account" name="@(key).AccountNumber" value="@account.AccountNumber" inputmode="numeric" maxlength="18" autocomplete="off" aria-invalid="@InvalidAria(key + ".AccountNumber")" aria-describedby="@DescribedBy(key + ".AccountNumber", id + "-account")">
+                <input class="csi-control @Invalid(key + ".AccountNumber")" id="@(id)-account" name="@(key).AccountNumber" value="@account.AccountNumber" inputmode="numeric" maxlength="18" autocomplete="off" data-required="Enter the account number, 6 to 18 digits" data-check="account" aria-invalid="@InvalidAria(key + ".AccountNumber")" aria-describedby="@DescribedBy(key + ".AccountNumber", id + "-account")">
                 @{ await FieldError(key + ".AccountNumber", id + "-account"); }
             </div>
             <div class="cud-col">
                 <label class="csi-label" for="@(id)-account-confirm">Re-enter Account Number</label>
                 @* Masked as it is typed, so the number is typed again rather than copied from the first box. *@
-                <input class="csi-control csi-control--masked @Invalid(key + ".AccountNumberConfirm")" id="@(id)-account-confirm" name="@(key).AccountNumberConfirm" value="@account.AccountNumberConfirm" inputmode="numeric" maxlength="18" autocomplete="off" spellcheck="false" aria-invalid="@InvalidAria(key + ".AccountNumberConfirm")" aria-describedby="@DescribedBy(key + ".AccountNumberConfirm", id + "-account-confirm")">
+                <input class="csi-control csi-control--masked @Invalid(key + ".AccountNumberConfirm")" id="@(id)-account-confirm" name="@(key).AccountNumberConfirm" value="@account.AccountNumberConfirm" inputmode="numeric" maxlength="18" autocomplete="off" spellcheck="false" data-required="Enter the account number again" data-check="match:@(id)-account" aria-invalid="@InvalidAria(key + ".AccountNumberConfirm")" aria-describedby="@DescribedBy(key + ".AccountNumberConfirm", id + "-account-confirm")">
                 @{ await FieldError(key + ".AccountNumberConfirm", id + "-account-confirm"); }
             </div>
         </div>
@@ -137,7 +138,7 @@
 <div class="csi">
     <partial name="_ClassicSteps" model="3" />
 
-    <form class="csi-main" id="bankDetailsForm" method="post" data-partial novalidate data-partial-focus="@focus">
+    <form class="csi-main" id="bankDetailsForm" data-guard method="post" data-partial novalidate data-partial-focus="@focus">
         @* Enter in an IFSC looks it up: the first submit button in the form. *@
         @if (Model.ByCheque)
         {
@@ -166,13 +167,13 @@
                 <div class="cud-grid">
                     <div class="cud-col">
                         <label class="csi-label" for="cheque-number">Cheque Number</label>
-                        <input class="csi-control @Invalid("Cheque.Number")" id="cheque-number" name="Cheque.Number" value="@f.Cheque.Number" inputmode="numeric" maxlength="6" autocomplete="off" aria-invalid="@InvalidAria("Cheque.Number")" aria-describedby="@DescribedBy("Cheque.Number", "cheque-number")">
+                        <input class="csi-control @Invalid("Cheque.Number")" id="cheque-number" name="Cheque.Number" value="@f.Cheque.Number" inputmode="numeric" maxlength="6" autocomplete="off" data-required="Enter the six-digit cheque number" data-check="digits:6" data-message="Enter the six-digit cheque number" aria-invalid="@InvalidAria("Cheque.Number")" aria-describedby="@DescribedBy("Cheque.Number", "cheque-number")">
                         @{ await FieldError("Cheque.Number", "cheque-number"); }
                     </div>
                     <div class="cud-col">
                         <label class="csi-label" id="cheque-date-label" for="cheque-date">Cheque Date</label>
                         @* The app's date control: three boxes, as every other date is typed. *@
-                        <div class="csi-date @Invalid("Cheque.Date")" role="group" aria-labelledby="cheque-date-label" aria-describedby="@DescribedBy("Cheque.Date", "cheque-date")">
+                        <div class="csi-date @Invalid("Cheque.Date")" role="group" data-required="Enter the cheque date" data-check="dmy" data-message="Enter the cheque date as a real date, DD/MM/YYYY" data-error-id="cheque-dateError" aria-labelledby="cheque-date-label" aria-describedby="@DescribedBy("Cheque.Date", "cheque-date")">
                             <input class="csi-date__part" id="cheque-date" name="Cheque.Dd" value="@f.Cheque.Dd" inputmode="numeric" maxlength="2" placeholder="DD" aria-label="Day" autocomplete="off" aria-invalid="@InvalidAria("Cheque.Date")">
                             <span class="csi-date__sep">/</span>
                             <input class="csi-date__part" name="Cheque.Mm" value="@f.Cheque.Mm" inputmode="numeric" maxlength="2" placeholder="MM" aria-label="Month" autocomplete="off">
@@ -184,7 +185,7 @@
                     <div class="cud-col">
                         <label class="csi-label" for="cms-location">Axis CMS Branch</label>
                         @* Typed, with the backend's branches offered as the browser's own suggestions. *@
-                        <input class="csi-control @Invalid("Cheque.CmsLocation")" id="cms-location" name="Cheque.CmsLocation" value="@f.Cheque.CmsLocation" list="cms-locations" placeholder="Start typing a branch" autocomplete="off" spellcheck="false" aria-invalid="@InvalidAria("Cheque.CmsLocation")" aria-describedby="@(DescribedBy("Cheque.CmsLocation", "cms-location") ?? "cms-location-hint")">
+                        <input class="csi-control @Invalid("Cheque.CmsLocation")" id="cms-location" name="Cheque.CmsLocation" value="@f.Cheque.CmsLocation" list="cms-locations" placeholder="Start typing a branch" autocomplete="off" spellcheck="false" data-required="Enter the Axis CMS branch" aria-invalid="@InvalidAria("Cheque.CmsLocation")" aria-describedby="@(DescribedBy("Cheque.CmsLocation", "cms-location") ?? "cms-location-hint")">
                         <datalist id="cms-locations">
                             @foreach (var location in Model.CmsLocations) { <option value="@location"></option> }
                         </datalist>
@@ -215,7 +216,7 @@
                     <label class="inv-switch-row" for="repay-same">
                         <span>Same as the payment account</span>
                         @* The hidden false goes after the box, so an unticked box still posts, and a ticked one binds first. *@
-                        <input type="checkbox" id="repay-same" name="Repayment.SameAsPayment" value="true" class="inv-switch" checked="@same" data-submit="bank-find-repayment">
+                        <input type="checkbox" id="repay-same" name="Repayment.SameAsPayment" value="true" class="inv-switch" checked="@same">
                         <input type="hidden" name="Repayment.SameAsPayment" value="false">
                     </label>
                 </div>
@@ -288,7 +289,7 @@
             }
         </p>
         <div class="csi-bar__right">
-            <button type="submit" form="bankDetailsForm" class="csi-btn csi-btn--primary" id="bank-proceed" data-loader="Saving the accounts&hellip;">Proceed</button>
+            <button type="submit" form="bankDetailsForm" class="csi-btn csi-btn--primary" id="bank-proceed" data-validate="form" data-loader="Saving the accounts&hellip;">Proceed</button>
         </div>
     </div>
 </footer>

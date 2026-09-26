@@ -1,7 +1,8 @@
-// FD Configuration: a choice is saved, and the backend's quote for the deposit
-// drawn again, without the page being sent. Every control marked data-quote posts
-// the form to FdQuote, which saves the deposit and answers with the quote panel
-// alone; what a choice shows or hides has already changed (partial-forms.js). The
+// FD Configuration: the backend's quote for the deposit is drawn again as a choice
+// changes, without the page being sent. Every control marked data-quote posts the
+// form to FdQuote, which answers with the quote panel alone and saves nothing - the
+// step is saved by Proceed, as on a bank's form. What a choice shows or hides has
+// already changed (partial-forms.js). The
 // amount is quoted as it is typed, once the partner pauses; what is wrong with it
 // is said once they leave the field, not while they are still typing it.
 (function () {
@@ -11,10 +12,15 @@
   var timer = null;
   var asked = 0;
 
+  var inFlight = null;
+
   function quote(sayProblem) {
     var mine = ++asked;
+    // A newer choice makes the one before it moot: its request is dropped, not waited for.
+    if (inFlight) inFlight.abort();
+    inFlight = window.AbortController ? new AbortController() : null;
     document.documentElement.classList.add('is-saving');
-    fetch(url, { method: 'POST', body: new FormData(form), credentials: 'same-origin' })
+    fetch(url, { method: 'POST', body: new FormData(form), credentials: 'same-origin', signal: inFlight ? inFlight.signal : undefined })
       .then(function (res) {
         if (!res.ok) throw new Error(res.status);
         return res.text();
@@ -27,11 +33,12 @@
         amount(sayProblem);
       })
       .catch(function () {
-        // Not saved this way - the application changed elsewhere, or the connection
-        // dropped: the page is posted the ordinary way, and says what happened.
+        // No quote this time - the connection dropped: the panel says so, and the
+        // next choice asks again. Proceed still saves and checks everything.
         if (mine !== asked) return;
-        var refresh = document.getElementById('fdRefresh');
-        if (refresh) form.requestSubmit(refresh);
+        var panel = document.getElementById('fd-quote');
+        var note = panel && panel.querySelector('.fd-summary__note, .cii-note');
+        if (note) note.textContent = 'The quote could not be fetched just now — it is asked for again with the next change.';
       })
       .then(function () {
         if (mine === asked) document.documentElement.classList.remove('is-saving');

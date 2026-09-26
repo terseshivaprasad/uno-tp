@@ -24,6 +24,26 @@ change `BackendClient.cs`: the pages depend only on the interfaces.
 
 In the environment, use a double underscore, for example `Backend__BaseUrl`.
 
+## What the app keeps, and for how long
+
+Answers that change seldom are kept in the app's memory (`src/UnoTP/Features/CachedBackend.cs`
+and `Lookups.cs`), so a page load does not ask the backend for them each time.
+Nothing that was not found is kept, and no failure is: the next request asks again.
+
+| Answer | Kept for | Notes |
+|---|---|---|
+| `GET reference`, `GET config` (every list and rule) | `Backend:ReferenceCacheMinutes`, default 10 | The same for every partner |
+| `GET sourcing/brokers`, `GET sourcing/staff` | `Backend:ReferenceCacheMinutes` | The same for every partner |
+| `GET ifsc/{code}` | 1 hour | Only a branch that was found; a new IFSC is found at once |
+| `GET ifsc?q=` (the bank search) | 5 minutes, and 1 minute in the browser | Only a search that found something; a new bank is found by the next search |
+| `POST deposits/quote` | 1 minute, never past the day | Keyed by amount, tenure, payout and category - nothing of the investor's |
+| `GET console/schedule` | 30 seconds | Dropped the moment the app adds, ends or removes a window or notice |
+| `GET me` | 5 minutes | Per user and per session; a new session asks again |
+| `GET demo/*` | `Backend:ReferenceCacheMinutes` | |
+
+A backend that changes one of these and needs it seen sooner should say so; the
+times are set in `CachedBackend.cs`. The cache holds at most 50,000 entries.
+
 ## Common to every backend call
 
 - **Partner:** every request carries `X-Partner-Id`, the user the portal sent

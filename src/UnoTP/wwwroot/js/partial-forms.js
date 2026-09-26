@@ -53,6 +53,34 @@
   }
   window.applyShowWhen = applyShowWhen;
 
+  // As on a bank's form, a step is saved by its Save or Proceed, not change by
+  // change. A step's form marked data-guard notes a change not yet sent, and
+  // leaving the page by a link, or closing it, asks first. Any post of the form
+  // sends everything in it, so a post, and the page it brings back, clears it.
+  var unsaved = false;
+  function guarded(el) {
+    var form = el && (el.form || (el.closest && el.closest('form')));
+    return !!(form && form.hasAttribute('data-guard'));
+  }
+  document.addEventListener('input', function (e) { if (guarded(e.target) && e.target.type !== 'file') unsaved = true; });
+  document.addEventListener('change', function (e) { if (guarded(e.target) && e.target.type !== 'file') unsaved = true; }, true);
+  document.addEventListener('submit', function () { unsaved = false; }, true);
+  document.addEventListener('click', function (e) {
+    var link = e.target.closest && e.target.closest('a[href]');
+    if (!unsaved || !link || link.target === '_blank' || link.getAttribute('href').charAt(0) === '#' || e.defaultPrevented) return;
+    if (!window.confirm('This step has changes that are not saved yet. Leave it without saving them?')) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+    } else {
+      unsaved = false;
+    }
+  }, true);
+  window.addEventListener('beforeunload', function (e) {
+    if (!unsaved) return;
+    e.preventDefault();
+    e.returnValue = '';
+  });
+
   // A control that reshapes the page submits its form as soon as it changes,
   // through the button it names: a file picked is uploaded, a choice redraws.
   document.addEventListener('change', function (e) {
@@ -254,9 +282,12 @@
 
     here.innerHTML = incoming.innerHTML;
     document.title = next.title;
+    // What the page now holds is what the server has; only what was typed since
+    // the post, put back below, is not.
     // The address is what a reload would show: the page, not the post.
     window.history[push ? 'pushState' : 'replaceState'](null, '', url);
 
+    unsaved = typed.length > 0;
     typed.forEach(function (t) {
       var f = document.getElementById(t[0]);
       if (f) f.value = t[1];

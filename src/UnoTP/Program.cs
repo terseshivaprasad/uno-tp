@@ -44,10 +44,13 @@ builder.Services.AddScoped<UnoTP.ViewModels.HolderSearch>();
 if (BackendOptions.Configured(builder.Configuration)) builder.Services.AddBackendApi();
 else builder.Services.AddMockBackend();
 if (IdfyOptions.Configured(builder.Configuration)) builder.Services.AddIdfy();
+// The backend's slow-changing answers kept in memory, around whichever answers (see CachedBackend).
+builder.Services.AddBackendCaching();
 // The console's schedule, read once per request for the gate, the tiles and the bell.
 builder.Services.AddScoped<UnoTP.Models.ConsoleState>();
 // The backend's lists and rules, kept for a few minutes (see Lookups).
-builder.Services.AddMemoryCache();
+// Each entry counts one; the limit keeps partners' searches from growing it without end.
+builder.Services.AddMemoryCache(options => options.SizeLimit = 50_000);
 builder.Services.AddScoped<Lookups>();
 
 // Who the partner is - the sign-in, and nothing else (see PartnerSession). The

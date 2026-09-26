@@ -22,11 +22,5 @@ public sealed class Lookups(IReferenceApi reference, IMemoryCache cache, IOption
     public Task<AppConfig> ConfigAsync(CancellationToken ct = default) =>
         Kept("backend:config", () => reference.ConfigAsync(ct));
 
-    private async Task<T> Kept<T>(string key, Func<Task<T>> ask)
-    {
-        if (cache.TryGetValue(key, out T? kept) && kept is not null) return kept;
-        var answer = await ask();
-        if (KeptFor > TimeSpan.Zero) cache.Set(key, answer, KeptFor);
-        return answer;
-    }
+    private Task<T> Kept<T>(string key, Func<Task<T>> ask) => cache.KeptAsync(key, KeptFor, ask);
 }

@@ -123,7 +123,7 @@
     @* Both cards share the column beside the rail; the page grid holds two
        columns, so a card left loose lands under the rail instead. *@
     <div class="csi-main">
-    <form class="csi-card" id="cudForm" method="post" enctype="multipart/form-data" data-partial novalidate>
+    <form class="csi-card" id="cudForm" data-guard method="post" enctype="multipart/form-data" data-partial novalidate>
         @* Who the step is for is not in the form: the server knows the application from the session. *@
         @* What a change that reshapes the step posts through. Shown only without a script. *@
         <button type="submit" class="csi-check cud-refresh" id="cudRefresh" name="refresh" value="" asp-action="Refresh">Update</button>
@@ -175,7 +175,7 @@
                     {
                         var shut = s.Ckyc && t.Code == M.Physical;
                         <label class="seg-toggle__opt" title="@(shut ? "A CKYC application is completed online, so it cannot be filed on paper." : null)">
-                            <input class="visually-hidden" type="radio" name="appType" id="cudAppType@(t.Code)" value="@t.Code" checked="@(s.AppType == t.Code)" disabled="@shut" data-submit="cudRefresh">@t.Name.ToUpperInvariant()
+                            <input class="visually-hidden" type="radio" name="appType" id="cudAppType@(t.Code)" value="@t.Code" checked="@(s.AppType == t.Code)" disabled="@shut">@t.Name.ToUpperInvariant()
                         </label>
                     }
                 </div>
@@ -193,7 +193,7 @@
                         var on = Model.MailDifferentOf(Model.Investor) == (value == "different");
                         var shut = value == "different" && !Model.MailCanDiffer(Model.Investor);
                         <label class="seg-toggle__opt" title="@(shut ? Model.View(M.MailSlot).NotApplicable : null)">
-                            <input class="visually-hidden" type="radio" name="mailing" id="cudMailing-@value" value="@value" checked="@on" disabled="@shut" data-submit="cudRefresh" data-confirm="@(value == "same" && !on && Model.View(M.MailSlot).Doc is not null ? M.MailDropAsk : null)">@label
+                            <input class="visually-hidden" type="radio" name="mailing" id="cudMailing-@value" value="@value" checked="@on" disabled="@shut" data-submit="@(mailInstant ? null : "cudRefresh")" data-confirm="@(value == "same" && !on && Model.View(M.MailSlot).Doc is not null ? M.MailDropAsk : null)">@label
                         </label>
                     }
                 </div>
@@ -356,7 +356,7 @@
                 <div class="cud-pay__mode">
                     <label class="csi-label" for="cudPayMode">Payment Mode</label>
                     <div class="cud-select">
-                        <select class="csi-control @Invalid("cudPayMode")" id="cudPayMode" name="payMode" data-submit="cudRefresh" autofocus="@Focus("cudPayMode")">
+                        <select class="csi-control @Invalid("cudPayMode")" id="cudPayMode" name="payMode" autofocus="@Focus("cudPayMode")">
                             <option value="">Select</option>
                             @foreach (var m in Model.PaymentModes)
                             {
