@@ -54,7 +54,7 @@ on `--page-bg`.
 ## Typography
 
 Font: **Georama** (Google Fonts, weights 300–700), loaded in `_Layout.cshtml` with
-`system-ui, sans-serif` fallback. Base body: `letter-spacing: .25px`, color `--ink`.
+`system-ui, sans-serif` fallback. Base body: `letter-spacing: 0`, color `--ink`; headings `-.01em`.
 
 | Role | Size | Weight | Color | Class |
 |---|---|---|---|---|
@@ -92,6 +92,21 @@ Two different small-label components exist and they are **not** interchangeable:
 
 Both come in the same semantic variants: `--primary`/`--muted` (or `--optional`),
 `--success`, `--warn`, `--danger`.
+
+## Colour carries meaning
+
+Solid `--red` is for the one main action on a screen (Proceed, Search) and for what
+is wrong (errors, refusals). A *selected* option - a chip, a toggle - is drawn with
+`--pink-bg`, a `--red` outline and `--red-dark` text, so selection never reads as an
+error. The card that holds the next thing to do is outlined in `--blue` with a
+`--blue-bg` ring. A card with nothing to do (not applicable, done) takes the lighter
+`--border`. Status is a chip tinted by what it means: green done, amber waiting,
+red refused or cancelled, grey neutral.
+
+Explain less in words: a check that passed says so behind an "How it was checked"
+info tip; warnings and failures stay written out. Trade terms (CKYC, NSDL, POA, CMS,
+IFSC, MICR, TDS, 15G/15H, FATCA, OCR) go through `Glossary.Term`, which explains them
+on hover and focus.
 
 ## Spacing & radius
 

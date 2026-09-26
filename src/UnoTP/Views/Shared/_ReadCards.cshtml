@@ -13,7 +13,7 @@
     var retry = item.Retry!;
     <div class="cud-retry @(retry.Error is null ? null : "is-invalid")" role="group" aria-labelledby="@(retry.Field)Label">
         <div class="cud-retry__say">
-            <span class="cud-retry__title" id="@(retry.Field)Label">NSDL did not match the name</span>
+            <span class="cud-retry__title" id="@(retry.Field)Label">@Glossary.Term("NSDL") did not match the name</span>
             <span class="cud-retry__text">Type the name exactly as printed on the PAN card, and NSDL is asked again.</span>
         </div>
         <div class="cud-retry__ask">

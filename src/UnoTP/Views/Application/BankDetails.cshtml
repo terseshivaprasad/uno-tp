@@ -73,7 +73,7 @@
     {
         <div class="cud-grid">
             <div class="cud-col bank-search">
-                <label class="csi-label" for="@(id)-ifsc">Bank &mdash; search by name, branch, IFSC or MICR</label>
+                <label class="csi-label" for="@(id)-ifsc">Bank &mdash; search by name, branch, @Glossary.Term("IFSC") or @Glossary.Term("MICR")</label>
                 <input class="csi-control @Invalid(key + ".Ifsc")" id="@(id)-ifsc" name="@(key).Ifsc" value="@account.Ifsc" maxlength="60" autocomplete="off" spellcheck="false" placeholder="e.g. HDFC Andheri or HDFC0000521"
                        data-required="Search for the bank and pick its branch"
                        role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="@(id)-suggest"
@@ -107,7 +107,7 @@
                 {
                     <div class="inv-kv"><div class="inv-kv__k">Bank name</div><div class="inv-kv__v">@branch.Bank</div></div>
                     <div class="inv-kv"><div class="inv-kv__k">Branch name</div><div class="inv-kv__v">@branch.Branch</div></div>
-                    <div class="inv-kv"><div class="inv-kv__k">IFSC &middot; MICR</div><div class="inv-kv__v">@branch.Ifsc &middot; @branch.Micr</div></div>
+                    <div class="inv-kv"><div class="inv-kv__k">@Glossary.Term("IFSC") &middot; @Glossary.Term("MICR")</div><div class="inv-kv__v">@branch.Ifsc &middot; @branch.Micr</div></div>
                 }
                 else
                 {
@@ -183,7 +183,7 @@
                         @{ await FieldError("Cheque.Date", "cheque-date"); }
                     </div>
                     <div class="cud-col">
-                        <label class="csi-label" for="cms-location">Axis CMS Branch</label>
+                        <label class="csi-label" for="cms-location">Axis @Glossary.Term("CMS") Branch</label>
                         @* Typed, with the backend's branches offered as the browser's own suggestions. *@
                         <input class="csi-control @Invalid("Cheque.CmsLocation")" id="cms-location" name="Cheque.CmsLocation" value="@f.Cheque.CmsLocation" list="cms-locations" placeholder="Start typing a branch" autocomplete="off" spellcheck="false" data-required="Enter the Axis CMS branch" aria-invalid="@InvalidAria("Cheque.CmsLocation")" aria-describedby="@(DescribedBy("Cheque.CmsLocation", "cms-location") ?? "cms-location-hint")">
                         <datalist id="cms-locations">

@@ -1,23 +1,30 @@
 @model IReadOnlyList<UnoTP.Backend.LogEntry>
 @{ var maxAttempts = (await Lookups.ConfigAsync()).MaxAttempts; }
-@* Every attempt, newest first, each as the checks it went through. *@
+@* Every attempt, newest first, as a timeline: one line each - what, how it
+   ended, when - and the checks it went through a click away. "See the history"
+   jumps to an attempt and opens it (partial-forms.js). *@
 <ol class="cud-log__list">
     @foreach (var entry in Model)
     {
         <li class="cud-log__row @(entry.Kind.Length > 0 ? "is-" + entry.Kind : null)" id="log-@entry.Id">
-            <div class="cud-log__top">
-                <span class="cud-log__doc">@entry.Document</span>
-                <span class="cud-log__try">Attempt @entry.Attempt of @maxAttempts</span>
-                <span class="cud-log__at">@entry.At</span>
-                <span class="cud-log__mark">@entry.Mark</span>
-            </div>
-            <p class="cud-log__file">@entry.File</p>
-            <ul class="cud-log__stages">
-                @foreach (var stage in entry.Stages)
-                {
-                    <li class="cud-log__stage @(stage.Kind.Length > 0 ? "is-" + stage.Kind : null)">@stage.Text</li>
-                }
-            </ul>
+            <details class="cud-log__item">
+                <summary class="cud-log__top">
+                    <span class="cud-log__dot" aria-hidden="true"></span>
+                    <span class="cud-log__doc">@entry.Document</span>
+                    <span class="cud-log__mark">@entry.Mark</span>
+                    <span class="cud-log__at">@entry.At</span>
+                    <span class="cud-log__try">Attempt @entry.Attempt of @maxAttempts</span>
+                </summary>
+                <div class="cud-log__body">
+                    <p class="cud-log__file">@entry.File</p>
+                    <ul class="cud-log__stages">
+                        @foreach (var stage in entry.Stages)
+                        {
+                            <li class="cud-log__stage @(stage.Kind.Length > 0 ? "is-" + stage.Kind : null)">@stage.Text</li>
+                        }
+                    </ul>
+                </div>
+            </details>
         </li>
     }
 </ol>

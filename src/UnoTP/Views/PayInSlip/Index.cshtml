@@ -120,10 +120,10 @@
                 <tr>
                     <th scope="col">Application</th>
                     <th scope="col">Investor</th>
-                    <th scope="col">Amount</th>
+                    <th scope="col" class="pis-table__amt">Amount</th>
                     <th scope="col">Instrument</th>
                     <th scope="col">Type</th>
-                    <th scope="col">CMS branch</th>
+                    <th scope="col">@Glossary.Term("CMS") branch</th>
                     <th scope="col">Applied</th>
                     <th scope="col">Slip</th>
                     <th scope="col" class="su-table__act"><span class="visually-hidden">Action</span></th>
@@ -154,7 +154,7 @@
                         <td data-label="CMS branch">@r.Branch</td>
                         <td data-label="Applied">@r.Applied.ToString("dd/MM/yyyy")</td>
                         <td data-label="Slip" class="pis-table__slip">
-                            <span class="@r.SlipTone" data-status>@r.SlipLabel</span>
+                            <span class="su-chip @r.SlipTone" data-status>@r.SlipLabel</span>
                             <div class="su-table__sub" data-slip-detail>@r.SlipNote</div>
                         </td>
                         <td class="su-table__act">

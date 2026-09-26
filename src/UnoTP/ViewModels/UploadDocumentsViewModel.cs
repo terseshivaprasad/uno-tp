@@ -1848,6 +1848,17 @@ public class UploadDocumentsViewModel(
         ? $"NSDL holds no such PAN and date of birth. {NsdlFailedNext(h)}"
         : "Type the name as printed on the PAN, and ask NSDL again";
 
+    // The bar's words for a missing document, and the card that holds it.
+    private static readonly Dictionary<string, string> SlotOfNeed = new()
+    {
+        ["the application form"] = "form", ["the PAN copy"] = "pan", ["the proof of address"] = "poa",
+        ["the photograph"] = "photo", ["the communication address proof"] = "mail",
+        ["the instrument copy"] = "payment", ["the employee proof"] = "empproof",
+    };
+
+    /// <summary>The card that holds the next thing to do, when that is a document; null otherwise.</summary>
+    public string? NextSlot() => Outstanding().FirstOrDefault() is { } first ? SlotOfNeed.GetValueOrDefault(first) : null;
+
     public List<string> Outstanding()
     {
         var s = State;

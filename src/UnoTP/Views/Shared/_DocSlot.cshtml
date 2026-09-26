@@ -13,7 +13,7 @@
     var key = v.Key;
     var filed = v.Doc is not null;
 }
-<div class="cud-slot @(v.Error is not null ? "is-invalid" : null) @(v.Unconfirmed ? "is-unconfirmed" : null)" id="@(Model.Alternate ? null : "slot-" + key)" tabindex="-1">
+<div class="cud-slot @(v.Error is not null ? "is-invalid" : null) @(v.Unconfirmed ? "is-unconfirmed" : null) @(Model.IsNext ? "is-next" : null)" id="@(Model.Alternate ? null : "slot-" + key)" tabindex="-1">
     <div class="cud-slot__frame">
         @if (!v.Used && v.Read is { } held)
         {
@@ -163,7 +163,16 @@
     @* What the checks made of the copy, under its box. *@
     @if (filed && v.Doc!.Check.Length > 0)
     {
-        <p class="cud-slot__check @(v.Doc.CheckKind.Length > 0 ? "is-" + v.Doc.CheckKind : null)">@v.Doc.Check</p>
+        if (v.Doc.CheckKind is "warn" or "bad")
+        {
+            <p class="cud-slot__check is-@v.Doc.CheckKind">@v.Doc.Check</p>
+        }
+        else
+        {
+            <p class="cud-slot__check cud-slot__check--quiet">
+                <span class="tip tip--info" tabindex="0" data-tip="@v.Doc.Check">How it was checked<span class="visually-hidden">: @v.Doc.Check</span></span>
+            </p>
+        }
     }
     @if (v.Tries is not null)
     {

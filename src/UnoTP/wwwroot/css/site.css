@@ -45,9 +45,11 @@ html, body {
   background: var(--page-bg);
   font-family: 'Georama', system-ui, sans-serif;
   color: var(--ink);
-  letter-spacing: .25px;
+  letter-spacing: 0;
   -webkit-font-smoothing: antialiased;
 }
+/* Headings sit a touch tighter than body text, as large type needs. */
+h1, h2, h3, .cii-title, .cud-head__name, .inv-title, .classic-steps__title, .status-card__title { letter-spacing: -.01em; }
 
 a { color: var(--red); text-decoration: none; }
 a:hover { text-decoration: underline; }
@@ -179,7 +181,7 @@ a.app-tile:hover { text-decoration: none; }
 .seg-toggle { display: inline-flex; border: 1px solid var(--border-3); border-radius: 6px; overflow: hidden; flex: none; }
 .seg-toggle__opt { padding: 8px 20px; font-size: 12.5px; font-weight: 500; background: #fff; color: var(--text); white-space: nowrap; border: 0; cursor: pointer; font-family: inherit; }
 .seg-toggle__opt + .seg-toggle__opt { border-left: 1px solid var(--border-3); }
-.seg-toggle__opt--active { background: var(--red); color: #fff; font-weight: 600; }
+.seg-toggle__opt--active { background: var(--pink-bg); color: var(--red-dark); font-weight: 600; box-shadow: inset 0 0 0 1px var(--red); }
 .seg-toggle__opt:disabled, .seg-toggle__opt:has(input:disabled) { background: var(--tint); color: var(--muted-2); cursor: not-allowed; }
 .seg-toggle--sm .seg-toggle__opt { padding: 6px 15px; font-size: 11.5px; }
 
@@ -355,15 +357,15 @@ select.inv-control:has(option[value=""]:checked) { color: var(--muted-2); }
 .cii-alert__close { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; margin: -2px -6px 0 0; border-radius: 6px; color: inherit; cursor: pointer; }
 .cii-alert__close:hover { background: rgba(192, 21, 47, .1); }
 .cii-card[hidden], .cii-ask[hidden] { display: none; }
-.cii-head { display: flex; align-items: center; gap: 12px; padding-bottom: 14px; border-bottom: 1px solid var(--divider); }
+.cii-head { display: flex; align-items: center; gap: 12px; padding-bottom: 6px; }
 .cii-title { flex: 1; min-width: 0; margin: 0; font-size: 16px; font-weight: 500; color: var(--text); }
 .cii-app { font-size: 12.5px; color: var(--muted); }
 .cii-app strong { color: var(--ink); font-weight: 600; }
 /* The investor's record under the card title: CKYC, the verified addresses, what is typed. */
 .cii-record { display: flex; flex-direction: column; gap: 16px; padding-top: 18px; }
-.cii-section { margin: 28px 0 0; padding-bottom: 12px; font-size: 15px; font-weight: 500; color: var(--text); border-bottom: 1px solid var(--divider); }
+.cii-section { margin: 28px 0 0; padding-bottom: 10px; font-size: 15px; font-weight: 500; color: var(--text); }
 /* The Documents heading of a joint holder, with where post goes beside it. */
-.cii-docs-head { display: flex; align-items: center; justify-content: space-between; gap: 12px 24px; flex-wrap: wrap; margin: 28px 0 0; padding-bottom: 12px; border-bottom: 1px solid var(--divider); }
+.cii-docs-head { display: flex; align-items: center; justify-content: space-between; gap: 12px 24px; flex-wrap: wrap; margin: 28px 0 0; padding-bottom: 10px; }
 .cii-docs-head__title { font-size: 15px; font-weight: 500; color: var(--text); }
 .cii-docs-head .seg-toggle { height: 32px; }
 .cii-docs-head .seg-toggle__opt { display: flex; align-items: center; padding: 0 16px; }
@@ -781,7 +783,7 @@ body:has(.rdocs:popover-open) { overflow: hidden; }
 .csi-rail__where, .csi-rail__bar { display: none; }
 
 .csi-card { background: #fff; border-radius: 8px; padding: 20px 22px 26px; margin-bottom: 70px; }
-.csi-card__title { font-size: 16px; font-weight: 500; color: var(--text); padding-bottom: 14px; border-bottom: 1px solid var(--divider); }
+.csi-card__title { font-size: 16px; font-weight: 500; color: var(--text); padding-bottom: 8px; }
 
 .csi-label { display: block; font-size: 12.5px; font-weight: 600; color: var(--ink); padding: 0 0 6px; }
 
@@ -1076,7 +1078,7 @@ html.is-saving::before {
    Three document slots across the top, the one the payment carries under them,
    and the details the application is sourced under in a card of its own. */
 /* Who the step is for on the left, what it is filed under on the right. */
-.cud-head { display: flex; align-items: flex-start; gap: 20px; flex-wrap: wrap; padding-bottom: 16px; border-bottom: 1px solid var(--divider); }
+.cud-head { display: flex; align-items: flex-start; gap: 20px; flex-wrap: wrap; padding-bottom: 8px; }
 .cud-head__who { min-width: 0; }
 .cud-head__step { font-size: 10.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted-2); }
 .cud-head__name { padding-top: 3px; font-size: 16px; font-weight: 600; line-height: 1.25; color: var(--ink); }
@@ -1286,7 +1288,7 @@ label.cud-tool { cursor: pointer; }
 label.seg-toggle__opt { display: inline-block; }
 /* A toggle made of radios is lit by the checked radio alone, so a click moves the
    red at once - never two options lit while the server answers. */
-.seg-toggle__opt:has(input:checked) { background: var(--red); color: #fff; font-weight: 600; }
+.seg-toggle__opt:has(input:checked) { background: var(--pink-bg); color: var(--red-dark); font-weight: 600; box-shadow: inset 0 0 0 1px var(--red); }
 .seg-toggle__opt:has(input:focus-visible) { outline: 2px solid var(--blue); outline-offset: -2px; }
 .seg-toggle__opt:has(input:disabled) { background: var(--tint); color: var(--muted-2); cursor: not-allowed; }
 
@@ -1459,7 +1461,7 @@ body.is-waiting { overflow: hidden; }
    last of them, not each one. */
 .csi-main { min-width: 0; display: flex; flex-direction: column; gap: 15px; margin-bottom: 70px; }
 .csi-main .csi-card { margin-bottom: 0; }
-.cud-extra__title { font-size: 16px; font-weight: 500; color: var(--text); padding-bottom: 14px; border-bottom: 1px solid var(--divider); }
+.cud-extra__title { font-size: 16px; font-weight: 500; color: var(--text); padding-bottom: 8px; }
 .cud-grid--details { gap: 18px 24px; }
 
 @media (max-width: 1100px) {
@@ -1871,7 +1873,7 @@ html:has(.clogin), html:has(.clogin) body { background: var(--border); }
 .fd-option input { position: absolute; opacity: 0; pointer-events: none; }
 .fd-option__face { display: block; padding: 10px 8px; border-radius: 6px; border: 1px solid var(--border-3); background: #fff; color: var(--text); font-size: 13px; font-weight: 500; text-align: center; white-space: nowrap; }
 .fd-option:hover .fd-option__face { border-color: var(--text); }
-.fd-option input:checked + .fd-option__face { border-color: var(--red); background: var(--red); color: #fff; font-weight: 700; }
+.fd-option input:checked + .fd-option__face { border-color: var(--red); background: var(--pink-bg); color: var(--red-dark); font-weight: 700; }
 .fd-option input:focus-visible + .fd-option__face { outline: 2px solid var(--ink); outline-offset: 2px; }
 .fd-section { border-top: 1px solid var(--divider); padding-top: 18px; display: flex; flex-direction: column; gap: 14px; }
 .fd-section--tight { gap: 12px; }
@@ -1915,3 +1917,125 @@ html:has(.clogin), html:has(.clogin) body { background: var(--border); }
   .fd-summary { order: -1; position: static; }
   .fd-options--tenure { grid-template-columns: repeat(4, minmax(0,1fr)); }
 }
+
+
+/* ----- Lists: the data shapes the table ------------------------------------
+   Amounts line up by place value, right-aligned in figures of one width. A
+   status is a chip, coloured by what it means. A row that is over - expired,
+   lapsed, cancelled - steps back, so the rows still in play are what the eye
+   finds. */
+.pis-table__amt { text-align: right; font-variant-numeric: tabular-nums; }
+.su-table th.pis-table__amt { text-align: right; }
+.su-chip { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 11.5px; font-weight: 600; line-height: 1.5; white-space: nowrap; background: var(--tint); color: var(--text); }
+.su-chip.text-success { background: var(--green-bg); color: var(--green); }
+.su-chip.text-danger { background: var(--pink-bg); color: var(--red-dark); }
+.su-chip.text-amber { background: var(--amber-bg); color: var(--amber); }
+.su-chip.text-muted { background: var(--tint); color: var(--muted); }
+.su-chip.text-blue, .su-chip.text-info { background: var(--blue-bg); color: var(--blue); }
+.su-table tr:is([data-state="expired"], [data-state="lapsed"], [data-state="cancelled"]) td { color: var(--muted); }
+.su-table tr:is([data-state="expired"], [data-state="lapsed"], [data-state="cancelled"]) :is(strong, .pis-table__amt) { color: var(--muted); font-weight: 500; }
+@media (max-width: 760px) {
+  .pis-table__amt, .su-table th.pis-table__amt { text-align: left; }
+}
+
+/* ----- A term explained --------------------------------------------------
+   Glossary.Term: a dotted underline, and on hover or focus the meaning in a
+   small dark label above it. It reads the same whatever the text around it is. */
+.tip { position: relative; text-decoration: none; border-bottom: 1px dotted currentColor; cursor: help; }
+.tip:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; border-radius: 2px; }
+.tip::after {
+  content: attr(data-tip); position: absolute; left: 50%; bottom: calc(100% + 8px); z-index: 70;
+  width: max-content; max-width: 260px; padding: 6px 9px; border-radius: 6px;
+  background: var(--ink); color: #fff; font-size: 12px; font-weight: 400; line-height: 1.4;
+  letter-spacing: 0; text-transform: none; text-align: left; white-space: normal;
+  transform: translateX(-50%); pointer-events: none; opacity: 0; transition: opacity .12s ease;
+}
+abbr.tip:hover::after, .tip:focus-visible::after { opacity: 1; }
+
+/* A check that went well is said behind an info mark; its words are there on
+   hover or focus. Warnings and failures stay written out under the card. */
+.cud-slot__check--quiet { padding-top: 6px; }
+.cud-slot__check--quiet::before { content: none; }
+.tip--info { display: inline-flex; align-items: center; gap: 5px; border-bottom: 0; font-size: 11.5px; color: var(--muted); }
+.tip--info::before { content: "i"; display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; border: 1px solid currentColor; border-radius: 50%; font-size: 9.5px; font-weight: 700; font-style: normal; }
+.tip--info:hover { color: var(--ink); }
+.tip--info::after { left: 0; transform: none; max-width: 300px; }
+
+/* ----- Emphasis is the difference from the neighbours -----------------------
+   A card with nothing to do - not applicable, or already done - steps back; the
+   card the bar names as next is the one outlined, so the eye goes there first. */
+.cud-slot__na { border-color: var(--border); }
+.cud-slot__na .cud-slot__na-title { color: var(--muted-2); }
+.cud-drop.is-filled, .cud-drop.is-held { border-color: var(--border); }
+/* Blue, the colour of information: red on a card would read as something wrong. */
+.cud-slot.is-next .cud-drop { border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-bg); }
+
+/* Detail kept a click away: "How it works" under a short line. */
+.cud-more { margin-top: 6px; font-size: 12px; color: var(--text); }
+.cud-more > summary { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; font-weight: 600; color: var(--blue); list-style: none; }
+.cud-more > summary::-webkit-details-marker { display: none; }
+.cud-more > summary::after { content: ""; width: 6px; height: 6px; margin-top: -3px; border-right: 1.6px solid currentColor; border-bottom: 1.6px solid currentColor; transform: rotate(45deg); transition: transform .15s ease; }
+.cud-more[open] > summary::after { transform: rotate(-135deg); margin-top: 3px; }
+.cud-more > summary:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; border-radius: 2px; }
+.cud-more[open] > .cud-route__p { margin-top: 8px; }
+
+/* ----- The history, as a timeline -------------------------------------------
+   One line per attempt on a thread: a dot coloured by how it ended, what it was,
+   the outcome and when. Its checks open under it. */
+.cud-log__list { position: relative; padding: 12px 0 0; }
+.cud-log__list::before { content: ""; position: absolute; left: 6px; top: 22px; bottom: 12px; width: 1px; background: var(--border-2); }
+.cud-log__row { padding: 0; border: 0; border-radius: 0; background: none; }
+.cud-log__row + .cud-log__row { margin-top: 0; }
+.cud-log__row:target, .cud-log__row.is-called { background: none; border-color: transparent; }
+.cud-log__row:target .cud-log__top { background: var(--pink-tint); }
+.cud-log__item > summary { list-style: none; cursor: pointer; }
+.cud-log__item > summary::-webkit-details-marker { display: none; }
+.cud-log__top { position: relative; display: flex; align-items: center; gap: 6px 12px; flex-wrap: wrap; padding: 9px 8px 9px 24px; border-radius: 6px; }
+.cud-log__top:hover { background: var(--tint); }
+.cud-log__top:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+.cud-log__dot { position: absolute; left: 1px; top: 50%; width: 11px; height: 11px; margin-top: -5.5px; border-radius: 50%; background: #fff; border: 2px solid var(--border-2); }
+.cud-log__row.is-ok .cud-log__dot { border-color: var(--green-2); background: var(--green-2); }
+.cud-log__row.is-warn .cud-log__dot { border-color: var(--amber-accent); background: var(--amber-accent); }
+.cud-log__row.is-bad .cud-log__dot { border-color: var(--red); background: var(--red); }
+.cud-log__mark { margin-left: 0; padding: 1px 7px; border-radius: 3px; background: var(--tint); font-size: 10px; }
+.cud-log__row.is-ok .cud-log__mark { background: var(--green-bg); }
+.cud-log__row.is-warn .cud-log__mark { background: var(--amber-bg); }
+.cud-log__row.is-bad .cud-log__mark { background: var(--pink-bg); }
+.cud-log__try { margin-left: auto; }
+.cud-log__top::after { content: ""; flex: none; width: 6px; height: 6px; margin: -3px 2px 0 0; border-right: 1.6px solid var(--muted); border-bottom: 1.6px solid var(--muted); transform: rotate(45deg); transition: transform .15s ease; }
+.cud-log__item[open] > .cud-log__top::after { transform: rotate(-135deg); margin-top: 3px; }
+.cud-log__body { padding: 0 8px 10px 24px; }
+.cud-log__body .cud-log__file { padding-top: 0; }
+@media (max-width: 760px) {
+  .cud-log__try { margin-left: 0; }
+}
+
+/* ----- Feedback in proportion ------------------------------------------------
+   Every press is felt: buttons sink a little while held. A quick action spins on
+   its own button while it is under way, and a toast says when it is done. A copy
+   button says "Copied" where it was pressed. */
+.btn:active:not(:disabled), .csi-btn:active:not(:disabled), .cud-tool:active, .csi-link:active { transform: translateY(1px); }
+.btn:active:not(:disabled), .csi-btn:active:not(:disabled) { filter: brightness(.94); }
+.is-busy { position: relative; color: transparent !important; pointer-events: none; }
+.is-busy::after { content: ""; position: absolute; left: 50%; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border: 2px solid var(--pink-bg); border-top-color: var(--red); border-radius: 50%; animation: cud-spin .7s linear infinite; }
+[data-copy] { position: relative; }
+[data-copy].is-copied::after { content: "Copied"; position: absolute; left: 50%; bottom: calc(100% + 6px); transform: translateX(-50%); padding: 3px 7px; border-radius: 4px; background: var(--ink); color: #fff; font-size: 11px; font-weight: 600; white-space: nowrap; pointer-events: none; }
+
+/* ----- Dashboard: the partner's work ----------------------------------------
+   What is waiting, one row each: how many, the first of them, and a way in. The
+   count carries the colour of how pressing it is; the rest stays quiet. Features
+   still to come step back among the tiles. */
+.work-list { list-style: none; margin: 24px 0 28px; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.work-item { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border: 1px solid var(--border); border-radius: 8px; background: #fff; color: var(--ink); }
+.work-item:hover { border-color: var(--border-3); background: var(--tint); text-decoration: none; }
+.work-item:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.work-item__count { flex: none; display: inline-flex; align-items: center; justify-content: center; min-width: 36px; height: 36px; padding: 0 8px; border-radius: 8px; font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; background: var(--tint); color: var(--text); }
+.work-item--red .work-item__count { background: var(--pink-bg); color: var(--red-dark); }
+.work-item--amber .work-item__count { background: var(--amber-bg); color: var(--amber); }
+.work-item--blue .work-item__count { background: var(--blue-bg); color: var(--blue); }
+.work-item__text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.work-item__title { font-size: 14px; font-weight: 600; }
+.work-item__detail { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.work-item__go { flex: none; width: 8px; height: 8px; border-top: 1.8px solid var(--muted); border-right: 1.8px solid var(--muted); transform: rotate(45deg); }
+.work-empty { margin: 20px 0 28px; padding: 16px; border-radius: 8px; background: var(--tint); font-size: 13px; color: var(--muted); }
+.classic-tile--off { opacity: .6; box-shadow: none; }

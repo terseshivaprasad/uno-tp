@@ -92,7 +92,7 @@
 
         if (holder == 1)
         {
-            <h3 class="cii-section">Investor's FATCA Details</h3>
+            <h3 class="cii-section">Investor's @Glossary.Term("FATCA") Details</h3>
             <div class="cii-switches">
                 <label class="inv-switch-row"><span>Are you/joint holder a tax resident of a country other than India?</span><input type="checkbox" class="inv-switch" name="@(p).FatcaTaxResident" checked="@Model.On($"{p}.FatcaTaxResident")"></label>
                 <label class="inv-switch-row"><span>Are you/joint holder a permanent resident of a foreign country?</span><input type="checkbox" class="inv-switch" name="@(p).FatcaPermanentResident" checked="@Model.On($"{p}.FatcaPermanentResident")"></label>
@@ -185,7 +185,6 @@
         @* The addresses are in the panel below, so only the PAN's checks stand here. *@
         <section class="cud-read">
             <h2 class="cud-read__title">What the PAN was checked with</h2>
-            <p class="cud-read__sub">Asked once the PAN copy is filed above. The addresses are in the proof of address boxes.</p>
             <partial name="_ReadCards" model="@(new ReadCardsBlock(docs.PanReadsOf(h), Url.Action("JointNsdl", new { n = holder })))" />
         </section>
     }
@@ -299,9 +298,9 @@
             </div>
             <div class="inv-kv-grid">
                 <div class="inv-kv inv-kv--wide"><div class="inv-kv__k">Permanent address</div><div class="inv-kv__v">@poa.Lines</div></div>
-                <div class="inv-kv"><div class="inv-kv__k">Permanent POA type</div><div class="inv-kv__v">@(docs.PoaTypeOf(h) is { Length: > 0 } poaType ? poaType : "—")</div></div>
-                <div class="inv-kv"><div class="inv-kv__k">POA reference number</div><div class="inv-kv__v">@(poa.Number.Length > 0 ? poa.Number : "—")</div></div>
-                <div class="inv-kv"><div class="inv-kv__k">POA expiry date</div><div class="inv-kv__v">@(poa.Expiry.Length > 0 ? poa.Expiry : "—")</div></div>
+                <div class="inv-kv"><div class="inv-kv__k">Permanent @Glossary.Term("POA") type</div><div class="inv-kv__v">@(docs.PoaTypeOf(h) is { Length: > 0 } poaType ? poaType : "—")</div></div>
+                <div class="inv-kv"><div class="inv-kv__k">@Glossary.Term("POA") reference number</div><div class="inv-kv__v">@(poa.Number.Length > 0 ? poa.Number : "—")</div></div>
+                <div class="inv-kv"><div class="inv-kv__k">@Glossary.Term("POA") expiry date</div><div class="inv-kv__v">@(poa.Expiry.Length > 0 ? poa.Expiry : "—")</div></div>
                 <div class="inv-kv"><div class="inv-kv__k">Verification</div><div class="inv-kv__v">@poa.State</div></div>
                 @if (docs.MailDifferentOf(h))
                 {
@@ -554,8 +553,8 @@
         @if (jointLog.Count > 0)
         {
             <section class="csi-card cud-log" id="ciiLog">
-                <h2 class="cud-extra__title">Joint holders&rsquo; upload, OCR and verification history</h2>
-                <p class="cud-log__sub">Every attempt at a joint holder&rsquo;s document, newest first, each named with the holder it is for. Three copies of a document refused one after another and it goes to Operations; a copy the checks take clears the count. The investor&rsquo;s are on Upload Documents.</p>
+                <h2 class="cud-extra__title">Joint holders&rsquo; upload, @Glossary.Term("OCR") and verification history</h2>
+                <p class="cud-log__sub">Every joint holder&rsquo;s attempt, newest first. Three refusals in a row send a document to Operations.</p>
                 <partial name="_DocLog" model="@jointLog" />
             </section>
         }

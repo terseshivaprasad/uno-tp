@@ -11,8 +11,15 @@ namespace UnoTP.ViewModels;
 public record DashboardTile(string Key, string Title, string Glyph, string? Controller, string? Off);
 
 /// <summary>The classic dashboard: its tiles, and why a closed page sent the partner here.</summary>
+/// <summary>Work waiting on the partner: how many, what the first of them is, and the page that handles it.</summary>
+/// <param name="Tone">amber, blue or red: how pressing it is.</param>
+public sealed record WorkItem(string Key, string Title, int Count, string Detail, string Controller, string Tone);
+
 public class DashboardViewModel(FeatureSet features, ConsoleBoard board, string? off)
 {
+    /// <summary>What is waiting on the partner, most pressing kinds included; empty when nothing is.</summary>
+    public IReadOnlyList<WorkItem> Work { get; init; } = [];
+
     // The four booking steps' outline glyphs (24px grid), in order: documents,
     // investor, payment, deposit. The dashboard lists them and the search page's
     // rail repeats them.

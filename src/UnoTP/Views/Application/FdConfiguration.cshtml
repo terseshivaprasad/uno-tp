@@ -182,8 +182,8 @@
                     <section class="fd-section fd-section--tight">
                         <label class="fd-toggle" for="fd-no-tds">
                             <span class="fd-toggle__text">
-                                <span class="fd-toggle__title">Do not deduct tax at source</span>
-                                <span class="fd-toggle__desc">Only where the investor is eligible &mdash; Form 15G under @Model.Config.SeniorAge, Form 15H at @Model.Config.SeniorAge and above</span>
+                                <span class="fd-toggle__title">Do not deduct tax at source (@Glossary.Term("TDS"))</span>
+                                <span class="fd-toggle__desc">Only where the investor is eligible &mdash; Form @Glossary.Term("15G") under @Model.Config.SeniorAge, Form @Glossary.Term("15H") at @Model.Config.SeniorAge and above</span>
                             </span>
                             <input type="checkbox" id="fd-no-tds" name="NoTds" value="true" class="inv-switch" checked="@f.NoTds" data-quote>
                             <input type="hidden" name="NoTds" value="false">

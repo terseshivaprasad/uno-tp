@@ -56,7 +56,7 @@
     // One document slot, drawn by the partial Investor Information shares.
     async Task Slot(M.SlotView v, string? form = null)
     {
-        <partial name="_DocSlot" model="@(new DocSlotBlock(v, Url.Action("Upload")!, form))" />
+        <partial name="_DocSlot" model="@(new DocSlotBlock(v, Url.Action("Upload")!, form, IsNext: v.Key == Model.NextSlot()))" />
     }
 
     // A slot as each value of a choice leaves it, every one drawn and all but the
@@ -208,21 +208,29 @@
                 <div class="cud-route__text">
                     @if (s.Ckyc)
                     {
-                        <h2 class="cud-route__title">KYC from CERSAI</h2>
-                        <p class="cud-route__p">The investor is asked for consent once the application is completed online: a link goes to their registered mobile number and email address, and they enter the OTP sent to the CERSAI-registered mobile number.</p>
-                        <p class="cud-route__p"><strong>The addresses &mdash; permanent and communication &mdash; and the photograph are CERSAI&rsquo;s to send.</strong> They are not uploaded here, and the record cannot be fetched again. The PAN copy is still filed below, and joint holders file their own documents on Investor Information.</p>
+                        <h2 class="cud-route__title">KYC from @Glossary.Term("CERSAI")</h2>
+                        <p class="cud-route__p">The addresses and the photograph come from the record; only the PAN copy is filed below.</p>
+                        <details class="cud-more">
+                            <summary>How it works</summary>
+                            <p class="cud-route__p">The investor is asked for consent once the application is completed online: a link goes to their registered mobile number and email address, and they enter the OTP sent to the CERSAI-registered mobile number.</p>
+                            <p class="cud-route__p">The addresses &mdash; permanent and communication &mdash; and the photograph are CERSAI&rsquo;s to send. They are not uploaded here, and the record cannot be fetched again. Joint holders file their own documents on Investor Information.</p>
+                        </details>
                     }
                     else
                     {
-                        <h2 class="cud-route__title">Fetch the KYC from CERSAI</h2>
-                        <p class="cud-route__p">If the record is fetched, the investor would be asked for consent once the application is completed online: a link goes to their registered mobile number and email address, and they enter the OTP sent to the CERSAI-registered mobile number.</p>
-                        <p class="cud-route__p">The addresses &mdash; permanent and communication &mdash; and the photograph would then come from CERSAI instead of being filed here, and anything uploaded for them would not be used. The PAN copy is filed here either way, and it is fetched for the investor only: joint holders file their own documents on Investor Information. <strong>Nothing changes until the record is fetched.</strong></p>
+                        <h2 class="cud-route__title">Fetch the KYC from @Glossary.Term("CERSAI")</h2>
+                        <p class="cud-route__p">Take the addresses and the photograph from the investor&rsquo;s record instead of uploading them.</p>
+                        <details class="cud-more">
+                            <summary>How it works</summary>
+                            <p class="cud-route__p">If the record is fetched, the investor is asked for consent once the application is completed online: a link goes to their registered mobile number and email address, and they enter the OTP sent to the CERSAI-registered mobile number.</p>
+                            <p class="cud-route__p">The addresses &mdash; permanent and communication &mdash; and the photograph then come from CERSAI instead of being filed here, and anything uploaded for them is not used. The PAN copy is filed here either way, and the record is fetched for the investor only: joint holders file their own documents on Investor Information. Nothing changes until the record is fetched.</p>
+                        </details>
                     }
                 </div>
                 <div class="cud-route__act">
                     @if (s.Ckyc)
                     {
-                        <p class="cud-ckyc-on">KYC from CKYC</p>
+                        <p class="cud-ckyc-on">KYC from @Glossary.Term("CKYC")</p>
                     }
                     else
                     {
@@ -341,7 +349,6 @@
            so they have no cards here. *@
         <section class="cud-read">
             <h2 class="cud-read__title">What the PAN was checked with</h2>
-            <p class="cud-read__sub">Asked once the PAN copy is filed above. The addresses are in the proof of address boxes.</p>
             <partial name="_ReadCards" model="@(new ReadCardsBlock(Model.PanReadsOf(Model.Investor), Url.Action("Nsdl")))" />
         </section>
 
@@ -350,7 +357,6 @@
            row of their own under the KYC documents. *@
         <section class="cud-read cud-pay" id="cudPayment">
             <h2 class="cud-read__title">Payment</h2>
-            <p class="cud-read__sub">A cheque is read by OCR and the account confirmed with the bank it is drawn on. Online and RTGS settle electronically and carry nothing.</p>
             @* The mode above its box, and the card beside the box, level with it. *@
             <div class="cud-pay__grid">
                 <div class="cud-pay__mode">
@@ -543,8 +549,8 @@
        attempt is kept as the checks it went through, so a refusal is never just a
        red line that has since been cleared away. *@
     <section class="csi-card cud-log">
-        <h2 class="cud-extra__title">Upload, OCR and verification history</h2>
-        <p class="cud-log__sub">Every attempt against this application, newest first. A document goes to Operations only after three copies of it are refused one after another &mdash; a copy the checks take clears the count, so replacing a document that is already filed costs nothing. The count is kept per document and per session: the PAN copy running out says nothing about the proof of address, and what an earlier session tried is on the record without counting against this one.</p>
+        <h2 class="cud-extra__title">Upload, @Glossary.Term("OCR") and verification history</h2>
+        <p class="cud-log__sub">Every attempt, newest first. Three refusals in a row send a document to Operations.</p>
         @if (s.Log.Count == 0)
         {
             <p class="cud-log__none">Nothing uploaded against this application yet.</p>
@@ -578,7 +584,7 @@
             {
                 <span class="csi-bar__saved">Draft saved @saved.ToString("HH:mm")</span>
             }
-            <button type="submit" class="csi-btn csi-btn--back" form="cudForm" asp-action="Save">Save draft</button>
+            <button type="submit" class="csi-btn csi-btn--back" form="cudForm" asp-action="Save" data-toast="Draft saved">Save draft</button>
             <button type="submit" class="csi-btn csi-btn--primary" form="cudForm" asp-action="Proceed"
                     data-loader="Checking everything on this step&hellip;">Proceed</button>
         </div>

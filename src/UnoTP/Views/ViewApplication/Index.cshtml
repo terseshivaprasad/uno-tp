@@ -142,7 +142,7 @@
                     <th scope="col">Application</th>
                     <th scope="col">Investor</th>
                     <th scope="col">Folio</th>
-                    <th scope="col">Amount</th>
+                    <th scope="col" class="pis-table__amt">Amount</th>
                     <th scope="col">Deposit</th>
                     <th scope="col">Applied</th>
                     <th scope="col">Status</th>
@@ -177,7 +177,7 @@
                         </td>
                         <td data-label="Applied">@r.Applied.ToString("dd/MM/yyyy")</td>
                         <td data-label="Status">
-                            <span class="@r.Status.Tone">@r.Status.Text</span>
+                            <span class="su-chip @r.Status.Tone">@r.Status.Text</span>
                             <div class="su-table__sub">@r.Waiting</div>
                         </td>
                         <td class="su-table__act">

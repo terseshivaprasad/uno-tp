@@ -159,6 +159,20 @@
     go(link.href, { credentials: 'same-origin' }, true, link, function () { window.location.href = link.href; });
   });
 
+  // The history's attempts are folded; a link to one ("See the history") opens it.
+  function openTarget() {
+    var id = window.location.hash.slice(1);
+    var row = id && document.getElementById(id);
+    var item = row && row.querySelector('details');
+    if (item) item.open = true;
+  }
+  window.addEventListener('hashchange', openTarget);
+  document.addEventListener('click', function (e) {
+    var link = e.target.closest && e.target.closest('a[href^="#log-"]');
+    if (link) setTimeout(openTarget, 0);
+  });
+  openTarget();
+
   // A page opened from history is drawn again from the server.
   window.addEventListener('popstate', function () { window.location.reload(); });
 
@@ -172,9 +186,30 @@
     return values;
   }
 
+  // A quick action says so on its own button, and once done in a toast - the
+  // screen-wide wait is for the waits that are real (an upload, a step).
+  function toast(words) {
+    var box = document.getElementById('toast');
+    if (!box) {
+      box = document.createElement('div');
+      box.id = 'toast';
+      box.className = 'toast';
+      box.setAttribute('role', 'status');
+      box.setAttribute('aria-live', 'polite');
+      document.body.appendChild(box);
+    }
+    box.textContent = words;
+    box.classList.add('toast--visible');
+    clearTimeout(toast.timer);
+    toast.timer = setTimeout(function () { box.classList.remove('toast--visible'); }, 2400);
+  }
+
   function go(url, init, push, from, fallback) {
     busy = true;
     var sent = typedNow();
+    var quick = from && from.matches && from.matches('button') && !from.getAttribute('data-loader');
+    var said = quick && from.getAttribute('data-toast');
+    if (quick) { from.classList.add('is-busy'); from.setAttribute('aria-busy', 'true'); }
     var words = from && from.getAttribute('data-loader');
     if (words && window.showLoader) window.showLoader(words, from.getAttribute('data-loader-hint') || '');
     // Anything else - a toggle, a drop-down - says it is on its way with a thin bar
@@ -210,13 +245,14 @@
         // A newer post is waiting, so this answer is already out of date: drawing
         // it would put back what the partner has changed since.
         if (waiting) return null;
-        return res.text().then(function (html) { swap(html, answered, push, sent); });
+        return res.text().then(function (html) { swap(html, answered, push, sent); if (said) toast(said); });
       })
       .catch(fallback)
       .then(function () {
         busy = false;
         if (window.hideLoader) window.hideLoader();
         document.documentElement.classList.remove('is-saving');
+        if (quick) { from.classList.remove('is-busy'); from.removeAttribute('aria-busy'); }
         if (waiting) {
           var next = waiting;
           waiting = null;
