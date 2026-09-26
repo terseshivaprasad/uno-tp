@@ -126,6 +126,8 @@
         </div>
     </div>
     <script src="~/js/loader.js" asp-append-version="true"></script>
+    @* Before the pages' own scripts, so a field found wrong stops a post before it goes. *@
+    <script src="~/js/checks.js" asp-append-version="true"></script>
     <script src="~/js/notices.js" asp-append-version="true"></script>
     <script src="~/js/topbar.js" asp-append-version="true"></script>
     <script src="~/js/date-parts.js" asp-append-version="true"></script>

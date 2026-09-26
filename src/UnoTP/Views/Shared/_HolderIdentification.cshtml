@@ -20,15 +20,17 @@
 
 @functions {
     // A button that posts one step: through the step's own form, or the page's form.
-    private async Task Step(string step, string css, string label, string? loader = null)
+    // One that checks the search fields first (checks.js) sends nothing while one is wrong.
+    private async Task Step(string step, string css, string label, string? loader = null, bool validate = false)
     {
+        var checks = validate ? ".csi-search" : null;
         if (Model.Embedded)
         {
-            <button type="submit" class="@css" formaction="@Model.Url(step)" formnovalidate data-loader="@loader">@Html.Raw(label)</button>
+            <button type="submit" class="@css" formaction="@Model.Url(step)" formnovalidate data-loader="@loader" data-validate="@checks">@Html.Raw(label)</button>
         }
         else
         {
-            <button type="submit" class="@css" data-loader="@loader">@Html.Raw(label)</button>
+            <button type="submit" class="@css" data-loader="@loader" data-validate="@checks">@Html.Raw(label)</button>
         }
         await Task.CompletedTask;
     }
@@ -75,6 +77,7 @@
                 <label class="csi-label" for="@(ids)Pan">Enter PAN</label>
                 <input class="csi-control csi-control--caps @(m.PanError is not null ? "is-invalid" : null)" id="@(ids)Pan" name="@Model.Name("Pan")" value="@m.Pan"
                        maxlength="10" autocomplete="off" spellcheck="false" aria-describedby="@(ids)PanError"
+                       data-required="Enter the PAN" data-check="pan"
                        aria-invalid="@(m.PanError is not null ? "true" : null)" autofocus="@(focus == ids + "Pan")">
                 <p class="csi-error" id="@(ids)PanError" hidden="@(m.PanError is null)">@m.PanError</p>
             </div>
@@ -82,7 +85,8 @@
             <div class="csi-field" data-for="pan">
                 <span class="csi-label" id="@(ids)DobLabel">Date Of Birth</span>
                 @* Three boxes with slashes between, like the old jq-dte control. *@
-                <div class="csi-date @(m.DobError is not null ? "is-invalid" : null)" role="group" aria-labelledby="@(ids)DobLabel" aria-describedby="@(ids)DobError">
+                <div class="csi-date @(m.DobError is not null ? "is-invalid" : null)" role="group" aria-labelledby="@(ids)DobLabel" aria-describedby="@(ids)DobError"
+                     data-required="Enter the date of birth" data-check="date" data-error-id="@(ids)DobError">
                     <input class="csi-date__part" id="@(ids)Dd" name="@Model.Name("Dd")" value="@m.Dd" inputmode="numeric" maxlength="2" placeholder="DD" aria-label="Day" autocomplete="off" autofocus="@(focus == ids + "Dd")">
                     <span class="csi-date__sep">-</span>
                     <input class="csi-date__part" name="@Model.Name("Mm")" value="@m.Mm" inputmode="numeric" maxlength="2" placeholder="MM" aria-label="Month" autocomplete="off">
@@ -98,13 +102,14 @@
                     <label class="csi-label" for="@(ids)Folio">Enter Folio Number</label>
                     <input class="csi-control csi-control--caps @(m.FolioError is not null ? "is-invalid" : null)" id="@(ids)Folio" name="@Model.Name("Folio")" value="@m.Folio"
                            maxlength="16" autocomplete="off" spellcheck="false" aria-describedby="@(ids)FolioError"
+                           data-required="Enter the folio number"
                            aria-invalid="@(m.FolioError is not null ? "true" : null)" autofocus="@(focus == ids + "Folio")">
                     <p class="csi-error" id="@(ids)FolioError" hidden="@(m.FolioError is null)">@m.FolioError</p>
                 </div>
             }
 
             <div class="csi-field csi-field--check">
-                @{ await Step("Check", "csi-check", "Check record <span aria-hidden=\"true\">&rsaquo;</span>"); }
+                @{ await Step("Check", "csi-check", "Check record <span aria-hidden=\"true\">&rsaquo;</span>", validate: true); }
             </div>
         </div>
 

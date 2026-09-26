@@ -106,17 +106,15 @@ public class ApplicationController(IApplicationApi applications, IDepositApi dep
     }
 
     /// <summary>
-    /// A choice on FD Configuration, made without the page: the deposit saved as it
-    /// stands, and the backend's quote for it drawn alone (_FdQuote) for fd-quote.js
-    /// to put in place. A save that meets a newer version answers 409, and the page
-    /// then posts the ordinary way to say so.
+    /// A choice on FD Configuration, made without the page: the backend's quote for
+    /// the deposit as it stands, drawn alone (_FdQuote) for fd-quote.js to put in
+    /// place. It saves nothing - as on a bank's form, the step is saved by Proceed.
     /// </summary>
     [HttpPost("FdConfiguration/quote")]
     public async Task<IActionResult> FdQuote(DepositForm form)
     {
         if (await LoadAsync() is not { } docs) return NotFound();
         var deposit = form.ToDetails();
-        if (await applications.SaveDepositAsync(docs.AppNo, docs.App.Version, deposit) is null) return Conflict();
         var quote = await QuoteAsync(docs, form.AmountProblem(docs.Config) is null ? deposit : null);
         return PartialView("_FdQuote", new FdConfigViewModel(docs, form, quote, new Dictionary<string, string>()));
     }

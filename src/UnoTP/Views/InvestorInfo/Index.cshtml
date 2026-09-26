@@ -47,13 +47,13 @@
     private string? DescribedBy(string name, string id) => Model.ErrorOf(name) is null ? null : id + "Error";
 
     // A labelled drop-down, as the classic steps draw one, holding what was posted.
-    private async Task Select(string id, string name, string label, IEnumerable<string> options, string opening = "")
+    private async Task Select(string id, string name, string label, IEnumerable<string> options, string opening = "", string? required = null)
     {
         var selected = Model.Value(name, opening);
         <div class="cud-col">
             <label class="csi-label" for="@id">@label</label>
             <div class="cud-select">
-                <select class="csi-control @Invalid(name)" id="@id" name="@name" aria-invalid="@(Invalid(name) is not null ? "true" : null)" aria-describedby="@DescribedBy(name, id)">
+                <select class="csi-control @Invalid(name)" id="@id" name="@name" aria-invalid="@(Invalid(name) is not null ? "true" : null)" aria-describedby="@DescribedBy(name, id)" data-required="@required">
                     <option value="" selected="@(selected.Length == 0)">Select</option>
                     @foreach (var o in options)
                     {
@@ -74,18 +74,18 @@
         var id = $"cii{holder}";
         <h3 class="cii-section">More Information</h3>
         <div class="cud-grid">
-            @{ await Select($"{id}Income", $"{p}.AnnualIncome", "Annual Income", lists.Incomes, income); }
-            @{ await Select($"{id}Occupation", $"{p}.Occupation", "Occupation", lists.Occupations, occupation); }
-            @{ await Select($"{id}SubOccupation", $"{p}.SubOccupation", "Sub Occupation", lists.SubOccupations, sub); }
-            @{ await Select($"{id}Marital", $"{p}.MaritalStatus", "Marital Status", lists.Maritals, marital); }
+            @{ await Select($"{id}Income", $"{p}.AnnualIncome", "Annual Income", lists.Incomes, income, "Select the annual income"); }
+            @{ await Select($"{id}Occupation", $"{p}.Occupation", "Occupation", lists.Occupations, occupation, "Select the occupation"); }
+            @{ await Select($"{id}SubOccupation", $"{p}.SubOccupation", "Sub Occupation", lists.SubOccupations, sub, "Select the sub occupation"); }
+            @{ await Select($"{id}Marital", $"{p}.MaritalStatus", "Marital Status", lists.Maritals, marital, "Select the marital status"); }
             <div class="cud-col">
                 <label class="csi-label" for="@(id)Mobile">Mobile Number</label>
-                <input class="csi-control @Invalid($"{p}.Mobile")" id="@(id)Mobile" name="@(p).Mobile" value="@Model.Value($"{p}.Mobile", mobile)" inputmode="numeric" maxlength="10" autocomplete="off" aria-invalid="@(Invalid($"{p}.Mobile") is not null ? "true" : null)" aria-describedby="@DescribedBy($"{p}.Mobile", id + "Mobile")">
+                <input class="csi-control @Invalid($"{p}.Mobile")" id="@(id)Mobile" name="@(p).Mobile" value="@Model.Value($"{p}.Mobile", mobile)" inputmode="numeric" maxlength="10" autocomplete="off" data-required="Enter the mobile number" data-check="mobile" aria-invalid="@(Invalid($"{p}.Mobile") is not null ? "true" : null)" aria-describedby="@DescribedBy($"{p}.Mobile", id + "Mobile")">
                 @{ await FieldError($"{p}.Mobile", id + "Mobile"); }
             </div>
             <div class="cud-col">
                 <label class="csi-label" for="@(id)Email">E-Mail</label>
-                <input class="csi-control csi-control--caps @Invalid($"{p}.Email")" id="@(id)Email" name="@(p).Email" value="@Model.Value($"{p}.Email", email)" type="email" autocomplete="off" aria-invalid="@(Invalid($"{p}.Email") is not null ? "true" : null)" aria-describedby="@DescribedBy($"{p}.Email", id + "Email")">
+                <input class="csi-control csi-control--caps @Invalid($"{p}.Email")" id="@(id)Email" name="@(p).Email" value="@Model.Value($"{p}.Email", email)" type="email" autocomplete="off" data-required="Enter the e-mail" data-check="email" aria-invalid="@(Invalid($"{p}.Email") is not null ? "true" : null)" aria-describedby="@DescribedBy($"{p}.Email", id + "Email")">
                 @{ await FieldError($"{p}.Email", id + "Email"); }
             </div>
         </div>
@@ -335,7 +335,7 @@
                     {
                         <div class="inv-field inv-field--sm">
                             <label for="h@(holder)-gender">Gender <span class="required">*</span></label>
-                            <select id="h@(holder)-gender" name="@(p).Gender" class="inv-control @(Invalid($"{p}.Gender") is not null ? "inv-control--error" : null)" required aria-invalid="@(Invalid($"{p}.Gender") is not null ? "true" : null)" aria-describedby="@DescribedBy($"{p}.Gender", $"h{holder}-gender")">
+                            <select id="h@(holder)-gender" name="@(p).Gender" class="inv-control @(Invalid($"{p}.Gender") is not null ? "inv-control--error" : null)" required data-required="Select the gender" aria-invalid="@(Invalid($"{p}.Gender") is not null ? "true" : null)" aria-describedby="@DescribedBy($"{p}.Gender", $"h{holder}-gender")">
                                 <option value="">Select</option>
                                 @foreach (var g in Model.Docs.Ref.Genders) { if (g == Model.Value($"{p}.Gender")) { <option selected>@g</option> } else { <option>@g</option> } }
                             </select>
@@ -351,7 +351,7 @@
                     </div>
                     <div class="inv-field inv-field--sm">
                         <label for="h@(holder)-parent">Father / Mother / Spouse name <span class="required">*</span></label>
-                        <input id="h@(holder)-parent" name="@(p).ParentName" class="inv-control @(Invalid($"{p}.ParentName") is not null ? "inv-control--error" : null)" value="@Model.Value($"{p}.ParentName")" required aria-invalid="@(Invalid($"{p}.ParentName") is not null ? "true" : null)" aria-describedby="@DescribedBy($"{p}.ParentName", $"h{holder}-parent")" />
+                        <input id="h@(holder)-parent" name="@(p).ParentName" class="inv-control @(Invalid($"{p}.ParentName") is not null ? "inv-control--error" : null)" value="@Model.Value($"{p}.ParentName")" required data-required="Enter the father's, mother's or spouse's name" aria-invalid="@(Invalid($"{p}.ParentName") is not null ? "true" : null)" aria-describedby="@DescribedBy($"{p}.ParentName", $"h{holder}-parent")" />
                         @{ await FieldError($"{p}.ParentName", $"h{holder}-parent"); }
                     </div>
                 </div>
@@ -417,7 +417,7 @@
 <div class="csi">
     <partial name="_ClassicSteps" model="2" />
 
-    <form class="csi-main" id="investorInfoForm" method="post" asp-action="Proceed" enctype="multipart/form-data" data-partial novalidate data-partial-focus="@Model.Focus">
+    <form class="csi-main" id="investorInfoForm" data-guard method="post" asp-action="Proceed" enctype="multipart/form-data" data-partial novalidate data-partial-focus="@Model.Focus">
 
         @if (banner is not null)
         {
@@ -505,12 +505,13 @@
                 <div class="cud-grid">
                     <div class="cud-col">
                         <label class="csi-label" for="ciiNomName">Name</label>
-                        <input class="csi-control @Invalid("Nominee.Name")" id="ciiNomName" name="Nominee.Name" value="@Model.Value("Nominee.Name")" autocomplete="off" aria-invalid="@(Invalid("Nominee.Name") is not null ? "true" : null)" aria-describedby="@DescribedBy("Nominee.Name", "ciiNomName")">
+                        <input class="csi-control @Invalid("Nominee.Name")" id="ciiNomName" name="Nominee.Name" value="@Model.Value("Nominee.Name")" autocomplete="off" data-required="Enter the nominee's name" aria-invalid="@(Invalid("Nominee.Name") is not null ? "true" : null)" aria-describedby="@DescribedBy("Nominee.Name", "ciiNomName")">
                         @{ await FieldError("Nominee.Name", "ciiNomName"); }
                     </div>
                     <div class="cud-col">
                         <span class="csi-label" id="ciiNomDobLabel">Date Of Birth</span>
-                        <div class="csi-date @Invalid("Nominee.Dob")" role="group" aria-labelledby="ciiNomDobLabel" aria-describedby="@DescribedBy("Nominee.Dob", "ciiNomDd")">
+                        <div class="csi-date @Invalid("Nominee.Dob")" role="group" aria-labelledby="ciiNomDobLabel" aria-describedby="@DescribedBy("Nominee.Dob", "ciiNomDd")"
+                             data-required="Enter the nominee's date of birth" data-check="date" data-error-id="ciiNomDdError">
                             <input class="csi-date__part" id="ciiNomDd" name="Nominee.Dd" value="@Model.Value("Nominee.Dd")" inputmode="numeric" maxlength="2" placeholder="DD" aria-label="Day" autocomplete="off">
                             <span class="csi-date__sep">/</span>
                             <input class="csi-date__part" name="Nominee.Mm" value="@Model.Value("Nominee.Mm")" inputmode="numeric" maxlength="2" placeholder="MM" aria-label="Month" autocomplete="off">
@@ -519,7 +520,7 @@
                         </div>
                         @{ await FieldError("Nominee.Dob", "ciiNomDd"); }
                     </div>
-                    @{ await Select("ciiNomRelation", "Nominee.Relation", "Relation with primary holder", relations); }
+                    @{ await Select("ciiNomRelation", "Nominee.Relation", "Relation with primary holder", relations, required: "Select the relation with the primary holder"); }
                 </div>
 
                 @* Only a minor nominee has a guardian. Shut, the fields are not posted, so
@@ -531,16 +532,16 @@
                 <div class="cud-grid">
                     <div class="cud-col">
                         <label class="csi-label" for="ciiNomGuardian">Guardian Name</label>
-                        <input class="csi-control @Invalid("Nominee.GuardianName")" id="ciiNomGuardian" name="Nominee.GuardianName" value="@Model.Value("Nominee.GuardianName")" autocomplete="off" aria-invalid="@(Invalid("Nominee.GuardianName") is not null ? "true" : null)" aria-describedby="@DescribedBy("Nominee.GuardianName", "ciiNomGuardian")">
+                        <input class="csi-control @Invalid("Nominee.GuardianName")" id="ciiNomGuardian" name="Nominee.GuardianName" value="@Model.Value("Nominee.GuardianName")" autocomplete="off" data-required="Enter the guardian's name" aria-invalid="@(Invalid("Nominee.GuardianName") is not null ? "true" : null)" aria-describedby="@DescribedBy("Nominee.GuardianName", "ciiNomGuardian")">
                         @{ await FieldError("Nominee.GuardianName", "ciiNomGuardian"); }
                     </div>
                 </div>
                 <div class="cud-grid">
-                    <div class="cud-col"><label class="csi-label" for="ciiGdn1">Address Line 1</label><input class="csi-control @Invalid("Nominee.GuardianAddress.Line1")" id="ciiGdn1" name="Nominee.GuardianAddress.Line1" value="@Model.Value("Nominee.GuardianAddress.Line1")" aria-invalid="@(Invalid("Nominee.GuardianAddress.Line1") is not null ? "true" : null)" aria-describedby="@DescribedBy("Nominee.GuardianAddress.Line1", "ciiGdn1")">@{ await FieldError("Nominee.GuardianAddress.Line1", "ciiGdn1"); }</div>
+                    <div class="cud-col"><label class="csi-label" for="ciiGdn1">Address Line 1</label><input class="csi-control @Invalid("Nominee.GuardianAddress.Line1")" id="ciiGdn1" name="Nominee.GuardianAddress.Line1" value="@Model.Value("Nominee.GuardianAddress.Line1")" data-required="Enter the first line of the address" aria-invalid="@(Invalid("Nominee.GuardianAddress.Line1") is not null ? "true" : null)" aria-describedby="@DescribedBy("Nominee.GuardianAddress.Line1", "ciiGdn1")">@{ await FieldError("Nominee.GuardianAddress.Line1", "ciiGdn1"); }</div>
                     <div class="cud-col"><label class="csi-label" for="ciiGdn2">Address Line 2 (Non-mandatory)</label><input class="csi-control" id="ciiGdn2" name="Nominee.GuardianAddress.Line2" value="@Model.Value("Nominee.GuardianAddress.Line2")"></div>
                     <div class="cud-col"><label class="csi-label" for="ciiGdn3">Address Line 3 (Non-mandatory)</label><input class="csi-control" id="ciiGdn3" name="Nominee.GuardianAddress.Line3" value="@Model.Value("Nominee.GuardianAddress.Line3")"></div>
-                    <div class="cud-col"><label class="csi-label" for="ciiGdnPin">Pin Code</label><input class="csi-control @Invalid("Nominee.GuardianAddress.PinCode")" id="ciiGdnPin" name="Nominee.GuardianAddress.PinCode" value="@Model.Value("Nominee.GuardianAddress.PinCode")" inputmode="numeric" maxlength="6" aria-invalid="@(Invalid("Nominee.GuardianAddress.PinCode") is not null ? "true" : null)" aria-describedby="@DescribedBy("Nominee.GuardianAddress.PinCode", "ciiGdnPin")">@{ await FieldError("Nominee.GuardianAddress.PinCode", "ciiGdnPin"); }</div>
-                    <div class="cud-col"><label class="csi-label" for="ciiGdnCity">City</label><input class="csi-control @Invalid("Nominee.GuardianAddress.City")" id="ciiGdnCity" name="Nominee.GuardianAddress.City" value="@Model.Value("Nominee.GuardianAddress.City")" aria-invalid="@(Invalid("Nominee.GuardianAddress.City") is not null ? "true" : null)" aria-describedby="@DescribedBy("Nominee.GuardianAddress.City", "ciiGdnCity")">@{ await FieldError("Nominee.GuardianAddress.City", "ciiGdnCity"); }</div>
+                    <div class="cud-col"><label class="csi-label" for="ciiGdnPin">Pin Code</label><input class="csi-control @Invalid("Nominee.GuardianAddress.PinCode")" id="ciiGdnPin" name="Nominee.GuardianAddress.PinCode" value="@Model.Value("Nominee.GuardianAddress.PinCode")" inputmode="numeric" maxlength="6" data-required="Enter the PIN code" data-check="pin" aria-invalid="@(Invalid("Nominee.GuardianAddress.PinCode") is not null ? "true" : null)" aria-describedby="@DescribedBy("Nominee.GuardianAddress.PinCode", "ciiGdnPin")">@{ await FieldError("Nominee.GuardianAddress.PinCode", "ciiGdnPin"); }</div>
+                    <div class="cud-col"><label class="csi-label" for="ciiGdnCity">City</label><input class="csi-control @Invalid("Nominee.GuardianAddress.City")" id="ciiGdnCity" name="Nominee.GuardianAddress.City" value="@Model.Value("Nominee.GuardianAddress.City")" data-required="Enter the city" aria-invalid="@(Invalid("Nominee.GuardianAddress.City") is not null ? "true" : null)" aria-describedby="@DescribedBy("Nominee.GuardianAddress.City", "ciiGdnCity")">@{ await FieldError("Nominee.GuardianAddress.City", "ciiGdnCity"); }</div>
                 </div>
                 <p class="cii-note">District- , State-</p>
                 </fieldset>
@@ -567,7 +568,7 @@
         <p class="csi-bar__hint">Add any joint holders and the nominee, then proceed to <strong>Bank Details &amp; Payment</strong></p>
         <div class="csi-bar__right">
             <button type="submit" form="investorInfoForm" class="csi-link btn-reset" formaction="@Url.Action("Clear")" formnovalidate>Clear All</button>
-            <button type="submit" form="investorInfoForm" class="csi-btn csi-btn--primary">Proceed</button>
+            <button type="submit" form="investorInfoForm" class="csi-btn csi-btn--primary" data-validate="form">Proceed</button>
         </div>
     </div>
 </footer>
