@@ -28,10 +28,13 @@ public class ApplicationController(IApplicationApi applications, IDepositApi dep
         if (await LoadAsync() is not { } docs) return Start();
         var form = BankForm.From(docs.App.Payment);
         var byCheque = ByCheque(docs);
+        // Paid by a cheque whose bank confirmed it, what is still empty comes off the cheque.
+        var filled = byCheque && docs.State.Docs.ContainsKey("payment") && form.FillFrom(docs.State.ChequeRead);
         var (pay, repay) = await BranchesAsync(byCheque ? form.Payment.CleanIfsc : "", form.RepaysToPayment(byCheque) ? form.Payment.CleanIfsc : form.Repayment.CleanIfsc);
         return View(new BankDetailsViewModel(docs, form, pay, repay, Said())
         {
             Demo = features.Flags.DemoData ? await demo.BanksAsync() : null,
+            FilledFromCheque = filled,
         });
     }
 

@@ -1,3 +1,5 @@
+using UnoTP.Backend.External;
+
 namespace UnoTP.Backend.Mock.External;
 
 /// <summary>
@@ -22,6 +24,10 @@ internal static class MockScans
     public const string MisreadAccount = "A/c ••••••7724 · IFSC HDFC0000123 · HDFC Bank, Baner, Pune";
 
     public const string Bank = "HDFC Bank";
+
+    /// <summary>The cheque's fields: the account above in full, its branch, and the cheque itself.</summary>
+    public static ChequeFields Cheque(bool misread) =>
+        new(misread ? "50100012347724" : "50100012347742", "HDFC0000123", "411240012", "004512", DateTime.Today.ToString("dd-MM-yyyy"));
 
     public static bool Named(UploadFile file, params string[] words) =>
         words.Any(file.FileName.ToLowerInvariant().Contains);

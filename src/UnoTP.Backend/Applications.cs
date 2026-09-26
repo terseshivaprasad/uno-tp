@@ -232,6 +232,12 @@ public sealed class UploadState
     /// <summary>What each copy was read to say, by the slot it came from.</summary>
     public Dictionary<string, ReadCard> Reads { get; init; } = [];
 
+    /// <summary>
+    /// The cheque's fields, kept once its bank confirmed the account on it, so Bank
+    /// Details opens filled in. Null until then, and again once a copy is not confirmed.
+    /// </summary>
+    public External.ChequeFields? ChequeRead { get; set; }
+
     /// <summary>Every attempt, newest first.</summary>
     public List<LogEntry> Log { get; init; } = [];
 

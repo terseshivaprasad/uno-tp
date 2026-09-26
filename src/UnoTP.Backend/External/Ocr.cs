@@ -25,10 +25,20 @@ public sealed record OcrSubject(string Pan, string Dob, string Name);
 /// <param name="Expiry">When a passport or a driving licence runs out, as dd-MM-yyyy; empty otherwise.</param>
 /// <param name="Dob">The date of birth the document prints - a PAN card, or a proof of
 /// address that carries one - as dd-MM-yyyy; empty otherwise.</param>
+/// <param name="Cheque">What a cheque prints, field by field, for Bank Details to be
+/// filled from; null for anything else.</param>
 public sealed record OcrReading(
     string Pan = "", string Name = "", string Address = "",
     string IdNumber = "", string Account = "", string Bank = "", string Gender = "", string Dob = "",
-    string Number = "", string Expiry = "");
+    string Number = "", string Expiry = "", ChequeFields? Cheque = null);
+
+/// <summary>A cheque's fields as OCR reads them.</summary>
+/// <param name="AccountNumber">The full account number, digits only.</param>
+/// <param name="Ifsc">The branch's IFSC.</param>
+/// <param name="Micr">The MICR code on the cheque's bottom line.</param>
+/// <param name="Number">The six-digit cheque number.</param>
+/// <param name="Date">The date written on the cheque, dd-MM-yyyy; empty when none is.</param>
+public sealed record ChequeFields(string AccountNumber, string Ifsc, string Micr, string Number, string Date);
 
 /// <summary>Dates of birth however a card or a service writes them, as the app keeps them.</summary>
 public static class Dobs

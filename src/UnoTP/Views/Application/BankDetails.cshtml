@@ -170,8 +170,15 @@
                         @{ await FieldError("Cheque.Number", "cheque-number"); }
                     </div>
                     <div class="cud-col">
-                        <label class="csi-label" for="cheque-date">Cheque Date</label>
-                        <input class="csi-control @Invalid("Cheque.Date")" id="cheque-date" name="Cheque.Date" value="@f.Cheque.Date" placeholder="DD / MM / YYYY" inputmode="numeric" autocomplete="off" aria-invalid="@InvalidAria("Cheque.Date")" aria-describedby="@DescribedBy("Cheque.Date", "cheque-date")">
+                        <label class="csi-label" id="cheque-date-label" for="cheque-date">Cheque Date</label>
+                        @* The app's date control: three boxes, as every other date is typed. *@
+                        <div class="csi-date @Invalid("Cheque.Date")" role="group" aria-labelledby="cheque-date-label" aria-describedby="@DescribedBy("Cheque.Date", "cheque-date")">
+                            <input class="csi-date__part" id="cheque-date" name="Cheque.Dd" value="@f.Cheque.Dd" inputmode="numeric" maxlength="2" placeholder="DD" aria-label="Day" autocomplete="off" aria-invalid="@InvalidAria("Cheque.Date")">
+                            <span class="csi-date__sep">/</span>
+                            <input class="csi-date__part" name="Cheque.Mm" value="@f.Cheque.Mm" inputmode="numeric" maxlength="2" placeholder="MM" aria-label="Month" autocomplete="off">
+                            <span class="csi-date__sep">/</span>
+                            <input class="csi-date__part csi-date__part--year" name="Cheque.Yyyy" value="@f.Cheque.Yyyy" inputmode="numeric" maxlength="4" placeholder="YYYY" aria-label="Year" autocomplete="off">
+                        </div>
                         @{ await FieldError("Cheque.Date", "cheque-date"); }
                     </div>
                     <div class="cud-col">
@@ -191,7 +198,7 @@
                     @* What Upload Documents read off the cheque, to type the account against. *@
                     <div class="bank-verified bank-after">
                         <svg class="bank-verified__tick" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7"></path></svg>
-                        <div class="bank-verified__text"><strong>@cheque.State.</strong> Read off the cheque filed on <a asp-controller="UploadDocuments" asp-action="Index">Upload Documents</a>: @cheque.Lines</div>
+                        <div class="bank-verified__text"><strong>@cheque.State.</strong> Read off the cheque filed on <a asp-controller="UploadDocuments" asp-action="Index">Upload Documents</a>: @cheque.Lines@if (Model.FilledFromCheque) {<text>. The account and the cheque above are filled in from it &mdash; check them against the cheque before you proceed.</text>}</div>
                     </div>
                 }
             </section>

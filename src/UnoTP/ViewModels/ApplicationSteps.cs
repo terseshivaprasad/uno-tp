@@ -86,9 +86,27 @@ public sealed class ChequeForm
     public string Number { get => numberValue; set => numberValue = value ?? ""; }
     private string numberValue = "";
 
-    /// <summary>As typed, "DD / MM / YYYY"; kept as dd-MM-yyyy.</summary>
-    public string Date { get => dateValue; set => dateValue = value ?? ""; }
-    private string dateValue = "";
+    /// <summary>
+    /// The date as "DD / MM / YYYY", made of the three boxes the page draws it in
+    /// (the app's date control). Set whole - from what was saved, or read off the
+    /// cheque - it is split into them.
+    /// </summary>
+    public string Date
+    {
+        get => Dd.Length + Mm.Length + Yyyy.Length == 0 ? "" : $"{Dd} / {Mm} / {Yyyy}";
+        set
+        {
+            var digits = new string((value ?? "").Where(char.IsAsciiDigit).ToArray());
+            (Dd, Mm, Yyyy) = digits.Length == 8 ? (digits[..2], digits[2..4], digits[4..]) : ("", "", "");
+        }
+    }
+
+    public string Dd { get => ddValue; set => ddValue = (value ?? "").Trim(); }
+    private string ddValue = "";
+    public string Mm { get => mmValue; set => mmValue = (value ?? "").Trim(); }
+    private string mmValue = "";
+    public string Yyyy { get => yyyyValue; set => yyyyValue = (value ?? "").Trim(); }
+    private string yyyyValue = "";
 
     public string CmsLocation { get => cmsLocationValue; set => cmsLocationValue = value ?? ""; }
     private string cmsLocationValue = "";
@@ -111,6 +129,28 @@ public sealed class BankForm
         form.Repayment.SameAsPayment = saved.RepaymentSameAsPayment;
         if (saved.Cheque is { } c) form.Cheque = new ChequeForm { Number = c.Number, Date = c.Date.Replace("-", " / "), CmsLocation = c.CmsLocation };
         return form;
+    }
+
+    /// <summary>
+    /// Fills what is still empty of the paying account and the cheque from what was
+    /// read off the cheque filed on Upload Documents. Nothing typed or saved is
+    /// replaced. True when anything was filled.
+    /// </summary>
+    public bool FillFrom(UnoTP.Backend.External.ChequeFields? read)
+    {
+        if (read is null) return false;
+        var filled = false;
+        void Fill(string now, string from, Action<string> set)
+        {
+            if (now.Trim().Length > 0 || from.Length == 0) return;
+            set(from);
+            filled = true;
+        }
+        Fill(Payment.Ifsc, read.Ifsc, v => Payment.Ifsc = v);
+        Fill(Payment.AccountNumber, read.AccountNumber, v => (Payment.AccountNumber, Payment.AccountNumberConfirm) = (v, v));
+        Fill(Cheque.Number, read.Number, v => Cheque.Number = v);
+        Fill(Cheque.Date, read.Date, v => Cheque.Date = v);
+        return filled;
     }
 
     /// <summary>
@@ -179,6 +219,9 @@ public sealed class BankDetailsViewModel(UploadDocumentsViewModel docs, BankForm
 
     /// <summary>Whether interest and the maturity amount go back to the account the cheque is drawn on.</summary>
     public bool SameAsPayment => Form.RepaysToPayment(ByCheque);
+
+    /// <summary>Whether the paying account or the cheque were filled in from the cheque read on Upload Documents.</summary>
+    public bool FilledFromCheque { get; init; }
 
     /// <summary>What the cheque filed on Upload Documents was read to say, if one is filed.</summary>
     public ReadCard? ChequeRead => Docs.State.Docs.ContainsKey("payment") ? Docs.State.Reads.GetValueOrDefault("payment") : null;

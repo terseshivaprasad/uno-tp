@@ -30,7 +30,13 @@
   --amber-tint: #FFFBF0;
   --amber-border: #F0D98A;
   --amber-accent: #E8A700;
+  /* One height for every document card and every check card on Upload Documents
+     and Investor Information, so a row of them lines up. A phone's is taller, as
+     its cards are narrower. Tall enough for a filed proof's four lines above its
+     View and Replace buttons. */
+  --doc-card-h: 204px;
 }
+@media (min-width: 761px) { :root { --doc-card-h: 172px; } }
 
 * , *::before, *::after { box-sizing: border-box; }
 
@@ -1256,7 +1262,7 @@ html.is-saving::before {
 /* Every document box is the same size whatever it holds - empty, filed, locked,
    refused or not applicable - so a row of them lines up. What a box says is held
    to a few lines inside it; the rest is in the note under the box and the history. */
-.cud-drop, .cud-slot__na { height: 184px; min-height: 0; overflow: hidden; }
+.cud-drop, .cud-slot__na { height: var(--doc-card-h); min-height: 0; overflow: hidden; }
 .cud-drop__title, .cud-drop__hint, .cud-drop__with, .cud-drop__must, .cud-slot__na-why {
   display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden;
 }
@@ -1299,7 +1305,7 @@ label.seg-toggle__opt { display: inline-block; }
 @media (min-width: 761px) {
   /* One size for every box, no taller than its fullest state needs: a proof of
      address read to its tag, two lines of address, the PIN and a note. */
-  .cud-drop, .cud-slot__na { height: 148px; padding: 16px 18px; }
+  .cud-drop, .cud-slot__na { padding: 16px 18px; }
   .cud-drop { justify-content: flex-start; text-align: left; }
   .cud-drop__idle, .cud-drop__busy, .cud-drop__locked, .cud-drop__done {
     display: grid; width: 100%; grid-template-columns: auto minmax(0, 1fr);
@@ -1797,9 +1803,8 @@ html:has(.clogin), html:has(.clogin) body { background: var(--border); }
 /* Every read card is the size of a document box, whatever it says: what it read
    and where that came from are held to two lines each. Only NSDL asking for the
    name printed on the PAN grows, to take the field. */
-.cud-read__card { height: 204px; overflow: hidden; display: flex; flex-direction: column; }
+.cud-read__card { height: var(--doc-card-h); overflow: hidden; display: flex; flex-direction: column; }
 /* Every box on the step is one height: the cards keep the document boxes' own. */
-@media (min-width: 761px) { .cud-read__card { height: 172px; } }
 .cud-read__card .cud-read__lines, .cud-read__card .cud-read__from {
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; padding-top: 7px;
 }

@@ -1614,6 +1614,7 @@ public class UploadDocumentsViewModel(
         var bank = answer.Verifier.Length > 0 ? answer.Verifier : "The bank";
         if (!answer.Confirmed)
         {
+            State.ChequeRead = null;
             (card.State, card.Kind) = ("Not confirmed", "is-failed");
             card.From = $"{bank} did not confirm that account against this {mode}, so nothing is carried forward. Upload a clearer copy of the instrument.";
             entry.Add($"{bank} did not confirm that account.", "bad");
@@ -1621,6 +1622,8 @@ public class UploadDocumentsViewModel(
             return ($"Read, but {bank} did not confirm the account on this {mode}. The copy is filed and no account is carried to Bank Details & Payment.", "bad");
         }
         card.Lines = reading.Account;
+        // What Bank Details opens with: the account, its IFSC and the cheque itself.
+        State.ChequeRead = reading.Cheque;
         (card.State, card.Kind) = ($"Confirmed with {bank}", "is-done");
         card.From = $"Read off the {mode} filed above and confirmed with {bank}. Bank Details & Payment opens with this account.";
         entry.Add($"{bank} confirmed that account.", "ok");

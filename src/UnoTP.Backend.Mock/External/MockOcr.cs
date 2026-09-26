@@ -47,7 +47,8 @@ public sealed class MockOcr : IOcrService
                     ? type == "Driving Licence" && MockScans.Named(file, "issuedate") ? MockScans.LicenceIssued
                     : (MockScans.Named(file, "expired") ? DateTime.Today.AddYears(-1) : DateTime.Today.AddYears(6)).ToString("dd-MM-yyyy")
                     : ""),
-            _ => new OcrReading(Account: MockScans.Misread(file) ? MockScans.MisreadAccount : MockScans.Account, Bank: MockScans.Bank),
+            _ => new OcrReading(Account: MockScans.Misread(file) ? MockScans.MisreadAccount : MockScans.Account, Bank: MockScans.Bank,
+                Cheque: MockScans.Cheque(MockScans.Misread(file))),
         });
 
     /// <summary>The gender an Aadhaar prints: the folio's where there is one, else
