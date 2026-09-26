@@ -47,7 +47,11 @@
     if (hint) hint.textContent = said.getAttribute('data-hint') || '';
     var problem = said.getAttribute('data-problem');
     var error = document.getElementById('fd-amountError');
+    // The amount sits in a box with the rupee sign: that box takes the red edge,
+    // and the error goes under it.
+    var box = input.closest('.fd-amount') || input;
     if (!problem) {
+      box.classList.remove('fd-amount--error');
       input.classList.remove('is-invalid');
       input.removeAttribute('aria-invalid');
       if (error) error.remove();
@@ -60,9 +64,10 @@
       error.className = 'csi-error';
       error.id = 'fd-amountError';
       error.setAttribute('role', 'alert');
-      input.insertAdjacentElement('afterend', error);
+      box.insertAdjacentElement('afterend', error);
     }
     error.textContent = problem;
+    box.classList.add('fd-amount--error');
     input.classList.add('is-invalid');
     input.setAttribute('aria-invalid', 'true');
     input.setAttribute('aria-describedby', 'fd-amountError');

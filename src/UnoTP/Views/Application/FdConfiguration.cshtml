@@ -88,98 +88,132 @@
                 </span>
             </div>
 
-            @* ── What the backend quotes for the choices below: redrawn on its own
-               as a choice changes (fd-quote.js), never with the whole page. ───── *@
-            <div class="cii-record" id="fd-quote" aria-live="polite">
-                <partial name="_FdQuote" model="Model" />
-            </div>
+            @* The deposit's choices on the left and, beside them, what the backend
+               quotes for them - redrawn on its own as a choice changes (fd-quote.js),
+               never with the whole page. On a phone the quote comes first. *@
+            <div class="fd-layout">
+                <div class="fd-main">
 
-            @* ── Amount ───────────────────────────────────────────────────────── *@
-            <div class="cud-grid">
-                <div class="cud-col">
-                    <label class="csi-label" for="fd-amount">Amount (&#8377;)</label>
-                    <input class="csi-control @Invalid("Amount")" id="fd-amount" name="Amount" value="@f.Amount" inputmode="numeric" autocomplete="off" data-quote aria-invalid="@InvalidAria("Amount")" aria-describedby="@(Model.Problem("Amount") is null ? "fd-amount-hint" : "fd-amountError")">
-                    @{ await FieldError("Amount", "fd-amount"); }
-                    <p class="csi-hint" id="fd-amount-hint">@(f.AmountValue > 0 && Model.Problem("Amount") is null ? Model.AmountHint : $"{Money.Rupees(Model.Config.MinAmount)} to {Money.Rupees(Model.Config.MaxAmount)}, in multiples of {Money.Rupees(Model.Config.AmountStep)}")</p>
-                </div>
-                <div class="cud-col">
-                    <label class="csi-label" for="fd-delivery">Delivery Type</label>
-                    <div class="cud-select">
-                        <select class="csi-control @Invalid("DeliveryType")" id="fd-delivery" name="DeliveryType" data-quote aria-invalid="@InvalidAria("DeliveryType")">
-                            @foreach (var d in Model.Ref.DeliveryTypes)
-                            {
-                                <option value="@d.Code" selected="@(d.Code == f.DeliveryType)">@d.Name</option>
-                            }
-                        </select>
-                    </div>
-                    @{ await FieldError("DeliveryType", "fd-delivery"); }
-                    <p class="csi-hint">@(Model.Email.Length > 0 ? $"The receipt is e-mailed to {Model.Email}" : "The receipt is e-mailed to the investor's e-mail on Investor Information")</p>
-                </div>
-            </div>
-
-            @* ── Tenure ───────────────────────────────────────────────────────── *@
-            <h3 class="cii-section" id="fd-tenure-label">Tenure &middot; months</h3>
-            <div class="fd-radios" role="radiogroup" aria-labelledby="fd-tenure-label">
-                @foreach (var t in Model.Ref.Tenures)
-                {
-                    <label class="csi-radio"><input type="radio" id="fd-tenure-@t" name="TenureMonths" value="@t" checked="@(t == f.TenureMonths)" data-quote> @t</label>
-                }
-            </div>
-            @{ await FieldError("TenureMonths", "fd-tenure"); }
-
-            @* ── Interest payout ──────────────────────────────────────────────── *@
-            <h3 class="cii-section" id="fd-payout-label">Interest Payout</h3>
-            <div class="fd-radios" role="radiogroup" aria-labelledby="fd-payout-label">
-                @foreach (var p in Model.Ref.Payouts)
-                {
-                    <label class="csi-radio"><input type="radio" id="fd-payout-@p.Code" name="InterestPayout" value="@p.Code" checked="@(p.Code == f.InterestPayout)" data-quote> @p.Name</label>
-                }
-            </div>
-            @{ await FieldError("InterestPayout", "fd-payout"); }
-            <p class="csi-hint">A payout on maturity makes the deposit cumulative</p>
-
-            @* ── Renewal and tax ──────────────────────────────────────────────── *@
-            <h3 class="cii-section">Renewal &amp; Tax</h3>
-            <div class="cii-switches">
-                <label class="inv-switch-row" for="fd-renew-on">
-                    <span>Renew automatically on maturity, unless the investor instructs otherwise</span>
-                    <input type="checkbox" id="fd-renew-on" name="AutoRenewal" value="true" class="inv-switch" checked="@f.AutoRenewal" data-quote>
-                    <input type="hidden" name="AutoRenewal" value="false">
-                </label>
-            </div>
-            @* Shown the moment auto renewal is turned on (data-show-when); hidden, it is
-               disabled, so its choice is not posted. *@
-            <fieldset class="cud-choice" data-show-when="AutoRenewal=true" hidden="@(!f.AutoRenewal)" disabled="@(!f.AutoRenewal)">
-                <div class="cud-grid">
-                    <div class="cud-col">
-                        <label class="csi-label" for="fd-renew">Renew</label>
-                        <div class="cud-select">
-                            <select class="csi-control @Invalid("RenewInstruction")" id="fd-renew" name="RenewInstruction" data-quote aria-invalid="@InvalidAria("RenewInstruction")">
-                                <option value="" selected="@(f.RenewInstruction.Length == 0)">Select</option>
-                                @foreach (var r in Model.Ref.RenewInstructions)
-                                {
-                                    <option value="@r.Code" selected="@(r.Code == f.RenewInstruction)">@r.Name</option>
-                                }
-                            </select>
+                    @* ── Amount ─────────────────────────────────────────────────── *@
+                    <div class="fd-group">
+                        <div class="inv-section-head">
+                            <label class="fd-label" for="fd-amount">Amount <span class="required">*</span></label>
+                            <div class="fd-aside">@Money.Rupees(Model.Config.MinAmount) minimum &middot; @Money.Rupees(Model.Config.MaxAmount) maximum</div>
                         </div>
-                        @{ await FieldError("RenewInstruction", "fd-renew"); }
+                        <div class="fd-amount @(Model.Problem("Amount") is null ? null : "fd-amount--error")">
+                            <span class="fd-amount__currency" aria-hidden="true">&#8377;</span>
+                            <input id="fd-amount" name="Amount" class="fd-amount__input @Invalid("Amount")" value="@f.Amount" inputmode="numeric" autocomplete="off" data-quote aria-invalid="@InvalidAria("Amount")" aria-describedby="@(Model.Problem("Amount") is null ? "fd-amount-hint" : "fd-amountError")">
+                        </div>
+                        @{ await FieldError("Amount", "fd-amount"); }
+                        <div class="fd-hint" id="fd-amount-hint">@(f.AmountValue > 0 && Model.Problem("Amount") is null ? Model.AmountHint : $"in multiples of {Money.Rupees(Model.Config.AmountStep)}")</div>
                     </div>
-                    <div class="cud-col">
-                        <label class="csi-label" for="fd-renew-for">Renew For</label>
-                        <input class="csi-control" id="fd-renew-for" value="Same tenure — @f.TenureMonths months" readonly tabindex="-1">
-                        <p class="csi-hint">At the card rate on the renewal date, not today&rsquo;s</p>
+
+                    @* ── Tenure ─────────────────────────────────────────────────── *@
+                    <div class="fd-group" role="radiogroup" aria-labelledby="fd-tenure-label">
+                        <div class="inv-section-head">
+                            <div class="fd-label" id="fd-tenure-label">Tenure &middot; months <span class="required">*</span></div>
+                        </div>
+                        <div class="fd-options fd-options--tenure">
+                            @foreach (var t in Model.Ref.Tenures)
+                            {
+                                <label class="fd-option">
+                                    <input type="radio" id="fd-tenure-@t" name="TenureMonths" value="@t" checked="@(t == f.TenureMonths)" data-quote>
+                                    <span class="fd-option__face">@t</span>
+                                </label>
+                            }
+                        </div>
+                        @{ await FieldError("TenureMonths", "fd-tenure"); }
                     </div>
+
+                    @* ── Interest payout ────────────────────────────────────────── *@
+                    <div class="fd-group" role="radiogroup" aria-labelledby="fd-payout-label">
+                        <div class="inv-section-head">
+                            <div class="fd-label" id="fd-payout-label">Interest payout <span class="required">*</span></div>
+                            <div class="fd-aside">a payout on maturity makes the deposit cumulative</div>
+                        </div>
+                        <div class="fd-options fd-options--payout">
+                            @foreach (var p in Model.Ref.Payouts)
+                            {
+                                <label class="fd-option">
+                                    <input type="radio" id="fd-payout-@p.Code" name="InterestPayout" value="@p.Code" checked="@(p.Code == f.InterestPayout)" data-quote>
+                                    <span class="fd-option__face">@p.Name</span>
+                                </label>
+                            }
+                        </div>
+                        @{ await FieldError("InterestPayout", "fd-payout"); }
+                    </div>
+
+                    @* ── Auto renewal ───────────────────────────────────────────── *@
+                    <section class="fd-section">
+                        <label class="fd-toggle" for="fd-renew-on">
+                            <span class="fd-toggle__text">
+                                <span class="fd-toggle__title">Auto renewal</span>
+                                <span class="fd-toggle__desc">Renews automatically on maturity unless the investor instructs otherwise</span>
+                            </span>
+                            <input type="checkbox" id="fd-renew-on" name="AutoRenewal" value="true" class="inv-switch" checked="@f.AutoRenewal" data-quote>
+                            <input type="hidden" name="AutoRenewal" value="false">
+                        </label>
+                        @* Shown the moment auto renewal is turned on (data-show-when); hidden,
+                           it is disabled, so its choice is not posted. *@
+                        <fieldset class="fd-grid-2 cud-choice" data-show-when="AutoRenewal=true" hidden="@(!f.AutoRenewal)" disabled="@(!f.AutoRenewal)">
+                            <div class="cud-col">
+                                <label class="csi-label" for="fd-renew">Renew <span class="required">*</span></label>
+                                <div class="cud-select">
+                                    <select class="csi-control @Invalid("RenewInstruction")" id="fd-renew" name="RenewInstruction" data-quote aria-invalid="@InvalidAria("RenewInstruction")">
+                                        <option value="" selected="@(f.RenewInstruction.Length == 0)">Select</option>
+                                        @foreach (var r in Model.Ref.RenewInstructions)
+                                        {
+                                            <option value="@r.Code" selected="@(r.Code == f.RenewInstruction)">@r.Name</option>
+                                        }
+                                    </select>
+                                </div>
+                                @{ await FieldError("RenewInstruction", "fd-renew"); }
+                            </div>
+                            <div class="cud-col">
+                                <label class="csi-label" for="fd-renew-for">Renew for</label>
+                                <input class="csi-control" id="fd-renew-for" value="Same tenure — @f.TenureMonths months" readonly tabindex="-1">
+                                <p class="csi-hint">At the card rate on the renewal date, not today&rsquo;s</p>
+                            </div>
+                        </fieldset>
+                    </section>
+
+                    @* ── TDS exemption ──────────────────────────────────────────── *@
+                    <section class="fd-section fd-section--tight">
+                        <label class="fd-toggle" for="fd-no-tds">
+                            <span class="fd-toggle__text">
+                                <span class="fd-toggle__title">Do not deduct tax at source</span>
+                                <span class="fd-toggle__desc">Only where the investor is eligible &mdash; Form 15G under @Model.Config.SeniorAge, Form 15H at @Model.Config.SeniorAge and above</span>
+                            </span>
+                            <input type="checkbox" id="fd-no-tds" name="NoTds" value="true" class="inv-switch" checked="@f.NoTds" data-quote>
+                            <input type="hidden" name="NoTds" value="false">
+                        </label>
+                        <div class="fd-note" data-show-when="NoTds=true" hidden="@(!f.NoTds)">
+                            <div class="fd-note__text"><strong>@Model.TdsForm is needed for the primary holder</strong>, by the investor&rsquo;s date of birth. Turning this off removes the requirement; TDS is then deducted at the applicable rate.</div>
+                        </div>
+                    </section>
+
+                    @* ── Delivery ───────────────────────────────────────────────── *@
+                    <section class="fd-section fd-grid-2">
+                        <div class="cud-col">
+                            <label class="csi-label" for="fd-delivery">Delivery type <span class="required">*</span></label>
+                            <div class="cud-select">
+                                <select class="csi-control @Invalid("DeliveryType")" id="fd-delivery" name="DeliveryType" data-quote aria-invalid="@InvalidAria("DeliveryType")">
+                                    @foreach (var d in Model.Ref.DeliveryTypes)
+                                    {
+                                        <option value="@d.Code" selected="@(d.Code == f.DeliveryType)">@d.Name</option>
+                                    }
+                                </select>
+                            </div>
+                            @{ await FieldError("DeliveryType", "fd-delivery"); }
+                            <p class="csi-hint">@(Model.Email.Length > 0 ? $"The receipt is e-mailed to {Model.Email}" : "The receipt is e-mailed to the investor's e-mail on Investor Information")</p>
+                        </div>
+                    </section>
                 </div>
-            </fieldset>
-            <div class="cii-switches">
-                <label class="inv-switch-row" for="fd-no-tds">
-                    <span>Do not deduct tax at source &mdash; only where the investor is eligible: Form 15G under @Model.Config.SeniorAge, Form 15H at @Model.Config.SeniorAge and above</span>
-                    <input type="checkbox" id="fd-no-tds" name="NoTds" value="true" class="inv-switch" checked="@f.NoTds" data-quote>
-                    <input type="hidden" name="NoTds" value="false">
-                </label>
-            </div>
-            <div class="bank-note bank-after" data-show-when="NoTds=true" hidden="@(!f.NoTds)">
-                <strong>@Model.TdsForm is needed for the primary holder</strong>, by the investor&rsquo;s date of birth. Turning this off removes the requirement; TDS is then deducted at the applicable rate.
+
+                @* ── This deposit, as the backend quotes it ─────────────────────── *@
+                <aside class="fd-summary" id="fd-quote" aria-live="polite">
+                    <partial name="_FdQuote" model="Model" />
+                </aside>
             </div>
         </section>
     </form>
