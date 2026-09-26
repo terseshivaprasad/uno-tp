@@ -105,6 +105,22 @@ public class ApplicationController(IApplicationApi applications, IDepositApi dep
         return problems.Count > 0 ? Back(nameof(FdConfiguration), problems) : RedirectToAction(nameof(ReviewSummary));
     }
 
+    /// <summary>
+    /// A choice on FD Configuration, made without the page: the deposit saved as it
+    /// stands, and the backend's quote for it drawn alone (_FdQuote) for fd-quote.js
+    /// to put in place. A save that meets a newer version answers 409, and the page
+    /// then posts the ordinary way to say so.
+    /// </summary>
+    [HttpPost("FdConfiguration/quote")]
+    public async Task<IActionResult> FdQuote(DepositForm form)
+    {
+        if (await LoadAsync() is not { } docs) return NotFound();
+        var deposit = form.ToDetails();
+        if (await applications.SaveDepositAsync(docs.AppNo, docs.App.Version, deposit) is null) return Conflict();
+        var quote = await QuoteAsync(docs, form.AmountProblem(docs.Config) is null ? deposit : null);
+        return PartialView("_FdQuote", new FdConfigViewModel(docs, form, quote, new Dictionary<string, string>()));
+    }
+
     // ----- Review Summary -------------------------------------------------------
 
     [HttpGet("ReviewSummary")]

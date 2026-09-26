@@ -214,15 +214,21 @@
                 </div>
             }
 
-            @if (!same)
-            {
-                await Account("Repayment", "repay", f.Repayment);
+            @* The repayment account, drawn whether or not it is the payment account, so
+               the toggle shows or hides it at once (data-show-when). Hidden, it is
+               disabled and not posted. Paid other than by cheque there is no toggle,
+               and the rule has nothing to read. *@
+            <fieldset class="cud-choice" data-show-when="Repayment.SameAsPayment!=true" hidden="@same" disabled="@same">
+                @{ await Account("Repayment", "repay", f.Repayment); }
                 <div class="bank-after">@{ await Branch(Model.RepaymentBranch, f.Repayment.CleanIfsc, "repay-lookup"); }</div>
-            }
+            </fieldset>
 
             <div class="bank-note bank-after">
                 <strong>The account must belong to a holder on this application.</strong> A third-party account is rejected by Operations.
-                @(same ? "Interest and the maturity amount go back to the account the cheque is drawn on." : null)
+                @if (Model.ByCheque)
+                {
+                    <span data-show-when="Repayment.SameAsPayment=true" hidden="@(!same)">Interest and the maturity amount go back to the account the cheque is drawn on.</span>
+                }
             </div>
         </section>
 

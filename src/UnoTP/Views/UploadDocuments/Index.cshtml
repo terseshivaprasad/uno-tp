@@ -13,6 +13,8 @@
     var mode = Model.ModeOf(s.Sourcing);
     var views = M.Slots.ToDictionary(d => d.Key, Model.View);
     var physical = s.AppType == M.Physical;
+    // The communication proof's box switches in place with the toggle, while nothing is filed there.
+    var mailInstant = Model.MailCanDiffer(Model.Investor) && views["mail"].Doc is null;
     var poaUsed = views["poa"].Used;
     var mailUsed = views["mail"].Used;
     var employee = Model.IsEmployee(s.Category);
@@ -55,6 +57,45 @@
     async Task Slot(M.SlotView v, string? form = null)
     {
         <partial name="_DocSlot" model="@(new DocSlotBlock(v, Url.Action("Upload")!, form))" />
+    }
+
+    // A slot as each value of a choice leaves it, every one drawn and all but the
+    // one standing hidden, so the page shows the right one the moment the choice
+    // changes (data-show-when, partial-forms.js) while the change is saved. A hidden
+    // one is a disabled fieldset, so nothing in it is posted. Each is worked out by
+    // setting the choice on the state for a moment and putting it back.
+    async Task Choices(string field, IEnumerable<(string Value, bool Now)> values, Func<string, M.SlotView> slotAs)
+    {
+        foreach (var (value, now) in values)
+        {
+            <fieldset class="cud-choice" data-show-when="@field=@value" hidden="@(!now)" disabled="@(!now)">
+                <partial name="_DocSlot" model="@(new DocSlotBlock(slotAs(value), Url.Action("Upload")!, Alternate: !now))" />
+            </fieldset>
+        }
+    }
+
+    M.SlotView FormAs(string type)
+    {
+        var state = Model.State;
+        var was = state.AppType;
+        state.AppType = type;
+        try { return Model.View(M.FormSlot); } finally { state.AppType = was; }
+    }
+
+    M.SlotView MailAs(string mailing)
+    {
+        var state = Model.State;
+        var was = state.MailDifferent;
+        state.MailDifferent = mailing == "different";
+        try { return Model.View(M.MailSlot); } finally { state.MailDifferent = was; }
+    }
+
+    M.SlotView PaymentAs(string mode)
+    {
+        var state = Model.State;
+        var was = state.PayMode;
+        state.PayMode = mode;
+        try { return Model.View(M.PaymentSlot); } finally { state.PayMode = was; }
     }
 }
 
@@ -221,7 +262,7 @@
         <div class="cud-grid cud-grid--docs">
             <div class="cud-col">
                 <span class="csi-label">Application form</span>
-                @{ await Slot(views["form"]); }
+                @{ await Choices("appType", Model.ApplicationTypes.Select(t => (t.Code, t.Code == s.AppType)), FormAs); }
             </div>
 
             @* The PAN copy the application is filed with. It comes over already
@@ -270,7 +311,8 @@
                 {
                     <label class="csi-label" for="cudMailType">Communication address proof</label>
                     <div class="cud-select">
-                        <select class="csi-control @Invalid("cudMailType")" id="cudMailType" name="mailType" disabled="@(!mailUsed)" data-submit="cudRefresh" autofocus="@Focus("cudMailType")">
+                        <select class="csi-control @Invalid("cudMailType")" id="cudMailType" name="mailType" disabled="@(!mailUsed)" data-submit="cudRefresh" autofocus="@Focus("cudMailType")"
+                                data-enable-when="@(mailInstant ? "mailing=different" : null)">
                             <option value="">@(mailUsed ? "Select" : "Not Applicable")</option>
                             @foreach (var p in Model.ProofsOfAddress)
                             {
@@ -280,7 +322,16 @@
                     </div>
                     await FieldError("cudMailType");
                 }
-                @{ await Slot(views["mail"]); }
+                @* Switched in place only while nothing is filed there: taking a filed
+                   proof off is asked about, and the page redrawn after it. *@
+                @if (mailInstant)
+                {
+                    await Choices("mailing", new[] { ("same", !Model.MailDifferentOf(Model.Investor)), ("different", Model.MailDifferentOf(Model.Investor)) }, MailAs);
+                }
+                else
+                {
+                    await Slot(views["mail"]);
+                }
             </div>
 
         </div>
@@ -315,7 +366,7 @@
                     </div>
                     @{ await FieldError("cudPayMode"); }
                 </div>
-                <div class="cud-pay__slot">@{ await Slot(views["payment"]); }</div>
+                <div class="cud-pay__slot">@{ await Choices("payMode", new[] { "" }.Concat(Model.PaymentModes.Select(m => m.Name)).Select(m => (m, m == s.PayMode)), PaymentAs); }</div>
                 <div class="cud-pay__card">
                     <partial name="_ReadCard" model="@(new ReadCardBlock(Model.PaymentRead()))" />
                 </div>

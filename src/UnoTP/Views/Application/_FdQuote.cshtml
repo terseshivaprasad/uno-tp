@@ -1,0 +1,48 @@
+@model FdConfigViewModel
+@* What the backend quotes for the deposit as it stands: drawn with FD Configuration,
+   and alone, in answer to FdQuote, each time a choice changes (fd-quote.js). It
+   carries what the amount field says under it, for the script to put there. *@
+@{
+    var f = Model.Form;
+    var q = Model.Quote;
+    var payout = Model.Payout;
+    var amountProblem = f.Amount.Length > 0 ? f.AmountProblem(Model.Config) : null;
+    var amountHint = f.AmountValue > 0 && amountProblem is null ? Model.AmountHint
+        : $"{Money.Rupees(Model.Config.MinAmount)} to {Money.Rupees(Model.Config.MaxAmount)}, in multiples of {Money.Rupees(Model.Config.AmountStep)}";
+}
+
+@functions {
+    private async Task Kv(string key, string value, bool unread = false)
+    {
+        <div class="inv-kv"><div class="inv-kv__k">@key</div><div class="inv-kv__v @(unread ? "inv-kv__v--unread" : null)">@value</div></div>
+        await Task.CompletedTask;
+    }
+}
+
+<div class="inv-panel">
+    <div class="inv-panel__label" style="padding-bottom:10px">This deposit &middot; quoted by the backend</div>
+    <div class="inv-kv-grid">
+        @{
+            await Kv("Amount", f.AmountValue > 0 ? Money.Rupees(f.AmountValue) : "Not entered", f.AmountValue == 0);
+            await Kv("Interest rate", q is null ? "Quoted once the amount is valid" : $"{q.Rate:0.00}% p.a.", q is null);
+            await Kv("Tenure", $"{f.TenureMonths} months");
+            await Kv("Interest payout", payout?.Name ?? "—");
+            await Kv("Scheme", Model.Cumulative ? "Cumulative" : "Non-cumulative");
+            await Kv("Category", Model.Category);
+            if (!Model.Cumulative && q is not null && payout is not null) await Kv($"Interest each {payout.Each}", Money.Rupees(q.InterestEach));
+            await Kv("Maturity value", q is null ? "—" : Money.Rupees(q.MaturityAmount), q is null);
+            await Kv("Matures on", q is null ? "—" : Money.Day(q.MaturesOn), q is null);
+        }
+    </div>
+    <p class="cii-note">
+        @if (q is null)
+        {
+            @:The rate and the returns are quoted once a valid amount is entered.
+        }
+        else
+        {
+            @:The card rate for a @f.TenureMonths-month deposit as on @Money.Day(q.RateAsOn), locked when the application is submitted. @(f.NoTds ? "Returns assume no TDS, on the exemption claimed below." : "Returns are shown before TDS at the applicable rate.")
+        }
+    </p>
+</div>
+<p hidden data-fd-amount data-problem="@amountProblem" data-hint="@amountHint"></p>

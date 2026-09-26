@@ -13,7 +13,7 @@
     var key = v.Key;
     var filed = v.Doc is not null;
 }
-<div class="cud-slot @(v.Error is not null ? "is-invalid" : null) @(v.Unconfirmed ? "is-unconfirmed" : null)" id="slot-@key" tabindex="-1">
+<div class="cud-slot @(v.Error is not null ? "is-invalid" : null) @(v.Unconfirmed ? "is-unconfirmed" : null)" id="@(Model.Alternate ? null : "slot-" + key)" tabindex="-1">
     <div class="cud-slot__frame">
         @if (!v.Used && v.Read is { } held)
         {

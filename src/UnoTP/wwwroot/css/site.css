@@ -403,6 +403,9 @@ select.inv-control:has(option[value=""]:checked) { color: var(--muted-2); }
 .bank-branch { margin-bottom: 0; }
 .csi-card > .cii-note { margin-top: 12px; }
 .csi-main > .csi-demo { margin-top: 0; }
+/* A part a choice shows or hides in place (data-show-when): no fieldset frame. */
+.cud-choice { min-width: 0; margin: 0; padding: 0; border: 0; }
+.cud-choice[hidden] { display: none; }
 /* Investor Identification's Note, across the card under its head. */
 .csi-note--banner { margin-top: 18px; padding: 11px 14px; }
 .csi-note--banner .csi-note__title { font-weight: 600; }

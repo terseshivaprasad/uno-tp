@@ -66,7 +66,7 @@
 <div class="csi">
     <partial name="_ClassicSteps" model="4" />
 
-    <form class="csi-main" id="fdConfigForm" method="post" data-partial novalidate data-partial-focus="@focus">
+    <form class="csi-main" id="fdConfigForm" method="post" data-partial novalidate data-partial-focus="@focus" data-quote-url="@Url.Action("FdQuote")">
         @* Pressed for the partner whenever a choice changes: the deposit is saved and redrawn. *@
         <button type="submit" class="visually-hidden" id="fdRefresh" name="refresh" value="" formnovalidate tabindex="-1">Update</button>
 
@@ -88,48 +88,24 @@
                 </span>
             </div>
 
-            @* ── What the backend quotes for the choices below ─────────────────── *@
-            <div class="cii-record">
-                <div class="inv-panel" aria-live="polite">
-                    <div class="inv-panel__label" style="padding-bottom:10px">This deposit &middot; quoted by the backend</div>
-                    <div class="inv-kv-grid">
-                        @{
-                            await Kv("Amount", f.AmountValue > 0 ? Money.Rupees(f.AmountValue) : "Not entered", f.AmountValue == 0);
-                            await Kv("Interest rate", q is null ? "Quoted once the amount is valid" : $"{q.Rate:0.00}% p.a.", q is null);
-                            await Kv("Tenure", $"{f.TenureMonths} months");
-                            await Kv("Interest payout", payout?.Name ?? "—");
-                            await Kv("Scheme", Model.Cumulative ? "Cumulative" : "Non-cumulative");
-                            await Kv("Category", Model.Category);
-                            if (!Model.Cumulative && q is not null && payout is not null) await Kv($"Interest each {payout.Each}", Money.Rupees(q.InterestEach));
-                            await Kv("Maturity value", q is null ? "—" : Money.Rupees(q.MaturityAmount), q is null);
-                            await Kv("Matures on", q is null ? "—" : Money.Day(q.MaturesOn), q is null);
-                        }
-                    </div>
-                    <p class="cii-note">
-                        @if (q is null)
-                        {
-                            @:The rate and the returns are quoted once a valid amount is entered.
-                        }
-                        else
-                        {
-                            @:The card rate for a @f.TenureMonths-month deposit as on @Money.Day(q.RateAsOn), locked when the application is submitted. @(f.NoTds ? "Returns assume no TDS, on the exemption claimed below." : "Returns are shown before TDS at the applicable rate.")
-                        }
-                    </p>
-                </div>
+            @* ── What the backend quotes for the choices below: redrawn on its own
+               as a choice changes (fd-quote.js), never with the whole page. ───── *@
+            <div class="cii-record" id="fd-quote" aria-live="polite">
+                <partial name="_FdQuote" model="Model" />
             </div>
 
             @* ── Amount ───────────────────────────────────────────────────────── *@
             <div class="cud-grid">
                 <div class="cud-col">
                     <label class="csi-label" for="fd-amount">Amount (&#8377;)</label>
-                    <input class="csi-control @Invalid("Amount")" id="fd-amount" name="Amount" value="@f.Amount" inputmode="numeric" autocomplete="off" data-submit="fdRefresh" aria-invalid="@InvalidAria("Amount")" aria-describedby="@(Model.Problem("Amount") is null ? "fd-amount-hint" : "fd-amountError")">
+                    <input class="csi-control @Invalid("Amount")" id="fd-amount" name="Amount" value="@f.Amount" inputmode="numeric" autocomplete="off" data-quote aria-invalid="@InvalidAria("Amount")" aria-describedby="@(Model.Problem("Amount") is null ? "fd-amount-hint" : "fd-amountError")">
                     @{ await FieldError("Amount", "fd-amount"); }
                     <p class="csi-hint" id="fd-amount-hint">@(f.AmountValue > 0 && Model.Problem("Amount") is null ? Model.AmountHint : $"{Money.Rupees(Model.Config.MinAmount)} to {Money.Rupees(Model.Config.MaxAmount)}, in multiples of {Money.Rupees(Model.Config.AmountStep)}")</p>
                 </div>
                 <div class="cud-col">
                     <label class="csi-label" for="fd-delivery">Delivery Type</label>
                     <div class="cud-select">
-                        <select class="csi-control @Invalid("DeliveryType")" id="fd-delivery" name="DeliveryType" data-submit="fdRefresh" aria-invalid="@InvalidAria("DeliveryType")">
+                        <select class="csi-control @Invalid("DeliveryType")" id="fd-delivery" name="DeliveryType" data-quote aria-invalid="@InvalidAria("DeliveryType")">
                             @foreach (var d in Model.Ref.DeliveryTypes)
                             {
                                 <option value="@d.Code" selected="@(d.Code == f.DeliveryType)">@d.Name</option>
@@ -146,7 +122,7 @@
             <div class="fd-radios" role="radiogroup" aria-labelledby="fd-tenure-label">
                 @foreach (var t in Model.Ref.Tenures)
                 {
-                    <label class="csi-radio"><input type="radio" id="fd-tenure-@t" name="TenureMonths" value="@t" checked="@(t == f.TenureMonths)" data-submit="fdRefresh"> @t</label>
+                    <label class="csi-radio"><input type="radio" id="fd-tenure-@t" name="TenureMonths" value="@t" checked="@(t == f.TenureMonths)" data-quote> @t</label>
                 }
             </div>
             @{ await FieldError("TenureMonths", "fd-tenure"); }
@@ -156,7 +132,7 @@
             <div class="fd-radios" role="radiogroup" aria-labelledby="fd-payout-label">
                 @foreach (var p in Model.Ref.Payouts)
                 {
-                    <label class="csi-radio"><input type="radio" id="fd-payout-@p.Code" name="InterestPayout" value="@p.Code" checked="@(p.Code == f.InterestPayout)" data-submit="fdRefresh"> @p.Name</label>
+                    <label class="csi-radio"><input type="radio" id="fd-payout-@p.Code" name="InterestPayout" value="@p.Code" checked="@(p.Code == f.InterestPayout)" data-quote> @p.Name</label>
                 }
             </div>
             @{ await FieldError("InterestPayout", "fd-payout"); }
@@ -167,17 +143,18 @@
             <div class="cii-switches">
                 <label class="inv-switch-row" for="fd-renew-on">
                     <span>Renew automatically on maturity, unless the investor instructs otherwise</span>
-                    <input type="checkbox" id="fd-renew-on" name="AutoRenewal" value="true" class="inv-switch" checked="@f.AutoRenewal" data-submit="fdRefresh">
+                    <input type="checkbox" id="fd-renew-on" name="AutoRenewal" value="true" class="inv-switch" checked="@f.AutoRenewal" data-quote>
                     <input type="hidden" name="AutoRenewal" value="false">
                 </label>
             </div>
-            @if (f.AutoRenewal)
-            {
+            @* Shown the moment auto renewal is turned on (data-show-when); hidden, it is
+               disabled, so its choice is not posted. *@
+            <fieldset class="cud-choice" data-show-when="AutoRenewal=true" hidden="@(!f.AutoRenewal)" disabled="@(!f.AutoRenewal)">
                 <div class="cud-grid">
                     <div class="cud-col">
                         <label class="csi-label" for="fd-renew">Renew</label>
                         <div class="cud-select">
-                            <select class="csi-control @Invalid("RenewInstruction")" id="fd-renew" name="RenewInstruction" data-submit="fdRefresh" aria-invalid="@InvalidAria("RenewInstruction")">
+                            <select class="csi-control @Invalid("RenewInstruction")" id="fd-renew" name="RenewInstruction" data-quote aria-invalid="@InvalidAria("RenewInstruction")">
                                 <option value="" selected="@(f.RenewInstruction.Length == 0)">Select</option>
                                 @foreach (var r in Model.Ref.RenewInstructions)
                                 {
@@ -193,20 +170,17 @@
                         <p class="csi-hint">At the card rate on the renewal date, not today&rsquo;s</p>
                     </div>
                 </div>
-            }
+            </fieldset>
             <div class="cii-switches">
                 <label class="inv-switch-row" for="fd-no-tds">
                     <span>Do not deduct tax at source &mdash; only where the investor is eligible: Form 15G under @Model.Config.SeniorAge, Form 15H at @Model.Config.SeniorAge and above</span>
-                    <input type="checkbox" id="fd-no-tds" name="NoTds" value="true" class="inv-switch" checked="@f.NoTds" data-submit="fdRefresh">
+                    <input type="checkbox" id="fd-no-tds" name="NoTds" value="true" class="inv-switch" checked="@f.NoTds" data-quote>
                     <input type="hidden" name="NoTds" value="false">
                 </label>
             </div>
-            @if (f.NoTds)
-            {
-                <div class="bank-note bank-after">
-                    <strong>@Model.TdsForm is needed for the primary holder</strong>, by the investor&rsquo;s date of birth. Turning this off removes the requirement; TDS is then deducted at the applicable rate.
-                </div>
-            }
+            <div class="bank-note bank-after" data-show-when="NoTds=true" hidden="@(!f.NoTds)">
+                <strong>@Model.TdsForm is needed for the primary holder</strong>, by the investor&rsquo;s date of birth. Turning this off removes the requirement; TDS is then deducted at the applicable rate.
+            </div>
         </section>
     </form>
 </div>
@@ -232,5 +206,6 @@
 
 @section Scripts {
     <script src="~/js/partial-forms.js" asp-append-version="true"></script>
+    <script src="~/js/fd-quote.js" asp-append-version="true"></script>
     <script src="~/js/classic-pin.js" asp-append-version="true"></script>
 }
