@@ -38,7 +38,7 @@ public sealed class FeatureFlags
     /// <summary>
     /// Demo mode: the test data cards, signing in as Entry:DemoUserId without the
     /// portal, and ?agency= showing the app as another kind of partner. Off unless
-    /// configured on - Development turns it on.
+    /// configured on; appsettings.json turns it on for now, for the demo on Render.
     /// </summary>
     public bool DemoData { get; set; }
 
