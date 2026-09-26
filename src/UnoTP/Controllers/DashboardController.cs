@@ -23,28 +23,26 @@ public class DashboardController(
     public async Task<IActionResult> Index(string? off)
     {
         var board = console.BoardAsync();
+        // The partner's own applications opened and left before submitting, to pick
+        // up again from here: only while New FD is open, as that is where they go.
+        var drafts = features.Flags.NewFd ? Try(() => applications.DraftsAsync()) : Skip<DraftSummary>();
         var work = WorkAsync();
-        return View(new DashboardViewModel(features, await board, off) { Work = await work });
+        return View(new DashboardViewModel(features, await board, off) { Work = await work, Drafts = await drafts });
     }
 
-    // What is waiting on the partner, from the lists the backend keeps: drafts to
-    // finish, investors yet to pay or accept, slips to generate, applications close
-    // to cancelling. Only what the partner's features open; a list the backend does
-    // not answer is left out rather than failing the page.
+    // What is waiting on the partner, from the lists the backend keeps: investors
+    // yet to pay or accept, slips to generate, applications close to cancelling.
+    // Only what the partner's features open; a list the backend does not answer is
+    // left out rather than failing the page.
     private async Task<IReadOnlyList<WorkItem>> WorkAsync()
     {
         var on = features.Flags;
         var config = await lookups.ConfigAsync();
         var today = DateTime.Today;
-        var drafts = on.NewFd ? Try(() => applications.DraftsAsync()) : Skip<DraftSummary>();
         var pending = on.ShortUrl ? Try(() => links.PendingAsync()) : Skip<PendingRecord>();
         var slipRows = on.PisGeneration ? Try(() => slips.SlipsAsync()) : Skip<SlipRecord>();
         var apps = on.ViewApplication ? Try(() => applications.ListAsync()) : Skip<ApplicationRecord>();
         var work = new List<WorkItem>();
-
-        if (await drafts is { Count: > 0 } d)
-            work.Add(new WorkItem("drafts", "Drafts to finish", d.Count,
-                $"Latest: {d[0].Name} · {Money.Rupees(d[0].Amount)}", "InvestorIdentification", "amber"));
 
         if (await pending is { Count: > 0 } p)
         {

@@ -235,6 +235,70 @@ application. Field lists are in `Registers.cs`.
 The page checks each action before sending it (a tile picked, `from` in the
 future and before `to`, a heading), and the backend checks again.
 
+## Dashboard
+
+The dashboard asks for its lists all at once and counts the rows itself; the
+backend has no route that returns counts. A list is asked for only while the
+user's menu opens its feature. A list that fails is left out and the page still
+loads. The code is in `DashboardController.cs`.
+
+| Section | Route | Feature | What the dashboard shows |
+|---|---|---|---|
+| Waiting on you: Close to auto-cancel | `GET applications`, `GET config` | `view-app` | Applications not `booked` or `cancelled` with 0 to 3 days left, where days left is `cancellationDays` minus the days since `applied`. The soonest is named. |
+| Waiting on you: Waiting on the investor | `GET links/pending` | `short-url` | Every row, split by `due` into "to pay" and "to accept". |
+| Waiting on you: Pay-in slips to generate | `GET payin-slips` | `pis` | Rows whose `state` is `pending`, on paper or accepted by the investor (`digital` false, or `accepted` true). |
+| Continue an incomplete application | `GET applications/drafts` | `new-fd` | The latest 3 drafts, each opening on Upload Documents; the rest are on Investor Identification. |
+| Tiles and the bell | `GET console/schedule` | | Tiles switched off for a window, and the notices in the bell. |
+| Top bar | `GET me` | | The partner's name. |
+
+Example answers, as the mock gives them (identifiers masked by the backend):
+
+`GET applications`
+
+```json
+[{ "appNo": "FBBMFL26F18317", "folio": "MF0044146", "investor": "Ra•••• Sh•••••",
+   "pan": "RASH••••P••••", "amount": 250000, "cumulative": true, "months": 36,
+   "payout": "On maturity", "holders": 1, "applied": "2026-09-14T00:00:00",
+   "digital": true, "instrument": "Cheque", "branch": "Pune Camp",
+   "state": "awaiting", "fdr": null, "step": "Payment", "scheme": "Samruddhi",
+   "milestones": [{ "step": "Application raised", "at": "2026-09-14T00:00:00" },
+                  { "step": "Payment received", "at": null }] }]
+```
+
+`GET config`
+
+```json
+{ "sourcingAgency": "1033", "minAge": 18, "seniorAge": 60, "maxJointHolders": 2,
+  "maxAttempts": 3, "minAmount": 5000, "maxAmount": 20000000, "amountStep": 1000,
+  "cancellationDays": 14, "draftDays": 30,
+  "linkValidityHours": { "payment": 48, "acceptance": 72 } }
+```
+
+`GET links/pending`
+
+```json
+[{ "appNo": "FBBMFL26F20488", "investor": "An•••• Jo•••••",
+   "applied": "2026-09-25T00:00:00", "mobile": "90••••1000",
+   "due": "payment", "email": "a••••@gmail.com" }]
+```
+
+`GET payin-slips`
+
+```json
+[{ "appNo": "FBBMFL26F16421", "investor": "Su•••• Pa•••••", "amount": 150000,
+   "instrument": "Cheque", "instrumentNo": "104139", "drawnOn": "HDFC Bank",
+   "applied": "2026-09-23T00:00:00", "branch": "Nashik Road", "digital": true,
+   "accepted": true, "state": "pending", "slipNo": null,
+   "acceptedOn": "2026-09-24T00:00:00" }]
+```
+
+`GET applications/drafts`
+
+```json
+[{ "appNo": "FBBMFL26F10421", "name": "P•••••• K•••••", "pan": "ABCPK••••F",
+   "dob": "••/••/1984", "amount": 100000 }]
+```
+
 ## Outside services
 
 The app asks each check separately, in this order: identification, OCR, then

@@ -1,3 +1,4 @@
+using UnoTP.Backend;
 using UnoTP.Features;
 using UnoTP.Models;
 
@@ -6,9 +7,10 @@ namespace UnoTP.ViewModels;
 /// <summary>
 /// One big tile on the dashboard. Controller is where it opens, or null while there
 /// is no page behind it yet; Off is what the tile says in place of opening, or null
-/// while the feature behind it is on.
+/// while the feature behind it is on. Why is the same said in a sentence, for the
+/// banner an off tile opens.
 /// </summary>
-public record DashboardTile(string Key, string Title, string Glyph, string? Controller, string? Off);
+public record DashboardTile(string Key, string Title, string Glyph, string? Controller, string? Off, string? Why = null);
 
 /// <summary>The classic dashboard: its tiles, and why a closed page sent the partner here.</summary>
 /// <summary>Work waiting on the partner: how many, what the first of them is, and the page that handles it.</summary>
@@ -19,6 +21,12 @@ public class DashboardViewModel(FeatureSet features, ConsoleBoard board, string?
 {
     /// <summary>What is waiting on the partner, most pressing kinds included; empty when nothing is.</summary>
     public IReadOnlyList<WorkItem> Work { get; init; } = [];
+
+    /// <summary>The partner's applications opened and not yet submitted, the one touched last first.</summary>
+    public IReadOnlyList<DraftSummary> Drafts { get; init; } = [];
+
+    /// <summary>How many drafts the dashboard shows; the rest are on Investor Identification.</summary>
+    public const int DraftsShown = 3;
 
     // The four booking steps' outline glyphs (24px grid), in order: documents,
     // investor, payment, deposit. The dashboard lists them and the search page's
@@ -86,10 +94,12 @@ public class DashboardViewModel(FeatureSet features, ConsoleBoard board, string?
     public ConsoleBoard Board { get; } = board;
 
     /// <summary>
-    /// Set when FeatureGate sent the partner here from a page that is closed, so the
-    /// dashboard says which feature and why instead of just reappearing.
+    /// Set when FeatureGate sent the partner here from a page that is closed, or an
+    /// off tile was pressed, so the dashboard says which feature and why instead of
+    /// just reappearing.
     /// </summary>
-    public string? Closed { get; } = ClosedLine(features, board, off);
+    public string? Closed => off is null ? null
+        : NewFd.Concat(Services).Concat(Admin).FirstOrDefault(t => t.Key == off)?.Why ?? ClosedLine(features, Board, off);
 
     private static string? ClosedLine(FeatureSet features, ConsoleBoard board, string? off)
     {
@@ -108,8 +118,11 @@ public class DashboardViewModel(FeatureSet features, ConsoleBoard board, string?
 
     // A tile with no page behind it yet cannot open even when its feature is on,
     // so it reads as coming rather than as a button that does nothing.
-    private DashboardTile Tile(string key, string title, string glyph, string? controller) =>
-        new(key, title, glyph, controller,
-            (features.NotInMenu.Contains(key) ? "Not in your menu" : null)
-            ?? Board.OffLabel(key, features.Flags) ?? (controller is null ? "Coming soon" : null));
+    private DashboardTile Tile(string key, string title, string glyph, string? controller)
+    {
+        var off = (features.NotInMenu.Contains(key) ? "Not in your menu" : null)
+            ?? Board.OffLabel(key, features.Flags) ?? (controller is null ? "Coming soon" : null);
+        return new(key, title, glyph, controller, off,
+            off is null ? null : ClosedLine(features, Board, key) ?? $"{title} is coming soon.");
+    }
 }

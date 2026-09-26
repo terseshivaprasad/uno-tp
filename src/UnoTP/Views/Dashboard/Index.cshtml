@@ -4,7 +4,7 @@
     ViewData["FirstNavActive"] = true;
 
     // The old WA_FD_UNOTP/Dashboard as it stands today: four steps down the left,
-    // two rows of big icon tiles on the right, and under the steps the counts of
+    // two rows of big icon tiles on the right, and under FD Services the counts of
     // the partner's work waiting on them. The tiles and whether each is on come
     // from the view model, which reads the switches in appsettings.
     var steps = DashboardViewModel.StepLabels.Zip(DashboardViewModel.StepGlyphs, (label, glyph) => (Label: label, Glyph: glyph));
@@ -15,17 +15,18 @@
     // nothing to await (fixed in Razor 9); nothing runs differently for it.
 #pragma warning disable CS1998
     // One big grey tile: a link while its feature is on, a greyed card saying why
-    // while it is off. Nothing on this page needs a script.
+    // while it is off. Pressing an off tile brings the page back with the reason
+    // in a sentence at the top. Nothing on this page needs a script.
     async Task Tile(DashboardTile t)
     {
         var icon = $"<svg width=\"48\" height=\"48\" viewBox=\"0 0 24 24\" fill=\"none\" aria-hidden=\"true\">{t.Glyph}</svg>";
         if (t.Off is not null || t.Controller is null)
         {
-            <div class="classic-tile classic-tile--off" aria-disabled="true">
+            <a class="classic-tile classic-tile--off" asp-controller="Dashboard" asp-action="Index" asp-route-off="@t.Key" title="@t.Why">
                 <span class="classic-tile__icon">@Html.Raw(icon)</span>
                 <span class="classic-tile__title">@t.Title</span>
                 <span class="classic-tile__off">@t.Off</span>
-            </div>
+            </a>
         }
         else
         {
@@ -67,12 +68,25 @@
                 }
             </ul>
         </div>
+    </section>
+
+    <section class="classic-actions">
+        <h2 class="classic-actions__title">Apply for a new FD</h2>
+        <div class="classic-tiles">
+            @foreach (var t in Model.NewFd) { await Tile(t); }
+        </div>
+        <hr class="classic-actions__rule">
+        <h2 class="classic-actions__title">FD Services</h2>
+        <div class="classic-tiles">
+            @foreach (var t in Model.Services) { await Tile(t); }
+        </div>
         @* The partner's own work waiting on them, counted from the backend's lists,
            each a link to the page that picks it up. Nothing waiting, nothing shown. *@
         @if (Model.Work.Count > 0)
         {
-            <nav class="work-counts" aria-label="Waiting on you">
-                <h2 class="work-counts__title">Waiting on you</h2>
+            <hr class="classic-actions__rule">
+            <nav class="work-counts" aria-labelledby="workTitle">
+                <h2 class="classic-actions__title" id="workTitle">Waiting on you</h2>
                 <ul class="work-counts__list">
                     @foreach (var w in Model.Work.OrderBy(w => w.Tone == "red" ? 0 : w.Tone == "amber" ? 1 : 2))
                     {
@@ -86,18 +100,37 @@
                 </ul>
             </nav>
         }
-    </section>
-
-    <section class="classic-actions">
-        <h2 class="classic-actions__title">Apply for a new FD</h2>
-        <div class="classic-tiles">
-            @foreach (var t in Model.NewFd) { await Tile(t); }
-        </div>
-        <hr class="classic-actions__rule">
-        <h2 class="classic-actions__title">FD Services</h2>
-        <div class="classic-tiles">
-            @foreach (var t in Model.Services) { await Tile(t); }
-        </div>
+        @* The partner's own applications opened and left before submitting, the one
+           touched last first: one press picks it up on Upload Documents, under the
+           number it was opened with. The rest are on Investor Identification. *@
+        @if (Model.Drafts.Count > 0)
+        {
+            <hr class="classic-actions__rule">
+            <section class="drafts" aria-labelledby="draftsTitle">
+                <div class="drafts__head">
+                    <h2 class="classic-actions__title" id="draftsTitle">Continue an incomplete application</h2>
+                    @if (Model.Drafts.Count > DashboardViewModel.DraftsShown)
+                    {
+                        <a class="drafts__all" asp-controller="InvestorIdentification" asp-action="Index">All @Model.Drafts.Count <span aria-hidden="true">&rsaquo;</span></a>
+                    }
+                </div>
+                <ul class="drafts__list">
+                    @foreach (var d in Model.Drafts.Take(DashboardViewModel.DraftsShown))
+                    {
+                        <li>
+                            @* Only the draft's number is posted, and the server checks it is one of this partner's. *@
+                            <form method="post" asp-controller="InvestorIdentification" asp-action="Continue">
+                                <input type="hidden" name="draft" value="@d.AppNo">
+                                <button type="submit" class="draft-card btn-reset" title="Continue application @d.AppNo" data-loader="Opening Upload Documents…" data-loader-hint="Application @d.AppNo">
+                                    <span class="draft-card__no">@d.AppNo</span>
+                                    <span class="draft-card__who">@d.Name@(d.Amount > 0 ? $" · {Money.Rupees(d.Amount)}" : "")</span>
+                                </button>
+                            </form>
+                        </li>
+                    }
+                </ul>
+            </section>
+        }
         @if (Model.Admin.Count > 0)
         {
             <hr class="classic-actions__rule">
