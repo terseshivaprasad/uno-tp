@@ -1,8 +1,7 @@
-// FD Configuration: the backend's quote for the deposit is drawn again as a choice
-// changes, without the page being sent. Every control marked data-quote posts the
-// form to FdQuote, which answers with the quote panel alone and saves nothing - the
-// step is saved by Proceed, as on a bank's form. What a choice shows or hides has
-// already changed (partial-forms.js). The
+// FD Configuration: a choice is saved, and the backend's quote for the deposit
+// drawn again, without the page being sent. Every control marked data-quote posts
+// the form to FdQuote, which saves the deposit and answers with the quote panel
+// alone; what a choice shows or hides has already changed (partial-forms.js). The
 // amount is quoted as it is typed, once the partner pauses; what is wrong with it
 // is said once they leave the field, not while they are still typing it.
 (function () {
@@ -28,12 +27,11 @@
         amount(sayProblem);
       })
       .catch(function () {
-        // No quote this time - the connection dropped: the panel says so, and the
-        // next choice asks again. Proceed still saves and checks everything.
+        // Not saved this way - the application changed elsewhere, or the connection
+        // dropped: the page is posted the ordinary way, and says what happened.
         if (mine !== asked) return;
-        var panel = document.getElementById('fd-quote');
-        var note = panel && panel.querySelector('.cii-note');
-        if (note) note.textContent = 'The quote could not be fetched just now — it is asked for again with the next change.';
+        var refresh = document.getElementById('fdRefresh');
+        if (refresh) form.requestSubmit(refresh);
       })
       .then(function () {
         if (mine === asked) document.documentElement.classList.remove('is-saving');

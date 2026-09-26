@@ -66,7 +66,7 @@
 <div class="csi">
     <partial name="_ClassicSteps" model="4" />
 
-    <form class="csi-main" id="fdConfigForm" data-guard method="post" data-partial novalidate data-partial-focus="@focus" data-quote-url="@Url.Action("FdQuote")">
+    <form class="csi-main" id="fdConfigForm" method="post" data-partial novalidate data-partial-focus="@focus" data-quote-url="@Url.Action("FdQuote")">
         @* Pressed for the partner whenever a choice changes: the deposit is saved and redrawn. *@
         <button type="submit" class="visually-hidden" id="fdRefresh" name="refresh" value="" formnovalidate tabindex="-1">Update</button>
 
@@ -98,8 +98,7 @@
             <div class="cud-grid">
                 <div class="cud-col">
                     <label class="csi-label" for="fd-amount">Amount (&#8377;)</label>
-                    <input class="csi-control @Invalid("Amount")" id="fd-amount" name="Amount" value="@f.Amount" inputmode="numeric" autocomplete="off" data-quote
-                           data-required="Required — enter the deposit amount" data-check="amount" data-min="@Model.Config.MinAmount" data-max="@Model.Config.MaxAmount" data-step="@Model.Config.AmountStep" aria-invalid="@InvalidAria("Amount")" aria-describedby="@(Model.Problem("Amount") is null ? "fd-amount-hint" : "fd-amountError")">
+                    <input class="csi-control @Invalid("Amount")" id="fd-amount" name="Amount" value="@f.Amount" inputmode="numeric" autocomplete="off" data-quote aria-invalid="@InvalidAria("Amount")" aria-describedby="@(Model.Problem("Amount") is null ? "fd-amount-hint" : "fd-amountError")">
                     @{ await FieldError("Amount", "fd-amount"); }
                     <p class="csi-hint" id="fd-amount-hint">@(f.AmountValue > 0 && Model.Problem("Amount") is null ? Model.AmountHint : $"{Money.Rupees(Model.Config.MinAmount)} to {Money.Rupees(Model.Config.MaxAmount)}, in multiples of {Money.Rupees(Model.Config.AmountStep)}")</p>
                 </div>
@@ -155,7 +154,7 @@
                     <div class="cud-col">
                         <label class="csi-label" for="fd-renew">Renew</label>
                         <div class="cud-select">
-                            <select class="csi-control @Invalid("RenewInstruction")" id="fd-renew" name="RenewInstruction" data-quote data-required="Required — choose what auto renewal renews" aria-invalid="@InvalidAria("RenewInstruction")">
+                            <select class="csi-control @Invalid("RenewInstruction")" id="fd-renew" name="RenewInstruction" data-quote aria-invalid="@InvalidAria("RenewInstruction")">
                                 <option value="" selected="@(f.RenewInstruction.Length == 0)">Select</option>
                                 @foreach (var r in Model.Ref.RenewInstructions)
                                 {
@@ -196,11 +195,11 @@
             }
             else
             {
-                <text>Choose the deposit, then proceed to <strong>Review Summary</strong> &mdash; Proceed saves it</text>
+                <text>Saved as you go, then proceed to <strong>Review Summary</strong></text>
             }
         </p>
         <div class="csi-bar__right">
-            <button type="submit" form="fdConfigForm" class="csi-btn csi-btn--primary" data-loader="Saving the deposit&hellip;" data-validate="form">Proceed</button>
+            <button type="submit" form="fdConfigForm" class="csi-btn csi-btn--primary" data-loader="Saving the deposit&hellip;">Proceed</button>
         </div>
     </div>
 </footer>
