@@ -51,8 +51,8 @@ public sealed class FeatureFlags
 
     /// <summary>
     /// Whether ?ff= and the unotp.ff cookie may change these switches for a
-    /// browser. Off unless configured on - Development turns it on - so on a server
-    /// only its configuration sets what is on, and nothing a request carries can.
+    /// browser. Off unless configured on, and configured on nowhere: only the
+    /// configuration sets what is on, and nothing a request carries can.
     /// </summary>
     public bool AllowOverrides { get; set; }
 

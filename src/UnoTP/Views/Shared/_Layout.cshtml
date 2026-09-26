@@ -42,7 +42,7 @@
             }
             <div class="app-header__welcome"><span class="welcome-label">Welcome,</span> @partner.Name <span class="entity-code">@partner.Code</span> <span class="app-header__as">@asWhat</span>@if (Features.IsOverridden)
             {
-                @* Only where overrides are allowed (Development): a page running on
+                @* Only where Features:AllowOverrides is on: a page running on
                    switches other than its configuration's says so. *@
                 <span class="app-header__ff" title="Feature overrides from ?ff= are on for this browser: @string.Join(", ", Features.Overrides). ?ff=reset turns them off.">Overrides on</span>
             }</div>
