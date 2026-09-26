@@ -22,6 +22,8 @@
 .entity-code { color: var(--red); }
 /* What the partner signs in as: a 1033 agency, or a broker under their code. */
 .app-header__as { display: inline-block; margin-left: 6px; padding: 2px 7px; border-radius: 3px; background: var(--tint); font-size: 11px; font-weight: 600; color: var(--text); vertical-align: 1px; }
+/* Feature overrides in force for this browser (Development only). */
+.app-header__ff { display: inline-block; margin-left: 6px; padding: 2px 7px; border: 1px solid var(--amber-border); border-radius: 3px; background: var(--amber-bg); font-size: 11px; font-weight: 600; color: var(--amber); vertical-align: 1px; cursor: help; }
 .app-header__nav { display: flex; border-left: 1px solid var(--border-2); padding-left: 16px; }
 .app-header__nav a { display: inline-flex; align-items: center; gap: 6px; padding: 0 12px; color: var(--ink); border-left: 1px solid var(--border-2); }
 .app-header__nav a svg { flex: none; }

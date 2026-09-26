@@ -123,6 +123,9 @@ public interface IDepositApi
 
     /// <summary>GET ifsc/{code}: the branch an IFSC names, or null (404) for none.</summary>
     Task<BankBranch?> BranchAsync(string ifsc, CancellationToken ct = default);
+
+    /// <summary>GET ifsc?q=: the branches whose bank name, branch, IFSC or MICR holds the text, best first; at most 20.</summary>
+    Task<IReadOnlyList<BankBranch>> SearchBranchesAsync(string query, CancellationToken ct = default);
 }
 
 /// <param name="Payout">A <see cref="PayoutOption.Code"/>.</param>
@@ -145,7 +148,14 @@ public sealed record BankBranch(string Ifsc, string Bank, string Branch, string 
 public interface IDemoApi
 {
     Task<DemoCases?> CasesAsync(CancellationToken ct = default);
+
+    /// <summary>GET demo/banks: the test branches, for the Test data card on Bank Details &amp; Payment; null (404) on a live backend.</summary>
+    Task<DemoBanks?> BanksAsync(CancellationToken ct = default);
 }
+
+/// <param name="Branches">Every branch a test IFSC names.</param>
+/// <param name="Notes">What else to try, one line each.</param>
+public sealed record DemoBanks(IReadOnlyList<BankBranch> Branches, IReadOnlyList<string> Notes);
 
 /// <param name="Dob">The date of birth every test record holds.</param>
 /// <param name="Notes">Further ways to reach an outcome, one line each.</param>

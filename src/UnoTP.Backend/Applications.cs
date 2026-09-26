@@ -21,6 +21,13 @@ public interface IApplicationApi
     /// </summary>
     Task<int?> SaveUploadAsync(string appNo, int version, UploadState upload, CancellationToken ct = default);
 
+    /// <summary>
+    /// PUT applications/{appNo}/pages/{page}: a page's working state, kept with the
+    /// application as it stands - it moves no version and meets no conflict. False
+    /// when the application is not the partner's.
+    /// </summary>
+    Task<bool> SavePageAsync(string appNo, string page, string state, CancellationToken ct = default);
+
     /// <summary>PUT applications/{appNo}/details: the holders' and the nominee's details, from Investor Information. New version, or null on a conflict.</summary>
     Task<int?> SaveDetailsAsync(string appNo, int version, ApplicationDetails details, CancellationToken ct = default);
 
@@ -44,7 +51,7 @@ public interface IApplicationApi
     /// </summary>
     Task<Submission?> ResendLinkAsync(string appNo, CancellationToken ct = default);
 
-    /// <summary>The partner's saved applications that are theirs to finish, newest first.</summary>
+    /// <summary>The partner's applications that are theirs to finish - opened, not yet submitted - newest first.</summary>
     Task<IReadOnlyList<DraftSummary>> DraftsAsync(CancellationToken ct = default);
 
     /// <summary>The partner's applications, for looking one up.</summary>
@@ -87,6 +94,14 @@ public sealed class Application
 
     /// <summary>Set once the application is submitted.</summary>
     public Submission? Submitted { get; set; }
+
+    /// <summary>
+    /// Each wizard page's working state as the page last left it, by page: what is
+    /// typed but not yet a part of its own, a joint holder still being searched
+    /// for. Kept with the application, so a new application starts clean and one
+    /// picked up again opens where it was left. Opaque to the backend.
+    /// </summary>
+    public Dictionary<string, string> Pages { get; set; } = [];
 }
 
 /// <summary>Investor Information, as saved: each holder's details, and the nominee's.</summary>

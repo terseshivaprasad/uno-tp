@@ -29,6 +29,7 @@ public partial class InvestorIdentificationViewModel(IInvestorApi investors, Uno
         "Investor Information",
         "Bank Details & Payment",
         "FD Configuration",
+        "Review Summary",
     };
 
     /// <summary>

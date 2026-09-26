@@ -1,12 +1,14 @@
 @model int
 @* The rail down the left of every classic wizard step. The page passes the step
    it is on; the ones behind it carry a filled tick, the ones ahead an empty one.
-   One partial so the five steps cannot drift from page to page. *@
+   Submitted passes the count itself: every step behind it. One partial so the
+   six steps cannot drift from page to page. *@
 @{
     // Investor Identification leads the rail with its own glyph; the four booking
-    // steps follow it with the dashboard's.
+    // steps follow it with the dashboard's, and Review Summary closes it.
     const string investorGlyph = "<circle cx=\"12\" cy=\"7.5\" r=\"4\"></circle><path d=\"M4.5 20.5a7.5 7.5 0 0 1 15 0\"></path>";
-    var glyphs = new[] { investorGlyph }.Concat(DashboardViewModel.StepGlyphs).ToArray();
+    const string reviewGlyph = "<circle cx=\"12\" cy=\"12\" r=\"9.5\"></circle><path d=\"M8 12.5l2.8 2.8L16.5 9.5\"></path>";
+    var glyphs = new[] { investorGlyph }.Concat(DashboardViewModel.StepGlyphs).Append(reviewGlyph).ToArray();
 }
 <aside class="csi-rail">
     @* On a phone the five steps will not fit across the width, and a rail that
@@ -14,11 +16,12 @@
        bar take their place; the steps themselves come back with the room. *@
     @{
         var stepCount = InvestorIdentificationViewModel.Steps.Length;
-        var through = ((Model + 1) * 100) / stepCount;
+        var submitted = Model >= stepCount;
+        var through = submitted ? 100 : ((Model + 1) * 100) / stepCount;
     }
     <p class="csi-rail__where">
-        <span class="csi-rail__count">Step @(Model + 1) of @stepCount</span>
-        <span class="csi-rail__now">@InvestorIdentificationViewModel.Steps[Model]</span>
+        <span class="csi-rail__count">@(submitted ? $"All {stepCount} steps done" : $"Step {Model + 1} of {stepCount}")</span>
+        <span class="csi-rail__now">@(submitted ? "Submitted" : InvestorIdentificationViewModel.Steps[Model])</span>
     </p>
     <span class="csi-rail__bar" aria-hidden="true"><span style="width:@(through)%"></span></span>
 

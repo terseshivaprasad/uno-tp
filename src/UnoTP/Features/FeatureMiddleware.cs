@@ -21,13 +21,15 @@ public static class FeatureMiddleware
             {
                 ctx.Response.Cookies.Delete(FeatureSet.CookieName, new CookieOptions { Path = CookiePath(ctx) });
             }
-            else if (ctx.Request.Query.ContainsKey(FeatureSet.QueryKey))
+            else if (defaults.AllowOverrides && ctx.Request.Query.ContainsKey(FeatureSet.QueryKey))
             {
                 ctx.Response.Cookies.Append(FeatureSet.CookieName, features.ToCookieValue(), new CookieOptions
                 {
                     HttpOnly = true,
                     IsEssential = true,
                     SameSite = SameSiteMode.Lax,
+                    // Secure as the app's other cookies are: always, outside Development.
+                    Secure = ctx.Request.IsHttps || !ctx.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment(),
                     // Under a virtual directory the overrides belong to this app only.
                     Path = CookiePath(ctx),
                 });

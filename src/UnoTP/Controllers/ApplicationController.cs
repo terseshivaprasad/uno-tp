@@ -14,8 +14,8 @@ namespace UnoTP.Controllers;
 /// What a post found wrong is carried to the page it redirects to.
 /// </summary>
 [RequiresFeature("new-fd")]
-[Route("Apps/UnoTp/Application")]
-public class ApplicationController(IApplicationApi applications, IDepositApi deposits, IServiceProvider services) : Controller
+[Route("Apps/UnoTp/Application/{appNo}")]
+public class ApplicationController(IApplicationApi applications, IDepositApi deposits, IDemoApi demo, FeatureSet features, IServiceProvider services) : Controller
 {
     private const string Changed =
         "This application changed somewhere else while that was being sent, so it was not kept. The page shows it as it stands now — do it again.";
@@ -27,8 +27,25 @@ public class ApplicationController(IApplicationApi applications, IDepositApi dep
     {
         if (await LoadAsync() is not { } docs) return Start();
         var form = BankForm.From(docs.App.Payment);
-        var (pay, repay) = await BranchesAsync(form.Payment.CleanIfsc, form.Repayment.SameAsPayment ? form.Payment.CleanIfsc : form.Repayment.CleanIfsc);
-        return View(new BankDetailsViewModel(docs, form, pay, repay, Said()));
+        var byCheque = ByCheque(docs);
+        var (pay, repay) = await BranchesAsync(byCheque ? form.Payment.CleanIfsc : "", form.RepaysToPayment(byCheque) ? form.Payment.CleanIfsc : form.Repayment.CleanIfsc);
+        return View(new BankDetailsViewModel(docs, form, pay, repay, Said())
+        {
+            Demo = features.Flags.DemoData ? await demo.BanksAsync() : null,
+        });
+    }
+
+    /// <summary>
+    /// The bank search's suggestions: the branches whose bank name, branch, IFSC or
+    /// MICR holds what was typed, as the backend finds them.
+    /// </summary>
+    [HttpGet("BankDetails/branches")]
+    public async Task<IActionResult> Branches(string? q)
+    {
+        if (HttpContext.CurrentApplication() is null) return NotFound();
+        var text = (q ?? "").Trim();
+        if (text.Length < 2) return Json(Array.Empty<BankBranch>());
+        return Json(await deposits.SearchBranchesAsync(text[..Math.Min(text.Length, 60)]));
     }
 
     /// <summary>
@@ -39,15 +56,22 @@ public class ApplicationController(IApplicationApi applications, IDepositApi dep
     public async Task<IActionResult> BankDetailsPost(BankForm form)
     {
         if (await LoadAsync() is not { } docs) return Start();
-        var byCheque = docs.State.PayMode.Length > 0 && docs.DocumentOf(docs.State.PayMode) is not null;
+        var byCheque = ByCheque(docs);
+        // The CMS branch is typed: kept as the backend spells it, whatever the case typed.
+        var cms = form.Cheque.CmsLocation.Trim();
+        form.Cheque.CmsLocation = docs.Ref.CmsLocations.FirstOrDefault(l => string.Equals(l, cms, StringComparison.OrdinalIgnoreCase)) ?? cms;
         if (await applications.SavePaymentAsync(docs.AppNo, docs.App.Version, form.ToDetails(byCheque)) is null)
             return Back(nameof(BankDetails), new() { ["banner"] = Changed });
         if (form.Find is not null) return RedirectToAction(nameof(BankDetails), null, null, form.Find == "repayment" ? "repay-ifsc" : "pay-ifsc");
 
-        var (pay, repay) = await BranchesAsync(form.Payment.CleanIfsc, form.Repayment.CleanIfsc);
-        var problems = form.Problems(byCheque, pay, form.Repayment.SameAsPayment ? pay : repay, docs.Ref.CmsLocations);
+        var (pay, repay) = await BranchesAsync(byCheque ? form.Payment.CleanIfsc : "", form.Repayment.CleanIfsc);
+        var problems = form.Problems(byCheque, pay, form.RepaysToPayment(byCheque) ? pay : repay, docs.Ref.CmsLocations);
         return problems.Count > 0 ? Back(nameof(BankDetails), problems) : RedirectToAction(nameof(FdConfiguration));
     }
+
+    // Paid by an instrument - a cheque - rather than electronically: only then is
+    // there an account the deposit is paid from to ask for.
+    private static bool ByCheque(UploadDocumentsViewModel docs) => docs.State.PayMode.Length > 0 && docs.DocumentOf(docs.State.PayMode) is not null;
 
     // ----- FD Configuration -----------------------------------------------------
 
@@ -127,7 +151,7 @@ public class ApplicationController(IApplicationApi applications, IDepositApi dep
     [HttpPost("Submitted/Resend")]
     public async Task<IActionResult> Resend()
     {
-        if (HttpContext.Session.CurrentApplication() is not { } appNo) return Start();
+        if (HttpContext.CurrentApplication() is not { } appNo) return Start();
         return await applications.ResendLinkAsync(appNo) is null
             ? Back(nameof(Submitted), new() { ["banner"] = "The link could not be sent again: no resend is left." })
             : RedirectToAction(nameof(Submitted));
@@ -138,7 +162,7 @@ public class ApplicationController(IApplicationApi applications, IDepositApi dep
     // The backend only ever finds the partner's own application.
     private async Task<UploadDocumentsViewModel?> LoadAsync()
     {
-        var appNo = HttpContext.Session.CurrentApplication();
+        var appNo = HttpContext.CurrentApplication();
         var app = appNo is null ? null : await applications.FindAsync(appNo);
         return app is null ? null : await ActivatorUtilities.CreateInstance<UploadDocumentsViewModel>(services, app, HttpContext.Session).ReadyAsync();
     }

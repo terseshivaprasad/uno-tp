@@ -20,14 +20,12 @@ public sealed class MockApplications(MockStore store, IPartner partner) : IAppli
         return Task.FromResult(app);
     }
 
-    // A draft is opened for whoever picks it up first; after that it is theirs.
-    public Task<Application?> FindAsync(string appNo, CancellationToken ct = default)
-    {
-        var draft = MockInFlight.Drafts.FirstOrDefault(d => d.Summary.AppNo == appNo);
-        return Task.FromResult(draft.Holder is null
-            ? store.Get(partner.Id, appNo)
-            : store.GetOrAdd(partner.Id, appNo, () => New(appNo, draft.Holder)));
-    }
+    // Only ever the partner's own application.
+    public Task<Application?> FindAsync(string appNo, CancellationToken ct = default) =>
+        Task.FromResult(store.Get(partner.Id, appNo));
+
+    public Task<bool> SavePageAsync(string appNo, string page, string state, CancellationToken ct = default) =>
+        Task.FromResult(store.Touch(partner.Id, appNo, app => app.Pages[page] = state));
 
     public Task<int?> SaveUploadAsync(string appNo, int version, UploadState upload, CancellationToken ct = default) =>
         Task.FromResult(store.SaveUpload(partner.Id, appNo, version, upload));
@@ -59,8 +57,13 @@ public sealed class MockApplications(MockStore store, IPartner partner) : IAppli
         return Task.FromResult(store.Save(partner.Id, appNo, app.Version, a => a.Submitted = a.Submitted! with { ResendsLeft = a.Submitted.ResendsLeft - 1 })?.Submitted);
     }
 
+    // The partner's own applications, opened here and not yet submitted - nothing
+    // made up - with the identifiers masked as the backend masks them.
     public Task<IReadOnlyList<DraftSummary>> DraftsAsync(CancellationToken ct = default) =>
-        Task.FromResult<IReadOnlyList<DraftSummary>>(MockInFlight.Drafts.Select(d => d.Summary).ToList());
+        Task.FromResult<IReadOnlyList<DraftSummary>>(store.List(partner.Id)
+            .Where(a => a.Submitted is null)
+            .Select(a => new DraftSummary(a.AppNo, Masks.Name(a.Holder.Name), Masks.Pan(a.Holder.Pan), Masks.Dob(a.Holder.Dob), a.Deposit?.Amount ?? 0))
+            .ToList());
 
     public Task<IReadOnlyList<ApplicationRecord>> ListAsync(CancellationToken ct = default) =>
         Task.FromResult<IReadOnlyList<ApplicationRecord>>(MockApplicationList.Build());
@@ -134,6 +137,18 @@ internal static class Masks
     /// <summary>9876543210 as ••••••3210.</summary>
     public static string Mobile(string mobile) =>
         mobile.Length >= 4 ? new string('•', mobile.Length - 4) + mobile[^4..] : mobile;
+
+    /// <summary>RAHUL S TERSE as R•••• S T••••.</summary>
+    public static string Name(string name) =>
+        string.Join(' ', name.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(w => w.Length <= 1 ? w : w[0] + new string('•', w.Length - 1)));
+
+    /// <summary>ABCPT1234Q as ABCPT••••Q.</summary>
+    public static string Pan(string pan) =>
+        pan.Length == 10 ? pan[..5] + "••••" + pan[^1] : pan;
+
+    /// <summary>14-08-1988 as ••/••/1988.</summary>
+    public static string Dob(string dob) =>
+        dob.Length >= 4 ? "••/••/" + dob[^4..] : dob;
 
     /// <summary>investor@example.com as in••••@example.com.</summary>
     public static string Email(string email) =>

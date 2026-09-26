@@ -1,227 +1,236 @@
 @model FdConfigViewModel
 @{
-    ViewData["Title"] = "Fixed Deposit Configuration";
-    Layout = "_WizardLayout";
-    ViewData["WizardStep"] = "fdconfig";
-    ViewData["PhoneTitle"] = "FD Configuration";
+    ViewData["Title"] = "FD Configuration";
 
-    // The deposit as the backend holds it, and what the backend quotes for it:
-    // every change posts, is saved, and the page comes back with the new quote.
+    // The fifth classic step, in the frame the steps before it draw. The deposit
+    // as the backend holds it, and what the backend quotes for it: every change
+    // posts, is saved, and the page comes back with the new quote above the choices.
     var f = Model.Form;
     var q = Model.Quote;
     var payout = Model.Payout;
+    var appNo = Model.Docs.AppNo;
     var banner = Model.Problem("banner");
-    var tenureText = $"{f.TenureMonths} months";
-    string Maturity() => q is null ? "—" : Money.Rupees(q.MaturityAmount);
-    string Rate() => q is null ? "—" : $"{q.Rate:0.00}%";
+
+    // What Proceed found, in page order; the first takes the caret.
+    var ids = new Dictionary<string, string>
+    {
+        ["Amount"] = "fd-amount",
+        ["TenureMonths"] = "fd-tenure-" + (Model.Ref.Tenures.FirstOrDefault()),
+        ["InterestPayout"] = "fd-payout-" + (Model.Ref.Payouts.FirstOrDefault()?.Code ?? ""),
+        ["RenewInstruction"] = "fd-renew",
+        ["DeliveryType"] = "fd-delivery",
+    };
+    var focus = ids.FirstOrDefault(i => Model.Problem(i.Key) is not null).Value;
+    var problems = Model.Problems.Count(p => p.Key != "banner");
 }
 
 @functions {
-    private async Task FieldError(string key)
+    private const string CopyGlyph = "<rect x=\"9\" y=\"9\" width=\"11\" height=\"11\" rx=\"1.6\"></rect><path d=\"M15 6.5V5.4A1.4 1.4 0 0 0 13.6 4H5.4A1.4 1.4 0 0 0 4 5.4v8.2A1.4 1.4 0 0 0 5.4 15h1.1\"></path>";
+
+    private string? Invalid(string key) => Model.Problem(key) is null ? null : "is-invalid";
+    private string? InvalidAria(string key) => Model.Problem(key) is null ? null : "true";
+
+    // What Proceed said about a field, under it.
+    private async Task FieldError(string key, string id)
     {
         if (Model.Problem(key) is { } message)
         {
-            <div class="inv-field__hint inv-field__hint--error" role="alert">@message</div>
+            <p class="csi-error" id="@(id)Error" role="alert">@message</p>
         }
+        await Task.CompletedTask;
+    }
+
+    private async Task Kv(string key, string value, bool unread = false)
+    {
+        <div class="inv-kv"><div class="inv-kv__k">@key</div><div class="inv-kv__v @(unread ? "inv-kv__v--unread" : null)">@value</div></div>
         await Task.CompletedTask;
     }
 }
 
-<div class="inv-page-head">
-    <div style="flex:1;min-width:0">
-        <div class="inv-title">Fixed Deposit Configuration</div>
-        <div style="font-size:12px;color:var(--muted);padding-top:4px">Rate and returns are quoted by the backend for the choices below</div>
-    </div>
-    <div style="font-size:12.5px;color:var(--muted);flex:none">Application No: <span style="font-weight:600;color:var(--ink)">@Model.Docs.AppNo</span></div>
-</div>
-
-@if (banner is not null)
-{
-    <div class="cud-banner" role="status"><span>@banner</span></div>
-}
-
-<div class="phone-only">
-    <div class="deposit-card" aria-live="polite">
-        <div class="deposit-card__top">
-            <div><div class="deposit-card__k">Amount</div><div class="deposit-card__amount">@(f.AmountValue > 0 ? Money.Rupees(f.AmountValue) : "—")</div></div>
-            <div class="deposit-card__rate"><div class="deposit-card__k">Rate</div><div class="deposit-card__rate-v">@Rate()</div></div>
-        </div>
-        <div class="deposit-card__grid">
-            <div><div class="deposit-card__k">Tenure</div><div class="deposit-card__v">@f.TenureMonths mo</div></div>
-            <div><div class="deposit-card__k">Payout</div><div class="deposit-card__v">@(payout?.Name ?? "—")</div></div>
-            <div><div class="deposit-card__k">Maturity</div><div class="deposit-card__v">@Maturity()</div></div>
-        </div>
+@* Once the card's head has scrolled off, this keeps who the step is for and
+   which application it is in view, as the steps before it do. *@
+<div class="cud-pin" id="cudPin" hidden>
+    <div class="cud-pin__inner">
+        <span class="cud-pin__who">@Model.Docs.HolderName</span>
+        <span class="cud-pin__pan">PAN @Model.Docs.HolderPan</span>
+        <span class="cud-pin__app">
+            <span class="cud-pin__label">Application</span>
+            @appNo
+            <button type="button" class="cud-copy" data-copy="@appNo" title="Copy the application number" aria-label="Copy the application number">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">@Html.Raw(CopyGlyph)</svg>
+            </button>
+        </span>
     </div>
 </div>
 
-<form method="post" id="fdConfigForm" class="fd-layout" data-partial novalidate>
-    @* Pressed for the partner whenever a choice changes: the deposit is saved and redrawn. *@
-    <button type="submit" class="visually-hidden" id="fdRefresh" name="refresh" value="" formnovalidate tabindex="-1">Update</button>
-    <div class="fd-main">
+<div class="csi">
+    <partial name="_ClassicSteps" model="4" />
 
-        @* ── Amount ───────────────────────────────────────────────────────────── *@
-        <div class="fd-group">
-            <div class="inv-section-head">
-                <label class="fd-label" for="fd-amount">Amount <span class="required">*</span></label>
-                <div class="fd-aside">@Money.Rupees(Model.Config.MinAmount) minimum &middot; @Money.Rupees(Model.Config.MaxAmount) maximum</div>
-            </div>
-            <div class="fd-amount @(Model.Problem("Amount") is null ? null : "fd-amount--error")">
-                <span class="fd-amount__currency">&#8377;</span>
-                <input id="fd-amount" name="Amount" class="fd-amount__input" value="@f.Amount" inputmode="numeric" autocomplete="off" data-submit="fdRefresh" />
-            </div>
-            <div class="fd-hint @(Model.Problem("Amount") is null ? null : "fd-hint--error")">@(Model.Problem("Amount") ?? (f.AmountValue > 0 ? Model.AmountHint : $"in multiples of {Money.Rupees(Model.Config.AmountStep)}"))</div>
-        </div>
+    <form class="csi-main" id="fdConfigForm" method="post" data-partial novalidate data-partial-focus="@focus">
+        @* Pressed for the partner whenever a choice changes: the deposit is saved and redrawn. *@
+        <button type="submit" class="visually-hidden" id="fdRefresh" name="refresh" value="" formnovalidate tabindex="-1">Update</button>
 
-        @* ── Tenure ───────────────────────────────────────────────────────────── *@
-        <div class="fd-group" role="radiogroup" aria-labelledby="fd-tenure-label">
-            <div class="inv-section-head">
-                <div class="fd-label" id="fd-tenure-label">Tenure &middot; months <span class="required">*</span></div>
+        @if (banner is not null)
+        {
+            <div class="cud-banner" role="status">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 7v6"></path><circle cx="12" cy="16.8" r=".8" fill="currentColor"></circle></svg>
+                <span>@banner</span>
             </div>
-            <div class="fd-options fd-options--tenure">
-                @foreach (var t in Model.Ref.Tenures)
-                {
-                    <label class="fd-option">
-                        <input type="radio" name="TenureMonths" value="@t" checked="@(t == f.TenureMonths)" data-submit="fdRefresh" />
-                        <span class="fd-option__face">@t</span>
-                    </label>
-                }
-            </div>
-            @{ await FieldError("TenureMonths"); }
-        </div>
+        }
 
-        @* ── Interest payout ──────────────────────────────────────────────────── *@
-        <div class="fd-group" role="radiogroup" aria-labelledby="fd-payout-label">
-            <div class="inv-section-head">
-                <div class="fd-label" id="fd-payout-label">Interest payout <span class="required">*</span></div>
-                <div class="fd-aside">a payout on maturity makes the deposit cumulative</div>
-            </div>
-            <div class="fd-options fd-options--payout">
-                @foreach (var p in Model.Ref.Payouts)
-                {
-                    <label class="fd-option">
-                        <input type="radio" name="InterestPayout" value="@p.Code" checked="@(p.Code == f.InterestPayout)" data-submit="fdRefresh" />
-                        <span class="fd-option__face">@p.Name</span>
-                    </label>
-                }
-            </div>
-            @{ await FieldError("InterestPayout"); }
-        </div>
-
-        @* ── Auto renewal ─────────────────────────────────────────────────────── *@
-        <section class="fd-section">
-            <label class="fd-toggle" for="fd-renew-on">
-                <span class="fd-toggle__text">
-                    <span class="fd-toggle__title">Auto renewal</span>
-                    <span class="fd-toggle__desc">Renews automatically on maturity unless the investor instructs otherwise</span>
+        <section class="csi-card cii-card" id="deposit">
+            <div class="cii-head" data-pin-head>
+                <h2 class="cii-title">Fixed Deposit Configuration</h2>
+                <span class="cii-app">Application No: <strong>@appNo</strong>
+                    <button type="button" class="cud-copy" data-copy="@appNo" title="Copy the application number" aria-label="Copy the application number">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">@Html.Raw(CopyGlyph)</svg>
+                    </button>
                 </span>
-                <input type="checkbox" id="fd-renew-on" name="AutoRenewal" value="true" class="inv-switch" checked="@f.AutoRenewal" data-submit="fdRefresh" />
-                <input type="hidden" name="AutoRenewal" value="false" />
-            </label>
-            @if (f.AutoRenewal)
-            {
-                <div class="fd-grid-2">
-                    <div class="inv-field">
-                        <label for="fd-renew">Renew <span class="required">*</span></label>
-                        <select id="fd-renew" name="RenewInstruction" class="inv-control @(Model.Problem("RenewInstruction") is null ? null : "inv-control--error")" data-submit="fdRefresh">
-                            <option value="">Select</option>
-                            @foreach (var r in Model.Ref.RenewInstructions)
+            </div>
+
+            @* ── What the backend quotes for the choices below ─────────────────── *@
+            <div class="cii-record">
+                <div class="inv-panel" aria-live="polite">
+                    <div class="inv-panel__label" style="padding-bottom:10px">This deposit &middot; quoted by the backend</div>
+                    <div class="inv-kv-grid">
+                        @{
+                            await Kv("Amount", f.AmountValue > 0 ? Money.Rupees(f.AmountValue) : "Not entered", f.AmountValue == 0);
+                            await Kv("Interest rate", q is null ? "Quoted once the amount is valid" : $"{q.Rate:0.00}% p.a.", q is null);
+                            await Kv("Tenure", $"{f.TenureMonths} months");
+                            await Kv("Interest payout", payout?.Name ?? "—");
+                            await Kv("Scheme", Model.Cumulative ? "Cumulative" : "Non-cumulative");
+                            await Kv("Category", Model.Category);
+                            if (!Model.Cumulative && q is not null && payout is not null) await Kv($"Interest each {payout.Each}", Money.Rupees(q.InterestEach));
+                            await Kv("Maturity value", q is null ? "—" : Money.Rupees(q.MaturityAmount), q is null);
+                            await Kv("Matures on", q is null ? "—" : Money.Day(q.MaturesOn), q is null);
+                        }
+                    </div>
+                    <p class="cii-note">
+                        @if (q is null)
+                        {
+                            @:The rate and the returns are quoted once a valid amount is entered.
+                        }
+                        else
+                        {
+                            @:The card rate for a @f.TenureMonths-month deposit as on @Money.Day(q.RateAsOn), locked when the application is submitted. @(f.NoTds ? "Returns assume no TDS, on the exemption claimed below." : "Returns are shown before TDS at the applicable rate.")
+                        }
+                    </p>
+                </div>
+            </div>
+
+            @* ── Amount ───────────────────────────────────────────────────────── *@
+            <div class="cud-grid">
+                <div class="cud-col">
+                    <label class="csi-label" for="fd-amount">Amount (&#8377;)</label>
+                    <input class="csi-control @Invalid("Amount")" id="fd-amount" name="Amount" value="@f.Amount" inputmode="numeric" autocomplete="off" data-submit="fdRefresh" aria-invalid="@InvalidAria("Amount")" aria-describedby="@(Model.Problem("Amount") is null ? "fd-amount-hint" : "fd-amountError")">
+                    @{ await FieldError("Amount", "fd-amount"); }
+                    <p class="csi-hint" id="fd-amount-hint">@(f.AmountValue > 0 && Model.Problem("Amount") is null ? Model.AmountHint : $"{Money.Rupees(Model.Config.MinAmount)} to {Money.Rupees(Model.Config.MaxAmount)}, in multiples of {Money.Rupees(Model.Config.AmountStep)}")</p>
+                </div>
+                <div class="cud-col">
+                    <label class="csi-label" for="fd-delivery">Delivery Type</label>
+                    <div class="cud-select">
+                        <select class="csi-control @Invalid("DeliveryType")" id="fd-delivery" name="DeliveryType" data-submit="fdRefresh" aria-invalid="@InvalidAria("DeliveryType")">
+                            @foreach (var d in Model.Ref.DeliveryTypes)
                             {
-                                <option value="@r.Code" selected="@(r.Code == f.RenewInstruction)">@r.Name</option>
+                                <option value="@d.Code" selected="@(d.Code == f.DeliveryType)">@d.Name</option>
                             }
                         </select>
-                        @{ await FieldError("RenewInstruction"); }
                     </div>
-                    <div class="inv-field laptop-only">
-                        <label for="fd-renew-for">Renew for</label>
-                        <input id="fd-renew-for" class="inv-control" value="Same tenure &mdash; @tenureText" readonly tabindex="-1" />
-                        <div class="inv-field__hint">at the card rate on the renewal date, not today&rsquo;s</div>
+                    @{ await FieldError("DeliveryType", "fd-delivery"); }
+                    <p class="csi-hint">@(Model.Email.Length > 0 ? $"The receipt is e-mailed to {Model.Email}" : "The receipt is e-mailed to the investor's e-mail on Investor Information")</p>
+                </div>
+            </div>
+
+            @* ── Tenure ───────────────────────────────────────────────────────── *@
+            <h3 class="cii-section" id="fd-tenure-label">Tenure &middot; months</h3>
+            <div class="fd-radios" role="radiogroup" aria-labelledby="fd-tenure-label">
+                @foreach (var t in Model.Ref.Tenures)
+                {
+                    <label class="csi-radio"><input type="radio" id="fd-tenure-@t" name="TenureMonths" value="@t" checked="@(t == f.TenureMonths)" data-submit="fdRefresh"> @t</label>
+                }
+            </div>
+            @{ await FieldError("TenureMonths", "fd-tenure"); }
+
+            @* ── Interest payout ──────────────────────────────────────────────── *@
+            <h3 class="cii-section" id="fd-payout-label">Interest Payout</h3>
+            <div class="fd-radios" role="radiogroup" aria-labelledby="fd-payout-label">
+                @foreach (var p in Model.Ref.Payouts)
+                {
+                    <label class="csi-radio"><input type="radio" id="fd-payout-@p.Code" name="InterestPayout" value="@p.Code" checked="@(p.Code == f.InterestPayout)" data-submit="fdRefresh"> @p.Name</label>
+                }
+            </div>
+            @{ await FieldError("InterestPayout", "fd-payout"); }
+            <p class="csi-hint">A payout on maturity makes the deposit cumulative</p>
+
+            @* ── Renewal and tax ──────────────────────────────────────────────── *@
+            <h3 class="cii-section">Renewal &amp; Tax</h3>
+            <div class="cii-switches">
+                <label class="inv-switch-row" for="fd-renew-on">
+                    <span>Renew automatically on maturity, unless the investor instructs otherwise</span>
+                    <input type="checkbox" id="fd-renew-on" name="AutoRenewal" value="true" class="inv-switch" checked="@f.AutoRenewal" data-submit="fdRefresh">
+                    <input type="hidden" name="AutoRenewal" value="false">
+                </label>
+            </div>
+            @if (f.AutoRenewal)
+            {
+                <div class="cud-grid">
+                    <div class="cud-col">
+                        <label class="csi-label" for="fd-renew">Renew</label>
+                        <div class="cud-select">
+                            <select class="csi-control @Invalid("RenewInstruction")" id="fd-renew" name="RenewInstruction" data-submit="fdRefresh" aria-invalid="@InvalidAria("RenewInstruction")">
+                                <option value="" selected="@(f.RenewInstruction.Length == 0)">Select</option>
+                                @foreach (var r in Model.Ref.RenewInstructions)
+                                {
+                                    <option value="@r.Code" selected="@(r.Code == f.RenewInstruction)">@r.Name</option>
+                                }
+                            </select>
+                        </div>
+                        @{ await FieldError("RenewInstruction", "fd-renew"); }
+                    </div>
+                    <div class="cud-col">
+                        <label class="csi-label" for="fd-renew-for">Renew For</label>
+                        <input class="csi-control" id="fd-renew-for" value="Same tenure — @f.TenureMonths months" readonly tabindex="-1">
+                        <p class="csi-hint">At the card rate on the renewal date, not today&rsquo;s</p>
                     </div>
                 </div>
             }
-        </section>
-
-        @* ── TDS exemption ────────────────────────────────────────────────────── *@
-        <section class="fd-section fd-section--tight">
-            <label class="fd-toggle" for="fd-no-tds">
-                <span class="fd-toggle__text">
-                    <span class="fd-toggle__title">Do not deduct tax at source</span>
-                    <span class="fd-toggle__desc">Only where the investor is eligible &mdash; Form 15G under @Model.Config.SeniorAge, Form 15H at @Model.Config.SeniorAge and above</span>
-                </span>
-                <input type="checkbox" id="fd-no-tds" name="NoTds" value="true" class="inv-switch" checked="@f.NoTds" data-submit="fdRefresh" />
-                <input type="hidden" name="NoTds" value="false" />
-            </label>
+            <div class="cii-switches">
+                <label class="inv-switch-row" for="fd-no-tds">
+                    <span>Do not deduct tax at source &mdash; only where the investor is eligible: Form 15G under @Model.Config.SeniorAge, Form 15H at @Model.Config.SeniorAge and above</span>
+                    <input type="checkbox" id="fd-no-tds" name="NoTds" value="true" class="inv-switch" checked="@f.NoTds" data-submit="fdRefresh">
+                    <input type="hidden" name="NoTds" value="false">
+                </label>
+            </div>
             @if (f.NoTds)
             {
-                <div class="fd-note">
-                    <div class="fd-note__text"><strong>@Model.TdsForm is needed for the primary holder</strong>, by the investor&rsquo;s date of birth. Turning this off removes the requirement; TDS is then deducted at the applicable rate.</div>
+                <div class="bank-note bank-after">
+                    <strong>@Model.TdsForm is needed for the primary holder</strong>, by the investor&rsquo;s date of birth. Turning this off removes the requirement; TDS is then deducted at the applicable rate.
                 </div>
             }
         </section>
+    </form>
+</div>
 
-        @* ── Delivery ─────────────────────────────────────────────────────────── *@
-        <section class="fd-section fd-grid-2">
-            <div class="inv-field">
-                <label for="fd-delivery">Delivery type <span class="required">*</span></label>
-                <select id="fd-delivery" name="DeliveryType" class="inv-control" data-submit="fdRefresh">
-                    @foreach (var d in Model.Ref.DeliveryTypes)
-                    {
-                        <option value="@d.Code" selected="@(d.Code == f.DeliveryType)">@d.Name</option>
-                    }
-                </select>
-                @{ await FieldError("DeliveryType"); }
-                <div class="inv-field__hint">@(Model.Email.Length > 0 ? $"the receipt is e-mailed to {Model.Email}" : "the receipt is e-mailed to the investor's e-mail on Investor Information")</div>
-            </div>
-        </section>
-    </div>
-
-    @* ── This deposit ─────────────────────────────────────────────────────────── *@
-    <aside class="fd-summary laptop-only" aria-live="polite">
-        <div class="fd-summary__label">This deposit</div>
-        <div>
-            <div class="fd-kv__k">Amount</div>
-            <div class="fd-summary__amount">@(f.AmountValue > 0 ? Money.Rupees(f.AmountValue) : "—")</div>
-        </div>
-        <div class="fd-summary__grid">
-            <div><div class="fd-kv__k">Interest rate</div><div class="fd-kv__v fd-kv__v--rate">@Rate()</div></div>
-            <div><div class="fd-kv__k">Tenure</div><div class="fd-kv__v">@tenureText</div></div>
-            <div><div class="fd-kv__k">Payout</div><div class="fd-kv__v">@(payout?.Name ?? "—")</div></div>
-            <div><div class="fd-kv__k">Category</div><div class="fd-kv__v">@Model.Category</div></div>
-        </div>
-        <div class="fd-summary__block">
-            <div><div class="fd-kv__k">Scheme</div><div class="fd-kv__v">@(Model.Cumulative ? "Cumulative" : "Non-cumulative")</div></div>
-            @if (!Model.Cumulative && q is not null && payout is not null)
+<footer class="csi-bar">
+    <div class="csi-bar__inner">
+        <a class="csi-btn csi-btn--back" asp-controller="Application" asp-action="BankDetails" data-loader="Going back to Bank Details &amp; Payment">Back</a>
+        <p class="csi-bar__hint">
+            @if (problems > 0)
             {
-                <div><div class="fd-kv__k">Interest each @payout.Each</div><div class="fd-kv__v">@Money.Rupees(q.InterestEach)</div></div>
-            }
-            <div><div class="fd-kv__k">Maturity value</div><div class="fd-kv__v">@Maturity()</div></div>
-            <div><div class="fd-kv__k">Matures on</div><div class="fd-kv__v">@(q is null ? "—" : Money.Day(q.MaturesOn))</div></div>
-        </div>
-        <div class="fd-summary__note">
-            @if (q is null)
-            {
-                @:The rate and the returns are quoted once a valid amount is entered.
+                @($"{problems} thing{(problems == 1 ? "" : "s")} still to fix on this step")
             }
             else
             {
-                @:Rate is the card rate for a @f.TenureMonths-month deposit as on @Money.Day(q.RateAsOn), and is locked when the application is submitted. @(f.NoTds ? "Returns assume no TDS, on the exemption claimed above." : "Returns are shown before TDS at the applicable rate.")
+                <text>Saved as you go, then proceed to <strong>Review Summary</strong></text>
             }
+        </p>
+        <div class="csi-bar__right">
+            <button type="submit" form="fdConfigForm" class="csi-btn csi-btn--primary" data-loader="Saving the deposit&hellip;">Proceed</button>
         </div>
-    </aside>
-</form>
-
-@section Footer {
-    @* The classic wizard's bar, as Upload Documents has it. *@
-    <footer class="csi-bar">
-        <div class="csi-bar__inner">
-            <a class="csi-btn csi-btn--back" asp-controller="Application" asp-action="BankDetails" data-loader="Going back to Bank Details &amp; Payment">Back</a>
-            <p class="csi-bar__hint">@(Model.Problems.Count(p => p.Key != "banner") is var n && n > 0 ? $"{n} thing{(n == 1 ? "" : "s")} still to fix on this step" : "Saved as you go · Proceed checks the deposit")</p>
-            <div class="csi-bar__right">
-                <button type="submit" form="fdConfigForm" class="csi-btn csi-btn--primary" data-loader="Saving the deposit&hellip;">Proceed</button>
-            </div>
-        </div>
-    </footer>
-}
+    </div>
+</footer>
 
 @section Scripts {
     <script src="~/js/partial-forms.js" asp-append-version="true"></script>
+    <script src="~/js/classic-pin.js" asp-append-version="true"></script>
 }

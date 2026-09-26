@@ -48,10 +48,8 @@
     </aside>
 
     <div class="csi-card">
-        <div class="csi-drafts__head">
-            <h1 class="csi-card__title csi-card__title--plain">View Application</h1>
-            <p class="csi-drafts__sub">Every application raised in the last @Model.WindowDays days. @listed.Count listed, @(open == 1 ? "one of them is" : $"{open} of them are") still waiting on someone. Search by number or folio to reach an older one.</p>
-        </div>
+        <div class="cii-head"><h1 class="cii-title">View Application</h1></div>
+        <p class="cii-note">Every application raised in the last @Model.WindowDays days. @listed.Count listed, @(open == 1 ? "one of them is" : $"{open} of them are") still waiting on someone. Search by number or folio to reach an older one.</p>
 
         <form class="pis-form" id="vaForm" novalidate>
             <fieldset class="csi-searchby csi-searchby--first">

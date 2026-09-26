@@ -731,9 +731,8 @@ select.inv-control:has(option[value=""]:checked) { color: var(--muted-2); }
 .cii-note { margin: 14px 0 0; font-size: 12.5px; color: var(--muted); }
 .cii-ask { display: flex; align-items: center; gap: 16px; padding: 22px; }
 .cii-ask__q { flex: 1; min-width: 0; margin: 0; font-size: 15px; color: var(--text); }
-.cii-add { display: inline-flex; align-items: center; gap: 6px; flex: none; padding: 0; border: 0; background: none; font-family: inherit; font-size: 13.5px; font-weight: 500; color: var(--blue); cursor: pointer; }
-.cii-add:hover { text-decoration: underline; }
-.inv-remove {
+/* Add Joint Holder and Add Nominee read as the Remove that takes them away again. */
+.cii-add, .inv-remove {
   display: inline-flex; align-items: center; gap: 6px; flex: none;
   font-size: 12.5px; font-weight: 600; color: var(--red-dark);
   background: none; border: 0; padding: 0; cursor: pointer; font-family: inherit;
@@ -756,35 +755,53 @@ select.inv-control:has(option[value=""]:checked) { color: var(--muted-2); }
   .inv-ckyc__photo { width: 64px; height: 64px; }
 }
 
-/* ===== Bank Details & Payment (09) =====
-   Builds on the 08 inv-* controls. The board spaces its field grid at 20px and
-   reads the IFSC lookup back in a four-across panel. */
-.bank-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 20px; }
-.bank-lookup {
-  background: var(--tint); border: 1px solid var(--tint); border-radius: 6px; padding: 13px 16px;
-  display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 14px 24px;
-}
-.bank-lookup[hidden] { display: none; }
+/* ===== Bank Details & Payment =====
+   Drawn in the classic frame as Investor Information is: csi-card sections,
+   cud-grid fields, and what an IFSC names in the same read-only panel. */
+.bank-after { margin-top: 18px; }
+.bank-branch { margin-bottom: 0; }
+.csi-card > .cii-note { margin-top: 12px; }
+.csi-main > .csi-demo { margin-top: 0; }
+/* Investor Identification's Note, across the card under its head. */
+.csi-note--banner { margin-top: 18px; padding: 11px 14px; }
+.csi-note--banner .csi-note__title { font-weight: 600; }
 
-.bank-verified { display: flex; align-items: flex-start; gap: 12px; background: var(--green-bg); border-radius: 6px; padding: 13px 15px; color: var(--green); }
-.bank-verified__tick { font-size: 13px; font-weight: 700; flex: none; padding-top: 1px; }
+/* The bank search's suggestions, dropped under the field. */
+.bank-search { position: relative; }
+.bank-suggest {
+  position: absolute; z-index: 20; left: 0; right: 0; top: 64px; max-height: 264px; overflow-y: auto;
+  margin: 0; padding: 4px 0; list-style: none; background: #fff;
+  border: 1px solid var(--border-3); border-radius: 6px; box-shadow: 0 8px 24px rgba(0, 0, 0, .12);
+}
+.bank-suggest[hidden] { display: none; }
+.bank-suggest__option { display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; cursor: pointer; }
+.bank-suggest__option:hover, .bank-suggest__option[aria-selected="true"] { background: var(--tint); }
+.bank-suggest__name { font-size: 13px; font-weight: 500; color: var(--ink); }
+.bank-suggest__codes { font-size: 11.5px; color: var(--muted); }
+.bank-suggest__none { padding: 9px 12px; font-size: 12.5px; color: var(--muted); }
+
+/* FD Configuration: tenure and payout as the classic radios, in a wrapping row. */
+.fd-radios { display: flex; flex-wrap: wrap; gap: 14px 0; padding-top: 18px; }
+
+/* Review Summary: what a read-only value rests on, and each card's Edit. */
+.inv-kv__note { padding-top: 2px; font-size: 11.5px; color: var(--muted); line-height: 1.4; }
+.rv-edit { margin-left: 8px; }
+
+/* Submitted: resending the link, with how many resends are left beside it. */
+.sub-resend { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; margin-top: 22px; }
+.sub-resend .csi-hint { padding-top: 0; }
+
+.bank-verified { display: flex; align-items: flex-start; gap: 10px; padding: 11px 14px; border: 1px solid var(--green-border); border-left: 3px solid var(--green); border-radius: 6px; background: var(--green-bg); color: var(--green); }
+.bank-verified__tick { flex: none; margin-top: 1px; }
 .bank-verified__text { flex: 1; min-width: 0; font-size: 12.5px; line-height: 1.5; }
 .bank-verified__text strong { font-weight: 600; }
-
-.bank-repayment { border-top: 1px solid var(--divider-2); padding-top: 20px; display: flex; flex-direction: column; gap: 18px; }
-.bank-repayment__head { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-.bank-same { display: flex; align-items: center; gap: 10px; flex: none; cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--ink); }
+.bank-verified__text a { color: inherit; font-weight: 600; }
 
 .bank-note {
-  border-left: 3px solid var(--amber-accent); background: var(--amber-tint); border-radius: 0 6px 6px 0; padding: 13px 15px;
+  border-left: 3px solid var(--amber-accent); background: var(--amber-tint); border-radius: 0 6px 6px 0; padding: 11px 14px;
   font-size: 12.5px; color: var(--amber); line-height: 1.5;
 }
-.bank-note strong { font-weight: 700; }
-.bank-note a { color: var(--blue); font-weight: 600; }
-
-@media (max-width: 900px) {
-  .bank-grid, .bank-lookup { grid-template-columns: repeat(2, minmax(0,1fr)); }
-}
+.bank-note strong { font-weight: 600; }
 /* Board 09 - Mobile: fields full width except cheque date and number side by side, a
    compact two-across bank read-out, and the repayment switch without its label. */
 @media (max-width: 560px) {
@@ -972,15 +989,16 @@ select.inv-control:has(option[value=""]:checked) { color: var(--muted-2); }
 .rv-split { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 24px; }
 .rv-split--wide-left { grid-template-columns: minmax(0,1.1fr) minmax(0,1fr); }
 
-.rv-checks { list-style: none; margin: 0; padding: 0; }
-.rv-check { display: flex; align-items: flex-start; gap: 9px; padding: 8px 0; border-top: 1px solid var(--tint); }
-.rv-check__mark { width: 13px; flex: none; text-align: center; font-size: 12px; font-weight: 700; color: var(--green); line-height: 1.5; }
+.rv-checks { list-style: none; margin: 0; padding: 12px 0 0; }
+.rv-check { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-top: 1px solid var(--divider); }
+.rv-check:first-child { border-top: 0; }
+.rv-check__mark { width: 14px; flex: none; text-align: center; font-size: 13px; font-weight: 700; color: var(--green); line-height: 1.5; }
 .rv-check__mark--na { color: var(--muted-2); }
 .rv-check__body { flex: 1; min-width: 0; }
-.rv-check__title { font-size: 12px; font-weight: 500; color: var(--ink); line-height: 1.4; }
-.rv-check__detail { font-size: 10.5px; color: var(--muted); padding-top: 2px; line-height: 1.45; }
+.rv-check__title { font-size: 13px; font-weight: 500; color: var(--ink); line-height: 1.4; }
+.rv-check__detail { font-size: 11.5px; color: var(--muted); padding-top: 2px; line-height: 1.45; }
 
-.rv-declarations { border-top: 1px solid var(--divider-2); padding-top: 20px; display: flex; flex-direction: column; gap: 12px; }
+.rv-declarations { padding-top: 18px; display: flex; flex-direction: column; gap: 14px; }
 .rv-declaration { display: flex; align-items: flex-start; gap: 11px; cursor: pointer; }
 .rv-declaration__box {
   appearance: none; -webkit-appearance: none; margin: 1px 0 0; flex: none; width: 17px; height: 17px;
@@ -991,7 +1009,7 @@ select.inv-control:has(option[value=""]:checked) { color: var(--muted-2); }
   background: var(--red) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round'%3E%3Cpath d='M5 12l5 5L20 7'/%3E%3C/svg%3E") center / 11px no-repeat;
 }
 .rv-declaration__box:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
-.rv-declaration__text { flex: 1; min-width: 0; font-size: 12px; color: var(--text); line-height: 1.55; }
+.rv-declaration__text { flex: 1; min-width: 0; font-size: 13px; color: var(--text); line-height: 1.55; }
 .rv-required { display: none; color: var(--red-dark); font-weight: 600; }
 .rv-declaration--unsigned .rv-required { display: inline; }
 
@@ -2037,6 +2055,9 @@ body:has(.rdocs:popover-open) { overflow: hidden; }
 .csi-search:has(input:is([name="by"], [name$=".By"])[value="folio"]:checked) [data-for="pan"] { display: none; }
 /* PANs, folios and names are held in capitals; the server upper-cases them too. */
 .csi-control--caps { text-transform: uppercase; }
+/* A number typed a second time to confirm it - the re-entered account number - shown
+   only as dots, without being a password field a browser offers to save. */
+.csi-control--masked { -webkit-text-security: disc; text-security: disc; letter-spacing: .12em; }
 .csi-file { max-width: 100%; font-family: inherit; font-size: 12.5px; color: var(--text); }
 .csi-file::file-selector-button { height: 34px; margin-right: 10px; padding: 0 14px; border: 1px solid var(--border-2); border-radius: 6px; background: #fff; font-family: inherit; font-size: 12.5px; font-weight: 600; color: var(--ink); cursor: pointer; }
 .csi-file.is-invalid::file-selector-button { border-color: var(--red); }
@@ -2048,36 +2069,22 @@ body:has(.rdocs:popover-open) { overflow: hidden; }
 /* What the check found, in place of the fields it was run from: who the investor
    is, the record the register holds, and what it is still short of - three bands
    of one card. */
-.csi-result { margin-top: 14px; border: 1px solid var(--border-2); border-radius: 8px; background: var(--card-bg); overflow: hidden; }
+/* The record found: the later steps' read-only panel (inv-panel). */
+.csi-result { margin: 18px 0 0; }
+/* The name, the folio it was found on beside it, and Search again at the far end. */
+.csi-result__head { display: flex; align-items: center; gap: 8px 12px; flex-wrap: wrap; padding-bottom: 12px; }
+.csi-result__head > form, .csi-result__head > .csi-result__again { margin-left: auto; }
+.csi-result__name { font-size: 15px; font-weight: 600; line-height: 1.3; color: var(--ink); overflow-wrap: anywhere; }
+.csi-result__tag { padding: 2px 8px; border: 1px solid var(--border-2); border-radius: 4px; background: #fff; font-size: 11.5px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--ink); }
+.csi-result__tag--new { border-color: var(--blue-border); background: var(--blue-bg); color: var(--blue); }
+.csi-result__head > form { flex: none; }
+/* What happens next, for a new investor or one not identified: under the record. */
+.csi-result__said { margin: 12px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--muted); }
+/* What the register holds, under the record's divider. */
+.csi-onrecord.inv-panel__part { padding: 14px 0 0; }
 .csi-result[hidden] { display: none; }
-.csi-result__head { display: flex; align-items: center; gap: 14px; padding: 16px 18px; }
-.csi-avatar { flex: none; display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid var(--border); border-radius: 50%; background: var(--tint); color: var(--muted-2); }
-.csi-avatar--initials { border-color: var(--pink-border); background: var(--pink-bg); color: var(--red-dark); }
-.csi-avatar__initials { font-size: 15px; font-weight: 700; letter-spacing: .03em; }
-.csi-avatar--initials .csi-avatar__figure,
-.csi-avatar:not(.csi-avatar--initials) .csi-avatar__initials { display: none; }
-.csi-result__who { flex: 1; min-width: 0; }
-.csi-result__name { font-size: 16px; font-weight: 600; line-height: 1.3; letter-spacing: .01em; color: var(--ink); overflow-wrap: anywhere; }
-.csi-result__meta { display: flex; align-items: center; gap: 6px 10px; flex-wrap: wrap; padding-top: 6px; }
-.csi-result__id { padding: 2px 8px; border: 1px solid var(--border-2); border-radius: 3px; background: #fff; font-size: 11px; font-weight: 700; letter-spacing: .03em; font-variant-numeric: tabular-nums; color: var(--ink); }
-.csi-result__id[hidden] { display: none; }
-.csi-result__detail { font-size: 12px; line-height: 1.5; color: var(--muted); }
-.csi-chip--new { background: var(--blue-bg); border-color: var(--blue-border); color: var(--blue); }
-.csi-again { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 1px solid var(--border-2); border-radius: 6px; background: #fff; font-family: inherit; font-size: 12.5px; font-weight: 600; color: var(--red); cursor: pointer; }
-.csi-again:hover { border-color: var(--red); background: var(--pink-bg); }
-.csi-again:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
 
-/* The record itself, as the register holds it. */
-.csi-record { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px 22px; margin: 0; padding: 14px 18px; border-top: 1px solid var(--border); background: var(--tint); }
-.csi-record__item[hidden] { display: none; }
-.csi-record dt { display: flex; align-items: center; gap: 5px; font-size: 10.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted-2); }
-.csi-record__lock { flex: none; }
-/* A dd carries a 40px indent of its own, which would step every value away from
-   the label above it. */
-.csi-record dd { margin: 0; padding-top: 4px; font-size: 13.5px; font-weight: 500; line-height: 1.45; font-variant-numeric: tabular-nums; color: var(--ink); }
-.csi-record__hint { padding-top: 3px; font-size: 11px; line-height: 1.45; color: var(--muted); }
-.csi-record__hint[hidden] { display: none; }
-.csi-record__missing { color: var(--red-dark); font-style: italic; }
+.csi-chip--new { background: var(--blue-bg); border-color: var(--blue-border); color: var(--blue); }
 
 /* What the register holds, item by item: green for held, blue for what is
    collected later on (see the colours under .csi-gap). */
@@ -2086,9 +2093,26 @@ body:has(.rdocs:popover-open) { overflow: hidden; }
 .csi-onrecord__label { font-size: 12px; font-weight: 700; color: var(--blue); }
 .csi-onrecord--complete .csi-onrecord__label { color: var(--green); }
 .csi-onrecord__list { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
-.csi-onrecord__item { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px 3px 8px; border: 1px solid var(--green-border); border-radius: 999px; background: var(--green-bg); font-size: 11.5px; font-weight: 600; color: var(--green); }
+.csi-onrecord__item { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px 3px 8px; border: 1px solid var(--green-border); border-radius: 4px; background: var(--green-bg); font-size: 11.5px; font-weight: 600; color: var(--green); }
 .csi-onrecord__item--missing { border-color: var(--blue-border); background: var(--blue-bg); color: var(--blue); }
 .csi-onrecord__foot { flex-basis: 100%; font-size: 12px; line-height: 1.5; color: var(--muted); }
+
+/* Investor Identification's investor card: its head row, then the record found,
+   spaced on a 4px rhythm - 12px inside a group, 16px between groups, 20px round
+   the panel's edge. Scoped to the card, so a joint holder's search on Investor
+   Information keeps its own. */
+.csi-holder { padding-top: 20px; }
+.csi-holder .csi-holder__head { gap: 12px; }
+.csi-holder .csi-chip { padding: 3px 8px; font-size: 11px; }
+.csi-holder .csi-result { margin-top: 16px; padding: 16px 20px 20px; }
+.csi-holder .csi-result__head { padding-bottom: 12px; }
+.csi-holder .csi-result .inv-kv-grid { gap: 16px 24px; }
+.csi-holder .csi-result .inv-kv__note { padding-top: 4px; }
+.csi-holder .csi-onrecord.inv-panel__part { margin-top: 16px; padding-top: 16px; gap: 12px; }
+.csi-holder .csi-onrecord__label { font-size: 12.5px; font-weight: 600; }
+.csi-holder .csi-onrecord__list { gap: 8px; }
+.csi-holder .csi-onrecord__item { padding: 4px 10px 4px 8px; font-size: 12px; }
+.csi-holder .csi-onrecord__foot { font-size: 12.5px; }
 
 /* Establishing a PAN the register does not hold: upload, OCR, then NSDL. */
 .csi-verify { padding: 14px 18px 16px; border-top: 1px solid var(--border); }
@@ -2149,15 +2173,11 @@ body:has(.rdocs:popover-open) { overflow: hidden; }
 @media (max-width: 1100px) {
   .csi-fields { grid-template-columns: repeat(2, minmax(0,260px)); }
   .csi-field--check { grid-column: 1 / -1; }
-  .csi-record { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 560px) {
   /* The hint stands on a phone now that it has a line of its own above the
      buttons: what is still missing is worth more there than the space it costs. */
   .csi-status { margin-left: 0; width: 100%; }
-  .csi-result__head { flex-wrap: wrap; padding: 14px; }
-  .csi-result__head > form, .csi-again { width: 100%; justify-content: center; }
-  .csi-record, .csi-onrecord, .csi-verify { padding-left: 14px; padding-right: 14px; }
 }
 
 /* Text only a screen reader needs, such as the header of an action column. */
@@ -2309,7 +2329,7 @@ body:has(.rdocs:popover-open) { overflow: hidden; }
 /* On the card's own corner, not floating in the space above it: they act on the
    document in the card, so that is where they live. Named as well as drawn - a
    magnifier and a circular arrow on their own read as zoom and refresh. */
-.cud-slot__tools { position: absolute; bottom: 14px; right: 14px; z-index: 2; display: flex; justify-content: flex-end; gap: 6px; }
+.cud-slot__tools { position: absolute; bottom: 10px; right: 12px; z-index: 2; display: flex; justify-content: flex-end; gap: 6px; }
 .cud-slot__tools[hidden] { display: none; }
 .cud-tool { display: inline-flex; align-items: center; gap: 5px; padding: 5px 9px; border: 1px solid var(--border-2); border-radius: 6px; background: #fff; font-family: inherit; font-size: 11.5px; font-weight: 600; color: var(--red); cursor: pointer; }
 .cud-tool svg { flex: none; }
@@ -2349,7 +2369,7 @@ body:has(.rdocs:popover-open) { overflow: hidden; }
 /* Room at the foot for View and Replace, which sit in that one place at every
    width: the card's bottom right corner, on the card they act on. The document's
    name keeps the card's whole width to be read in. */
-.cud-drop.is-filled { cursor: zoom-in; padding-bottom: 46px; }
+.cud-drop.is-filled { cursor: zoom-in; padding-bottom: 42px; }
 .cud-drop.is-filled:hover { border-color: var(--border-3); background: var(--tint); }
 .cud-drop:disabled { cursor: default; }
 .cud-drop__idle, .cud-drop__busy, .cud-drop__locked, .cud-drop__done { display: flex; flex-direction: column; align-items: center; gap: 4px; }
@@ -2435,7 +2455,7 @@ body:has(.rdocs:popover-open) { overflow: hidden; }
 /* Every document box is the same size whatever it holds - empty, filed, locked,
    refused or not applicable - so a row of them lines up. What a box says is held
    to a few lines inside it; the rest is in the note under the box and the history. */
-.cud-drop, .cud-slot__na { height: 204px; min-height: 0; overflow: hidden; }
+.cud-drop, .cud-slot__na { height: 184px; min-height: 0; overflow: hidden; }
 .cud-drop__title, .cud-drop__hint, .cud-drop__with, .cud-drop__must, .cud-slot__na-why {
   display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden;
 }
@@ -2476,7 +2496,9 @@ label.seg-toggle__opt { display: inline-block; }
    state it is in on the left, and what it says beside it, both on the same
    baseline a form field would keep. A phone gets the stack back. */
 @media (min-width: 761px) {
-  .cud-drop, .cud-slot__na { height: 172px; padding: 18px 20px; }
+  /* One size for every box, no taller than its fullest state needs: a proof of
+     address read to its tag, two lines of address, the PIN and a note. */
+  .cud-drop, .cud-slot__na { height: 148px; padding: 16px 18px; }
   .cud-drop { justify-content: flex-start; text-align: left; }
   .cud-drop__idle, .cud-drop__busy, .cud-drop__locked, .cud-drop__done {
     display: grid; width: 100%; grid-template-columns: auto minmax(0, 1fr);
@@ -2763,42 +2785,42 @@ body.is-waiting { overflow: hidden; }
 
 .su-filters { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 4px 0 12px; }
 .su-pills { display: flex; gap: 8px; flex-wrap: wrap; }
-.su-pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border: 1px solid var(--border-2); border-radius: 999px; background: #fff; font-family: inherit; font-size: 12px; color: var(--text); cursor: pointer; }
+.su-pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid var(--border-2); border-radius: 999px; background: #fff; font-family: inherit; font-size: 12.5px; color: var(--text); cursor: pointer; }
 .su-pill:hover { border-color: var(--muted); color: var(--ink); }
 .su-pill--on, .su-pill--on:hover { border-color: var(--red); background: var(--pink-bg); color: var(--red-dark); font-weight: 600; }
-.su-pill__n { font-size: 10.5px; font-weight: 700; color: var(--muted-2); }
+.su-pill__n { font-size: 11px; font-weight: 700; color: var(--muted-2); }
 .su-pill--on .su-pill__n { color: var(--red-dark); }
-.su-search { display: flex; align-items: center; gap: 7px; margin-left: auto; padding: 0 10px; height: 32px; border: 1px solid var(--border-3); border-radius: 6px; background: #fff; color: var(--muted-2); }
+.su-search { display: flex; align-items: center; gap: 7px; margin-left: auto; padding: 0 10px; height: 36px; border: 1px solid var(--border-3); border-radius: 6px; background: #fff; color: var(--muted-2); }
 .su-search:focus-within { border-color: var(--muted); }
-.su-search input { width: 190px; border: 0; padding: 0; background: none; font-family: inherit; font-size: 12.5px; color: var(--ink); }
+.su-search input { width: 210px; border: 0; padding: 0; background: none; font-family: inherit; font-size: 13px; color: var(--ink); }
 .su-search input:focus { outline: none; }
 
 .su-nolink { color: var(--muted-2); }
 .su-filters { padding-top: 14px; }
 
 /* The cancellation rule, said once and plainly, above the list it governs. */
-.su-notice { display: flex; gap: 11px; margin-top: 14px; padding: 13px 15px; border: 1px solid var(--amber-border); border-left: 3px solid var(--amber); border-radius: 6px; background: var(--amber-bg); color: var(--amber); }
+.su-notice { display: flex; gap: 10px; margin-top: 18px; padding: 11px 14px; border: 1px solid var(--amber-border); border-left: 3px solid var(--amber); border-radius: 6px; background: var(--amber-bg); color: var(--amber); }
 .su-notice__icon { flex: none; margin-top: 1px; }
-.su-notice__title { font-size: 13px; font-weight: 700; }
-.su-notice p { padding-top: 3px; font-size: 12.5px; line-height: 1.55; max-width: 92ch; }
-.su-notice strong { font-weight: 700; }
-.su-table { width: 100%; table-layout: fixed; border-collapse: collapse; margin-top: 4px; font-size: 12.5px; color: var(--text); }
-.su-table th { padding: 10px 12px 8px 0; font-size: 10.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted-2); text-align: left; border-bottom: 1px solid var(--border); }
-.su-table td { padding: 12px 12px 12px 0; border-bottom: 1px solid var(--divider); vertical-align: middle; overflow-wrap: anywhere; }
+.su-notice__title { font-size: 12.5px; font-weight: 600; }
+.su-notice p { padding-top: 2px; font-size: 12.5px; line-height: 1.55; max-width: 92ch; }
+.su-notice strong { font-weight: 600; }
+.su-table { width: 100%; table-layout: fixed; border-collapse: collapse; margin-top: 4px; font-size: 13px; color: var(--text); }
+.su-table th { padding: 12px 12px 9px 0; font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted-2); text-align: left; border-bottom: 1px solid var(--border); }
+.su-table td { padding: 13px 12px 13px 0; border-bottom: 1px solid var(--divider); vertical-align: middle; overflow-wrap: anywhere; }
 .su-table tr:last-child td { border-bottom: 0; }
 .su-table strong { color: var(--ink); font-weight: 600; }
-.su-table__sub { padding-top: 2px; font-size: 11px; color: var(--muted); }
+.su-table__sub { padding-top: 3px; font-size: 11.5px; color: var(--muted); }
 /* Close to the automatic cancellation: the row says so in amber. */
 .su-table__sub--urgent { color: var(--amber); font-weight: 600; }
 .su-table__act { padding-right: 0; text-align: right; }
 .su-table tbody tr:hover td { background: var(--tint); }
 
-.su-empty { padding: 26px 0; text-align: center; font-size: 12.5px; color: var(--muted); }
+.su-empty { padding: 26px 0; text-align: center; font-size: 13px; color: var(--muted); }
 .su-empty[hidden] { display: none; }
 
 .su-pager { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding-top: 14px; }
 .su-pager[hidden] { display: none; }
-.su-pager__count { flex: 1; min-width: 160px; font-size: 11.5px; color: var(--muted); }
+.su-pager__count { flex: 1; min-width: 160px; font-size: 12.5px; color: var(--muted); }
 .su-pager__nav, .su-pager__pages { display: flex; align-items: center; gap: 6px; }
 .su-page { min-width: 30px; height: 30px; padding: 0 8px; border: 1px solid var(--border-2); border-radius: 6px; background: #fff; font-family: inherit; font-size: 12.5px; color: var(--text); cursor: pointer; }
 .su-page:hover:not(:disabled) { border-color: var(--muted); color: var(--ink); }
@@ -2830,7 +2852,7 @@ body.is-waiting { overflow: hidden; }
    The list furniture is the Short URL page's - su-table, su-empty and su-pager
    are shared between the two - so only the form, the tick column and the bar
    are new here. */
-.pis-form { padding-top: 4px; }
+.pis-form { padding-top: 18px; }
 .pis-form__row { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
 .pis-form__row--search { padding-top: 18px; align-items: flex-end; }
 .pis-field--appno { width: 100%; max-width: 260px; }
@@ -2844,12 +2866,12 @@ body.is-waiting { overflow: hidden; }
 
 /* How the application came in. Digital is called out in blue because it is the
    one that can be held back; physical is the quiet default. */
-.pis-tag { display: inline-block; padding: 2px 7px; border-radius: 3px; border: 1px solid var(--border); background: var(--tint); font-size: 10.5px; font-weight: 600; color: var(--muted); }
+.pis-tag { display: inline-block; padding: 2px 8px; border-radius: 3px; border: 1px solid var(--border); background: var(--tint); font-size: 11px; font-weight: 600; color: var(--muted); }
 .pis-tag--digital { border-color: var(--blue-border); background: var(--blue-bg); color: var(--blue); }
 
 /* What is held back, in one line. The rule itself is in the rail and on each
    blocked row, so this only carries the count and where to act. */
-.pis-flag { display: flex; align-items: center; gap: 8px; margin-top: 12px; padding: 8px 12px; border-radius: 6px; background: var(--pink-bg); font-size: 12px; line-height: 1.45; color: var(--red-dark); }
+.pis-flag { display: flex; align-items: center; gap: 10px; margin-top: 18px; padding: 11px 14px; border: 1px solid var(--pink-border); border-left: 3px solid var(--red); border-radius: 6px; background: var(--pink-bg); font-size: 12.5px; line-height: 1.45; color: var(--red-dark); }
 .pis-flag svg { flex: none; color: var(--red); }
 .pis-flag strong { font-weight: 600; }
 
@@ -2888,17 +2910,17 @@ body.is-waiting { overflow: hidden; }
 .va-sheet__body { flex: 1; min-height: 0; overflow-y: auto; padding: 18px 24px 22px; }
 .va-sheet__body:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
 .va-sheet__grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 18px 20px; }
-.va-sheet__head { margin: 22px 0 0; padding-top: 16px; border-top: 1px solid var(--divider); font-size: 13px; font-weight: 600; }
+.va-sheet__head { margin: 24px 0 0; padding-top: 14px; border-top: 1px solid var(--divider); font-size: 15px; font-weight: 500; color: var(--text); }
 
-.va-kv__k { font-size: 11px; font-weight: 500; color: var(--muted); line-height: 1.35; }
-.va-kv__v { font-size: 13.5px; font-weight: 500; padding-top: 4px; color: var(--ink); line-height: 1.4; }
+.va-kv__k { font-size: 11.5px; font-weight: 500; color: var(--muted); line-height: 1.35; }
+.va-kv__v { font-size: 14px; font-weight: 500; padding-top: 3px; color: var(--ink); line-height: 1.4; }
 .va-kv__v--lg { font-size: 15px; font-weight: 600; }
-.va-kv__note { font-size: 10.5px; color: var(--muted-2); padding-top: 3px; line-height: 1.4; }
+.va-kv__note { font-size: 11.5px; color: var(--muted); padding-top: 3px; line-height: 1.4; }
 
 /* The history: a step the application has taken carries its date, one it has
    not is greyed and says so. */
 .va-steps { list-style: none; margin: 10px 0 0; padding: 0; }
-.va-step { display: flex; align-items: baseline; gap: 12px; position: relative; padding: 8px 0 8px 26px; border-bottom: 1px solid var(--divider); font-size: 12.5px; color: var(--muted-2); }
+.va-step { display: flex; align-items: baseline; gap: 12px; position: relative; padding: 9px 0 9px 26px; border-bottom: 1px solid var(--divider); font-size: 13px; color: var(--muted-2); }
 .va-step:last-child { border-bottom: 0; }
 .va-step::before { content: ""; position: absolute; left: 4px; top: 13px; width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid var(--border-2); background: #fff; }
 .va-step--done { color: var(--text); }
@@ -3114,7 +3136,10 @@ a.view-switch__opt:hover { background: var(--tint); color: var(--ink); text-deco
 }
 
 /* A joint holder's address panel and manual entry, under their documents. */
-.cii-record--after { margin-top: 24px; }
+/* A holder's read-only panel: the record, then the address under a divider. The
+   panel's own margin is dropped inside a card, where the record's padding spaces it. */
+.cii-record > .inv-panel { margin-bottom: 0; }
+.inv-panel__part { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); }
 
 /* ----- Status pages -------------------------------------------------------
    Session Expired, Unauthorized and the error page: one card, what happened and

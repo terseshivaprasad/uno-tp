@@ -9,6 +9,17 @@ services:
     envVars:
       - key: ASPNETCORE_ENVIRONMENT
         value: Production
+      # Demo mode is off in Production: no sign-in without the portal's UserId and
+      # Syscode, no test data cards, and no ?ff= or ?agency= overrides. For a demo
+      # deployment, turn it on here - never on one that reaches a real backend.
+      # - key: Features__DemoData
+      #   value: "true"
+      # - key: Entry__DemoUserId
+      #   value: "100002225"
+      # - key: Entry__DemoSysCode
+      #   value: UNOTP
+      # - key: Features__AllowOverrides
+      #   value: "true"
       # Addresses of the other eSarathi apps (see AppUrls.cs). Until they are
       # deployed, links out to the login, console and explorers stay plain paths.
       # - key: Apps__eSarathiLogin

@@ -1,15 +1,16 @@
 @model ReviewViewModel
 @{
     ViewData["Title"] = "Application Submitted";
-    Layout = "_Layout";
 
-    // The application as the backend has it once submitted: when, where the
-    // payment link went and until when, and the deposit it carries.
+    // The application as the backend has it once submitted, in the frame the
+    // steps before it draw, every step behind it: when, where the payment link
+    // went and until when, and the deposit it carries.
     var sub = Model.App.Submitted!;
     var d = Model.Deposit;
     var q = Model.Quote;
     var hours = Model.PaymentLinkHours;
     var payout = Model.Payout;
+    var appNo = Model.Docs.AppNo;
     var nextSteps = new[]
     {
         (Lead: "Investor pays the link", Detail: $" — from any account in a holder’s name. Within {hours} hours."),
@@ -18,33 +19,47 @@
     };
 }
 
-<div class="sub-page">
-    <div class="sub-main">
-        <div class="sub-title-row">
-            <div class="sub-tick" aria-hidden="true">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"></path></svg>
-            </div>
-            <div>
-                <h1 class="sub-title">Application submitted</h1>
-                <div class="sub-meta">@Money.Day(sub.At) &middot; @Model.Docs.AppNo</div>
-            </div>
-        </div>
+@functions {
+    private const string CopyGlyph = "<rect x=\"9\" y=\"9\" width=\"11\" height=\"11\" rx=\"1.6\"></rect><path d=\"M15 6.5V5.4A1.4 1.4 0 0 0 13.6 4H5.4A1.4 1.4 0 0 0 4 5.4v8.2A1.4 1.4 0 0 0 5.4 15h1.1\"></path>";
 
+    private async Task Kv(string key, string value)
+    {
+        <div class="inv-kv"><div class="inv-kv__k">@key</div><div class="inv-kv__v">@value</div></div>
+        await Task.CompletedTask;
+    }
+}
+
+<div class="csi">
+    <partial name="_ClassicSteps" model="@InvestorIdentificationViewModel.Steps.Length" />
+
+    <div class="csi-main">
         @if (Model.Refused is { } refused)
         {
-            <div class="cud-banner" role="alert"><span>@refused</span></div>
+            <div class="csi-gap csi-gap--alert" role="alert">
+                <svg class="csi-gap__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 7v6"></path><circle cx="12" cy="16.8" r=".8" fill="currentColor"></circle></svg>
+                <div class="csi-gap__body"><p>@refused</p></div>
+            </div>
         }
 
-        <div class="sub-pending">
-            <div class="sub-pending__head">
-                <div class="sub-pending__title">Waiting on the investor&rsquo;s payment</div>
-                <div class="sub-pending__tag">@(sub.Status == "payment-pending" ? "Payment pending" : sub.Status)</div>
+        @* ── Submitted, and waiting on the investor ─────────────────────────── *@
+        <section class="csi-card cii-card" id="submitted">
+            <div class="cii-head">
+                <h2 class="cii-title">Application Submitted</h2>
+                <span class="cii-app">Application No: <strong>@appNo</strong>
+                    <button type="button" class="cud-copy" data-copy="@appNo" title="Copy the application number" aria-label="Copy the application number">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">@Html.Raw(CopyGlyph)</svg>
+                    </button>
+                </span>
             </div>
-            <div class="sub-pending__text">The link was sent by SMS to <strong>@sub.LinkSentTo</strong>@if (sub.LinkEmailedTo.Length > 0) {<text> and by e-mail to <strong>@sub.LinkEmailedTo</strong></text>}, and expires <strong>@Money.Day(sub.LinkValidUntil)</strong>. Submitted is not booked &mdash; the deposit and its rate are held only until then.</div>
-        </div>
+            <p class="cii-note">Submitted @Money.Day(sub.At)</p>
 
-        <div class="sub-box">
-            <div class="sub-box__label">What happens next</div>
+            <div class="cud-banner bank-after" role="status">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7"></path></svg>
+                <span><strong>@(sub.Status == "payment-pending" ? "Waiting on the investor’s payment." : sub.Status)</strong>
+                    The link was sent by SMS to <strong>@sub.LinkSentTo</strong>@if (sub.LinkEmailedTo.Length > 0) {<text> and by e-mail to <strong>@sub.LinkEmailedTo</strong></text>}, and expires <strong>@Money.Day(sub.LinkValidUntil)</strong>. Submitted is not booked &mdash; the deposit and its rate are held only until then.</span>
+            </div>
+
+            <h3 class="cii-section">What Happens Next</h3>
             <ol class="sub-steps">
                 @for (var i = 0; i < nextSteps.Length; i++)
                 {
@@ -54,58 +69,56 @@
                     </li>
                 }
             </ol>
-        </div>
 
-        <form method="post" asp-action="Resend" class="sub-actions">
-            <button type="submit" class="btn btn-primary sub-actions__primary" disabled="@(sub.ResendsLeft == 0)" data-loader="Sending the link again&hellip;">@(sub.ResendsLeft == 0 ? "Payment link resent" : "Resend payment link")</button>
-            <a class="sub-actions__link sub-actions__link--plain" asp-controller="Dashboard" asp-action="Index">Back to home</a>
-        </form>
-        <div class="sub-note">@(sub.ResendsLeft == 0 ? $"No resends left. The link still expires {Money.Day(sub.LinkValidUntil)}." : $"{sub.ResendsLeft} resend{(sub.ResendsLeft == 1 ? " is" : "s are")} available.")</div>
-    </div>
-
-    <div class="sub-side">
-        <section class="sub-card">
-            <div class="sub-card__head">
-                <div class="sub-card__title">Deposit summary</div>
-            </div>
-            @if (d is not null)
-            {
-                <div class="sub-kv-grid">
-                    <div><div class="sub-kv__k">Invested amount</div><div class="sub-kv__v sub-kv__v--lg">@Money.Rupees(d.Amount)</div></div>
-                    <div><div class="sub-kv__k">Rate of interest</div><div class="sub-kv__v sub-kv__v--lg sub-kv__v--green">@(q is null ? "—" : $"{q.Rate:0.00}% p.a.")</div></div>
-                    <div><div class="sub-kv__k">Tenure</div><div class="sub-kv__v">@d.TenureMonths months</div></div>
-                    <div><div class="sub-kv__k">Scheme</div><div class="sub-kv__v">@(payout?.PerYear == 0 ? "Cumulative" : "Non-cumulative") &middot; @Model.Docs.CategoryName(Model.Docs.State.Category)</div></div>
-                    <div><div class="sub-kv__k">Interest payout</div><div class="sub-kv__v">@(payout?.Name ?? d.Payout)</div></div>
-                    <div><div class="sub-kv__k">Maturity value</div><div class="sub-kv__v">@(q is null ? "—" : Money.Rupees(q.MaturityAmount))</div></div>
-                    <div><div class="sub-kv__k">Auto renewal</div><div class="sub-kv__v">@(d.AutoRenewal ? $"On · {Model.Option(Model.Ref.RenewInstructions, d.RenewInstruction)}" : "Off")</div></div>
-                    <div><div class="sub-kv__k">TDS</div><div class="sub-kv__v">@(d.NoTds ? "Not deducted" : "Deducted")</div></div>
-                    <div><div class="sub-kv__k">Delivery</div><div class="sub-kv__v">@Model.Option(Model.Ref.DeliveryTypes, d.DeliveryType)</div></div>
-                </div>
-            }
-            <div class="sub-holders">
-                <div class="sub-holders__label">Holders</div>
-                <div class="sub-holders__names">
-                    @for (var i = 0; i < Model.Holders.Count; i++)
-                    {
-                        var h = Model.Holders[i];
-                        @(i > 0 ? " · " : "")@h.Holder.Who.Name @if (!h.Holder.Joint) { <span class="sub-holders__role">primary</span> }
-                    }
-                </div>
-            </div>
+            <form method="post" asp-action="Resend" class="sub-resend">
+                <button type="submit" class="csi-check" disabled="@(sub.ResendsLeft == 0)" data-loader="Sending the link again&hellip;">@(sub.ResendsLeft == 0 ? "Payment link resent" : "Resend payment link")</button>
+                <span class="csi-hint">@(sub.ResendsLeft == 0 ? $"No resends left. The link still expires {Money.Day(sub.LinkValidUntil)}." : $"{sub.ResendsLeft} resend{(sub.ResendsLeft == 1 ? " is" : "s are")} available.")</span>
+            </form>
         </section>
 
-        <section class="sub-card sub-card--padded">
-            <div class="sub-card__title">Start another</div>
-            <div class="sub-tiles">
-                <a class="sub-tile" asp-controller="InvestorIdentification" asp-action="Index">
-                    <span class="sub-tile__title">New application</span>
-                    <span class="sub-tile__text">A different investor, from the search step.</span>
-                </a>
-                <a class="sub-tile" asp-controller="ViewApplication" asp-action="Index">
-                    <span class="sub-tile__title">Track this application</span>
-                    <span class="sub-tile__text">Find it among the partner&rsquo;s applications.</span>
-                </a>
+        @* ── The deposit it carries ─────────────────────────────────────────── *@
+        <section class="csi-card cii-card" id="submitted-deposit">
+            <div class="cii-head"><h2 class="cii-title">Deposit Summary</h2></div>
+            <div class="cii-record">
+                <div class="inv-panel inv-panel--stack">
+                    @if (d is not null)
+                    {
+                        <div class="inv-kv-grid">
+                            @{
+                                await Kv("Invested amount", Money.Rupees(d.Amount));
+                                await Kv("Rate of interest", q is null ? "—" : $"{q.Rate:0.00}% p.a.");
+                                await Kv("Tenure", $"{d.TenureMonths} months");
+                                await Kv("Scheme", $"{(payout?.PerYear == 0 ? "Cumulative" : "Non-cumulative")} · {Model.Docs.CategoryName(Model.Docs.State.Category)}");
+                                await Kv("Interest payout", payout?.Name ?? d.Payout);
+                                await Kv("Maturity value", q is null ? "—" : Money.Rupees(q.MaturityAmount));
+                                await Kv("Auto renewal", d.AutoRenewal ? $"On · {Model.Option(Model.Ref.RenewInstructions, d.RenewInstruction)}" : "Off");
+                                await Kv("TDS", d.NoTds ? "Not deducted" : "Deducted");
+                                await Kv("Delivery", Model.Option(Model.Ref.DeliveryTypes, d.DeliveryType));
+                            }
+                        </div>
+                    }
+                    <div class="inv-kv-grid @(d is not null ? "inv-kv-grid--divided" : null)">
+                        <div class="inv-kv inv-kv--wide">
+                            <div class="inv-kv__k">Holders</div>
+                            <div class="inv-kv__v">@string.Join(" · ", Model.Holders.Select(h => h.Holder.Joint ? h.Holder.Who.Name : $"{h.Holder.Who.Name} (primary)"))</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
     </div>
 </div>
+
+<footer class="csi-bar">
+    <div class="csi-bar__inner">
+        <a class="csi-btn csi-btn--back" asp-controller="Dashboard" asp-action="Index">Home</a>
+        <p class="csi-bar__hint"><a class="csi-link" asp-controller="ViewApplication" asp-action="Index">Track this application</a> among the partner&rsquo;s applications</p>
+        <div class="csi-bar__right">
+            <a class="csi-btn csi-btn--primary" asp-controller="InvestorIdentification" asp-action="Index">New Application</a>
+        </div>
+    </div>
+</footer>
+
+@section Scripts {
+    <script src="~/js/classic-pin.js" asp-append-version="true"></script>
+}

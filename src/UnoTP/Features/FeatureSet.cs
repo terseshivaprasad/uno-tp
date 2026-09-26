@@ -6,6 +6,8 @@ namespace UnoTP.Features;
 /// The features in force for one request: the appsettings defaults with any
 /// demo override layered on top. Overrides ride in a cookie so they survive
 /// navigation - useful for showing a flow with and without a feature in one sitting.
+/// They are taken only where Features:AllowOverrides is on; anywhere else the
+/// query and the cookie are ignored, and a cookie left over is cleared.
 ///
 ///   ?ff=pis:off             turn one off
 ///   ?ff=pis:off,admin:on    set several at once
@@ -64,6 +66,12 @@ public sealed class FeatureSet(FeatureFlags flags, IReadOnlyList<string>? overri
         clearCookie = false;
 
         var fromCookie = ctx.Request.Cookies.TryGetValue(CookieName, out var cookie) ? cookie : null;
+        if (!defaults.AllowOverrides)
+        {
+            clearCookie = fromCookie is not null;
+            return new FeatureSet(defaults.Clone());
+        }
+
         var fromQuery = ctx.Request.Query.TryGetValue(QueryKey, out var q) ? q.ToString() : null;
 
         if (string.Equals(fromQuery?.Trim(), "reset", StringComparison.OrdinalIgnoreCase))

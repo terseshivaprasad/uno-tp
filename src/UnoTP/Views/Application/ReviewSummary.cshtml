@@ -1,217 +1,245 @@
 @model ReviewViewModel
 @{
     ViewData["Title"] = "Review Summary";
-    Layout = "_WizardLayout";
-    ViewData["WizardStep"] = "review";
 
-    // Everything the application holds, as the backend has it: what each step
-    // saved, the documents filed, and the backend's quote for the deposit.
+    // The last classic step, in the frame the steps before it draw: everything the
+    // application holds, as the backend has it - what each step saved, the
+    // documents filed, and the backend's quote for the deposit - one card a step,
+    // read-only as Investor Information shows what was read, each with its Edit.
     var d = Model.Deposit;
     var q = Model.Quote;
     var payment = Model.Payment;
     var docs = Model.Docs;
+    var appNo = docs.AppNo;
     var blockers = Model.Blockers;
     var mode = docs.ModeOf(docs.State.Sourcing);
     var sourceName = docs.Resolved(mode, sub: false);
-    var holdersText = Model.Holders.Count == 1 ? "One holder" : $"{Model.Holders.Count} holders";
+    var byCheque = docs.State.PayMode.Length > 0 && docs.DocumentOf(docs.State.PayMode) is not null;
     string Or(string value, string empty = "Not entered") => value.Length > 0 ? value : empty;
     string Account(BankAccount? a, BankBranch? b) => a is null || a.AccountNumber.Length == 0 ? "Not entered"
         : $"{b?.Bank ?? a.Ifsc} {Money.MaskAccount(a.AccountNumber)}";
 }
 
 @functions {
-    private async Task Kv(string key, string value, string? note = null, string? css = null)
+    private const string CopyGlyph = "<rect x=\"9\" y=\"9\" width=\"11\" height=\"11\" rx=\"1.6\"></rect><path d=\"M15 6.5V5.4A1.4 1.4 0 0 0 13.6 4H5.4A1.4 1.4 0 0 0 4 5.4v8.2A1.4 1.4 0 0 0 5.4 15h1.1\"></path>";
+
+    // A read-only value, with what it rests on under it.
+    private async Task Kv(string key, string value, string? note = null, bool wide = false, bool unread = false)
     {
-        <div><div class="rv-kv__k">@key</div><div class="rv-kv__v @css">@value</div>@if (note is not null) { <div class="rv-kv__note">@note</div> }</div>
+        <div class="inv-kv @(wide ? "inv-kv--wide" : null)">
+            <div class="inv-kv__k">@key</div>
+            <div class="inv-kv__v @(unread ? "inv-kv__v--unread" : null)">@value</div>
+            @if (note is { Length: > 0 })
+            {
+                <div class="inv-kv__note">@note</div>
+            }
+        </div>
+        await Task.CompletedTask;
+    }
+
+    // A card's head: its title, the step's Edit, and on the first card the
+    // application number the strip keeps in view once it scrolls off.
+    private async Task Head(string title, string controller, string action, bool first = false)
+    {
+        <div class="cii-head" data-pin-head="@(first ? "" : null)">
+            <h2 class="cii-title">@title</h2>
+            @if (first)
+            {
+                <span class="cii-app">Application No: <strong>@Model.Docs.AppNo</strong>
+                    <button type="button" class="cud-copy" data-copy="@Model.Docs.AppNo" title="Copy the application number" aria-label="Copy the application number">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">@Html.Raw(CopyGlyph)</svg>
+                    </button>
+                </span>
+            }
+            <a class="csi-link rv-edit" href="@Url.Action(action, controller)" aria-label="Edit @title">Edit</a>
+        </div>
         await Task.CompletedTask;
     }
 }
 
-<div class="rv-page">
-    <div class="inv-page-head">
-        <div style="flex:1;min-width:0">
-            <div class="inv-title">Review Summary</div>
-            <div style="font-size:12px;color:var(--muted);padding-top:4px">Everything captured across the steps &middot; check before submission</div>
-        </div>
-        <div style="font-size:12.5px;color:var(--muted);flex:none">Application No: <span style="font-weight:600;color:var(--ink)">@docs.AppNo</span></div>
+@* Once the first card's head has scrolled off, this keeps who the application is
+   for and which it is in view, as the steps before it do. *@
+<div class="cud-pin" id="cudPin" hidden>
+    <div class="cud-pin__inner">
+        <span class="cud-pin__who">@docs.HolderName</span>
+        <span class="cud-pin__pan">PAN @docs.HolderPan</span>
+        <span class="cud-pin__app">
+            <span class="cud-pin__label">Application</span>
+            @appNo
+            <button type="button" class="cud-copy" data-copy="@appNo" title="Copy the application number" aria-label="Copy the application number">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">@Html.Raw(CopyGlyph)</svg>
+            </button>
+        </span>
     </div>
+</div>
 
-    @if (Model.Refused is { } refused)
-    {
-        <div class="cud-banner" role="alert"><span>@refused</span></div>
-    }
+<div class="csi">
+    <partial name="_ClassicSteps" model="5" />
 
-    @if (blockers.Count == 0)
-    {
-        <div class="rv-ready">
-            <div class="rv-ready__text"><strong>Nothing is missing.</strong> Every step is complete. <span class="rv-em">The declarations below are the only thing left.</span></div>
-            <div class="rv-ready__status">Ready to submit</div>
-        </div>
-    }
-    else
-    {
-        <div class="rv-callout">
-            <div class="rv-callout__text">
-                <strong>@blockers.Count thing@(blockers.Count == 1 ? " is" : "s are") still missing before this can be submitted:</strong>
-                @string.Join("; ", blockers.Select(b => $"{b.What} ({b.Step})")).
-            </div>
-        </div>
-    }
-
-    @* ── Fixed deposit ────────────────────────────────────────────────────────── *@
-    <section class="rv-section">
-        <div class="rv-head">
-            <div class="rv-head__text">
-                <div class="rv-head__title">Fixed deposit</div>
-                <div class="rv-head__desc">@(q is null ? "Quoted once the deposit is configured" : $"Card rate as on {Money.Day(q.RateAsOn)} · locked when the application is submitted")</div>
-            </div>
-            <a class="rv-head__action" asp-controller="Application" asp-action="FdConfiguration">Edit</a>
-        </div>
-        @if (d is null || d.Amount == 0)
+    <div class="csi-main">
+        @if (Model.Refused is { } refused)
         {
-            <p class="rv-kv__v rv-kv__v--empty">Not configured yet.</p>
+            <div class="csi-gap csi-gap--alert" role="alert">
+                <svg class="csi-gap__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 7v6"></path><circle cx="12" cy="16.8" r=".8" fill="currentColor"></circle></svg>
+                <div class="csi-gap__body"><p>@refused</p></div>
+            </div>
+        }
+
+        @if (blockers.Count == 0)
+        {
+            <div class="cud-banner" role="status">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7"></path></svg>
+                <span><strong>Nothing is missing.</strong> Every step is complete &mdash; sign the declarations at the foot of the page to submit.</span>
+            </div>
         }
         else
         {
-            <div class="rv-grid-4">
-                @{ await Kv("Invested amount", Money.Rupees(d.Amount), Money.InWords(d.Amount).ToLowerInvariant(), "rv-kv__v--lg"); }
-                @{ await Kv("Category", docs.State.Category.Length > 0 ? docs.CategoryName(docs.State.Category) : "Not chosen", null, "rv-kv__v--lg"); }
-                @{ await Kv("Scheme", Model.Payout?.PerYear == 0 ? "Cumulative" : "Non-cumulative", null, "rv-kv__v--lg"); }
-                @{ await Kv("Rate of interest", q is null ? "—" : $"{q.Rate:0.00}% p.a.", null, "rv-kv__v--lg rv-kv__v--green"); }
-                @{ await Kv("Tenure", $"{d.TenureMonths} months", null, "rv-kv__v--lg"); }
-                @{ await Kv("Interest payout", Model.Payout?.Name ?? d.Payout, q is not null && q.InterestEach > 0 ? $"{Money.Rupees(q.InterestEach)} each {Model.Payout?.Each}" : null, "rv-kv__v--lg"); }
-                @{ await Kv("Maturity value", q is null ? "—" : Money.Rupees(q.MaturityAmount), null, "rv-kv__v--lg"); }
-                @{ await Kv("Matures on", q is null ? "—" : Money.Day(q.MaturesOn), null, "rv-kv__v--lg"); }
-            </div>
-            <div class="rv-grid-4 rv-grid-4--divided">
-                @{ await Kv("Auto renewal", d.AutoRenewal ? $"On · {Model.Option(Model.Ref.RenewInstructions, d.RenewInstruction)}" : "Off"); }
-                @{ await Kv("TDS", d.NoTds ? "Not deducted — exemption claimed" : "Deducted at the applicable rate", null, d.NoTds ? "rv-kv__v--amber" : null); }
-                @{ await Kv("Delivery type", Model.Option(Model.Ref.DeliveryTypes, d.DeliveryType), Or(Model.DetailsOf(docs.Investor).Email, "")); }
-                @{ await Kv("Maturity instruction", "Credit to the repayment account", payment?.Repayment is { AccountNumber.Length: > 0 } r ? Account(r, Model.RepaymentBranch) : null); }
+            <div class="csi-gap csi-gap--alert" role="alert">
+                <svg class="csi-gap__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 7v6"></path><circle cx="12" cy="16.8" r=".8" fill="currentColor"></circle></svg>
+                <div class="csi-gap__body">
+                    <div class="csi-gap__title">@blockers.Count thing@(blockers.Count == 1 ? " is" : "s are") still missing before this can be submitted</div>
+                    <p>@string.Join("; ", blockers.Select(b => $"{b.What} ({b.Step})")).</p>
+                </div>
             </div>
         }
-    </section>
 
-    @* ── Holders ──────────────────────────────────────────────────────────────── *@
-    <section class="rv-section">
-        <div class="rv-head">
-            <div class="rv-head__text">
-                <div class="rv-head__title">Holders</div>
-                <div class="rv-head__desc">@holdersText &middot; one row per holder, carrying everything captured so far</div>
+        @* ── Fixed deposit ─────────────────────────────────────────────────── *@
+        <section class="csi-card cii-card" id="rv-deposit">
+            @{ await Head("Fixed Deposit", "Application", "FdConfiguration", first: true); }
+            <p class="cii-note">@(q is null ? "Quoted once the deposit is configured" : $"Card rate as on {Money.Day(q.RateAsOn)} · locked when the application is submitted")</p>
+            <div class="cii-record">
+                <div class="inv-panel">
+                    @if (d is null || d.Amount == 0)
+                    {
+                        <div class="inv-kv__v inv-kv__v--unread">Not configured yet</div>
+                    }
+                    else
+                    {
+                        <div class="inv-kv-grid">
+                            @{
+                                await Kv("Invested amount", Money.Rupees(d.Amount), Money.InWords(d.Amount).ToLowerInvariant());
+                                await Kv("Rate of interest", q is null ? "—" : $"{q.Rate:0.00}% p.a.");
+                                await Kv("Tenure", $"{d.TenureMonths} months");
+                                await Kv("Interest payout", Model.Payout?.Name ?? d.Payout, q is not null && q.InterestEach > 0 ? $"{Money.Rupees(q.InterestEach)} each {Model.Payout?.Each}" : null);
+                                await Kv("Scheme", Model.Payout?.PerYear == 0 ? "Cumulative" : "Non-cumulative");
+                                await Kv("Category", docs.State.Category.Length > 0 ? docs.CategoryName(docs.State.Category) : "Not chosen");
+                                await Kv("Maturity value", q is null ? "—" : Money.Rupees(q.MaturityAmount));
+                                await Kv("Matures on", q is null ? "—" : Money.Day(q.MaturesOn));
+                                await Kv("Maturity instruction", "Credit to the repayment account", payment?.Repayment is { AccountNumber.Length: > 0 } r ? Account(r, Model.RepaymentBranch) : null);
+                            }
+                        </div>
+                        <div class="inv-kv-grid inv-kv-grid--divided">
+                            @{
+                                await Kv("Auto renewal", d.AutoRenewal ? $"On · {Model.Option(Model.Ref.RenewInstructions, d.RenewInstruction)}" : "Off");
+                                await Kv("TDS", d.NoTds ? "Not deducted — exemption claimed" : "Deducted at the applicable rate");
+                                await Kv("Delivery type", Model.Option(Model.Ref.DeliveryTypes, d.DeliveryType), Or(Model.DetailsOf(docs.Investor).Email, ""));
+                            }
+                        </div>
+                    }
+                </div>
             </div>
-            <a class="rv-head__action" asp-controller="InvestorInfo" asp-action="Index">Edit</a>
-        </div>
-        <div class="rv-holders">
-            @foreach (var h in Model.Holders)
-            {
-                var who = h.Holder.Who;
-                var det = h.Details;
-                var gender = det.Gender.Length > 0 ? det.Gender : who.Gender;
-                <div class="rv-holder">
-                    <div class="rv-holder__id">
-                        <div class="rv-holder__id-body">
-                            <div class="rv-holder__name-row">
-                                <div class="rv-holder__name">@Or(who.Name, "Name not verified yet")</div>
-                                <div class="rv-role @(h.Holder.Joint ? "" : "rv-role--primary")">@(h.Holder.Joint ? "Joint" : "Primary")</div>
-                            </div>
-                            <div class="rv-holder__meta">PAN @UploadDocumentsViewModel.Mask(who.Pan)<br />@UploadDocumentsViewModel.MaskDate(who.Dob) &middot; @Or(gender, "gender not entered")</div>
-                            <div class="rv-holder__meta">@Or(det.NameType, "Parent") @Or(det.ParentName)</div>
-                            <div class="rv-holder__meta">Folio @Or(who.Folio, "opens with this application")</div>
+        </section>
+
+        @* ── Holders ───────────────────────────────────────────────────────── *@
+        <section class="csi-card cii-card" id="rv-holders">
+            @{ await Head("Holders", "InvestorInfo", "Index"); }
+            <p class="cii-note">@(Model.Holders.Count == 1 ? "One holder" : $"{Model.Holders.Count} holders") &middot; everything captured for each</p>
+            <div class="cii-record">
+                @foreach (var h in Model.Holders)
+                {
+                    var who = h.Holder.Who;
+                    var det = h.Details;
+                    var gender = det.Gender.Length > 0 ? det.Gender : who.Gender;
+                    <div class="inv-panel inv-panel--stack">
+                        <div class="inv-panel__label">@(h.Holder.Joint ? "Joint holder" : "Primary holder") &middot; @Or(who.Name, "name not verified yet")</div>
+                        <div class="inv-kv-grid">
+                            @{
+                                await Kv("PAN", UploadDocumentsViewModel.Mask(who.Pan));
+                                await Kv("DOB", UploadDocumentsViewModel.MaskDate(who.Dob));
+                                await Kv("Gender", Or(gender), unread: gender.Length == 0);
+                                await Kv(Or(det.NameType, "Father / Mother / Spouse") + " name", Or(det.ParentName), unread: det.ParentName.Length == 0);
+                                await Kv("Folio", Or(who.Folio, "Opens with this application"));
+                                await Kv("Mobile", Or(det.Mobile), unread: det.Mobile.Length == 0);
+                                await Kv("E-mail", Or(det.Email), unread: det.Email.Length == 0);
+                                await Kv("Annual income", Or(det.AnnualIncome), unread: det.AnnualIncome.Length == 0);
+                                await Kv("Occupation", Or(det.Occupation), Or(det.SubOccupation, ""), unread: det.Occupation.Length == 0);
+                                await Kv("Marital status", Or(det.MaritalStatus), unread: det.MaritalStatus.Length == 0);
+                                if (!h.Holder.Joint)
+                                {
+                                    await Kv("FATCA · tax resident elsewhere", det.FatcaTaxResident ? "Yes" : "No");
+                                    await Kv("FATCA · foreign resident", det.FatcaPermanentResident ? "Yes" : "No");
+                                }
+                            }
                         </div>
-                    </div>
-                    <div class="rv-holder__col">
-                        <div class="rv-holder__col-head"><div class="rv-holder__col-label">Contact</div></div>
-                        <div class="rv-mini-grid rv-mini-grid--1">
-                            <div><div class="rv-mini__k">Mobile</div><div class="rv-mini__v">@Or(det.Mobile)</div></div>
-                            <div><div class="rv-mini__k">E-mail</div><div class="rv-mini__v">@Or(det.Email)</div></div>
-                        </div>
-                    </div>
-                    <div class="rv-holder__col">
-                        <div class="rv-holder__col-head"><div class="rv-holder__col-label">More information</div></div>
-                        <div class="rv-mini-grid">
-                            <div><div class="rv-mini__k">Annual income</div><div class="rv-mini__v">@Or(det.AnnualIncome)</div></div>
-                            <div><div class="rv-mini__k">Occupation</div><div class="rv-mini__v">@Or(det.Occupation)</div></div>
-                            <div><div class="rv-mini__k">Sub occupation</div><div class="rv-mini__v">@Or(det.SubOccupation)</div></div>
-                            <div><div class="rv-mini__k">Marital status</div><div class="rv-mini__v">@Or(det.MaritalStatus)</div></div>
-                            @if (!h.Holder.Joint)
-                            {
-                                <div><div class="rv-mini__k">FATCA &middot; tax resident elsewhere</div><div class="rv-mini__v">@(det.FatcaTaxResident ? "Yes" : "No")</div></div>
-                                <div><div class="rv-mini__k">FATCA &middot; foreign resident</div><div class="rv-mini__v">@(det.FatcaPermanentResident ? "Yes" : "No")</div></div>
+                        <div class="inv-kv-grid inv-kv-grid--divided">
+                            @{
+                                await Kv("Permanent address", h.Permanent.Lines, wide: true);
+                                await Kv("Verification", h.Permanent.State);
+                                await Kv("POA type", Or(h.PoaType, "—"));
+                                await Kv("POA reference number", Or(h.Permanent.Number, "—"));
+                                await Kv("POA expiry date", Or(h.Permanent.Expiry, "—"));
+                                await Kv("Communication address", h.Mailing, h.MailingState, wide: true);
                             }
                         </div>
                     </div>
-                    <div class="rv-holder__col rv-holder__col--poa @(h.Mailing == "Same as permanent" ? "" : "rv-holder__col--flag")">
-                        <div class="rv-holder__col-head">
-                            <div class="rv-holder__col-label">Address &amp; proof of address</div>
-                            <div class="rv-verified">@h.Permanent.State</div>
-                        </div>
-                        <div class="rv-mini-grid">
-                            <div class="rv-mini--wide"><div class="rv-mini__k">Permanent address</div><div class="rv-mini__v">@h.Permanent.Lines</div></div>
-                            <div class="rv-mini--wide"><div class="rv-mini__k">Mailing address</div><div class="rv-mini__v">@h.Mailing @(h.MailingState.Length > 0 ? $"· {h.MailingState}" : "")</div></div>
-                            <div><div class="rv-mini__k">POA type</div><div class="rv-mini__v">@Or(h.PoaType, "—")</div></div>
-                            <div><div class="rv-mini__k">POA reference</div><div class="rv-mini__v">@Or(h.Permanent.Number, "—")</div></div>
-                            <div><div class="rv-mini__k">POA expiry</div><div class="rv-mini__v">@Or(h.Permanent.Expiry, "—")</div></div>
-                        </div>
-                    </div>
-                </div>
-            }
-        </div>
-    </section>
-
-    @* ── Nominee ──────────────────────────────────────────────────────────────── *@
-    <section class="rv-section">
-        <div class="rv-head">
-            <div class="rv-head__text">
-                <div class="rv-head__title">Nominee</div>
-                <div class="rv-head__desc">Asked once for the application, not per holder</div>
-            </div>
-            <a class="rv-head__action" asp-controller="InvestorInfo" asp-action="Index">Edit</a>
-        </div>
-        @if (Model.Nominee is { } n)
-        {
-            <div class="rv-grid-4">
-                @{ await Kv("Name", Or(n.Name)); }
-                @{ await Kv("Date of birth", Or(n.Dob)); }
-                @{ await Kv("Relation with primary holder", Or(n.Relation)); }
-                @{ await Kv("Guardian", Or(n.GuardianName, "Not needed")); }
-            </div>
-        }
-        else
-        {
-            <p class="rv-kv__v rv-kv__v--empty">No nominee named.</p>
-        }
-    </section>
-
-    <div class="rv-split rv-split--wide-left">
-        @* ── Bank & payment ─────────────────────────────────────────────────── *@
-        <section class="rv-section">
-            <div class="rv-head">
-                <div class="rv-head__text">
-                    <div class="rv-head__title">Bank &amp; payment</div>
-                    <div class="rv-head__desc">Paid by @Or(docs.State.PayMode, "a mode not chosen yet")</div>
-                </div>
-                <a class="rv-head__action" asp-controller="Application" asp-action="BankDetails">Edit</a>
-            </div>
-            <div class="rv-grid-2">
-                @{ await Kv("Payment account", Account(payment?.Payment, Model.PaymentBranch), Model.PaymentBranch is { } pb ? $"{pb.Branch} · IFSC {pb.Ifsc} · MICR {pb.Micr}" : null, "rv-kv__v--lg"); }
-                @{ await Kv("Repayment account", payment is null ? "Not entered" : payment.RepaymentSameAsPayment ? "Same account" : Account(payment.Repayment, Model.RepaymentBranch), "interest and maturity paid to the investor", "rv-kv__v--lg"); }
-                @if (payment?.Cheque is { } c)
-                {
-                    await Kv("Cheque", $"{Or(c.Number)} · {Or(c.Date)}");
-                    await Kv("Axis CMS location", Or(c.CmsLocation), "where the cheque is presented");
                 }
             </div>
         </section>
 
-        @* ── Documents ──────────────────────────────────────────────────────── *@
-        <section class="rv-section">
-            <div class="rv-head">
-                <div class="rv-head__text">
-                    <div class="rv-head__title">Documents</div>
-                    <div class="rv-head__desc">Every document the application carries</div>
+        @* ── Nominee ───────────────────────────────────────────────────────── *@
+        <section class="csi-card cii-card" id="rv-nominee">
+            @{ await Head("Nominee", "InvestorInfo", "Index"); }
+            <p class="cii-note">Asked once for the application, not per holder</p>
+            <div class="cii-record">
+                <div class="inv-panel">
+                    @if (Model.Nominee is { } n)
+                    {
+                        <div class="inv-kv-grid">
+                            @{
+                                await Kv("Name", Or(n.Name));
+                                await Kv("Date of birth", Or(n.Dob));
+                                await Kv("Relation with primary holder", Or(n.Relation));
+                                await Kv("Guardian", Or(n.GuardianName, "Not needed"));
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="inv-kv__v inv-kv__v--unread">No nominee named</div>
+                    }
                 </div>
-                <a class="rv-head__action" asp-controller="UploadDocuments" asp-action="Index">Edit</a>
             </div>
+        </section>
+
+        @* ── Bank & payment ────────────────────────────────────────────────── *@
+        <section class="csi-card cii-card" id="rv-bank">
+            @{ await Head("Bank Details & Payment", "Application", "BankDetails"); }
+            <p class="cii-note">Paid by @Or(docs.State.PayMode, "a mode not chosen yet")</p>
+            <div class="cii-record">
+                <div class="inv-panel">
+                    <div class="inv-kv-grid">
+                        @{
+                            // Only a cheque is drawn on an account the deposit is paid from.
+                            if (byCheque)
+                            {
+                                await Kv("Payment account", Account(payment?.Payment, Model.PaymentBranch), Model.PaymentBranch is { } pb ? $"{pb.Branch} · IFSC {pb.Ifsc} · MICR {pb.Micr}" : null);
+                            }
+                            await Kv("Repayment account", payment is null ? "Not entered" : payment.RepaymentSameAsPayment ? "Same as the payment account" : Account(payment.Repayment, Model.RepaymentBranch), "Interest and maturity paid to the investor");
+                            if (payment?.Cheque is { } c)
+                            {
+                                await Kv("Cheque", $"{Or(c.Number)} · {Or(c.Date)}");
+                                await Kv("Axis CMS branch", Or(c.CmsLocation), "Where the cheque is presented");
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        @* ── Documents ─────────────────────────────────────────────────────── *@
+        <section class="csi-card cii-card" id="rv-documents">
+            @{ await Head("Documents", "UploadDocuments", "Index"); }
+            <p class="cii-note">Every document the application carries</p>
             <ul class="rv-checks">
                 @foreach (var doc in Model.Documents)
                 {
@@ -222,50 +250,51 @@
                 }
             </ul>
         </section>
-    </div>
 
-    @* ── Other details ──────────────────────────────────────────────────────── *@
-    <section class="rv-section">
-        <div class="rv-head">
-            <div class="rv-head__text">
-                <div class="rv-head__title">Other details</div>
-                <div class="rv-head__desc">How the application is sourced, from Upload Documents</div>
+        @* ── Other details ─────────────────────────────────────────────────── *@
+        <section class="csi-card cii-card" id="rv-other">
+            @{ await Head("Other Details", "UploadDocuments", "Index"); }
+            <p class="cii-note">How the application is sourced, from Upload Documents</p>
+            <div class="cii-record">
+                <div class="inv-panel">
+                    <div class="inv-kv-grid">
+                        @{
+                            await Kv("Sourcing mode", mode?.Name ?? "Not chosen");
+                            await Kv(mode?.CodeLabel ?? "Code", Or(docs.State.SourceCode), sourceName?.Text);
+                            await Kv("Sub broker code", Or(docs.State.SubBroker));
+                            await Kv("Application type", Model.Option(Model.Ref.ApplicationTypes, docs.State.AppType), docs.State.AppType == UploadDocumentsViewModel.Physical ? $"Form no {Or(docs.State.TypedFormNo)}" : null);
+                            await Kv("Sourced by", $"{docs.Partner.Name} · {docs.Partner.Code}");
+                        }
+                    </div>
+                </div>
             </div>
-            <a class="rv-head__action" asp-controller="UploadDocuments" asp-action="Index">Edit</a>
-        </div>
-        <div class="rv-grid-4">
-            @{ await Kv("Sourcing mode", mode?.Name ?? "Not chosen"); }
-            @{ await Kv(mode?.CodeLabel ?? "Code", Or(docs.State.SourceCode), sourceName?.Text); }
-            @{ await Kv("Sub broker code", Or(docs.State.SubBroker)); }
-            @{ await Kv("Application type", Model.Option(Model.Ref.ApplicationTypes, docs.State.AppType), docs.State.AppType == UploadDocumentsViewModel.Physical ? $"form no {Or(docs.State.TypedFormNo)}" : null); }
-            @{ await Kv("Sourced by", $"{docs.Partner.Name} · {docs.Partner.Code}"); }
-        </div>
-    </section>
+        </section>
 
-    @* ── Declarations ─────────────────────────────────────────────────────────── *@
-    <form method="post" asp-action="Send" class="rv-declarations" id="reviewForm" novalidate>
-        <div class="rv-head__title">Declarations</div>
-        @for (var i = 0; i < Model.Ref.Declarations.Count; i++)
-        {
-            <label class="rv-declaration">
-                <input type="checkbox" name="declarations" value="@i" class="rv-declaration__box" />
-                <span class="rv-declaration__text">@Model.Ref.Declarations[i] <span class="rv-required">Required</span></span>
-            </label>
-        }
-    </form>
+        @* ── Declarations ──────────────────────────────────────────────────── *@
+        <section class="csi-card cii-card" id="rv-declarations">
+            <div class="cii-head"><h2 class="cii-title">Declarations</h2><span class="csi-status">Every one required</span></div>
+            <form method="post" asp-action="Send" class="rv-declarations" id="reviewForm" novalidate>
+                @for (var i = 0; i < Model.Ref.Declarations.Count; i++)
+                {
+                    <label class="rv-declaration">
+                        <input type="checkbox" name="declarations" value="@i" class="rv-declaration__box" />
+                        <span class="rv-declaration__text">@Model.Ref.Declarations[i]</span>
+                    </label>
+                }
+            </form>
+        </section>
+    </div>
 </div>
 
-@section Footer {
-    <footer class="csi-bar">
-        <div class="csi-bar__inner">
-            <a class="csi-btn csi-btn--back" asp-controller="Application" asp-action="FdConfiguration" data-loader="Going back to FD Configuration">Back</a>
-            <p class="csi-bar__hint" id="rv-footer-hint">@(Model.Ready ? "Nothing missing · sign every declaration to submit" : $"{blockers.Count} thing{(blockers.Count == 1 ? "" : "s")} still missing before submitting")</p>
-            <div class="csi-bar__right">
-                <button type="button" class="csi-btn csi-btn--primary" id="openPaymentLinkModal" disabled>Submit application</button>
-            </div>
+<footer class="csi-bar">
+    <div class="csi-bar__inner">
+        <a class="csi-btn csi-btn--back" asp-controller="Application" asp-action="FdConfiguration" data-loader="Going back to FD Configuration">Back</a>
+        <p class="csi-bar__hint" id="rv-footer-hint">@(Model.Ready ? "Nothing missing · sign every declaration to submit" : $"{blockers.Count} thing{(blockers.Count == 1 ? "" : "s")} still missing before submitting")</p>
+        <div class="csi-bar__right">
+            <button type="button" class="csi-btn csi-btn--primary" id="openPaymentLinkModal" disabled>Submit Application</button>
         </div>
-    </footer>
-}
+    </div>
+</footer>
 
 @* The submit dialog: what is sent to the investor once the application is submitted. *@
 <div class="modal-overlay pl-overlay" id="paymentLinkModal" hidden>
@@ -292,6 +321,7 @@
 </div>
 
 @section Scripts {
+    <script src="~/js/classic-pin.js" asp-append-version="true"></script>
     <script>
         (function () {
             var form = document.getElementById('reviewForm');

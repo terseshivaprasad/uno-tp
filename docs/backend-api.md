@@ -64,7 +64,9 @@ again; a failed answer is not kept.
 | GET | `me` | | `PartnerProfile`: `name`, `code`, `agencyType`, `brokerCode` of the signed-in partner. The `sourcingAgency` in `config` chooses the sourcing mode, broker code and deposit category; any other type sources as a broker under `brokerCode`, with the category set from the holder's date of birth and gender. While `Features:DemoData` is on, `?agency=2001&broker=BR10874` shows the app as another kind of partner for the session. |
 | POST | `deposits/quote` | `{ amount, tenureMonths, payout, category, startsOn? }` | `DepositQuote`: `rate`, `interestEach`, `maturityAmount`, `maturesOn`, `rateAsOn` |
 | GET | `ifsc/{code}` | | `BankBranch`: `ifsc`, `bank`, `branch`, `micr`, or 404 |
+| GET | `ifsc?q={text}` | | `BankBranch[]`: the branches whose bank name, branch, IFSC or MICR holds every word of the text, best first, at most 20 — the bank search on Bank Details &amp; Payment |
 | GET | `demo/cases` | | `DemoCases`: `dob`, `cases` (`{ pan, dob, folios, shows }`; an empty `dob` is none on record, no `folios` a new investor) and `notes`, for the Test data card on Investor Identification while `Features:DemoData` is on. A live backend answers 404 and the card is not shown. |
+| GET | `demo/banks` | | `DemoBanks`: `branches` (`BankBranch[]`) and `notes`, for the Test data card on Bank Details &amp; Payment while `Features:DemoData` is on. A live backend answers 404 and the card is not shown. |
 
 - **`ReferenceData`:** `applicationTypes` and `renewInstructions` and
   `deliveryTypes` as `{ code, name }`; `categories` as `{ code, name, employee,
@@ -107,18 +109,20 @@ again; a failed answer is not kept.
 | GET | `applications/{appNo}` | | `Application`, or 404. Drafts included. |
 | PUT | `applications/{appNo}/upload` | `UploadState`, with header `If-Match: "{version}"` | `{ version }`, or `409`/`412` if the application changed since that version was read. Nothing is saved in that case. |
 | PUT | `applications/{appNo}/details` | `ApplicationDetails`, with `If-Match` | `{ version }`, or `409`/`412` |
+| PUT | `applications/{appNo}/pages/{page}` | `{ state }` | `204`, or `404` when the application is not the partner's. A wizard page's working state, kept in `pages` on the application as it stands: it moves no version and meets no conflict. Opaque to the backend. |
 | PUT | `applications/{appNo}/payment` | `PaymentDetails`, with `If-Match` | `{ version }`, or `409`/`412` |
 | PUT | `applications/{appNo}/deposit` | `DepositDetails`, with `If-Match` | `{ version }`, or `409`/`412` |
 | POST | `applications/{appNo}/submit` | with `If-Match` | `Application` as submitted, or `409`/`412`. Sends the investor the payment link by SMS and e-mail both. |
 | POST | `applications/{appNo}/resend-link` | | `Submission`, or `404`/`409` when there is no link to resend |
-| GET | `applications/drafts` | | `DraftSummary[]`: saved applications that are still the partner's to finish, with identifiers masked |
+| GET | `applications/drafts` | | `DraftSummary[]`: the partner's own applications, opened and not yet submitted, the one touched last first, with identifiers masked |
 | GET | `applications` | | `ApplicationRecord[]`: the partner's applications, including older ones, each with its `scheme` name and `milestones` (`{ step, at }`, in order) for the View Application timeline |
 
 - **`holder`:** `pan`, `dob`, `name`, `folio`, `panFiled`, `address`,
   `onRecord { pan, photo, poa }` or null, and `gender` (the folio's, or `""`).
 - **`Application`:** `appNo`, `holder`, `version`, `upload` (an `UploadState`,
-  or null until first saved), and `prior` (attempts on record from before the
-  upload step, newest first, as `LogEntry[]`).
+  or null until first saved), `prior` (attempts on record from before the
+  upload step, newest first, as `LogEntry[]`), and `pages` (each wizard page's
+  working state by page name, as the page last saved it).
 - **`ApplicationDetails`:** Investor Information: `holders` (one per holder
   type: `holder` 01/02/03, `gender`, `nameType`, `parentName`, `annualIncome`,
   `occupation`, `subOccupation`, `maritalStatus`, `mobile`, `email`,

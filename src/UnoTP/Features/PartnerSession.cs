@@ -4,18 +4,17 @@ using UnoTP.Backend;
 namespace UnoTP.Features;
 
 /// <summary>
-/// What the server keeps for one partner's browser, so none of it has to travel
-/// in an address or a hidden field: who the partner is, the application they are
-/// on, and the search that found it. Addresses carry no PAN, date of birth, name,
-/// folio or application number - they end up in logs, history and Referer headers,
-/// and anything in a hidden field can be changed before it is posted back.
+/// What the server keeps for one partner's browser: the sign-in - who the partner
+/// is, the backend's session for them, when it ends and the menu it opens - and
+/// nothing else. The application and everything on it are the backend's, kept
+/// there for audit; the application a page is on is in its address (see
+/// ApplicationUrls), and addresses carry no PAN, date of birth, name or folio.
 ///
-/// Held in ASP.NET Core session state behind an HttpOnly, SameSite=Strict cookie.
+/// Held in ASP.NET Core session state behind an HttpOnly, SameSite=Lax cookie.
 /// </summary>
 public static class PartnerSession
 {
     private const string OwnerKey = "partner";
-    private const string ApplicationKey = "application";
     private const string SessionIdKey = "entry.session";
     private const string ExpiresKey = "entry.expires";
     private const string MenuKey = "entry.menu";
@@ -78,24 +77,6 @@ public static class PartnerSession
         session.SetString(DemoAgencyKey, agency.Trim());
         if (broker is { Length: > 0 }) session.SetString(DemoBrokerKey, broker.Trim().ToUpperInvariant());
         else session.Remove(DemoBrokerKey);
-    }
-
-    /// <summary>The application the partner is working on, by number.</summary>
-    public static string? CurrentApplication(this ISession session) => session.GetString(ApplicationKey);
-
-    public static void SetCurrentApplication(this ISession session, string? appNo)
-    {
-        if (appNo is null) session.Remove(ApplicationKey);
-        else session.SetString(ApplicationKey, appNo);
-    }
-
-    public static T? Read<T>(this ISession session, string key) where T : class =>
-        session.GetString(key) is { } json ? JsonSerializer.Deserialize<T>(json) : null;
-
-    public static void Write<T>(this ISession session, string key, T? value) where T : class
-    {
-        if (value is null) session.Remove(key);
-        else session.SetString(key, JsonSerializer.Serialize(value));
     }
 }
 

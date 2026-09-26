@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using UnoTP.Backend;
 using UnoTP.Features;
@@ -20,7 +21,7 @@ namespace UnoTP.Controllers;
 // One document per post, the largest 4 MB, with the form around it.
 [RequestSizeLimit(12 * 1024 * 1024)]
 [RequestFormLimits(MultipartBodyLengthLimit = 12 * 1024 * 1024)]
-[Route("Apps/UnoTp/Classic/UploadDocuments")]
+[Route("Apps/UnoTp/Application/{appNo}/UploadDocuments")]
 public class UploadDocumentsController(
     IApplicationApi applications,
     IDocumentApi documents,
@@ -31,8 +32,7 @@ public class UploadDocumentsController(
     {
         if (await LoadAsync() is not { } model) return Start();
         // Said once: a reload after it shows the page as it stands.
-        model.Shown = HttpContext.Session.Read<Flash>(FlashKey(model));
-        HttpContext.Session.Write<Flash>(FlashKey(model), null);
+        model.Shown = TempData[FlashKey(model)] is string said ? JsonSerializer.Deserialize<Flash>(said) : null;
         return View(model);
     }
 
@@ -88,10 +88,10 @@ public class UploadDocumentsController(
     public Task<IActionResult> Proceed(UploadForm form) => Change(form, model => model.Proceed());
 
     // The backend only ever finds the partner's own application, so a number in
-    // the session that is not theirs finds nothing.
+    // the address that is not theirs finds nothing.
     private async Task<UploadDocumentsViewModel?> LoadAsync()
     {
-        var appNo = HttpContext.Session.CurrentApplication();
+        var appNo = HttpContext.CurrentApplication();
         var app = appNo is null ? null : await applications.FindAsync(appNo);
         return app is null ? null : await ActivatorUtilities.CreateInstance<UploadDocumentsViewModel>(services, app, HttpContext.Session).ReadyAsync();
     }
@@ -114,7 +114,7 @@ public class UploadDocumentsController(
         {
             await model.SettleAsync();
         }
-        if (model.Said is not null) HttpContext.Session.Write(FlashKey(model), model.Said);
+        if (model.Said is not null) TempData[FlashKey(model)] = JsonSerializer.Serialize(model.Said);
         return model.Complete && model.Said is null
             ? RedirectToAction(nameof(InvestorInfoController.Index), "InvestorInfo")
             : Back(at);

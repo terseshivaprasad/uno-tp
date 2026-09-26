@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using UnoTP.Backend;
 
 namespace UnoTP.ViewModels;
@@ -174,17 +175,86 @@ public sealed class InvestorInfoViewModel(InvestorInfoState state, UploadDocumen
     /// </summary>
     public static bool PepAsked(UploadDocumentsViewModel.DocHolder h) => h.Who.Folio.Length == 0;
 
-    /// <summary>The PEP answers Proceed found missing, by field name ("Holder2.Pep").</summary>
-    public IReadOnlySet<string> PepMissing { get; init; } = new HashSet<string>();
+    /// <summary>What Proceed found missing or wrong, by field name ("Holder2.Pep", "Nominee.Dob").</summary>
+    public IReadOnlyDictionary<string, string> Errors { get; init; } = new Dictionary<string, string>();
 
-    /// <summary>The PEP answers still to give, by field name, for every holder asked.</summary>
-    public static List<string> PepUnanswered(InvestorInfoState state, IEnumerable<(int Holder, UploadDocumentsViewModel.DocHolder Who)> holders) =>
-        [.. from h in holders
-            where PepAsked(h.Who)
-            from q in PepQuestions
-            let field = $"Holder{h.Holder}.{q.Field}"
-            where state.Fields.GetValueOrDefault(field) is not ("yes" or "no")
-            select field];
+    /// <summary>What Proceed said about a field, if anything.</summary>
+    public string? ErrorOf(string name) => Errors.GetValueOrDefault(name);
+
+    /// <summary>
+    /// What every added holder types or chooses, in the order the page draws it: the
+    /// field, the id the page gives its control, and what an empty one says. The
+    /// gender is asked only where nothing read it, so is checked only when posted.
+    /// </summary>
+    private static readonly (string Field, string Id, string Empty)[] HolderFields =
+    [
+        ("Gender", "h{0}-gender", "Select the gender"),
+        ("NameType", "h{0}-nametype", "Select the name type"),
+        ("ParentName", "h{0}-parent", "Enter the father's, mother's or spouse's name"),
+        ("AnnualIncome", "cii{0}Income", "Select the annual income"),
+        ("Occupation", "cii{0}Occupation", "Select the occupation"),
+        ("SubOccupation", "cii{0}SubOccupation", "Select the sub occupation"),
+        ("MaritalStatus", "cii{0}Marital", "Select the marital status"),
+        ("Mobile", "cii{0}Mobile", "Enter the mobile number"),
+        ("Email", "cii{0}Email", "Enter the e-mail"),
+    ];
+
+    /// <summary>
+    /// Everything Proceed cannot go on without, in page order: each added holder's
+    /// fields and PEP answers, then the nominee's, and a minor nominee's guardian's.
+    /// Each comes with the id of the control to bring the partner to.
+    /// </summary>
+    public static List<(string Field, string Id, string Error)> Unfilled(InvestorInfoState state, IEnumerable<(int Holder, UploadDocumentsViewModel.DocHolder Who)> holders, int minorUnder)
+    {
+        var found = new List<(string, string, string)>();
+        var fields = state.Fields;
+        string Of(string name) => fields.GetValueOrDefault(name)?.Trim() ?? "";
+        void Need(string name, string id, string empty, string? wrong = null, Func<string, bool>? valid = null)
+        {
+            var value = Of(name);
+            if (value.Length == 0) found.Add((name, id, empty));
+            else if (valid is not null && !valid(value)) found.Add((name, id, wrong!));
+        }
+
+        foreach (var (holder, who) in holders)
+        {
+            foreach (var (field, id, empty) in HolderFields)
+            {
+                var name = $"Holder{holder}.{field}";
+                if (field == "Gender" && !fields.ContainsKey(name)) continue;
+                var at = string.Format(id, holder);
+                if (field == "Mobile") Need(name, at, empty, "Enter a 10-digit mobile number", v => Regex.IsMatch(v, @"^[6-9]\d{9}$"));
+                else if (field == "Email") Need(name, at, empty, "Enter a valid e-mail", v => Regex.IsMatch(v, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"));
+                else Need(name, at, empty);
+            }
+            if (!PepAsked(who)) continue;
+            foreach (var (field, _) in PepQuestions)
+            {
+                var name = $"Holder{holder}.{field}";
+                if (Of(name) is not ("yes" or "no")) found.Add((name, "pep-" + name, "Choose Yes or No"));
+            }
+        }
+
+        if (!state.Nominee) return found;
+        Need("Nominee.Name", "ciiNomName", "Enter the nominee's name");
+        var (dd, mm, yyyy) = (Of("Nominee.Dd"), Of("Nominee.Mm"), Of("Nominee.Yyyy"));
+        if (dd.Length == 0 || mm.Length == 0 || yyyy.Length == 0) found.Add(("Nominee.Dob", "ciiNomDd", "Enter the nominee's date of birth"));
+        else if (!IsDate(dd, mm, yyyy, DateTime.Today)) found.Add(("Nominee.Dob", "ciiNomDd", "Enter a real date of birth, not a future one"));
+        Need("Nominee.Relation", "ciiNomRelation", "Select the relation with the primary holder");
+        if (IsMinor(dd, mm, yyyy, DateTime.Today, minorUnder))
+        {
+            Need("Nominee.GuardianName", "ciiNomGuardian", "Enter the guardian's name");
+            Need("Nominee.GuardianAddress.Line1", "ciiGdn1", "Enter the first line of the address");
+            Need("Nominee.GuardianAddress.PinCode", "ciiGdnPin", "Enter the PIN code", "Enter a 6-digit PIN code", v => Regex.IsMatch(v, @"^[1-9]\d{5}$"));
+            Need("Nominee.GuardianAddress.City", "ciiGdnCity", "Enter the city");
+        }
+        return found;
+    }
+
+    private static bool IsDate(string dd, string mm, string yyyy, DateTime today) =>
+        int.TryParse(dd, out var d) && int.TryParse(mm, out var m) && int.TryParse(yyyy, out var y)
+        && y >= 1900 && m is >= 1 and <= 12 && d >= 1 && d <= DateTime.DaysInMonth(y, m)
+        && new DateTime(y, m, d) <= today;
 
     /// <summary>The part of the page the last post was about.</summary>
     public string? Focus { get; init; }

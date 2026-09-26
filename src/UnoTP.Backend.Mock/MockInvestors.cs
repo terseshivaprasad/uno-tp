@@ -105,6 +105,16 @@ public sealed class MockDemo : IDemoApi
         return Task.FromResult<DemoCases?>(new DemoCases(MockInvestors.DemoDob, cases, Notes));
     }
 
+    public Task<DemoBanks?> BanksAsync(CancellationToken ct = default) =>
+        Task.FromResult<DemoBanks?>(new DemoBanks(MockDeposits.Branches, BankNotes));
+
+    private static readonly string[] BankNotes =
+    [
+        "Search by any part of the bank name, the branch, the IFSC or the MICR — \"hdfc pune\" finds HDFC's Baner branch.",
+        "Any other IFSC finds no branch, and Proceed turns it back.",
+        "Any account number of 6 to 18 digits is taken; it has to be typed the same twice.",
+    ];
+
     private static readonly string[] Notes =
     [
         "A folio can also be searched by its number, with the same result as its PAN.",

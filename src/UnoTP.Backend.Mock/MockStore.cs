@@ -43,14 +43,6 @@ public sealed class MockStore(IConfiguration config)
         return entries.TryAdd(app.AppNo, new Entry(owner, app));
     }
 
-    /// <summary>The owner's application under this number, opened from <paramref name="open"/> if it is new.</summary>
-    public Application? GetOrAdd(string owner, string appNo, Func<Application> open)
-    {
-        Sweep();
-        var entry = entries.GetOrAdd(appNo, _ => new Entry(owner, open()));
-        return Read(entry, owner);
-    }
-
     public Application? Get(string owner, string appNo)
     {
         Sweep();
@@ -78,6 +70,31 @@ public sealed class MockStore(IConfiguration config)
             entry.Seen = DateTime.UtcNow;
             return JsonSerializer.Deserialize<Application>(entry.Json, Json);
         }
+    }
+
+    /// <summary>
+    /// Changes the owner's application as it stands, without moving its version: a
+    /// page's working state, which no save made against a version should meet.
+    /// </summary>
+    public bool Touch(string owner, string appNo, Action<Application> change)
+    {
+        if (!entries.TryGetValue(appNo, out var entry) || entry.Owner != owner) return false;
+        lock (entry.Gate)
+        {
+            var app = JsonSerializer.Deserialize<Application>(entry.Json, Json)!;
+            change(app);
+            entry.Json = JsonSerializer.Serialize(app, Json);
+            entry.Seen = DateTime.UtcNow;
+            return true;
+        }
+    }
+
+    /// <summary>The owner's applications, the one touched last first.</summary>
+    public IReadOnlyList<Application> List(string owner)
+    {
+        Sweep();
+        return entries.Values.Where(e => e.Owner == owner).OrderByDescending(e => e.Seen)
+            .Select(e => Read(e, owner)).OfType<Application>().ToList();
     }
 
     public void File(string owner, string appNo, string slot, UploadFile copy)

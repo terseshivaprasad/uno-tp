@@ -23,7 +23,7 @@ namespace UnoTP.Controllers;
 [RequiresFeature("new-fd")]
 [RequestSizeLimit(12 * 1024 * 1024)]
 [RequestFormLimits(MultipartBodyLengthLimit = 12 * 1024 * 1024)]
-[Route("Apps/UnoTp/Application/InvestorInfo")]
+[Route("Apps/UnoTp/Application/{appNo}/InvestorInfo")]
 public class InvestorInfoController(
     HolderSearch search,
     IApplicationApi applications,
@@ -34,21 +34,22 @@ public class InvestorInfoController(
     private const string Changed =
         "This application changed somewhere else while that was being sent, so it was not kept. The page shows it as it stands now — do it again.";
 
-    // One page's state per application the session is on.
-    private string Key => "investor-info:" + HttpContext.Session.CurrentApplication();
+    // The page's working state is the application's, kept with it in the
+    // application store: read before every action, saved back after it.
+    private const string Page = "investor-info";
+    private InvestorInfoState? state;
 
     private InvestorInfoState State
     {
-        get => HttpContext.Session.Read<InvestorInfoState>(Key) ?? new();
-        set => HttpContext.Session.Write(Key, value);
+        get => state ??= new();
+        set => state = value;
     }
 
     [HttpGet("")]
     public async Task<IActionResult> Index()
     {
         if (await LoadAsync() is not { } docs) return Start();
-        docs.Shown = HttpContext.Session.Read<Flash>(FlashKey(docs));
-        HttpContext.Session.Write<Flash>(FlashKey(docs), null);
+        docs.Shown = TempData[FlashKey(docs)] is string said ? JsonSerializer.Deserialize<Flash>(said) : null;
 
         var state = State;
         // A page opened afresh - a new session, or a new visit - opens on what the
@@ -59,7 +60,7 @@ public class InvestorInfoController(
         {
             Offline = TempData["offline"] is true,
             Unfinished = TempData["unfinished"] as int?,
-            PepMissing = (TempData["pep"] as string ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries).ToHashSet(),
+            Errors = TempData["errors"] is string errors ? JsonSerializer.Deserialize<Dictionary<string, string>>(errors)! : new Dictionary<string, string>(),
             Focus = docs.Shown?.Focus ?? TempData["focus"] as string,
         };
 
@@ -103,13 +104,14 @@ public class InvestorInfoController(
 
         if (await LoadAsync() is not { } docs) return Start();
 
-        // Every holder with no folio says whether they are, or are related to, a
-        // politically exposed person.
+        // Every field the page asks for filled in, and every holder with no folio
+        // saying whether they are, or are related to, a politically exposed person.
+        // Everything missing is marked at once, and the first takes the caret.
         var holders = docs.JointHolders.Select(h => (int.Parse(h.Code), h)).Prepend((1, docs.Investor));
-        if (InvestorInfoViewModel.PepUnanswered(state, holders) is [var first, ..] pep)
+        if (InvestorInfoViewModel.Unfilled(state, holders, docs.Config.MinAge) is [var first, ..] unfilled)
         {
-            TempData["pep"] = string.Join(',', pep);
-            return Back("pep-" + first);
+            TempData["errors"] = JsonSerializer.Serialize(unfilled.ToDictionary(u => u.Field, u => u.Error));
+            return Back(first.Id);
         }
 
         docs.KeepJoint(form);
@@ -127,7 +129,7 @@ public class InvestorInfoController(
         if (await LoadAsync() is not { } docs) return Start();
         // The third first, so the second going does not move them up on the way.
         foreach (var h in docs.JointHolders.Reverse().ToList()) docs.RemoveJoint(h.Code);
-        if (await SaveAsync(docs)) HttpContext.Session.Remove(Key);
+        if (await SaveAsync(docs)) State = new();
         return Back(null);
     }
 
@@ -251,15 +253,25 @@ public class InvestorInfoController(
     // ----- Keeping what was typed --------------------------------------------
 
     /// <summary>
-    /// After every post, what the form now holds is saved to the backend as the
-    /// application's details, so the page always opens on what the backend has. The
-    /// details are a part of their own, so a save that meets a newer version reads
-    /// the application again and saves over it.
+    /// Before every action the page's working state is read from the application,
+    /// and after it saved back there if it changed - so it belongs to the
+    /// application, not to the browser's session. After every post, what the form
+    /// now holds is also saved as the application's details, so the page always
+    /// opens on what the backend has. The details are a part of their own, so a
+    /// save that meets a newer version reads the application again and saves over it.
     /// </summary>
     public override async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
+        var appNo = HttpContext.CurrentApplication();
+        var kept = appNo is null ? null : (await applications.FindAsync(appNo))?.Pages.GetValueOrDefault(Page);
+        state = kept is null ? null : JsonSerializer.Deserialize<InvestorInfoState>(kept);
+
         await next();
-        if (!HttpMethods.IsPost(Request.Method) || HttpContext.Session.CurrentApplication() is not { } appNo) return;
+        if (appNo is null) return;
+        var now = JsonSerializer.Serialize(State);
+        if (now != kept) await applications.SavePageAsync(appNo, Page, now);
+
+        if (!HttpMethods.IsPost(Request.Method)) return;
         var details = InvestorDetailsForm.ToDetails(State);
         for (var tries = 0; tries < 2; tries++)
         {
@@ -319,7 +331,7 @@ public class InvestorInfoController(
     // The backend only ever finds the partner's own application.
     private async Task<UploadDocumentsViewModel?> LoadAsync()
     {
-        var appNo = HttpContext.Session.CurrentApplication();
+        var appNo = HttpContext.CurrentApplication();
         var app = appNo is null ? null : await applications.FindAsync(appNo);
         return app is null ? null : await ActivatorUtilities.CreateInstance<UploadDocumentsViewModel>(services, app, HttpContext.Session).ReadyAsync();
     }
@@ -332,7 +344,7 @@ public class InvestorInfoController(
         var saved = await applications.SaveUploadAsync(docs.AppNo, docs.App.Version, docs.State) is not null;
         if (saved) await docs.SettleAsync();
         else docs.Said = new Flash { Banner = Changed };
-        if (docs.Said is not null) HttpContext.Session.Write(FlashKey(docs), docs.Said);
+        if (docs.Said is not null) TempData[FlashKey(docs)] = JsonSerializer.Serialize(docs.Said);
         return saved;
     }
 

@@ -6,7 +6,8 @@ namespace UnoTP.Features;
 /// independently - see <see cref="FeatureSet"/> for the per-session override.
 ///
 /// Adding a feature is two lines: a property here and an entry in
-/// <see cref="FeatureSet.Switches"/> so the ?ff= override can reach it.
+/// <see cref="FeatureSet.Switches"/> so the ?ff= override can reach it - where
+/// overrides are allowed at all (<see cref="AllowOverrides"/>).
 /// </summary>
 public sealed class FeatureFlags
 {
@@ -34,8 +35,12 @@ public sealed class FeatureFlags
     /// <summary>The Console Admin tile and page, for administrators only.</summary>
     public bool Admin { get; set; }
 
-    /// <summary>The test data card at the foot of Investor Identification. Off in production.</summary>
-    public bool DemoData { get; set; } = true;
+    /// <summary>
+    /// Demo mode: the test data cards, signing in as Entry:DemoUserId without the
+    /// portal, and ?agency= showing the app as another kind of partner. Off unless
+    /// configured on - Development turns it on.
+    /// </summary>
+    public bool DemoData { get; set; }
 
     /// <summary>
     /// Document identification says which proof of address a copy is, and that
@@ -43,6 +48,13 @@ public sealed class FeatureFlags
     /// first, and identification only checks the copy is that proof.
     /// </summary>
     public bool DocIdentification { get; set; } = true;
+
+    /// <summary>
+    /// Whether ?ff= and the unotp.ff cookie may change these switches for a
+    /// browser. Off unless configured on - Development turns it on - so on a server
+    /// only its configuration sets what is on, and nothing a request carries can.
+    /// </summary>
+    public bool AllowOverrides { get; set; }
 
     /// <summary>The switch behind a console feature key, as ?ff= and the tiles name it.</summary>
     public bool IsOn(string key) => key switch

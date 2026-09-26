@@ -47,10 +47,8 @@
     </aside>
 
     <div class="csi-card">
-        <div class="csi-drafts__head">
-            <h1 class="csi-card__title csi-card__title--plain">Pay In Slip Generation &mdash; Axis</h1>
-            <p class="csi-drafts__sub">Every application raised in the last @Model.WindowDays days whose money is coming by cheque or DD. @pending of @listed.Count @(pending == 1 ? "is" : "are") ready for a slip@(blocked > 0 ? $", and {blocked} {(blocked == 1 ? "is" : "are")} held back for acceptance" : "").</p>
-        </div>
+        <div class="cii-head"><h1 class="cii-title">Pay In Slip Generation &mdash; Axis</h1></div>
+        <p class="cii-note">Every application raised in the last @Model.WindowDays days whose money is coming by cheque or DD. @pending of @listed.Count @(pending == 1 ? "is" : "are") ready for a slip@(blocked > 0 ? $", and {blocked} {(blocked == 1 ? "is" : "are")} held back for acceptance" : "").</p>
 
         <form class="pis-form" id="pisForm" novalidate>
             <fieldset class="csi-searchby csi-searchby--first">

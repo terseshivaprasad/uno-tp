@@ -248,7 +248,7 @@ public sealed class MockDeposits : IDepositApi
         ["maturity"] = 0, ["yearly"] = 1, ["halfyearly"] = 2, ["quarterly"] = 4, ["monthly"] = 12,
     };
 
-    private static readonly BankBranch[] Branches =
+    internal static readonly BankBranch[] Branches =
     [
         new("HDFC0000521", "HDFC Bank", "Andheri East, Mumbai", "400240015"),
         new("HDFC0000123", "HDFC Bank", "Baner, Pune", "411240012"),
@@ -274,4 +274,17 @@ public sealed class MockDeposits : IDepositApi
 
     public Task<BankBranch?> BranchAsync(string ifsc, CancellationToken ct = default) =>
         Task.FromResult(Branches.FirstOrDefault(b => b.Ifsc.Equals(ifsc.Trim(), StringComparison.OrdinalIgnoreCase)));
+
+    // Every word typed must be in the bank, the branch, the IFSC or the MICR; a
+    // branch whose IFSC or MICR starts with what was typed comes first.
+    public Task<IReadOnlyList<BankBranch>> SearchBranchesAsync(string query, CancellationToken ct = default)
+    {
+        var words = query.Split(' ', ',', '—', '-').Select(w => w.Trim()).Where(w => w.Length > 0).ToArray();
+        IReadOnlyList<BankBranch> found = words.Length == 0 ? [] : Branches
+            .Where(b => words.All(w => $"{b.Bank} {b.Branch} {b.Ifsc} {b.Micr}".Contains(w, StringComparison.OrdinalIgnoreCase)))
+            .OrderBy(b => b.Ifsc.StartsWith(query.Trim(), StringComparison.OrdinalIgnoreCase) || b.Micr.StartsWith(query.Trim()) ? 0 : 1)
+            .ThenBy(b => b.Bank).ThenBy(b => b.Branch)
+            .Take(20).ToList();
+        return Task.FromResult(found);
+    }
 }

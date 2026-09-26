@@ -32,6 +32,20 @@
         await Task.CompletedTask;
     }
 
+    // What Proceed said about a field, under it; its control points here.
+    private async Task FieldError(string name, string id)
+    {
+        if (Model.ErrorOf(name) is { } error)
+        {
+            <p class="csi-error" id="@(id)Error" role="alert">@error</p>
+        }
+        await Task.CompletedTask;
+    }
+
+    // The attributes a control Proceed found wanting carries.
+    private string? Invalid(string name) => Model.ErrorOf(name) is null ? null : "is-invalid";
+    private string? DescribedBy(string name, string id) => Model.ErrorOf(name) is null ? null : id + "Error";
+
     // A labelled drop-down, as the classic steps draw one, holding what was posted.
     private async Task Select(string id, string name, string label, IEnumerable<string> options, string opening = "")
     {
@@ -39,7 +53,7 @@
         <div class="cud-col">
             <label class="csi-label" for="@id">@label</label>
             <div class="cud-select">
-                <select class="csi-control" id="@id" name="@name">
+                <select class="csi-control @Invalid(name)" id="@id" name="@name" aria-invalid="@(Invalid(name) is not null ? "true" : null)" aria-describedby="@DescribedBy(name, id)">
                     <option value="" selected="@(selected.Length == 0)">Select</option>
                     @foreach (var o in options)
                     {
@@ -47,6 +61,7 @@
                     }
                 </select>
             </div>
+            @{ await FieldError(name, id); }
         </div>
         await Task.CompletedTask;
     }
@@ -65,11 +80,13 @@
             @{ await Select($"{id}Marital", $"{p}.MaritalStatus", "Marital Status", lists.Maritals, marital); }
             <div class="cud-col">
                 <label class="csi-label" for="@(id)Mobile">Mobile Number</label>
-                <input class="csi-control" id="@(id)Mobile" name="@(p).Mobile" value="@Model.Value($"{p}.Mobile", mobile)" inputmode="numeric" maxlength="10" autocomplete="off">
+                <input class="csi-control @Invalid($"{p}.Mobile")" id="@(id)Mobile" name="@(p).Mobile" value="@Model.Value($"{p}.Mobile", mobile)" inputmode="numeric" maxlength="10" autocomplete="off" aria-invalid="@(Invalid($"{p}.Mobile") is not null ? "true" : null)" aria-describedby="@DescribedBy($"{p}.Mobile", id + "Mobile")">
+                @{ await FieldError($"{p}.Mobile", id + "Mobile"); }
             </div>
             <div class="cud-col">
                 <label class="csi-label" for="@(id)Email">E-Mail</label>
-                <input class="csi-control csi-control--caps" id="@(id)Email" name="@(p).Email" value="@Model.Value($"{p}.Email", email)" type="email" autocomplete="off">
+                <input class="csi-control csi-control--caps @Invalid($"{p}.Email")" id="@(id)Email" name="@(p).Email" value="@Model.Value($"{p}.Email", email)" type="email" autocomplete="off" aria-invalid="@(Invalid($"{p}.Email") is not null ? "true" : null)" aria-describedby="@DescribedBy($"{p}.Email", id + "Email")">
+                @{ await FieldError($"{p}.Email", id + "Email"); }
             </div>
         </div>
 
@@ -222,7 +239,7 @@
             {
                 await JointRecord(holder, h, search.Record);
                 await Documents(holder, h);
-                await JointAddress(holder, h, search.Record?.Gender ?? "");
+                await ManualEntry(holder, search.Record?.Gender ?? "");
                 await MoreInformation(holder, lists);
                 await Pep(holder, h);
             }
@@ -230,9 +247,9 @@
     }
 
     // An added joint holder's record, as the investor's card shows theirs: who they
-    // are, read-only. Their documents follow, then their addresses and what nothing
-    // read, typed - the gender where the record holds none, and the father's,
-    // mother's or spouse's name, which OCR does not read.
+    // are and where they live, read-only, in one panel. Their documents follow, then
+    // what nothing read, typed - the gender where the record holds none, and the
+    // father's, mother's or spouse's name, which OCR does not read.
     private async Task JointRecord(int holder, UploadDocumentsViewModel.DocHolder h, InvestorIdentificationViewModel.Holder? record)
     {
         var docs = Model.Docs;
@@ -259,51 +276,54 @@
                         <div class="inv-kv"><div class="inv-kv__k">PAN</div><div class="inv-kv__v">@UploadDocumentsViewModel.Mask(h.Who.Pan)</div></div>
                         <div class="inv-kv"><div class="inv-kv__k">Folio</div><div class="inv-kv__v @(onFolio ? null : "inv-kv__v--unread")">@(onFolio ? h.Who.Folio : "Opens with this application")</div></div>
                     </div>
+                    @{ await Address(h); }
                 </div>
             </div>
-
         </div>
         await Task.CompletedTask;
     }
 
-    // An added joint holder's addresses, as their folio and the documents above give
-    // them, and what nothing read, typed here.
-    private async Task JointAddress(int holder, UploadDocumentsViewModel.DocHolder h, string gender)
+    // A holder's addresses, as their folio and their documents give them: the lower
+    // part of the holder's read-only panel, under the record.
+    private async Task Address(UploadDocumentsViewModel.DocHolder h)
     {
         var docs = Model.Docs;
-        var p = $"Holder{holder}";
         var poa = docs.ReadsOf(h)[0].Card;
-        <div class="cii-record cii-record--after">
-            <div class="inv-panel inv-panel--stack">
-                <div class="inv-section-head">
-                    <div class="inv-panel__label" style="flex:1;min-width:0">Address &amp; proof of address &middot; from the folio and the @(h.Joint ? "documents above" : "documents on Upload Documents")</div>
-                    @if (!h.Joint)
-                    {
-                        <a class="inv-panel__action" asp-controller="UploadDocuments" asp-action="Index">Open documents</a>
-                    }
-                </div>
-                <div class="inv-kv-grid">
-                    <div class="inv-kv inv-kv--wide"><div class="inv-kv__k">Permanent address</div><div class="inv-kv__v">@poa.Lines</div></div>
-                    <div class="inv-kv"><div class="inv-kv__k">Permanent POA type</div><div class="inv-kv__v">@(docs.PoaTypeOf(h) is { Length: > 0 } poaType ? poaType : "—")</div></div>
-                    <div class="inv-kv"><div class="inv-kv__k">POA reference number</div><div class="inv-kv__v">@(poa.Number.Length > 0 ? poa.Number : "—")</div></div>
-                    <div class="inv-kv"><div class="inv-kv__k">POA expiry date</div><div class="inv-kv__v">@(poa.Expiry.Length > 0 ? poa.Expiry : "—")</div></div>
-                    <div class="inv-kv"><div class="inv-kv__k">Verification</div><div class="inv-kv__v">@poa.State</div></div>
-                </div>
-                <div class="inv-kv-grid inv-kv-grid--divided">
-                    @if (docs.MailDifferentOf(h))
-                    {
-                        var mail = docs.MailReadOf(h);
-                        <div class="inv-kv inv-kv--wide"><div class="inv-kv__k">Communication address</div><div class="inv-kv__v">@mail.Lines</div></div>
-                        <div class="inv-kv"><div class="inv-kv__k">Proof</div><div class="inv-kv__v">@(docs.MailTypeOf(h) is { Length: > 0 } mailType ? mailType : "—")</div></div>
-                        <div class="inv-kv"><div class="inv-kv__k">Verification</div><div class="inv-kv__v">@mail.State</div></div>
-                    }
-                    else
-                    {
-                        <div class="inv-kv inv-kv--wide"><div class="inv-kv__k">Communication address</div><div class="inv-kv__v">Same as permanent</div></div>
-                    }
-                </div>
+        <div class="inv-panel__part">
+            <div class="inv-section-head" style="padding-bottom:10px">
+                <div class="inv-panel__label" style="flex:1;min-width:0">Address &amp; proof of address &middot; from the folio and the @(h.Joint ? "documents below" : "documents on Upload Documents")</div>
+                @if (!h.Joint)
+                {
+                    <a class="inv-panel__action" asp-controller="UploadDocuments" asp-action="Index">Open documents</a>
+                }
             </div>
+            <div class="inv-kv-grid">
+                <div class="inv-kv inv-kv--wide"><div class="inv-kv__k">Permanent address</div><div class="inv-kv__v">@poa.Lines</div></div>
+                <div class="inv-kv"><div class="inv-kv__k">Permanent POA type</div><div class="inv-kv__v">@(docs.PoaTypeOf(h) is { Length: > 0 } poaType ? poaType : "—")</div></div>
+                <div class="inv-kv"><div class="inv-kv__k">POA reference number</div><div class="inv-kv__v">@(poa.Number.Length > 0 ? poa.Number : "—")</div></div>
+                <div class="inv-kv"><div class="inv-kv__k">POA expiry date</div><div class="inv-kv__v">@(poa.Expiry.Length > 0 ? poa.Expiry : "—")</div></div>
+                <div class="inv-kv"><div class="inv-kv__k">Verification</div><div class="inv-kv__v">@poa.State</div></div>
+                @if (docs.MailDifferentOf(h))
+                {
+                    var mail = docs.MailReadOf(h);
+                    <div class="inv-kv inv-kv--wide"><div class="inv-kv__k">Communication address</div><div class="inv-kv__v">@mail.Lines</div></div>
+                    <div class="inv-kv"><div class="inv-kv__k">Communication proof</div><div class="inv-kv__v">@(docs.MailTypeOf(h) is { Length: > 0 } mailType ? mailType : "—") &middot; @mail.State</div></div>
+                }
+                else
+                {
+                    <div class="inv-kv inv-kv--wide"><div class="inv-kv__k">Communication address</div><div class="inv-kv__v">Same as permanent</div></div>
+                }
+            </div>
+        </div>
+        await Task.CompletedTask;
+    }
 
+    // What nothing read for a holder, typed: the gender where the record holds
+    // none, and the father's, mother's or spouse's name, which OCR does not read.
+    private async Task ManualEntry(int holder, string gender)
+    {
+        var p = $"Holder{holder}";
+        <div class="cii-record">
             <div class="inv-manual" id="h@(holder)-manual">
                 <div class="inv-section-head">
                     <div class="inv-manual__title">@(gender.Length == 0 ? "Two fields" : "One field") could not be read for this holder</div>
@@ -315,21 +335,24 @@
                     {
                         <div class="inv-field inv-field--sm">
                             <label for="h@(holder)-gender">Gender <span class="required">*</span></label>
-                            <select id="h@(holder)-gender" name="@(p).Gender" class="inv-control" required>
+                            <select id="h@(holder)-gender" name="@(p).Gender" class="inv-control @(Invalid($"{p}.Gender") is not null ? "inv-control--error" : null)" required aria-invalid="@(Invalid($"{p}.Gender") is not null ? "true" : null)" aria-describedby="@DescribedBy($"{p}.Gender", $"h{holder}-gender")">
                                 <option value="">Select</option>
                                 @foreach (var g in Model.Docs.Ref.Genders) { if (g == Model.Value($"{p}.Gender")) { <option selected>@g</option> } else { <option>@g</option> } }
                             </select>
+                            @{ await FieldError($"{p}.Gender", $"h{holder}-gender"); }
                         </div>
                     }
                     <div class="inv-field inv-field--sm">
                         <label for="h@(holder)-nametype">Name type <span class="required">*</span></label>
-                        <select id="h@(holder)-nametype" name="@(p).NameType" class="inv-control inv-control--strong" required>
+                        <select id="h@(holder)-nametype" name="@(p).NameType" class="inv-control inv-control--strong @(Invalid($"{p}.NameType") is not null ? "inv-control--error" : null)" required aria-describedby="@DescribedBy($"{p}.NameType", $"h{holder}-nametype")">
                             @foreach (var t in Model.Docs.Ref.NameTypes) { if (t == Model.Value($"{p}.NameType", Model.Docs.Ref.NameTypes.FirstOrDefault() ?? "")) { <option selected>@t</option> } else { <option>@t</option> } }
                         </select>
+                        @{ await FieldError($"{p}.NameType", $"h{holder}-nametype"); }
                     </div>
                     <div class="inv-field inv-field--sm">
                         <label for="h@(holder)-parent">Father / Mother / Spouse name <span class="required">*</span></label>
-                        <input id="h@(holder)-parent" name="@(p).ParentName" class="inv-control" value="@Model.Value($"{p}.ParentName")" required />
+                        <input id="h@(holder)-parent" name="@(p).ParentName" class="inv-control @(Invalid($"{p}.ParentName") is not null ? "inv-control--error" : null)" value="@Model.Value($"{p}.ParentName")" required aria-invalid="@(Invalid($"{p}.ParentName") is not null ? "true" : null)" aria-describedby="@DescribedBy($"{p}.ParentName", $"h{holder}-parent")" />
+                        @{ await FieldError($"{p}.ParentName", $"h{holder}-parent"); }
                     </div>
                 </div>
             </div>
@@ -348,7 +371,7 @@
             {
                 var name = $"Holder{holder}.{field}";
                 var answer = Model.Value(name);
-                var missing = Model.PepMissing.Contains(name);
+                var missing = Model.ErrorOf(name) is not null;
                 <div class="cii-pep__row @(missing ? "is-invalid" : null)" id="pep-@name" tabindex="-1" role="radiogroup" aria-labelledby="pep-@(name)-q">
                     <span class="cii-pep__q" id="pep-@(name)-q">@question</span>
                     <div class="cii-pep__answers">
@@ -370,7 +393,7 @@
     {
         <section class="csi-card cii-ask" id="@id">
             <p class="cii-ask__q">@question</p>
-            @{ await Post(action, null, "cii-add", $"<svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" aria-hidden=\"true\"><path d=\"M12 5v14M5 12h14\"></path></svg> {label}"); }
+            @{ await Post(action, null, "cii-add", $"<svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" aria-hidden=\"true\"><path d=\"M12 5v14M5 12h14\"></path></svg> {label}"); }
         </section>
     }
 }
@@ -426,9 +449,19 @@
             @{
                 var investor = Model.Docs.Investor;
                 var investorGender = Model.Docs.HolderGender;
+                var investorPhoto = Model.Docs.State.Docs.GetValueOrDefault(investor.Key("photo"));
             }
             <div class="cii-record">
                 <div class="inv-panel inv-ckyc">
+                    @* The photograph filed on Upload Documents, as a joint holder's card shows theirs. *@
+                    @if (investorPhoto is { Before: false })
+                    {
+                        <img class="inv-ckyc__photo inv-ckyc__photo--img" src="@Url.Action("Copy", "UploadDocuments", new { slot = investor.Key("photo"), v = investorPhoto.GetHashCode() })" alt="@(investor.Who.Name)'s photograph">
+                    }
+                    else
+                    {
+                        <div class="inv-ckyc__photo">Photo<br />@(Model.Docs.View(UploadDocumentsViewModel.PhotoSlot, investor).Used ? "not uploaded" : "on the folio")</div>
+                    }
                     <div style="flex:1;min-width:0">
                         <div class="inv-panel__label" style="padding-bottom:10px">From the application &middot; read-only</div>
                         <div class="inv-kv-grid">
@@ -438,10 +471,11 @@
                             <div class="inv-kv"><div class="inv-kv__k">PAN</div><div class="inv-kv__v">@Model.Docs.HolderPan</div></div>
                             <div class="inv-kv"><div class="inv-kv__k">Folio</div><div class="inv-kv__v">@Model.Docs.HolderFolio</div></div>
                         </div>
+                        @{ await Address(investor); }
                     </div>
                 </div>
             </div>
-            @{ await JointAddress(1, investor, investorGender); }
+            @{ await ManualEntry(1, investorGender); }
             @{ await MoreInformation(1, lists); }
             @{ await Pep(1, Model.Docs.Investor); }
         </section>
@@ -471,17 +505,19 @@
                 <div class="cud-grid">
                     <div class="cud-col">
                         <label class="csi-label" for="ciiNomName">Name</label>
-                        <input class="csi-control" id="ciiNomName" name="Nominee.Name" value="@Model.Value("Nominee.Name")" autocomplete="off">
+                        <input class="csi-control @Invalid("Nominee.Name")" id="ciiNomName" name="Nominee.Name" value="@Model.Value("Nominee.Name")" autocomplete="off" aria-invalid="@(Invalid("Nominee.Name") is not null ? "true" : null)" aria-describedby="@DescribedBy("Nominee.Name", "ciiNomName")">
+                        @{ await FieldError("Nominee.Name", "ciiNomName"); }
                     </div>
                     <div class="cud-col">
                         <span class="csi-label" id="ciiNomDobLabel">Date Of Birth</span>
-                        <div class="csi-date" role="group" aria-labelledby="ciiNomDobLabel">
-                            <input class="csi-date__part" name="Nominee.Dd" value="@Model.Value("Nominee.Dd")" inputmode="numeric" maxlength="2" placeholder="DD" aria-label="Day" autocomplete="off">
+                        <div class="csi-date @Invalid("Nominee.Dob")" role="group" aria-labelledby="ciiNomDobLabel" aria-describedby="@DescribedBy("Nominee.Dob", "ciiNomDd")">
+                            <input class="csi-date__part" id="ciiNomDd" name="Nominee.Dd" value="@Model.Value("Nominee.Dd")" inputmode="numeric" maxlength="2" placeholder="DD" aria-label="Day" autocomplete="off">
                             <span class="csi-date__sep">/</span>
                             <input class="csi-date__part" name="Nominee.Mm" value="@Model.Value("Nominee.Mm")" inputmode="numeric" maxlength="2" placeholder="MM" aria-label="Month" autocomplete="off">
                             <span class="csi-date__sep">/</span>
                             <input class="csi-date__part csi-date__part--year" name="Nominee.Yyyy" value="@Model.Value("Nominee.Yyyy")" inputmode="numeric" maxlength="4" placeholder="YYYY" aria-label="Year" autocomplete="off">
                         </div>
+                        @{ await FieldError("Nominee.Dob", "ciiNomDd"); }
                     </div>
                     @{ await Select("ciiNomRelation", "Nominee.Relation", "Relation with primary holder", relations); }
                 </div>
@@ -495,15 +531,16 @@
                 <div class="cud-grid">
                     <div class="cud-col">
                         <label class="csi-label" for="ciiNomGuardian">Guardian Name</label>
-                        <input class="csi-control" id="ciiNomGuardian" name="Nominee.GuardianName" value="@Model.Value("Nominee.GuardianName")" autocomplete="off">
+                        <input class="csi-control @Invalid("Nominee.GuardianName")" id="ciiNomGuardian" name="Nominee.GuardianName" value="@Model.Value("Nominee.GuardianName")" autocomplete="off" aria-invalid="@(Invalid("Nominee.GuardianName") is not null ? "true" : null)" aria-describedby="@DescribedBy("Nominee.GuardianName", "ciiNomGuardian")">
+                        @{ await FieldError("Nominee.GuardianName", "ciiNomGuardian"); }
                     </div>
                 </div>
                 <div class="cud-grid">
-                    <div class="cud-col"><label class="csi-label" for="ciiGdn1">Address Line 1</label><input class="csi-control" id="ciiGdn1" name="Nominee.GuardianAddress.Line1" value="@Model.Value("Nominee.GuardianAddress.Line1")"></div>
+                    <div class="cud-col"><label class="csi-label" for="ciiGdn1">Address Line 1</label><input class="csi-control @Invalid("Nominee.GuardianAddress.Line1")" id="ciiGdn1" name="Nominee.GuardianAddress.Line1" value="@Model.Value("Nominee.GuardianAddress.Line1")" aria-invalid="@(Invalid("Nominee.GuardianAddress.Line1") is not null ? "true" : null)" aria-describedby="@DescribedBy("Nominee.GuardianAddress.Line1", "ciiGdn1")">@{ await FieldError("Nominee.GuardianAddress.Line1", "ciiGdn1"); }</div>
                     <div class="cud-col"><label class="csi-label" for="ciiGdn2">Address Line 2 (Non-mandatory)</label><input class="csi-control" id="ciiGdn2" name="Nominee.GuardianAddress.Line2" value="@Model.Value("Nominee.GuardianAddress.Line2")"></div>
                     <div class="cud-col"><label class="csi-label" for="ciiGdn3">Address Line 3 (Non-mandatory)</label><input class="csi-control" id="ciiGdn3" name="Nominee.GuardianAddress.Line3" value="@Model.Value("Nominee.GuardianAddress.Line3")"></div>
-                    <div class="cud-col"><label class="csi-label" for="ciiGdnPin">Pin Code</label><input class="csi-control" id="ciiGdnPin" name="Nominee.GuardianAddress.PinCode" value="@Model.Value("Nominee.GuardianAddress.PinCode")" inputmode="numeric" maxlength="6"></div>
-                    <div class="cud-col"><label class="csi-label" for="ciiGdnCity">City</label><input class="csi-control" id="ciiGdnCity" name="Nominee.GuardianAddress.City" value="@Model.Value("Nominee.GuardianAddress.City")"></div>
+                    <div class="cud-col"><label class="csi-label" for="ciiGdnPin">Pin Code</label><input class="csi-control @Invalid("Nominee.GuardianAddress.PinCode")" id="ciiGdnPin" name="Nominee.GuardianAddress.PinCode" value="@Model.Value("Nominee.GuardianAddress.PinCode")" inputmode="numeric" maxlength="6" aria-invalid="@(Invalid("Nominee.GuardianAddress.PinCode") is not null ? "true" : null)" aria-describedby="@DescribedBy("Nominee.GuardianAddress.PinCode", "ciiGdnPin")">@{ await FieldError("Nominee.GuardianAddress.PinCode", "ciiGdnPin"); }</div>
+                    <div class="cud-col"><label class="csi-label" for="ciiGdnCity">City</label><input class="csi-control @Invalid("Nominee.GuardianAddress.City")" id="ciiGdnCity" name="Nominee.GuardianAddress.City" value="@Model.Value("Nominee.GuardianAddress.City")" aria-invalid="@(Invalid("Nominee.GuardianAddress.City") is not null ? "true" : null)" aria-describedby="@DescribedBy("Nominee.GuardianAddress.City", "ciiGdnCity")">@{ await FieldError("Nominee.GuardianAddress.City", "ciiGdnCity"); }</div>
                 </div>
                 <p class="cii-note">District- , State-</p>
                 </fieldset>

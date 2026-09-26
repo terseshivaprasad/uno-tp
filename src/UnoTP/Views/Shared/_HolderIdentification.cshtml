@@ -145,60 +145,52 @@
 }
 else
 {
-    @* The record, laid out on the page. The old site put the match behind a
-       "Please make a selection" dialog. *@
-    <div class="csi-result">
+    @* The record, laid out on the page as the later steps lay out what was read:
+       one read-only panel. The old site put the match behind a "Please make a
+       selection" dialog. *@
+    // A folio found is an existing customer, so the folio beside the name says it;
+    // only a new investor, or one not identified, is named as such, with what
+    // happens next under the record.
+    var said = newPan ? Model.NewPanNote : r.Folio.Length > 0 ? null : m.Detail;
+    <div class="inv-panel csi-result">
         <div class="csi-result__head">
-            <span class="csi-avatar @(r.Initials.Length > 0 ? "csi-avatar--initials" : null)" aria-hidden="true">
-                <svg class="csi-avatar__figure" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="4"></circle><path d="M4.5 20.5a7.5 7.5 0 0 1 15 0"></path></svg>
-                <span class="csi-avatar__initials">@r.Initials</span>
-            </span>
-            <div class="csi-result__who">
-                <div class="csi-result__name">@(Model.KnownName is { Length: > 0 } known ? known : r.Heading)</div>
-                <div class="csi-result__meta">
-                    @if (r.Id is not null)
-                    {
-                        <span class="csi-result__id">@r.Id</span>
-                    }
-                    @{
-                        var kind = newPan ? "New investor" : m.Kind;
-                    }
-                    <span class="csi-chip @(kind switch { "Existing customer" => "csi-chip--success", "New investor" => "csi-chip--new", _ => null })">@kind</span>
-                    <span class="csi-result__detail">@(newPan ? Model.NewPanNote : m.Detail)</span>
-                </div>
-            </div>
+            <span class="csi-result__name">@(Model.KnownName is { Length: > 0 } known ? known : r.Heading)</span>
+            @if (r.Folio.Length > 0)
+            {
+                <span class="csi-result__tag">Folio @r.Folio</span>
+            }
+            else
+            {
+                <span class="csi-result__tag csi-result__tag--new">@(newPan ? "New investor" : m.Kind)</span>
+            }
             @* Back to the fields, still holding what was typed. *@
-            @{ await Again("csi-again", "<svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"10.5\" cy=\"10.5\" r=\"6.5\"></circle><path d=\"M15.5 15.5L20 20\"></path></svg> Search again"); }
+            @{ await Again("csi-check csi-result__again", "<svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"10.5\" cy=\"10.5\" r=\"6.5\"></circle><path d=\"M15.5 15.5L20 20\"></path></svg> Search again"); }
         </div>
-
-        <dl class="csi-record">
-            <div class="csi-record__item"><dt>PAN</dt><dd>@r.MaskedPan</dd></div>
-            <div class="csi-record__item"><dt>Date of birth</dt><dd>@r.MaskedDob</dd></div>
+        <div class="inv-kv-grid">
+            <div class="inv-kv"><div class="inv-kv__k">PAN</div><div class="inv-kv__v">@r.MaskedPan</div></div>
+            <div class="inv-kv"><div class="inv-kv__k">Date of birth</div><div class="inv-kv__v">@r.MaskedDob</div></div>
             @* Gender is held against the folio and is not the partner's to change
-               here, so the card says where a correction comes from. *@
+               here, so the panel says where a correction comes from. *@
             @if (r.Gender.Length > 0)
             {
-                <div class="csi-record__item">
-                    <dt>
-                        Gender
-                        <svg class="csi-record__lock" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9.5" rx="1.5"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>
-                    </dt>
-                    <dd>@r.Gender</dd>
-                    <p class="csi-record__hint">Held on the folio &mdash; Operations can correct it</p>
+                <div class="inv-kv">
+                    <div class="inv-kv__k">Gender</div>
+                    <div class="inv-kv__v">@r.Gender</div>
+                    <div class="inv-kv__note">Held on the folio &mdash; Operations can correct it</div>
                 </div>
             }
-            @if (r.Note.Length > 0)
-            {
-                <div class="csi-record__item"><dt>KYC</dt><dd>@r.Note</dd></div>
-            }
-        </dl>
+        </div>
+        @if (said is { Length: > 0 })
+        {
+            <p class="csi-result__said">@said</p>
+        }
 
         @if (m.Identified)
         {
             @* What the register holds against this record, item by item. Anything
                missing is asked for again during entry, so it is said here rather
                than left for the upload step to spring. *@
-            <div class="csi-onrecord @(r.Missing == 0 ? "csi-onrecord--complete" : null)">
+            <div class="inv-panel__part csi-onrecord @(r.Missing == 0 ? "csi-onrecord--complete" : null)">
                 <div class="csi-onrecord__label">@r.OnRecordTitle</div>
                 <ul class="csi-onrecord__list">
                     @foreach (var item in r.OnRecord)

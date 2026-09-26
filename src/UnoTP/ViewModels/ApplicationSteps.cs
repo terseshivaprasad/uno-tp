@@ -113,13 +113,23 @@ public sealed class BankForm
         return form;
     }
 
-    /// <summary>The form as the backend saves it: typed, whether finished or not.</summary>
+    /// <summary>
+    /// Whether the repayment account is the payment account. Only a cheque names an
+    /// account the deposit is paid from, so paid any other way it never is.
+    /// </summary>
+    public bool RepaysToPayment(bool byCheque) => byCheque && Repayment.SameAsPayment;
+
+    /// <summary>
+    /// The form as the backend saves it: typed, whether finished or not. The paying
+    /// account and the cheque are kept only when the deposit is paid by cheque.
+    /// </summary>
     public PaymentDetails ToDetails(bool byCheque)
     {
-        var payment = new BankAccount(Payment.CleanIfsc, Payment.CleanAccount);
-        var repayment = Repayment.SameAsPayment ? payment : new BankAccount(Repayment.CleanIfsc, Repayment.CleanAccount);
+        var payment = byCheque ? new BankAccount(Payment.CleanIfsc, Payment.CleanAccount) : null;
+        var same = RepaysToPayment(byCheque);
+        var repayment = same ? payment : new BankAccount(Repayment.CleanIfsc, Repayment.CleanAccount);
         var cheque = byCheque ? new ChequeDetails(Cheque.Number.Trim(), ChequeDay ?? Cheque.Date.Trim(), Cheque.CmsLocation) : null;
-        return new PaymentDetails(payment, repayment, Repayment.SameAsPayment, cheque);
+        return new PaymentDetails(payment, repayment, same, cheque);
     }
 
     /// <summary>The cheque date as dd-MM-yyyy, or null when it is not a date.</summary>
@@ -133,18 +143,18 @@ public sealed class BankForm
         var problems = new Dictionary<string, string>();
         void Account(AccountForm a, string key, BankBranch? branch)
         {
-            if (a.CleanIfsc.Length == 0) problems[key + ".Ifsc"] = "Enter the IFSC";
-            else if (branch is null) problems[key + ".Ifsc"] = "No branch has this IFSC — check it against the cheque";
+            if (a.CleanIfsc.Length == 0) problems[key + ".Ifsc"] = "Search for the bank and pick its branch";
+            else if (branch is null) problems[key + ".Ifsc"] = "No branch has this IFSC — pick one from the search, or check it against the cheque";
             if (a.CleanAccount.Length is < 6 or > 18) problems[key + ".AccountNumber"] = "Enter the account number, 6 to 18 digits";
             else if (new string(a.AccountNumberConfirm.Where(char.IsAsciiDigit).ToArray()) != a.CleanAccount) problems[key + ".AccountNumberConfirm"] = "Does not match the account number";
         }
-        Account(Payment, "Payment", paymentBranch);
-        if (!Repayment.SameAsPayment) Account(Repayment, "Repayment", repaymentBranch);
+        if (byCheque) Account(Payment, "Payment", paymentBranch);
+        if (!RepaysToPayment(byCheque)) Account(Repayment, "Repayment", repaymentBranch);
         if (byCheque)
         {
             if (Cheque.Number.Trim() is not { Length: 6 } n || !n.All(char.IsAsciiDigit)) problems["Cheque.Number"] = "Enter the six-digit cheque number";
             if (ChequeDay is null) problems["Cheque.Date"] = "Enter the cheque date";
-            if (!cmsLocations.Contains(Cheque.CmsLocation)) problems["Cheque.CmsLocation"] = "Choose the Axis CMS location";
+            if (!cmsLocations.Contains(Cheque.CmsLocation)) problems["Cheque.CmsLocation"] = Cheque.CmsLocation.Trim().Length == 0 ? "Enter the Axis CMS branch" : "Choose an Axis CMS branch from the list";
         }
         return problems;
     }
@@ -167,10 +177,16 @@ public sealed class BankDetailsViewModel(UploadDocumentsViewModel docs, BankForm
     /// <summary>Paid by an instrument - a cheque - rather than electronically.</summary>
     public bool ByCheque => PayMode.Length > 0 && Docs.DocumentOf(PayMode) is not null;
 
+    /// <summary>Whether interest and the maturity amount go back to the account the cheque is drawn on.</summary>
+    public bool SameAsPayment => Form.RepaysToPayment(ByCheque);
+
     /// <summary>What the cheque filed on Upload Documents was read to say, if one is filed.</summary>
     public ReadCard? ChequeRead => Docs.State.Docs.ContainsKey("payment") ? Docs.State.Reads.GetValueOrDefault("payment") : null;
 
     public IReadOnlyList<string> CmsLocations => Docs.Ref.CmsLocations;
+
+    /// <summary>The test branches, while test data is on and the backend has them.</summary>
+    public DemoBanks? Demo { get; init; }
 }
 
 // ===== FD Configuration ======================================================

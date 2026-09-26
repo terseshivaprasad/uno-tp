@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using UnoTP.Backend;
 using UnoTP.Features;
@@ -9,8 +10,10 @@ namespace UnoTP.Controllers;
 /// Investor Identification, the first classic wizard step: the primary holder is
 /// taken through <see cref="HolderSearch"/>. Every step is a post, and every post
 /// redirects back to the bare page address: what was typed and what the check found
-/// are kept in the session, never in the address, so no PAN, date of birth or name
-/// reaches a log, the history or a Referer header.
+/// are kept in the browser's encrypted TempData cookie until Proceed - never in the
+/// address, so no PAN, date of birth or name reaches a log, the history or a
+/// Referer header, and never in the server's session. Proceed opens the
+/// application in the backend, which keeps it and everything on it from then on.
 /// </summary>
 [RequiresFeature("new-fd")]
 [Route("Purchase/InvestorIdentification")]
@@ -22,10 +25,15 @@ public class InvestorIdentificationController(
 {
     private const string SearchKey = "search";
 
+    // Peeked, not read, so it stays until the page replaces or clears it.
     private SearchState? Saved
     {
-        get => HttpContext.Session.Read<SearchState>(SearchKey);
-        set => HttpContext.Session.Write(SearchKey, value);
+        get => TempData.Peek(SearchKey) is string json ? JsonSerializer.Deserialize<SearchState>(json) : null;
+        set
+        {
+            if (value is null) TempData.Remove(SearchKey);
+            else TempData[SearchKey] = JsonSerializer.Serialize(value);
+        }
     }
 
     /// <summary>The page as the session left it: blank, being filled in, or checked.</summary>
@@ -66,8 +74,8 @@ public class InvestorIdentificationController(
     /// <summary>
     /// Opens the application and carries the holder to the upload step, once the
     /// register has found them or holds no folio against their PAN - whose PAN copy
-    /// is then filed and put to NSDL on the upload step. The application is held on the server; the upload step finds it
-    /// through the session.
+    /// is then filed and put to NSDL on the upload step. The application is held by
+    /// the backend; the upload step finds it by the number in its address.
     /// </summary>
     [HttpPost("proceed")]
     public async Task<IActionResult> Proceed()
@@ -90,13 +98,12 @@ public class InvestorIdentificationController(
         return Opened(await applications.FindAsync(d.AppNo));
     }
 
-    // The upload step finds the application through the session.
+    // The upload step finds the application by the number in its address.
     private IActionResult Opened(Application? app)
     {
         if (app is null) return Back();
-        HttpContext.Session.SetCurrentApplication(app.AppNo);
         Saved = null;
-        return RedirectToAction(nameof(UploadDocumentsController.Index), "UploadDocuments");
+        return RedirectToAction(nameof(UploadDocumentsController.Index), "UploadDocuments", new { appNo = app.AppNo });
     }
 
     // The page again, at its bare address.

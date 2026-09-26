@@ -31,8 +31,14 @@ public sealed class BackendClient(HttpClient http, IPartner partner)
     public Task<BankBranch?> BranchAsync(string ifsc, CancellationToken ct = default) =>
         Get<BankBranch>($"ifsc/{Seg(ifsc)}", ct);
 
+    public async Task<IReadOnlyList<BankBranch>> SearchBranchesAsync(string query, CancellationToken ct = default) =>
+        await List<BankBranch>($"ifsc?q={Seg(query)}", ct);
+
     public Task<DemoCases?> CasesAsync(CancellationToken ct = default) =>
         Get<DemoCases>("demo/cases", ct);
+
+    public Task<DemoBanks?> BanksAsync(CancellationToken ct = default) =>
+        Get<DemoBanks>("demo/banks", ct);
 
     // ----- Entry -------------------------------------------------------------
 
@@ -74,6 +80,15 @@ public sealed class BackendClient(HttpClient http, IPartner partner)
         if (response.StatusCode is HttpStatusCode.Conflict or HttpStatusCode.PreconditionFailed) return null;
         response.EnsureSuccessStatusCode();
         return (await Read<Saved>(response, ct)).Version;
+    }
+
+    public async Task<bool> SavePageAsync(string appNo, string page, string state, CancellationToken ct = default)
+    {
+        using var request = Request(HttpMethod.Put, $"applications/{Seg(appNo)}/pages/{Seg(page)}", Body(new { state }));
+        using var response = await SendAsync(request, ct);
+        if (response.StatusCode == HttpStatusCode.NotFound) return false;
+        response.EnsureSuccessStatusCode();
+        return true;
     }
 
     public Task<int?> SaveDetailsAsync(string appNo, int version, ApplicationDetails details, CancellationToken ct = default) =>

@@ -27,6 +27,10 @@ builder.Services.AddControllersWithViews(options =>
     options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
 });
 builder.Services.AddSingleton<AppUrls>();
+// A wizard step's address carries the application's number, and every link and
+// redirect to another step carries it on (see ApplicationUrls).
+builder.Services.AddSingleton<Microsoft.AspNetCore.Mvc.Routing.IUrlHelperFactory>(
+    new ApplicationUrlHelperFactory(new Microsoft.AspNetCore.Mvc.Routing.UrlHelperFactory()));
 // All data comes from the backend API, and every outside check - NSDL, document
 // identification, masking, OCR, verification, the PAN-Aadhaar link - from a
 // service of its own. With no Backend:BaseUrl set, the mock answers for all of
@@ -46,10 +50,16 @@ builder.Services.AddScoped<UnoTP.Models.ConsoleState>();
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<Lookups>();
 
-// Who the partner is and the application they are on (see PartnerSession).
+// Who the partner is - the sign-in, and nothing else (see PartnerSession). The
+// application and everything on it are the backend's, for audit; the application a
+// page is on is in its address (see ApplicationUrls).
 builder.Services.AddDistributedMemoryCache();
-// The app's cookies all carry its name - unotp.session, unotp.antiforgery and
-// unotp.ff (FeatureSet) - so they are told apart from other apps' on the same host.
+// The app's cookies all carry its name - unotp.session, unotp.antiforgery,
+// unotp.tempdata and unotp.ff (FeatureSet) - so they are told apart from other
+// apps' on the same host. Outside Development every one is Secure whatever the
+// request looks like, so none can go over plain HTTP even if the proxy's forwarded
+// scheme is lost; Development runs on http://localhost, so there they follow it.
+var cookieSecure = builder.Environment.IsDevelopment() ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
 builder.Services.AddSession(options =>
 {
     options.Cookie.Name = "unotp.session";
@@ -58,14 +68,25 @@ builder.Services.AddSession(options =>
     // cookie is withheld on that redirect chain, so the partner would arrive with
     // no session. Lax still keeps it off cross-site posts; antiforgery guards them too.
     options.Cookie.SameSite = SameSiteMode.Lax;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    options.Cookie.SecurePolicy = cookieSecure;
     options.Cookie.IsEssential = true;
 });
 
 builder.Services.AddAntiforgery(options =>
 {
     options.Cookie.Name = "unotp.antiforgery";
-    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    options.Cookie.SecurePolicy = cookieSecure;
+});
+
+// TempData rides in a cookie encrypted with the keys below: the search typed on
+// Investor Identification until Proceed, and what a post has to say once.
+builder.Services.Configure<Microsoft.AspNetCore.Mvc.CookieTempDataProviderOptions>(options =>
+{
+    options.Cookie.Name = "unotp.tempdata";
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.Cookie.SecurePolicy = cookieSecure;
+    options.Cookie.IsEssential = true;
 });
 
 // Behind Render's proxy, which ends TLS: the scheme and client address it forwards
@@ -149,16 +170,16 @@ else
 
 // No UseHttpsRedirection: Render terminates TLS at the edge and forwards plain HTTP to the container.
 
-// The pages carry no cache headers of their own, so Safari holds on to a copy and
-// serves old markup against freshly versioned scripts - the script then looks for
-// elements the cached page does not have and the screen stops responding. The
-// markup is rendered from mock data on every request anyway, so none of it is
-// worth caching.
+// Pages and JSON are never kept by the browser or anything between: they carry an
+// investor's name, address, PAN and account details, which must not be left in a
+// cache on a shared computer. And a page held on to is served as old markup against
+// freshly versioned scripts, which then look for elements it does not have.
 app.Use(async (context, next) =>
 {
     context.Response.OnStarting(() =>
     {
-        if (context.Response.ContentType?.StartsWith("text/html", StringComparison.OrdinalIgnoreCase) == true)
+        var type = context.Response.ContentType;
+        if (type is not null && (type.StartsWith("text/html", StringComparison.OrdinalIgnoreCase) || type.StartsWith("application/json", StringComparison.OrdinalIgnoreCase)))
         {
             context.Response.Headers.CacheControl = "no-store, no-cache, must-revalidate";
             context.Response.Headers.Pragma = "no-cache";
@@ -215,6 +236,10 @@ foreach (var archived in new[] { "/Apps/UnoTp/Dashboard/{**rest}", "/Apps/UnoTp/
 // Its later wizard steps are served again (ApplicationController); its first two are
 // the classic Investor Identification and Upload Documents.
 app.MapGet("/Apps/UnoTp/Application/HolderIdentification", () => Results.LocalRedirect("~/Purchase/InvestorIdentification"));
-app.MapGet("/Apps/UnoTp/Application/UploadDocuments", () => Results.LocalRedirect("~/Apps/UnoTp/Classic/UploadDocuments"));
+// An address with no application in it has none to open: the way in is a search.
+foreach (var bare in new[] { "/Apps/UnoTp/Application/UploadDocuments", "/Apps/UnoTp/Classic/UploadDocuments" })
+{
+    app.MapGet(bare, () => Results.LocalRedirect("~/Purchase/InvestorIdentification"));
+}
 
 app.Run();

@@ -15,13 +15,26 @@
 <div class="csi">
     <partial name="_ClassicSteps" model="0" />
 
-    <div class="csi-card">
-        <h1 class="csi-card__title">Enter Basic Information</h1>
+    <div class="csi-main">
+    <section class="csi-card cii-card">
+        <div class="cii-head"><h1 class="cii-title">Enter Basic Information</h1></div>
 
-        @* On a wide screen the Note stands beside the investor rather than under
-           it, so the drafts come up by its height; narrower, it drops back below. *@
-        <div class="csi-split">
-        <section class="csi-holder csi-split__main">
+        @* What the partner is told before anything is searched, across the card as
+           the later steps give their notes. *@
+        <div class="csi-note csi-note--banner">
+            <svg class="csi-note__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 11v6"></path><circle cx="12" cy="7.5" r=".7" fill="currentColor"></circle></svg>
+            <div class="csi-note__body">
+                <div class="csi-note__title">Note</div>
+                <ul>
+                    @foreach (var n in (await Lookups.ReferenceAsync()).IdentificationNotes)
+                    {
+                        <li>@n</li>
+                    }
+                </ul>
+            </div>
+        </div>
+
+        <section class="csi-holder">
             <div class="csi-holder__head">
                 <span class="csi-holder__no">1</span>
                 <span class="csi-holder__name">Investor</span>
@@ -32,29 +45,19 @@
             <partial name="_HolderIdentification" model="@(new HolderIdentificationBlock(Model, "csi", step => Url.Action(step)!,
                 NewPanNote: "No folio against this PAN: a new application opens, and the PAN copy is checked with NSDL on Upload Documents."))" />
         </section>
+    </section>
 
-        <aside class="csi-split__side">
-            <div class="csi-note">
-                <svg class="csi-note__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 11v6"></path><circle cx="12" cy="7.5" r=".7" fill="currentColor"></circle></svg>
-                <div class="csi-note__body">
-                    <div class="csi-note__title">Note</div>
-                    <ul>
-                        @foreach (var n in (await Lookups.ReferenceAsync()).IdentificationNotes)
-                        {
-                            <li>@n</li>
-                        }
-                    </ul>
-                </div>
-            </div>
-        </aside>
-        </div>
-
-    <section class="csi-drafts">
-        <div class="csi-drafts__head">
-            <h2 class="csi-drafts__title">Continue an incomplete application</h2>
-            <p class="csi-drafts__sub">@Model.Drafts.Count most recent saved and not submitted &middot; identifiers are masked &middot; a draft is kept for @((await Lookups.ConfigAsync()).DraftDays) days</p>
-        </div>
-        <table class="csi-drafts__table">
+    @* Only the partner's own applications, opened here and not yet submitted. *@
+    <section class="csi-card cii-card">
+        <div class="cii-head"><h2 class="cii-title">Continue an Incomplete Application</h2></div>
+        @if (Model.Drafts.Count == 0)
+        {
+            <p class="cii-note">No application is waiting to be finished. One opened below and left before it is submitted is listed here, kept for @((await Lookups.ConfigAsync()).DraftDays) days.</p>
+        }
+        else
+        {
+        <p class="cii-note">@Model.Drafts.Count opened and not submitted, the one touched last first &middot; identifiers are masked &middot; kept for @((await Lookups.ConfigAsync()).DraftDays) days</p>
+        <table class="su-table">
             <thead>
                 <tr>
                     <th scope="col">Application</th>
@@ -74,7 +77,7 @@
                         <td data-label="PAN">@d.Pan</td>
                         <td data-label="Date of birth">@d.Dob</td>
                         <td data-label="Amount">@PayInSlipViewModel.Rupees(d.Amount)</td>
-                        <td class="csi-drafts__act">
+                        <td class="su-table__act">
                             @* Picked up under the number it was opened with, holder in full. *@
                             @* Only the draft's number is posted, and the server checks it is one of this partner's. *@
                             <form method="post" asp-action="Continue" data-partial>
@@ -86,6 +89,7 @@
                 }
             </tbody>
         </table>
+        }
     </section>
 
     @if (Model.Demo is { } demo)
