@@ -169,8 +169,6 @@ a.app-tile:hover { text-decoration: none; }
    no accent rule, the red lead sentence carries the signal. */
 .callout--mint { border-left: none; background: var(--green-bg); border-radius: 6px; }
 .callout--sm { padding: 10px 13px; border-radius: 6px; gap: 4px; font-size: 11px; line-height: 1.5; }
- which (being an author rule) otherwise beats the
-   browser's default [hidden]{display:none}
 
 .seg-toggle { display: inline-flex; border: 1px solid var(--border-3); border-radius: 6px; overflow: hidden; flex: none; }
 .seg-toggle__opt { padding: 8px 20px; font-size: 12.5px; font-weight: 500; background: #fff; color: var(--text); white-space: nowrap; border: 0; cursor: pointer; font-family: inherit; }
