@@ -266,3 +266,6 @@ app.MapGet("/Apps/UnoTp/Application/{appNo}/{step}", (string appNo, string step,
         : Results.NotFound());
 
 app.Run();
+
+// So a test host (WebApplicationFactory<Program>) can start the app as it runs.
+public partial class Program;
