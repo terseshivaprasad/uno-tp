@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.Net;
 
-namespace UnoTP.Features;
+namespace UnoTP.Infrastructure;
 
 /// <summary>
 /// Catches whatever a page lets through. Every failure is logged once, with the
@@ -32,7 +32,7 @@ public sealed class GlobalExceptionMiddleware(RequestDelegate next, ILogger<Glob
             {
                 log.LogInformation("The backend ended the session, {Method} {Path} (ref {Reference}).", ctx.Request.Method, ctx.Request.Path, reference);
                 ctx.Response.Clear();
-                ctx.Response.Redirect($"{ctx.Request.PathBase}/Home/SessionExpired");
+                ctx.Response.Redirect($"{ctx.Request.PathBase}/unotp/session-expired");
                 return;
             }
 
@@ -51,7 +51,7 @@ public sealed class GlobalExceptionMiddleware(RequestDelegate next, ILogger<Glob
             // The error page, drawn by the app as any page is: the request is sent
             // through again as a GET for /Error, found afresh by routing.
             var (path, method) = (ctx.Request.Path, ctx.Request.Method);
-            ctx.Request.Path = "/Error";
+            ctx.Request.Path = "/unotp/error";
             ctx.Request.Method = HttpMethods.Get;
             ctx.SetEndpoint(null);
             ctx.Request.RouteValues.Clear();

@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
 using UnoTP.Models;
 
-namespace UnoTP.Features;
+namespace UnoTP.Infrastructure;
 
 /// <summary>
 /// Names the console feature a controller or action belongs to (see
@@ -40,7 +40,7 @@ public sealed class FeatureGate : IAsyncActionFilter
             // A feature the user's menu does not open is not theirs to reach at all.
             if (features.NotInMenu.Contains(key))
             {
-                context.Result = new RedirectToActionResult("Unauthorized", "Home", new { feature = key });
+                context.Result = new RedirectToActionResult("Unauthorized", "Entry", new { feature = key });
                 return;
             }
             var board = await services.GetRequiredService<ConsoleState>().BoardAsync();

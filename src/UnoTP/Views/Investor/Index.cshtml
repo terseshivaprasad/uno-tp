@@ -1,11 +1,11 @@
-@model InvestorInfoViewModel
+@model InvestorViewModel
 @{
     ViewData["Title"] = "Investor Information";
 
     // The old WA_FD_UNOTP/InvestorInformation: a card for the investor, one for each
     // joint holder added, and one for the nominee, down one column. The page is one
     // form, and every button posts all of it, so nothing typed is lost to a post
-    // about something else (see InvestorInfoController).
+    // about something else (see InvestorController).
     // Every list the page offers, from the backend.
     var reference = Model.Docs.Ref;
     var lists = new Lists(reference.IncomeBands, reference.Occupations, reference.SubOccupations, reference.MaritalStatuses);
@@ -102,7 +102,7 @@
 
     // A proof's label: with document identification, the type the copy was
     // identified as beside it; without, the drop-down the type is chosen from first.
-    private async Task ProofLabel(UploadDocumentsViewModel.DocHolder h, string field, string label, bool used, string type)
+    private async Task ProofLabel(DocumentsViewModel.DocHolder h, string field, string label, bool used, string type)
     {
         if (Model.Docs.AutoProofType)
         {
@@ -116,7 +116,7 @@
             <div class="cud-select">
                 <select class="csi-control @(error is null ? null : "is-invalid")" id="@key" name="@key" disabled="@(!used)" data-submit="refresh-@h.Code">
                     <option value="">@(used ? "Select" : "Not Applicable")</option>
-                    @foreach (var p in Model.Docs.ProofsOfAddress)
+                    @foreach (var p in Model.Docs.ProofsFor(field == "poaType" ? DocumentsViewModel.PoaSlot.Key : DocumentsViewModel.MailSlot.Key))
                     {
                         <option value="@p" selected="@(type == p)">@p</option>
                     }
@@ -136,13 +136,14 @@
     // what was read. Every holder's attempts are at the foot of the page. Where post
     // goes stands beside the heading, as it stands beside the application type for
     // the investor; the refresh button it posts through is shown only without a script.
-    private async Task Documents(int holder, UploadDocumentsViewModel.DocHolder h)
+    private async Task Documents(int holder, DocumentsViewModel.DocHolder h)
     {
         var docs = Model.Docs;
         var upload = Url.Action("JointUpload", new { n = holder })!;
-        var pan = docs.View(UploadDocumentsViewModel.PanSlot, h);
-        var poa = docs.View(UploadDocumentsViewModel.PoaSlot, h);
-        var mail = docs.View(UploadDocumentsViewModel.MailSlot, h);
+        var pan = docs.View(DocumentsViewModel.PanSlot, h);
+        var poa = docs.View(DocumentsViewModel.PoaSlot, h);
+        var mail = docs.View(DocumentsViewModel.MailSlot, h);
+        var panReads = new ReadCardsBlock(docs.PanReadsOf(h), Url.Action("JointNsdl", new { n = holder }));
         var different = docs.MailDifferentOf(h);
         var canDiffer = docs.MailCanDiffer(h);
         var mailingLabel = $"cii{holder}MailingLabel";
@@ -157,7 +158,7 @@
                         var on = different == (value == "different");
                         var shut = value == "different" && !canDiffer;
                         <label class="seg-toggle__opt" title="@(shut ? mail.NotApplicable : null)">
-                            <input class="visually-hidden" type="radio" name="@h.Key("mailing")" id="@h.Key("mailing")-@value" value="@value" checked="@on" disabled="@shut" data-submit="refresh-@h.Code" data-confirm="@(value == "same" && !on && mail.Doc is not null ? UploadDocumentsViewModel.MailDropAsk : null)">@label
+                            <input class="visually-hidden" type="radio" name="@h.Key("mailing")" id="@h.Key("mailing")-@value" value="@value" checked="@on" disabled="@shut" data-submit="refresh-@h.Code" data-confirm="@(value == "same" && !on && mail.Doc is not null ? DocumentsViewModel.MailDropAsk : null)">@label
                         </label>
                     }
                 </div>
@@ -165,27 +166,40 @@
         </div>
         <div class="cud-grid cud-grid--docs">
             <div class="cud-col">
-                <span class="csi-label">PAN @if (pan.Optional) { <span class="cud-optional">(Non-mandatory)</span> }</span>
+                <div class="cud-col__head"><span class="csi-label">PAN @if (pan.Optional) { <span class="cud-optional">(Non-mandatory)</span> }</span></div>
                 <partial name="_DocSlot" model="@(new DocSlotBlock(pan, upload))" />
             </div>
+            @* NSDL asking for the name printed on the PAN: across the row straight
+               under the PAN's box. *@
+            @if (panReads.AsksName)
+            {
+                <div class="cud-retry-row"><partial name="_NsdlRetry" model="@panReads" /></div>
+            }
             <div class="cud-col">
-                <span class="csi-label">Photo</span>
-                <partial name="_DocSlot" model="@(new DocSlotBlock(docs.View(UploadDocumentsViewModel.PhotoSlot, h), upload))" />
+                <div class="cud-col__head"><span class="csi-label">Photo</span></div>
+                <partial name="_DocSlot" model="@(new DocSlotBlock(docs.View(DocumentsViewModel.PhotoSlot, h), upload))" />
             </div>
             <div class="cud-col">
-                @{ await ProofLabel(h, "poaType", "Proof of address", poa.Used, docs.PoaTypeOf(h)); }
+                <div class="cud-col__head">@{ await ProofLabel(h, "poaType", "Proof of address", poa.Used, docs.PoaTypeOf(h)); }</div>
                 <partial name="_DocSlot" model="@(new DocSlotBlock(poa, upload))" />
             </div>
             <div class="cud-col">
-                @{ await ProofLabel(h, "mailType", "Communication address proof", mail.Used, docs.MailTypeOf(h)); }
+                <div class="cud-col__head">@{ await ProofLabel(h, "mailType", "Communication address proof", mail.Used, docs.MailTypeOf(h)); }</div>
                 <partial name="_DocSlot" model="@(new DocSlotBlock(mail, upload))" />
             </div>
+            @* An Aadhaar filed whose number OCR could not read: the number typed for
+               the PAN-Aadhaar link, across the row under the proofs of address. *@
+            @if (docs.AsksAadhaarNumber(h))
+            {
+                var (aadhaarField, aadhaarError) = docs.AadhaarNumberField(h);
+                <div class="cud-retry-row cud-retry-row--end"><partial name="_AadhaarNumber" model="@(new AadhaarNumberBlock(aadhaarField, Url.Action("JointAadhaarNumber", new { n = holder })!, aadhaarError))" /></div>
+            }
         </div>
 
         @* The addresses are in the panel below, so only the PAN's checks stand here. *@
         <section class="cud-read">
             <h2 class="cud-read__title">What the PAN was checked with</h2>
-            <partial name="_ReadCards" model="@(new ReadCardsBlock(docs.PanReadsOf(h), Url.Action("JointNsdl", new { n = holder })))" />
+            <partial name="_ReadCards" model="@panReads" />
         </section>
     }
 
@@ -201,8 +215,8 @@
         var holder = index + 2;
         var state = Model.State.Joint[index];
         var search = Model.Joint[index];
-        var who = InvestorInfoViewModel.Ordinal(holder) + " Holder";
-        var h = state.Added ? Model.Docs.JointHolder(InvestorInfoViewModel.CodeOf(holder)) : null;
+        var who = InvestorViewModel.Ordinal(holder) + " Holder";
+        var h = state.Added ? Model.Docs.JointHolder(InvestorViewModel.CodeOf(holder)) : null;
         <section class="csi-card cii-card" id="holder-@holder">
             <div class="cii-head">
                 <h2 class="cii-title">@who Details</h2>
@@ -249,7 +263,7 @@
     // are and where they live, read-only, in one panel. Their documents follow, then
     // what nothing read, typed - the gender where the record holds none, and the
     // father's, mother's or spouse's name, which OCR does not read.
-    private async Task JointRecord(int holder, UploadDocumentsViewModel.DocHolder h, InvestorIdentificationViewModel.Holder? record)
+    private async Task JointRecord(int holder, DocumentsViewModel.DocHolder h, NewApplicationViewModel.Holder? record)
     {
         var docs = Model.Docs;
         var gender = record?.Gender ?? "";
@@ -259,20 +273,20 @@
             <div class="inv-panel inv-ckyc">
                 @if (photo is { Before: false })
                 {
-                    <img class="inv-ckyc__photo inv-ckyc__photo--img" src="@Url.Action("Copy", "UploadDocuments", new { slot = h.Key("photo"), v = photo.GetHashCode() })" alt="@(h.Who.Name)'s photograph">
+                    <img class="inv-ckyc__photo inv-ckyc__photo--img" src="@Url.Action("Copy", "Documents", new { slot = h.Key("photo"), v = photo.GetHashCode() })" alt="@(h.Who.Name)'s photograph">
                 }
                 else
                 {
-                    <div class="inv-ckyc__photo">Photo<br />@(docs.View(UploadDocumentsViewModel.PhotoSlot, h).Used ? "upload below" : "on the folio")</div>
+                    <div class="inv-ckyc__photo">Photo<br />@(docs.View(DocumentsViewModel.PhotoSlot, h).Used ? "upload below" : "on the folio")</div>
                 }
                 <div style="flex:1;min-width:0">
                     <div class="inv-panel__label" style="padding-bottom:10px">@(onFolio ? $"From folio {h.Who.Folio}" : "From the search and the PAN copy") &middot; read-only</div>
                     <div class="inv-kv-grid">
                         <div class="inv-kv"><div class="inv-kv__k">Applicant Name</div><div class="inv-kv__v @(h.Who.Name.Length == 0 ? "inv-kv__v--unread" : null)">@(h.Who.Name.Length > 0 ? h.Who.Name : "Read off the PAN copy once filed")</div></div>
-                        <div class="inv-kv"><div class="inv-kv__k">DOB</div><div class="inv-kv__v">@h.Who.Dob</div></div>
+                        <div class="inv-kv"><div class="inv-kv__k">DOB</div><div class="inv-kv__v">@Dates.Show(h.Who.Dob)</div></div>
                         <div class="inv-kv"><div class="inv-kv__k">Gender</div><div class="inv-kv__v @(gender.Length == 0 ? "inv-kv__v--unread" : null)">@(gender.Length > 0 ? gender : "Not read — enter below")</div></div>
                         <div class="inv-kv"><div class="inv-kv__k">Father Name</div><div class="inv-kv__v inv-kv__v--unread">Not read &mdash; enter below</div></div>
-                        <div class="inv-kv"><div class="inv-kv__k">PAN</div><div class="inv-kv__v">@UploadDocumentsViewModel.Mask(h.Who.Pan)</div></div>
+                        <div class="inv-kv"><div class="inv-kv__k">PAN</div><div class="inv-kv__v">@DocumentsViewModel.Mask(h.Who.Pan)</div></div>
                         <div class="inv-kv"><div class="inv-kv__k">Folio</div><div class="inv-kv__v @(onFolio ? null : "inv-kv__v--unread")">@(onFolio ? h.Who.Folio : "Opens with this application")</div></div>
                     </div>
                     @{ await Address(h); }
@@ -284,7 +298,7 @@
 
     // A holder's addresses, as their folio and their documents give them: the lower
     // part of the holder's read-only panel, under the record.
-    private async Task Address(UploadDocumentsViewModel.DocHolder h)
+    private async Task Address(DocumentsViewModel.DocHolder h)
     {
         var docs = Model.Docs;
         var poa = docs.ReadsOf(h)[0].Card;
@@ -293,14 +307,14 @@
                 <div class="inv-panel__label" style="flex:1;min-width:0">Address &amp; proof of address &middot; from the folio and the @(h.Joint ? "documents below" : "documents on Upload Documents")</div>
                 @if (!h.Joint)
                 {
-                    <a class="inv-panel__action" asp-controller="UploadDocuments" asp-action="Index">Open documents</a>
+                    <a class="inv-panel__action" asp-controller="Documents" asp-action="Index">Open documents</a>
                 }
             </div>
             <div class="inv-kv-grid">
                 <div class="inv-kv inv-kv--wide"><div class="inv-kv__k">Permanent address</div><div class="inv-kv__v">@poa.Lines</div></div>
                 <div class="inv-kv"><div class="inv-kv__k">Permanent @Glossary.Term("POA") type</div><div class="inv-kv__v">@(docs.PoaTypeOf(h) is { Length: > 0 } poaType ? poaType : "—")</div></div>
                 <div class="inv-kv"><div class="inv-kv__k">@Glossary.Term("POA") reference number</div><div class="inv-kv__v">@(poa.Number.Length > 0 ? poa.Number : "—")</div></div>
-                <div class="inv-kv"><div class="inv-kv__k">@Glossary.Term("POA") expiry date</div><div class="inv-kv__v">@(poa.Expiry.Length > 0 ? poa.Expiry : "—")</div></div>
+                <div class="inv-kv"><div class="inv-kv__k">@Glossary.Term("POA") expiry date</div><div class="inv-kv__v">@(poa.Expiry.Length > 0 ? Dates.Show(poa.Expiry) : "—")</div></div>
                 <div class="inv-kv"><div class="inv-kv__k">Verification</div><div class="inv-kv__v">@poa.State</div></div>
                 @if (docs.MailDifferentOf(h))
                 {
@@ -362,11 +376,11 @@
     // Whether the holder is, or is related to, a politically exposed person: asked
     // of every holder with no folio, and both answers needed to proceed. A holder
     // on a folio has answered already, so is not asked.
-    private async Task Pep(int holder, UploadDocumentsViewModel.DocHolder h)
+    private async Task Pep(int holder, DocumentsViewModel.DocHolder h)
     {
-        if (!InvestorInfoViewModel.PepAsked(h)) return;
+        if (!InvestorViewModel.PepAsked(h)) return;
         <div class="cii-pep">
-            @foreach (var (field, question) in InvestorInfoViewModel.PepQuestions)
+            @foreach (var (field, question) in InvestorViewModel.PepQuestions)
             {
                 var name = $"Holder{holder}.{field}";
                 var answer = Model.Value(name);
@@ -432,7 +446,7 @@
                offline: Proceed stops, and says so over the top of this card. *@
             <div class="cii-alert" id="ciiFatcaAlert" role="alert" tabindex="-1" hidden="@(!Model.Offline)">
                 <svg class="cii-alert__icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5L2.5 20h19z"></path><path d="M12 10v4.5"></path><circle cx="12" cy="17.3" r=".6" fill="currentColor"></circle></svg>
-                <p class="cii-alert__text">@InvestorInfoViewModel.FatcaOffline</p>
+                <p class="cii-alert__text">@InvestorViewModel.FatcaOffline</p>
                 <button type="button" class="cii-alert__close btn-reset" data-cii-close="ciiFatcaAlert" aria-label="Close">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
                 </button>
@@ -455,11 +469,11 @@
                     @* The photograph filed on Upload Documents, as a joint holder's card shows theirs. *@
                     @if (investorPhoto is { Before: false })
                     {
-                        <img class="inv-ckyc__photo inv-ckyc__photo--img" src="@Url.Action("Copy", "UploadDocuments", new { slot = investor.Key("photo"), v = investorPhoto.GetHashCode() })" alt="@(investor.Who.Name)'s photograph">
+                        <img class="inv-ckyc__photo inv-ckyc__photo--img" src="@Url.Action("Copy", "Documents", new { slot = investor.Key("photo"), v = investorPhoto.GetHashCode() })" alt="@(investor.Who.Name)'s photograph">
                     }
                     else
                     {
-                        <div class="inv-ckyc__photo">Photo<br />@(Model.Docs.View(UploadDocumentsViewModel.PhotoSlot, investor).Used ? "not uploaded" : "on the folio")</div>
+                        <div class="inv-ckyc__photo">Photo<br />@(Model.Docs.View(DocumentsViewModel.PhotoSlot, investor).Used ? "not uploaded" : "on the folio")</div>
                     }
                     <div style="flex:1;min-width:0">
                         <div class="inv-panel__label" style="padding-bottom:10px">From the application &middot; read-only</div>
@@ -563,7 +577,7 @@
 
 <footer class="csi-bar">
     <div class="csi-bar__inner">
-        <a class="csi-btn csi-btn--back" asp-controller="UploadDocuments" asp-action="Index" data-loader="Going back to Upload Documents">Back</a>
+        <a class="csi-btn csi-btn--back" asp-controller="Documents" asp-action="Index" data-loader="Going back to Upload Documents">Back</a>
         <p class="csi-bar__hint">Add any joint holders and the nominee, then proceed to <strong>Bank Details &amp; Payment</strong></p>
         <div class="csi-bar__right">
             <button type="submit" form="investorInfoForm" class="csi-link btn-reset" formaction="@Url.Action("Clear")" formnovalidate>Clear All</button>
@@ -575,7 +589,7 @@
 @section Scripts {
     <script src="~/js/partial-forms.js" asp-append-version="true"></script>
     <script src="~/js/image-shrink.js" asp-append-version="true"></script>
-    <script src="~/js/classic-pin.js" asp-append-version="true"></script>
+    <script src="~/js/pin.js" asp-append-version="true"></script>
     <script>
         // A guardian is named only for a minor nominee: the section opens once the
         // date of birth typed makes them one, and shuts - its fields no longer

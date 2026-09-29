@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using UnoTP.Backend;
-using UnoTP.Features;
+using UnoTP.Infrastructure;
 using UnoTP.Models;
 using UnoTP.ViewModels;
 
@@ -9,7 +9,7 @@ namespace UnoTP.Controllers;
 
 /// <summary>
 /// Upload Documents, the second classic wizard step (see
-/// <see cref="UploadDocumentsViewModel"/>). Every post reads the application
+/// <see cref="DocumentsViewModel"/>). Every post reads the application
 /// afresh, changes it, and saves it back against the version it read, then
 /// redirects back to the page, so a refresh never posts twice.
 ///
@@ -21,8 +21,8 @@ namespace UnoTP.Controllers;
 // One document per post, the largest 4 MB, with the form around it.
 [RequestSizeLimit(12 * 1024 * 1024)]
 [RequestFormLimits(MultipartBodyLengthLimit = 12 * 1024 * 1024)]
-[Route("Apps/UnoTp/Application/{appNo}/UploadDocuments")]
-public class UploadDocumentsController(
+[Route("unotp/applications/{appNo}/documents")]
+public class DocumentsController(
     IApplicationApi applications,
     IDocumentApi documents,
     IServiceProvider services) : Controller
@@ -79,6 +79,11 @@ public class UploadDocumentsController(
     public Task<IActionResult> Nsdl(UploadForm form) =>
         ChangeAsync(form, model => model.RetryNsdlAsync(model.Investor, Request.Form["nsdlName"]));
 
+    /// <summary>The investor's 12-digit Aadhaar number, typed where OCR could not read it, for the PAN-Aadhaar link.</summary>
+    [HttpPost("aadhaar-number")]
+    public Task<IActionResult> AadhaarNumber(UploadForm form) =>
+        ChangeAsync(form, model => model.AadhaarNumberAsync(model.Investor, Request.Form["aadhaarNo"]));
+
     [HttpPost("ckyc")]
     public Task<IActionResult> Ckyc(UploadForm form) => Change(form, model => model.Ckyc());
 
@@ -89,18 +94,18 @@ public class UploadDocumentsController(
 
     // The backend only ever finds the partner's own application, so a number in
     // the address that is not theirs finds nothing.
-    private async Task<UploadDocumentsViewModel?> LoadAsync()
+    private async Task<DocumentsViewModel?> LoadAsync()
     {
         var appNo = HttpContext.CurrentApplication();
         var app = appNo is null ? null : await applications.FindAsync(appNo);
-        return app is null ? null : await ActivatorUtilities.CreateInstance<UploadDocumentsViewModel>(services, app, HttpContext.Session).ReadyAsync();
+        return app is null ? null : await ActivatorUtilities.CreateInstance<DocumentsViewModel>(services, app, HttpContext.Session).ReadyAsync();
     }
 
     // Every post reads the application afresh, changes it, and saves it back
     // against the version it read. A save refused because the application changed
     // in between - another tab, a second click - keeps nothing, and the page says
     // so. The work returns where on the page to come back to.
-    private async Task<IActionResult> ChangeAsync(UploadForm form, Func<UploadDocumentsViewModel, Task<string?>> work)
+    private async Task<IActionResult> ChangeAsync(UploadForm form, Func<DocumentsViewModel, Task<string?>> work)
     {
         if (await LoadAsync() is not { } model) return Start();
         model.Posted = form;
@@ -116,11 +121,11 @@ public class UploadDocumentsController(
         }
         if (model.Said is not null) TempData[FlashKey(model)] = JsonSerializer.Serialize(model.Said);
         return model.Complete && model.Said is null
-            ? RedirectToAction(nameof(InvestorInfoController.Index), "InvestorInfo")
+            ? RedirectToAction(nameof(InvestorController.Index), "Investor")
             : Back(at);
     }
 
-    private Task<IActionResult> Change(UploadForm form, Func<UploadDocumentsViewModel, string?> work) =>
+    private Task<IActionResult> Change(UploadForm form, Func<DocumentsViewModel, string?> work) =>
         ChangeAsync(form, model => Task.FromResult(work(model)));
 
     // Back to the page for the same investor, at the part the post was about.
@@ -128,7 +133,7 @@ public class UploadDocumentsController(
 
     // With no application in the session there is nothing to show: the partner
     // starts at Investor Identification, which opens one.
-    private RedirectToActionResult Start() => RedirectToAction(nameof(InvestorIdentificationController.Index), "InvestorIdentification");
+    private RedirectToActionResult Start() => RedirectToAction(nameof(NewApplicationController.Index), "NewApplication");
 
-    private static string FlashKey(UploadDocumentsViewModel model) => "flash:" + model.AppNo;
+    private static string FlashKey(DocumentsViewModel model) => "flash:" + model.AppNo;
 }

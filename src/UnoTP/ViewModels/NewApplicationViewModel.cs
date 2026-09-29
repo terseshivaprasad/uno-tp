@@ -13,12 +13,12 @@ namespace UnoTP.ViewModels;
 /// Upload Documents, as a joint holder's is.
 ///
 /// Every step is a post, and every post redirects back to the bare page address
-/// (see <see cref="Controllers.InvestorIdentificationController"/>): what was typed
+/// (see <see cref="Controllers.NewApplicationController"/>): what was typed
 /// and what the check found are kept in the session, never in the address, so no
 /// PAN, date of birth or name reaches a log, the history or a Referer header. The
 /// page drawn after the redirect runs the check again from what the session holds.
 /// </summary>
-public partial class InvestorIdentificationViewModel(IInvestorApi investors, UnoTP.Features.Lookups lookups)
+public partial class NewApplicationViewModel(IInvestorApi investors, UnoTP.Infrastructure.Lookups lookups)
 {
     // The rail down the left of every classic wizard step. This page is the first
     // of them; the ones after it carry an empty check until the wizard fills them.
@@ -250,7 +250,7 @@ public partial class InvestorIdentificationViewModel(IInvestorApi investors, Uno
         // last character, a date of birth its year.
         public string MaskedPan => Pan.Length == 10 ? Pan[..5] + "••••" + Pan[9..] : Pan;
 
-        public string MaskedDob => Dob.Length == 10 ? "••-••-" + Dob[6..] : Dob;
+        public string MaskedDob => Dob.Length == 10 ? "••/••/" + Dob[6..] : Dob;
 
         /// <summary>What the register holds against the record, item by item.</summary>
         public IReadOnlyList<(string Label, bool Held)> OnRecord =>

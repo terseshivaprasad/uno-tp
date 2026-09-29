@@ -16,7 +16,7 @@ namespace UnoTP.ViewModels;
 /// copy is filed and put to NSDL.</param>
 /// <param name="KnownName">The name the holder goes by now, where NSDL has since verified one.</param>
 public sealed record HolderIdentificationBlock(
-    InvestorIdentificationViewModel Search,
+    NewApplicationViewModel Search,
     string Ids,
     Func<string, string> Url,
     string? Prefix = null,

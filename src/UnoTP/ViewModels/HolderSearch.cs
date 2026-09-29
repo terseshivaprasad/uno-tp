@@ -1,6 +1,6 @@
 using UnoTP.Backend;
 using UnoTP.Backend.External;
-using Stage = UnoTP.ViewModels.InvestorIdentificationViewModel.Stage;
+using Stage = UnoTP.ViewModels.NewApplicationViewModel.Stage;
 
 namespace UnoTP.ViewModels;
 
@@ -24,15 +24,15 @@ public sealed record SearchState(
 /// holder's documents. Each step takes the
 /// holder's search as the session holds it and gives back what to hold next.
 /// </summary>
-public sealed class HolderSearch(IInvestorApi investors, UnoTP.Features.Lookups lookups)
+public sealed class HolderSearch(IInvestorApi investors, UnoTP.Infrastructure.Lookups lookups)
 {
-    public InvestorIdentificationViewModel NewModel() => new(investors, lookups);
+    public NewApplicationViewModel NewModel() => new(investors, lookups);
 
     /// <summary>
     /// The holder as the session left them: blank, being filled in, or checked. Gives
     /// back the search to hold from now on.
     /// </summary>
-    public async Task<SearchState?> ShowAsync(InvestorIdentificationViewModel model, SearchState? saved)
+    public async Task<SearchState?> ShowAsync(NewApplicationViewModel model, SearchState? saved)
     {
         if (saved is null) return null;
         model.Fill(saved.By, saved.Pan, saved.Dd, saved.Mm, saved.Yyyy, saved.Folio);
@@ -56,7 +56,7 @@ public sealed class HolderSearch(IInvestorApi investors, UnoTP.Features.Lookups 
     /// copy is filed, so they go on as it stands. Null otherwise. The investor
     /// proceeds on it, and a joint holder is added on it.
     /// </summary>
-    public async Task<InvestorIdentificationViewModel?> FoundAsync(SearchState? saved)
+    public async Task<NewApplicationViewModel?> FoundAsync(SearchState? saved)
     {
         var model = NewModel();
         if (!await RestoreAsync(model, saved)) return null;
@@ -68,7 +68,7 @@ public sealed class HolderSearch(IInvestorApi investors, UnoTP.Features.Lookups 
     /// PAN copy is on it already when the register holds one or the PAN was
     /// established from one; what the folio holds is carried only for a holder on one.
     /// </summary>
-    public static Holder ApplicationHolder(InvestorIdentificationViewModel.Holder record)
+    public static Holder ApplicationHolder(NewApplicationViewModel.Holder record)
     {
         var onFolio = record.Folio.Length > 0;
         return new Holder(record.Pan, record.Dob, record.Name, record.Folio, record.Docs.Pan,
@@ -76,7 +76,7 @@ public sealed class HolderSearch(IInvestorApi investors, UnoTP.Features.Lookups 
     }
 
     // The search as the session holds it, checked again. False with nothing checked.
-    private static async Task<bool> RestoreAsync(InvestorIdentificationViewModel model, SearchState? saved)
+    private static async Task<bool> RestoreAsync(NewApplicationViewModel model, SearchState? saved)
     {
         if (saved is not { Checked: true }) return false;
         model.Fill(saved.By, saved.Pan, saved.Dd, saved.Mm, saved.Yyyy, saved.Folio);

@@ -21,28 +21,28 @@ namespace UnoTP.ViewModels;
 /// Information, which hands its posts to this same model (see <see cref="DocHolder"/>).
 ///
 /// A document's checks are outside services, each asked in turn: identification,
-/// OCR - which for an Aadhaar has to read all 12 digits of its number - and whoever
-/// answers for what was read - the issuer or the bank - or for a PAN, the
+/// OCR - which for an Aadhaar has to read the name and date of birth on the PAN - and
+/// whoever answers for what was read - the issuer or the bank - or for a PAN, the
 /// PAN-Aadhaar link. Only then is the copy filed with DMS (see <see cref="IDocumentApi"/>).
 ///
 /// The address carries nothing: the application is the one the session is on,
 /// opened by Investor Identification, and only ever the owner's own (see
-/// <see cref="Controllers.UploadDocumentsController"/>), which reads it, hands it
+/// <see cref="Controllers.DocumentsController"/>), which reads it, hands it
 /// here, and saves what this leaves in it.
 /// </summary>
-public class UploadDocumentsViewModel(
+public class DocumentsViewModel(
     UnoTP.Backend.Application app,
     ISession session,
     IDocumentApi documents,
     IDocumentIdentifier identifier,
     IOcrService ocr,
     INsdlService nsdl,
-    UnoTP.Features.FeatureSet features,
+    UnoTP.Infrastructure.FeatureSet features,
     IVerificationService verification,
     IPanAadhaarLinkService panLink,
     IFaceMatchService faces,
-    UnoTP.Features.Lookups lookups,
-    UnoTP.Features.CurrentPartner currentPartner,
+    UnoTP.Infrastructure.Lookups lookups,
+    UnoTP.Infrastructure.CurrentPartner currentPartner,
     ISourcingApi sourcing)
 {
     /// <summary>The application the session is on, read afresh for every request.</summary>
@@ -209,7 +209,7 @@ public class UploadDocumentsViewModel(
         pan.Length == 10 ? pan[..5] + "••••" + pan[9..] : pan;
 
     public static string MaskDate(string dob) =>
-        dob.Length == 10 ? "••-••-" + dob[6..] : dob;
+        dob.Length == 10 ? "••/••/" + dob[6..] : dob;
 
     // ===== What the page offers ================================================
 
@@ -240,7 +240,7 @@ public class UploadDocumentsViewModel(
     public PartnerProfile Partner { get; private set; } = null!;
 
     /// <summary>Reads the lists, the rules, the partner and the sourcing registers. Every request calls it before the model is used.</summary>
-    public async Task<UploadDocumentsViewModel> ReadyAsync(CancellationToken ct = default)
+    public async Task<DocumentsViewModel> ReadyAsync(CancellationToken ct = default)
     {
         var (reference, config, partner) = (lookups.ReferenceAsync(ct), lookups.ConfigAsync(ct), currentPartner.ProfileAsync(ct));
         var (brokers, staff) = (sourcing.BrokersAsync(ct), sourcing.StaffAsync(ct));
@@ -255,6 +255,19 @@ public class UploadDocumentsViewModel(
 
     /// <summary>The proofs of address the step takes, by type.</summary>
     public IReadOnlyList<string> ProofsOfAddress => [.. Ref.ProofsOfAddress.Select(p => p.Type)];
+
+    /// <summary>
+    /// The proofs a box takes. The permanent address is proved only by an officially
+    /// valid document - one that carries the holder's photograph: an Aadhaar, a
+    /// passport, a driving licence or a voter ID. A utility bill says only where post
+    /// goes, so it proves the communication address alone.
+    /// </summary>
+    public IReadOnlyList<string> ProofsFor(string slot) =>
+        slot == PoaSlot.Key ? [.. Ref.ProofsOfAddress.Where(p => p.HasPhoto).Select(p => p.Type)] : ProofsOfAddress;
+
+    // "Aadhaar, Passport, Driving Licence or Voter ID".
+    private static string OneOf(IReadOnlyList<string> types) =>
+        types.Count <= 1 ? string.Join("", types) : string.Join(", ", types.Take(types.Count - 1)) + " or " + types[^1];
 
     // Only the modes settled by an instrument carry a document; the rest are
     // settled electronically and have nothing to file.
@@ -394,7 +407,7 @@ public class UploadDocumentsViewModel(
     public const string PanAuthority = "the Income Tax Department";
 
     // The same, short enough for a card.
-    private const string LinkWaitsShort = "Asked once an Aadhaar number is read on this application.";
+    private const string LinkWaitsShort = "Asked once an Aadhaar is filed as the proof of address, with its number.";
 
     private const string LinkWaits =
         "Whether an Aadhaar is linked to it is asked once an Aadhaar is read on this application — file one as the proof of address.";
@@ -447,7 +460,7 @@ public class UploadDocumentsViewModel(
     public sealed record SlotView(
         SlotDef Def, string Key, bool Used, string? NotApplicable, string? Locked, StoredDoc? Doc,
         string? Must, string? With, int Attempts, string? Error, string? ErrorLog, bool Optional = false,
-        ReadCard? Read = null, string? LockedHint = null, int MaxAttempts = int.MaxValue)
+        ReadCard? Read = null, string? LockedHint = null, int MaxAttempts = int.MaxValue, string? Final = null)
     {
         /// <summary>Wanted before the step can go on: asked for, not optional, and not in yet.</summary>
         public bool Missing => Used && !Optional && Doc is null;
@@ -515,8 +528,9 @@ public class UploadDocumentsViewModel(
             "poa" or "mail" when Issuers.TryGetValue(proofType, out var issuer) => issuer.Length > 0
                 ? Run + $"the address is confirmed with {issuer}."
                 : $"Once uploaded: identified and read by OCR. A {proofType.ToLowerInvariant()} has no issuer to confirm the address with, so Operations settle it.",
-            // The type is what the copy is identified as, so until one is filed it is not known.
-            "poa" or "mail" => "Once uploaded: identified, which sets its type, read by OCR, then confirmed with its issuer.",
+            // The type is what the copy is identified as, so until one is filed it is
+            // not known: the box names the proofs it takes.
+            "poa" or "mail" => $"{OneOf(ProofsFor(def.Key))}: identified on upload, then confirmed with its issuer.",
             _ => null,
         };
 
@@ -545,8 +559,18 @@ public class UploadDocumentsViewModel(
             optional ? "Not mandatory: the holder is on a folio." : null,
             with, s.AttemptsOf(key),
             flash?.Errors.GetValueOrDefault(key), flash?.ErrorLog.GetValueOrDefault(key), optional, read,
-            waitsOnPan ? "The proof is checked against the holder the PAN copy establishes." : null, MaxAttempts);
+            // Waiting on the PAN, the box still names the proofs it will take.
+            waitsOnPan ? $"Accepted: {OneOf(ProofsFor(def.Key))}. Checked against the holder the PAN copy establishes." : null, MaxAttempts,
+            FinalWhy(def, h, doc));
     }
+
+    // A PAN copy NSDL has verified - the PAN, the date of birth and the name read off
+    // it all held together - is final on the application: it is not replaced, as a
+    // new copy could only undo what NSDL confirmed. Null for any other copy.
+    private string? FinalWhy(SlotDef def, DocHolder h, StoredDoc? doc) =>
+        def.Key == PanSlot.Key && doc is not null && NsdlApplies(h) && NsdlOf(h) == "verified"
+            ? "Verified with NSDL — the PAN, date of birth and name all match — so this PAN copy is final and cannot be replaced."
+            : null;
 
     /// <summary>
     /// What a holder's KYC copies were read to say, always the same cards in the
@@ -569,12 +593,13 @@ public class UploadDocumentsViewModel(
                     "Choose Different from Permanent to file a proof of another address.")),
         ];
         if (h.Joint || NsdlApplies(h)) cards.Add(NsdlCard(h));
-        // The link is asked with the number an Aadhaar carries, so its card stands
-        // only once an Aadhaar is filed as a proof of address.
-        if (AadhaarFiled(h))
-            cards.Add(("PAN–Aadhaar link", LinkApplies(h) ? State.Reads[h.Key("pan")]
+        // The link is asked with the number an Aadhaar carries. Its card stands once
+        // the PAN is on the application - waiting on an Aadhaar until one is filed -
+        // and, for a holder on a folio, once an Aadhaar is filed, to say it is not asked.
+        if (AadhaarFiled(h) || LinkApplies(h) && PanOnApplication(h))
+            cards.Add(new ReadItem("PAN–Aadhaar link", LinkApplies(h) ? State.Reads[h.Key("pan")]
                 : NotRead("Not applicable", $"{Mask(h.Who.Pan)} · on the folio",
-                    "The PAN–Aadhaar link is asked only for a holder with no folio yet.")));
+                    "The PAN–Aadhaar link is asked only for a holder with no folio yet."), h.Key("link")));
         if (View(PoaSlot, h).Used)
         {
             cards.Add(new ReadItem("PAN–POA name & DOB", DetailsOf(h), h.Key("details")));
@@ -882,7 +907,7 @@ public class UploadDocumentsViewModel(
     {
         var pan = Mask(h.Who.Pan);
         s.Reads[h.Key("pan")] = h.Who.PanFiled
-            ? new ReadCard("Link not checked", pan + " · link with Aadhaar not checked yet",
+            ? new ReadCard("Waiting on an Aadhaar", pan + " · link with Aadhaar not asked yet",
                 $"PAN confirmed with NSDL. {LinkWaitsShort}")
             : new ReadCard("Not yet read", "Read off the PAN copy once one is filed here.", LinkWaitsShort);
         // The folio's address is shown as it stands, until a proof filed here is confirmed.
@@ -1107,14 +1132,14 @@ public class UploadDocumentsViewModel(
     /// </summary>
     public void KeepJoint(IFormCollection form)
     {
-        string Proof(string? type) => ProofsOfAddress.Contains(type) ? type! : "";
+        string Proof(string? type, string slot) => ProofsFor(slot).Contains(type) ? type! : "";
         foreach (var h in JointHolders)
         {
-            if (!AutoProofType && form.TryGetValue(h.Key("poaType"), out var poa)) SetPoaType(h, Proof(poa));
+            if (!AutoProofType && form.TryGetValue(h.Key("poaType"), out var poa)) SetPoaType(h, Proof(poa, PoaSlot.Key));
             if (!MailCanDiffer(h) || !form.TryGetValue(h.Key("mailing"), out var mailing)) continue;
             var different = mailing == "different";
             if (!different) ForgetMail(h);
-            var type = !different ? "" : !AutoProofType && form.TryGetValue(h.Key("mailType"), out var mail) ? Proof(mail) : MailTypeOf(h);
+            var type = !different ? "" : !AutoProofType && form.TryGetValue(h.Key("mailType"), out var mail) ? Proof(mail, MailSlot.Key) : MailTypeOf(h);
             SetMail(h, different, type);
         }
     }
@@ -1151,7 +1176,7 @@ public class UploadDocumentsViewModel(
         if (s.AppType != Physical) Drop("form");
 
         // A type chosen from the drop-down, when it is not set from the upload.
-        if (!AutoProofType && Posted.PoaType is not null) s.PoaType = ProofsOfAddress.Contains(Posted.PoaType) ? Posted.PoaType : "";
+        if (!AutoProofType && Posted.PoaType is not null) s.PoaType = ProofsFor(PoaSlot.Key).Contains(Posted.PoaType) ? Posted.PoaType : "";
 
         // Post going to the permanent address has nothing else to prove: the proof
         // of another address goes with the answer.
@@ -1252,6 +1277,7 @@ public class UploadDocumentsViewModel(
         string? refuse =
             file is null || file.Length == 0 ? "Choose a file to upload"
             : view.Locked is not null ? view.Locked
+            : view.Final is not null ? view.Final
             : view.Spent ? $"{MaxAttempts} copies of this document were refused one after another this session, so it is no longer filed here — book a service call to file it."
             : !Accepted(def, file) ? "That file type is not accepted here"
             : file.Length > def.Accepts.MaxMb * Mb ? $"The file is over {def.Accepts.MaxMb} MB — {SizeOf(file.Length)}"
@@ -1422,7 +1448,7 @@ public class UploadDocumentsViewModel(
         var detect = proof && AutoProofType;
         var identified = await identifier.IdentifyAsync(rule.Kind, detect ? "" : TypeOf(def, h), copy);
         if (detect && identified.Matches && !ProofsOfAddress.Contains(identified.Type))
-            identified = new Identification(false, "It could not be told which proof of address it is. Upload a clearer copy of an Aadhaar, passport, driving licence, voter ID or utility bill.");
+            identified = new Identification(false, $"It could not be told which proof of address it is. Upload a clearer copy of {OneOf(ProofsFor(def.Key)).ToLowerInvariant().Replace("aadhaar", "an Aadhaar")}.");
         var type = detect ? identified.Type ?? "" : TypeOf(def, h);
 
         async Task RefuseAsync(string why, string whatNext, params (string Text, string Kind)[] stages)
@@ -1446,10 +1472,18 @@ public class UploadDocumentsViewModel(
             await RefuseAsync($"That does not read as {rule.What}", identified.Hint ?? "Upload a clearer copy.", ($"Not identified as {rule.What}.", "bad"));
             return;
         }
+        // A proof the box does not take - a utility bill for the permanent address.
+        if (proof && !ProofsFor(def.Key).Contains(type))
+        {
+            await RefuseAsync($"A {type.ToLowerInvariant()} is not taken as proof of the permanent address",
+                $"Upload {(h.Joint ? "this holder's" : "the investor's")} {OneOf(ProofsFor(def.Key))} — a {type.ToLowerInvariant()} proves only a communication address.",
+                ($"Identified as a {type.ToLowerInvariant()}, which proves only a communication address.", "bad"));
+            return;
+        }
         entry.Add($"Identified as {(proof ? "a proof of address: " + type : rule.What)}.", "ok");
 
-        // 2. OCR. An Aadhaar is filed unmasked: one OCR cannot read all 12 digits of
-        // the number off - masked, or too unclear - is not taken.
+        // 2. OCR. An Aadhaar is taken only when the name and date of birth it reads
+        // are the PAN's; masked or not, its number need not be read (see ReadAddressAsync).
         var reading = await ocr.ReadAsync(rule.Kind, type, copy, new OcrSubject(h.Who.Pan, h.Who.Dob, h.Who.Name), AadhaarConsent);
         // A PAN copy has to be the holder's own: the PAN and date of birth it reads
         // as are the ones already on the application, which cannot be changed here.
@@ -1462,21 +1496,20 @@ public class UploadDocumentsViewModel(
         }
         // What the PAN copy reads, for its box once it is filed.
         if (def.Key == "pan")
-            State.Reads[h.Key("panocr")] = new ReadCard("", InvestorIdentificationViewModel.NormaliseName(reading.Name), "")
+            State.Reads[h.Key("panocr")] = new ReadCard("", NewApplicationViewModel.NormaliseName(reading.Name), "")
                 { Number = reading.Pan.Replace(" ", "").ToUpperInvariant(), Dob = reading.Dob };
-        if (proof && type == "Aadhaar" && !AadhaarNumbers.IsWhole(reading.IdNumber))
+        if (proof && type == "Aadhaar" && AadhaarMismatch(h, reading) is { } notTheirs2)
         {
-            await RefuseAsync("OCR could not read all 12 digits of the Aadhaar number, so the copy may be masked",
-                "The application needs the unmasked Aadhaar, with all 12 digits readable — upload that.",
-                ("OCR read no whole 12-digit Aadhaar number off it: masked, or not clear enough.", "bad"),
-                ("An Aadhaar is filed unmasked, so this copy was not taken.", "bad"));
+            await RefuseAsync(notTheirs2, $"Upload {(h.Joint ? "this holder's" : "the investor's")} own Aadhaar, clear enough to read the name and date of birth.",
+                ($"OCR read: name {(reading.Name.Trim().Length > 0 ? reading.Name.Trim() : "none")}, date of birth {(reading.Dob.Length > 0 ? MaskDate(reading.Dob) : "none")}.", ""),
+                ("An Aadhaar is taken only when its name and date of birth match the PAN's.", "bad"));
             return;
         }
 
         // A joint holder with no folio is put to NSDL with the name the copy reads.
         if (def.Key == "pan" && NsdlApplies(h))
         {
-            await NsdlAsync(h, InvestorIdentificationViewModel.NormaliseName(reading.Name), entry, typed: false);
+            await NsdlAsync(h, NewApplicationViewModel.NormaliseName(reading.Name), entry, typed: false);
             h = Again(h);
         }
 
@@ -1531,7 +1564,7 @@ public class UploadDocumentsViewModel(
         // The number the proof carries, and when it runs out, stand in its box. An
         // Aadhaar shows its last four digits only.
         (card.Number, card.Expiry) = (ProofNumber(type, reading), reading.Expiry);
-        if (card.Number.Length > 0) entry.Add($"Number read: {card.Number}{(card.Expiry.Length > 0 ? $", valid till {card.Expiry}" : "")}.");
+        if (card.Number.Length > 0) entry.Add($"Number read: {card.Number}{(card.Expiry.Length > 0 ? $", valid till {Dates.Show(card.Expiry)}" : "")}.");
         // The investor's gender, where the folio gives none, sets the category.
         if (!h.Joint && Who.Gender.Length == 0 && reading.Gender.Length > 0 && State.Gender != reading.Gender)
         {
@@ -1546,24 +1579,24 @@ public class UploadDocumentsViewModel(
         if (answer.Confirmed && answer.Expiry.Length > 0 && answer.Expiry != card.Expiry)
         {
             entry.Add(card.Expiry.Length > 0
-                ? $"{Cap(issuer)} holds it valid till {answer.Expiry}; the copy read {card.Expiry}, which is set aside."
-                : $"{Cap(issuer)} holds it valid till {answer.Expiry}; no expiry could be read off the copy.");
+                ? $"{Cap(issuer)} holds it valid till {Dates.Show(answer.Expiry)}; the copy read {Dates.Show(card.Expiry)}, which is set aside."
+                : $"{Cap(issuer)} holds it valid till {Dates.Show(answer.Expiry)}; no expiry could be read off the copy.");
             card.Expiry = answer.Expiry;
         }
         if (answer.Confirmed && answer.Standing.Length > 0 && !answer.Standing.Equals("Active", StringComparison.OrdinalIgnoreCase))
             entry.Add($"{Cap(issuer)} holds it as {answer.Standing}.", "warn");
 
         // An Aadhaar carries the number the PAN-Aadhaar link is asked with, so a PAN
-        // already on the application can be asked about now.
-        if (type == "Aadhaar" && AadhaarNumbers.IsWhole(reading.IdNumber) && LinkApplies(h))
+        // already on the application can be asked about now. Where OCR could not
+        // read the whole number - masked, or not clear enough - it is typed instead.
+        if (type == "Aadhaar" && LinkApplies(h))
         {
-            session.SetString(AadhaarKey(h), reading.IdNumber);
-            if (PanOnApplication(h) && (!NsdlApplies(h) || NsdlOf(h) == "verified")) await RelinkPanAsync(h, entry);
-            else if (PanOnApplication(h))
+            if (AadhaarNumbers.IsWhole(reading.IdNumber)) await AskLinkWithAsync(h, reading.IdNumber, entry);
+            else
             {
-                // The Aadhaar number is kept, and asked with once NSDL verifies the PAN.
-                LinkWaitsOnNsdl(h);
-                entry.Add("The PAN-Aadhaar link waits until NSDL verifies the PAN; this Aadhaar is asked with then.", "warn");
+                session.Remove(AadhaarKey(h));
+                LinkWaitsOnNumber(h);
+                entry.Add("OCR read no whole 12-digit Aadhaar number off it; the number is typed for the PAN-Aadhaar link.", "warn");
             }
         }
 
@@ -1676,6 +1709,88 @@ public class UploadDocumentsViewModel(
             : ("Waiting on NSDL", "", $"Asked once NSDL verifies the PAN{(AadhaarOf(h).Length > 0 ? ", with the Aadhaar already read" : "")}.");
     }
 
+    // An Aadhaar number, read or typed, kept for the link and asked with now - or,
+    // while NSDL has not verified the PAN, once it does.
+    private async Task AskLinkWithAsync(DocHolder h, string number, LogEntry entry)
+    {
+        session.SetString(AadhaarKey(h), number);
+        if (PanOnApplication(h) && (!NsdlApplies(h) || NsdlOf(h) == "verified")) await RelinkPanAsync(h, entry);
+        else if (PanOnApplication(h))
+        {
+            // The Aadhaar number is kept, and asked with once NSDL verifies the PAN.
+            LinkWaitsOnNsdl(h);
+            entry.Add("The PAN-Aadhaar link waits until NSDL verifies the PAN; this Aadhaar is asked with then.", "warn");
+        }
+    }
+
+    // An Aadhaar filed whose number OCR could not read whole: the link card says it
+    // waits on the number, typed in the row under the proofs.
+    private void LinkWaitsOnNumber(DocHolder h)
+    {
+        var card = State.Reads[h.Key("pan")];
+        card.Lines = Mask(h.Who.Pan) + " · link with Aadhaar not asked yet";
+        (card.State, card.Kind) = ("Aadhaar number needed", "is-failed");
+        card.From = "OCR could not read the whole Aadhaar number off the copy. Type it in the row under the proofs of address, and the link is asked.";
+    }
+
+    /// <summary>
+    /// Whether the Aadhaar number is asked for by hand: an Aadhaar is filed for a
+    /// holder with no folio, and no whole number is held for the link - OCR could
+    /// not read it, or the session it was kept in has ended.
+    /// </summary>
+    public bool AsksAadhaarNumber(DocHolder h) =>
+        LinkApplies(h) && AadhaarFiled(h) && AadhaarOf(h).Length == 0
+        && State.Reads[h.Key("pan")] is { Kind: not "is-done" } card && card.State != "Not linked";
+
+    /// <summary>The Aadhaar number row's field, and what was wrong with the number last typed.</summary>
+    public (string Field, string? Error) AadhaarNumberField(DocHolder h) =>
+        (h.Key("aadhaarNo"), Shown?.Errors.GetValueOrDefault(h.Key("aadhaarNo")));
+
+    /// <summary>
+    /// The 12-digit Aadhaar number, typed where OCR could not read it off the
+    /// Aadhaar filed, and the PAN-Aadhaar link asked with it. Like one read, it is
+    /// held in the session only, never saved. Returns where on the page to come back to.
+    /// </summary>
+    public async Task<string?> AadhaarNumberAsync(DocHolder h, string? typed)
+    {
+        var key = h.Key("aadhaarNo");
+        if (!AsksAadhaarNumber(h)) return "read-" + h.Key("link");
+        var number = new string((typed ?? "").Where(char.IsAsciiDigit).ToArray());
+        if (!AadhaarNumbers.IsValid(number))
+        {
+            Say().Errors[key] = number.Length != 12 ? "Enter the 12-digit Aadhaar number" : "That is not a valid Aadhaar number — check it against the card";
+            return "row-" + key;
+        }
+        var entry = new LogEntry(Guid.NewGuid().ToString("n")[..8], "PAN–Aadhaar link · number typed", 1,
+            DateTime.Now.ToString("HH:mm:ss"), "Aadhaar number typed: XXXX XXXX " + number[^4..]) { Holder = h.Joint ? h.Code : "" };
+        State.Log.Insert(0, entry);
+        await AskLinkWithAsync(h, number, entry);
+        var card = State.Reads[h.Key("pan")];
+        entry.End(card.Kind == "is-done" ? "Linked" : card.State, card.Kind == "is-done" ? "ok" : "warn");
+        return "read-" + h.Key("link");
+    }
+
+    // An Aadhaar is taken only when the name and date of birth it reads are the
+    // PAN's: the name as NSDL or the folio holds it - or, until NSDL verifies it,
+    // as read off the PAN copy - allowing initials and a name left out, and the
+    // date of birth exactly. Null when they match; otherwise why not.
+    private string? AadhaarMismatch(DocHolder h, OcrReading reading)
+    {
+        var panName = h.Who.Name.Length > 0 ? h.Who.Name
+            : State.Reads.TryGetValue(h.Key("panocr"), out var panRead) ? panRead.Lines : "";
+        var name = reading.Name.Trim();
+        if (panName.Length == 0) return "The PAN's name is not known yet, so the Aadhaar cannot be matched with it — file the PAN copy first";
+        var nameOk = name.Length > 0 && NameMatch(name, panName) != "mismatch";
+        var dobOk = reading.Dob.Length > 0 && reading.Dob == h.Who.Dob;
+        return (nameOk, dobOk) switch
+        {
+            (true, true) => null,
+            (false, false) => "The name and date of birth on the Aadhaar do not match the PAN's",
+            (false, _) => name.Length == 0 ? "The name on the Aadhaar could not be read" : "The name on the Aadhaar does not match the PAN's",
+            _ => reading.Dob.Length == 0 ? "The date of birth on the Aadhaar could not be read" : "The date of birth on the Aadhaar does not match the PAN's",
+        };
+    }
+
     // NSDL asked about a joint holder's PAN, date of birth and a name; verified,
     // the name is theirs from here on.
     private async Task NsdlAsync(DocHolder h, string name, LogEntry entry, bool typed)
@@ -1707,7 +1822,7 @@ public class UploadDocumentsViewModel(
     {
         var key = h.Key("nsdl");
         if (!NsdlApplies(h) || NsdlOf(h) != "name" || State.Docs.GetValueOrDefault(h.Key("pan")) is not { } doc) return "read-" + key;
-        var name = InvestorIdentificationViewModel.NormaliseName(typed);
+        var name = NewApplicationViewModel.NormaliseName(typed);
         if (name.Length < 3)
         {
             Say().Errors[key] = "Enter the name as printed on the PAN";
@@ -1784,7 +1899,7 @@ public class UploadDocumentsViewModel(
             case PanAadhaarLink.Linked:
                 card.Lines = pan + " · linked with Aadhaar";
                 (card.State, card.Kind) = ("Linked with Aadhaar", "is-done");
-                card.From = $"Confirmed with {PanAuthority} against the Aadhaar read on this application.";
+                card.From = $"Confirmed with {PanAuthority} against the Aadhaar number on this application, read off the copy or typed.";
                 entry.Add($"{Cap(PanAuthority)} holds an Aadhaar against this PAN.", "ok");
                 break;
             case PanAadhaarLink.NotLinked:
@@ -1793,9 +1908,14 @@ public class UploadDocumentsViewModel(
                 card.From = $"{Cap(PanAuthority)} holds no Aadhaar against this PAN. The deposit can still be booked, but TDS runs at the higher rate until the investor links it.";
                 entry.Add("No Aadhaar against this PAN.", "warn");
                 break;
+            case PanAadhaarLink.NeedsAadhaar when AadhaarFiled(h):
+                // An Aadhaar is filed, but its number was not read: it is typed.
+                LinkWaitsOnNumber(h);
+                entry.Add("No Aadhaar number held for this application; it is typed for the PAN-Aadhaar link.", "warn");
+                break;
             default:
-                card.Lines = pan + " · link with Aadhaar not checked yet";
-                (card.State, card.Kind) = ("Link not checked", "");
+                card.Lines = pan + " · link with Aadhaar not asked yet";
+                (card.State, card.Kind) = ("Waiting on an Aadhaar", "");
                 card.From = LinkWaitsShort;
                 entry.Add("No Aadhaar number read on this application yet, so the PAN-Aadhaar link is not asked.", "warn");
                 break;

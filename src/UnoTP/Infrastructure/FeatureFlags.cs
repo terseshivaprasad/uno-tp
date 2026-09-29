@@ -1,4 +1,4 @@
-namespace UnoTP.Features;
+namespace UnoTP.Infrastructure;
 
 /// <summary>
 /// The prototype's feature switches, bound from the "Features" section of

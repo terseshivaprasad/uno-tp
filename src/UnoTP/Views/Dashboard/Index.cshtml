@@ -100,35 +100,21 @@
                 </ul>
             </nav>
         }
-        @* The partner's own applications opened and left before submitting, the one
-           touched last first: one press picks it up on Upload Documents, under the
-           number it was opened with. The rest are on Investor Identification. *@
+        @* The partner's own applications opened and left before submitting: the same
+           table as Investor Identification's, the latest few of them, each one press
+           from Upload Documents. The rest are on Investor Identification. *@
         @if (Model.Drafts.Count > 0)
         {
             <hr class="classic-actions__rule">
             <section class="drafts" aria-labelledby="draftsTitle">
                 <div class="drafts__head">
-                    <h2 class="classic-actions__title" id="draftsTitle">Continue an incomplete application</h2>
+                    <h2 class="classic-actions__title" id="draftsTitle">Continue an Incomplete Application</h2>
                     @if (Model.Drafts.Count > DashboardViewModel.DraftsShown)
                     {
-                        <a class="drafts__all" asp-controller="InvestorIdentification" asp-action="Index">All @Model.Drafts.Count <span aria-hidden="true">&rsaquo;</span></a>
+                        <a class="drafts__all" asp-controller="NewApplication" asp-action="Index">All @Model.Drafts.Count <span aria-hidden="true">&rsaquo;</span></a>
                     }
                 </div>
-                <ul class="drafts__list">
-                    @foreach (var d in Model.Drafts.Take(DashboardViewModel.DraftsShown))
-                    {
-                        <li>
-                            @* Only the draft's number is posted, and the server checks it is one of this partner's. *@
-                            <form method="post" asp-controller="InvestorIdentification" asp-action="Continue">
-                                <input type="hidden" name="draft" value="@d.AppNo">
-                                <button type="submit" class="draft-card btn-reset" title="Continue application @d.AppNo" data-loader="Opening Upload Documents…" data-loader-hint="Application @d.AppNo">
-                                    <span class="draft-card__no">@d.AppNo</span>
-                                    <span class="draft-card__who">@d.Name@(d.Amount > 0 ? $" · {Money.Rupees(d.Amount)}" : "")</span>
-                                </button>
-                            </form>
-                        </li>
-                    }
-                </ul>
+                <partial name="_Drafts" model="@(new DraftsBlock(Model.Drafts.Take(DashboardViewModel.DraftsShown).ToList(), Model.Drafts.Count, Partial: false))" />
             </section>
         }
         @if (Model.Admin.Count > 0)

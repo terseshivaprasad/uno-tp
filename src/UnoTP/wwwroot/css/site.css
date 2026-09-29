@@ -30,13 +30,13 @@
   --amber-tint: #FFFBF0;
   --amber-border: #F0D98A;
   --amber-accent: #E8A700;
-  /* One height for every document card and every check card on Upload Documents
-     and Investor Information, so a row of them lines up. A phone's is taller, as
-     its cards are narrower. Tall enough for a filed proof's four lines above its
-     View and Replace buttons. */
-  --doc-card-h: 204px;
+  /* One height for every document box and every check card on Upload Documents
+     and Investor Information, whatever each says, so all of them line up. Tall
+     enough for a filed proof's four lines; its View and Replace sit under it. A
+     phone's is taller, as its boxes stack the mark over the text. */
+  --doc-card-h: 184px;
 }
-@media (min-width: 761px) { :root { --doc-card-h: 172px; } }
+@media (min-width: 761px) { :root { --doc-card-h: 144px; } }
 
 * , *::before, *::after { box-sizing: border-box; }
 
@@ -178,12 +178,29 @@ a.app-tile:hover { text-decoration: none; }
 .callout--mint { border-left: none; background: var(--green-bg); border-radius: 6px; }
 .callout--sm { padding: 10px 13px; border-radius: 6px; gap: 4px; font-size: 11px; line-height: 1.5; }
 
-.seg-toggle { display: inline-flex; border: 1px solid var(--border-3); border-radius: 6px; overflow: hidden; flex: none; }
-.seg-toggle__opt { padding: 8px 20px; font-size: 12.5px; font-weight: 500; background: #fff; color: var(--text); white-space: nowrap; border: 0; cursor: pointer; font-family: inherit; }
-.seg-toggle__opt + .seg-toggle__opt { border-left: 1px solid var(--border-3); }
-.seg-toggle__opt--active { background: var(--pink-bg); color: var(--red-dark); font-weight: 600; box-shadow: inset 0 0 0 1px var(--red); }
-.seg-toggle__opt:disabled, .seg-toggle__opt:has(input:disabled) { background: var(--tint); color: var(--muted-2); cursor: not-allowed; }
-.seg-toggle--sm .seg-toggle__opt { padding: 6px 15px; font-size: 11.5px; }
+/* A segmented toggle: a capsule track holding a capsule per option, as tall as a
+   field (36px). The chosen option is drawn as every selection is - pink, a red
+   outline, red-dark text - and lifted off the track; the rest are plain text on
+   it. A toggle made of radios is lit by the checked radio alone, so a click moves
+   the selection at once, never two lit while the server answers. */
+.seg-toggle { display: inline-flex; align-items: stretch; gap: 2px; height: 36px; padding: 3px; border: 1px solid var(--border-2); border-radius: 999px; background: var(--tint); flex: none; }
+.seg-toggle__opt {
+  display: inline-flex; align-items: center; justify-content: center; padding: 0 16px;
+  border: 1px solid transparent; border-radius: 999px; background: transparent;
+  font-family: inherit; font-size: 12.5px; font-weight: 500; color: var(--text); white-space: nowrap; cursor: pointer;
+  transition: background-color .12s ease, border-color .12s ease, color .12s ease;
+}
+.seg-toggle__opt:hover { color: var(--ink); background: #fff; }
+.seg-toggle__opt--active, .seg-toggle__opt:has(input:checked) {
+  background: var(--pink-bg); border-color: var(--red); color: var(--red-dark); font-weight: 600;
+  box-shadow: 0 1px 2px rgba(24, 39, 75, .1);
+}
+.seg-toggle__opt:has(input:focus-visible) { outline: 2px solid var(--blue); outline-offset: 1px; }
+/* An option that cannot be chosen here stays on the track, faded; its title says why. */
+.seg-toggle__opt:disabled, .seg-toggle__opt:has(input:disabled) { background: transparent; color: var(--muted-2); cursor: not-allowed; }
+.seg-toggle__opt:has(input:checked:disabled) { background: var(--pink-bg); border-color: var(--pink-border); color: var(--muted); box-shadow: none; }
+.seg-toggle--sm { height: 30px; }
+.seg-toggle--sm .seg-toggle__opt { padding: 0 13px; font-size: 11.5px; }
 
 /* Room at the bottom of the wizard so the fixed footer bar (.csi-bar) never covers
    the last field or button. */
@@ -367,8 +384,6 @@ select.inv-control:has(option[value=""]:checked) { color: var(--muted-2); }
 /* The Documents heading of a joint holder, with where post goes beside it. */
 .cii-docs-head { display: flex; align-items: center; justify-content: space-between; gap: 12px 24px; flex-wrap: wrap; margin: 28px 0 0; padding-bottom: 10px; }
 .cii-docs-head__title { font-size: 15px; font-weight: 500; color: var(--text); }
-.cii-docs-head .seg-toggle { height: 32px; }
-.cii-docs-head .seg-toggle__opt { display: flex; align-items: center; padding: 0 16px; }
 .cii-switches { display: flex; flex-direction: column; gap: 18px; padding-top: 18px; }
 /* The PEP questions: the question on the left, Yes and No on the right. */
 .cii-pep { display: flex; flex-direction: column; margin-top: 24px; border-top: 1px solid var(--divider); }
@@ -862,6 +877,13 @@ body:has(.rdocs:popover-open) { overflow: hidden; }
 /* A step already behind the wizard: its tick is filled in. */
 .csi-rail__step--done .csi-rail__check { color: var(--green); }
 .csi-rail__where, .csi-rail__bar { display: none; }
+/* Over each name, what it is: "Step 1" to "Step 4" for the booking steps the
+   dashboard promises, "Start" and "Submit" for the ends, which carry no number,
+   stand apart behind a rule, and read a little quieter. */
+.csi-rail__num { display: block; padding-bottom: 1px; font-size: 9.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted-2); }
+.csi-rail__step--current .csi-rail__num { color: var(--red); opacity: .75; }
+.csi-rail__rule { margin: 0 2px; border: 0; border-top: 1px dashed var(--border-2); }
+.csi-rail__step--end:not(.csi-rail__step--current) .csi-rail__label { color: var(--text); font-weight: 500; }
 
 .csi-card { background: #fff; border-radius: 8px; padding: 20px 22px 26px; margin-bottom: 70px; }
 .csi-card__title { font-size: 16px; font-weight: 500; color: var(--text); padding-bottom: 8px; }
@@ -930,6 +952,7 @@ body:has(.rdocs:popover-open) { overflow: hidden; }
   .csi-rail__step { flex: none; gap: 8px; }
   .csi-rail__label { font-size: 12px; white-space: nowrap; }
   .csi-rail__check { display: none; }
+  .csi-rail__rule { border-top: 0; border-left: 1px dashed var(--border-2); margin: 4px 2px; }
 }
 /* ===== The wizard on a phone =====
    Five steps will not go across a phone, and a rail that scrolls sideways hides
@@ -938,6 +961,7 @@ body:has(.rdocs:popover-open) { overflow: hidden; }
 @media (max-width: 760px) {
   .csi-rail { flex-direction: column; gap: 9px; padding: 12px 14px; overflow: visible; }
   .csi-rail__step { display: none; }
+  .csi-rail__rule { display: none; }
   .csi-rail__where { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; }
   .csi-rail__count { font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted-2); }
   .csi-rail__now { font-size: 14px; font-weight: 700; color: var(--ink); }
@@ -1203,8 +1227,6 @@ html.is-saving::before {
 .cud-apptype { display: flex; align-items: center; gap: 14px 36px; flex-wrap: wrap; padding: 18px 0 2px; }
 .cud-apptype__group { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
 .cud-apptype .csi-label { padding: 0; }
-.cud-apptype .seg-toggle { height: 32px; }
-.cud-apptype .seg-toggle__opt { display: flex; align-items: center; padding: 0 20px; }
 
 /* The arrow is the page's own, so the control matches the text fields beside it. */
 .cud-select { position: relative; }
@@ -1216,10 +1238,14 @@ html.is-saving::before {
    against the slot, or an error under the card pushes the slot taller and the
    buttons land on the words. */
 .cud-slot__frame { position: relative; }
-/* On the card's own corner, not floating in the space above it: they act on the
-   document in the card, so that is where they live. Named as well as drawn - a
-   magnifier and a circular arrow on their own read as zoom and refresh. */
-.cud-slot__tools { position: absolute; bottom: 10px; right: 12px; z-index: 2; display: flex; justify-content: flex-end; gap: 6px; }
+/* View and Replace sit at the top, on the label line over the card they act on, at
+   its right: out of the card, so every card keeps one height whatever it holds.
+   Named as well as drawn - a magnifier and a circular arrow on their own read as
+   zoom and refresh - except where the column is too narrow for both the label and
+   the names (below). */
+.cud-slot { position: relative; }
+.cud-slot__tools { display: flex; justify-content: flex-end; gap: 6px; }
+.cud-slot > .cud-slot__tools { position: absolute; top: -27px; right: 0; z-index: 2; }
 .cud-slot__tools[hidden] { display: none; }
 .cud-tool { display: inline-flex; align-items: center; gap: 5px; padding: 5px 9px; border: 1px solid var(--border-2); border-radius: 6px; background: #fff; font-family: inherit; font-size: 11.5px; font-weight: 600; color: var(--red); cursor: pointer; }
 .cud-tool svg { flex: none; }
@@ -1350,6 +1376,8 @@ html.is-saving::before {
   display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden;
 }
 .cud-drop__title, .cud-drop__hint, .cud-drop__must { -webkit-line-clamp: 2; }
+/* A box waiting on another names what it will take: room for that. */
+.cud-drop.is-locked .cud-drop__hint { -webkit-line-clamp: 3; }
 .cud-drop__with, .cud-slot__na-why { -webkit-line-clamp: 3; }
 label.cud-tool { cursor: pointer; }
 .cud-upload { margin-top: 8px; }
@@ -1365,13 +1393,7 @@ label.cud-tool { cursor: pointer; }
 .cud-ckyc-pop { width: min(560px, calc(100% - 32px)); }
 .cud-sheet .cud-preview__sheet, .cud-sheet .cud-ckyc__sheet { width: 100%; }
 
-/* The application type's toggle is a pair of radios: the checked one is lit. */
-label.seg-toggle__opt { display: inline-block; }
-/* A toggle made of radios is lit by the checked radio alone, so a click moves the
-   red at once - never two options lit while the server answers. */
-.seg-toggle__opt:has(input:checked) { background: var(--pink-bg); color: var(--red-dark); font-weight: 600; box-shadow: inset 0 0 0 1px var(--red); }
-.seg-toggle__opt:has(input:focus-visible) { outline: 2px solid var(--blue); outline-offset: -2px; }
-.seg-toggle__opt:has(input:disabled) { background: var(--tint); color: var(--muted-2); cursor: not-allowed; }
+
 
 /* What the last post has to say for the whole step. */
 .cud-banner { display: flex; align-items: flex-start; gap: 9px; margin-bottom: 16px; padding: 11px 14px; border: 1px solid var(--green-border); border-left: 3px solid var(--green); border-radius: 6px; background: var(--green-bg); font-size: 12.5px; line-height: 1.5; color: var(--green); }
@@ -1561,6 +1583,8 @@ body.is-waiting { overflow: hidden; }
    number on it cannot be placed by whoever picks it up. */
 .cud-pin { position: fixed; top: 45px; left: 0; right: 0; z-index: 35; background: #fff; border-bottom: 1px solid var(--divider); box-shadow: 0 2px 8px rgba(24,39,75,.06); }
 .cud-pin[hidden] { display: none; }
+/* While the strip is pinned, the rail sits under it rather than behind it. */
+body:has(.cud-pin:not([hidden])) .csi-rail { top: 100px; max-height: calc(100vh - 168px); }
 .cud-pin__inner { max-width: 1440px; margin: 0 auto; padding: 8px 16px; display: flex; align-items: center; gap: 18px; flex-wrap: wrap; font-size: 12px; }
 .cud-pin__who { font-weight: 700; color: var(--ink); }
 .cud-pin__pan { color: var(--muted); }
@@ -1591,11 +1615,12 @@ body.is-waiting { overflow: hidden; }
 .cud-route.is-on { border-color: var(--green-border); border-left-color: var(--green); background: var(--green-bg); }
 .cud-route.is-on .cud-route__title { color: var(--green); }
 /* Not a route this application can take: a physical one is signed and filed by
-   hand, and CERSAI's consent is given online. */
-.cud-route.is-off { border-color: var(--border-2); border-left-color: var(--border-2); background: var(--tint); }
-.cud-route.is-off .cud-route__title { color: var(--muted); }
-.cud-route.is-off .cud-route__p { color: var(--muted-2); }
-.cud-route.is-off .cud-route__p strong { color: var(--muted); }
+   hand, and CERSAI's consent is given online. Greyed while its button is disabled,
+   which follows the application type as it is chosen. */
+.cud-route:has(.cud-ckyc-btn:disabled) { border-color: var(--border-2); border-left-color: var(--border-2); background: var(--tint); }
+.cud-route:has(.cud-ckyc-btn:disabled) .cud-route__title { color: var(--muted); }
+.cud-route:has(.cud-ckyc-btn:disabled) .cud-route__p { color: var(--muted-2); }
+.cud-route:has(.cud-ckyc-btn:disabled) .cud-route__p strong { color: var(--muted); }
 
 /* ===== Asking CKYC for the record =====
    The dialog the old site puts in front of a partner before the consent link
@@ -1884,8 +1909,8 @@ html:has(.clogin), html:has(.clogin) body { background: var(--border); }
 }
 
 /* Every read card is the size of a document box, whatever it says: what it read
-   and where that came from are held to two lines each. Only NSDL asking for the
-   name printed on the PAN grows, to take the field. */
+   and where that came from are held to two lines each. NSDL asking for the name
+   printed on the PAN does so in a row under the cards (.cud-retry), not in its card. */
 .cud-read__card { height: var(--doc-card-h); overflow: hidden; display: flex; flex-direction: column; }
 /* Every box on the step is one height: the cards keep the document boxes' own. */
 .cud-read__card .cud-read__lines, .cud-read__card .cud-read__from {
@@ -1893,7 +1918,35 @@ html:has(.clogin), html:has(.clogin) body { background: var(--border); }
 }
 .cud-read__card .cud-read__was { display: none; }
 /* NSDL holding a PAN against another name: the printed name asked for in a row of
-   its own under the cards, the field and the button side by side. */
+   its own under the PAN's box, the field and the button side by side. */
+/* In a document grid, the row straight under the PAN's box: across every column,
+   on the second row. Auto-placed boxes flow round it. On Upload Documents the PAN
+   is the second box, so once a phone stacks the boxes it is the third row. */
+/* In a document grid, the row straight under the PAN's box: across every column,
+   on the second row. Auto-placed boxes flow round it. On Upload Documents the PAN
+   is the second box, so once a phone stacks the boxes it is the third row. */
+.cud-grid > .cud-retry-row { grid-column: 1 / -1; grid-row: 2; }
+.cud-retry-row > .cud-retry { margin-top: 0; }
+@media (max-width: 700px) { .cud-grid > .cud-retry-row--pan-second { grid-row: 3; } }
+/* The Aadhaar number, typed for the PAN-Aadhaar link: after the last box, so across
+   the row under the proofs of address. */
+.cud-grid > .cud-retry-row--end { grid-row: auto; }
+
+/* Under a box: an error, a failed check or the tries left, each on a line of its own. */
+.cud-slot__notes { display: flex; flex-direction: column; }
+
+/* A document column's head: its label, and the type where it is chosen. */
+.cud-col__head { padding-bottom: 4px; }
+.cud-col__head > .csi-label { padding-bottom: 0; }
+/* A column whose card has View and Replace keeps its label clear of them; a narrow
+   column shows them as their icons alone, the names kept for hover and screen readers. */
+.cud-grid--docs > .cud-col { container-type: inline-size; }
+.cud-grid--docs > .cud-col:has(> .cud-slot > .cud-slot__tools, > .cud-choice:not([hidden]) > .cud-slot > .cud-slot__tools) > .cud-col__head { padding-right: 190px; }
+@container (max-width: 420px) {
+  .cud-slot__tools .cud-tool { padding: 5px 6px; }
+  .cud-slot__tools .cud-tool > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .cud-grid--docs > .cud-col:has(> .cud-slot > .cud-slot__tools, > .cud-choice:not([hidden]) > .cud-slot > .cud-slot__tools) > .cud-col__head { padding-right: 96px; }
+}
 .cud-retry { display: flex; align-items: center; flex-wrap: wrap; gap: 12px 24px; margin-top: 16px; padding: 14px 18px; border: 1px solid var(--pink-border); border-left: 3px solid var(--red); border-radius: 8px; background: var(--pink-tint); }
 .cud-retry__say { display: flex; flex-direction: column; gap: 2px; flex: 1 1 280px; min-width: 0; }
 .cud-retry__title { font-size: 13px; font-weight: 600; color: var(--red-dark); }
@@ -1909,6 +1962,10 @@ html:has(.clogin), html:has(.clogin) body { background: var(--border); }
 .cud-pay__mode { grid-column: 1; grid-row: 1; }
 .cud-pay__slot { grid-column: 1; grid-row: 2; }
 .cud-pay__slot .cud-slot { padding-top: 0; }
+/* The payment card has the mode's select over it, not a label: its View and Replace
+   take a line of their own above it, and the read card beside it drops level. */
+.cud-pay__slot .cud-slot > .cud-slot__tools { position: static; padding-bottom: 6px; }
+.cud-pay__grid:has(.cud-pay__slot .cud-choice:not([hidden]) .cud-slot__tools) .cud-pay__card { padding-top: 33px; }
 .cud-pay__card { grid-column: 2; grid-row: 2; }
 @media (max-width: 760px) {
   .cud-pay__grid { grid-template-columns: minmax(0, 1fr); }
@@ -2031,16 +2088,23 @@ html:has(.clogin), html:has(.clogin) body { background: var(--border); }
   letter-spacing: 0; text-transform: none; text-align: left; white-space: normal;
   transform: translateX(-50%); pointer-events: none; opacity: 0; transition: opacity .12s ease;
 }
-abbr.tip:hover::after, .tip:focus-visible::after { opacity: 1; }
+.tip:hover::after, .tip:focus-visible::after { opacity: 1; }
 
-/* A check that went well is said behind an info mark; its words are there on
-   hover or focus. Warnings and failures stay written out under the card. */
-.cud-slot__check--quiet { padding-top: 6px; }
-.cud-slot__check--quiet::before { content: none; }
+/* What a check said is behind an info mark; its words are there on hover or
+   focus. Only a failure that asks for a new copy stays written out. */
 .tip--info { display: inline-flex; align-items: center; gap: 5px; border-bottom: 0; font-size: 11.5px; color: var(--muted); }
 .tip--info::before { content: "i"; display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; border: 1px solid currentColor; border-radius: 50%; font-size: 9.5px; font-weight: 700; font-style: normal; }
 .tip--info:hover { color: var(--ink); }
 .tip--info::after { left: 0; transform: none; max-width: 300px; }
+/* The mark alone, with no words beside it: beside a box's tools, or a card's title. */
+.tip--mark { gap: 0; }
+.tip--mark.is-warn { color: var(--amber, #b45309); }
+.cud-slot__tools .tip::after { left: auto; right: 0; transform: none; }
+.cud-read__kind .tip--mark { margin-left: 6px; vertical-align: -2px; }
+.cud-read__card .tip::after { top: calc(100% + 6px); bottom: auto; max-width: 240px; }
+/* A copy that is final - a PAN NSDL verified - shows a lock where Replace would be. */
+.cud-tool.cud-tool--final { color: var(--green); border-color: transparent; background: transparent; cursor: help; }
+.cud-tool.cud-tool--final:hover { color: var(--green); background: transparent; }
 
 /* ----- Emphasis is the difference from the neighbours -----------------------
    A card with nothing to do - not applicable, or already done - steps back; the
@@ -2117,14 +2181,8 @@ abbr.tip:hover::after, .tip:focus-visible::after { opacity: 1; }
 .work-count--blue .work-count__n { background: var(--blue-bg); color: var(--blue); }
 .work-count__label { font-size: 12px; font-weight: 600; line-height: 1.3; }
 
-/* Continue an incomplete application: the latest drafts under the counts, each one
-   press from Upload Documents. The number leads, as it is what the partner quotes. */
+/* Continue an Incomplete Application on the dashboard: Investor Identification's
+   table of drafts (_Drafts), under the counts, with a way to the rest. */
 .drafts__head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .drafts__all { font-size: 12.5px; font-weight: 600; white-space: nowrap; }
-.drafts__list { list-style: none; margin: 0; padding: 21px 0 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
-.drafts__list form { height: 100%; }
-.draft-card { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; width: 100%; height: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; background: #fff; color: var(--ink); text-align: left; cursor: pointer; font-family: inherit; }
-.draft-card:hover { border-color: var(--border-3); background: var(--tint); }
-.draft-card:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
-.draft-card__no { font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.draft-card__who { font-size: 12px; color: var(--muted); line-height: 1.35; }
+.drafts .cii-note { margin-top: 8px; }

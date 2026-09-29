@@ -1,4 +1,4 @@
-@model ShortUrlViewModel
+@model LinksViewModel
 @{
     ViewData["Title"] = "Short URL (classic)";
 
@@ -67,7 +67,7 @@
         <div class="su-filters">
             <div class="su-pills" role="group" aria-label="Filter by state">
                 <button type="button" class="su-pill su-pill--on" data-state="all">All <span class="su-pill__n" data-count="all"></span></button>
-                @foreach (var st in ShortUrlViewModel.States)
+                @foreach (var st in LinksViewModel.States)
                 {
                     <button type="button" class="su-pill" data-state="@st.Key">@st.Label <span class="su-pill__n" data-count="@st.Key"></span></button>
                 }
@@ -151,7 +151,7 @@
 
 @section Scripts {
     <script src="~/js/console.js" asp-append-version="true"></script>
-    <script src="~/js/classic-short-url.js" asp-append-version="true"></script>
+    <script src="~/js/links.js" asp-append-version="true"></script>
     @if (ViewData["Toast"] is string toast)
     {
         @* What the last post came to, said once. *@

@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Net.Http.Headers;
 
-namespace UnoTP.Features;
+namespace UnoTP.Infrastructure;
 
 /// <summary>
 /// One round trip for a change instead of two. Every post answers with a redirect

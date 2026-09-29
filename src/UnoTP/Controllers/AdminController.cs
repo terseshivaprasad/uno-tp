@@ -1,7 +1,7 @@
 using System.Globalization;
 using Microsoft.AspNetCore.Mvc;
 using UnoTP.Backend;
-using UnoTP.Features;
+using UnoTP.Infrastructure;
 using UnoTP.Models;
 using UnoTP.ViewModels;
 
@@ -15,7 +15,7 @@ namespace UnoTP.Controllers;
 /// with the schedule as the backend now holds it.
 /// </summary>
 [RequiresFeature("admin")]
-[Route("Apps/UnoTp/Classic/Admin")]
+[Route("unotp/admin")]
 public class AdminController(FeatureSet features, ConsoleState console, IConsoleApi consoleApi, Lookups lookups) : Controller
 {
     [HttpGet("")]

@@ -3,7 +3,7 @@ using UnoTP.Backend;
 namespace UnoTP.ViewModels;
 
 /// <summary>View Application: the partner's applications, to look one up.</summary>
-public class ViewApplicationViewModel(IReadOnlyList<ApplicationRecord> applications, int windowDays)
+public class ApplicationsViewModel(IReadOnlyList<ApplicationRecord> applications, int windowDays)
 {
     // The old ViewApplication screen asked for an application number before it
     // would show anything, and had no way to reach an investor's other
@@ -134,5 +134,5 @@ public class ViewApplicationViewModel(IReadOnlyList<ApplicationRecord> applicati
 
     // The pay-in slip page writes rupees for the same applications, so the two
     // lists never disagree about an amount.
-    public static string Rupees(long amount) => PayInSlipViewModel.Rupees(amount);
+    public static string Rupees(long amount) => PayInSlipsViewModel.Rupees(amount);
 }

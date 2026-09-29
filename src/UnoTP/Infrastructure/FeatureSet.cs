@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Options;
 
-namespace UnoTP.Features;
+namespace UnoTP.Infrastructure;
 
 /// <summary>
 /// The features in force for one request: the appsettings defaults with any

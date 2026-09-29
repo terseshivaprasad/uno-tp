@@ -1,5 +1,5 @@
-@model InvestorIdentificationViewModel
-@using Stage = UnoTP.ViewModels.InvestorIdentificationViewModel.Stage
+@model NewApplicationViewModel
+@using Stage = UnoTP.ViewModels.NewApplicationViewModel.Stage
 @{
     ViewData["Title"] = "Investor Identification (classic)";
 
@@ -56,39 +56,7 @@
         }
         else
         {
-        <p class="cii-note">@Model.Drafts.Count opened and not submitted, the one touched last first &middot; identifiers are masked &middot; kept for @((await Lookups.ConfigAsync()).DraftDays) days</p>
-        <table class="su-table">
-            <thead>
-                <tr>
-                    <th scope="col">Application</th>
-                    <th scope="col">Name</th>
-                    <th scope="col">PAN</th>
-                    <th scope="col">Date of birth</th>
-                    <th scope="col">Amount</th>
-                    <th scope="col"><span class="visually-hidden">Action</span></th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var d in Model.Drafts)
-                {
-                    <tr>
-                        <td data-label="Application"><strong>@d.AppNo</strong></td>
-                        <td data-label="Name">@d.Name</td>
-                        <td data-label="PAN">@d.Pan</td>
-                        <td data-label="Date of birth">@d.Dob</td>
-                        <td data-label="Amount">@PayInSlipViewModel.Rupees(d.Amount)</td>
-                        <td class="su-table__act">
-                            @* Picked up under the number it was opened with, holder in full. *@
-                            @* Only the draft's number is posted, and the server checks it is one of this partner's. *@
-                            <form method="post" asp-action="Continue" data-partial>
-                                <input type="hidden" name="draft" value="@d.AppNo">
-                                <button type="submit" class="csi-link btn-reset" data-loader="Opening Upload Documents…" data-loader-hint="Application @d.AppNo">Continue <span aria-hidden="true">&rsaquo;</span></button>
-                            </form>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+        <partial name="_Drafts" model="@(new DraftsBlock(Model.Drafts, Model.Drafts.Count, Partial: true))" />
         }
     </section>
 
@@ -97,7 +65,7 @@
     <section class="csi-demo">
         <div class="csi-demo__head">
             <h2 class="csi-demo__title">Test data</h2>
-            <p class="csi-demo__sub">@demo.Cases.Count cases, and what each one does &middot; test records only &middot; every date of birth on record is <strong>@demo.Dob</strong></p>
+            <p class="csi-demo__sub">@demo.Cases.Count cases, and what each one does &middot; test records only &middot; every date of birth on record is <strong>@Dates.Show(demo.Dob)</strong></p>
         </div>
         <table class="csi-demo__table">
             <thead>
@@ -117,7 +85,7 @@
                         <td data-label="Case"><span class="csi-demo__no">@(i + 1)</span></td>
                         <td data-label="PAN"><code>@c.Pan</code></td>
                         <td data-label="Date of birth">
-                            @if (c.Dob.Length > 0) { @c.Dob }
+                            @if (c.Dob.Length > 0) { @Dates.Show(c.Dob) }
                             else { <span class="csi-demo__none">not on record</span> }
                         </td>
                         <td data-label="Folio">

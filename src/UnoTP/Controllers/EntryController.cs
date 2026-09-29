@@ -3,27 +3,28 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using UnoTP.Backend;
 using UnoTP.Backend.External;
-using UnoTP.Features;
+using UnoTP.Infrastructure;
 using UnoTP.ViewModels;
 
 namespace UnoTP.Controllers;
 
 /// <summary>
-/// The way into the app. The portal opens /Home?UserId=...&amp;Syscode=..., both
+/// The way into the app. The portal opens /unotp/entry?UserId=...&amp;Syscode=... (or
+/// / or the old /Home, which lead there), both
 /// encrypted. They are decrypted by the portal's service, the backend starts a
 /// session for the user and says which menus they may open, and the user lands
 /// on the dashboard - with nothing of either value left in the address. Also the
 /// error page, and the drawio download.
 /// </summary>
 [AllowWithoutSession]
-public class HomeController(
+public class EntryController(
     IDecryptionService decryption,
     ISessionApi sessions,
     FeatureSet features,
     IOptions<EntryOptions> entry,
-    ILogger<HomeController> log) : Controller
+    ILogger<EntryController> log) : Controller
 {
-    [HttpGet("Home")]
+    [HttpGet("unotp/entry")]
     public async Task<IActionResult> Index(
         [FromQuery(Name = "UserId")] string? userId,
         [FromQuery(Name = "Syscode")] string? sysCode,
@@ -87,7 +88,7 @@ public class HomeController(
     }
 
     /// <summary>Where a page goes when nobody has come in from the portal, or their session has ended.</summary>
-    [HttpGet("Home/SessionExpired")]
+    [HttpGet("unotp/session-expired")]
     public IActionResult SessionExpired()
     {
         HttpContext.Session.Clear();
@@ -96,33 +97,33 @@ public class HomeController(
     }
 
     /// <summary>Ends the session here and goes back to the portal, which signs the user out there.</summary>
-    [HttpGet("Home/Logout")]
-    public IActionResult Logout([FromServices] UnoTP.AppUrls apps)
+    [HttpGet("unotp/logout")]
+    public IActionResult Logout([FromServices] UnoTP.Infrastructure.AppUrls apps)
     {
         HttpContext.Session.Clear();
         return Redirect(apps.Url("/"));
     }
 
     /// <summary>A feature the user's menu does not open, reached by its address.</summary>
-    [HttpGet("Home/Unauthorized")]
+    [HttpGet("unotp/unauthorized")]
     public IActionResult Unauthorized(string? feature) =>
         Refused(feature is not null && FeatureSet.MenuKeys.Contains(feature)
             ? $"{UnoTP.Models.ConsoleAdmin.NameOf(feature)} is not in your menu. Ask your administrator if you need it."
             : "You do not have access to this page.");
 
-    [HttpGet("Error")]
+    [HttpGet("unotp/error")]
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     [IgnoreAntiforgeryToken]
     public IActionResult Error() =>
         View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
 
     /// <summary>A standalone page to download the Unotp search page drawio file.</summary>
-    [HttpGet("DrawioDownload")]
+    [HttpGet("unotp/drawio-download")]
     public IActionResult DrawioDownload() => View();
 
     // Only ever to a page of this app.
     private IActionResult Onward(string? returnUrl) =>
-        LocalRedirect(Url.IsLocalUrl(returnUrl) ? returnUrl! : "~/Dashboard");
+        LocalRedirect(Url.IsLocalUrl(returnUrl) ? returnUrl! : "~/unotp");
 
     // The way in was refused, or the page is not the user's: said on Unauthorized.
     private ViewResult Refused(string message)

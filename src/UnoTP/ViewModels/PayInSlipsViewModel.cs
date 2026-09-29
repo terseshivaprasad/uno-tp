@@ -4,7 +4,7 @@ using UnoTP.Backend;
 namespace UnoTP.ViewModels;
 
 /// <summary>Pay In Slip Generation: the applications paying on paper, and their slips.</summary>
-public class PayInSlipViewModel(IReadOnlyList<SlipRecord> slips, int windowDays)
+public class PayInSlipsViewModel(IReadOnlyList<SlipRecord> slips, int windowDays)
 {
     // The window the page works to. It is the Short URL page's rule seen from the
     // other side: an application that goes unpaid for this long cancels itself, so

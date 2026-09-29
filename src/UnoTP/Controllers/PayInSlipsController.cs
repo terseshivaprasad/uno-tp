@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using UnoTP.Backend;
-using UnoTP.Features;
+using UnoTP.Infrastructure;
 using UnoTP.ViewModels;
 
 namespace UnoTP.Controllers;
@@ -11,14 +11,14 @@ namespace UnoTP.Controllers;
 /// each post says what came of it once, on the page it redirects to.
 /// </summary>
 [RequiresFeature("pis")]
-[Route("Apps/UnoTp/Classic/PayInSlip")]
-public class PayInSlipController(IPayInSlipApi slips, ILinkApi links, Lookups lookups) : Controller
+[Route("unotp/pay-in-slips")]
+public class PayInSlipsController(IPayInSlipApi slips, ILinkApi links, Lookups lookups) : Controller
 {
     [HttpGet("")]
     public async Task<IActionResult> Index()
     {
         ViewData["Toast"] = TempData["toast"];
-        return View(new PayInSlipViewModel(await slips.SlipsAsync(), (await lookups.ConfigAsync()).CancellationDays));
+        return View(new PayInSlipsViewModel(await slips.SlipsAsync(), (await lookups.ConfigAsync()).CancellationDays));
     }
 
     /// <summary>Issues the application's slip, or a fresh one for a reprint.</summary>

@@ -1,4 +1,4 @@
-@model PayInSlipViewModel
+@model PayInSlipsViewModel
 @{
     ViewData["Title"] = "Pay In Slip Generation (classic)";
 
@@ -7,7 +7,7 @@
     // last fourteen days of applications, which is every one a slip can still be
     // made for, and keeps the search for narrowing that down.
     var earliest = Model.Earliest;
-    var today = PayInSlipViewModel.Today;
+    var today = PayInSlipsViewModel.Today;
     var listed = Model.Listed.ToList();
     var pending = listed.Count(r => r.State == "pending" && !r.Blocked);
     var blocked = listed.Count(r => r.Blocked);
@@ -142,7 +142,7 @@
                             <div class="su-table__sub@(r.Urgent ? " su-table__sub--urgent" : "")">@r.Countdown</div>
                         </td>
                         <td data-label="Investor">@r.Investor</td>
-                        <td data-label="Amount" class="pis-table__amt">@PayInSlipViewModel.Rupees(r.Amount)</td>
+                        <td data-label="Amount" class="pis-table__amt">@PayInSlipsViewModel.Rupees(r.Amount)</td>
                         <td data-label="Instrument">
                             @r.Instrument @r.InstrumentNo
                             <div class="su-table__sub">@r.DrawnOn</div>
@@ -206,7 +206,7 @@
 
 @section Scripts {
     <script src="~/js/console.js" asp-append-version="true"></script>
-    <script src="~/js/classic-payin-slip.js" asp-append-version="true"></script>
+    <script src="~/js/pay-in-slips.js" asp-append-version="true"></script>
     @if (ViewData["Toast"] is string toast)
     {
         @* What the last post came to, said once. *@

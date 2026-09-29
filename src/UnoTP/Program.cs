@@ -6,7 +6,7 @@ using UnoTP;
 using UnoTP.Backend;
 using UnoTP.Backend.Idfy;
 using UnoTP.Backend.Mock;
-using UnoTP.Features;
+using UnoTP.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -223,30 +223,46 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapHealthChecks("/health");
 
-// The portal may open the app at its root: the way in is Home, with whatever it sent.
-app.MapGet("/", (HttpContext ctx) => Results.LocalRedirect("~/Home" + ctx.Request.QueryString));
+// The portal may open the app at its root: the way in is its entry, with whatever it sent.
+app.MapGet("/", (HttpContext ctx) => Results.LocalRedirect("~/unotp/entry" + ctx.Request.QueryString));
 
-// Old addresses, kept for saved links and the other apps' tiles. A search
-// bookmarked under the old address keeps its query, so it lands on its result.
-app.MapGet("/Apps/UnoTp/Classic", () => Results.LocalRedirect("~/Dashboard"));
-app.MapGet("/Apps/UnoTp/Classic/SearchInvestor", (HttpContext ctx) =>
-    Results.LocalRedirect("~/Purchase/InvestorIdentification" + ctx.Request.QueryString));
-
-// The new design's dashboard and consent tracker are kept in archive/new-design.
-// Their addresses - saved links, and the other apps' tiles - land on the classic
-// dashboard instead.
-foreach (var archived in new[] { "/Apps/UnoTp/Dashboard/{**rest}", "/Apps/UnoTp/ConsentTracker" })
+// Every page is under /unotp, in lowercase. The addresses it had before - saved
+// links, the portal's /Home?UserId=..., the other apps' tiles - land on the page
+// that took their place, with whatever query they carried.
+var moved = new (string From, string To)[]
 {
-    app.MapGet(archived, () => Results.LocalRedirect("~/Dashboard"));
-}
+    ("/Home", "/unotp/entry"),
+    ("/Home/SessionExpired", "/unotp/session-expired"),
+    ("/Home/Logout", "/unotp/logout"),
+    ("/Home/Unauthorized", "/unotp/unauthorized"),
+    ("/Dashboard", "/unotp"),
+    ("/Apps/UnoTp/Classic", "/unotp"),
+    ("/Apps/UnoTp/Dashboard/{**rest}", "/unotp"),
+    ("/Apps/UnoTp/ConsentTracker", "/unotp"),
+    ("/Apps/UnoTp/Desktop/ConsentTracker", "/unotp"),
+    ("/Purchase/InvestorIdentification", "/unotp/new"),
+    ("/Apps/UnoTp/Classic/SearchInvestor", "/unotp/new"),
+    ("/Apps/UnoTp/Application/HolderIdentification", "/unotp/new"),
+    // An address with no application in it has none to open: the way in is a search.
+    ("/Apps/UnoTp/Application/UploadDocuments", "/unotp/new"),
+    ("/Apps/UnoTp/Classic/UploadDocuments", "/unotp/new"),
+    ("/Apps/UnoTp/Classic/ViewApplication", "/unotp/applications"),
+    ("/Apps/UnoTp/Classic/PayInSlip", "/unotp/pay-in-slips"),
+    ("/Apps/UnoTp/Classic/ShortUrl", "/unotp/links"),
+    ("/Apps/UnoTp/Classic/Admin", "/unotp/admin"),
+};
+foreach (var (from, to) in moved)
+    app.MapGet(from, (HttpContext ctx) => Results.LocalRedirect("~" + to + ctx.Request.QueryString));
 
-// Its later wizard steps are served again (ApplicationController); its first two are
-// the classic Investor Identification and Upload Documents.
-app.MapGet("/Apps/UnoTp/Application/HolderIdentification", () => Results.LocalRedirect("~/Purchase/InvestorIdentification"));
-// An address with no application in it has none to open: the way in is a search.
-foreach (var bare in new[] { "/Apps/UnoTp/Application/UploadDocuments", "/Apps/UnoTp/Classic/UploadDocuments" })
+// A step of an application, under its old name.
+var steps = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
 {
-    app.MapGet(bare, () => Results.LocalRedirect("~/Purchase/InvestorIdentification"));
-}
+    ["UploadDocuments"] = "documents", ["InvestorInfo"] = "investor", ["BankDetails"] = "payment",
+    ["FdConfiguration"] = "deposit", ["ReviewSummary"] = "review", ["Submitted"] = "submitted",
+};
+app.MapGet("/Apps/UnoTp/Application/{appNo}/{step}", (string appNo, string step, HttpContext ctx) =>
+    steps.TryGetValue(step, out var to)
+        ? Results.LocalRedirect($"~/unotp/applications/{Uri.EscapeDataString(appNo)}/{to}{ctx.Request.QueryString}")
+        : Results.NotFound());
 
 app.Run();

@@ -2,14 +2,14 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using UnoTP.Backend;
-using UnoTP.Features;
+using UnoTP.Infrastructure;
 using UnoTP.Models;
 using UnoTP.ViewModels;
 
 namespace UnoTP.Controllers;
 
 /// <summary>
-/// Investor Information (see <see cref="InvestorInfoViewModel"/>). The page is one
+/// Investor Information (see <see cref="InvestorViewModel"/>). The page is one
 /// form, and every post carries all of it: what was typed is kept in the session
 /// first, then the post does its one thing - a joint holder's identification step,
 /// a joint holder's document, adding or removing a card, Proceed - and redirects
@@ -23,8 +23,8 @@ namespace UnoTP.Controllers;
 [RequiresFeature("new-fd")]
 [RequestSizeLimit(12 * 1024 * 1024)]
 [RequestFormLimits(MultipartBodyLengthLimit = 12 * 1024 * 1024)]
-[Route("Apps/UnoTp/Application/{appNo}/InvestorInfo")]
-public class InvestorInfoController(
+[Route("unotp/applications/{appNo}/investor")]
+public class InvestorController(
     HolderSearch search,
     IApplicationApi applications,
     IServiceProvider services) : Controller
@@ -56,7 +56,7 @@ public class InvestorInfoController(
         // backend holds for it.
         if (state.Fields.Count == 0 && docs.App.Details is { } saved) InvestorDetailsForm.FromDetails(state, saved);
         Recover(state, docs);
-        var model = new InvestorInfoViewModel(state, docs)
+        var model = new InvestorViewModel(state, docs)
         {
             Offline = TempData["offline"] is true,
             Unfinished = TempData["unfinished"] as int?,
@@ -89,7 +89,7 @@ public class InvestorInfoController(
     public async Task<IActionResult> Proceed(IFormCollection form)
     {
         var state = Keep(form);
-        var page = new InvestorInfoViewModel(state, null);
+        var page = new InvestorViewModel(state, null);
         if (page.On("Holder1.FatcaTaxResident") || page.On("Holder1.FatcaPermanentResident"))
         {
             TempData["offline"] = true;
@@ -108,7 +108,7 @@ public class InvestorInfoController(
         // saying whether they are, or are related to, a politically exposed person.
         // Everything missing is marked at once, and the first takes the caret.
         var holders = docs.JointHolders.Select(h => (int.Parse(h.Code), h)).Prepend((1, docs.Investor));
-        if (InvestorInfoViewModel.Unfilled(state, holders, docs.Config.MinAge) is [var first, ..] unfilled)
+        if (InvestorViewModel.Unfilled(state, holders, docs.Config.MinAge) is [var first, ..] unfilled)
         {
             TempData["errors"] = JsonSerializer.Serialize(unfilled.ToDictionary(u => u.Field, u => u.Error));
             return Back(first.Id);
@@ -118,7 +118,7 @@ public class InvestorInfoController(
         var at = docs.ProceedJoint();
         if (!await SaveAsync(docs)) at = null;
         return docs.Said is null
-            ? RedirectToAction(nameof(ApplicationController.BankDetails), "Application")
+            ? RedirectToAction(nameof(PaymentController.Index), "Payment")
             : Back(at);
     }
 
@@ -141,7 +141,7 @@ public class InvestorInfoController(
     {
         var state = Keep(form);
         if (await LoadAsync() is not { } docs) return Start();
-        if (!new InvestorInfoViewModel(state, docs).CanAddJoint) return Back(null);
+        if (!new InvestorViewModel(state, docs).CanAddJoint) return Back(null);
         state.Joint.Add(new SearchState("pan", null, null, null, null, null, Checked: false));
         State = state;
         return Back($"holder-{state.Joint.Count + 1}");
@@ -169,7 +169,7 @@ public class InvestorInfoController(
         taken.AddRange(docs.JointHolders.Select(h => h.Who.Pan));
         if (taken.Contains(record.Pan)) return Back($"holder-{n}");
 
-        docs.AddJoint(InvestorInfoViewModel.CodeOf(n), HolderSearch.ApplicationHolder(record));
+        docs.AddJoint(InvestorViewModel.CodeOf(n), HolderSearch.ApplicationHolder(record));
         if (await SaveAsync(docs))
         {
             state.Joint[i] = state.Joint[i] with { Added = true };
@@ -190,7 +190,7 @@ public class InvestorInfoController(
         var i = n - 2;
         if (i < 0 || i != state.Joint.Count - 1) return Back($"holder-{n}");
         if (await LoadAsync() is not { } docs) return Start();
-        docs.RemoveJoint(InvestorInfoViewModel.CodeOf(n));
+        docs.RemoveJoint(InvestorViewModel.CodeOf(n));
         if (!await SaveAsync(docs)) return Back(null);
 
         state.Joint.RemoveAt(i);
@@ -219,7 +219,7 @@ public class InvestorInfoController(
         JointDocsAsync(n, form, (docs, h) =>
         {
             var key = form["slot"].ToString();
-            return UploadDocumentsViewModel.HolderSlots.Any(d => h.Key(d.Key) == key)
+            return DocumentsViewModel.HolderSlots.Any(d => h.Key(d.Key) == key)
                 ? docs.UploadAsync(key, form.Files)
                 : Task.FromResult<string?>(null);
         });
@@ -228,6 +228,11 @@ public class InvestorInfoController(
     [HttpPost("joint/{n:int}/nsdl")]
     public Task<IActionResult> JointNsdl(int n, IFormCollection form) =>
         JointDocsAsync(n, form, (docs, h) => docs.RetryNsdlAsync(h, form[h.Key("nsdlName")]));
+
+    /// <summary>A joint holder's 12-digit Aadhaar number, typed where OCR could not read it, for the PAN-Aadhaar link.</summary>
+    [HttpPost("joint/{n:int}/aadhaar-number")]
+    public Task<IActionResult> JointAadhaarNumber(int n, IFormCollection form) =>
+        JointDocsAsync(n, form, (docs, h) => docs.AadhaarNumberAsync(h, form[h.Key("aadhaarNo")]));
 
     // ----- The nominee -------------------------------------------------------
 
@@ -303,7 +308,7 @@ public class InvestorInfoController(
 
     // A session that lost the page - it expired, or the partner came back in another
     // - finds the joint holders the application already carries, added.
-    private static void Recover(InvestorInfoState state, UploadDocumentsViewModel docs)
+    private static void Recover(InvestorInfoState state, DocumentsViewModel docs)
     {
         if (state.Joint.Count > 0) return;
         foreach (var h in docs.JointHolders)
@@ -317,11 +322,11 @@ public class InvestorInfoController(
     // A post about a joint holder's documents: the application read afresh, what
     // every card posted about its documents kept, the step done, and all of it saved
     // back against the version read.
-    private async Task<IActionResult> JointDocsAsync(int n, IFormCollection form, Func<UploadDocumentsViewModel, UploadDocumentsViewModel.DocHolder, Task<string?>> step)
+    private async Task<IActionResult> JointDocsAsync(int n, IFormCollection form, Func<DocumentsViewModel, DocumentsViewModel.DocHolder, Task<string?>> step)
     {
         Keep(form);
         if (await LoadAsync() is not { } docs) return Start();
-        if (docs.JointHolder(InvestorInfoViewModel.CodeOf(n)) is not { } h) return Back($"holder-{n}");
+        if (docs.JointHolder(InvestorViewModel.CodeOf(n)) is not { } h) return Back($"holder-{n}");
         docs.KeepJoint(form);
         var at = await step(docs, h);
         if (!await SaveAsync(docs)) at = null;
@@ -329,17 +334,17 @@ public class InvestorInfoController(
     }
 
     // The backend only ever finds the partner's own application.
-    private async Task<UploadDocumentsViewModel?> LoadAsync()
+    private async Task<DocumentsViewModel?> LoadAsync()
     {
         var appNo = HttpContext.CurrentApplication();
         var app = appNo is null ? null : await applications.FindAsync(appNo);
-        return app is null ? null : await ActivatorUtilities.CreateInstance<UploadDocumentsViewModel>(services, app, HttpContext.Session).ReadyAsync();
+        return app is null ? null : await ActivatorUtilities.CreateInstance<DocumentsViewModel>(services, app, HttpContext.Session).ReadyAsync();
     }
 
     // Saved against the version read, then DMS brought in line. A save refused
     // because the application changed in between keeps nothing, and says so. What
     // the post has to say is kept for the page it redirects to.
-    private async Task<bool> SaveAsync(UploadDocumentsViewModel docs)
+    private async Task<bool> SaveAsync(DocumentsViewModel docs)
     {
         var saved = await applications.SaveUploadAsync(docs.AppNo, docs.App.Version, docs.State) is not null;
         if (saved) await docs.SettleAsync();
@@ -362,7 +367,7 @@ public class InvestorInfoController(
 
     // With no application in the session there is nothing to show: the partner
     // starts at Investor Identification, which opens one.
-    private RedirectToActionResult Start() => RedirectToAction(nameof(InvestorIdentificationController.Index), "InvestorIdentification");
+    private RedirectToActionResult Start() => RedirectToAction(nameof(NewApplicationController.Index), "NewApplication");
 
-    private static string FlashKey(UploadDocumentsViewModel docs) => "flash-info:" + docs.AppNo;
+    private static string FlashKey(DocumentsViewModel docs) => "flash-info:" + docs.AppNo;
 }

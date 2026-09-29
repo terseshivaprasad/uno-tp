@@ -1,7 +1,7 @@
 using System.Text.Json;
 using UnoTP.Backend;
 
-namespace UnoTP.Features;
+namespace UnoTP.Infrastructure;
 
 /// <summary>
 /// What the server keeps for one partner's browser: the sign-in - who the partner
@@ -21,7 +21,7 @@ public static class PartnerSession
 
     /// <summary>
     /// Whose applications this browser may open: the user the portal sent in (see
-    /// HomeController), so an application only ever opens for them. Before anyone
+    /// EntryController), so an application only ever opens for them. Before anyone
     /// has come in, a random id nobody's applications are held under.
     /// </summary>
     public static string Owner(this ISession session)

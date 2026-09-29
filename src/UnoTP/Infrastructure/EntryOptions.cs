@@ -1,4 +1,4 @@
-namespace UnoTP.Features;
+namespace UnoTP.Infrastructure;
 
 /// <summary>
 /// The "Entry" section of appsettings: the user the demo comes in as when the app

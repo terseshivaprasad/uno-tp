@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using UnoTP.Backend;
-using UnoTP.Features;
+using UnoTP.Infrastructure;
 using UnoTP.Models;
 using UnoTP.ViewModels;
 
@@ -19,7 +19,7 @@ public class DashboardController(
     Lookups lookups,
     ILogger<DashboardController> log) : Controller
 {
-    [HttpGet("Dashboard")]
+    [HttpGet("unotp")]
     public async Task<IActionResult> Index(string? off)
     {
         var board = console.BoardAsync();
@@ -49,11 +49,11 @@ public class DashboardController(
             var pay = p.Count(x => x.Due == "payment");
             work.Add(new WorkItem("links", "Waiting on the investor", p.Count,
                 string.Join(" · ", new[] { (pay, "to pay"), (p.Count - pay, "to accept") }.Where(x => x.Item1 > 0).Select(x => $"{x.Item1} {x.Item2}")),
-                "ShortUrl", "blue"));
+                "Links", "blue"));
         }
 
         if (await slipRows is { } s && s.Count(x => x.State == "pending" && (!x.Digital || x.Accepted)) is var toMake and > 0)
-            work.Add(new WorkItem("slips", "Pay-in slips to generate", toMake, "Cheques and DDs to pay in at Axis", "PayInSlip", "blue"));
+            work.Add(new WorkItem("slips", "Pay-in slips to generate", toMake, "Cheques and DDs to pay in at Axis", "PayInSlips", "blue"));
 
         if (await apps is { } a)
         {
@@ -64,7 +64,7 @@ public class DashboardController(
             if (closing.Count > 0)
                 work.Add(new WorkItem("closing", "Close to auto-cancel", closing.Count,
                     $"Soonest: {closing[0].App.AppNo}, {(closing[0].Left <= 1 ? "today" : $"in {closing[0].Left} days")}",
-                    "ViewApplication", "red"));
+                    "Applications", "red"));
         }
         return work;
     }

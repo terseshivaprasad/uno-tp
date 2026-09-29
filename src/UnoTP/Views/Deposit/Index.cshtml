@@ -1,4 +1,4 @@
-@model FdConfigViewModel
+@model DepositViewModel
 @{
     ViewData["Title"] = "FD Configuration";
 
@@ -66,7 +66,7 @@
 <div class="csi">
     <partial name="_ClassicSteps" model="4" />
 
-    <form class="csi-main" id="fdConfigForm" data-guard method="post" data-partial novalidate data-partial-focus="@focus" data-quote-url="@Url.Action("FdQuote")">
+    <form class="csi-main" id="fdConfigForm" data-guard method="post" data-partial novalidate data-partial-focus="@focus" data-quote-url="@Url.Action("Quote")">
         @* Pressed for the partner whenever a choice changes: the deposit is saved and redrawn. *@
         <button type="submit" class="visually-hidden" id="fdRefresh" name="refresh" value="" formnovalidate tabindex="-1">Update</button>
 
@@ -213,7 +213,7 @@
 
                 @* ── This deposit, as the backend quotes it ─────────────────────── *@
                 <aside class="fd-summary" id="fd-quote" aria-live="polite">
-                    <partial name="_FdQuote" model="Model" />
+                    <partial name="_Quote" model="Model" />
                 </aside>
             </div>
         </section>
@@ -222,7 +222,7 @@
 
 <footer class="csi-bar">
     <div class="csi-bar__inner">
-        <a class="csi-btn csi-btn--back" asp-controller="Application" asp-action="BankDetails" data-loader="Going back to Bank Details &amp; Payment">Back</a>
+        <a class="csi-btn csi-btn--back" asp-controller="Payment" asp-action="Index" data-loader="Going back to Bank Details &amp; Payment">Back</a>
         <p class="csi-bar__hint">
             @if (problems > 0)
             {
@@ -242,5 +242,5 @@
 @section Scripts {
     <script src="~/js/partial-forms.js" asp-append-version="true"></script>
     <script src="~/js/fd-quote.js" asp-append-version="true"></script>
-    <script src="~/js/classic-pin.js" asp-append-version="true"></script>
+    <script src="~/js/pin.js" asp-append-version="true"></script>
 }

@@ -2,18 +2,18 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.AspNetCore.Routing;
 
-namespace UnoTP.Features;
+namespace UnoTP.Infrastructure;
 
 /// <summary>
 /// The application a wizard step works on travels in the page's address -
-/// Apps/UnoTp/Application/{appNo}/... - never in the server's session: the
+/// unotp/applications/{appNo}/... - never in the server's session: the
 /// application and everything on it are the backend's, kept there for audit.
 /// </summary>
 public static class ApplicationUrls
 {
     /// <summary>The controllers whose addresses carry the application's number.</summary>
     public static readonly IReadOnlySet<string> Steps =
-        new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "UploadDocuments", "InvestorInfo", "Application" };
+        new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Documents", "Investor", "Payment", "Deposit", "Review", "Submitted" };
 
     /// <summary>The application the page is on, from its address; null off the wizard.</summary>
     public static string? CurrentApplication(this HttpContext http) => http.GetRouteValue("appNo") as string;

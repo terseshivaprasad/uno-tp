@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using UnoTP.Backend;
-using UnoTP.Features;
+using UnoTP.Infrastructure;
 using UnoTP.ViewModels;
 
 namespace UnoTP.Controllers;
@@ -11,14 +11,14 @@ namespace UnoTP.Controllers;
 /// do; the post says what came of it once, on the page it redirects to.
 /// </summary>
 [RequiresFeature("short-url")]
-[Route("Apps/UnoTp/Classic/ShortUrl")]
-public class ShortUrlController(ILinkApi links, Lookups lookups) : Controller
+[Route("unotp/links")]
+public class LinksController(ILinkApi links, Lookups lookups) : Controller
 {
     [HttpGet("")]
     public async Task<IActionResult> Index()
     {
         ViewData["Toast"] = TempData["toast"];
-        return View(new ShortUrlViewModel(await links.SentAsync(), await links.PendingAsync(), await lookups.ConfigAsync()));
+        return View(new LinksViewModel(await links.SentAsync(), await links.PendingAsync(), await lookups.ConfigAsync()));
     }
 
     /// <summary>Sends a link, replacing any sent before, which stops working.</summary>

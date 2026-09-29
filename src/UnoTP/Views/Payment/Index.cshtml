@@ -1,4 +1,4 @@
-@model BankDetailsViewModel
+@model PaymentViewModel
 @{
     ViewData["Title"] = "Bank Details & Payment";
 
@@ -199,7 +199,7 @@
                     @* What Upload Documents read off the cheque, to type the account against. *@
                     <div class="bank-verified bank-after">
                         <svg class="bank-verified__tick" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7"></path></svg>
-                        <div class="bank-verified__text"><strong>@cheque.State.</strong> Read off the cheque filed on <a asp-controller="UploadDocuments" asp-action="Index">Upload Documents</a>: @cheque.Lines@if (Model.FilledFromCheque) {<text>. The account and the cheque above are filled in from it &mdash; check them against the cheque before you proceed.</text>}</div>
+                        <div class="bank-verified__text"><strong>@cheque.State.</strong> Read off the cheque filed on <a asp-controller="Documents" asp-action="Index">Upload Documents</a>: @cheque.Lines@if (Model.FilledFromCheque) {<text>. The account and the cheque above are filled in from it &mdash; check them against the cheque before you proceed.</text>}</div>
                     </div>
                 }
             </section>
@@ -277,7 +277,7 @@
 
 <footer class="csi-bar">
     <div class="csi-bar__inner">
-        <a class="csi-btn csi-btn--back" asp-controller="InvestorInfo" asp-action="Index" data-loader="Going back to Investor Information">Back</a>
+        <a class="csi-btn csi-btn--back" asp-controller="Investor" asp-action="Index" data-loader="Going back to Investor Information">Back</a>
         <p class="csi-bar__hint">
             @if (problems > 0)
             {
@@ -296,6 +296,6 @@
 
 @section Scripts {
     <script src="~/js/partial-forms.js" asp-append-version="true"></script>
-    <script src="~/js/classic-pin.js" asp-append-version="true"></script>
+    <script src="~/js/pin.js" asp-append-version="true"></script>
     <script src="~/js/bank-search.js" asp-append-version="true"></script>
 }

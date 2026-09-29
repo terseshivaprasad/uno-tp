@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Options;
 
-namespace UnoTP.Features;
+namespace UnoTP.Infrastructure;
 
 public static class FeatureMiddleware
 {

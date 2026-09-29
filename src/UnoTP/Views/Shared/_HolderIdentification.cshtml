@@ -1,5 +1,5 @@
 @model HolderIdentificationBlock
-@using Stage = UnoTP.ViewModels.InvestorIdentificationViewModel.Stage
+@using Stage = UnoTP.ViewModels.NewApplicationViewModel.Stage
 @* Investor Identification's search and result for one holder: the primary on
    Investor Identification, and each joint holder on Investor Information. Every
    step posts to the server, which checks the holder against the register (see
@@ -51,7 +51,7 @@
         }
     }
 
-    private async Task SearchFields(InvestorIdentificationViewModel m, string ids, string? focus)
+    private async Task SearchFields(NewApplicationViewModel m, string ids, string? focus)
     {
         if (Model.FolioSearch)
         {
@@ -88,9 +88,9 @@
                 <div class="csi-date @(m.DobError is not null ? "is-invalid" : null)" role="group" aria-labelledby="@(ids)DobLabel" aria-describedby="@(ids)DobError"
                      data-required="Enter the date of birth" data-check="date" data-error-id="@(ids)DobError">
                     <input class="csi-date__part" id="@(ids)Dd" name="@Model.Name("Dd")" value="@m.Dd" inputmode="numeric" maxlength="2" placeholder="DD" aria-label="Day" autocomplete="off" autofocus="@(focus == ids + "Dd")">
-                    <span class="csi-date__sep">-</span>
+                    <span class="csi-date__sep">/</span>
                     <input class="csi-date__part" name="@Model.Name("Mm")" value="@m.Mm" inputmode="numeric" maxlength="2" placeholder="MM" aria-label="Month" autocomplete="off">
-                    <span class="csi-date__sep">-</span>
+                    <span class="csi-date__sep">/</span>
                     <input class="csi-date__part csi-date__part--year" name="@Model.Name("Yyyy")" value="@m.Yyyy" inputmode="numeric" maxlength="4" placeholder="YYYY" aria-label="Year" autocomplete="off">
                 </div>
                 <p class="csi-error" id="@(ids)DobError" hidden="@(m.DobError is null)">@m.DobError</p>
@@ -190,11 +190,12 @@ else
             <p class="csi-result__said">@said</p>
         }
 
-        @if (m.Identified)
+        @if (m.Identified || newPan)
         {
             @* What the register holds against this record, item by item. Anything
                missing is asked for again during entry, so it is said here rather
-               than left for the upload step to spring. *@
+               than left for the upload step to spring. A new investor has no record
+               yet, so every item is listed as collected during entry. *@
             <div class="inv-panel__part csi-onrecord @(r.Missing == 0 ? "csi-onrecord--complete" : null)">
                 <div class="csi-onrecord__label">@r.OnRecordTitle</div>
                 <ul class="csi-onrecord__list">
@@ -210,7 +211,7 @@ else
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M12 6v7"></path><circle cx="12" cy="18" r=".6" fill="currentColor"></circle></svg>
                             }
                             <span>@item.Label</span>
-                            <span class="visually-hidden">, @(item.Held ? "available with us" : "not available with us")</span>
+                            <span class="visually-hidden">, @(item.Held ? "available with us" : newPan ? "collected during entry" : "not available with us")</span>
                         </li>
                     }
                 </ul>

@@ -1,5 +1,5 @@
 @model DocSlotBlock
-@using M = UnoTP.ViewModels.UploadDocumentsViewModel
+@using M = UnoTP.ViewModels.DocumentsViewModel
 @*
     One document slot, the investor's on Upload Documents or a joint holder's on
     Investor Information. Empty, the box is a label over the file picker, so a
@@ -14,6 +14,42 @@
     var filed = v.Doc is not null;
 }
 <div class="cud-slot @(v.Error is not null ? "is-invalid" : null) @(v.Unconfirmed ? "is-unconfirmed" : null) @(Model.IsNext ? "is-next" : null)" id="@(Model.Alternate ? null : "slot-" + key)" tabindex="-1">
+    @* At the top, on the label line over the box, at its right: how the copy was
+       checked behind an info mark, then View and Replace - or, for a copy that is
+       final, a lock saying why it cannot be replaced. Out of the box, so every box
+       keeps one height whatever it holds. The box itself opens the copy too. *@
+    @if (v.Used && filed)
+    {
+    <div class="cud-slot__tools">
+        @* A check that failed asks for a new copy, so it stays written out under the box. *@
+        @if (v.Doc!.Check.Length > 0 && v.Doc.CheckKind != "bad")
+        {
+            <span class="tip tip--info tip--mark @(v.Doc.CheckKind == "warn" ? "is-warn" : null)" tabindex="0" data-tip="@v.Doc.Check"><span class="visually-hidden">How it was checked: @v.Doc.Check</span></span>
+        }
+        <button type="button" class="cud-tool" popovertarget="preview-@key" title="View @v.Def.Label">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.8 12S5.5 5.5 12 5.5 22.2 12 22.2 12 18.5 18.5 12 18.5 1.8 12 1.8 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            <span>View</span>
+        </button>
+        @* Three refused in a row and a filed document cannot be swapped here either;
+           nor can a PAN copy NSDL verified, which is final. *@
+        @if (v.Final is not null)
+        {
+            <span class="cud-tool cud-tool--final tip" tabindex="0" data-tip="@v.Final">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10.5" width="14" height="9.5" rx="1.6"></rect><path d="M8.5 10.5V7.8a3.5 3.5 0 0 1 7 0v2.7"></path></svg>
+                <span>Final</span><span class="visually-hidden">: @v.Final</span>
+            </span>
+        }
+        else if (!v.Spent)
+        {
+            <label class="cud-tool" for="file-@key" title="Replace @v.Def.Label">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 12a8.5 8.5 0 0 1-14.6 5.9"></path><path d="M3.5 12a8.5 8.5 0 0 1 14.6-5.9"></path><path d="M18.5 2.5V7H14"></path><path d="M5.5 21.5V17H10"></path></svg>
+                <span>Replace</span>
+            </label>
+            <input type="file" id="file-@key" name="file_@key" accept="@v.Def.Accepts.Mime" hidden data-submit="upload-@key" form="@form"
+                   data-shrink="@(v.Def.Key == DocumentsViewModel.FormSlot.Key ? null : "2560")">
+        }
+    </div>
+    }
     <div class="cud-slot__frame">
         @if (!v.Used && v.Read is { } held)
         {
@@ -45,22 +81,6 @@
         }
         else if (filed)
         {
-            <div class="cud-slot__tools">
-                <button type="button" class="cud-tool" popovertarget="preview-@key" title="View @v.Def.Label">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.8 12S5.5 5.5 12 5.5 22.2 12 22.2 12 18.5 18.5 12 18.5 1.8 12 1.8 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                    <span>View</span>
-                </button>
-                @* Three refused in a row and a filed document cannot be swapped here either. *@
-                @if (!v.Spent)
-                {
-                    <label class="cud-tool" for="file-@key" title="Replace @v.Def.Label">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 12a8.5 8.5 0 0 1-14.6 5.9"></path><path d="M3.5 12a8.5 8.5 0 0 1 14.6-5.9"></path><path d="M18.5 2.5V7H14"></path><path d="M5.5 21.5V17H10"></path></svg>
-                        <span>Replace</span>
-                    </label>
-                    <input type="file" id="file-@key" name="file_@key" accept="@v.Def.Accepts.Mime" hidden data-submit="upload-@key" form="@form"
-                           data-shrink="@(v.Def.Key == UploadDocumentsViewModel.FormSlot.Key ? null : "2560")">
-                }
-            </div>
             // A proof of address or a PAN copy says in its box what it was read to say.
             var address = v.Def.Key is "poa" or "mail" ? v.Read : null;
             var panRead = v.Def.Key == "pan" ? v.Read : null;
@@ -83,7 +103,7 @@
                         {
                             var expired = M.Expired(address.Expiry);
                             <span class="cud-held__id">
-                                @address.Number@if (address.Expiry.Length > 0) { <span class="@(expired ? "cud-held__expired" : null)"> &middot; @(expired ? "expired" : "valid till") @address.Expiry</span> }
+                                @address.Number@if (address.Expiry.Length > 0) { <span class="@(expired ? "cud-held__expired" : null)"> &middot; @(expired ? "expired" : "valid till") @Dates.Show(address.Expiry)</span> }
                             </span>
                         }
                     }
@@ -138,7 +158,7 @@
                 @* A photo is made smaller before it goes (image-shrink.js) - but never the
                    application form, a page of small print OCR has to read in full. *@
                 <input class="cud-drop__input" type="file" id="file-@key" name="file_@key" accept="@v.Def.Accepts.Mime"
-                       data-shrink="@(v.Def.Key == UploadDocumentsViewModel.FormSlot.Key ? null : "2560")"
+                       data-shrink="@(v.Def.Key == DocumentsViewModel.FormSlot.Key ? null : "2560")"
                        disabled="@(v.Locked is not null || v.Spent)" aria-describedby="@(key)Error" data-submit="upload-@key" form="@form">
             </label>
         }
@@ -149,35 +169,33 @@
                     data-loader="Checking the @v.Def.Label&hellip;" data-loader-hint="Identified, read by OCR, then checked with whoever stands behind it">Upload</button>
         }
     </div>
-    @if (v.Error is not null)
-    {
-        <p class="csi-error" id="@(key)Error" role="alert">
-            @v.Error
-            @if (v.ErrorLog is not null)
-            {
-                @* The history holds what the checks said, and the page is long. *@
-                <a class="cud-why" href="#log-@v.ErrorLog">See the history</a>
-            }
-        </p>
-    }
-    @* What the checks made of the copy, under its box. *@
-    @if (filed && v.Doc!.Check.Length > 0)
-    {
-        if (v.Doc.CheckKind is "warn" or "bad")
+    @* Under the box: what went wrong, what the checks made of the copy, the tries
+       left. One part, so the page's grid lines the boxes of a row up above it. *@
+    <div class="cud-slot__notes">
+        @if (v.Error is not null)
         {
-            <p class="cud-slot__check is-@v.Doc.CheckKind">@v.Doc.Check</p>
-        }
-        else
-        {
-            <p class="cud-slot__check cud-slot__check--quiet">
-                <span class="tip tip--info" tabindex="0" data-tip="@v.Doc.Check">How it was checked<span class="visually-hidden">: @v.Doc.Check</span></span>
+            <p class="csi-error" id="@(key)Error" role="alert">
+                @v.Error
+                @if (v.ErrorLog is not null)
+                {
+                    @* The history holds what the checks said, and the page is long. *@
+                    <a class="cud-why" href="#log-@v.ErrorLog">See the history</a>
+                }
             </p>
         }
-    }
-    @if (v.Tries is not null)
-    {
-        <p class="cud-slot__tries @(v.Spent ? "is-spent" : null)">@v.Tries</p>
-    }
+        @* Only what asks something of the partner stands under the box: an error, a
+           check that failed and wants a new copy, the tries left. How a copy was
+           checked otherwise is behind the info mark over the box, and what was read
+           is in the box and the cards below. *@
+        @if (filed && v.Doc!.CheckKind == "bad" && v.Doc.Check.Length > 0)
+        {
+            <p class="cud-slot__check is-bad">@v.Doc.Check</p>
+        }
+        @if (v.Tries is not null)
+        {
+            <p class="cud-slot__tries @(v.Spent ? "is-spent" : null)">@v.Tries</p>
+        }
+    </div>
 </div>
 
 @if (filed)
@@ -201,7 +219,7 @@
                 }
                 else
                 {
-                    var src = Url.Action("Copy", "UploadDocuments", new { slot = key, v = v.Doc.GetHashCode() });
+                    var src = Url.Action("Copy", "Documents", new { slot = key, v = v.Doc.GetHashCode() });
                     if (v.Doc.ContentType.StartsWith("image/"))
                     {
                         <img src="@src" alt="@v.Def.Label" loading="lazy">

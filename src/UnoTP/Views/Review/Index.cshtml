@@ -105,7 +105,7 @@
 
         @* ── Fixed deposit ─────────────────────────────────────────────────── *@
         <section class="csi-card cii-card" id="rv-deposit">
-            @{ await Head("Fixed Deposit", "Application", "FdConfiguration", first: true); }
+            @{ await Head("Fixed Deposit", "Deposit", "Index", first: true); }
             <p class="cii-note">@(q is null ? "Quoted once the deposit is configured" : $"Card rate as on {Money.Day(q.RateAsOn)} · locked when the application is submitted")</p>
             <div class="cii-record">
                 <div class="inv-panel">
@@ -142,7 +142,7 @@
 
         @* ── Holders ───────────────────────────────────────────────────────── *@
         <section class="csi-card cii-card" id="rv-holders">
-            @{ await Head("Holders", "InvestorInfo", "Index"); }
+            @{ await Head("Holders", "Investor", "Index"); }
             <p class="cii-note">@(Model.Holders.Count == 1 ? "One holder" : $"{Model.Holders.Count} holders") &middot; everything captured for each</p>
             <div class="cii-record">
                 @foreach (var h in Model.Holders)
@@ -154,8 +154,8 @@
                         <div class="inv-panel__label">@(h.Holder.Joint ? "Joint holder" : "Primary holder") &middot; @Or(who.Name, "name not verified yet")</div>
                         <div class="inv-kv-grid">
                             @{
-                                await Kv("PAN", UploadDocumentsViewModel.Mask(who.Pan));
-                                await Kv("DOB", UploadDocumentsViewModel.MaskDate(who.Dob));
+                                await Kv("PAN", DocumentsViewModel.Mask(who.Pan));
+                                await Kv("DOB", DocumentsViewModel.MaskDate(who.Dob));
                                 await Kv("Gender", Or(gender), unread: gender.Length == 0);
                                 await Kv(Or(det.NameType, "Father / Mother / Spouse") + " name", Or(det.ParentName), unread: det.ParentName.Length == 0);
                                 await Kv("Folio", Or(who.Folio, "Opens with this application"));
@@ -188,7 +188,7 @@
 
         @* ── Nominee ───────────────────────────────────────────────────────── *@
         <section class="csi-card cii-card" id="rv-nominee">
-            @{ await Head("Nominee", "InvestorInfo", "Index"); }
+            @{ await Head("Nominee", "Investor", "Index"); }
             <p class="cii-note">Asked once for the application, not per holder</p>
             <div class="cii-record">
                 <div class="inv-panel">
@@ -213,7 +213,7 @@
 
         @* ── Bank & payment ────────────────────────────────────────────────── *@
         <section class="csi-card cii-card" id="rv-bank">
-            @{ await Head("Bank Details & Payment", "Application", "BankDetails"); }
+            @{ await Head("Bank Details & Payment", "Payment", "Index"); }
             <p class="cii-note">Paid by @Or(docs.State.PayMode, "a mode not chosen yet")</p>
             <div class="cii-record">
                 <div class="inv-panel">
@@ -238,7 +238,7 @@
 
         @* ── Documents ─────────────────────────────────────────────────────── *@
         <section class="csi-card cii-card" id="rv-documents">
-            @{ await Head("Documents", "UploadDocuments", "Index"); }
+            @{ await Head("Documents", "Documents", "Index"); }
             <p class="cii-note">Every document the application carries</p>
             <ul class="rv-checks">
                 @foreach (var doc in Model.Documents)
@@ -253,7 +253,7 @@
 
         @* ── Other details ─────────────────────────────────────────────────── *@
         <section class="csi-card cii-card" id="rv-other">
-            @{ await Head("Other Details", "UploadDocuments", "Index"); }
+            @{ await Head("Other Details", "Documents", "Index"); }
             <p class="cii-note">How the application is sourced, from Upload Documents</p>
             <div class="cii-record">
                 <div class="inv-panel">
@@ -262,7 +262,7 @@
                             await Kv("Sourcing mode", mode?.Name ?? "Not chosen");
                             await Kv(mode?.CodeLabel ?? "Code", Or(docs.State.SourceCode), sourceName?.Text);
                             await Kv("Sub broker code", Or(docs.State.SubBroker));
-                            await Kv("Application type", Model.Option(Model.Ref.ApplicationTypes, docs.State.AppType), docs.State.AppType == UploadDocumentsViewModel.Physical ? $"Form no {Or(docs.State.TypedFormNo)}" : null);
+                            await Kv("Application type", Model.Option(Model.Ref.ApplicationTypes, docs.State.AppType), docs.State.AppType == DocumentsViewModel.Physical ? $"Form no {Or(docs.State.TypedFormNo)}" : null);
                             await Kv("Sourced by", $"{docs.Partner.Name} · {docs.Partner.Code}");
                         }
                     </div>
@@ -273,7 +273,7 @@
         @* ── Declarations ──────────────────────────────────────────────────── *@
         <section class="csi-card cii-card" id="rv-declarations">
             <div class="cii-head"><h2 class="cii-title">Declarations</h2><span class="csi-status">Every one required</span></div>
-            <form method="post" asp-action="Send" class="rv-declarations" id="reviewForm" novalidate>
+            <form method="post" asp-action="Submit" class="rv-declarations" id="reviewForm" novalidate>
                 @for (var i = 0; i < Model.Ref.Declarations.Count; i++)
                 {
                     <label class="rv-declaration">
@@ -288,7 +288,7 @@
 
 <footer class="csi-bar">
     <div class="csi-bar__inner">
-        <a class="csi-btn csi-btn--back" asp-controller="Application" asp-action="FdConfiguration" data-loader="Going back to FD Configuration">Back</a>
+        <a class="csi-btn csi-btn--back" asp-controller="Deposit" asp-action="Index" data-loader="Going back to FD Configuration">Back</a>
         <p class="csi-bar__hint" id="rv-footer-hint">@(Model.Ready ? "Nothing missing · sign every declaration to submit" : $"{blockers.Count} thing{(blockers.Count == 1 ? "" : "s")} still missing before submitting")</p>
         <div class="csi-bar__right">
             <button type="button" class="csi-btn csi-btn--primary" id="openPaymentLinkModal" disabled>Submit Application</button>
@@ -321,7 +321,7 @@
 </div>
 
 @section Scripts {
-    <script src="~/js/classic-pin.js" asp-append-version="true"></script>
+    <script src="~/js/pin.js" asp-append-version="true"></script>
     <script>
         (function () {
             var form = document.getElementById('reviewForm');

@@ -1,4 +1,4 @@
-namespace UnoTP;
+namespace UnoTP.Infrastructure;
 
 /// <summary>
 /// Where the other apps of the solution are served from. Each app runs on its own,
@@ -15,7 +15,10 @@ public sealed class AppUrls(IConfiguration config)
     public static string OwnerOf(string route)
     {
         var path = route.Split('?', '#')[0];
-        if (path.StartsWith("/Apps/UnoTp", StringComparison.OrdinalIgnoreCase)
+        // Uno TP's pages are under /unotp; its old addresses still come to it, to be sent on.
+        if (path.Equals("/unotp", StringComparison.OrdinalIgnoreCase)
+            || path.StartsWith("/unotp/", StringComparison.OrdinalIgnoreCase)
+            || path.StartsWith("/Apps/UnoTp", StringComparison.OrdinalIgnoreCase)
             || path.Equals("/Dashboard", StringComparison.OrdinalIgnoreCase)
             || path.StartsWith("/Purchase/", StringComparison.OrdinalIgnoreCase)) return "UnoTP";
         if (path.StartsWith("/Apps/DmsExplorer", StringComparison.OrdinalIgnoreCase)) return "DmsExplorer";

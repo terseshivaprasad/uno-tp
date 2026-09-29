@@ -1,5 +1,5 @@
 using UnoTP.Backend;
-using UnoTP.Features;
+using UnoTP.Infrastructure;
 using UnoTP.Models;
 
 namespace UnoTP.ViewModels;
@@ -26,7 +26,7 @@ public class DashboardViewModel(FeatureSet features, ConsoleBoard board, string?
     public IReadOnlyList<DraftSummary> Drafts { get; init; } = [];
 
     /// <summary>How many drafts the dashboard shows; the rest are on Investor Identification.</summary>
-    public const int DraftsShown = 3;
+    public const int DraftsShown = 5;
 
     // The four booking steps' outline glyphs (24px grid), in order: documents,
     // investor, payment, deposit. The dashboard lists them and the search page's
@@ -54,14 +54,14 @@ public class DashboardViewModel(FeatureSet features, ConsoleBoard board, string?
     public IReadOnlyList<DashboardTile> NewFd => newFd ??=
     [
         // A new page with a plus.
-        Tile("new-fd", "Create New FD", Sheet + $"<path d=\"M13 11.5v8M9 15.5h8\" {White} stroke-width=\"2.4\"></path>", "InvestorIdentification"),
+        Tile("new-fd", "Create New FD", Sheet + $"<path d=\"M13 11.5v8M9 15.5h8\" {White} stroke-width=\"2.4\"></path>", "NewApplication"),
         // A pay-in slip: a torn-off receipt with the rupee on it.
         Tile("pis", "PIS Generation - Axis", "<path d=\"M5 3.5a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v18l-2.3-1.5-2.4 1.5-2.3-1.5-2.3 1.5-2.4-1.5L5 21.5z\" fill=\"currentColor\"></path>"
-            + $"<path d=\"M9 7h6M9 10h6M12.3 7c2.6 0 2.6 5-.8 5H9.4l4.8 4.3\" {White} stroke-width=\"1.8\" fill=\"none\"></path>", "PayInSlip"),
+            + $"<path d=\"M9 7h6M9 10h6M12.3 7c2.6 0 2.6 5-.8 5H9.4l4.8 4.3\" {White} stroke-width=\"1.8\" fill=\"none\"></path>", "PayInSlips"),
         // Looking an application up: a page with a magnifier.
-        Tile("view-app", "View existing application", Sheet + $"<circle cx=\"12.5\" cy=\"14.5\" r=\"3.2\" {White} stroke-width=\"2\"></circle><path d=\"M14.9 16.9l2.6 2.6\" {White} stroke-width=\"2.2\"></path>", "ViewApplication"),
+        Tile("view-app", "View existing application", Sheet + $"<circle cx=\"12.5\" cy=\"14.5\" r=\"3.2\" {White} stroke-width=\"2\"></circle><path d=\"M14.9 16.9l2.6 2.6\" {White} stroke-width=\"2.2\"></path>", "Applications"),
         // Two chain links.
-        Tile("short-url", "Short URL", $"<g {Slate} stroke-width=\"2.8\"><path d=\"M10 14a4.5 4.5 0 0 0 6.4 0l3.2-3.2a4.5 4.5 0 0 0-6.4-6.4L11.6 6\"></path><path d=\"M14 10a4.5 4.5 0 0 0-6.4 0l-3.2 3.2a4.5 4.5 0 0 0 6.4 6.4l1.6-1.6\"></path></g>", "ShortUrl"),
+        Tile("short-url", "Short URL", $"<g {Slate} stroke-width=\"2.8\"><path d=\"M10 14a4.5 4.5 0 0 0 6.4 0l3.2-3.2a4.5 4.5 0 0 0-6.4-6.4L11.6 6\"></path><path d=\"M14 10a4.5 4.5 0 0 0-6.4 0l-3.2 3.2a4.5 4.5 0 0 0 6.4 6.4l1.6-1.6\"></path></g>", "Links"),
     ];
 
     private IReadOnlyList<DashboardTile>? services;

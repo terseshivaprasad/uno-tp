@@ -105,11 +105,11 @@
         <section class="sub-card sub-card--padded">
             <div class="sub-card__title">Start another</div>
             <div class="sub-tiles">
-                <a class="sub-tile" asp-controller="InvestorIdentification" asp-action="Index">
+                <a class="sub-tile" asp-controller="NewApplication" asp-action="Index">
                     <span class="sub-tile__title">New application</span>
                     <span class="sub-tile__text">A different investor, from the search step.</span>
                 </a>
-                <a class="sub-tile" asp-controller="ViewApplication" asp-action="Index">
+                <a class="sub-tile" asp-controller="Applications" asp-action="Index">
                     <span class="sub-tile__title">Track this application</span>
                     <span class="sub-tile__text">Find it among the partner&rsquo;s applications.</span>
                 </a>
@@ -119,5 +119,5 @@
 </div>
 
 @section Scripts {
-    <script src="~/js/classic-pin.js" asp-append-version="true"></script>
+    <script src="~/js/pin.js" asp-append-version="true"></script>
 }

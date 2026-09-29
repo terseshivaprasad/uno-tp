@@ -1,14 +1,14 @@
 using Microsoft.AspNetCore.Mvc;
 using UnoTP.Backend;
-using UnoTP.Features;
+using UnoTP.Infrastructure;
 using UnoTP.ViewModels;
 
 namespace UnoTP.Controllers;
 
 [RequiresFeature("view-app")]
-public class ViewApplicationController(IApplicationApi applications, Lookups lookups) : Controller
+public class ApplicationsController(IApplicationApi applications, Lookups lookups) : Controller
 {
-    [HttpGet("Apps/UnoTp/Classic/ViewApplication")]
+    [HttpGet("unotp/applications")]
     public async Task<IActionResult> Index() =>
-        View(new ViewApplicationViewModel(await applications.ListAsync(), (await lookups.ConfigAsync()).CancellationDays));
+        View(new ApplicationsViewModel(await applications.ListAsync(), (await lookups.ConfigAsync()).CancellationDays));
 }

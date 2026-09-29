@@ -1,5 +1,5 @@
-@model UploadDocumentsViewModel
-@using M = UnoTP.ViewModels.UploadDocumentsViewModel
+@model DocumentsViewModel
+@using M = UnoTP.ViewModels.DocumentsViewModel
 @{
     ViewData["Title"] = "Upload Documents (classic)";
 
@@ -13,6 +13,8 @@
     var mode = Model.ModeOf(s.Sourcing);
     var views = M.Slots.ToDictionary(d => d.Key, Model.View);
     var physical = s.AppType == M.Physical;
+    // What the PAN was checked with, and where a name typed for NSDL posts.
+    var panReads = new ReadCardsBlock(Model.PanReadsOf(Model.Investor), Url.Action("Nsdl"));
     // The communication proof's box switches in place with the toggle, while nothing is filed there.
     var mailInstant = Model.MailCanDiffer(Model.Investor) && views["mail"].Doc is null;
     var poaUsed = views["poa"].Used;
@@ -175,7 +177,7 @@
                     {
                         var shut = s.Ckyc && t.Code == M.Physical;
                         <label class="seg-toggle__opt" title="@(shut ? "A CKYC application is completed online, so it cannot be filed on paper." : null)">
-                            <input class="visually-hidden" type="radio" name="appType" id="cudAppType@(t.Code)" value="@t.Code" checked="@(s.AppType == t.Code)" disabled="@shut">@t.Name.ToUpperInvariant()
+                            <input class="visually-hidden" type="radio" name="appType" id="cudAppType@(t.Code)" value="@t.Code" checked="@(s.AppType == t.Code)" disabled="@shut">@t.Name
                         </label>
                     }
                 </div>
@@ -201,10 +203,15 @@
         </div>
 
         @* Only where the register holds nothing: an investor who already has a
-           folio has been through KYC, so there is no CERSAI record to fetch. *@
+           folio has been through KYC, so there is no CERSAI record to fetch. It
+           applies to a digital application only: consent is given online, so a
+           physical one, signed and filed by hand, never fetches it. Choosing
+           Physical disables the button and greys the section at once
+           (data-enable-when, data-show-when), so it reads as not applicable
+           rather than missing; the server refuses it too. *@
         @if (!Model.HasFolio)
         {
-            <section class="cud-route @(s.Ckyc ? "is-on" : physical ? "is-off" : null)" id="cudRoute">
+            <section class="cud-route @(s.Ckyc ? "is-on" : null)" id="cudRoute">
                 <div class="cud-route__text">
                     @if (s.Ckyc)
                     {
@@ -234,11 +241,12 @@
                     }
                     else
                     {
-                        <button type="button" class="btn btn-secondary btn-sm cud-ckyc-btn" popovertarget="cudCkycAsk" disabled="@physical">
+                        <button type="button" class="btn btn-secondary btn-sm cud-ckyc-btn" popovertarget="cudCkycAsk" disabled="@physical" data-enable-when="appType=@M.Digital">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5v11"></path><path d="M7.5 10L12 14.5 16.5 10"></path><path d="M4.5 15.5v3a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5v-3"></path></svg>
                             Fetch from CKYC
                         </button>
-                        <p class="cud-ckyc-ask__note">@(physical ? "A physical application is signed and filed by hand, so the CERSAI record is not fetched for it." : "Once fetched, this cannot be undone on this application.")</p>
+                        <p class="cud-ckyc-ask__note" data-show-when="appType=@M.Digital" hidden="@physical">Once fetched, this cannot be undone on this application.</p>
+                        <p class="cud-ckyc-ask__note" data-show-when="appType=@M.Physical" hidden="@(!physical)">Not applicable: a physical application is signed and filed by hand, so the CERSAI record is not fetched for it.</p>
                     }
                 </div>
             </section>
@@ -269,19 +277,26 @@
 
         <div class="cud-grid cud-grid--docs">
             <div class="cud-col">
-                <span class="csi-label">Application form</span>
+                <div class="cud-col__head"><span class="csi-label">Application form</span></div>
                 @{ await Choices("appType", Model.ApplicationTypes.Select(t => (t.Code, t.Code == s.AppType)), FormAs); }
             </div>
 
             @* The PAN copy the application is filed with. It comes over already
                filed when the step before uploaded or matched one. *@
             <div class="cud-col">
-                <span class="csi-label">PAN @if (views["pan"].Optional) { <span class="cud-optional">(Non-mandatory)</span> }</span>
+                <div class="cud-col__head"><span class="csi-label">PAN @if (views["pan"].Optional) { <span class="cud-optional">(Non-mandatory)</span> }</span></div>
                 @{ await Slot(views["pan"]); }
             </div>
 
+            @* NSDL asking for the name printed on the PAN: across the row straight
+               under the PAN's box, however many boxes a row holds. *@
+            @if (panReads.AsksName)
+            {
+                <div class="cud-retry-row cud-retry-row--pan-second"><partial name="_NsdlRetry" model="@panReads" /></div>
+            }
+
             <div class="cud-col">
-                <span class="csi-label">Photo</span>
+                <div class="cud-col__head"><span class="csi-label">Photo</span></div>
                 @{ await Slot(views["photo"]); }
             </div>
 
@@ -289,6 +304,7 @@
                 @* With document identification, the type is what the copy is identified
                    as once it is uploaded, shown beside the label. Without it, the type is
                    chosen first, and the box waits for it. *@
+                <div class="cud-col__head">
                 @if (Model.AutoProofType)
                 {
                     <span class="csi-label">Proof of address <partial name="_ProofType" model="@(poaUsed ? s.PoaType : null)" /></span>
@@ -299,7 +315,7 @@
                     <div class="cud-select">
                         <select class="csi-control @Invalid("cudPoaType")" id="cudPoaType" name="poaType" disabled="@(!poaUsed)" data-submit="cudRefresh" autofocus="@Focus("cudPoaType")">
                             <option value="">@(poaUsed ? "Select" : "Not Applicable")</option>
-                            @foreach (var p in Model.ProofsOfAddress)
+                            @foreach (var p in Model.ProofsFor(M.PoaSlot.Key))
                             {
                                 <option value="@p" selected="@(s.PoaType == p)">@p</option>
                             }
@@ -307,10 +323,12 @@
                     </div>
                     await FieldError("cudPoaType");
                 }
+                </div>
                 @{ await Slot(views["poa"]); }
             </div>
 
             <div class="cud-col">
+                <div class="cud-col__head">
                 @if (Model.AutoProofType)
                 {
                     <span class="csi-label">Communication address proof <partial name="_ProofType" model="@(mailUsed ? s.MailPoaType : null)" /></span>
@@ -330,6 +348,7 @@
                     </div>
                     await FieldError("cudMailType");
                 }
+                </div>
                 @* Switched in place only while nothing is filed there: taking a filed
                    proof off is asked about, and the page redrawn after it. *@
                 @if (mailInstant)
@@ -342,6 +361,13 @@
                 }
             </div>
 
+            @* An Aadhaar filed whose number OCR could not read: the number typed for
+               the PAN-Aadhaar link, across the row under the proofs of address. *@
+            @if (Model.AsksAadhaarNumber(Model.Investor))
+            {
+                var (aadhaarField, aadhaarError) = Model.AadhaarNumberField(Model.Investor);
+                <div class="cud-retry-row cud-retry-row--end"><partial name="_AadhaarNumber" model="@(new AadhaarNumberBlock(aadhaarField, Url.Action("AadhaarNumber")!, aadhaarError))" /></div>
+            }
         </div>
 
         @* What the PAN was checked with. The addresses stand in the boxes of the
@@ -349,7 +375,7 @@
            so they have no cards here. *@
         <section class="cud-read">
             <h2 class="cud-read__title">What the PAN was checked with</h2>
-            <partial name="_ReadCards" model="@(new ReadCardsBlock(Model.PanReadsOf(Model.Investor), Url.Action("Nsdl")))" />
+            <partial name="_ReadCards" model="@panReads" />
         </section>
 
         @* How the deposit is paid is the application's, not the investor's KYC: the
@@ -565,7 +591,7 @@
 
 <footer class="csi-bar">
     <div class="csi-bar__inner">
-        <a class="csi-btn csi-btn--back" asp-controller="InvestorIdentification" asp-action="Index"
+        <a class="csi-btn csi-btn--back" asp-controller="NewApplication" asp-action="Index"
            data-loader="Going back to Investor Identification"
            data-loader-hint="Nothing filed here is lost — it is kept against this application.">Back</a>
         @* What Proceed would ask for next, so the partner is never sent looking for it. *@
@@ -596,5 +622,5 @@
 @section Scripts {
     <script src="~/js/partial-forms.js" asp-append-version="true"></script>
     <script src="~/js/image-shrink.js" asp-append-version="true"></script>
-    <script src="~/js/classic-pin.js" asp-append-version="true"></script>
+    <script src="~/js/pin.js" asp-append-version="true"></script>
 }

@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using UnoTP.Backend;
-using UnoTP.Features;
+using UnoTP.Infrastructure;
 using UnoTP.ViewModels;
 
 namespace UnoTP.Controllers;
@@ -16,8 +16,8 @@ namespace UnoTP.Controllers;
 /// application in the backend, which keeps it and everything on it from then on.
 /// </summary>
 [RequiresFeature("new-fd")]
-[Route("Purchase/InvestorIdentification")]
-public class InvestorIdentificationController(
+[Route("unotp/new")]
+public class NewApplicationController(
     FeatureSet features,
     IDemoApi demo,
     IApplicationApi applications,
@@ -103,7 +103,7 @@ public class InvestorIdentificationController(
     {
         if (app is null) return Back();
         Saved = null;
-        return RedirectToAction(nameof(UploadDocumentsController.Index), "UploadDocuments", new { appNo = app.AppNo });
+        return RedirectToAction(nameof(DocumentsController.Index), "Documents", new { appNo = app.AppNo });
     }
 
     // The page again, at its bare address.

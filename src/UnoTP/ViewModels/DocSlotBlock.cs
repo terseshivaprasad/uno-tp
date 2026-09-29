@@ -7,4 +7,4 @@ namespace UnoTP.ViewModels;
 /// the slot as it stands; it carries no id, so the page's own slot keeps its anchor.
 /// </summary>
 /// <param name="IsNext">The card that holds the next thing to do: the one the eye should find first.</param>
-public sealed record DocSlotBlock(UploadDocumentsViewModel.SlotView View, string UploadUrl, string? Form = null, bool Alternate = false, bool IsNext = false);
+public sealed record DocSlotBlock(DocumentsViewModel.SlotView View, string UploadUrl, string? Form = null, bool Alternate = false, bool IsNext = false);

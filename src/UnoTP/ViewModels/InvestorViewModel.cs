@@ -40,7 +40,7 @@ public static class InvestorDetailsForm
         {
             var p = $"Holder{n}.";
             details.Holders.Add(new HolderDetails(
-                InvestorInfoViewModel.CodeOf(n),
+                InvestorViewModel.CodeOf(n),
                 F(p + "Gender"), F(p + "NameType"), F(p + "ParentName"),
                 F(p + "AnnualIncome"), F(p + "Occupation"), F(p + "SubOccupation"), F(p + "MaritalStatus"),
                 F(p + "Mobile"), F(p + "Email").ToUpperInvariant(),
@@ -103,7 +103,7 @@ public static class InvestorDetailsForm
 /// photograph and proof of address the way the investor does on Upload Documents,
 /// through the same model (<see cref="Docs"/>).
 /// </summary>
-public sealed class InvestorInfoViewModel(InvestorInfoState state, UploadDocumentsViewModel? docs)
+public sealed class InvestorViewModel(InvestorInfoState state, DocumentsViewModel? docs)
 {
     /// <summary>Joint holders the backend's rules allow beside the investor.</summary>
     public int MaxJoint => Docs.Config.MaxJointHolders;
@@ -121,10 +121,10 @@ public sealed class InvestorInfoViewModel(InvestorInfoState state, UploadDocumen
 
     /// <summary>The application, and the joint holders' documents on it. Left out only
     /// where the model is asked a question and the page is not drawn.</summary>
-    public UploadDocumentsViewModel Docs { get; } = docs!;
+    public DocumentsViewModel Docs { get; } = docs!;
 
     /// <summary>Each joint holder's identification, checked from the session, in order.</summary>
-    public List<InvestorIdentificationViewModel> Joint { get; } = [];
+    public List<NewApplicationViewModel> Joint { get; } = [];
 
     /// <summary>What a field last held, or what it opens with before anything is posted.</summary>
     public string Value(string name, string opening = "") =>
@@ -173,7 +173,7 @@ public sealed class InvestorInfoViewModel(InvestorInfoState state, UploadDocumen
     /// Whether a holder is asked the PEP questions: only one with no folio yet. A
     /// holder on a folio has answered them already.
     /// </summary>
-    public static bool PepAsked(UploadDocumentsViewModel.DocHolder h) => h.Who.Folio.Length == 0;
+    public static bool PepAsked(DocumentsViewModel.DocHolder h) => h.Who.Folio.Length == 0;
 
     /// <summary>What Proceed found missing or wrong, by field name ("Holder2.Pep", "Nominee.Dob").</summary>
     public IReadOnlyDictionary<string, string> Errors { get; init; } = new Dictionary<string, string>();
@@ -204,7 +204,7 @@ public sealed class InvestorInfoViewModel(InvestorInfoState state, UploadDocumen
     /// fields and PEP answers, then the nominee's, and a minor nominee's guardian's.
     /// Each comes with the id of the control to bring the partner to.
     /// </summary>
-    public static List<(string Field, string Id, string Error)> Unfilled(InvestorInfoState state, IEnumerable<(int Holder, UploadDocumentsViewModel.DocHolder Who)> holders, int minorUnder)
+    public static List<(string Field, string Id, string Error)> Unfilled(InvestorInfoState state, IEnumerable<(int Holder, DocumentsViewModel.DocHolder Who)> holders, int minorUnder)
     {
         var found = new List<(string, string, string)>();
         var fields = state.Fields;

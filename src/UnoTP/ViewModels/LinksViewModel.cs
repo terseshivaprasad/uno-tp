@@ -3,7 +3,7 @@ using UnoTP.Backend;
 namespace UnoTP.ViewModels;
 
 /// <summary>Short URL: the links sent to investors, and the applications that can carry one.</summary>
-public class ShortUrlViewModel(IReadOnlyList<SentLinkRecord> sent, IReadOnlyList<PendingRecord> pending, AppConfig config)
+public class LinksViewModel(IReadOnlyList<SentLinkRecord> sent, IReadOnlyList<PendingRecord> pending, AppConfig config)
 {
     // What the investor is asked to do once the link opens. The purpose decides
     // how long the link stays valid, so the two travel together.

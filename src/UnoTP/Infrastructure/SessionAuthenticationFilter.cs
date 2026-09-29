@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
 
-namespace UnoTP.Features;
+namespace UnoTP.Infrastructure;
 
 /// <summary>Marks the pages that open without a session: the way in, the pages that say why not, and the error page.</summary>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
@@ -30,11 +30,11 @@ public sealed class SessionAuthenticationFilter : IAsyncAuthorizationFilter
         {
             // Back to this very page once the demo user is in.
             var back = http.Request.PathBase + http.Request.Path + http.Request.QueryString;
-            context.Result = new RedirectToActionResult("Index", "Home", new { returnUrl = back.ToString() });
+            context.Result = new RedirectToActionResult("Index", "Entry", new { returnUrl = back.ToString() });
             return Task.CompletedTask;
         }
         http.Session.Clear();
-        context.Result = new RedirectToActionResult("SessionExpired", "Home", null);
+        context.Result = new RedirectToActionResult("SessionExpired", "Entry", null);
         return Task.CompletedTask;
     }
 }

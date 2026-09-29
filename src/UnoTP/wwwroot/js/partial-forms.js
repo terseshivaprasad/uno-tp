@@ -172,6 +172,9 @@
     if (link) setTimeout(openTarget, 0);
   });
   openTarget();
+  // Landed on a box (#slot-...): the browser has brought it into view; the address
+  // lets it go, so a reload does not ring it again.
+  if (/^#slot-/.test(window.location.hash)) window.history.replaceState(null, '', withoutSpot(window.location.href));
 
   // A page opened from history is drawn again from the server.
   window.addEventListener('popstate', function () { window.location.reload(); });
@@ -297,6 +300,14 @@
     });
   }
 
+  // A link into the history (#log-...) is kept; a box to come back to (#slot-...) is
+  // already brought into view below, so it is left off the address.
+  function withoutSpot(url) {
+    var at = new URL(url, window.location.href);
+    if (/^#slot-/.test(at.hash)) at.hash = '';
+    return at.href;
+  }
+
   function swap(html, url, push, sent) {
     var next = new DOMParser().parseFromString(html, 'text/html');
     var incoming = next.querySelector('main');
@@ -320,8 +331,9 @@
     document.title = next.title;
     // What the page now holds is what the server has; only what was typed since
     // the post, put back below, is not.
-    // The address is what a reload would show: the page, not the post.
-    window.history[push ? 'pushState' : 'replaceState'](null, '', url);
+    // The address is what a reload would show: the page, not the post - and not
+    // the box the answer was about, or a reload would land on it again, ringed.
+    window.history[push ? 'pushState' : 'replaceState'](null, '', withoutSpot(url));
 
     unsaved = typed.length > 0;
     typed.forEach(function (t) {
