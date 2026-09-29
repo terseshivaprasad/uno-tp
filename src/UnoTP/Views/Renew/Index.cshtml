@@ -1,0 +1,153 @@
+@model RenewViewModel
+@{
+    ViewData["Title"] = "Renew FD";
+
+    // Renew FD: the folio is searched, its deposits listed with where each stands,
+    // and the ones inside the renewal window can be renewed from their row. The
+    // renewals asked for so far, and where each stands with the investor, follow.
+    var before = Model.Config.RenewBeforeDays;
+    var after = Model.Config.RenewAfterDays;
+}
+
+<div class="csi csi--wide">
+    <aside class="csi-rail csi-rail--steps">
+        <h2 class="csi-rail__title">Renewing a deposit</h2>
+        <div class="csi-rail__note">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 6.5V12l3.5 2.5"></path></svg>
+            <div>
+                <div class="csi-rail__note-title">From @before days before maturity to @after days after</div>
+                <p>Inside that window a deposit is maturing or matured, and can be renewed. Before it, the deposit runs; after it, the money is paid out.</p>
+            </div>
+        </div>
+        <div class="csi-rail__note">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 12a8.5 8.5 0 0 1-14.6 5.9"></path><path d="M3.5 12a8.5 8.5 0 0 1 14.6-5.9"></path><path d="M18.5 2.5V7H14"></path><path d="M5.5 21.5V17H10"></path></svg>
+            <div>
+                <div class="csi-rail__note-title">Principal, or principal and interest</div>
+                <p>The maturity amount can be renewed whole, or the interest paid out and the principal renewed. The tenure and payout are chosen afresh, at the card rate of the day.</p>
+            </div>
+        </div>
+        <div class="csi-rail__note">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 6.5l-11 11-5.5-5.5"></path></svg>
+            <div>
+                <div class="csi-rail__note-title">Accepted by the investor</div>
+                <p>A renewal is sent to the investor as a link, as a new deposit is, and starts once they accept it: on maturity, or at once for a deposit that has matured.</p>
+            </div>
+        </div>
+    </aside>
+
+    <div class="csi-card">
+        <div class="cii-head"><h1 class="cii-title">Renew FD</h1></div>
+        <p class="cii-note">Find the folio, pick the deposit, and say what is renewed and for how long.</p>
+
+        <form class="pis-form" method="get" asp-action="Index" novalidate>
+            <div class="csi-fields">
+                <div class="csi-field">
+                    <label class="csi-label" for="rnFolio">Folio number</label>
+                    <input class="csi-control csi-control--caps" id="rnFolio" name="folio" value="@Model.Folio" maxlength="12" autocomplete="off" spellcheck="false" placeholder="e.g. TS003027" data-chars="code" data-required="Enter the folio number">
+                </div>
+                <div class="csi-field csi-field--check">
+                    <button type="submit" class="csi-btn csi-btn--primary" data-validate="form">Search</button>
+                </div>
+            </div>
+        </form>
+
+        @if (Model.NotFound)
+        {
+            <p class="csi-error" role="alert">No folio @Model.Folio on the register &mdash; check the number.</p>
+        }
+        else if (Model.Deposits is { Count: 0 })
+        {
+            <p class="csi-hint">Folio @Model.Folio holds no deposits.</p>
+        }
+        else if (Model.Deposits is { } deposits)
+        {
+            <p class="csi-hint">@deposits.Count @(deposits.Count == 1 ? "deposit" : "deposits") on folio @Model.Folio &middot; @deposits[0].Investor</p>
+            <table class="su-table">
+                <colgroup>
+                    <col style="width:16%"><col style="width:13%"><col style="width:8%"><col style="width:17%">
+                    <col style="width:14%"><col style="width:12%"><col style="width:10%"><col style="width:10%">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th scope="col">Deposit</th>
+                        <th scope="col" class="pis-table__amt">Amount</th>
+                        <th scope="col">Rate</th>
+                        <th scope="col">Tenure &middot; payout</th>
+                        <th scope="col">Matures on</th>
+                        <th scope="col" class="pis-table__amt">At maturity</th>
+                        <th scope="col">Status</th>
+                        <th scope="col" class="su-table__act"><span class="visually-hidden">Action</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var d in deposits)
+                    {
+                        <tr data-state="@d.Status">
+                            <td data-label="Deposit"><strong>@d.Number</strong><div class="su-table__sub">from @Money.Day(d.StartedOn)</div></td>
+                            <td data-label="Amount" class="pis-table__amt">@Money.Rupees(d.Amount)</td>
+                            <td data-label="Rate">@d.Rate.ToString("0.00")%</td>
+                            <td data-label="Tenure · payout">@d.TenureMonths months &middot; @Model.PayoutName(d.Payout)</td>
+                            <td data-label="Matures on">@Money.Day(d.MaturesOn)</td>
+                            <td data-label="At maturity" class="pis-table__amt">@Money.Rupees(d.MaturityAmount)</td>
+                            <td data-label="Status"><span class="chip @RenewViewModel.StatusTone(d.Status)">@RenewViewModel.StatusLabel(d.Status)</span></td>
+                            <td data-label="" class="su-table__act">
+                                @if (d.Renewable)
+                                {
+                                    <a class="csi-btn csi-btn--primary" asp-action="Deposit" asp-route-number="@d.Number">Renew</a>
+                                }
+                                else
+                                {
+                                    <span class="tip tip--info tip--mark" tabindex="0" data-tip="@d.Why"><span class="visually-hidden">@d.Why</span></span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+
+        <h2 class="cii-section">Renewals asked for</h2>
+        @if (Model.Recent.Count == 0)
+        {
+            <p class="csi-hint">None yet. A renewal asked for here is listed with where it stands with the investor.</p>
+        }
+        else
+        {
+            <table class="su-table">
+                <colgroup>
+                    <col style="width:14%"><col style="width:16%"><col style="width:18%"><col style="width:16%">
+                    <col style="width:12%"><col style="width:12%"><col style="width:12%">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th scope="col">Reference</th>
+                        <th scope="col">Deposit</th>
+                        <th scope="col">Renewed as</th>
+                        <th scope="col">New deposit</th>
+                        <th scope="col">Matures on</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Asked on</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in Model.Recent)
+                    {
+                        <tr>
+                            <td data-label="Reference"><strong>@r.Id</strong></td>
+                            <td data-label="Deposit">@r.DepositNumber<div class="su-table__sub">@r.Investor &middot; @r.Folio</div></td>
+                            <td data-label="Renewed as">@Model.ModeName(r.Mode)<div class="su-table__sub">from @Money.Day(r.RenewsOn)</div></td>
+                            <td data-label="New deposit">@Money.Rupees(r.Amount)<div class="su-table__sub">@r.TenureMonths months &middot; @r.Rate.ToString("0.00")% &middot; @Model.PayoutName(r.Payout)</div></td>
+                            <td data-label="Matures on">@Money.Day(r.MaturesOn)</td>
+                            <td data-label="Status"><span class="chip @RenewViewModel.StatusTone(r.Status)">@RenewViewModel.StatusLabel(r.Status)</span><div class="su-table__sub">link to @r.LinkSentTo</div></td>
+                            <td data-label="Asked on">@Money.Day(r.RequestedAt)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/checks.js" asp-append-version="true"></script>
+}

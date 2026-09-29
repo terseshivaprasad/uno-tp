@@ -73,7 +73,7 @@ public class DashboardViewModel(FeatureSet features, ConsoleBoard board, string?
             + $"<path d=\"M8.5 14l2.5 2.5 4.8-5\" {White} stroke-width=\"2.2\" fill=\"none\"></path>", null),
         // Rolling a deposit over: arrows turning round the rupee.
         Tile("renew", "Renew FD", $"<g {Slate} stroke-width=\"2.3\"><path d=\"M20.5 12a8.5 8.5 0 0 1-15 5.5\"></path><path d=\"M3.5 12a8.5 8.5 0 0 1 15-5.5\"></path><path d=\"M19.5 2.5V7H15\"></path><path d=\"M4.5 21.5V17H9\"></path></g>"
-            + $"<path d=\"M10.2 9.2h3.6M10.2 11h3.6M12.1 9.2c1.6 0 1.6 3.4-.6 3.4h-1.3l3 2.6\" {Slate} stroke-width=\"1.4\"></path>", null),
+            + $"<path d=\"M10.2 9.2h3.6M10.2 11h3.6M12.1 9.2c1.6 0 1.6 3.4-.6 3.4h-1.3l3 2.6\" {Slate} stroke-width=\"1.4\"></path>", "Renew"),
     ];
 
     /// <summary>Console Admin, shown only while the Admin feature is on.</summary>

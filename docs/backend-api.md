@@ -28,6 +28,7 @@ in its address, never in the session.
 | `/unotp/applications/{appNo}/submitted` | Application Submitted |
 | `/unotp/pay-in-slips` | PIS Generation - Axis |
 | `/unotp/links` | Short URL |
+| `/unotp/renew`, `/unotp/renew/{deposit}`, `…/done` | Renew FD: the deposits on a folio, a renewal chosen and quoted, and sent for the investor to accept |
 | `/unotp/admin` | Console Admin |
 | `/unotp/entry`, `/unotp/logout`, `/unotp/session-expired`, `/unotp/unauthorized`, `/unotp/error` | Entry and status pages |
 
@@ -216,6 +217,23 @@ again; a failed answer is not kept.
 **Deposit categories:** `PUBLIC/GENERAL`, `WOMEN`, `SR CITIZEN` and `SR CITIZEN
 WOMEN` (60 or over), plus `EMPLOYEE` and `EMPLOYEE WOMEN`, which only a 1033
 partner can book, under MFL-EX.
+
+## Renewals
+
+Renew FD. The deposits a folio holds, and a renewal asked for one: the backend
+quotes the rate as on the day, records the request and sends the investor the
+acceptance link, as for a new deposit.
+
+| Method | Route | Body | Answer |
+|---|---|---|---|
+| GET | `folios/{folio}/deposits` | | `HeldDeposit[]`: the deposits on the folio, newest first; empty for a folio with none; 404 for no such folio |
+| GET | `deposits/{number}` | | `HeldDeposit`, or 404 |
+| POST | `renewals` | `{ depositNumber, mode, tenureMonths, payout }` | `RenewalRecord`: the request as recorded, the link sent; 409 when the deposit cannot be renewed now |
+| GET | `renewals` | | `RenewalRecord[]`: the partner's requests, newest first |
+
+- **`HeldDeposit`:** `number`, `folio`, `investor`, `category` (a category code, which the renewal is quoted under), `amount`, `rate`, `tenureMonths`, `payout` (a payout code), `startedOn`, `maturesOn`, `maturityAmount`, `status` (`running`, `maturing`, `matured`, `renewed`, `closed`), `renewable`, and `why` it is not.
+- **`RenewalRecord`:** `id`, `depositNumber`, `folio`, `investor`, `mode` (a `renewInstructions` code: `principal` pays the interest out, `principal-interest` renews the maturity amount), `amount`, `tenureMonths`, `payout`, `rate`, `renewsOn` (maturity, or the day asked once matured), `maturesOn`, `maturityAmount`, `status` (`sent`, `accepted`), `requestedAt`, `linkSentTo` (masked).
+- `config` carries `renewBeforeDays` and `renewAfterDays`: the window, around maturity, in which a deposit is `maturing` or `matured` and can be renewed.
 
 ## Documents (DMS)
 

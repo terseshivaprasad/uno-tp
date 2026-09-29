@@ -26,6 +26,7 @@ public static class MockBackendServiceCollectionExtensions
         services.AddScoped<IPartnerApi, MockPartner>();
         services.AddSingleton<IDepositApi, MockDeposits>();
         services.AddSingleton<IPlaceApi, MockPlaces>();
+        services.AddSingleton<IRenewalApi, MockRenewals>();
         services.AddSingleton<IDemoApi, MockDemo>();
         services.AddScoped<ISessionApi, MockSessions>();
         services.AddSingleton<IDecryptionService, MockDecryption>();

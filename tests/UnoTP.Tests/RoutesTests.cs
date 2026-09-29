@@ -52,6 +52,7 @@ public class RoutesTests(App app)
     [InlineData("/unotp/applications")]
     [InlineData("/unotp/pay-in-slips")]
     [InlineData("/unotp/links")]
+    [InlineData("/unotp/renew")]
     public async Task A_page_opens_once_signed_in(string page)
     {
         var client = await app.SignedInAsync();

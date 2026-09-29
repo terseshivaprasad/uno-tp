@@ -149,6 +149,56 @@ public class JourneyTests(App app)
     }
 
     [Fact]
+    public async Task A_matured_deposit_on_a_folio_is_renewed_and_sent_for_acceptance()
+    {
+        var client = await app.SignedInAsync();
+
+        // The folio's deposits, each with where it stands; only the maturing and the matured can be renewed.
+        var page = await client.GetStringAsync("/unotp/renew?folio=TS003027");
+        Assert.Contains("3 deposits on folio TS003027", page);
+        foreach (var status in new[] { "Matured", "Maturing", "Running" }) Assert.Contains($">{status}<", page);
+        Assert.Equal(2, Regex.Matches(page, ">Renew</a>").Count);
+
+        var form = await client.GetStringAsync("/unotp/renew/FD2023001234");
+        Assert.Contains("Renew deposit FD2023001234", form);
+        Assert.Contains("Principal and interest", form);
+        Assert.Contains("id=\"fd-quote\"", form);
+        Assert.Contains("Card rate as on", form);
+
+        // Sent, it is recorded and the investor sent the link; the deposit is renewed from here on.
+        var done = await App.PostAsync(client, "/unotp/renew/FD2023001234", "/unotp/renew/FD2023001234",
+            ("Mode", "principal-interest"), ("TenureMonths", "24"), ("Payout", "maturity"));
+        Assert.EndsWith("/unotp/renew/FD2023001234/done", done.RequestMessage!.RequestUri!.AbsolutePath);
+        var said = await done.Content.ReadAsStringAsync();
+        Assert.Contains("Renewal sent for acceptance", said);
+        Assert.Matches("(•|&#x2022;){6}3210", said); // Razor writes the mask's dots as entities
+        var again = await client.GetStringAsync("/unotp/renew?folio=TS003027");
+        Assert.Contains(">Renewed<", again);
+        Assert.Contains(">Sent for acceptance<", again);
+
+        // A deposit still running is turned back, with why.
+        var refused = await App.PostAsync(client, "/unotp/renew/FD2025000912", "/unotp/renew/FD2025000912",
+            ("Mode", "principal"), ("TenureMonths", "12"), ("Payout", "yearly"));
+        Assert.EndsWith("/unotp/renew/FD2025000912", refused.RequestMessage!.RequestUri!.AbsolutePath);
+        Assert.Contains("Renewal opens 30 days before maturity", await refused.Content.ReadAsStringAsync());
+
+        // A folio the register does not hold says so; one with no deposits too.
+        Assert.Contains("No folio NOPE0001 on the register", await client.GetStringAsync("/unotp/renew?folio=NOPE0001"));
+        Assert.Contains("holds no deposits", await client.GetStringAsync("/unotp/renew?folio=MF0051187"));
+    }
+
+    [Fact]
+    public async Task The_bell_says_why_Application_Status_is_off()
+    {
+        var client = await app.SignedInAsync();
+
+        var page = await client.GetStringAsync("/unotp");
+
+        Assert.Contains("Application Status is being rebuilt", page);
+        Assert.Contains("class=\"notices__count\">1<", page);
+    }
+
+    [Fact]
     public async Task A_PIN_code_is_placed_by_the_backend()
     {
         var client = await app.SignedInAsync();

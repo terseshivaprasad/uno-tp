@@ -215,6 +215,8 @@ a.app-tile:hover { text-decoration: none; }
 .chip--muted { background: var(--divider); color: var(--muted); }
 .chip--success { background: var(--green-bg); color: var(--green); }
 .chip--warn { background: var(--amber-bg); color: var(--amber); }
+.chip--ok { background: var(--green-bg); color: var(--green); }
+.chip--muted { background: var(--tint); color: var(--muted); }
 .chip--danger { background: var(--pink-bg); color: var(--red-dark); }
 .kv-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px 20px; }
 .kv-grid--2 { grid-template-columns: repeat(2, minmax(0,1fr)); }
@@ -2138,7 +2140,7 @@ html:has(.clogin), html:has(.clogin) body { background: var(--border); }
 .su-chip.text-amber { background: var(--amber-bg); color: var(--amber); }
 .su-chip.text-muted { background: var(--tint); color: var(--muted); }
 .su-chip.text-blue, .su-chip.text-info { background: var(--blue-bg); color: var(--blue); }
-.su-table tr:is([data-state="expired"], [data-state="lapsed"], [data-state="cancelled"]) td { color: var(--muted); }
+.su-table tr:is([data-state="expired"], [data-state="lapsed"], [data-state="cancelled"], [data-state="closed"]) td { color: var(--muted); }
 .su-table tr:is([data-state="expired"], [data-state="lapsed"], [data-state="cancelled"]) :is(strong, .pis-table__amt) { color: var(--muted); font-weight: 500; }
 @media (max-width: 760px) {
   .pis-table__amt, .su-table th.pis-table__amt { text-align: left; }

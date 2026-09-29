@@ -4,92 +4,156 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>Fixed Deposit Online Payment</title>
+<title>Complete your fixed deposit</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Georama:wght@500;600;700&display=swap">
 <!--
   The payment link e-mail Uno TP's backend sends an investor (POST links, purpose
-  "payment"): see docs/backend-api.md. The words are the e-mail's as it is sent
-  today, unchanged. It is drawn as the app draws a page - the same ground, top
-  bar, card, head, button and callout, in the same colours and type
-  (wwwroot/css/site.css, docs/BRAND_GUIDELINES.md) - so the investor sees what
-  the partner saw. Tables and inline styles, as e-mail clients need; 600px wide,
-  one column on a phone. Georama where the client loads web fonts (Apple Mail,
-  iOS), Arial otherwise. The link is in the sentence, as today, and once more as
-  a button: the same address, no other words.
+  "payment"): see docs/backend-api.md. Drawn as the app draws a page - the same
+  ground, top bar, card, head, button, chip, record panel and step rail, in the
+  same colours and type (wwwroot/css/site.css, docs/BRAND_GUIDELINES.md) - so the
+  investor sees what the partner saw.
+
+  What it carries, and why:
+  - One action, with the amount on the button, how long the link stands, and the
+    address written out for a client that blocks buttons.
+  - Pay from the depositor's own account: an NBFC returns a third-party payment.
+  - The deposit as applied for, so the investor checks what they pay for, with the
+    rate as quoted and the note that the rate booked is the one on the day of payment.
+  - What follows: matched on the next working day; the Fixed Deposit Receipt and
+    what it states (RBI Public Deposits Directions, para 41-42); the customer login.
+  - A different amount: not through this link; a fresh link is sent.
+  - The safety lines (RBI BE(A)WARE), the credit rating and agency and the
+    statement the Directions ask for (para 29(1), 29(5)), and that deposits are not
+    insured (para 31(9)).
+
+  Tables and inline styles, as e-mail clients need; 600px wide, one column on a
+  phone. Georama where the client loads web fonts (Apple Mail, iOS), Arial otherwise.
 
   Fields the backend fills:
-    {{investorName}}  {{link}} (the full address)  {{linkShown}} (as printed: cmtpl.in/…)
-  Subject: MMFSL Payment SHORT URL (as today)
+    {{investorName}}  {{investorEmail}}  {{appNo}}  {{partnerName}}
+    {{amount}} (Indian grouping, no symbol)  {{tenure}}  {{payout}}  {{rate}}  {{ratedOn}}
+    {{maturityValue}}  {{maturesOn}}  {{nominee}} (name and relation, or "None named yet")
+    {{receiptAlso}} ("" or ", and by post as you chose")
+    {{link}}  {{validUntil}} (e.g. "Thu 1 Oct, 5:00 pm")  {{rating}}  {{registeredOffice}}  {{cin}}
+  Subject: Complete your fixed deposit: pay ₹{{amount}} by {{validUntil}} · {{appNo}}
+
+  The acceptance link (purpose "acceptance") uses the same layout with the title
+  "Accept the terms of your deposit", the button "Review and accept", and step 1
+  "Read the terms and accept them through the link".
 -->
 </head>
 <body style="margin:0;padding:0;background:#E9EDF2;-webkit-text-size-adjust:100%;">
+<!-- Preheader: the line inboxes show under the subject. -->
+<div style="display:none;max-height:0;overflow:hidden;font-size:1px;line-height:1px;color:#E9EDF2;">Pay &#8377;{{amount}} through your secure link by {{validUntil}}. Net banking or UPI, from your own account; your FD receipt follows by e-mail.</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#E9EDF2" style="background:#E9EDF2;">
 
 <!-- The top bar, as the app's. The backend swaps in the logo:
      <img src="…/mahindra-finance.png" width="164" alt="Mahindra Finance"> -->
 <tr><td bgcolor="#FFFFFF" style="background:#FFFFFF;border-bottom:1px solid #E7EAEE;">
   <table role="presentation" width="600" align="center" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;">
-    <tr><td style="padding:14px 16px;font-family:Georama,Arial,Helvetica,sans-serif;font-size:18px;line-height:22px;"><span style="color:#E31837;font-weight:700;letter-spacing:-0.3px;">mahindra</span> <span style="color:#231F20;font-weight:500;font-size:13px;letter-spacing:.06em;">FINANCE</span></td></tr>
+    <tr>
+      <td style="padding:14px 16px;font-family:Georama,Arial,Helvetica,sans-serif;font-size:18px;line-height:22px;"><span style="color:#E31837;font-weight:700;letter-spacing:-0.3px;">mahindra</span> <span style="color:#231F20;font-weight:500;font-size:13px;letter-spacing:.06em;">FINANCE</span></td>
+      <td align="right" style="padding:14px 16px;font-family:Georama,Arial,Helvetica,sans-serif;font-size:10.5px;line-height:16px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#6B7280;">Fixed deposit</td>
+    </tr>
   </table>
 </td></tr>
 
 <tr><td align="center" style="padding:22px 16px 28px;">
 <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;">
 
-  <!-- The card (.csi-card), its head (.cii-title) -->
+  <!-- The card (.csi-card) -->
   <tr><td bgcolor="#FFFFFF" style="background:#FFFFFF;border-radius:8px;padding:20px 22px 26px;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
 
-    <tr><td style="padding-bottom:14px;border-bottom:1px solid #EDEFF3;font-family:Georama,Arial,Helvetica,sans-serif;font-size:16px;line-height:22px;font-weight:500;color:#4D4D4F;">Fixed Deposit Online Payment</td></tr>
+    <!-- Its head (.cii-head) -->
+    <tr>
+      <td style="font-family:Georama,Arial,Helvetica,sans-serif;font-size:16px;line-height:22px;font-weight:500;color:#4D4D4F;">Complete your fixed deposit</td>
+      <td align="right" style="font-family:Georama,Arial,Helvetica,sans-serif;font-size:12.5px;line-height:22px;color:#6B7280;white-space:nowrap;">Application No: <strong style="color:#231F20;font-weight:600;">{{appNo}}</strong></td>
+    </tr>
 
-    <tr><td style="padding:18px 0 0;font-family:Georama,Arial,Helvetica,sans-serif;font-size:13.5px;line-height:21px;color:#231F20;font-weight:600;">Dear {{investorName}},</td></tr>
-
-    <tr><td style="padding:14px 0 0;font-family:Georama,Arial,Helvetica,sans-serif;font-size:13.5px;line-height:21px;color:#4D4D4F;">
-      <p style="margin:0;">Greeting from Mahindra Finance!</p>
-      <p style="margin:10px 0 0;">We thank you for the patronage extended by registering to invest in Fixed Deposit.</p>
-      <p style="margin:10px 0 0;">Based on your registration, please find the payment gateway link <a href="{{link}}" style="color:#E31837;text-decoration:underline;word-break:break-all;">{{linkShown}}</a> to invest in MMFSL Deposits.</p>
+    <tr><td colspan="2" style="padding:14px 0 0;font-family:Georama,Arial,Helvetica,sans-serif;font-size:13.5px;line-height:21px;color:#4D4D4F;">
+      Dear {{investorName}},<br><br>
+      Your fixed deposit application, made through {{partnerName}}, is complete. One step remains: the payment. Pay through the secure link below by <strong style="color:#231F20;font-weight:600;">{{validUntil}}</strong>, and the deposit opens on the next working day.
     </td></tr>
 
-    <!-- The same link, as the app's primary button (.csi-btn--primary) -->
-    <tr><td style="padding:18px 0 0;">
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0">
-        <tr><td bgcolor="#E31837" style="background:#E31837;border:1px solid #E31837;border-radius:6px;">
-          <a href="{{link}}" style="display:inline-block;padding:8px 22px;font-family:Georama,Arial,Helvetica,sans-serif;font-size:13px;line-height:18px;font-weight:500;color:#FFFFFF;text-decoration:none;">{{linkShown}}</a>
-        </td></tr>
-      </table>
-    </td></tr>
-
-    <tr><td style="padding:20px 0 0;font-family:Georama,Arial,Helvetica,sans-serif;font-size:13.5px;line-height:21px;color:#4D4D4F;">
+    <!-- The action (.csi-btn--primary), how long it stands (.chip--warn), and the address for anyone the button fails -->
+    <tr><td colspan="2" style="padding:18px 0 0;">
       <table role="presentation" cellpadding="0" cellspacing="0" border="0">
         <tr>
-          <td style="padding-right:8px;vertical-align:top;font-family:Georama,Arial,Helvetica,sans-serif;font-size:13.5px;line-height:21px;color:#4D4D4F;">&bull;</td>
-          <td style="font-family:Georama,Arial,Helvetica,sans-serif;font-size:13.5px;line-height:21px;color:#4D4D4F;">For any other queries you may please call us on <span style="color:#231F20;font-weight:600;">1800 266 9266</span> between 10.00 am to 5.00 pm (Monday to Friday) or write to us at <a href="mailto:mfinfd@mahindra.com" style="color:#E31837;">mfinfd@mahindra.com</a></td>
+          <td bgcolor="#E31837" style="background:#E31837;border:1px solid #E31837;border-radius:6px;">
+            <a href="{{link}}" style="display:inline-block;padding:8px 22px;font-family:Georama,Arial,Helvetica,sans-serif;font-size:13px;line-height:18px;font-weight:500;color:#FFFFFF;text-decoration:none;">Pay &#8377;{{amount}} securely</a>
+          </td>
+          <td style="padding-left:12px;">
+            <span style="display:inline-block;padding:3px 8px;border-radius:3px;background:#FFF3CD;font-family:Georama,Arial,Helvetica,sans-serif;font-size:10.5px;line-height:15px;font-weight:700;color:#664D03;white-space:nowrap;">Valid till {{validUntil}}</span>
+          </td>
         </tr>
       </table>
+      <div style="padding-top:10px;font-family:Georama,Arial,Helvetica,sans-serif;font-size:12px;line-height:18px;color:#6B7280;">
+        Net banking, UPI or debit card, from a bank account in your own name: a payment from anyone else&rsquo;s account is returned.<br>
+        If the button does not open, copy this address into your browser: <a href="{{link}}" style="color:#E31837;text-decoration:underline;word-break:break-all;">{{link}}</a>
+      </div>
     </td></tr>
 
-    <!-- The Note, as the app's callout (.inv-manual: amber tint, amber edge) -->
-    <tr><td style="padding:22px 0 0;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#FFFBF0" style="background:#FFFBF0;border-left:3px solid #E8A700;border-radius:0 6px 6px 0;">
-        <tr><td style="padding:13px 15px 14px;font-family:Georama,Arial,Helvetica,sans-serif;">
-          <div style="font-size:12.5px;line-height:18px;font-weight:700;color:#231F20;">Note:</div>
-          <ol style="margin:8px 0 0;padding-left:20px;font-size:12.5px;line-height:19px;color:#664D03;">
-            <li style="margin-top:4px;">Any transaction done on a particular calendar date(0:00 hrs till 23:59 hrs) will be considered for generating Fixed Deposit Receipt as on next working day.</li>
-            <li style="margin-top:4px;">You can view your Fixed Deposit details after verification &amp; authentication by Mahindra Finance.</li>
-            <li style="margin-top:4px;">Please visit <a href="https://fixeddeposit.mahindrafinance.com" style="color:#E31837;">https://fixeddeposit.mahindrafinance.com</a> Fixed Deposit Customer Login.</li>
-            <li style="margin-top:4px;">Your transaction amount should match with the funds which you transfer in our account.</li>
-            <li style="margin-top:4px;">In case you wish to modify the transaction amount registered with us kindly inform us through email to <a href="mailto:mfinfd@mahindra.com" style="color:#E31837;">mfinfd@mahindra.com</a> and initiate a new transaction with revised amount.</li>
-          </ol>
+    <!-- The deposit, read-only, as the app shows a record (.inv-panel, .inv-kv) -->
+    <tr><td colspan="2" style="padding:20px 0 0;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#F5F8FB" style="background:#F5F8FB;border-radius:6px;">
+        <tr><td style="padding:14px 16px 16px;">
+          <div style="font-family:Georama,Arial,Helvetica,sans-serif;font-size:10.5px;line-height:15px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#6B7280;">Your deposit &middot; as applied for</div>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+            <tr><td width="33%" style="padding:12px 12px 0 0;font-family:Georama,Arial,Helvetica,sans-serif;vertical-align:top;"><div style="font-size:11.5px;line-height:16px;font-weight:500;color:#6B7280;">Amount</div><div style="padding-top:3px;font-size:14px;line-height:20px;font-weight:500;color:#231F20;">&#8377;{{amount}}</div></td><td width="33%" style="padding:12px 12px 0 0;font-family:Georama,Arial,Helvetica,sans-serif;vertical-align:top;"><div style="font-size:11.5px;line-height:16px;font-weight:500;color:#6B7280;">Tenure</div><div style="padding-top:3px;font-size:14px;line-height:20px;font-weight:500;color:#231F20;">{{tenure}}</div></td><td width="33%" style="padding:12px 12px 0 0;font-family:Georama,Arial,Helvetica,sans-serif;vertical-align:top;"><div style="font-size:11.5px;line-height:16px;font-weight:500;color:#6B7280;">Interest payout</div><div style="padding-top:3px;font-size:14px;line-height:20px;font-weight:500;color:#231F20;">{{payout}}</div></td></tr>
+            <tr><td width="33%" style="padding:12px 12px 0 0;font-family:Georama,Arial,Helvetica,sans-serif;vertical-align:top;"><div style="font-size:11.5px;line-height:16px;font-weight:500;color:#6B7280;">Interest rate</div><div style="padding-top:3px;font-size:14px;line-height:20px;font-weight:500;color:#231F20;">{{rate}}% a year</div></td><td width="33%" style="padding:12px 12px 0 0;font-family:Georama,Arial,Helvetica,sans-serif;vertical-align:top;"><div style="font-size:11.5px;line-height:16px;font-weight:500;color:#6B7280;">Maturity value</div><div style="padding-top:3px;font-size:14px;line-height:20px;font-weight:500;color:#231F20;">&#8377;{{maturityValue}}</div></td><td width="33%" style="padding:12px 12px 0 0;font-family:Georama,Arial,Helvetica,sans-serif;vertical-align:top;"><div style="font-size:11.5px;line-height:16px;font-weight:500;color:#6B7280;">Matures on</div><div style="padding-top:3px;font-size:14px;line-height:20px;font-weight:500;color:#231F20;">{{maturesOn}}</div></td></tr>
+            <tr><td width="33%" style="padding:12px 12px 0 0;font-family:Georama,Arial,Helvetica,sans-serif;vertical-align:top;"><div style="font-size:11.5px;line-height:16px;font-weight:500;color:#6B7280;">Nominee</div><div style="padding-top:3px;font-size:14px;line-height:20px;font-weight:500;color:#231F20;">{{nominee}}</div></td><td width="33%" style="padding:12px 12px 0 0;font-family:Georama,Arial,Helvetica,sans-serif;vertical-align:top;"><div style="font-size:11.5px;line-height:16px;font-weight:500;color:#6B7280;">Deposit receipt</div><div style="padding-top:3px;font-size:14px;line-height:20px;font-weight:500;color:#231F20;">E-mailed to {{investorEmail}}</div></td><td width="33%" style="padding:12px 12px 0 0;font-family:Georama,Arial,Helvetica,sans-serif;vertical-align:top;"><div style="font-size:11.5px;line-height:16px;font-weight:500;color:#6B7280;">Applied through</div><div style="padding-top:3px;font-size:14px;line-height:20px;font-weight:500;color:#231F20;">{{partnerName}}</div></td></tr>
+          </table>
+          <div style="padding-top:12px;font-family:Georama,Arial,Helvetica,sans-serif;font-size:11.5px;line-height:17px;color:#6B7280;">The rate is the card rate as on {{ratedOn}}. The deposit is booked at the rate in force on the day the payment is received.</div>
         </td></tr>
       </table>
     </td></tr>
 
-    <tr><td style="padding:22px 0 0;border-top:0;font-family:Georama,Arial,Helvetica,sans-serif;font-size:13.5px;line-height:21px;color:#4D4D4F;">
-      Thanks &amp; Regards,<br>
-      <strong style="color:#231F20;font-weight:600;">Mahindra Finance Fixed Deposit Team</strong>
+    <!-- What follows, as the app's step rail (.csi-rail__num, .csi-rail__title) -->
+    <tr><td colspan="2" style="padding:20px 0 0;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr><td style="padding-bottom:2px;font-family:Georama,Arial,Helvetica,sans-serif;font-size:12.5px;line-height:18px;font-weight:700;color:#231F20;">What happens next</td></tr>
+        <tr><td style="padding:12px 0;border-bottom:1px solid #EDEFF3;font-family:Georama,Arial,Helvetica,sans-serif;">
+          <div style="font-size:9.5px;line-height:14px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#6B7280;">Step 1</div>
+          <div style="padding-top:2px;font-size:13px;line-height:18px;font-weight:600;color:#231F20;">You pay through the link</div>
+          <div style="padding-top:3px;font-size:12.5px;line-height:19px;color:#4D4D4F;">Pay exactly &#8377;{{amount}}. A different amount cannot be matched to this application and is returned to your account.</div>
+        </td></tr>
+        <tr><td style="padding:12px 0;border-bottom:1px solid #EDEFF3;font-family:Georama,Arial,Helvetica,sans-serif;">
+          <div style="font-size:9.5px;line-height:14px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#6B7280;">Step 2</div>
+          <div style="padding-top:2px;font-size:13px;line-height:18px;font-weight:600;color:#231F20;">We match the payment to your application</div>
+          <div style="padding-top:3px;font-size:12.5px;line-height:19px;color:#4D4D4F;">A payment received on a calendar day is booked on the next working day, and the deposit runs from that day.</div>
+        </td></tr>
+        <tr><td style="padding:12px 0;font-family:Georama,Arial,Helvetica,sans-serif;">
+          <div style="font-size:9.5px;line-height:14px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#6B7280;">Step 3</div>
+          <div style="padding-top:2px;font-size:13px;line-height:18px;font-weight:600;color:#231F20;">Your Fixed Deposit Receipt reaches you</div>
+          <div style="padding-top:3px;font-size:12.5px;line-height:19px;color:#4D4D4F;">By e-mail{{receiptAlso}}. It states the date of deposit, your name, the amount, the rate of interest and the date the deposit is repayable. See it any time on the <a href="https://fixeddeposit.mahindrafinance.com" style="color:#E31837;">Fixed Deposit customer login</a>.</div>
+        </td></tr>
+      </table>
+    </td></tr>
+
+    <!-- Changing the amount, and help -->
+    <tr><td colspan="2" style="padding:18px 0 0;font-family:Georama,Arial,Helvetica,sans-serif;font-size:12.5px;line-height:19px;color:#4D4D4F;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #EDEFF3;">
+        <tr><td style="padding-top:16px;font-family:Georama,Arial,Helvetica,sans-serif;font-size:12.5px;line-height:19px;color:#4D4D4F;">
+          <strong style="color:#231F20;font-weight:600;">Want to deposit a different amount?</strong> Do not pay through this link. Write to <a href="mailto:mfinfd@mahindra.com" style="color:#E31837;">mfinfd@mahindra.com</a> with your application number, and a fresh link is sent for the revised amount.<br>
+          <div style="padding-top:6px;"><strong style="color:#231F20;font-weight:600;">Questions?</strong> Call <span style="color:#231F20;font-weight:600;">1800 266 9266</span>, Monday to Friday, 10 am to 5 pm, or write to <a href="mailto:mfinfd@mahindra.com" style="color:#E31837;">mfinfd@mahindra.com</a>.</div>
+        </td></tr>
+      </table>
     </td></tr>
 
   </table>
+  </td></tr>
+
+  <!-- Under the card: safety, the rating and the statements the RBI directions ask for, and who this is from -->
+  <tr><td style="padding:16px 6px 0;font-family:Georama,Arial,Helvetica,sans-serif;font-size:12px;line-height:18px;color:#6B7280;">
+    <strong style="color:#4D4D4F;font-weight:600;">Stay safe.</strong> Mahindra Finance never asks for your OTP, PIN, password or card details by phone, SMS or e-mail, and never sends a payment link from a personal number. Pay only through this link or the customer login. If you did not apply for this deposit, ignore this e-mail: the link expires on its own.
+  </td></tr>
+  <tr><td style="padding:12px 6px 0;font-family:Georama,Arial,Helvetica,sans-serif;font-size:11.5px;line-height:17px;color:#6B7280;">
+    Fixed deposits of Mahindra &amp; Mahindra Financial Services Limited are rated <strong style="color:#4D4D4F;font-weight:600;">{{rating}}</strong>. The financial activities of the company are regulated by the Reserve Bank of India. It must, however, be distinctly understood that the Reserve Bank does not undertake any responsibility for the financial soundness of the company or for the correctness of any of the statements or the representations made or opinions expressed by the company, and for repayment of deposit / discharge of liabilities by the company. The deposits solicited by the company are not insured.
+  </td></tr>
+  <tr><td style="padding:12px 6px 0;font-family:Georama,Arial,Helvetica,sans-serif;font-size:11.5px;line-height:17px;color:#6B7280;">
+    Mahindra &amp; Mahindra Financial Services Limited &middot; {{registeredOffice}} &middot; CIN {{cin}}<br>
+    Sent to {{investorEmail}} because a fixed deposit application was made in your name through {{partnerName}}.
   </td></tr>
 
 </table>

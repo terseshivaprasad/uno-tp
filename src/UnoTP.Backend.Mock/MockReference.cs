@@ -192,7 +192,8 @@ public sealed class MockReference : IReferenceApi
         AmountStep: 1_000,
         CancellationDays: MockWindow.Days,
         DraftDays: 30,
-        LinkValidityHours: new Dictionary<string, int> { ["payment"] = PaymentLinkHours, ["acceptance"] = 72 });
+        LinkValidityHours: new Dictionary<string, int> { ["payment"] = PaymentLinkHours, ["acceptance"] = 72 },
+        RenewBeforeDays: MockRenewals.BeforeDays, RenewAfterDays: MockRenewals.AfterDays);
 
     public Task<ReferenceData> ReferenceAsync(CancellationToken ct = default) => Task.FromResult(Data);
 
@@ -264,13 +265,16 @@ public sealed class MockDeposits : IDepositApi
         var rate = Rates.TryGetValue(request.TenureMonths, out var r) ? r : throw new ArgumentException($"No card rate for {request.TenureMonths} months.");
         var perYear = PerYear.TryGetValue(request.Payout, out var p) ? p : throw new ArgumentException($"No payout called {request.Payout}.");
         decimal amount = request.Amount;
-        var maturity = perYear == 0
-            ? Math.Round(amount * (decimal)Math.Pow(1 + (double)rate / 200, request.TenureMonths / 6.0), 0, MidpointRounding.AwayFromZero)
-            : amount;
+        var maturity = MaturityOf(amount, rate, request.TenureMonths, perYear);
         // Half a rupee rounds up, as the page always rounded it.
         var each = perYear == 0 ? 0 : Math.Round(amount * rate / 100 / perYear, 0, MidpointRounding.AwayFromZero);
         return Task.FromResult(new DepositQuote(rate, each, maturity, starts.AddMonths(request.TenureMonths), today));
     }
+
+    /// <summary>What a deposit comes to at maturity: compounded half-yearly for a cumulative one, the amount itself otherwise.</summary>
+    internal static decimal MaturityOf(decimal amount, decimal rate, int months, int perYear) => perYear == 0
+        ? Math.Round(amount * (decimal)Math.Pow(1 + (double)rate / 200, months / 6.0), 0, MidpointRounding.AwayFromZero)
+        : amount;
 
     public Task<BankBranch?> BranchAsync(string ifsc, CancellationToken ct = default) =>
         Task.FromResult(Branches.FirstOrDefault(b => b.Ifsc.Equals(ifsc.Trim(), StringComparison.OrdinalIgnoreCase)));

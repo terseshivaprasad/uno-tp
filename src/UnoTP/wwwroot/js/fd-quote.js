@@ -6,7 +6,7 @@
 // amount is quoted as it is typed, once the partner pauses; what is wrong with it
 // is said once they leave the field, not while they are still typing it.
 (function () {
-  var form = document.getElementById('fdConfigForm');
+  var form = document.getElementById('fdConfigForm') || document.querySelector('form[data-quote-url]');
   if (!form || !window.fetch) return;
   var url = form.getAttribute('data-quote-url');
   var timer = null;

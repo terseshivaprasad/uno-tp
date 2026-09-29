@@ -91,6 +91,8 @@ public sealed record ReferenceData(
 /// <param name="CancellationDays">Days an unpaid application stands before it cancels itself.</param>
 /// <param name="DraftDays">Days a saved, unsubmitted application is kept.</param>
 /// <param name="LinkValidityHours">How long a link to the investor stays open, by what it asks of them ("payment", "acceptance").</param>
+/// <param name="RenewBeforeDays">A deposit can be renewed from this many days before it matures...</param>
+/// <param name="RenewAfterDays">...to this many days after; then it is paid out.</param>
 public sealed record AppConfig(
     string SourcingAgency,
     int MinAge,
@@ -102,7 +104,9 @@ public sealed record AppConfig(
     long AmountStep,
     int CancellationDays,
     int DraftDays,
-    IReadOnlyDictionary<string, int> LinkValidityHours);
+    IReadOnlyDictionary<string, int> LinkValidityHours,
+    int RenewBeforeDays = 30,
+    int RenewAfterDays = 14);
 
 /// <summary>Who the app is being used by: GET me, from the signed-in partner.</summary>
 public interface IPartnerApi

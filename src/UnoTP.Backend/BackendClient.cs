@@ -10,7 +10,7 @@ namespace UnoTP.Backend;
 /// </summary>
 public sealed class BackendClient(HttpClient http, IPartner partner)
     : ApiClient(http, partner), IInvestorApi, IApplicationApi, IDocumentApi, ISourcingApi, IPayInSlipApi, ILinkApi, IConsoleApi,
-        IReferenceApi, IPartnerApi, IDepositApi, IPlaceApi, IDemoApi, ISessionApi
+        IReferenceApi, IPartnerApi, IDepositApi, IPlaceApi, IRenewalApi, IDemoApi, ISessionApi
 {
     // ----- Reference, config and the partner -----------------------------------
 
@@ -36,6 +36,20 @@ public sealed class BackendClient(HttpClient http, IPartner partner)
 
     public Task<PinPlace?> PinCodeAsync(string pin, CancellationToken ct = default) =>
         Get<PinPlace>($"pincodes/{Seg(pin)}", ct);
+
+    // ----- Renewals ------------------------------------------------------------
+
+    public async Task<IReadOnlyList<HeldDeposit>?> DepositsAsync(string folio, CancellationToken ct = default) =>
+        await Get<List<HeldDeposit>>($"folios/{Seg(folio)}/deposits", ct);
+
+    public Task<HeldDeposit?> DepositAsync(string number, CancellationToken ct = default) =>
+        Get<HeldDeposit>($"deposits/{Seg(number)}", ct);
+
+    public Task<RenewalRecord?> RenewAsync(NewRenewal renewal, CancellationToken ct = default) =>
+        SendOrNull<RenewalRecord>(HttpMethod.Post, "renewals", Body(renewal), ct);
+
+    public async Task<IReadOnlyList<RenewalRecord>> RenewalsAsync(CancellationToken ct = default) =>
+        await List<RenewalRecord>("renewals", ct);
 
     public Task<DemoCases?> CasesAsync(CancellationToken ct = default) =>
         Get<DemoCases>("demo/cases", ct);

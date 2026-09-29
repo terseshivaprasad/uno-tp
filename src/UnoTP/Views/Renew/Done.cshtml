@@ -1,0 +1,40 @@
+@model RenewDoneViewModel
+@{
+    ViewData["Title"] = "Renew FD";
+    var r = Model.Renewal;
+}
+
+<div class="csi csi--wide">
+    <div class="csi-card">
+        <div class="cii-head">
+            <h1 class="cii-title">Renewal sent for acceptance</h1>
+            <span class="cii-app">Reference <strong>@r.Id</strong></span>
+        </div>
+        <p class="cii-note">An acceptance link has gone to the investor on @r.LinkSentTo. Once they accept, deposit @r.DepositNumber renews on @Money.Day(r.RenewsOn) as below. Until then nothing changes on the folio.</p>
+
+        <div class="cii-record">
+            <div class="inv-panel">
+                <div class="inv-panel__label" style="padding-bottom:10px">The renewal &middot; as recorded</div>
+                <div class="inv-kv-grid">
+                    <div class="inv-kv"><div class="inv-kv__k">Deposit</div><div class="inv-kv__v">@r.DepositNumber</div></div>
+                    <div class="inv-kv"><div class="inv-kv__k">Investor</div><div class="inv-kv__v">@r.Investor</div></div>
+                    <div class="inv-kv"><div class="inv-kv__k">Folio</div><div class="inv-kv__v">@r.Folio</div></div>
+                    <div class="inv-kv"><div class="inv-kv__k">Renewed as</div><div class="inv-kv__v">@Model.ModeName</div></div>
+                    <div class="inv-kv"><div class="inv-kv__k">Amount</div><div class="inv-kv__v">@Money.Rupees(r.Amount)</div></div>
+                    <div class="inv-kv"><div class="inv-kv__k">Rate</div><div class="inv-kv__v">@r.Rate.ToString("0.00")% a year</div></div>
+                    <div class="inv-kv"><div class="inv-kv__k">Tenure &middot; payout</div><div class="inv-kv__v">@r.TenureMonths months &middot; @Model.PayoutName</div></div>
+                    <div class="inv-kv"><div class="inv-kv__k">Renews on</div><div class="inv-kv__v">@Money.Day(r.RenewsOn)</div></div>
+                    <div class="inv-kv"><div class="inv-kv__k">Matures on</div><div class="inv-kv__v">@Money.Day(r.MaturesOn) &middot; @Money.Rupees(r.MaturityAmount)</div></div>
+                    <div class="inv-kv"><div class="inv-kv__k">Status</div><div class="inv-kv__v"><span class="chip @RenewViewModel.StatusTone(r.Status)">@RenewViewModel.StatusLabel(r.Status)</span></div></div>
+                    <div class="inv-kv"><div class="inv-kv__k">Asked on</div><div class="inv-kv__v">@Money.Day(r.RequestedAt)</div></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="cud-apptype" style="padding-top:22px;gap:14px">
+            <a class="csi-btn csi-btn--primary" asp-action="Index" asp-route-folio="@r.Folio">Back to folio @r.Folio</a>
+            <a class="csi-btn csi-btn--back" asp-action="Index">Renew another</a>
+            <a class="csi-link csi-link--muted" asp-controller="Dashboard" asp-action="Index">Dashboard</a>
+        </div>
+    </div>
+</div>
