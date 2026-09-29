@@ -10,6 +10,39 @@ backend routes, and there is one file per outside service in `External/` and
 These routes are the ones the app proposes. If the backend's routes differ,
 change `BackendClient.cs`: the pages depend only on the interfaces.
 
+## Pages
+
+Every page is under `/unotp`, in lowercase. The application a step works on is
+in its address, never in the session.
+
+| Address | Page |
+|---|---|
+| `/unotp` | Dashboard |
+| `/unotp/new` | Investor Identification: search, drafts, and a new application |
+| `/unotp/applications` | View Application: the partner's applications |
+| `/unotp/applications/{appNo}/documents` | Upload Documents |
+| `/unotp/applications/{appNo}/investor` | Investor Information |
+| `/unotp/applications/{appNo}/payment` | Bank Details & Payment |
+| `/unotp/applications/{appNo}/deposit` | FD Configuration |
+| `/unotp/applications/{appNo}/review` | Review Summary |
+| `/unotp/applications/{appNo}/submitted` | Application Submitted |
+| `/unotp/pay-in-slips` | PIS Generation - Axis |
+| `/unotp/links` | Short URL |
+| `/unotp/admin` | Console Admin |
+| `/unotp/entry`, `/unotp/logout`, `/unotp/session-expired`, `/unotp/unauthorized`, `/unotp/error` | Entry and status pages |
+
+Each page is one controller (`src/UnoTP/Controllers/{Page}Controller.cs`), one view
+model (`ViewModels/{Page}ViewModel.cs`) and one folder of views (`Views/{Page}/`),
+named after the page: `NewApplication`, `Documents`, `Investor`, `Payment`,
+`Deposit`, `Review`, `Submitted`, `Applications`, `PayInSlips`, `Links`, `Admin`,
+`Dashboard`, `Entry`. The plumbing (session, feature gate, errors, cache, app
+addresses) is in `Infrastructure/`.
+
+A form posts to its page's address and a verb (`.../documents/upload`,
+`.../review/submit`). The old addresses (`/Home`, `/Dashboard`,
+`/Purchase/InvestorIdentification`, `/Apps/UnoTp/...`) redirect to these, with
+their query.
+
 ## Configuration
 
 | Setting | Meaning |
@@ -26,7 +59,7 @@ In the environment, use a double underscore, for example `Backend__BaseUrl`.
 
 ## What the app keeps, and for how long
 
-Answers that change seldom are kept in the app's memory (`src/UnoTP/Features/CachedBackend.cs`
+Answers that change seldom are kept in the app's memory (`src/UnoTP/Infrastructure/CachedBackend.cs`
 and `Lookups.cs`), so a page load does not ask the backend for them each time.
 Nothing that was not found is kept, and no failure is: the next request asks again.
 
@@ -57,8 +90,8 @@ times are set in `CachedBackend.cs`. The cache holds at most 50,000 entries.
 
 ## Entry
 
-The portal opens the app at `/Home?UserId=...&Syscode=...` (or at `/` with the
-same query), both values encrypted. The app decrypts each with the portal's
+The portal opens the app at `/unotp/entry?UserId=...&Syscode=...` (or at `/`, or
+the old `/Home`, with the same query), both values encrypted. The app decrypts each with the portal's
 decryption service, starts a session, reads the user's menu, keeps all three in
 the server session, and redirects to the Dashboard, so neither value stays in
 the address. Every other page needs that session; without one, or once it has
@@ -93,7 +126,9 @@ again; a failed answer is not kept.
   women, senior }`; `paymentModes` as `{ name, document }` (`document` is the
   instrument a copy is filed for, or null); `sourcingModes` as `{ code, name,
   codeLabel, nameLabel, house, search, register, sub, categories }`;
-  `proofsOfAddress` as `{ type, issuer, hasPhoto }`; `payouts` as `{ code, name,
+  `proofsOfAddress` as `{ type, issuer, hasPhoto }` (only a proof with
+  `hasPhoto` - an officially valid document - proves the permanent address; one
+  without, a utility bill, proves only the communication address); `payouts` as `{ code, name,
   perYear, each }` (`perYear` 0 is cumulative); `tenures` in months;
   `requiredDocuments` as `{ title, items, notes }`; and plain lists for
   `employeeHolders`, `employeeRelations`, `employeeProofs`, `incomeBands`,
@@ -311,10 +346,18 @@ and the proof stays filed whatever they say. A holder's PAN copy is taken before
 address, and the PAN–Aadhaar link card appears only once an Aadhaar is filed as a
 proof.
 
-- **An Aadhaar is filed unmasked.** If OCR can't read all 12 digits of its
-  number (the copy is masked, or not clear enough), the copy is refused, counts
-  as an attempt, and is kept aside like any other refusal. The masking service
-  is not called by the upload step.
+- **An Aadhaar is taken on its name and date of birth.** The name and date of
+  birth OCR reads off an Aadhaar (as proof of address or communication address,
+  for the investor or a joint holder) must match the PAN's: the name as NSDL or
+  the folio holds it, allowing initials or a name left out, and the date of birth
+  exactly. If either differs or can't be read, the copy is refused, counts as an
+  attempt, and is kept aside like any other refusal. A masked Aadhaar is
+  accepted. The masking service is not called by the upload step.
+- **An Aadhaar number OCR can't read is typed.** When an Aadhaar is filed for a
+  holder with no folio and OCR reads no whole 12-digit number, the partner types
+  it for the PAN–Aadhaar link. It must be 12 digits, not start with 0 or 1, and
+  pass the Verhoeff check digit. Like a number read, it is kept in the server
+  session only and never sent to the backend, except to the link check.
 
 | Service | Interface | With Idfy.Api | Without IDfy (`external/{name}/`) |
 |---|---|---|---|
@@ -343,8 +386,8 @@ proof.
   asked, the PAN or Aadhaar that prompted it is still filed. The link is
   marked "not checked" and asked again when an Aadhaar is next filed.
 - **Aadhaar number:** only a whole 12-digit number is used for the link
-  check. A masked number, or the partial one a secure QR code carries, is
-  ignored, and the printed number is used instead.
+  check: the one OCR reads, or the one the partner types when OCR can't read it.
+  A masked number, or the partial one a secure QR code carries, is ignored.
 
 ### Rules the app keeps when calling Idfy.Api
 
@@ -360,5 +403,5 @@ proof.
   The upload step doesn't ask for it, so behind a real IDfy an Aadhaar is
   turned back with a message saying why. The mock doesn't ask for consent.
 - **The link check needs both numbers:** it runs when the second of the PAN and
-  the Aadhaar number arrives. The Aadhaar number, read by OCR, is kept only in
+  the Aadhaar number arrives. The Aadhaar number, read by OCR or typed, is kept only in
   the server session for that application. It is never saved to the backend.
