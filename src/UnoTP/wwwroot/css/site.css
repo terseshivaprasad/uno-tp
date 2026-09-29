@@ -1910,8 +1910,10 @@ html:has(.clogin), html:has(.clogin) body { background: var(--border); }
 
 /* Every read card is the size of a document box, whatever it says: what it read
    and where that came from are held to two lines each. NSDL asking for the name
-   printed on the PAN does so in a row under the cards (.cud-retry), not in its card. */
-.cud-read__card { height: var(--doc-card-h); overflow: hidden; display: flex; flex-direction: column; }
+   printed on the PAN does so in a row under the cards (.cud-retry), not in its card.
+   The card itself does not clip, so an info mark's words can spill over its edge. */
+.cud-read__card { height: var(--doc-card-h); display: flex; flex-direction: column; }
+.cud-read__card .cud-read__head { flex: none; }
 /* Every box on the step is one height: the cards keep the document boxes' own. */
 .cud-read__card .cud-read__lines, .cud-read__card .cud-read__from {
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; padding-top: 7px;
@@ -2101,7 +2103,7 @@ html:has(.clogin), html:has(.clogin) body { background: var(--border); }
 .tip--mark.is-warn { color: var(--amber, #b45309); }
 .cud-slot__tools .tip::after { left: auto; right: 0; transform: none; }
 .cud-read__kind .tip--mark { margin-left: 6px; vertical-align: -2px; }
-.cud-read__card .tip::after { top: calc(100% + 6px); bottom: auto; max-width: 240px; }
+.cud-read__card .tip::after { top: calc(100% + 6px); bottom: auto; left: 50%; transform: translateX(-50%); max-width: 240px; }
 /* A copy that is final - a PAN NSDL verified - shows a lock where Replace would be. */
 .cud-tool.cud-tool--final { color: var(--green); border-color: transparent; background: transparent; cursor: help; }
 .cud-tool.cud-tool--final:hover { color: var(--green); background: transparent; }
