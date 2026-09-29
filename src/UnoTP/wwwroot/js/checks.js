@@ -179,6 +179,8 @@
     e.preventDefault();
     e.stopImmediatePropagation();
     var focus = first.matches('input, select, textarea') ? first : first.querySelector('input, select, textarea');
+    // Inside a folded card (a joint holder's), the card opens first.
+    for (var fold = first.closest('details:not([open])'); fold; fold = fold.parentElement && fold.parentElement.closest('details:not([open])')) fold.open = true;
     if (focus) {
       focus.focus({ preventScroll: true });
       if (first.scrollIntoView) first.scrollIntoView({ block: 'center' });

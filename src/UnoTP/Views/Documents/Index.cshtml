@@ -611,17 +611,28 @@
         <a class="csi-btn csi-btn--back" asp-controller="NewApplication" asp-action="Index"
            data-loader="Going back to Investor Identification"
            data-loader-hint="Nothing filed here is lost — it is kept against this application.">Back</a>
-        @* What Proceed would ask for next, so the partner is never sent looking for it. *@
-        <p class="csi-bar__hint">
-            @if (left.Count == 0)
-            {
-                @:Everything is in &mdash; <strong>ready to proceed</strong>
-            }
-            else
-            {
-                @:@left.Count @(left.Count == 1 ? "thing" : "things") still to go &mdash; <strong>@left[0]</strong>@(left.Count > 1 ? " first" : "")
-            }
-        </p>
+        @* What Proceed would ask for next, so the partner is never sent looking for
+           it - and, with more than one thing left, the whole list on a click. *@
+        @if (left.Count == 0)
+        {
+            <p class="csi-bar__hint">Everything is in &mdash; <strong>ready to proceed</strong></p>
+        }
+        else if (left.Count == 1)
+        {
+            <p class="csi-bar__hint">1 thing still to go &mdash; <strong>@left[0]</strong></p>
+        }
+        else
+        {
+            <details class="csi-bar__hint csi-left">
+                <summary>@left.Count things still to go &mdash; <strong>@left[0]</strong> first<span class="csi-left__more">See all</span></summary>
+                <ol class="csi-left__list">
+                    @foreach (var need in left)
+                    {
+                        <li>@need</li>
+                    }
+                </ol>
+            </details>
+        }
         <div class="csi-bar__right">
             @if (s.SavedAt is { } saved)
             {

@@ -225,22 +225,13 @@
         var who = InvestorViewModel.Ordinal(holder) + " Holder";
         var h = state.Added ? Model.Docs.JointHolder(InvestorViewModel.CodeOf(holder)) : null;
         <section class="csi-card cii-card" id="holder-@holder">
-            <div class="cii-head">
-                <h2 class="cii-title">@who Details</h2>
-                <span class="csi-status @(h is not null ? "csi-status--ok" : null)">@(h is not null ? "Added" : "Not added")</span>
-                @* Only the last holder opened can go: the second waits for the third. *@
-                @if (holder < Model.State.Joint.Count + 1)
-                {
-                    <button type="button" class="inv-remove" disabled title="Remove the third holder first">@Html.Raw($"<svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" aria-hidden=\"true\">{BinGlyph}</svg> Remove")</button>
-                }
-                else
-                {
-                    await Post("JointRemove", new { n = holder }, "inv-remove", $"<svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" aria-hidden=\"true\">{BinGlyph}</svg> Remove");
-                }
-            </div>
-
             @if (h is null)
             {
+                <div class="cii-head">
+                    <h2 class="cii-title">@who Details</h2>
+                    <span class="csi-status">Not added</span>
+                    @{ await Remove(holder); }
+                </div>
                 if (Model.Unfinished == holder)
                 {
                     <div class="csi-gap csi-gap--alert cii-unfinished" role="alert">
@@ -257,14 +248,57 @@
             }
             else
             {
-                await JointRecord(holder, h, search.Record);
-                await Documents(holder, h);
-                await CommAddress(holder, h);
-                await ManualEntry(holder, search.Record?.Gender ?? "");
-                await MoreInformation(holder, lists);
-                await Pep(holder, h);
+                @* Once the card is complete it folds to a line - who, and where it stands
+                   - and opens again on a click, on an error in it, or when a post was
+                   about it. Its fields post folded or not. *@
+                var (complete, standing) = Standing(holder, h);
+                var folded = complete && !Model.About(holder, h);
+                <details class="cii-fold" open="@(!folded)">
+                    <summary class="cii-head">
+                        <h2 class="cii-title">@who Details</h2>
+                        <span class="csi-status csi-status--ok">Added</span>
+                        <svg class="cii-fold__chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
+                        <span class="cii-fold__line">@standing</span>
+                    </summary>
+                    <div class="cii-fold__tools">@{ await Remove(holder); }</div>
+                    @{ await JointRecord(holder, h, search.Record); }
+                    @{ await Documents(holder, h); }
+                    @{ await CommAddress(holder, h); }
+                    @{ await ManualEntry(holder, search.Record?.Gender ?? ""); }
+                    @{ await MoreInformation(holder, lists); }
+                    @{ await Pep(holder, h); }
+                </details>
             }
         </section>
+    }
+
+    // Remove, for the last holder opened only: the second waits for the third.
+    private async Task Remove(int holder)
+    {
+        var glyph = $"<svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" aria-hidden=\"true\">{BinGlyph}</svg> Remove";
+        if (holder < Model.State.Joint.Count + 1)
+        {
+            <button type="button" class="inv-remove" disabled title="Remove the third holder first">@Html.Raw(glyph)</button>
+        }
+        else
+        {
+            await Post("JointRemove", new { n = holder }, "inv-remove", glyph);
+        }
+    }
+
+    // Where an added holder's card stands, for its folded line: who they are, the
+    // documents filed of those asked for, and the fields still to fill.
+    private (bool Complete, string Line) Standing(int holder, DocumentsViewModel.DocHolder h)
+    {
+        var docs = Model.Docs;
+        var slots = DocumentsViewModel.HolderSlots.Select(d => docs.View(d, h)).Where(v => v.Used).ToList();
+        var filed = slots.Count(v => v.Doc is not null);
+        var fields = InvestorViewModel.UnfilledFor(Model.State, holder, h, docs.MailTyped, Model.Places).Count;
+        var complete = slots.All(v => !v.Missing) && fields == 0;
+        var line = $"{h.Who.Name} · PAN {DocumentsViewModel.Mask(h.Who.Pan)} · {(h.Who.Folio.Length > 0 ? "Folio " + h.Who.Folio : "New folio")}"
+            + (slots.Count > 0 ? $" · {filed} of {slots.Count} document{(slots.Count == 1 ? "" : "s")} filed" : "")
+            + (fields == 0 ? " · details complete" : $" · {fields} field{(fields == 1 ? "" : "s")} to fill");
+        return (complete, line);
     }
 
     // An added joint holder's record, as the investor's card shows theirs: who they
@@ -365,7 +399,7 @@
                     @if (gender.Length == 0)
                     {
                         <div class="inv-field inv-field--sm">
-                            <label for="h@(holder)-gender">Gender <span class="required">*</span></label>
+                            <label for="h@(holder)-gender">Gender</label>
                             <select id="h@(holder)-gender" name="@(p).Gender" class="inv-control @(Invalid($"{p}.Gender") is not null ? "inv-control--error" : null)" required data-required="Select the gender" aria-invalid="@(Invalid($"{p}.Gender") is not null ? "true" : null)" aria-describedby="@DescribedBy($"{p}.Gender", $"h{holder}-gender")">
                                 <option value="">Select</option>
                                 @foreach (var g in Model.Docs.Ref.Genders) { if (g == Model.Value($"{p}.Gender")) { <option selected>@g</option> } else { <option>@g</option> } }
@@ -374,14 +408,14 @@
                         </div>
                     }
                     <div class="inv-field inv-field--sm">
-                        <label for="h@(holder)-nametype">Name type <span class="required">*</span></label>
+                        <label for="h@(holder)-nametype">Name type</label>
                         <select id="h@(holder)-nametype" name="@(p).NameType" class="inv-control inv-control--strong @(Invalid($"{p}.NameType") is not null ? "inv-control--error" : null)" required aria-describedby="@DescribedBy($"{p}.NameType", $"h{holder}-nametype")">
                             @foreach (var t in Model.Docs.Ref.NameTypes) { if (t == Model.Value($"{p}.NameType", Model.Docs.Ref.NameTypes.FirstOrDefault() ?? "")) { <option selected>@t</option> } else { <option>@t</option> } }
                         </select>
                         @{ await FieldError($"{p}.NameType", $"h{holder}-nametype"); }
                     </div>
                     <div class="inv-field inv-field--sm">
-                        <label for="h@(holder)-parent">Father / Mother / Spouse name <span class="required">*</span></label>
+                        <label for="h@(holder)-parent">Father / Mother / Spouse name</label>
                         <input id="h@(holder)-parent" name="@(p).ParentName" class="inv-control @(Invalid($"{p}.ParentName") is not null ? "inv-control--error" : null)" value="@Model.Value($"{p}.ParentName")" required data-required="Enter the father's, mother's or spouse's name" aria-invalid="@(Invalid($"{p}.ParentName") is not null ? "true" : null)" aria-describedby="@DescribedBy($"{p}.ParentName", $"h{holder}-parent")" />
                         @{ await FieldError($"{p}.ParentName", $"h{holder}-parent"); }
                     </div>
@@ -418,13 +452,13 @@
                     {
                         var name = c + field;
                         <div class="inv-field inv-field--sm @(required is null ? "inv-field--optional" : null)">
-                            <label for="@(id)@suffix">@label @if (required is not null) { <span class="required">*</span> } else { <span class="cud-optional">(Non-mandatory)</span> }</label>
+                            <label for="@(id)@suffix">@label @if (required is null) { <span class="cud-optional">(Non-mandatory)</span> }</label>
                             <input class="inv-control @(Invalid(name) is not null ? "inv-control--error" : null)" id="@(id)@suffix" name="@name" value="@Model.Value(name)" maxlength="60" autocomplete="off" data-required="@required" aria-invalid="@(Invalid(name) is not null ? "true" : null)" aria-describedby="@DescribedBy(name, id + suffix)">
                             @{ await FieldError(name, id + suffix); }
                         </div>
                     }
                     <div class="inv-field inv-field--sm">
-                        <label for="@(id)pin">PIN Code <span class="required">*</span></label>
+                        <label for="@(id)pin">PIN Code</label>
                         <input class="inv-control @(Invalid(c + "PinCode") is not null ? "inv-control--error" : null)" id="@(id)pin" name="@(c)PinCode" value="@pin" inputmode="numeric" maxlength="6" autocomplete="off" data-required="Enter the PIN code" data-check="pin"
                                data-pin-url="@Url.Action("PinCode", new { pin = "PIN" })" data-placed="@(place is not null ? pin : null)" aria-invalid="@(Invalid(c + "PinCode") is not null ? "true" : null)" aria-describedby="@DescribedBy(c + "PinCode", id + "pin")">
                         @{ await FieldError(c + "PinCode", id + "pin"); }
@@ -519,6 +553,9 @@
             </div>
             <div class="cii-head" data-pin-head>
                 <h2 class="cii-title">Investor Details</h2>
+                @* Clear All stands away from Proceed, and asks first: it takes the joint holders off too. *@
+                <button type="submit" form="investorInfoForm" class="csi-link csi-link--muted cii-clear" formaction="@Url.Action("Clear")" formnovalidate
+                        data-confirm="Clear everything typed on this step, and remove the joint holders and the nominee?">Clear All</button>
                 <span class="cii-app">Application No: <strong>@appNo</strong>
                     <button type="button" class="cud-copy" data-copy="@appNo" title="Copy the application number" aria-label="Copy the application number">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">@Html.Raw(CopyGlyph)</svg>
@@ -647,7 +684,7 @@
         <a class="csi-btn csi-btn--back" asp-controller="Documents" asp-action="Index" data-loader="Going back to Upload Documents">Back</a>
         <p class="csi-bar__hint">Add any joint holders and the nominee, then proceed to <strong>Bank Details &amp; Payment</strong></p>
         <div class="csi-bar__right">
-            <button type="submit" form="investorInfoForm" class="csi-link btn-reset" formaction="@Url.Action("Clear")" formnovalidate>Clear All</button>
+            <button type="submit" form="investorInfoForm" class="csi-btn csi-btn--back" formaction="@Url.Action("Save")" formnovalidate data-toast="Draft saved">Save draft</button>
             <button type="submit" form="investorInfoForm" class="csi-btn csi-btn--primary" data-validate="form">Proceed</button>
         </div>
     </div>

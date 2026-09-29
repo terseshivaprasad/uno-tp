@@ -5,7 +5,7 @@
   --ink: #231F20;
   --text: #4D4D4F;
   --muted: #6B7280;
-  --muted-2: #9AA1AB;
+  --muted-2: #9AA1AB; /* disabled controls and placeholders only: too light for text that is read */
   --border: #E7EAEE;
   --border-2: #D9DEE5;
   --border-3: #ced4da;
@@ -65,7 +65,7 @@ body { min-height: 100vh; display: flex; flex-direction: column; }
    it runs the full width of the viewport, as it does the full width of the frame. */
 .app-footer {
   height: 34px; background: #fff; border-top: 1px solid var(--divider);
-  display: flex; align-items: center; padding: 0 16px; font-size: 10.5px; color: var(--muted-2);
+  display: flex; align-items: center; padding: 0 16px; font-size: 10.5px; color: var(--muted);
 }
 
 /* ===== Cards ===== */
@@ -128,7 +128,7 @@ body { min-height: 100vh; display: flex; flex-direction: column; }
 .app-tile__icon { width: 32px; height: 32px; border-radius: 6px; background: var(--tint); display: flex; align-items: center; justify-content: center; flex: none; }
 .app-tile--pinned .app-tile__icon { background: var(--pink-bg); }
 .app-tile__title { font-size: 12.5px; font-weight: 700; color: var(--ink); line-height: 1.3; }
-.app-tile__desc { font-size: 9.5px; color: var(--muted-2); padding-top: 2px; line-height: 1.4; }
+.app-tile__desc { font-size: 9.5px; color: var(--muted); padding-top: 2px; line-height: 1.4; }
 .app-tile__badge { font-size: 9.5px; font-weight: 700; color: #fff; background: var(--red); border-radius: 9px; padding: 2px 6px; flex: none; }
 .app-tile--disabled .app-tile__title { color: var(--muted-2); }
 /* Board 00 - Mobile: tighter two-up tiles, and the pinned one carries a tint
@@ -220,7 +220,7 @@ a.app-tile:hover { text-decoration: none; }
 .kv-grid--2 { grid-template-columns: repeat(2, minmax(0,1fr)); }
 .kv-grid--4 { grid-template-columns: repeat(4, minmax(0,1fr)); }
 .kv { display: flex; flex-direction: column; gap: 3px; }
-.kv dt { font-size: 10.5px; color: var(--muted-2); font-weight: 600; }
+.kv dt { font-size: 10.5px; color: var(--muted); font-weight: 600; }
 .kv dd { margin: 0; font-size: 13px; font-weight: 500; color: var(--ink); }
 
 /* ===== Modal overlay (11A payment-link dialog on Review Summary) ===== */
@@ -291,7 +291,7 @@ tbody tr[hidden] { display: none; }
 
 .inv-panel { background: var(--tint); border: 1px solid var(--tint); border-radius: 6px; padding: 14px 16px; margin-bottom: 16px; }
 .inv-panel--stack { display: flex; flex-direction: column; gap: 14px; }
-.inv-panel__label { font-size: 10.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted-2); }
+.inv-panel__label { font-size: 10.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
 .inv-panel__action { font-size: 11px; font-weight: 600; color: var(--red); flex: none; }
 .inv-panel__note { font-size: 11px; color: var(--muted); line-height: 1.5; }
 
@@ -300,14 +300,14 @@ tbody tr[hidden] { display: none; }
 .inv-ckyc__photo {
   width: 84px; height: 84px; border-radius: 6px; background: #fff; border: 1px solid var(--divider); flex: none;
   display: flex; align-items: center; justify-content: center; text-align: center;
-  font-size: 10.5px; color: var(--muted-2); line-height: 1.4;
+  font-size: 10.5px; color: var(--muted); line-height: 1.4;
 }
 .inv-kv-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 14px 24px; }
 .inv-kv-grid--divided { border-top: 1px solid var(--divider); padding-top: 14px; }
 .inv-kv--wide { grid-column: span 2; }
 .inv-kv__k { font-size: 11.5px; font-weight: 500; color: var(--muted); }
 .inv-kv__v { font-size: 14px; font-weight: 500; color: var(--ink); padding-top: 3px; line-height: 1.4; }
-.inv-kv__v--unread { color: var(--muted-2); }
+.inv-kv__v--unread { color: var(--muted); }
 
 .inv-manual {
   border-left: 3px solid var(--amber-accent); background: var(--amber-tint); border-radius: 0 6px 6px 0;
@@ -378,6 +378,18 @@ select.inv-control:has(option[value=""]:checked) { color: var(--muted-2); }
 .cii-title { flex: 1; min-width: 0; margin: 0; font-size: 16px; font-weight: 500; color: var(--text); }
 .cii-app { font-size: 12.5px; color: var(--muted); }
 .cii-app strong { color: var(--ink); font-weight: 600; }
+.cii-clear { margin-right: 6px; }
+/* An added joint holder folds to a line once nothing on the card is left to do:
+   who they are and where the card stands. Open, the card as it always was. */
+.cii-fold > summary { list-style: none; cursor: pointer; flex-wrap: wrap; }
+.cii-fold > summary::-webkit-details-marker { display: none; }
+.cii-fold > summary:focus-visible { outline: 2px solid var(--blue); outline-offset: 4px; border-radius: 4px; }
+.cii-fold__line { flex: 1 1 100%; order: 3; font-size: 12.5px; line-height: 1.5; color: var(--muted); }
+.cii-fold[open] .cii-fold__line { display: none; }
+.cii-fold__chev { flex: none; color: var(--muted); transition: transform .15s ease; }
+.cii-fold[open] .cii-fold__chev { transform: rotate(180deg); }
+.cii-fold__tools { display: flex; justify-content: flex-end; padding-top: 2px; }
+@media (prefers-reduced-motion: reduce) { .cii-fold__chev { transition: none; } }
 /* The investor's record under the card title: CKYC, the verified addresses, what is typed. */
 .cii-record { display: flex; flex-direction: column; gap: 16px; padding-top: 18px; }
 .cii-section { margin: 28px 0 0; padding-bottom: 10px; font-size: 15px; font-weight: 500; color: var(--text); }
@@ -482,7 +494,7 @@ select.inv-control:has(option[value=""]:checked) { color: var(--muted-2); }
 }
 .fd-amount__clear {
   flex: none; width: 32px; height: 32px; border: 0; background: none; border-radius: 6px; cursor: pointer;
-  font-size: 13px; color: var(--muted-2); font-family: inherit;
+  font-size: 13px; color: var(--muted); font-family: inherit;
 }
 .fd-amount__clear:hover { color: var(--ink); background: var(--tint); }
 
@@ -496,7 +508,7 @@ select.inv-control:has(option[value=""]:checked) { color: var(--muted-2); }
 .rv-holder__id { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; background: var(--green-bg); border-left: 4px solid var(--green-2); }
 .rv-holder__photo {
   width: 48px; height: 58px; flex: none; border-radius: 6px; background: #fff; border: 1px solid var(--divider);
-  display: flex; align-items: center; justify-content: center; font-size: 8px; color: var(--muted-2); letter-spacing: .04em;
+  display: flex; align-items: center; justify-content: center; font-size: 8px; color: var(--muted); letter-spacing: .04em;
 }
 .rv-holder__id-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
 .rv-holder__name-row { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
@@ -506,13 +518,13 @@ select.inv-control:has(option[value=""]:checked) { color: var(--muted-2); }
 .rv-holder__count-label { font-size: 10.5px; font-weight: 700; color: var(--green); line-height: 1.35; }
 .rv-holder__bar { height: 4px; border-radius: 2px; background: var(--divider); overflow: hidden; }
 .rv-holder__bar > div { width: 100%; height: 100%; background: var(--green-2); }
-.rv-holder__consent { font-size: 10px; color: var(--muted-2); line-height: 1.5; padding-top: 1px; }
+.rv-holder__consent { font-size: 10px; color: var(--muted); line-height: 1.5; padding-top: 1px; }
 
 .rv-holder__col { padding: 14px 16px; border-left: 1px solid var(--tint); display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .rv-holder__col--poa { background: var(--green-bg); }
 .rv-holder__col--flag { background: var(--pink-bg); }
 .rv-holder__col-head { display: flex; align-items: baseline; gap: 8px; }
-.rv-holder__col-label { flex: 1; min-width: 0; font-size: 9.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted-2); }
+.rv-holder__col-label { flex: 1; min-width: 0; font-size: 9.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .rv-holder__poa-note { font-size: 10.5px; font-weight: 500; color: var(--green); line-height: 1.5; border-top: 1px solid var(--green-border); padding-top: 9px; }
 
 .rv-checks { list-style: none; margin: 0; padding: 12px 0 0; }
@@ -574,7 +586,7 @@ select.inv-control:has(option[value=""]:checked) { color: var(--muted-2); }
 }
 .pl-terms dt { font-size: 10.5px; font-weight: 500; color: var(--muted); }
 .pl-terms dd { margin: 0; font-size: 12.5px; font-weight: 500; color: var(--ink); padding-top: 5px; }
-.pl-terms dd.pl-terms__note { font-size: 9.5px; font-weight: 400; color: var(--muted-2); padding-top: 3px; line-height: 1.5; }
+.pl-terms dd.pl-terms__note { font-size: 9.5px; font-weight: 400; color: var(--muted); padding-top: 3px; line-height: 1.5; }
 
 .pl-lapse { border-left: 3px solid var(--amber-accent); background: var(--amber-tint); border-radius: 0 6px 6px 0; padding: 12px 14px; font-size: 11.5px; color: var(--amber); line-height: 1.6; }
 .pl-lapse strong { font-weight: 700; }
@@ -628,7 +640,7 @@ select.inv-control:has(option[value=""]:checked) { color: var(--muted-2); }
 .sub-pending__text strong { font-weight: 700; }
 
 .sub-box { border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
-.sub-box__label { background: var(--tint); border-bottom: 1px solid var(--divider); padding: 9px 13px; font-size: 9.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted-2); }
+.sub-box__label { background: var(--tint); border-bottom: 1px solid var(--divider); padding: 9px 13px; font-size: 9.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .sub-steps { list-style: none; margin: 0; padding: 0 13px; }
 .sub-step { display: flex; align-items: flex-start; gap: 10px; padding: 12px 0; border-top: 1px solid var(--tint); }
 .sub-step:first-child { border-top: none; }
@@ -657,10 +669,10 @@ select.inv-control:has(option[value=""]:checked) { color: var(--muted-2); }
 .sub-kv__v { font-size: 12.5px; font-weight: 500; color: var(--ink); padding-top: 6px; line-height: 1.4; }
 .sub-kv__v--lg { font-size: 14px; }
 .sub-kv__v--green { color: var(--green); }
-.sub-kv__note { font-size: 9.5px; color: var(--muted-2); padding-top: 3px; }
+.sub-kv__note { font-size: 9.5px; color: var(--muted); padding-top: 3px; }
 
 .sub-holders { border-top: 1px solid var(--divider); padding: 14px 14px 16px; display: flex; flex-direction: column; gap: 8px; }
-.sub-holders__label { font-size: 9.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted-2); }
+.sub-holders__label { font-size: 9.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .sub-holders__names { font-size: 11.5px; font-weight: 500; color: var(--ink); }
 .sub-holders__role { color: var(--muted-2); font-weight: 400; }
 .sub-holders__text { font-size: 10.5px; color: var(--muted); line-height: 1.6; }
@@ -880,7 +892,7 @@ body:has(.rdocs:popover-open) { overflow: hidden; }
 /* Over each name, what it is: "Step 1" to "Step 4" for the booking steps the
    dashboard promises, "Start" and "Submit" for the ends, which carry no number,
    stand apart behind a rule, and read a little quieter. */
-.csi-rail__num { display: block; padding-bottom: 1px; font-size: 9.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted-2); }
+.csi-rail__num { display: block; padding-bottom: 1px; font-size: 9.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
 .csi-rail__step--current .csi-rail__num { color: var(--red); opacity: .75; }
 .csi-rail__rule { margin: 0 2px; border: 0; border-top: 1px dashed var(--border-2); }
 .csi-rail__step--end:not(.csi-rail__step--current) .csi-rail__label { color: var(--text); font-weight: 500; }
@@ -930,10 +942,25 @@ body:has(.rdocs:popover-open) { overflow: hidden; }
 .csi-bar__inner { max-width: 1440px; margin: 0 auto; padding: 10px 16px; display: flex; align-items: center; gap: 14px; }
 .csi-bar__hint { flex: 1; min-width: 0; font-size: 12.5px; color: var(--muted); text-align: center; }
 .csi-bar__hint strong { color: var(--ink); font-weight: 600; }
+/* The count of what is still to go opens the whole list, above the bar, so nothing
+   has to be scrolled for. */
+.csi-left { position: relative; }
+.csi-left > summary { list-style: none; cursor: pointer; }
+.csi-left > summary::-webkit-details-marker { display: none; }
+.csi-left > summary:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; border-radius: 3px; }
+.csi-left__more { margin-left: 8px; font-size: 11.5px; font-weight: 600; color: var(--red); }
+.csi-left[open] .csi-left__more { color: var(--muted); }
+.csi-left__list {
+  position: absolute; left: 50%; bottom: calc(100% + 14px); transform: translateX(-50%); z-index: 41;
+  margin: 0; padding: 12px 18px 12px 34px; min-width: 260px; max-width: min(420px, calc(100vw - 32px));
+  text-align: left; background: #fff; border: 1px solid var(--border-2); border-radius: 8px; box-shadow: 0 8px 24px rgba(35, 31, 32, .12);
+  font-size: 12.5px; line-height: 1.7; color: var(--ink);
+}
+.csi-left__list li::marker { color: var(--muted); }
 .csi-bar__right { display: flex; align-items: center; gap: 22px; }
 /* What the draft holds and when it was put there, beside the button that saved
    it. Quiet: it is a receipt, not an instruction. */
-.csi-bar__saved { font-size: 11.5px; color: var(--muted-2); white-space: nowrap; }
+.csi-bar__saved { font-size: 11.5px; color: var(--muted); white-space: nowrap; }
 .csi-bar__saved[hidden] { display: none; }
 .csi-btn { display: inline-flex; align-items: center; justify-content: center; height: 34px; padding: 0 22px; border: 1px solid var(--red); border-radius: 6px; font-family: inherit; font-size: 13px; font-weight: 500; cursor: pointer; }
 .csi-btn--back { background: #fff; color: var(--red); }
@@ -963,7 +990,7 @@ body:has(.rdocs:popover-open) { overflow: hidden; }
   .csi-rail__step { display: none; }
   .csi-rail__rule { display: none; }
   .csi-rail__where { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; }
-  .csi-rail__count { font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted-2); }
+  .csi-rail__count { font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
   .csi-rail__now { font-size: 14px; font-weight: 700; color: var(--ink); }
   .csi-rail__bar { display: block; height: 4px; border-radius: 2px; background: var(--divider-2); overflow: hidden; }
   .csi-rail__bar > span { display: block; height: 100%; border-radius: 2px; background: var(--red); }
@@ -1111,7 +1138,7 @@ html.is-saving::before {
 .csi-drafts__title { font-size: 16px; font-weight: 500; color: var(--text); }
 .csi-drafts__sub { padding: 4px 0 10px; font-size: 11.5px; color: var(--muted); }
 .csi-drafts__table { width: 100%; border-collapse: collapse; font-size: 12.5px; color: var(--text); }
-.csi-drafts__table th { padding: 10px 10px 8px 0; font-size: 10.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted-2); text-align: left; border-bottom: 1px solid var(--divider); }
+.csi-drafts__table th { padding: 10px 10px 8px 0; font-size: 10.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); text-align: left; border-bottom: 1px solid var(--divider); }
 .csi-drafts__table td { padding: 11px 10px 11px 0; border-bottom: 1px solid var(--divider); vertical-align: top; }
 .csi-drafts__table tr:last-child td { border-bottom: 0; }
 .csi-drafts__table strong { color: var(--ink); font-weight: 600; }
@@ -1123,7 +1150,7 @@ html.is-saving::before {
   .csi-drafts__table tr { display: block; padding: 12px 0; border-bottom: 1px solid var(--divider); }
   .csi-drafts__table tr:last-child { border-bottom: 0; }
   .csi-drafts__table td { display: flex; gap: 10px; padding: 3px 0; border: 0; }
-  .csi-drafts__table td::before { content: attr(data-label); flex: none; width: 108px; font-size: 11px; color: var(--muted-2); }
+  .csi-drafts__table td::before { content: attr(data-label); flex: none; width: 108px; font-size: 11px; color: var(--muted); }
   .csi-drafts__act { justify-content: flex-end; }
 }
 
@@ -1162,11 +1189,11 @@ html.is-saving::before {
 .csi-demo__sub { padding: 3px 0 10px; font-size: 11.5px; color: var(--muted); }
 .csi-demo__sub strong { color: var(--ink); font-weight: 600; }
 .csi-demo__table { width: 100%; border-collapse: collapse; font-size: 12px; color: var(--text); }
-.csi-demo__table th { padding: 8px 12px 7px 0; font-size: 10.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted-2); text-align: left; border-bottom: 1px solid var(--border-2); }
+.csi-demo__table th { padding: 8px 12px 7px 0; font-size: 10.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); text-align: left; border-bottom: 1px solid var(--border-2); }
 .csi-demo__table td { padding: 9px 12px 9px 0; border-bottom: 1px solid var(--divider); vertical-align: top; }
 .csi-demo__table tr:last-child td { border-bottom: 0; }
 .csi-demo__table code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; font-weight: 600; letter-spacing: .02em; color: var(--ink); }
-.csi-demo__none { color: var(--muted-2); }
+.csi-demo__none { color: var(--muted); }
 .csi-demo__no { display: inline-block; min-width: 20px; height: 20px; border-radius: 50%; background: var(--border-2); color: #fff; font-size: 11px; font-weight: 700; line-height: 20px; text-align: center; }
 .csi-demo__notes { margin: 10px 0 0; padding: 10px 0 0 17px; border-top: 1px solid var(--border-2); font-size: 11.5px; line-height: 1.6; color: var(--muted); }
 .csi-demo__notes strong { color: var(--ink); font-weight: 600; }
@@ -1176,7 +1203,7 @@ html.is-saving::before {
   .csi-demo__table tr { display: block; padding: 10px 0; border-bottom: 1px solid var(--divider); }
   .csi-demo__table tr:last-child { border-bottom: 0; }
   .csi-demo__table td { display: flex; gap: 10px; padding: 3px 0; border: 0; }
-  .csi-demo__table td::before { content: attr(data-label); flex: none; width: 108px; font-size: 11px; color: var(--muted-2); }
+  .csi-demo__table td::before { content: attr(data-label); flex: none; width: 108px; font-size: 11px; color: var(--muted); }
 }
 
 /* ===== Uno TP classic - Upload Documents =====
@@ -1185,15 +1212,15 @@ html.is-saving::before {
 /* Who the step is for on the left, what it is filed under on the right. */
 .cud-head { display: flex; align-items: flex-start; gap: 20px; flex-wrap: wrap; padding-bottom: 8px; }
 .cud-head__who { min-width: 0; }
-.cud-head__step { font-size: 10.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted-2); }
+.cud-head__step { font-size: 10.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
 .cud-head__name { padding-top: 3px; font-size: 16px; font-weight: 600; line-height: 1.25; color: var(--ink); }
 /* The two identifiers read as a pair of facts, each under its own label and set
    apart by the space between them rather than by a middot inside one line. */
 .cud-head__ids { display: flex; flex-wrap: wrap; gap: 3px 24px; padding-top: 7px; font-size: 12.5px; font-weight: 600; color: var(--ink); }
-.cud-head__ids em { font-style: normal; padding-right: 7px; font-size: 10.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted-2); }
+.cud-head__ids em { font-style: normal; padding-right: 7px; font-size: 10.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
 .cud-head__right { margin-left: auto; display: flex; align-items: flex-start; gap: 22px; flex-wrap: wrap; }
 .cud-head__refs { display: flex; gap: 22px; margin: 0; }
-.cud-head__refs dt { font-size: 10.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted-2); }
+.cud-head__refs dt { font-size: 10.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
 .cud-head__refs dd { margin: 0; padding-top: 3px; font-size: 12.5px; font-weight: 600; color: var(--ink); }
 .cud-head__pending { font-weight: 400; font-style: italic; color: var(--muted); }
 .cud-head .csi-link { padding-top: 14px; }
@@ -1206,7 +1233,7 @@ html.is-saving::before {
    halfway between its own box and the row above. */
 .cud-col > .csi-label { padding-bottom: 4px; }
 .cud-col__spacer { height: 38px; }
-.cud-optional { font-weight: 400; color: var(--muted-2); }
+.cud-optional { font-weight: 400; color: var(--muted); }
 /* What a proof was identified as, beside its label. */
 .cud-type { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: var(--tint); font-size: 11px; font-weight: 600; color: var(--ink); vertical-align: 1px; }
 .cud-col[hidden] { display: none; }
@@ -1214,7 +1241,7 @@ html.is-saving::before {
 .csi-control[readonly], .csi-control:disabled { background: var(--tint); color: var(--muted); cursor: default; }
 .cud-resolved { padding-top: 6px; font-size: 11.5px; color: var(--muted); }
 .cud-resolved strong { font-weight: 600; color: var(--ink); }
-.cud-resolved__none { font-weight: 400; font-style: italic; color: var(--muted-2); }
+.cud-resolved__none { font-weight: 400; font-style: italic; color: var(--muted); }
 /* Something worth knowing about a field, in the informational blue the rest of
    the wizard uses - never the red of something that stops the application. */
 .cud-note { display: flex; gap: 7px; margin-top: 7px; padding: 8px 10px; border-left: 3px solid var(--blue); border-radius: 6px; background: var(--blue-bg); font-size: 11.5px; line-height: 1.5; color: var(--blue); }
@@ -1313,7 +1340,7 @@ html.is-saving::before {
   background-size: 15px 1.5px; background-repeat: no-repeat; background-position: center;
 }
 .cud-slot__na-text { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-.cud-slot__na-title { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted-2); }
+.cud-slot__na-title { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 /* Why it is not applicable, which is what a partner looking at a grey card wants
    to know before they wonder what they have done wrong. */
 .cud-slot__na-why { font-size: 11.5px; font-weight: 400; line-height: 1.5; letter-spacing: 0; color: var(--muted); }
@@ -1342,7 +1369,7 @@ html.is-saving::before {
 .cud-drop__checking { font-size: 12.5px; color: var(--muted); }
 /* Which of the three checks is running, under the one it is running. Three
    seconds of an unlabelled spinner is how the same file gets uploaded twice. */
-.cud-drop__step { font-size: 11px; line-height: 1.5; color: var(--muted-2); }
+.cud-drop__step { font-size: 11px; line-height: 1.5; color: var(--muted); }
 .cud-drop__step:empty { display: none; }
 @keyframes cud-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) {
@@ -1350,7 +1377,7 @@ html.is-saving::before {
 }
 .cud-drop__icon { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; margin-bottom: 5px; border-radius: 50%; background: var(--pink-bg); color: var(--red); }
 .cud-drop__title { font-size: 13px; font-weight: 500; color: var(--text); }
-.cud-drop__hint { font-size: 11px; line-height: 1.5; color: var(--muted-2); }
+.cud-drop__hint { font-size: 11px; line-height: 1.5; color: var(--muted); }
 /* What the document itself has to be, beyond its format. Amber: it is a rule the
    copy must meet, not an error the partner has already made. */
 .cud-drop__must { font-size: 11px; font-weight: 600; line-height: 1.5; color: var(--amber); }
@@ -1378,7 +1405,7 @@ html.is-saving::before {
 /* A filed proof of address: its state and the address it reads, in the box. */
 .cud-held__tag.is-done { background: var(--green-bg); color: var(--green); }
 .cud-held__tag.is-failed { background: var(--pink-bg); color: var(--red-dark); }
-.cud-held__tag.is-na, .cud-held__tag.is-working { background: var(--tint); color: var(--muted-2); }
+.cud-held__tag.is-na, .cud-held__tag.is-working { background: var(--tint); color: var(--muted); }
 .cud-drop.is-read .cud-drop__done { gap: 3px; }
 /* The state first, a breath under it, then what was read: one text size for what
    was read, one for the detail under it, the same in the boxes and the cards. */
@@ -1523,7 +1550,7 @@ body.is-waiting { overflow: hidden; }
    The document is filed, so the mark stays - it just stops being green. */
 .cud-slot.is-unconfirmed .cud-drop__check { background: var(--amber-bg); color: var(--amber); }
 /* What the application has left for this document, of the three it allows. */
-.cud-slot__tries { padding-top: 6px; font-size: 11px; text-align: left; color: var(--muted-2); }
+.cud-slot__tries { padding-top: 6px; font-size: 11px; text-align: left; color: var(--muted); }
 .cud-slot__tries[hidden] { display: none; }
 .cud-slot__tries.is-spent { font-weight: 600; color: var(--red-dark); }
 .cud-slot .csi-error { text-align: left; }
@@ -1545,7 +1572,7 @@ body.is-waiting { overflow: hidden; }
 .cud-read__head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .cud-read__kind { font-size: 12px; font-weight: 700; color: var(--ink); }
 /* What the check is doing, in the colour of where it got to. */
-.cud-read__state { flex: none; font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted-2); }
+.cud-read__state { flex: none; font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
 .cud-read__card.is-working { border-color: var(--blue-border); }
 .cud-read__card.is-working .cud-read__state { color: var(--blue); }
 .cud-read__card.is-done { border-color: var(--green-border); }
@@ -1570,7 +1597,7 @@ body.is-waiting { overflow: hidden; }
    cleared off the box is still readable here, which is the point of it. */
 .cud-log__sub { padding-top: 6px; font-size: 11.5px; line-height: 1.5; color: var(--muted); }
 .cud-log__list { list-style: none; margin: 0; padding: 14px 0 0; }
-.cud-log__none { padding-top: 14px; font-size: 12px; color: var(--muted-2); }
+.cud-log__none { padding-top: 14px; font-size: 12px; color: var(--muted); }
 .cud-log__none[hidden] { display: none; }
 .cud-log__row { padding: 14px 18px; border: 1px solid var(--border-2); border-left-width: 3px; border-radius: 8px; }
 .cud-log__row + .cud-log__row { margin-top: 12px; }
@@ -1582,9 +1609,9 @@ body.is-waiting { overflow: hidden; }
 .cud-log__top { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
 .cud-log__doc { font-size: 12.5px; font-weight: 700; color: var(--ink); }
 .cud-log__try { font-size: 11px; color: var(--muted); }
-.cud-log__at { font-size: 11px; color: var(--muted-2); font-variant-numeric: tabular-nums; }
+.cud-log__at { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
 /* How the attempt ended, in the colour of the outcome. */
-.cud-log__mark { margin-left: auto; font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted-2); }
+.cud-log__mark { margin-left: auto; font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
 .cud-log__row.is-ok .cud-log__mark { color: var(--green); }
 .cud-log__row.is-warn .cud-log__mark { color: var(--amber); }
 .cud-log__row.is-bad .cud-log__mark { color: var(--red-dark); }
@@ -1628,7 +1655,7 @@ body:has(.cud-pin:not([hidden])) .csi-rail { top: 100px; max-height: calc(100vh 
 .cud-pin__who { font-weight: 700; color: var(--ink); }
 .cud-pin__pan { color: var(--muted); }
 .cud-pin__app { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; font-weight: 700; color: var(--ink); }
-.cud-pin__label { font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted-2); }
+.cud-pin__label { font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 
 /* One press to put the number in a message to support. */
 .cud-copy { font-family: inherit; display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 0; margin-left: 2px; border: 1px solid var(--border-2); border-radius: 6px; background: #fff; color: var(--muted); cursor: pointer; vertical-align: middle; }
@@ -1688,7 +1715,7 @@ body:has(.cud-pin:not([hidden])) .csi-rail { top: 100px; max-height: calc(100vh 
 .cud-preview[hidden] { display: none; }
 .cud-preview__sheet { display: flex; flex-direction: column; width: min(760px, 100%); max-height: min(86vh, 900px); border-radius: 8px; background: #fff; overflow: hidden; }
 .cud-preview__head { display: flex; align-items: flex-start; gap: 16px; padding: 14px 18px; border-bottom: 1px solid var(--divider); }
-.cud-preview__kind { font-size: 10.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted-2); }
+.cud-preview__kind { font-size: 10.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
 .cud-preview__title { padding-top: 2px; font-size: 14.5px; font-weight: 600; color: var(--ink); word-break: break-all; }
 .cud-preview__close { margin-left: auto; display: inline-flex; padding: 4px; border: 0; background: none; color: var(--muted); cursor: pointer; }
 .cud-preview__close:hover { color: var(--ink); }
@@ -1721,14 +1748,14 @@ body:has(.cud-pin:not([hidden])) .csi-rail { top: 100px; max-height: calc(100vh 
 .su-pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid var(--border-2); border-radius: 999px; background: #fff; font-family: inherit; font-size: 12.5px; color: var(--text); cursor: pointer; }
 .su-pill:hover { border-color: var(--muted); color: var(--ink); }
 .su-pill--on, .su-pill--on:hover { border-color: var(--red); background: var(--pink-bg); color: var(--red-dark); font-weight: 600; }
-.su-pill__n { font-size: 11px; font-weight: 700; color: var(--muted-2); }
+.su-pill__n { font-size: 11px; font-weight: 700; color: var(--muted); }
 .su-pill--on .su-pill__n { color: var(--red-dark); }
 .su-search { display: flex; align-items: center; gap: 7px; margin-left: auto; padding: 0 10px; height: 36px; border: 1px solid var(--border-3); border-radius: 6px; background: #fff; color: var(--muted-2); }
 .su-search:focus-within { border-color: var(--muted); }
 .su-search input { width: 210px; border: 0; padding: 0; background: none; font-family: inherit; font-size: 13px; color: var(--ink); }
 .su-search input:focus { outline: none; }
 
-.su-nolink { color: var(--muted-2); }
+.su-nolink { color: var(--muted); }
 .su-filters { padding-top: 14px; }
 
 /* The cancellation rule, said once and plainly, above the list it governs. */
@@ -1738,7 +1765,7 @@ body:has(.cud-pin:not([hidden])) .csi-rail { top: 100px; max-height: calc(100vh 
 .su-notice p { padding-top: 2px; font-size: 12.5px; line-height: 1.55; max-width: 92ch; }
 .su-notice strong { font-weight: 600; }
 .su-table { width: 100%; table-layout: fixed; border-collapse: collapse; margin-top: 4px; font-size: 13px; color: var(--text); }
-.su-table th { padding: 12px 12px 9px 0; font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted-2); text-align: left; border-bottom: 1px solid var(--border); }
+.su-table th { padding: 12px 12px 9px 0; font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); text-align: left; border-bottom: 1px solid var(--border); }
 .su-table td { padding: 13px 12px 13px 0; border-bottom: 1px solid var(--divider); vertical-align: middle; overflow-wrap: anywhere; }
 .su-table tr:last-child td { border-bottom: 0; }
 .su-table strong { color: var(--ink); font-weight: 600; }
@@ -1767,7 +1794,7 @@ body:has(.cud-pin:not([hidden])) .csi-rail { top: 100px; max-height: calc(100vh 
   .su-table colgroup, .su-table thead { display: none; }
   .su-table tr { padding: 12px 0; border-bottom: 1px solid var(--divider); }
   .su-table td { display: flex; gap: 10px; padding: 3px 0; border: 0; }
-  .su-table td::before { content: attr(data-label); flex: none; width: 104px; font-size: 11px; color: var(--muted-2); }
+  .su-table td::before { content: attr(data-label); flex: none; width: 104px; font-size: 11px; color: var(--muted); }
   .su-table__act { justify-content: flex-end; }
   .su-table__act::before { content: none; }
 }
@@ -2069,7 +2096,7 @@ html:has(.clogin), html:has(.clogin) body { background: var(--border); }
 .fd-note__text a { color: var(--blue); font-weight: 600; }
 .fd-note__action { flex: none; font-size: 12px; font-weight: 600; color: var(--red); }
 .fd-summary { background: var(--tint); border-radius: 8px; padding: 20px; position: sticky; top: 16px; display: flex; flex-direction: column; gap: 18px; }
-.fd-summary__label { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted-2); }
+.fd-summary__label { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .fd-summary__amount { font-size: 26px; font-weight: 600; padding-top: 3px; color: var(--ink); letter-spacing: -.3px; }
 .fd-summary__grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 16px; }
 .fd-summary__block { border-top: 1px solid var(--border); padding-top: 16px; display: flex; flex-direction: column; gap: 16px; }
@@ -2151,7 +2178,7 @@ html:has(.clogin), html:has(.clogin) body { background: var(--border); }
    A card with nothing to do - not applicable, or already done - steps back; the
    card the bar names as next is the one outlined, so the eye goes there first. */
 .cud-slot__na { border-color: var(--border); }
-.cud-slot__na .cud-slot__na-title { color: var(--muted-2); }
+.cud-slot__na .cud-slot__na-title { color: var(--muted); }
 .cud-drop.is-filled, .cud-drop.is-held { border-color: var(--border); }
 /* Blue, the colour of information: red on a card would read as something wrong. */
 .cud-slot.is-next .cud-drop { border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-bg); }

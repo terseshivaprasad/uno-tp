@@ -97,7 +97,7 @@
                     @* ── Amount ─────────────────────────────────────────────────── *@
                     <div class="fd-group">
                         <div class="inv-section-head">
-                            <label class="fd-label" for="fd-amount">Amount <span class="required">*</span></label>
+                            <label class="fd-label" for="fd-amount">Amount</label>
                             <div class="fd-aside">@Money.Rupees(Model.Config.MinAmount) minimum &middot; @Money.Rupees(Model.Config.MaxAmount) maximum</div>
                         </div>
                         <div class="fd-amount @(Model.Problem("Amount") is null ? null : "fd-amount--error")">
@@ -112,7 +112,7 @@
                     @* ── Tenure ─────────────────────────────────────────────────── *@
                     <div class="fd-group" role="radiogroup" aria-labelledby="fd-tenure-label">
                         <div class="inv-section-head">
-                            <div class="fd-label" id="fd-tenure-label">Tenure &middot; months <span class="required">*</span></div>
+                            <div class="fd-label" id="fd-tenure-label">Tenure &middot; months</div>
                         </div>
                         <div class="fd-options fd-options--tenure">
                             @foreach (var t in Model.Ref.Tenures)
@@ -129,7 +129,7 @@
                     @* ── Interest payout ────────────────────────────────────────── *@
                     <div class="fd-group" role="radiogroup" aria-labelledby="fd-payout-label">
                         <div class="inv-section-head">
-                            <div class="fd-label" id="fd-payout-label">Interest payout <span class="required">*</span></div>
+                            <div class="fd-label" id="fd-payout-label">Interest payout</div>
                             <div class="fd-aside">a payout on maturity makes the deposit cumulative</div>
                         </div>
                         <div class="fd-options fd-options--payout">
@@ -158,7 +158,7 @@
                            it is disabled, so its choice is not posted. *@
                         <fieldset class="fd-grid-2 cud-choice" data-show-when="AutoRenewal=true" hidden="@(!f.AutoRenewal)" disabled="@(!f.AutoRenewal)">
                             <div class="cud-col">
-                                <label class="csi-label" for="fd-renew">Renew <span class="required">*</span></label>
+                                <label class="csi-label" for="fd-renew">Renew</label>
                                 <div class="cud-select">
                                     <select class="csi-control @Invalid("RenewInstruction")" id="fd-renew" name="RenewInstruction" data-quote data-required="Required — choose what auto renewal renews" aria-invalid="@InvalidAria("RenewInstruction")">
                                         <option value="" selected="@(f.RenewInstruction.Length == 0)">Select</option>
@@ -196,7 +196,7 @@
                     @* ── Delivery ───────────────────────────────────────────────── *@
                     <section class="fd-section fd-grid-2">
                         <div class="cud-col">
-                            <label class="csi-label" for="fd-delivery">Delivery type <span class="required">*</span></label>
+                            <label class="csi-label" for="fd-delivery">Delivery type</label>
                             <div class="cud-select">
                                 <select class="csi-control @Invalid("DeliveryType")" id="fd-delivery" name="DeliveryType" data-quote aria-invalid="@InvalidAria("DeliveryType")">
                                     @foreach (var d in Model.Ref.DeliveryTypes)
@@ -234,6 +234,7 @@
             }
         </p>
         <div class="csi-bar__right">
+            <button type="submit" form="fdConfigForm" class="csi-btn csi-btn--back" name="draft" value="1" formnovalidate data-toast="Draft saved">Save draft</button>
             <button type="submit" form="fdConfigForm" class="csi-btn csi-btn--primary" data-loader="Saving the deposit&hellip;" data-validate="form">Proceed</button>
         </div>
     </div>

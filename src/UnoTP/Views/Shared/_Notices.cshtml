@@ -10,7 +10,10 @@
             <path d="M6.5 9.5a5.5 5.5 0 0 1 11 0c0 4.5 1.8 5.5 1.8 5.5H4.7s1.8-1 1.8-5.5z"></path>
             <path d="M10.2 18.5a2 2 0 0 0 3.6 0"></path>
         </svg>
-        <span class="notices__count">@upcoming.Count</span>
+        @if (upcoming.Count > 0)
+        {
+            <span class="notices__count">@upcoming.Count</span>
+        }
     </button>
 
     <div class="notices__panel" id="noticesPanel" role="dialog" aria-label="Scheduled notices" hidden>

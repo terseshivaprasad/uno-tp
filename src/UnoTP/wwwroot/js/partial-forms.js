@@ -83,6 +83,12 @@
 
   // A control that reshapes the page submits its form as soon as it changes,
   // through the button it names: a file picked is uploaded, a choice redraws.
+  // A button that takes something off asks first; cancelled, nothing is posted.
+  document.addEventListener('click', function (e) {
+    var button = e.target.closest && e.target.closest('button[data-confirm]');
+    if (button && !window.confirm(button.getAttribute('data-confirm'))) { e.preventDefault(); e.stopImmediatePropagation(); }
+  }, true);
+
   document.addEventListener('change', function (e) {
     var el = e.target.closest && e.target.closest('[data-submit]');
     if (!el) { applyShowWhen(e.target.form); return; }
@@ -354,6 +360,8 @@
     var id = mark && mark.getAttribute('data-partial-focus');
     var target = (id && document.getElementById(id)) || here.querySelector('[autofocus]');
     if (target) {
+      // Inside a folded card (a joint holder's), the card opens first.
+      for (var fold = target.closest('details:not([open])'); fold; fold = fold.parentElement && fold.parentElement.closest('details:not([open])')) fold.open = true;
       target.focus({ preventScroll: true });
       var box = target.getBoundingClientRect();
       if (box.top < 60 || box.bottom > window.innerHeight - 70) target.scrollIntoView({ block: 'center' });

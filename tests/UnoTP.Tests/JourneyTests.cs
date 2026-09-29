@@ -13,6 +13,7 @@ public class JourneyTests(App app)
 {
     private const string NewInvestor = "XXXXC1003C";
     private const string OnFolioWithoutPanCopy = "XXXXH1008H";
+    private const string OnFolioComplete = "XXXXA1001A";
 
     [Fact]
     public async Task Upload_Documents_opens_waiting_on_the_PAN_copy()
@@ -117,6 +118,47 @@ public class JourneyTests(App app)
         Assert.Contains("\"district\":\"Mumbai\"", await found.Content.ReadAsStringAsync());
         Assert.Equal(HttpStatusCode.NotFound, none.StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, short_.StatusCode);
+    }
+
+    [Fact]
+    public async Task Save_draft_keeps_the_partner_on_the_step()
+    {
+        var client = await app.SignedInAsync();
+        var at = await App.NewApplicationAsync(client, NewInvestor);
+
+        var investor = await App.PostAsync(client, at + "/investor", at + "/investor/save");
+        var payment = await App.PostAsync(client, at + "/payment", at + "/payment", ("draft", "1"));
+        var deposit = await App.PostAsync(client, at + "/deposit", at + "/deposit", ("draft", "1"));
+
+        Assert.EndsWith("/investor", investor.RequestMessage!.RequestUri!.AbsolutePath);
+        Assert.EndsWith("/payment", payment.RequestMessage!.RequestUri!.AbsolutePath);
+        Assert.EndsWith("/deposit", deposit.RequestMessage!.RequestUri!.AbsolutePath);
+    }
+
+    [Fact]
+    public async Task A_joint_holder_folds_to_a_line_once_their_card_is_complete()
+    {
+        var client = await app.SignedInAsync();
+        var at = await App.NewApplicationAsync(client, NewInvestor);
+        await App.PostAsync(client, at + "/investor", at + "/investor/joint/add");
+        await App.PostAsync(client, at + "/investor", at + "/investor/joint/2/check",
+            ("Joint2.Pan", OnFolioComplete), ("Joint2.Dd", "14"), ("Joint2.Mm", "08"), ("Joint2.Yyyy", "1988"));
+
+        // Just added, with fields to fill: open, with the line saying so.
+        var opened = await client.GetStringAsync(at + "/investor");
+        Assert.Matches("<details class=\"cii-fold\" open", opened);
+        Assert.Contains("fields to fill", opened);
+
+        // Every field filled: folded to its line - while the investor's own card,
+        // which Proceed stopped at, stays open.
+        await App.PostAsync(client, at + "/investor", at + "/investor",
+            ("Holder2.NameType", "Father"), ("Holder2.ParentName", "SUBHASH TERSE"), ("Holder2.AnnualIncome", "5-10 lakh"),
+            ("Holder2.Occupation", "Service"), ("Holder2.SubOccupation", "Private"), ("Holder2.MaritalStatus", "Married"),
+            ("Holder2.Mobile", "9876543210"), ("Holder2.Email", "rahul@example.com"));
+        var page = await client.GetStringAsync(at + "/investor");
+        Assert.Matches("<details class=\"cii-fold\">", page);
+        Assert.Contains("SHIVAPRASAD SUBHASH TERSE", page);
+        Assert.Contains("details complete", page);
     }
 
     [Fact]

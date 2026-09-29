@@ -23,11 +23,13 @@ public class DepositController(IApplicationApi applications, IDepositApi deposit
     /// Proceed moves on once nothing is missing.
     /// </summary>
     [HttpPost("")]
-    public async Task<IActionResult> Save(DepositForm form, string? refresh)
+    public async Task<IActionResult> Save(DepositForm form, string? refresh, string? draft)
     {
         if (await LoadAsync() is not { } docs) return Start();
         if (await Applications.SaveDepositAsync(docs.AppNo, docs.App.Version, form.ToDetails()) is null)
             return Back(nameof(Index), new() { ["banner"] = Changed });
+        // Save draft: kept as it stands, checked only on Proceed.
+        if (draft is not null) return Back(nameof(Index), new());
         var problems = form.Problems(docs.Config, docs.Ref);
         if (refresh is not null)
         {

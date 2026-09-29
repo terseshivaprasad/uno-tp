@@ -225,66 +225,91 @@ public sealed class InvestorViewModel(InvestorInfoState state, DocumentsViewMode
 
     /// <summary>
     /// Everything Proceed cannot go on without, in page order: each added holder's
-    /// fields and PEP answers, then the nominee's, and a minor nominee's guardian's.
-    /// Each comes with the id of the control to bring the partner to.
+    /// card (<see cref="UnfilledFor"/>), then the nominee's, and a minor nominee's
+    /// guardian's. Each comes with the id of the control to bring the partner to.
     /// </summary>
     public static List<(string Field, string Id, string Error)> Unfilled(InvestorInfoState state, IEnumerable<(int Holder, DocumentsViewModel.DocHolder Who)> holders, int minorUnder,
         Func<DocumentsViewModel.DocHolder, bool>? typesMail = null, IReadOnlyDictionary<string, PinPlace>? places = null)
     {
-        var found = new List<(string, string, string)>();
-        var fields = state.Fields;
-        string Of(string name) => fields.GetValueOrDefault(name)?.Trim() ?? "";
-        void Need(string name, string id, string empty, string? wrong = null, Func<string, bool>? valid = null)
+        var found = new List<(string Field, string Id, string Error)>();
+        foreach (var (holder, who) in holders) found.AddRange(UnfilledFor(state, holder, who, typesMail, places));
+        if (!state.Nominee) return found;
+
+        var need = new Needs(state.Fields, found);
+        need.Need("Nominee.Name", "ciiNomName", "Enter the nominee's name");
+        var (dd, mm, yyyy) = (need.Of("Nominee.Dd"), need.Of("Nominee.Mm"), need.Of("Nominee.Yyyy"));
+        if (dd.Length == 0 || mm.Length == 0 || yyyy.Length == 0) found.Add(("Nominee.Dob", "ciiNomDd", "Enter the nominee's date of birth"));
+        else if (!IsDate(dd, mm, yyyy, DateTime.Today)) found.Add(("Nominee.Dob", "ciiNomDd", "Enter a real date of birth, not a future one"));
+        need.Need("Nominee.Relation", "ciiNomRelation", "Select the relation with the primary holder");
+        if (IsMinor(dd, mm, yyyy, DateTime.Today, minorUnder))
+        {
+            need.Need("Nominee.GuardianName", "ciiNomGuardian", "Enter the guardian's name");
+            need.Need("Nominee.GuardianAddress.Line1", "ciiGdn1", "Enter the first line of the address");
+            need.Need("Nominee.GuardianAddress.PinCode", "ciiGdnPin", "Enter the PIN code", "Enter a 6-digit PIN code", IsPin);
+            need.Need("Nominee.GuardianAddress.City", "ciiGdnCity", "Enter the city");
+        }
+        return found;
+    }
+
+    /// <summary>
+    /// What one added holder's card still lacks, in page order: a communication
+    /// address typed, what nothing read, More Information, and for a holder with no
+    /// folio the PEP answers. Empty once the card is complete.
+    /// </summary>
+    public static List<(string Field, string Id, string Error)> UnfilledFor(InvestorInfoState state, int holder, DocumentsViewModel.DocHolder who,
+        Func<DocumentsViewModel.DocHolder, bool>? typesMail = null, IReadOnlyDictionary<string, PinPlace>? places = null)
+    {
+        var found = new List<(string Field, string Id, string Error)>();
+        var need = new Needs(state.Fields, found);
+        if (typesMail?.Invoke(who) == true)
+        {
+            var c = $"Holder{holder}.{InvestorDetailsForm.Comm}";
+            need.Need(c + "Line1", $"h{holder}-comm1", "Enter the first line of the address");
+            need.Need(c + "City", $"h{holder}-commcity", "Enter the city");
+            need.Need(c + "PinCode", $"h{holder}-commpin", "Enter the PIN code", "Enter a 6-digit PIN code", IsPin);
+            if (IsPin(need.Of(c + "PinCode")) && places?.ContainsKey(need.Of(c + "PinCode")) == false)
+                found.Add((c + "PinCode", $"h{holder}-commpin", "No district is found for this PIN code; check it"));
+        }
+        foreach (var (field, id, empty) in HolderFields)
+        {
+            var name = $"Holder{holder}.{field}";
+            if (field == "Gender" && !state.Fields.ContainsKey(name)) continue;
+            var at = string.Format(id, holder);
+            if (field == "Mobile") need.Need(name, at, empty, "Enter a 10-digit mobile number", v => Regex.IsMatch(v, @"^[6-9]\d{9}$"));
+            else if (field == "Email") need.Need(name, at, empty, "Enter a valid e-mail", v => Regex.IsMatch(v, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"));
+            else need.Need(name, at, empty);
+        }
+        if (!PepAsked(who)) return found;
+        foreach (var (field, _) in PepQuestions)
+        {
+            var name = $"Holder{holder}.{field}";
+            if (need.Of(name) is not ("yes" or "no")) found.Add((name, "pep-" + name, "Choose Yes or No"));
+        }
+        return found;
+    }
+
+    // A field that has to hold something, and hold it rightly.
+    private sealed class Needs(Dictionary<string, string> fields, List<(string Field, string Id, string Error)> found)
+    {
+        public string Of(string name) => fields.GetValueOrDefault(name)?.Trim() ?? "";
+
+        public void Need(string name, string id, string empty, string? wrong = null, Func<string, bool>? valid = null)
         {
             var value = Of(name);
             if (value.Length == 0) found.Add((name, id, empty));
             else if (valid is not null && !valid(value)) found.Add((name, id, wrong!));
         }
-
-        foreach (var (holder, who) in holders)
-        {
-            foreach (var (field, id, empty) in HolderFields)
-            {
-                // The communication address stands first, straight under the holder's record.
-                if (field == HolderFields[0].Field && typesMail?.Invoke(who) == true)
-                {
-                    var c = $"Holder{holder}.{InvestorDetailsForm.Comm}";
-                    Need(c + "Line1", $"h{holder}-comm1", "Enter the first line of the address");
-                    Need(c + "City", $"h{holder}-commcity", "Enter the city");
-                    Need(c + "PinCode", $"h{holder}-commpin", "Enter the PIN code", "Enter a 6-digit PIN code", IsPin);
-                    if (IsPin(Of(c + "PinCode")) && places?.ContainsKey(Of(c + "PinCode")) == false)
-                        found.Add((c + "PinCode", $"h{holder}-commpin", "No district is found for this PIN code; check it"));
-                }
-                var name = $"Holder{holder}.{field}";
-                if (field == "Gender" && !fields.ContainsKey(name)) continue;
-                var at = string.Format(id, holder);
-                if (field == "Mobile") Need(name, at, empty, "Enter a 10-digit mobile number", v => Regex.IsMatch(v, @"^[6-9]\d{9}$"));
-                else if (field == "Email") Need(name, at, empty, "Enter a valid e-mail", v => Regex.IsMatch(v, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"));
-                else Need(name, at, empty);
-            }
-            if (!PepAsked(who)) continue;
-            foreach (var (field, _) in PepQuestions)
-            {
-                var name = $"Holder{holder}.{field}";
-                if (Of(name) is not ("yes" or "no")) found.Add((name, "pep-" + name, "Choose Yes or No"));
-            }
-        }
-
-        if (!state.Nominee) return found;
-        Need("Nominee.Name", "ciiNomName", "Enter the nominee's name");
-        var (dd, mm, yyyy) = (Of("Nominee.Dd"), Of("Nominee.Mm"), Of("Nominee.Yyyy"));
-        if (dd.Length == 0 || mm.Length == 0 || yyyy.Length == 0) found.Add(("Nominee.Dob", "ciiNomDd", "Enter the nominee's date of birth"));
-        else if (!IsDate(dd, mm, yyyy, DateTime.Today)) found.Add(("Nominee.Dob", "ciiNomDd", "Enter a real date of birth, not a future one"));
-        Need("Nominee.Relation", "ciiNomRelation", "Select the relation with the primary holder");
-        if (IsMinor(dd, mm, yyyy, DateTime.Today, minorUnder))
-        {
-            Need("Nominee.GuardianName", "ciiNomGuardian", "Enter the guardian's name");
-            Need("Nominee.GuardianAddress.Line1", "ciiGdn1", "Enter the first line of the address");
-            Need("Nominee.GuardianAddress.PinCode", "ciiGdnPin", "Enter the PIN code", "Enter a 6-digit PIN code", v => Regex.IsMatch(v, @"^[1-9]\d{5}$"));
-            Need("Nominee.GuardianAddress.City", "ciiGdnCity", "Enter the city");
-        }
-        return found;
     }
+
+    /// <summary>
+    /// Whether the last post was about a joint holder's card - an error on it, or the
+    /// part of the page to come back to is in it - so the card is shown open.
+    /// </summary>
+    public bool About(int holder, DocumentsViewModel.DocHolder h) =>
+        Errors.Keys.Any(k => k.StartsWith($"Holder{holder}."))
+        || (Docs.Shown?.Errors.Keys.Any(k => k.StartsWith($"h{h.Code}-")) ?? false)
+        || Focus is { } f && (f.StartsWith($"holder-{holder}") || f.StartsWith($"h{holder}-") || f.StartsWith($"cii{holder}")
+            || f.StartsWith($"pep-Holder{holder}.") || f.Contains($"h{h.Code}-"));
 
     private static bool IsDate(string dd, string mm, string yyyy, DateTime today) =>
         int.TryParse(dd, out var d) && int.TryParse(mm, out var m) && int.TryParse(yyyy, out var y)

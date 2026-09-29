@@ -144,6 +144,14 @@ public class InvestorController(
         return found;
     }
 
+    /// <summary>Save draft: what the form holds, kept, and the page as it stands.</summary>
+    [HttpPost("save")]
+    public IActionResult Save(IFormCollection form)
+    {
+        Keep(form);
+        return Back(null);
+    }
+
     /// <summary>Clear All: the page as it opened, and no joint holder left on the application.</summary>
     [HttpPost("clear")]
     public async Task<IActionResult> Clear()

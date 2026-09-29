@@ -48,7 +48,7 @@ public class PaymentController(IApplicationApi applications, IDepositApi deposit
     /// Proceed moves on once nothing is missing.
     /// </summary>
     [HttpPost("")]
-    public async Task<IActionResult> Save(BankForm form)
+    public async Task<IActionResult> Save(BankForm form, string? draft)
     {
         if (await LoadAsync() is not { } docs) return Start();
         var byCheque = ByCheque(docs);
@@ -58,6 +58,8 @@ public class PaymentController(IApplicationApi applications, IDepositApi deposit
         if (await Applications.SavePaymentAsync(docs.AppNo, docs.App.Version, form.ToDetails(byCheque)) is null)
             return Back(nameof(Index), new() { ["banner"] = Changed });
         if (form.Find is not null) return RedirectToAction(nameof(Index), null, null, form.Find == "repayment" ? "repay-ifsc" : "pay-ifsc");
+        // Save draft: kept as it stands, checked only on Proceed.
+        if (draft is not null) return Back(nameof(Index), new());
 
         var (pay, repay) = await BranchesAsync(byCheque ? form.Payment.CleanIfsc : "", form.Repayment.CleanIfsc);
         var problems = form.Problems(byCheque, pay, form.RepaysToPayment(byCheque) ? pay : repay, docs.Ref.CmsLocations);
