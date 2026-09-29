@@ -54,10 +54,11 @@ public sealed class DepositForm
     }
 
     /// <summary>What stops the step, by field.</summary>
-    public Dictionary<string, string> Problems(AppConfig config, ReferenceData reference)
+    /// <param name="amountFixed">A renewal: the amount is the deposit's maturity amount, not the partner's to change or the limits' to check.</param>
+    public Dictionary<string, string> Problems(AppConfig config, ReferenceData reference, bool amountFixed = false)
     {
         var problems = new Dictionary<string, string>();
-        if (AmountProblem(config) is { } amount) problems["Amount"] = amount;
+        if (!amountFixed && AmountProblem(config) is { } amount) problems["Amount"] = amount;
         if (!reference.Tenures.Contains(TenureMonths)) problems["TenureMonths"] = "Choose the tenure";
         if (reference.Payouts.All(p => p.Code != InterestPayout)) problems["InterestPayout"] = "Choose the interest payout";
         if (AutoRenewal && reference.RenewInstructions.All(r => r.Code != RenewInstruction)) problems["RenewInstruction"] = "Required — choose what auto renewal renews";
@@ -93,7 +94,11 @@ public sealed class DepositViewModel(DocumentsViewModel docs, DepositForm form, 
     /// <summary>Where an e-receipt goes: the investor's e-mail on Investor Information.</summary>
     public string Email => Docs.App.Details?.Holders.FirstOrDefault(h => h.Holder == HolderType.Investor)?.Email ?? "";
 
-    public string AmountHint => Form.AmountProblem(Config) is { } problem ? problem
+    /// <summary>A renewal's amount is the deposit's maturity amount: shown, not typed.</summary>
+    public bool AmountFixed => Docs.IsRenewal;
+
+    public string AmountHint => AmountFixed ? $"{Money.InWords(Form.AmountValue)} · the maturity amount of deposit {Docs.Renewal!.DepositNumber}, renewed"
+        : Form.AmountProblem(Config) is { } problem ? problem
         : $"{Money.InWords(Form.AmountValue)} · in multiples of {Money.Rupees(Config.AmountStep)}";
 
     /// <summary>What is still to do before Proceed opens, in words.</summary>

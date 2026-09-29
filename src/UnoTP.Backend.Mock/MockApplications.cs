@@ -68,6 +68,15 @@ public sealed class MockApplications(MockStore store, IPartner partner) : IAppli
     public Task<IReadOnlyList<ApplicationRecord>> ListAsync(CancellationToken ct = default) =>
         Task.FromResult<IReadOnlyList<ApplicationRecord>>(MockApplicationList.Build());
 
+    /// <summary>A renewal's application: opened as any other, with the deposit and what comes over from it already on it.</summary>
+    internal Task<Application> OpenRenewalAsync(Holder holder, RenewalOf renewal, UploadState upload, PaymentDetails payment, DepositDetails deposit)
+    {
+        Application app;
+        do app = new() { AppNo = NewAppNo(), Holder = holder, Prior = PriorAttempts(holder).ToList(), Renewal = renewal, Upload = upload, Payment = payment, Deposit = deposit };
+        while (!store.TryAdd(partner.Id, app));
+        return Task.FromResult(app);
+    }
+
     private static Application New(string appNo, Holder holder) =>
         new() { AppNo = appNo, Holder = holder, Prior = PriorAttempts(holder).ToList() };
 

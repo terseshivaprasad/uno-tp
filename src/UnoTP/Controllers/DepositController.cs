@@ -15,7 +15,7 @@ public class DepositController(IApplicationApi applications, IDepositApi deposit
         if (await LoadAsync() is not { } docs) return Start();
         var form = DepositForm.From(docs.App.Deposit, docs.Ref);
         var problems = Said();
-        return View(new DepositViewModel(docs, form, await QuoteAsync(docs, form.AmountProblem(docs.Config) is null ? docs.App.Deposit : null), problems));
+        return View(new DepositViewModel(docs, form, await QuoteAsync(docs, docs.IsRenewal || form.AmountProblem(docs.Config) is null ? docs.App.Deposit : null), problems));
     }
 
     /// <summary>
@@ -26,16 +26,18 @@ public class DepositController(IApplicationApi applications, IDepositApi deposit
     public async Task<IActionResult> Save(DepositForm form, string? refresh, string? draft)
     {
         if (await LoadAsync() is not { } docs) return Start();
+        // A renewal's amount is the deposit's, whatever was posted.
+        if (docs.IsRenewal) form.Amount = Money.Group(docs.Renewal!.Amount);
         if (await Applications.SaveDepositAsync(docs.AppNo, docs.App.Version, form.ToDetails()) is null)
             return Back(nameof(Index), new() { ["banner"] = Changed });
         // Save draft: kept as it stands, checked only on Proceed.
         if (draft is not null) return Back(nameof(Index), new());
-        var problems = form.Problems(docs.Config, docs.Ref);
+        var problems = form.Problems(docs.Config, docs.Ref, docs.IsRenewal);
         if (refresh is not null)
         {
             // Redrawn around the choice that changed; an amount that is wrong says so as it is typed.
             var said = new Dictionary<string, string>();
-            if (form.AmountProblem(docs.Config) is { } amount && form.Amount.Length > 0) said["Amount"] = amount;
+            if (!docs.IsRenewal && form.AmountProblem(docs.Config) is { } amount && form.Amount.Length > 0) said["Amount"] = amount;
             return Back(nameof(Index), said, refresh);
         }
         return problems.Count > 0 ? Back(nameof(Index), problems) : RedirectToAction(nameof(ReviewController.Index), "Review");
@@ -50,8 +52,9 @@ public class DepositController(IApplicationApi applications, IDepositApi deposit
     public async Task<IActionResult> Quote(DepositForm form)
     {
         if (await LoadAsync() is not { } docs) return NotFound();
+        if (docs.IsRenewal) form.Amount = Money.Group(docs.Renewal!.Amount);
         var deposit = form.ToDetails();
-        var quote = await QuoteAsync(docs, form.AmountProblem(docs.Config) is null ? deposit : null);
+        var quote = await QuoteAsync(docs, docs.IsRenewal || form.AmountProblem(docs.Config) is null ? deposit : null);
         return PartialView("_Quote", new DepositViewModel(docs, form, quote, new Dictionary<string, string>()));
     }
 }

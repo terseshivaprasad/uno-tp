@@ -208,7 +208,7 @@
         @* ── The account interest and the maturity amount go to ──────────────── *@
         <section class="csi-card cii-card" id="repayment">
             @{ await Head("Repayment Bank Details", first: !Model.ByCheque); }
-            <p class="cii-note">Interest and the maturity amount are paid into this account@(Model.ByCheque ? "" : $" · paid by {(Model.PayMode.Length > 0 ? Model.PayMode : "the mode chosen on Upload Documents")}")</p>
+            <p class="cii-note">Interest and the maturity amount are paid into this account@(Model.IsRenewal ? $" · the maturing deposit {Model.Docs.Renewal!.DepositNumber} pays for the new one, and its account is filled in below" : Model.ByCheque ? "" : $" · paid by {(Model.PayMode.Length > 0 ? Model.PayMode : "the mode chosen on Upload Documents")}")</p>
 
             @if (Model.ByCheque)
             {

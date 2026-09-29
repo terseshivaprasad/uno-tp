@@ -154,6 +154,9 @@ public sealed class PaymentViewModel(DocumentsViewModel docs, BankForm form, Ban
     /// <summary>Paid by an instrument - a cheque - rather than electronically.</summary>
     public bool ByCheque => PayMode.Length > 0 && Docs.DocumentOf(PayMode) is not null;
 
+    /// <summary>A renewal: nothing is paid, so only the repayment account is asked - opened with the deposit's own.</summary>
+    public bool IsRenewal => Docs.IsRenewal;
+
     /// <summary>Whether interest and the maturity amount go back to the account the cheque is drawn on.</summary>
     public bool SameAsPayment => Form.RepaysToPayment(ByCheque);
 

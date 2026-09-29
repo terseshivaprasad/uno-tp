@@ -59,6 +59,12 @@ public class DocumentsViewModel(
     // application, and the head of the page says so rather than leaving a blank.
     public bool HasFolio => Who.Folio.Length > 0;
 
+    /// <summary>The deposit this application renews, when it was opened from Renew FD; null for a new deposit.</summary>
+    public RenewalOf? Renewal => App.Renewal;
+
+    /// <summary>A renewal: no payment is made - the maturing deposit pays for the new one - and the amount is its maturity amount.</summary>
+    public bool IsRenewal => App.Renewal is not null;
+
     public string Folio => Who.Folio;
 
     public string HolderFolio => HasFolio ? Who.Folio : "Opens with this application";
@@ -531,8 +537,10 @@ public class DocumentsViewModel(
             "mail" => !MailCanDiffer(h) ? (false, MailWhy(h))
                 : MailTyped(h) ? (false, MailTypedWhy)
                 : MailDifferentOf(h) ? (true, null) : (false, "Post goes to the permanent address, so there is no other address to prove."),
-            // Until a mode is chosen the box waits on the choice (locked below).
-            "payment" => (s.PayMode.Length == 0 || DocumentOf(s.PayMode) is not null, $"{s.PayMode} is settled electronically, so there is no instrument to copy."),
+            // A renewal is paid by the maturing deposit. Otherwise, until a mode is
+            // chosen the box waits on the choice (locked below).
+            "payment" => IsRenewal ? (false, $"The maturing deposit {Renewal!.DepositNumber} pays for the new one, so there is no instrument to copy.")
+                : (s.PayMode.Length == 0 || DocumentOf(s.PayMode) is not null, $"{s.PayMode} is settled electronically, so there is no instrument to copy."),
             "empproof" => (IsEmployee(s.Category), "Only a deposit booked against a staff record carries an employee proof."),
             _ => (true, (string?)null),
         };
@@ -919,24 +927,32 @@ public class DocumentsViewModel(
     {
         get
         {
-            var s = App.Upload ??= Open();
+            var s = App.Upload ??= new UploadState();
+            Ready(s);
             Settle(s);
             return s;
         }
     }
 
-    // A new application opens with the reads as the step before left them, the
-    // PAN copy that came over with it, and the attempts the backend has on record
-    // from before this page - which are on the record without counting against
-    // the three.
-    private UploadState Open()
+    // A holder's cards are opened the first time the step sees them: the reads as
+    // the step before left them, the PAN copy that came over, and the attempts the
+    // backend has on record from before this page - on the record without counting
+    // against the three. A state the backend opened with holders already on it - a
+    // renewal's, with the deposit's joint holders - has theirs opened here too.
+    private void Ready(UploadState s)
     {
-        var s = new UploadState();
-        OpenHolder(s, Investor);
-        s.Reads["payment"] = new ReadCard("Not yet read", "Read off the instrument once a copy is filed.",
-            "The account the deposit is paid from. Bank Details & Payment opens with whatever is confirmed here.");
-        s.Log.AddRange(App.Prior);
-        return s;
+        if (!s.Reads.ContainsKey(Investor.Key("poa")))
+        {
+            OpenHolder(s, Investor);
+            s.Reads.TryAdd("payment", new ReadCard("Not yet read", "Read off the instrument once a copy is filed.",
+                "The account the deposit is paid from. Bank Details & Payment opens with whatever is confirmed here."));
+            if (s.Log.Count == 0) s.Log.AddRange(App.Prior);
+        }
+        foreach (var (code, joint) in s.Joint)
+        {
+            var h = new DocHolder(code, joint.Holder);
+            if (!s.Reads.ContainsKey(h.Key("poa"))) OpenHolder(s, h);
+        }
     }
 
     // A holder's cards open with what identifying them established: the PAN copy
@@ -1095,7 +1111,7 @@ public class DocumentsViewModel(
         // A type chosen from the drop-down, when it is not set from the upload.
         if (!AutoProofType && View(PoaSlot).Used) Need(s.PoaType.Length > 0, "cudPoaType", "Choose the proof of address");
         if (!AutoProofType && View(MailSlot).Used) Need(s.MailPoaType.Length > 0, "cudMailType", "Choose the communication address proof");
-        Need(s.PayMode.Length > 0, "cudPayMode", "Choose the payment mode");
+        if (!IsRenewal) Need(s.PayMode.Length > 0, "cudPayMode", "Choose the payment mode");
         Need(s.Sourcing.Length > 0, "cudSourcing", "Choose the sourcing mode");
         if (mode is not null)
         {
@@ -2032,7 +2048,7 @@ public class DocumentsViewModel(
         if (Missing(PhotoSlot)) left.Add("the photograph");
         if (!AutoProofType && View(MailSlot).Used && s.MailPoaType.Length == 0) left.Add("the communication address proof type");
         if (Missing(MailSlot)) left.Add("the communication address proof");
-        if (s.PayMode.Length == 0) left.Add("the payment mode");
+        if (!IsRenewal && s.PayMode.Length == 0) left.Add("the payment mode");
         if (Missing(PaymentSlot)) left.Add("the instrument copy");
         if (mode is null) left.Add("the sourcing mode");
         else

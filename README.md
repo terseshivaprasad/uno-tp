@@ -51,7 +51,7 @@ the sign-in.
 | `/unotp/applications/{appNo}/payment` | Step 3, Bank Details & Payment |
 | `/unotp/applications/{appNo}/deposit` | Step 4, FD Configuration |
 | `/unotp/applications/{appNo}/review`, `…/submitted` | Review Summary, Submitted |
-| `/unotp/renew`, `/unotp/renew/{deposit}` | Renew FD: a folio's deposits, and a renewal sent for acceptance |
+| `/unotp/renew` | Renew FD: a folio's deposits; Renew opens an application through the same steps |
 | `/unotp/applications`, `/unotp/pay-in-slips`, `/unotp/links`, `/unotp/admin` | The other dashboard tiles |
 | `/unotp/entry`, `/unotp/session-expired`, `/unotp/logout` | The way in and out |
 

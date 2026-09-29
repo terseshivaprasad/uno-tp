@@ -149,38 +149,55 @@ public class JourneyTests(App app)
     }
 
     [Fact]
-    public async Task A_matured_deposit_on_a_folio_is_renewed_and_sent_for_acceptance()
+    public async Task A_matured_deposit_is_renewed_through_the_same_steps_with_the_deposits_own_details_filled_in()
     {
         var client = await app.SignedInAsync();
 
-        // The folio's deposits, each with where it stands; only the maturing and the matured can be renewed.
+        // The folio's deposits, each with where it stands and a remark; only the maturing and the matured can be renewed.
         var page = await client.GetStringAsync("/unotp/renew?folio=TS003027");
         Assert.Contains("3 deposits on folio TS003027", page);
         foreach (var status in new[] { "Matured", "Maturing", "Running" }) Assert.Contains($">{status}<", page);
-        Assert.Equal(2, Regex.Matches(page, ">Renew</a>").Count);
+        Assert.Equal(2, Regex.Matches(page, ">Renew</button>").Count);
+        Assert.Contains("Renewal opens 30 days before maturity", page);
+        Assert.Contains("1 joint holder", page);
 
-        var form = await client.GetStringAsync("/unotp/renew/FD2023001234");
-        Assert.Contains("Renew deposit FD2023001234", form);
-        Assert.Contains("Principal and interest", form);
-        Assert.Contains("id=\"fd-quote\"", form);
-        Assert.Contains("Card rate as on", form);
+        // Renew opens an application, at Upload Documents: no payment for a renewal.
+        var started = await App.PostAsync(client, "/unotp/renew?folio=TS003027", "/unotp/renew/FD2023001234/start", ("folio", "TS003027"));
+        var at = started.RequestMessage!.RequestUri!.AbsolutePath;
+        Assert.EndsWith("/documents", at);
+        var appAt = at[..^"/documents".Length];
+        var documents = await started.Content.ReadAsStringAsync();
+        Assert.Contains("FDR FD2023001234", documents);
+        Assert.Contains("The maturing deposit FD2023001234 pays for the new one", documents);
+        Assert.Contains(">Not applicable</option>", documents);
+        Assert.DoesNotContain("the payment mode", Regex.Match(documents, "csi-bar__hint.*?</(p|details)>", RegexOptions.Singleline).Value);
 
-        // Sent, it is recorded and the investor sent the link; the deposit is renewed from here on.
-        var done = await App.PostAsync(client, "/unotp/renew/FD2023001234", "/unotp/renew/FD2023001234",
-            ("Mode", "principal-interest"), ("TenureMonths", "24"), ("Payout", "maturity"));
-        Assert.EndsWith("/unotp/renew/FD2023001234/done", done.RequestMessage!.RequestUri!.AbsolutePath);
-        var said = await done.Content.ReadAsStringAsync();
-        Assert.Contains("Renewal sent for acceptance", said);
-        Assert.Matches("(•|&#x2022;){6}3210", said); // Razor writes the mask's dots as entities
-        var again = await client.GetStringAsync("/unotp/renew?folio=TS003027");
-        Assert.Contains(">Renewed<", again);
-        Assert.Contains(">Sent for acceptance<", again);
+        // The deposit's joint holder is on Investor Information already, added.
+        var investor = await client.GetStringAsync(appAt + "/investor");
+        Assert.Contains("MEERA ANIL JOSHI", investor);
+        Assert.Contains("Second Holder Details", investor);
+
+        // Bank Details: only the repayment account, filled from the deposit's.
+        var payment = await client.GetStringAsync(appAt + "/payment");
+        Assert.Contains("HDFC0000521", payment);
+        Assert.Contains("pays for the new one", payment);
+        Assert.DoesNotContain("Payment Bank Details", payment);
+
+        // FD Configuration: the maturity amount, read-only, quoted.
+        var deposit = await client.GetStringAsync(appAt + "/deposit");
+        Assert.Matches("id=\"fd-amount\"[^>]*readonly", deposit);
+        Assert.Contains("the maturity amount of deposit FD2023001234", deposit);
+        Assert.Contains("fd-kv__v--rate", deposit);
+
+        // Review Summary names the deposit renewed; the list shows it renewed.
+        var review = await client.GetStringAsync(appAt + "/review");
+        Assert.Contains("Deposit FD2023001234", review);
+        Assert.Contains(">Renewed<", await client.GetStringAsync("/unotp/renew?folio=TS003027"));
 
         // A deposit still running is turned back, with why.
-        var refused = await App.PostAsync(client, "/unotp/renew/FD2025000912", "/unotp/renew/FD2025000912",
-            ("Mode", "principal"), ("TenureMonths", "12"), ("Payout", "yearly"));
-        Assert.EndsWith("/unotp/renew/FD2025000912", refused.RequestMessage!.RequestUri!.AbsolutePath);
-        Assert.Contains("Renewal opens 30 days before maturity", await refused.Content.ReadAsStringAsync());
+        var refused = await App.PostAsync(client, "/unotp/renew?folio=TS003027", "/unotp/renew/FD2025000912/start", ("folio", "TS003027"));
+        Assert.EndsWith("/unotp/renew", refused.RequestMessage!.RequestUri!.AbsolutePath);
+        Assert.Contains("cannot be renewed now", await refused.Content.ReadAsStringAsync());
 
         // A folio the register does not hold says so; one with no deposits too.
         Assert.Contains("No folio NOPE0001 on the register", await client.GetStringAsync("/unotp/renew?folio=NOPE0001"));

@@ -98,12 +98,12 @@
                     <div class="fd-group">
                         <div class="inv-section-head">
                             <label class="fd-label" for="fd-amount">Amount</label>
-                            <div class="fd-aside">@Money.Rupees(Model.Config.MinAmount) minimum &middot; @Money.Rupees(Model.Config.MaxAmount) maximum</div>
+                            <div class="fd-aside">@(Model.AmountFixed ? $"the maturity amount of deposit {Model.Docs.Renewal!.DepositNumber}" : $"{Money.Rupees(Model.Config.MinAmount)} minimum · {Money.Rupees(Model.Config.MaxAmount)} maximum")</div>
                         </div>
                         <div class="fd-amount @(Model.Problem("Amount") is null ? null : "fd-amount--error")">
                             <span class="fd-amount__currency" aria-hidden="true">&#8377;</span>
-                            <input id="fd-amount" name="Amount" class="fd-amount__input @Invalid("Amount")" value="@f.Amount" inputmode="numeric" autocomplete="off" data-quote
-                                   data-required="Required — enter the deposit amount" data-check="amount" data-min="@Model.Config.MinAmount" data-max="@Model.Config.MaxAmount" data-step="@Model.Config.AmountStep" aria-invalid="@InvalidAria("Amount")" aria-describedby="@(Model.Problem("Amount") is null ? "fd-amount-hint" : "fd-amountError")">
+                            <input id="fd-amount" name="Amount" class="fd-amount__input @Invalid("Amount")" value="@f.Amount" inputmode="numeric" autocomplete="off" data-quote readonly="@Model.AmountFixed"
+                                   data-required="@(Model.AmountFixed ? null : "Required — enter the deposit amount")" data-check="@(Model.AmountFixed ? null : "amount")" data-min="@Model.Config.MinAmount" data-max="@Model.Config.MaxAmount" data-step="@Model.Config.AmountStep" aria-invalid="@InvalidAria("Amount")" aria-describedby="@(Model.Problem("Amount") is null ? "fd-amount-hint" : "fd-amountError")">
                         </div>
                         @{ await FieldError("Amount", "fd-amount"); }
                         <div class="fd-hint" id="fd-amount-hint">@(f.AmountValue > 0 && Model.Problem("Amount") is null ? Model.AmountHint : $"in multiples of {Money.Rupees(Model.Config.AmountStep)}")</div>

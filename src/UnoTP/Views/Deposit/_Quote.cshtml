@@ -6,7 +6,7 @@
     var f = Model.Form;
     var q = Model.Quote;
     var payout = Model.Payout;
-    var amountProblem = f.Amount.Length > 0 ? f.AmountProblem(Model.Config) : null;
+    var amountProblem = !Model.AmountFixed && f.Amount.Length > 0 ? f.AmountProblem(Model.Config) : null;
     var amountHint = f.AmountValue > 0 && amountProblem is null ? Model.AmountHint
         : $"in multiples of {Money.Rupees(Model.Config.AmountStep)}";
 }

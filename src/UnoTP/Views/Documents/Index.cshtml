@@ -109,6 +109,10 @@
     <div class="cud-pin__inner">
         <span class="cud-pin__who">@Model.HolderName</span>
         <span class="cud-pin__pan">PAN @Model.HolderPan</span>
+        @if (Model.IsRenewal)
+        {
+            <span class="cud-pin__pan">FDR @Model.Renewal!.DepositNumber</span>
+        }
         <span class="cud-pin__app">
             <span class="cud-pin__label">Application</span>
             @Model.AppNo
@@ -153,6 +157,14 @@
                         <dt>Folio</dt>
                         <dd class="@(Model.HasFolio ? null : "cud-head__pending")">@Model.HolderFolio</dd>
                     </div>
+                    @if (Model.IsRenewal)
+                    {
+                        @* A renewal: the deposit receipt it renews, beside the folio. *@
+                        <div>
+                            <dt>Renews</dt>
+                            <dd>FDR @Model.Renewal!.DepositNumber</dd>
+                        </div>
+                    }
                     <div>
                         <dt>Application</dt>
                         @* The number every question about this application starts with. *@
@@ -402,8 +414,8 @@
                 <div class="cud-pay__mode">
                     <label class="csi-label" for="cudPayMode">Payment Mode</label>
                     <div class="cud-select">
-                        <select class="csi-control @Invalid("cudPayMode")" id="cudPayMode" name="payMode" autofocus="@Focus("cudPayMode")">
-                            <option value="">Select</option>
+                        <select class="csi-control @Invalid("cudPayMode")" id="cudPayMode" name="payMode" autofocus="@Focus("cudPayMode")" disabled="@(Model.IsRenewal)">
+                            <option value="">@(Model.IsRenewal ? "Not applicable" : "Select")</option>
                             @foreach (var m in Model.PaymentModes)
                             {
                                 <option value="@m.Name" selected="@(s.PayMode == m.Name)">@m.Name</option>
@@ -411,6 +423,10 @@
                         </select>
                     </div>
                     @{ await FieldError("cudPayMode"); }
+                    @if (Model.IsRenewal)
+                    {
+                        <p class="csi-hint">No payment: the maturing deposit @Model.Renewal!.DepositNumber pays for the new one.</p>
+                    }
                 </div>
                 <div class="cud-pay__slot">@{ await Choices("payMode", new[] { "" }.Concat(Model.PaymentModes.Select(m => m.Name)).Select(m => (m, m == s.PayMode)), PaymentAs); }</div>
                 @* The account read off the instrument: only for a mode that carries one,

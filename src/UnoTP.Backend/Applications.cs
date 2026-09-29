@@ -96,6 +96,13 @@ public sealed class Application
     public Submission? Submitted { get; set; }
 
     /// <summary>
+    /// The deposit this application renews; null for a new deposit. Set by the
+    /// backend when the application is opened from Renew FD, with the deposit's
+    /// joint holders, repayment account and maturity amount already on it.
+    /// </summary>
+    public RenewalOf? Renewal { get; init; }
+
+    /// <summary>
     /// Each wizard page's working state as the page last left it, by page: what is
     /// typed but not yet a part of its own, a joint holder still being searched
     /// for. Kept with the application, so a new application starts clean and one
@@ -168,6 +175,10 @@ public sealed record BankAccount(string Ifsc, string AccountNumber);
 /// <param name="Date">dd-MM-yyyy.</param>
 /// <param name="CmsLocation">The Axis CMS location it is presented at.</param>
 public sealed record ChequeDetails(string Number, string Date, string CmsLocation);
+
+/// <summary>The deposit an application renews: what runs on into the new one.</summary>
+/// <param name="Amount">What is renewed - the deposit's maturity amount - which the new deposit is opened for, read-only.</param>
+public sealed record RenewalOf(string DepositNumber, long Amount, DateOnly MaturesOn, decimal Rate, int TenureMonths, string Payout);
 
 /// <summary>FD Configuration, as saved. Codes are the reference lists'.</summary>
 /// <param name="NoTds">Form 15G or 15H is submitted, so no TDS is deducted.</param>

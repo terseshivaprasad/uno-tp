@@ -120,6 +120,10 @@
                                 await Kv("Invested amount", Money.Rupees(d.Amount), Money.InWords(d.Amount).ToLowerInvariant());
                                 await Kv("Rate of interest", q is null ? "—" : $"{q.Rate:0.00}% p.a.");
                                 await Kv("Tenure", $"{d.TenureMonths} months");
+                                if (Model.Docs.Renewal is { } renewal)
+                                {
+                                    await Kv("Renews", $"Deposit {renewal.DepositNumber} · matured {Money.Day(renewal.MaturesOn)} · its maturity amount, no payment", wide: true);
+                                }
                                 await Kv("Interest payout", Model.Payout?.Name ?? d.Payout, q is not null && q.InterestEach > 0 ? $"{Money.Rupees(q.InterestEach)} each {Model.Payout?.Each}" : null);
                                 await Kv("Scheme", Model.Payout?.PerYear == 0 ? "Cumulative" : "Non-cumulative");
                                 await Kv("Category", docs.State.Category.Length > 0 ? docs.CategoryName(docs.State.Category) : "Not chosen");

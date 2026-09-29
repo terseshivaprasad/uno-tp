@@ -45,11 +45,8 @@ public sealed class BackendClient(HttpClient http, IPartner partner)
     public Task<HeldDeposit?> DepositAsync(string number, CancellationToken ct = default) =>
         Get<HeldDeposit>($"deposits/{Seg(number)}", ct);
 
-    public Task<RenewalRecord?> RenewAsync(NewRenewal renewal, CancellationToken ct = default) =>
-        SendOrNull<RenewalRecord>(HttpMethod.Post, "renewals", Body(renewal), ct);
-
-    public async Task<IReadOnlyList<RenewalRecord>> RenewalsAsync(CancellationToken ct = default) =>
-        await List<RenewalRecord>("renewals", ct);
+    public Task<Application?> StartAsync(string depositNumber, CancellationToken ct = default) =>
+        SendOrNull<Application>(HttpMethod.Post, "renewals", Body(new { depositNumber }), ct);
 
     public Task<DemoCases?> CasesAsync(CancellationToken ct = default) =>
         Get<DemoCases>("demo/cases", ct);
