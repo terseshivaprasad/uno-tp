@@ -39,8 +39,11 @@ public sealed class BackendClient(HttpClient http, IPartner partner)
 
     // ----- Renewals ------------------------------------------------------------
 
-    public async Task<IReadOnlyList<HeldDeposit>?> DepositsAsync(string folio, CancellationToken ct = default) =>
+    public async Task<IReadOnlyList<HeldDeposit>?> DepositsByFolioAsync(string folio, CancellationToken ct = default) =>
         await Get<List<HeldDeposit>>($"folios/{Seg(folio)}/deposits", ct);
+
+    public async Task<IReadOnlyList<HeldDeposit>?> DepositsByPanAsync(string pan, string dob, CancellationToken ct = default) =>
+        await Get<List<HeldDeposit>>($"deposits?pan={Seg(pan)}&dob={Seg(dob)}", ct);
 
     public Task<HeldDeposit?> DepositAsync(string number, CancellationToken ct = default) =>
         Get<HeldDeposit>($"deposits/{Seg(number)}", ct);

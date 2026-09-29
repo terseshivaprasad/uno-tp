@@ -2,12 +2,16 @@
 @{
     ViewData["Title"] = "Renew FD";
 
-    // Renew FD: the folio is searched, its deposits listed with where each stands
-    // and a remark on what renewing it means now, and one inside the renewal
-    // window is renewed from its row - which opens an application, as a new
-    // deposit does, with the deposit's holders, bank and amount already on it.
-    var before = Model.Config.RenewBeforeDays;
-    var after = Model.Config.RenewAfterDays;
+    // The old WA_FD_UNOTP/RenewalDashboard: search by PAN and date of birth or by
+    // folio, the notes under the search, and - here - the deposits found, with
+    // where each stands and a remark on what renewing it means now. Renew on a
+    // deposit that is due opens an application, as a new deposit does, with the
+    // deposit's holders, bank and amount already on it.
+    var s = Model.Search;
+    // The search as it was asked, carried on Renew so the list comes back the same on a refusal.
+    var asked = s.ByFolio
+        ? new Dictionary<string, string> { ["by"] = "folio", ["folio"] = s.Folio }
+        : new Dictionary<string, string> { ["by"] = "pan", ["pan"] = s.Pan, ["dd"] = s.Dd, ["mm"] = s.Mm, ["yyyy"] = s.Yyyy };
 }
 
 <div class="csi csi--wide">
@@ -16,62 +20,119 @@
         <div class="csi-rail__note">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 6.5V12l3.5 2.5"></path></svg>
             <div>
-                <div class="csi-rail__note-title">From @before days before maturity to @after days after</div>
-                <p>Inside that window a deposit is maturing or matured, and can be renewed. Before it, the deposit runs; after it, the money is paid out.</p>
+                <div class="csi-rail__note-title">From @Model.Config.RenewFromDays to @Model.Config.RenewUntilDays days before maturity</div>
+                <p>A deposit is due for renewal inside that window (@Model.Config.RenewUntilDaysAutoRenewal days for one tagged for auto renewal). Earlier, it runs; nearer maturity, it is with Operations.</p>
             </div>
         </div>
         <div class="csi-rail__note">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 12a8.5 8.5 0 0 1-14.6 5.9"></path><path d="M3.5 12a8.5 8.5 0 0 1 14.6-5.9"></path><path d="M18.5 2.5V7H14"></path><path d="M5.5 21.5V17H10"></path></svg>
             <div>
                 <div class="csi-rail__note-title">The same steps as a new deposit</div>
-                <p>Renew opens an application with the deposit's holders, its repayment account and its maturity amount already filled in. Documents, holders, bank and the deposit follow as they do for a purchase; nothing is paid, the maturing deposit pays for the new one.</p>
+                <p>Renew opens an application with the deposit's holders, its repayment account and its maturity amount filled in. Documents, holders, bank and the deposit follow as for a purchase; nothing is paid, the maturing deposit pays for the new one.</p>
             </div>
         </div>
         <div class="csi-rail__note">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 6.5l-11 11-5.5-5.5"></path></svg>
             <div>
                 <div class="csi-rail__note-title">Accepted by the investor</div>
-                <p>Submitted, the renewal goes to the investor as a link, as a new deposit does, and starts once they accept it: on maturity, or at once for a deposit that has matured.</p>
+                <p>Submitted, the renewal goes to the investor as a link, as a new deposit does, and takes effect on maturity once they accept it.</p>
             </div>
         </div>
     </aside>
 
     <div class="csi-card">
-        <div class="cii-head"><h1 class="cii-title">Renew FD</h1></div>
-        <p class="cii-note">Find the folio, then renew a deposit from its row.</p>
+        <div class="cii-head"><h1 class="cii-title">Renewal &mdash; Search</h1></div>
 
         @if (Model.Said is not null)
         {
             <p class="csi-error" role="alert">@Model.Said</p>
         }
 
-        <form class="pis-form" method="get" asp-action="Index" novalidate>
-            <div class="csi-fields">
-                <div class="csi-field">
-                    <label class="csi-label" for="rnFolio">Folio number</label>
-                    <input class="csi-control csi-control--caps" id="rnFolio" name="folio" value="@Model.Folio" maxlength="12" autocomplete="off" spellcheck="false" placeholder="e.g. TS003027" data-chars="code" data-required="Enter the folio number">
+        <form class="pis-form" id="rnForm" method="get" asp-action="Index" novalidate>
+            <fieldset class="csi-searchby csi-searchby--first">
+                <legend class="csi-label">Search By</legend>
+                <label class="csi-radio">
+                    <input type="radio" name="by" value="pan" checked="@(!s.ByFolio)">
+                    <span>Search by PAN &amp; DOB</span>
+                </label>
+                <label class="csi-radio">
+                    <input type="radio" name="by" value="folio" checked="@s.ByFolio">
+                    <span>Search by Folio</span>
+                </label>
+            </fieldset>
+
+            <fieldset class="cud-choice" data-show-when="by=pan" hidden="@s.ByFolio" disabled="@s.ByFolio">
+                <div class="csi-fields">
+                    <div class="csi-field">
+                        <label class="csi-label" for="rnPan">PAN</label>
+                        <input class="csi-control csi-control--caps @(Model.Problem("Pan") is null ? null : "is-invalid")" id="rnPan" name="pan" value="@s.Pan" maxlength="10" autocomplete="off" spellcheck="false"
+                               data-required="Enter the PAN" data-check="pan" aria-invalid="@(Model.Problem("Pan") is null ? null : "true")" aria-describedby="rnPanError">
+                        <p class="csi-error" id="rnPanError" hidden="@(Model.Problem("Pan") is null)">@Model.Problem("Pan")</p>
+                    </div>
+                    <div class="csi-field">
+                        <span class="csi-label" id="rnDobLabel">DOB</span>
+                        <div class="csi-date @(Model.Problem("Dob") is null ? null : "is-invalid")" role="group" aria-labelledby="rnDobLabel" aria-describedby="rnDobError"
+                             data-required="Enter the date of birth" data-check="date" data-error-id="rnDobError">
+                            <input class="csi-date__part" id="rnDd" name="dd" value="@s.Dd" inputmode="numeric" maxlength="2" placeholder="DD" aria-label="Day" autocomplete="off">
+                            <span class="csi-date__sep">/</span>
+                            <input class="csi-date__part" name="mm" value="@s.Mm" inputmode="numeric" maxlength="2" placeholder="MM" aria-label="Month" autocomplete="off">
+                            <span class="csi-date__sep">/</span>
+                            <input class="csi-date__part csi-date__part--year" name="yyyy" value="@s.Yyyy" inputmode="numeric" maxlength="4" placeholder="YYYY" aria-label="Year" autocomplete="off">
+                        </div>
+                        <p class="csi-error" id="rnDobError" hidden="@(Model.Problem("Dob") is null)">@Model.Problem("Dob")</p>
+                    </div>
+                    <div class="csi-field csi-field--check">
+                        <button type="submit" class="csi-btn csi-btn--primary" data-validate="form">Search</button>
+                        <a class="csi-btn csi-btn--back" asp-action="Index">Clear</a>
+                    </div>
                 </div>
-                <div class="csi-field csi-field--check">
-                    <button type="submit" class="csi-btn csi-btn--primary" data-validate="form">Search</button>
+            </fieldset>
+
+            <fieldset class="cud-choice" data-show-when="by=folio" hidden="@(!s.ByFolio)" disabled="@(!s.ByFolio)">
+                <div class="csi-fields">
+                    <div class="csi-field">
+                        <label class="csi-label" for="rnFolio">Folio number</label>
+                        <input class="csi-control csi-control--caps @(Model.Problem("Folio") is null ? null : "is-invalid")" id="rnFolio" name="folio" value="@s.Folio" maxlength="16" autocomplete="off" spellcheck="false"
+                               data-required="Enter the folio number" data-chars="code" aria-invalid="@(Model.Problem("Folio") is null ? null : "true")" aria-describedby="rnFolioError">
+                        <p class="csi-error" id="rnFolioError" hidden="@(Model.Problem("Folio") is null)">@Model.Problem("Folio")</p>
+                    </div>
+                    <div class="csi-field csi-field--check">
+                        <button type="submit" class="csi-btn csi-btn--primary" data-validate="form">Search</button>
+                        <a class="csi-btn csi-btn--back" asp-action="Index">Clear</a>
+                    </div>
                 </div>
-            </div>
+            </fieldset>
         </form>
+
+        @* The old screen's notes, as the backend gives them. *@
+        <div class="csi-note csi-note--banner">
+            <svg class="csi-note__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 11v6"></path><circle cx="12" cy="7.5" r=".7" fill="currentColor"></circle></svg>
+            <div class="csi-note__body">
+                <div class="csi-note__title">Note</div>
+                <ul>
+                    @foreach (var n in Model.Ref.RenewalNotes)
+                    {
+                        <li>@n</li>
+                    }
+                </ul>
+            </div>
+        </div>
 
         @if (Model.NotFound)
         {
-            <p class="csi-error" role="alert">No folio @Model.Folio on the register &mdash; check the number.</p>
+            <p class="csi-error" role="alert">No deposit on record against @Model.Asked &mdash; check it, or search the other way.</p>
         }
         else if (Model.Deposits is { Count: 0 })
         {
-            <p class="csi-hint">Folio @Model.Folio holds no deposits.</p>
+            <p class="csi-hint">Nothing due for renewal, or held, against @Model.Asked.</p>
         }
         else if (Model.Deposits is { } deposits)
         {
-            <p class="csi-hint">@deposits.Count @(deposits.Count == 1 ? "deposit" : "deposits") on folio @Model.Folio &middot; @deposits[0].Investor</p>
+            <p class="csi-hint">@deposits.Count @(deposits.Count == 1 ? "deposit" : "deposits") against @Model.Asked &middot; @deposits[0].Investor &middot; folio @deposits[0].Folio</p>
             <table class="su-table">
                 <colgroup>
-                    <col style="width:15%"><col style="width:12%"><col style="width:16%"><col style="width:12%">
-                    <col style="width:10%"><col style="width:26%"><col style="width:9%">
+                    <col style="width:15%"><col style="width:12%"><col style="width:16%"><col style="width:11%">
+                    <col style="width:11%"><col style="width:26%"><col style="width:9%">
                 </colgroup>
                 <thead>
                     <tr>
@@ -88,16 +149,16 @@
                     @foreach (var d in deposits)
                     {
                         <tr data-state="@d.Status">
-                            <td data-label="Deposit"><strong>@d.Number</strong><div class="su-table__sub">from @Money.Day(d.StartedOn)@(d.JointHolders is { Count: > 0 } j ? $" · {j.Count} joint holder{(j.Count == 1 ? "" : "s")}" : "")</div></td>
+                            <td data-label="Deposit"><strong>@d.Number</strong><div class="su-table__sub">from @Money.Day(d.StartedOn)@(d.JointHolders is { Count: > 0 } j ? $" · {j.Count} joint holder{(j.Count == 1 ? "" : "s")}" : "")@(d.AutoRenewal ? " · auto renewal" : "")</div></td>
                             <td data-label="Amount" class="pis-table__amt">@Money.Rupees(d.Amount)<div class="su-table__sub">@Money.Rupees(d.MaturityAmount) at maturity</div></td>
                             <td data-label="Rate · tenure · payout">@d.Rate.ToString("0.00")% &middot; @d.TenureMonths months<div class="su-table__sub">@Model.PayoutName(d.Payout)</div></td>
                             <td data-label="Matures on">@Money.Day(d.MaturesOn)</td>
                             <td data-label="Status"><span class="chip @RenewViewModel.StatusTone(d.Status)">@RenewViewModel.StatusLabel(d.Status)</span></td>
-                            <td data-label="Remark">@RenewViewModel.Remark(d)</td>
+                            <td data-label="Remark">@Model.Remark(d)</td>
                             <td data-label="" class="su-table__act">
                                 @if (d.Renewable)
                                 {
-                                    <form method="post" asp-action="Start" asp-route-number="@d.Number" asp-route-folio="@Model.Folio">
+                                    <form method="post" asp-action="Start" asp-route-number="@d.Number" asp-all-route-data="asked">
                                         <button type="submit" class="csi-btn csi-btn--primary" data-loader="Opening the renewal&hellip;">Renew</button>
                                     </form>
                                 }
@@ -111,5 +172,7 @@
 </div>
 
 @section Scripts {
+    <script src="~/js/partial-forms.js" asp-append-version="true"></script>
     <script src="~/js/checks.js" asp-append-version="true"></script>
+    <script src="~/js/date-parts.js" asp-append-version="true"></script>
 }

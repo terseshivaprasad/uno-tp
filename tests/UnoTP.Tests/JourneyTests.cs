@@ -153,16 +153,20 @@ public class JourneyTests(App app)
     {
         var client = await app.SignedInAsync();
 
-        // The folio's deposits, each with where it stands and a remark; only the maturing and the matured can be renewed.
-        var page = await client.GetStringAsync("/unotp/renew?folio=TS003027");
-        Assert.Contains("3 deposits on folio TS003027", page);
-        foreach (var status in new[] { "Matured", "Maturing", "Running" }) Assert.Contains($">{status}<", page);
+        // Searched by PAN and date of birth: the investor's deposits, each with where it
+        // stands and a remark; only the ones due - inside the window - can be renewed.
+        var page = await client.GetStringAsync("/unotp/renew?by=pan&pan=XXXXA1001A&dd=14&mm=08&yyyy=1988");
+        Assert.Contains("4 deposits against PAN XXXXA1001A", page);
+        foreach (var status in new[] { "Due for renewal", "Running", "Entry closed" }) Assert.Contains($">{status}<", page);
         Assert.Equal(2, Regex.Matches(page, ">Renew</button>").Count);
-        Assert.Contains("Renewal opens 30 days before maturity", page);
+        Assert.Contains("Renewal entry opens 61 days before maturity", page);
+        Assert.Contains("Renewal entry closed 7 days before maturity", page);
+        Assert.Contains("tagged for auto renewal", page);
         Assert.Contains("1 joint holder", page);
+        Assert.Contains("Deposits due for renewal only will be displayed in this module.", page);
 
         // Renew opens an application, at Upload Documents: no payment for a renewal.
-        var started = await App.PostAsync(client, "/unotp/renew?folio=TS003027", "/unotp/renew/FD2023001234/start", ("folio", "TS003027"));
+        var started = await App.PostAsync(client, "/unotp/renew?by=pan&pan=XXXXA1001A&dd=14&mm=08&yyyy=1988", "/unotp/renew/FD2023001234/start", ("by", "pan"), ("pan", "XXXXA1001A"), ("dd", "14"), ("mm", "08"), ("yyyy", "1988"));
         var at = started.RequestMessage!.RequestUri!.AbsolutePath;
         Assert.EndsWith("/documents", at);
         var appAt = at[..^"/documents".Length];
@@ -189,19 +193,20 @@ public class JourneyTests(App app)
         Assert.Contains("the maturity amount of deposit FD2023001234", deposit);
         Assert.Contains("fd-kv__v--rate", deposit);
 
-        // Review Summary names the deposit renewed; the list shows it renewed.
+        // Review Summary names the deposit renewed; the list, by folio this time, shows it renewed.
         var review = await client.GetStringAsync(appAt + "/review");
         Assert.Contains("Deposit FD2023001234", review);
-        Assert.Contains(">Renewed<", await client.GetStringAsync("/unotp/renew?folio=TS003027"));
+        Assert.Contains(">Renewed<", await client.GetStringAsync("/unotp/renew?by=folio&folio=TS003027"));
 
         // A deposit still running is turned back, with why.
-        var refused = await App.PostAsync(client, "/unotp/renew?folio=TS003027", "/unotp/renew/FD2025000912/start", ("folio", "TS003027"));
+        var refused = await App.PostAsync(client, "/unotp/renew?by=folio&folio=TS003027", "/unotp/renew/FD2025000912/start", ("by", "folio"), ("folio", "TS003027"));
         Assert.EndsWith("/unotp/renew", refused.RequestMessage!.RequestUri!.AbsolutePath);
         Assert.Contains("cannot be renewed now", await refused.Content.ReadAsStringAsync());
 
-        // A folio the register does not hold says so; one with no deposits too.
-        Assert.Contains("No folio NOPE0001 on the register", await client.GetStringAsync("/unotp/renew?folio=NOPE0001"));
-        Assert.Contains("holds no deposits", await client.GetStringAsync("/unotp/renew?folio=MF0051187"));
+        // Nothing on record says so; a folio with no deposits too; a PAN mistyped is not searched.
+        Assert.Contains("No deposit on record against folio NOPE0001", await client.GetStringAsync("/unotp/renew?by=folio&folio=NOPE0001"));
+        Assert.Contains("Nothing due for renewal, or held, against folio MF0051187", await client.GetStringAsync("/unotp/renew?by=folio&folio=MF0051187"));
+        Assert.Contains("Enter a valid PAN, like ABCDE1234F", await client.GetStringAsync("/unotp/renew?by=pan&pan=XXXX&dd=14&mm=08&yyyy=1988"));
     }
 
     [Fact]

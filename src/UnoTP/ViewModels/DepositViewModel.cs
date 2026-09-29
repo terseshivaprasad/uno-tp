@@ -97,7 +97,7 @@ public sealed class DepositViewModel(DocumentsViewModel docs, DepositForm form, 
     /// <summary>A renewal's amount is the deposit's maturity amount: shown, not typed.</summary>
     public bool AmountFixed => Docs.IsRenewal;
 
-    public string AmountHint => AmountFixed ? $"{Money.InWords(Form.AmountValue)} · the maturity amount of deposit {Docs.Renewal!.DepositNumber}, renewed"
+    public string AmountHint => AmountFixed ? $"{Money.InWords(Form.AmountValue)} · the maturity amount of deposit {Docs.Renewal!.DepositNumber}, renewed on {Money.Day(Docs.Renewal.MaturesOn)} at the rate prevailing then"
         : Form.AmountProblem(Config) is { } problem ? problem
         : $"{Money.InWords(Form.AmountValue)} · in multiples of {Money.Rupees(Config.AmountStep)}";
 

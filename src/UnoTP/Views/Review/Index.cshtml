@@ -122,7 +122,7 @@
                                 await Kv("Tenure", $"{d.TenureMonths} months");
                                 if (Model.Docs.Renewal is { } renewal)
                                 {
-                                    await Kv("Renews", $"Deposit {renewal.DepositNumber} · matured {Money.Day(renewal.MaturesOn)} · its maturity amount, no payment", wide: true);
+                                    await Kv("Renews", $"Deposit {renewal.DepositNumber} · matures {Money.Day(renewal.MaturesOn)} · its maturity amount, at the rate prevailing on maturity, no payment", wide: true);
                                 }
                                 await Kv("Interest payout", Model.Payout?.Name ?? d.Payout, q is not null && q.InterestEach > 0 ? $"{Money.Rupees(q.InterestEach)} each {Model.Payout?.Each}" : null);
                                 await Kv("Scheme", Model.Payout?.PerYear == 0 ? "Cumulative" : "Non-cumulative");

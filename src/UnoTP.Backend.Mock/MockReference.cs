@@ -179,7 +179,19 @@ public sealed class MockReference : IReferenceApi
             "The deposit terms above, including the rate and that it locks on realisation, were read out to the investor.",
             "I have not received or promised any cash consideration outside this application.",
         ],
-        NoticeKinds: ["Rate change", "Maintenance"]);
+        NoticeKinds: ["Rate change", "Maintenance"],
+        // The old RenewalDashboard's notes, word for word.
+        RenewalNotes:
+        [
+            "Deposits due for renewal only will be displayed in this module.",
+            "You are not allowed to make any changes of depositors in this module.",
+            "Please keep the renewal documents ready to upload before proceeding.",
+            "Details appearing in Renewal Application/FDR will be considered to renew the Deposits.",
+            $"You will be able to make renewal entry in this module only from {MockRenewals.FromDays} days upto {MockRenewals.UntilDays} days prior to maturity.",
+            "Changes in the Second holder/Third holder OR any other information shall be executed as per the details mentioned in Renewal Application/FDR.",
+            "Any renewal of Deposit in advance of its maturity date, will be subject to the rate of interest and other terms & conditions prevailing on the date of said maturity.",
+            $"The Auto renewal tag cases will be able to make renewal entry in this module only from {MockRenewals.FromDays} days up to {MockRenewals.UntilDaysAutoRenewal} days prior to maturity.",
+        ]);
 
     private static readonly AppConfig Config = new(
         SourcingAgency: SourcingAgency,
@@ -193,7 +205,7 @@ public sealed class MockReference : IReferenceApi
         CancellationDays: MockWindow.Days,
         DraftDays: 30,
         LinkValidityHours: new Dictionary<string, int> { ["payment"] = PaymentLinkHours, ["acceptance"] = 72 },
-        RenewBeforeDays: MockRenewals.BeforeDays, RenewAfterDays: MockRenewals.AfterDays);
+        RenewFromDays: MockRenewals.FromDays, RenewUntilDays: MockRenewals.UntilDays, RenewUntilDaysAutoRenewal: MockRenewals.UntilDaysAutoRenewal);
 
     public Task<ReferenceData> ReferenceAsync(CancellationToken ct = default) => Task.FromResult(Data);
 

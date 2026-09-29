@@ -77,7 +77,8 @@ public sealed record ReferenceData(
     IReadOnlyList<string> IdentificationNotes,
     IReadOnlyList<string> DashboardNotes,
     IReadOnlyList<string> Declarations,
-    IReadOnlyList<string> NoticeKinds);
+    IReadOnlyList<string> NoticeKinds,
+    IReadOnlyList<string> RenewalNotes);
 
 /// <summary>The limits and rules the pages check against. The backend checks them again on save.</summary>
 /// <param name="SourcingAgency">The agency type that chooses how an application is sourced.</param>
@@ -91,8 +92,9 @@ public sealed record ReferenceData(
 /// <param name="CancellationDays">Days an unpaid application stands before it cancels itself.</param>
 /// <param name="DraftDays">Days a saved, unsubmitted application is kept.</param>
 /// <param name="LinkValidityHours">How long a link to the investor stays open, by what it asks of them ("payment", "acceptance").</param>
-/// <param name="RenewBeforeDays">A deposit can be renewed from this many days before it matures...</param>
-/// <param name="RenewAfterDays">...to this many days after; then it is paid out.</param>
+/// <param name="RenewFromDays">A renewal can be entered from this many days before the deposit matures...</param>
+/// <param name="RenewUntilDays">...until this many days before maturity; nearer, it is Operations'.</param>
+/// <param name="RenewUntilDaysAutoRenewal">The same, for a deposit tagged for auto renewal.</param>
 public sealed record AppConfig(
     string SourcingAgency,
     int MinAge,
@@ -105,8 +107,9 @@ public sealed record AppConfig(
     int CancellationDays,
     int DraftDays,
     IReadOnlyDictionary<string, int> LinkValidityHours,
-    int RenewBeforeDays = 30,
-    int RenewAfterDays = 14);
+    int RenewFromDays = 61,
+    int RenewUntilDays = 7,
+    int RenewUntilDaysAutoRenewal = 10);
 
 /// <summary>Who the app is being used by: GET me, from the signed-in partner.</summary>
 public interface IPartnerApi

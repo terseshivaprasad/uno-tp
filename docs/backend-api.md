@@ -220,23 +220,28 @@ partner can book, under MFL-EX.
 
 ## Renewals
 
-Renew FD. The deposits a folio holds, and a renewal opened from one. A renewal
-is an application like a new deposit's: the backend opens it with `renewal` set
-and the deposit's joint holders (`upload.joint`), repayment account
-(`payment.repayment`) and maturity amount (`deposit`, read-only on the page)
-already on it; the steps, the submit and the investor's acceptance are the same
-as for a new deposit. Upload Documents asks no payment mode or instrument for a
-renewal, and Bank Details asks only the repayment account.
+Renew FD, the old RenewalDashboard. The investor is searched by PAN and date of
+birth or by folio, their deposits listed with where each stands, and a renewal
+entered for one that is due. A renewal is an application like a new deposit's:
+the backend opens it with `renewal` set and the deposit's joint holders
+(`upload.joint`), repayment account (`payment.repayment`) and maturity amount
+(`deposit`, read-only on the page) already on it; the steps, the submit and the
+investor's acceptance are the same as for a new deposit. Upload Documents asks no
+payment mode or instrument for a renewal, and Bank Details asks only the
+repayment account.
 
 | Method | Route | Body | Answer |
 |---|---|---|---|
-| GET | `folios/{folio}/deposits` | | `HeldDeposit[]`: the deposits on the folio, newest first; empty for a folio with none; 404 for no such folio |
+| GET | `deposits?pan={pan}&dob={dd-MM-yyyy}` | | `HeldDeposit[]`: the deposits held by that investor, soonest to mature first; 404 for none on record |
+| GET | `folios/{folio}/deposits` | | `HeldDeposit[]`: the deposits on the folio; empty for a folio with none; 404 for no such folio |
 | GET | `deposits/{number}` | | `HeldDeposit`, or 404 |
-| POST | `renewals` | `{ depositNumber }` | `Application`: the renewal opened, with `renewal` set and what comes over from the deposit on it; 409 when the deposit cannot be renewed now |
+| POST | `renewals` | `{ depositNumber }` | `Application`: the renewal opened, with `renewal` set and what comes over from the deposit on it; 409 when the deposit is not due |
 
-- **`HeldDeposit`:** `number`, `folio`, `investor`, `category` (a category code), `amount`, `rate`, `tenureMonths`, `payout` (a payout code), `startedOn`, `maturesOn`, `maturityAmount`, `status` (`running`, `maturing`, `matured`, `renewed`, `closed`), `renewable`, `why` it is not, `jointHolders` (`{ pan, dob, name, folio }`, in order) and `repayment` (`{ ifsc, accountNumber }` or null).
+- **`HeldDeposit`:** `number`, `folio`, `investor`, `category` (a category code), `amount`, `rate`, `tenureMonths`, `payout` (a payout code), `startedOn`, `maturesOn`, `maturityAmount`, `status`, `renewable`, `why` it is not, `jointHolders` (`{ pan, dob, name, folio }`, in order), `repayment` (`{ ifsc, accountNumber }` or null) and `autoRenewal`.
+- **`status`:** `running` (too early), `due` (inside the window), `late` (too near maturity: Operations'), `matured`, `renewed`. Only `due` is `renewable`.
+- **The window**, in `config`: from `renewFromDays` (61) to `renewUntilDays` (7) days before maturity, or `renewUntilDaysAutoRenewal` (10) for a deposit tagged for auto renewal. A renewal entered in advance takes the rate prevailing on the maturity date.
 - **`Application.renewal`:** `depositNumber`, `amount` (the maturity amount the new deposit is opened for), `maturesOn`, `rate`, `tenureMonths`, `payout`; null for a new deposit.
-- `config` carries `renewBeforeDays` and `renewAfterDays`: the window, around maturity, in which a deposit is `maturing` or `matured` and can be renewed.
+- `reference` carries `renewalNotes`: the lines the search page shows under the search.
 
 ## Documents (DMS)
 
