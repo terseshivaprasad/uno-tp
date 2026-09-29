@@ -25,6 +25,23 @@ public sealed class MockSourcing : ISourcingApi
     public Task<IReadOnlyList<Party>> BrokersAsync(CancellationToken ct = default) => Task.FromResult<IReadOnlyList<Party>>(Brokers);
 
     public Task<IReadOnlyList<Party>> StaffAsync(CancellationToken ct = default) => Task.FromResult<IReadOnlyList<Party>>(Staff);
+
+    public Task<IReadOnlyList<Party>> SearchBrokersAsync(string query, CancellationToken ct = default) => Task.FromResult(Find(Brokers, query));
+
+    public Task<IReadOnlyList<Party>> SearchStaffAsync(string query, CancellationToken ct = default) => Task.FromResult(Find(Staff, query));
+
+    // Every word typed must be in the code or the name; a code that starts with the text comes first.
+    private static IReadOnlyList<Party> Find(IEnumerable<Party> register, string query)
+    {
+        var words = query.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (words.Length == 0) return [];
+        return register
+            .Where(p => words.All(w => p.Code.Contains(w, StringComparison.OrdinalIgnoreCase) || p.Name.Contains(w, StringComparison.OrdinalIgnoreCase)))
+            .OrderByDescending(p => p.Code.StartsWith(words[0], StringComparison.OrdinalIgnoreCase))
+            .ThenBy(p => p.Name)
+            .Take(20)
+            .ToList();
+    }
 }
 
 /// <summary>The Axis CMS branches a cheque can be paid in at.</summary>

@@ -8,6 +8,12 @@ public interface ISourcingApi
 
     /// <summary>The staff an employee code is searched against.</summary>
     Task<IReadOnlyList<Party>> StaffAsync(CancellationToken ct = default);
+
+    /// <summary>GET sourcing/brokers?q=: the brokers whose code or name holds every word of the text, best first; at most 20.</summary>
+    Task<IReadOnlyList<Party>> SearchBrokersAsync(string query, CancellationToken ct = default);
+
+    /// <summary>GET sourcing/staff?q=: the same, on the staff register.</summary>
+    Task<IReadOnlyList<Party>> SearchStaffAsync(string query, CancellationToken ct = default);
 }
 
 /// <summary>A code and the name the register holds against it.</summary>

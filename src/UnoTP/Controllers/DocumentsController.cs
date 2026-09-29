@@ -25,8 +25,29 @@ namespace UnoTP.Controllers;
 public class DocumentsController(
     IApplicationApi applications,
     IDocumentApi documents,
+    ISourcingApi sourcing,
     IServiceProvider services) : Controller
 {
+    /// <summary>
+    /// A register searched as a code is typed (register-search.js): the brokers or
+    /// the staff whose code or name holds the text, as the backend finds them.
+    /// </summary>
+    [HttpGet("sourcing")]
+    [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Client)]
+    public async Task<IActionResult> Sourcing(string? register, string? q)
+    {
+        if (HttpContext.CurrentApplication() is null) return NotFound();
+        var text = (q ?? "").Trim();
+        if (text.Length < 2) return Json(Array.Empty<Party>());
+        text = text[..Math.Min(text.Length, 40)];
+        return register switch
+        {
+            "brokers" => Json(await sourcing.SearchBrokersAsync(text)),
+            "staff" => Json(await sourcing.SearchStaffAsync(text)),
+            _ => NotFound(),
+        };
+    }
+
     [HttpGet("")]
     public async Task<IActionResult> Index()
     {

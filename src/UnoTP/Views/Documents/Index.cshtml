@@ -29,8 +29,9 @@
     string? Invalid(string key) => Err(key) is null ? null : "is-invalid";
     bool Focus(string key) => flash?.Focus == key;
 
-    var sourceRegister = Model.RegisterOf(mode, sub: false);
-    var subRegister = Model.RegisterOf(mode, sub: true);
+    var sourceRegister = M.RegisterName(mode, sub: false);
+    var subRegister = M.RegisterName(mode, sub: true);
+    var registerSearch = Url.Action("Sourcing");
     var sourceShut = !chooses || mode is null || mode.House.Length > 0;
     var subShut = mode is null || mode.Sub is M.SubField.House or M.SubField.Shut or M.SubField.EmployeeShut;
     var subRequired = mode is not null && M.SubRequired(mode);
@@ -466,17 +467,18 @@
             @* Both code fields stand under every mode: what changes is what they are
                called, which of them is typed, and which the mode fills itself. A
                searched field offers its register as the browser's own suggestions.
-               A code typed posts as the field is left, so its name from the register
-               is shown at once, not with the next choice made. *@
+               A searched field is looked up on the backend as it is typed
+               (register-search.js), and a code picked or typed posts as the field is
+               left, so its name is shown at once, not with the next choice made. *@
             <div class="cud-col">
                 <label class="csi-label" for="cudSourceCode">@(mode?.CodeLabel ?? "Broker Code")</label>
                 <input class="csi-control @Invalid("cudSourceCode")" id="cudSourceCode" name="sourceCode" data-chars="code" form="cudForm" value="@s.SourceCode" maxlength="12" autocomplete="off" spellcheck="false"
-                       disabled="@sourceShut" data-submit="cudRefresh" list="@(sourceRegister.Count > 0 ? "cudSourceCodeRegister" : null)" autofocus="@Focus("cudSourceCode")">
-                @if (sourceRegister.Count > 0)
+                       disabled="@sourceShut" data-submit="cudRefresh" autofocus="@Focus("cudSourceCode")"
+                       data-register-search="@(sourceRegister is null ? null : registerSearch)" data-register="@sourceRegister" data-name-label="@(mode?.NameLabel ?? "Broker Name")"
+                       role="@(sourceRegister is null ? null : "combobox")" aria-autocomplete="@(sourceRegister is null ? null : "list")" aria-expanded="@(sourceRegister is null ? null : "false")" aria-controls="@(sourceRegister is null ? null : "cudSourceCodeSuggest")">
+                @if (sourceRegister is not null)
                 {
-                    <datalist id="cudSourceCodeRegister">
-                        @foreach (var p in sourceRegister) { <option value="@p.Code">@p.Name</option> }
-                    </datalist>
+                    <ul class="bank-suggest" id="cudSourceCodeSuggest" role="listbox" aria-label="@(mode?.NameLabel ?? "Brokers") found" hidden></ul>
                 }
                 @if (sourceName is { } sn)
                 {
@@ -490,12 +492,12 @@
                     @if (!subRequired && !subShut) { <span class="cud-optional">(Non-mandatory)</span> }
                 </label>
                 <input class="csi-control @Invalid("cudSubBroker")" id="cudSubBroker" name="subBroker" data-chars="code" form="cudForm" value="@s.SubBroker" maxlength="12" autocomplete="off" spellcheck="false" data-submit="cudRefresh"
-                       disabled="@subShut" list="@(subRegister.Count > 0 ? "cudSubBrokerRegister" : null)" autofocus="@Focus("cudSubBroker")">
-                @if (subRegister.Count > 0)
+                       disabled="@subShut" autofocus="@Focus("cudSubBroker")"
+                       data-register-search="@(subRegister is null ? null : registerSearch)" data-register="@subRegister" data-name-label="Sub Broker Name"
+                       role="@(subRegister is null ? null : "combobox")" aria-autocomplete="@(subRegister is null ? null : "list")" aria-expanded="@(subRegister is null ? null : "false")" aria-controls="@(subRegister is null ? null : "cudSubBrokerSuggest")">
+                @if (subRegister is not null)
                 {
-                    <datalist id="cudSubBrokerRegister">
-                        @foreach (var p in subRegister) { <option value="@p.Code">@p.Name</option> }
-                    </datalist>
+                    <ul class="bank-suggest" id="cudSubBrokerSuggest" role="listbox" aria-label="Sub brokers found" hidden></ul>
                 }
                 @if (subName is { } bn)
                 {
@@ -538,7 +540,10 @@
                 @* An employee deposit is booked against a staff record. *@
                 <div class="cud-col">
                     <label class="csi-label" for="cudEmpCode">Employee Code</label>
-                    <input class="csi-control @Invalid("cudEmpCode")" id="cudEmpCode" name="empCode" data-chars="code" form="cudForm" value="@s.EmpCode" maxlength="10" autocomplete="off" spellcheck="false" autofocus="@Focus("cudEmpCode")">
+                    <input class="csi-control @Invalid("cudEmpCode")" id="cudEmpCode" name="empCode" data-chars="code" form="cudForm" value="@s.EmpCode" maxlength="10" autocomplete="off" spellcheck="false" autofocus="@Focus("cudEmpCode")"
+                           data-register-search="@registerSearch" data-register="staff" data-name-label="Employee Name" data-submit="cudRefresh"
+                           role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="cudEmpCodeSuggest">
+                    <ul class="bank-suggest" id="cudEmpCodeSuggest" role="listbox" aria-label="Staff found" hidden></ul>
                     <p class="cud-resolved">Employee Name &mdash; <strong class="@(empName is null ? "cud-resolved__none" : null)">@(empName ?? (s.EmpCode.Length > 0 ? "not found" : "—"))</strong></p>
                     @if (s.EmpCode.Length > 0 && empName is null)
                     {
@@ -667,6 +672,7 @@
 
 @section Scripts {
     <script src="~/js/partial-forms.js" asp-append-version="true"></script>
+    <script src="~/js/register-search.js" asp-append-version="true"></script>
     <script src="~/js/image-shrink.js" asp-append-version="true"></script>
     <script src="~/js/pin.js" asp-append-version="true"></script>
 }

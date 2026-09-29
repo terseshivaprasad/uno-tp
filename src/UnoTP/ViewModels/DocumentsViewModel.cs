@@ -2013,6 +2013,11 @@ public class DocumentsViewModel(
             : ("No name against this code here. You can still proceed — Operations check it before the deposit is booked.", false);
     }
 
+    /// <summary>The register a code field is searched against as it is typed - "brokers" or "staff" - or null where it is not searched.</summary>
+    public static string? RegisterName(SourcingModeOption? mode, bool sub) =>
+        mode is null || mode.Search != (sub ? "sub" : "source") ? null
+        : mode.Register switch { Register.Brokers => "brokers", Register.Employees => "staff", _ => null };
+
     /// <summary>What a code field is searched against under the mode, if it is searched at all.</summary>
     public IReadOnlyList<Party> RegisterOf(SourcingModeOption? mode, bool sub)
     {

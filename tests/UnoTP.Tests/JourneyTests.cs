@@ -232,6 +232,30 @@ public class JourneyTests(App app)
     }
 
     [Fact]
+    public async Task A_broker_code_is_searched_on_the_register_as_it_is_typed()
+    {
+        var client = await app.SignedInAsync();
+        var at = await App.NewApplicationAsync(client, NewInvestor);
+
+        var found = await client.GetStringAsync(at + "/documents/sourcing?register=brokers&q=dec");
+        var byCode = await client.GetStringAsync(at + "/documents/sourcing?register=brokers&q=BR11");
+        var tooShort = await client.GetStringAsync(at + "/documents/sourcing?register=brokers&q=d");
+        var noRegister = await client.GetAsync(at + "/documents/sourcing?register=nope&q=dec");
+
+        Assert.Contains("Deccan Wealth Advisors", found);
+        Assert.Contains("\"code\":\"BR10874\"", found);
+        Assert.Contains("BR11250", byCode);
+        Assert.Contains("BR11903", byCode);
+        Assert.Equal("[]", tooShort);
+        Assert.Equal(HttpStatusCode.NotFound, noRegister.StatusCode);
+
+        // The field on the page is wired to it.
+        var page = await client.GetStringAsync(at + "/documents");
+        Assert.Contains("data-register-search=", page);
+        Assert.DoesNotContain("<datalist", page);
+    }
+
+    [Fact]
     public async Task The_bell_says_why_Application_Status_is_off()
     {
         var client = await app.SignedInAsync();

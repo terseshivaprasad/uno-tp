@@ -72,6 +72,7 @@ Nothing that was not found is kept, and no failure is: the next request asks aga
 | `GET ifsc/{code}` | 1 hour | Only a branch that was found; a new IFSC is found at once |
 | `GET pincodes/{pin}` | 1 day | Only a PIN code that was found |
 | `GET ifsc?q=` (the bank search) | 5 minutes, and 1 minute in the browser | Only a search that found something; a new bank is found by the next search |
+| `GET sourcing/brokers?q=`, `GET sourcing/staff?q=` | 5 minutes, and 1 minute in the browser | The same: only a search that found something |
 | `POST deposits/quote` | 1 minute, never past the day | Keyed by amount, tenure, payout and category - nothing of the investor's |
 | `GET console/schedule` | 30 seconds | Dropped the moment the app adds, ends or removes a window or notice |
 | `GET me` | 5 minutes | Per user and per session; a new session asks again |
@@ -279,6 +280,7 @@ A slot holds one copy:
 |---|---|---|
 | GET | `sourcing/brokers` | `Party[]` (`code`, `name`) |
 | GET | `sourcing/staff` | `Party[]`. Includes the partner at the keyboard. |
+| GET | `sourcing/brokers?q={text}`, `sourcing/staff?q={text}` | `Party[]`: the parties whose code or name holds every word of the text, best first, at most 20 — the code fields on Upload Documents are searched this way as they are typed |
 | GET | `payin-slips` | `SlipRecord[]`: every application paying by cheque or DD, cancelled ones included |
 | GET | `links` | `SentLinkRecord[]`: links sent to investors, each by SMS and e-mail, with the masked `mobile` and `email` it went to. The link itself is never returned. |
 | GET | `links/pending` | `PendingRecord[]`: applications waiting on the investor (`appNo`, `investor`, `applied`, masked `mobile` and `email`, `due`) |

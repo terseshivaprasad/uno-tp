@@ -66,6 +66,24 @@ internal sealed class CachedSourcingApi(ISourcingApi inner, IMemoryCache cache, 
 
     public Task<IReadOnlyList<Party>> StaffAsync(CancellationToken ct = default) =>
         cache.KeptAsync("backend:staff", keptFor, () => inner.StaffAsync(ct));
+
+    // A search is kept five minutes, and only when it found something: a party
+    // added to the register is found by the next search.
+    public Task<IReadOnlyList<Party>> SearchBrokersAsync(string query, CancellationToken ct = default) =>
+        SearchAsync("backend:brokers", query, q => inner.SearchBrokersAsync(q, ct));
+
+    public Task<IReadOnlyList<Party>> SearchStaffAsync(string query, CancellationToken ct = default) =>
+        SearchAsync("backend:staff", query, q => inner.SearchStaffAsync(q, ct));
+
+    private async Task<IReadOnlyList<Party>> SearchAsync(string register, string query, Func<string, Task<IReadOnlyList<Party>>> ask)
+    {
+        var key = (register, query.Trim().ToLowerInvariant());
+        if (cache.TryGetValue(key, out IReadOnlyList<Party>? kept) && kept is not null) return kept;
+        var found = await ask(query);
+        if (found.Count > 0)
+            cache.Set(key, found, new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5), Size = 1 });
+        return found;
+    }
 }
 
 /// <summary>

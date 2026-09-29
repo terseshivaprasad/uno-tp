@@ -196,6 +196,12 @@ public sealed class BackendClient(HttpClient http, IPartner partner)
     public async Task<IReadOnlyList<Party>> StaffAsync(CancellationToken ct = default) =>
         await List<Party>("sourcing/staff", ct);
 
+    public async Task<IReadOnlyList<Party>> SearchBrokersAsync(string query, CancellationToken ct = default) =>
+        await List<Party>($"sourcing/brokers?q={Seg(query)}", ct);
+
+    public async Task<IReadOnlyList<Party>> SearchStaffAsync(string query, CancellationToken ct = default) =>
+        await List<Party>($"sourcing/staff?q={Seg(query)}", ct);
+
     public async Task<IReadOnlyList<SlipRecord>> SlipsAsync(CancellationToken ct = default) =>
         await List<SlipRecord>("payin-slips", ct);
 
