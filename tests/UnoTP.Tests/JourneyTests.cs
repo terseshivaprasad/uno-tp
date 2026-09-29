@@ -210,7 +210,7 @@ public class JourneyTests(App app)
     }
 
     [Fact]
-    public async Task No_TDS_needs_the_form_filed_on_FD_Configuration_before_Proceed()
+    public async Task No_TDS_needs_Form_121_filed_on_FD_Configuration_before_Proceed()
     {
         var client = await app.SignedInAsync();
         var at = await App.NewApplicationAsync(client, NewInvestor);
@@ -221,14 +221,14 @@ public class JourneyTests(App app)
         Assert.Contains("id=\"slot-tdsform\"", await client.GetStringAsync(deposit));
         var refused = await App.PostAsync(client, deposit, deposit, chosen);
         Assert.EndsWith("/deposit", refused.RequestMessage!.RequestUri!.AbsolutePath);
-        Assert.Contains("Upload the Form 15G/15H before proceeding", await refused.Content.ReadAsStringAsync());
+        Assert.Contains("Upload the Form 121 before proceeding", await refused.Content.ReadAsStringAsync());
 
         // Filed from the page, the deposit is saved with the switch on, and Proceed goes on.
-        var filed = await App.UploadAsync(client, deposit, "tdsform", "form-15g.jpg", chosen);
+        var filed = await App.UploadAsync(client, deposit, "tdsform", "form-121.jpg", chosen);
         Assert.Contains(">Replace<", Regex.Match(filed, "id=\"slot-tdsform\".*?cud-slot__notes", RegexOptions.Singleline).Value);
         var proceeded = await App.PostAsync(client, deposit, deposit, chosen);
         Assert.EndsWith("/review", proceeded.RequestMessage!.RequestUri!.AbsolutePath);
-        Assert.Contains("Form 15G/15H", await proceeded.Content.ReadAsStringAsync());
+        Assert.Contains("Form 121", await proceeded.Content.ReadAsStringAsync());
     }
 
     [Fact]

@@ -181,7 +181,7 @@ public sealed record ChequeDetails(string Number, string Date, string CmsLocatio
 public sealed record RenewalOf(string DepositNumber, long Amount, DateOnly MaturesOn, decimal Rate, int TenureMonths, string Payout);
 
 /// <summary>FD Configuration, as saved. Codes are the reference lists'.</summary>
-/// <param name="NoTds">Form 15G or 15H is submitted, so no TDS is deducted.</param>
+/// <param name="NoTds">Form 121, the TDS declaration, is submitted, so no TDS is deducted.</param>
 public sealed record DepositDetails(
     long Amount,
     int TenureMonths,

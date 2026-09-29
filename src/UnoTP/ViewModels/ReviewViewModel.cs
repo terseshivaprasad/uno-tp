@@ -96,7 +96,7 @@ public sealed class ReviewViewModel(DocumentsViewModel docs, DepositQuote? quote
                 if (Docs.MailTyped(h.Holder) && Docs.TypedMailOf(h.Holder) is null) list.Add(("Investor Information", $"the communication address of {who}"));
             }
             if (Payment is null) list.Add(("Bank Details & Payment", "the payment and repayment accounts"));
-            if (Deposit?.NoTds == true && Docs.View(DocumentsViewModel.TdsFormSlot).Doc is null) list.Add(("FD Configuration", "the Form 15G/15H"));
+            if (Deposit?.NoTds == true && Docs.View(DocumentsViewModel.TdsFormSlot).Doc is null) list.Add(("FD Configuration", "the Form 121"));
             if (Deposit is null || Deposit.Amount == 0) list.Add(("FD Configuration", "the deposit"));
             return list;
         }

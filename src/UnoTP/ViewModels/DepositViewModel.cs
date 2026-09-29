@@ -88,8 +88,8 @@ public sealed class DepositViewModel(DocumentsViewModel docs, DepositForm form, 
     /// <summary>The category the deposit is booked as, from Upload Documents.</summary>
     public string Category => Docs.State.Category.Length > 0 ? Docs.CategoryName(Docs.State.Category) : "Not chosen yet";
 
-    /// <summary>The form that exempts the investor from TDS: 15H at the senior citizen age and over, 15G under it.</summary>
-    public string TdsForm => SeniorByDob(Docs.Investor.Who.Dob, Config.SeniorAge) ? "Form 15H" : "Form 15G";
+    /// <summary>The form that exempts the investor from TDS: one form, Form 121, whatever the investor's age.</summary>
+    public string TdsForm => "Form 121";
 
     /// <summary>Where an e-receipt goes: the investor's e-mail on Investor Information.</summary>
     public string Email => Docs.App.Details?.Holders.FirstOrDefault(h => h.Holder == HolderType.Investor)?.Email ?? "";

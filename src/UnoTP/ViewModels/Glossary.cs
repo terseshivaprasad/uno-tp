@@ -21,8 +21,7 @@ public static class Glossary
         ["MICR"] = "The 9-digit code on a cheque's bottom line",
         ["OCR"] = "Reading the text off an uploaded copy",
         ["TDS"] = "Tax deducted at source from the interest",
-        ["15G"] = "Form 15G: a declaration by an investor below the senior age that no tax is due, so no TDS is deducted",
-        ["15H"] = "Form 15H: the same declaration by a senior citizen",
+        ["121"] = "Form 121: the investor's signed declaration that no tax is due on the interest, so no TDS is deducted",
         ["FATCA"] = "Foreign tax residency, declared under the US FATCA rules",
         ["PEP"] = "Politically exposed person",
     };

@@ -480,13 +480,13 @@ public class DocumentsViewModel(
     public static readonly SlotDef PaymentSlot = new("payment", "the instrument", Image);
     public static readonly SlotDef EmpProofSlot = new("empproof", "Employee Proof", Proof);
 
-    /// <summary>Form 15G or 15H, filed on FD Configuration when no TDS is to be deducted.</summary>
-    public static readonly SlotDef TdsFormSlot = new("tdsform", "Form 15G/15H", Form);
+    /// <summary>Form 121, the TDS declaration, filed on FD Configuration when no TDS is to be deducted.</summary>
+    public static readonly SlotDef TdsFormSlot = new("tdsform", "Form 121", Form);
 
     public static readonly SlotDef[] Slots = [FormSlot, PanSlot, PhotoSlot, PoaSlot, MailSlot, PaymentSlot, EmpProofSlot, TdsFormSlot];
 
     /// <summary>
-    /// Set while FD Configuration is drawn: its Form 15G/15H box is asked for by the
+    /// Set while FD Configuration is drawn: its Form 121 box is asked for by the
     /// switch on the page, before the deposit is saved with it. Elsewhere the box is
     /// asked for by the deposit as saved.
     /// </summary>

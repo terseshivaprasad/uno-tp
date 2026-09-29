@@ -17,7 +17,7 @@ public class DepositController(IApplicationApi applications, IDepositApi deposit
         if (await LoadAsync() is not { } docs) return Start();
         var form = DepositForm.From(docs.App.Deposit, docs.Ref);
         var problems = Said();
-        // The Form 15G/15H box stands on this page, shown by the switch; what the last
+        // The Form 121 box stands on this page, shown by the switch; what the last
         // upload had to say about it comes with the page.
         docs.TdsFormWanted = true;
         docs.Shown = TempData[FlashKey(docs)] is string said ? JsonSerializer.Deserialize<Flash>(said) : null;
@@ -41,7 +41,7 @@ public class DepositController(IApplicationApi applications, IDepositApi deposit
         var problems = form.Problems(docs.Config, docs.Ref, docs.IsRenewal);
         // No TDS is a claim the investor signs: the form is filed here before Proceed.
         docs.TdsFormWanted = form.NoTds;
-        if (form.NoTds && docs.View(DocumentsViewModel.TdsFormSlot).Doc is null) problems["TdsForm"] = "Upload the Form 15G/15H before proceeding, or turn the switch off";
+        if (form.NoTds && docs.View(DocumentsViewModel.TdsFormSlot).Doc is null) problems["TdsForm"] = "Upload the Form 121 before proceeding, or turn the switch off";
         if (refresh is not null)
         {
             // Redrawn around the choice that changed; an amount that is wrong says so as it is typed.
@@ -53,7 +53,7 @@ public class DepositController(IApplicationApi applications, IDepositApi deposit
     }
 
     /// <summary>
-    /// The Form 15G/15H, filed from this page: the deposit is saved as it stands - the
+    /// The Form 121, filed from this page: the deposit is saved as it stands - the
     /// switch on, with it - and the copy taken as Upload Documents takes one.
     /// </summary>
     [HttpPost("upload")]
