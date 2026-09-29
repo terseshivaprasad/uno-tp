@@ -172,7 +172,7 @@ again; a failed answer is not kept.
 | PUT | `applications/{appNo}/pages/{page}` | `{ state }` | `204`, or `404` when the application is not the partner's. A wizard page's working state, kept in `pages` on the application as it stands: it moves no version and meets no conflict. Opaque to the backend. |
 | PUT | `applications/{appNo}/payment` | `PaymentDetails`, with `If-Match` | `{ version }`, or `409`/`412` |
 | PUT | `applications/{appNo}/deposit` | `DepositDetails`, with `If-Match` | `{ version }`, or `409`/`412` |
-| POST | `applications/{appNo}/submit` | with `If-Match` | `Application` as submitted, or `409`/`412`. Sends the investor the payment link by SMS and e-mail both. |
+| POST | `applications/{appNo}/submit` | `{ paymentLink }` or `{}`, with `If-Match` | `Application` as submitted, or `409`/`412`. Sends the investor the payment link by SMS and e-mail both. `paymentLink` is `{ url, shortUrl }`: the page the investor pays on, as the app built it from `PaymentLink:Template`, and its short form from UrlShortener.Api, or null when the shortener did not answer. The backend sends `shortUrl` when there is one, `url` otherwise; with no `paymentLink` at all it makes its own link. |
 | POST | `applications/{appNo}/resend-link` | | `Submission`, or `404`/`409` when there is no link to resend |
 | GET | `applications/drafts` | | `DraftSummary[]`: the partner's own applications, opened and not yet submitted, the one touched last first, with identifiers masked |
 | GET | `applications` | | `ApplicationRecord[]`: the partner's applications, including older ones, each with its `scheme` name and `milestones` (`{ step, at }`, in order) for the View Application timeline |
@@ -199,7 +199,8 @@ again; a failed answer is not kept.
 - **`DepositDetails`:** `amount`, `tenureMonths`, `payout`, `autoRenewal`,
   `renewInstruction`, `noTds`, `deliveryType`, as the reference lists code them.
 - **`Submission`:** `at`, `status`, `linkSentTo` (the mobile, masked), `linkValidUntil`,
-  `resendsLeft`, `linkEmailedTo` (the e-mail, masked; empty when there is none). `Application` carries it as `submitted`, with `details`,
+  `resendsLeft`, `linkEmailedTo` (the e-mail, masked; empty when there is none),
+  `shortUrl` (the short payment link the application was submitted with, or empty; the page does not show it). `Application` carries it as `submitted`, with `details`,
   `payment` and `deposit`.
 - **`UploadState`:** the upload step as a whole. That covers the choices made
   (`appType`, `poaType`, `payMode`, `sourcing`, `sourceCode`, `subBroker`,

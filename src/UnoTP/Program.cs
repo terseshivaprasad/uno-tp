@@ -6,6 +6,7 @@ using UnoTP;
 using UnoTP.Backend;
 using UnoTP.Backend.Idfy;
 using UnoTP.Backend.Mock;
+using UnoTP.Backend.Shortener;
 using UnoTP.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -38,12 +39,18 @@ builder.Services.AddSingleton<Microsoft.AspNetCore.Mvc.Routing.IUrlHelperFactory
 // endpoint for, and whatever answered before keeps the rest.
 builder.Services.Configure<BackendOptions>(builder.Configuration.GetSection(BackendOptions.Section));
 builder.Services.Configure<IdfyOptions>(builder.Configuration.GetSection(IdfyOptions.Section));
+builder.Services.Configure<ShortenerOptions>(builder.Configuration.GetSection(ShortenerOptions.Section));
+builder.Services.Configure<PaymentLinkOptions>(builder.Configuration.GetSection(PaymentLinkOptions.Section));
 builder.Services.AddScoped<IPartner, SessionPartner>();
 // Investor Identification's steps, for the primary holder and each joint holder alike.
 builder.Services.AddScoped<UnoTP.ViewModels.HolderSearch>();
 if (BackendOptions.Configured(builder.Configuration)) builder.Services.AddBackendApi();
 else builder.Services.AddMockBackend();
 if (IdfyOptions.Configured(builder.Configuration)) builder.Services.AddIdfy();
+// The payment link is shortened on submit by UrlShortener.Api when Shortener:BaseUrl
+// is set; otherwise by the mock while it answers, and not at all on a real backend.
+if (ShortenerOptions.Configured(builder.Configuration)) builder.Services.AddShortener();
+else builder.Services.AddUnshortenedLinks();
 // The backend's slow-changing answers kept in memory, around whichever answers (see CachedBackend).
 builder.Services.AddBackendCaching();
 // The console's schedule, read once per request for the gate, the tiles and the bell.

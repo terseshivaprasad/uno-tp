@@ -65,7 +65,9 @@ underscore (`Backend__BaseUrl`).
 | Setting | Meaning |
 |---|---|
 | `Backend:BaseUrl` | The backend API. Blank runs the mock. |
-| `Idfy:BaseUrl` | Idfy.Api for the document checks it has an endpoint for. |
+| `Idfy:BaseUrl`, `Idfy:ClientId` | Idfy.Api for the document checks it has an endpoint for, and the name the app calls itself by on its `X-Client-Id` header (`unotp`). |
+| `Shortener:BaseUrl`, `Shortener:ClientId` | UrlShortener.Api, which shortens the payment link on submit, and the `X-Client-Id` it is called with. Blank, the mock shortens; on a real backend the link goes in full. |
+| `PaymentLink:Template` | The page the investor pays on, with `{appNo}` for the application's number. Blank, the app sends no link and the backend makes its own. |
 | `Apps:eSarathiLogin`, `Apps:eSarathiConsole`, … | The other apps' addresses, for the links out and the session-expired redirect. |
 | `Entry:DemoUserId`, `Entry:DemoSysCode` | The user demo mode signs in as. |
 

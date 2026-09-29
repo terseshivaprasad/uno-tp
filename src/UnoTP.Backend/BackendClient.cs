@@ -117,9 +117,9 @@ public sealed class BackendClient(HttpClient http, IPartner partner)
     public Task<int?> SaveDepositAsync(string appNo, int version, DepositDetails deposit, CancellationToken ct = default) =>
         PutVersioned($"applications/{Seg(appNo)}/deposit", version, deposit, ct);
 
-    public async Task<Application?> SubmitAsync(string appNo, int version, CancellationToken ct = default)
+    public async Task<Application?> SubmitAsync(string appNo, int version, PaymentLink? link = null, CancellationToken ct = default)
     {
-        using var request = Request(HttpMethod.Post, $"applications/{Seg(appNo)}/submit", Body(new { }));
+        using var request = Request(HttpMethod.Post, $"applications/{Seg(appNo)}/submit", Body(new { paymentLink = link }));
         request.Headers.IfMatch.Add(new EntityTagHeaderValue($"\"{version}\""));
         using var response = await SendAsync(request, ct);
         if (response.StatusCode is HttpStatusCode.Conflict or HttpStatusCode.PreconditionFailed) return null;

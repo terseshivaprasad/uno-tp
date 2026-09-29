@@ -41,13 +41,14 @@ public sealed class MockApplications(MockStore store, IPartner partner) : IAppli
 
     // Submitting sends the investor the payment link, to the mobile number and the
     // e-mail on the investor's details, open for the hours the rules give a payment link.
-    public Task<Application?> SubmitAsync(string appNo, int version, CancellationToken ct = default) =>
+    public Task<Application?> SubmitAsync(string appNo, int version, PaymentLink? link = null, CancellationToken ct = default) =>
         Task.FromResult(store.Save(partner.Id, appNo, version, app =>
         {
             var investor = app.Details?.Holders.FirstOrDefault(h => h.Holder == HolderType.Investor);
             var now = DateTime.Now;
             app.Submitted = new Submission(now, "payment-pending", Masks.Mobile(investor?.Mobile ?? ""),
-                now.AddHours(MockReference.PaymentLinkHours), ResendsLeft: 1, LinkEmailedTo: Masks.Email(investor?.Email ?? ""));
+                now.AddHours(MockReference.PaymentLinkHours), ResendsLeft: 1, LinkEmailedTo: Masks.Email(investor?.Email ?? ""),
+                ShortUrl: link?.ShortUrl ?? "");
         }));
 
     // One resend, which does not move the link's expiry.

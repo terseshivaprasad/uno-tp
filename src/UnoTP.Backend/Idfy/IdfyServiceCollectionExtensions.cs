@@ -12,6 +12,9 @@ public sealed class IdfyOptions
 
     public string BaseUrl { get; set; } = "";
 
+    /// <summary>The name this app calls itself by on Idfy.Api's X-Client-Id header (its rate limit is per client).</summary>
+    public string ClientId { get; set; } = "unotp";
+
     /// <summary>Idfy.Api waits up to about 60 s for IDfy, so the app waits a little longer.</summary>
     public int TimeoutSeconds { get; set; } = 75;
 
@@ -37,6 +40,7 @@ public static class IdfyServiceCollectionExtensions
             var options = sp.GetRequiredService<IOptions<IdfyOptions>>().Value;
             http.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + "/");
             http.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
+            http.DefaultRequestHeaders.Add("X-Client-Id", options.ClientId);
         });
 
         services.Handover<IDocumentIdentifier, IdfyDocumentIdentifier>();

@@ -40,9 +40,10 @@ public interface IApplicationApi
     /// <summary>
     /// POST applications/{appNo}/submit: the application is submitted and the
     /// investor sent the link to pay and consent. Null on a conflict; the
-    /// application, as submitted, otherwise.
+    /// application, as submitted, otherwise. <paramref name="link"/> is the payment
+    /// link the backend sends the investor; null leaves the backend to make its own.
     /// </summary>
-    Task<Application?> SubmitAsync(string appNo, int version, CancellationToken ct = default);
+    Task<Application?> SubmitAsync(string appNo, int version, PaymentLink? link = null, CancellationToken ct = default);
 
     /// <summary>
     /// POST applications/{appNo}/resend-link: sends a submitted application's payment
@@ -196,7 +197,14 @@ public sealed record DepositDetails(
 /// <param name="LinkEmailedTo">The e-mail address it went to as well, masked; empty when there is none.</param>
 /// <param name="LinkValidUntil">When the payment link stops working.</param>
 /// <param name="ResendsLeft">Times the link can still be sent again.</param>
-public sealed record Submission(DateTime At, string Status, string LinkSentTo, DateTime LinkValidUntil, int ResendsLeft, string LinkEmailedTo = "");
+public sealed record Submission(DateTime At, string Status, string LinkSentTo, DateTime LinkValidUntil, int ResendsLeft, string LinkEmailedTo = "", string ShortUrl = "");
+
+/// <summary>
+/// The payment link an application is submitted with: the page the investor pays
+/// on, and its short form when the shortener answered. The backend sends whichever
+/// it has - the short one when there is one - by SMS and e-mail.
+/// </summary>
+public sealed record PaymentLink(string Url, string? ShortUrl);
 
 /// <summary>One application's upload step, as it is saved.</summary>
 public sealed class UploadState

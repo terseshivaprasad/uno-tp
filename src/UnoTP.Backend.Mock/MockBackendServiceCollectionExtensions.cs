@@ -39,6 +39,7 @@ public static class MockBackendServiceCollectionExtensions
         services.AddSingleton<IVerificationService, MockVerification>();
         services.AddSingleton<IPanAadhaarLinkService, MockPanAadhaarLink>();
         services.AddSingleton<IFaceMatchService, MockFaceMatch>();
+        services.AddSingleton<UnoTP.Backend.Shortener.IShortLinkService, MockShortener>();
         return services;
     }
 }
