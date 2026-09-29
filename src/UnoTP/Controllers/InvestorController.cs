@@ -280,7 +280,8 @@ public class InvestorController(
     {
         var state = Keep(form);
         state.Nominee = false;
-        Drop(state, "Nominee.");
+        // Taken off again, the question is asked again next time.
+        Drop(state, "Nominee.", "NomineeSkipped");
         State = state;
         return Back("ciiAddNominee");
     }

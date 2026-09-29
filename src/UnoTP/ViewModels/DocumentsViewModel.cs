@@ -525,10 +525,9 @@ public class DocumentsViewModel(
             "pan" => held?.Pan == true ? (false, heldWhy) : (true, null),
             // CKYC is fetched for the investor only: a joint holder files their own.
             "photo" => held?.Photo == true ? (false, heldWhy) : s.Ckyc && !h.Joint ? (false, CkycWhy) : (true, null),
-            // A folio that holds the proof, or the address itself, needs no proof of it.
-            "poa" => held?.Poa == true ? (false, heldWhy)
-                : held is not null && h.Who.Address.Length > 0 ? (false, "The address is on the folio, so no proof of it is asked for.")
-                : s.Ckyc && !h.Joint ? (false, CkycWhy) : (true, null),
+            // A folio that holds the proof, or the address itself, needs no proof of
+            // it - but takes a newer one, should the address have changed (optional, below).
+            "poa" => s.Ckyc && !h.Joint ? (false, CkycWhy) : (true, null),
             "mail" => !MailCanDiffer(h) ? (false, MailWhy(h))
                 : MailTyped(h) ? (false, MailTypedWhy)
                 : MailDifferentOf(h) ? (true, null) : (false, "Post goes to the permanent address, so there is no other address to prove."),
@@ -567,8 +566,10 @@ public class DocumentsViewModel(
         };
 
         // A holder on a folio has been through KYC: a PAN copy the folio does not
-        // hold is taken if there is one, but not needed.
-        var optional = used && def.Key == "pan" && h.Who.Folio.Length > 0;
+        // hold is taken if there is one, but not needed; and where the folio holds
+        // the proof of address, or the address, a newer proof is taken but not needed.
+        var optional = used && h.Who.Folio.Length > 0
+            && (def.Key == "pan" || def.Key == "poa" && (held?.Poa == true || h.Who.Address.Length > 0));
 
         // What the copy was read to say stands in its own box once it is filed. An
         // address the folio holds is shown where its proof would be, as it stands:
@@ -581,14 +582,14 @@ public class DocumentsViewModel(
             "mail" when doc is not null => MailReadOf(h),
             "payment" when doc is not null => s.Reads.GetValueOrDefault("payment"),
             "pan" when doc is not null => PanReadOf(h, doc),
-            "poa" when !used && folioAddress => FolioAddress(h, "not checked here."),
+            "poa" when doc is null && folioAddress => FolioAddress(h, used ? "file a newer proof only if the address has changed." : "not checked here."),
             "mail" when !used && folioAddress && !MailCanDiffer(h) => FolioAddress(h, "post goes there."),
             _ => null,
         };
 
         var flash = Shown;
         return new SlotView(def, key, used, used ? null : na, locked, doc,
-            optional ? "Not mandatory: the holder is on a folio." : null,
+            optional ? (def.Key == "poa" ? "Not mandatory: the folio's address stands unless a newer proof is filed." : "Not mandatory: the holder is on a folio.") : null,
             with, s.AttemptsOf(key),
             flash?.Errors.GetValueOrDefault(key), flash?.ErrorLog.GetValueOrDefault(key), optional, read,
             // Waiting on the PAN, the box still names the proofs it will take.
@@ -1860,9 +1861,9 @@ public class DocumentsViewModel(
         var key = h.Key("nsdl");
         if (!NsdlApplies(h) || NsdlOf(h) != "name" || State.Docs.GetValueOrDefault(h.Key("pan")) is not { } doc) return "read-" + key;
         var name = NewApplicationViewModel.NormaliseName(typed);
-        if (name.Length < 3)
+        if (name.Length < 3 || !InvestorViewModel.IsName(name))
         {
-            Say().Errors[key] = "Enter the name as printed on the PAN";
+            Say().Errors[key] = name.Length < 3 ? "Enter the name as printed on the PAN" : "Enter the name as printed on the PAN: letters only";
             return "read-" + key;
         }
         var entry = new LogEntry(Guid.NewGuid().ToString("n")[..8], $"{PanSlot.Label} · NSDL again", 1,

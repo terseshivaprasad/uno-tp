@@ -64,8 +64,9 @@ public sealed class ReviewViewModel(DocumentsViewModel docs, DepositQuote? quote
                     if (def.Key == DocumentsViewModel.MailSlot.Key && !Docs.CommProofUpload) continue;
                     var v = Docs.View(def, h);
                     list.Add(new ReviewDocument($"{Cap(def.Key == "poa" ? "proof of address" : def.Label)} · {who}",
-                        !v.Used ? v.NotApplicable ?? "" : v.Doc is { } d ? (d.Check.Length > 0 ? d.Check : "Filed") : "Not filed yet",
-                        v.Doc is not null, v.Used));
+                        !v.Used ? v.NotApplicable ?? "" : v.Doc is { } d ? (d.Check.Length > 0 ? d.Check : "Filed")
+                            : v.Optional ? "Not filed: not needed for a holder on a folio" : "Not filed yet",
+                        v.Doc is not null || v.Optional, v.Used));
                 }
             }
             foreach (var def in new[] { DocumentsViewModel.FormSlot, DocumentsViewModel.PaymentSlot, DocumentsViewModel.EmpProofSlot })

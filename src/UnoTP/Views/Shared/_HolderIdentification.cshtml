@@ -100,7 +100,7 @@
             {
                 <div class="csi-field" data-for="folio">
                     <label class="csi-label" for="@(ids)Folio">Enter Folio Number</label>
-                    <input class="csi-control csi-control--caps @(m.FolioError is not null ? "is-invalid" : null)" id="@(ids)Folio" name="@Model.Name("Folio")" value="@m.Folio"
+                    <input class="csi-control csi-control--caps @(m.FolioError is not null ? "is-invalid" : null)" id="@(ids)Folio" name="@Model.Name("Folio")" data-chars="code" value="@m.Folio"
                            maxlength="16" autocomplete="off" spellcheck="false" aria-describedby="@(ids)FolioError"
                            data-required="Enter the folio number"
                            aria-invalid="@(m.FolioError is not null ? "true" : null)" autofocus="@(focus == ids + "Folio")">

@@ -416,7 +416,7 @@
                     </div>
                     <div class="inv-field inv-field--sm">
                         <label for="h@(holder)-parent">Father / Mother / Spouse name</label>
-                        <input id="h@(holder)-parent" name="@(p).ParentName" class="inv-control @(Invalid($"{p}.ParentName") is not null ? "inv-control--error" : null)" value="@Model.Value($"{p}.ParentName")" required data-required="Enter the father's, mother's or spouse's name" aria-invalid="@(Invalid($"{p}.ParentName") is not null ? "true" : null)" aria-describedby="@DescribedBy($"{p}.ParentName", $"h{holder}-parent")" />
+                        <input id="h@(holder)-parent" name="@(p).ParentName" class="inv-control @(Invalid($"{p}.ParentName") is not null ? "inv-control--error" : null)" value="@Model.Value($"{p}.ParentName")" required data-required="Enter the father's, mother's or spouse's name" data-check="name" aria-invalid="@(Invalid($"{p}.ParentName") is not null ? "true" : null)" aria-describedby="@DescribedBy($"{p}.ParentName", $"h{holder}-parent")" />
                         @{ await FieldError($"{p}.ParentName", $"h{holder}-parent"); }
                     </div>
                 </div>
@@ -453,7 +453,7 @@
                         var name = c + field;
                         <div class="inv-field inv-field--sm @(required is null ? "inv-field--optional" : null)">
                             <label for="@(id)@suffix">@label @if (required is null) { <span class="cud-optional">(Non-mandatory)</span> }</label>
-                            <input class="inv-control @(Invalid(name) is not null ? "inv-control--error" : null)" id="@(id)@suffix" name="@name" value="@Model.Value(name)" maxlength="60" autocomplete="off" data-required="@required" aria-invalid="@(Invalid(name) is not null ? "true" : null)" aria-describedby="@DescribedBy(name, id + suffix)">
+                            <input class="inv-control @(Invalid(name) is not null ? "inv-control--error" : null)" id="@(id)@suffix" name="@name" value="@Model.Value(name)" maxlength="60" autocomplete="off" data-required="@required" data-check="@(field == "City" ? "name" : "text")" aria-invalid="@(Invalid(name) is not null ? "true" : null)" aria-describedby="@DescribedBy(name, id + suffix)">
                             @{ await FieldError(name, id + suffix); }
                         </div>
                     }
@@ -622,7 +622,7 @@
                 <div class="cud-grid">
                     <div class="cud-col">
                         <label class="csi-label" for="ciiNomName">Name</label>
-                        <input class="csi-control @Invalid("Nominee.Name")" id="ciiNomName" name="Nominee.Name" value="@Model.Value("Nominee.Name")" autocomplete="off" data-required="Enter the nominee's name" aria-invalid="@(Invalid("Nominee.Name") is not null ? "true" : null)" aria-describedby="@DescribedBy("Nominee.Name", "ciiNomName")">
+                        <input class="csi-control @Invalid("Nominee.Name")" id="ciiNomName" name="Nominee.Name" value="@Model.Value("Nominee.Name")" autocomplete="off" data-required="Enter the nominee's name" data-check="name" aria-invalid="@(Invalid("Nominee.Name") is not null ? "true" : null)" aria-describedby="@DescribedBy("Nominee.Name", "ciiNomName")">
                         @{ await FieldError("Nominee.Name", "ciiNomName"); }
                     </div>
                     <div class="cud-col">
@@ -649,20 +649,27 @@
                 <div class="cud-grid">
                     <div class="cud-col">
                         <label class="csi-label" for="ciiNomGuardian">Guardian Name</label>
-                        <input class="csi-control @Invalid("Nominee.GuardianName")" id="ciiNomGuardian" name="Nominee.GuardianName" value="@Model.Value("Nominee.GuardianName")" autocomplete="off" data-required="Enter the guardian's name" aria-invalid="@(Invalid("Nominee.GuardianName") is not null ? "true" : null)" aria-describedby="@DescribedBy("Nominee.GuardianName", "ciiNomGuardian")">
+                        <input class="csi-control @Invalid("Nominee.GuardianName")" id="ciiNomGuardian" name="Nominee.GuardianName" value="@Model.Value("Nominee.GuardianName")" autocomplete="off" data-required="Enter the guardian's name" data-check="name" aria-invalid="@(Invalid("Nominee.GuardianName") is not null ? "true" : null)" aria-describedby="@DescribedBy("Nominee.GuardianName", "ciiNomGuardian")">
                         @{ await FieldError("Nominee.GuardianName", "ciiNomGuardian"); }
                     </div>
                 </div>
                 <div class="cud-grid">
-                    <div class="cud-col"><label class="csi-label" for="ciiGdn1">Address Line 1</label><input class="csi-control @Invalid("Nominee.GuardianAddress.Line1")" id="ciiGdn1" name="Nominee.GuardianAddress.Line1" value="@Model.Value("Nominee.GuardianAddress.Line1")" data-required="Enter the first line of the address" aria-invalid="@(Invalid("Nominee.GuardianAddress.Line1") is not null ? "true" : null)" aria-describedby="@DescribedBy("Nominee.GuardianAddress.Line1", "ciiGdn1")">@{ await FieldError("Nominee.GuardianAddress.Line1", "ciiGdn1"); }</div>
-                    <div class="cud-col"><label class="csi-label" for="ciiGdn2">Address Line 2 (Non-mandatory)</label><input class="csi-control" id="ciiGdn2" name="Nominee.GuardianAddress.Line2" value="@Model.Value("Nominee.GuardianAddress.Line2")"></div>
-                    <div class="cud-col"><label class="csi-label" for="ciiGdn3">Address Line 3 (Non-mandatory)</label><input class="csi-control" id="ciiGdn3" name="Nominee.GuardianAddress.Line3" value="@Model.Value("Nominee.GuardianAddress.Line3")"></div>
+                    <div class="cud-col"><label class="csi-label" for="ciiGdn1">Address Line 1</label><input class="csi-control @Invalid("Nominee.GuardianAddress.Line1")" id="ciiGdn1" name="Nominee.GuardianAddress.Line1" value="@Model.Value("Nominee.GuardianAddress.Line1")" data-required="Enter the first line of the address" data-check="text" aria-invalid="@(Invalid("Nominee.GuardianAddress.Line1") is not null ? "true" : null)" aria-describedby="@DescribedBy("Nominee.GuardianAddress.Line1", "ciiGdn1")">@{ await FieldError("Nominee.GuardianAddress.Line1", "ciiGdn1"); }</div>
+                    <div class="cud-col"><label class="csi-label" for="ciiGdn2">Address Line 2 (Non-mandatory)</label><input class="csi-control" id="ciiGdn2" name="Nominee.GuardianAddress.Line2" value="@Model.Value("Nominee.GuardianAddress.Line2")" data-check="text"></div>
+                    <div class="cud-col"><label class="csi-label" for="ciiGdn3">Address Line 3 (Non-mandatory)</label><input class="csi-control" id="ciiGdn3" name="Nominee.GuardianAddress.Line3" value="@Model.Value("Nominee.GuardianAddress.Line3")" data-check="text"></div>
                     <div class="cud-col"><label class="csi-label" for="ciiGdnPin">Pin Code</label><input class="csi-control @Invalid("Nominee.GuardianAddress.PinCode")" id="ciiGdnPin" name="Nominee.GuardianAddress.PinCode" value="@Model.Value("Nominee.GuardianAddress.PinCode")" inputmode="numeric" maxlength="6" data-required="Enter the PIN code" data-check="pin" aria-invalid="@(Invalid("Nominee.GuardianAddress.PinCode") is not null ? "true" : null)" aria-describedby="@DescribedBy("Nominee.GuardianAddress.PinCode", "ciiGdnPin")">@{ await FieldError("Nominee.GuardianAddress.PinCode", "ciiGdnPin"); }</div>
-                    <div class="cud-col"><label class="csi-label" for="ciiGdnCity">City</label><input class="csi-control @Invalid("Nominee.GuardianAddress.City")" id="ciiGdnCity" name="Nominee.GuardianAddress.City" value="@Model.Value("Nominee.GuardianAddress.City")" data-required="Enter the city" aria-invalid="@(Invalid("Nominee.GuardianAddress.City") is not null ? "true" : null)" aria-describedby="@DescribedBy("Nominee.GuardianAddress.City", "ciiGdnCity")">@{ await FieldError("Nominee.GuardianAddress.City", "ciiGdnCity"); }</div>
+                    <div class="cud-col"><label class="csi-label" for="ciiGdnCity">City</label><input class="csi-control @Invalid("Nominee.GuardianAddress.City")" id="ciiGdnCity" name="Nominee.GuardianAddress.City" value="@Model.Value("Nominee.GuardianAddress.City")" data-required="Enter the city" data-check="name" aria-invalid="@(Invalid("Nominee.GuardianAddress.City") is not null ? "true" : null)" aria-describedby="@DescribedBy("Nominee.GuardianAddress.City", "ciiGdnCity")">@{ await FieldError("Nominee.GuardianAddress.City", "ciiGdnCity"); }</div>
                 </div>
                 <p class="cii-note">District- , State-</p>
                 </fieldset>
             </section>
+        }
+
+        @if (!Model.State.Nominee)
+        {
+            @* Skipping is kept with the form, so the question is not asked again on
+               this application once answered. *@
+            <input type="hidden" name="NomineeSkipped" id="ciiNomineeSkipped" value="@Model.Value("NomineeSkipped")">
         }
 
         @* Every joint holder's attempts, newest first, in one place at the foot of
@@ -677,6 +684,32 @@
             </section>
         }
     </form>
+
+    @if (!Model.State.Nominee)
+    {
+        @* Proceed with no nominee named asks first. Skip goes on; Add opens the nominee's card. *@
+        <div class="cud-sheet cud-ckyc-pop" id="ciiNomineeAsk" popover role="dialog" aria-modal="true" aria-labelledby="ciiNomineeAskTitle">
+            <div class="cud-ckyc__sheet">
+                <header class="cud-ckyc__head">
+                    <span class="cud-ckyc__mark" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 11v6"></path><circle cx="12" cy="7.5" r=".7" fill="currentColor"></circle></svg>
+                    </span>
+                    <h2 class="cud-ckyc__title" id="ciiNomineeAskTitle">No nominee is named</h2>
+                    <button type="button" class="cud-preview__close" popovertarget="ciiNomineeAsk" popovertargetaction="hide" aria-label="Close">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19"></path></svg>
+                    </button>
+                </header>
+                <div class="cud-ckyc__body">
+                    <p><strong>We strongly advise adding a nominee.</strong> With one named, the deposit is paid to them directly. Without one, it passes to the legal heirs only after succession is settled, which can take months.</p>
+                    <p>A nominee can be added now, in a minute, or the application can go on without one.</p>
+                </div>
+                <footer class="cud-ckyc__foot">
+                    <button type="button" class="csi-link" data-nominee-skip>Skip</button>
+                    <button type="submit" form="investorInfoForm" class="csi-btn csi-btn--primary" formaction="@Url.Action("NomineeAdd")" formnovalidate data-loader="Opening the nominee&rsquo;s card&hellip;">Add nominee</button>
+                </footer>
+            </div>
+        </div>
+    }
 </div>
 
 <footer class="csi-bar">
@@ -685,7 +718,8 @@
         <p class="csi-bar__hint">Add any joint holders and the nominee, then proceed to <strong>Bank Details &amp; Payment</strong></p>
         <div class="csi-bar__right">
             <button type="submit" form="investorInfoForm" class="csi-btn csi-btn--back" formaction="@Url.Action("Save")" formnovalidate data-toast="Draft saved">Save draft</button>
-            <button type="submit" form="investorInfoForm" class="csi-btn csi-btn--primary" data-validate="form">Proceed</button>
+            <button type="submit" form="investorInfoForm" class="csi-btn csi-btn--primary" data-validate="form"
+                    data-ask-nominee="@(Model.State.Nominee || Model.Value("NomineeSkipped") == "yes" ? null : "yes")">Proceed</button>
         </div>
     </div>
 </footer>
@@ -713,6 +747,27 @@
             var minor = whole && born <= today && adult > today;
             guardian.hidden = !minor;
             guardian.disabled = !minor;
+        });
+
+        // Proceed with no nominee named asks first. Skip is kept with the form, so
+        // once answered the question is not asked again; Add posts to NomineeAdd.
+        document.addEventListener('click', function (e) {
+            var proceed = e.target.closest && e.target.closest('[data-ask-nominee]');
+            var ask = proceed && document.getElementById('ciiNomineeAsk');
+            if (!ask || !ask.showPopover) return;
+            var skipped = document.getElementById('ciiNomineeSkipped');
+            if (skipped && skipped.value === 'yes') return;
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            ask.showPopover();
+        }, true);
+        document.addEventListener('click', function (e) {
+            if (!e.target.closest || !e.target.closest('[data-nominee-skip]')) return;
+            document.getElementById('ciiNomineeAsk').hidePopover();
+            var skipped = document.getElementById('ciiNomineeSkipped');
+            if (skipped) skipped.value = 'yes';
+            var proceed = document.querySelector('[data-ask-nominee]');
+            if (proceed) proceed.click();
         });
 
         // The offline alert closes on its cross; Proceed with a FATCA Yes brings it back.

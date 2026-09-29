@@ -75,6 +75,27 @@ public class JourneyTests(App app)
     }
 
     [Fact]
+    public async Task A_holder_on_a_folio_may_file_a_newer_proof_of_address_over_the_folios()
+    {
+        var client = await app.SignedInAsync();
+        var at = await App.NewApplicationAsync(client, OnFolioComplete);
+
+        // The folio's address stands in the box, not needed again, with the tool to file a newer proof.
+        var page = await client.GetStringAsync(at + "/documents");
+        var box = Regex.Match(page, "id=\"slot-poa\".*?cud-slot__notes", RegexOptions.Singleline).Value;
+        Assert.Contains("Newer proof", box);
+        Assert.Contains("Shantiniketan", box);
+        Assert.Contains("file a newer proof only if the address has changed", box);
+        Assert.DoesNotContain("the proof of address", Regex.Match(page, "csi-bar__hint.*?</(p|details)>", RegexOptions.Singleline).Value);
+
+        // Filed, the newer proof is what the box holds, and Replace stands over it.
+        var after = await App.UploadAsync(client, at + "/documents", "poa", "voter_id.jpg", ("appType", "DIGITAL"));
+        var filed = Regex.Match(after, "id=\"slot-poa\".*?cud-slot__notes", RegexOptions.Singleline).Value;
+        Assert.DoesNotContain("Newer proof", filed);
+        Assert.Contains(">Replace<", filed);
+    }
+
+    [Fact]
     public async Task A_different_communication_address_is_typed_on_Investor_Information()
     {
         var client = await app.SignedInAsync();
@@ -102,6 +123,29 @@ public class JourneyTests(App app)
             ("Holder1.Comm.Line1", "Flat 4, Sea View"), ("Holder1.Comm.City", "Mumbai"), ("Holder1.Comm.PinCode", "400050"));
         var review = await client.GetStringAsync(at + "/review");
         Assert.Contains("Flat 4, Sea View, Mumbai, Maharashtra - 400050", review);
+    }
+
+    [Fact]
+    public async Task Proceed_with_no_nominee_named_asks_first_until_one_is_added_or_skipped()
+    {
+        var client = await app.SignedInAsync();
+        var at = await App.NewApplicationAsync(client, NewInvestor);
+
+        var page = await client.GetStringAsync(at + "/investor");
+        Assert.Contains("data-ask-nominee=\"yes\"", page);
+        Assert.Contains("id=\"ciiNomineeAsk\"", page);
+        Assert.Contains("We strongly advise adding a nominee.", page);
+
+        // Skipped, the question is kept answered with the form.
+        await App.PostAsync(client, at + "/investor", at + "/investor/save", ("NomineeSkipped", "yes"));
+        var skipped = await client.GetStringAsync(at + "/investor");
+        Assert.DoesNotContain("data-ask-nominee=\"yes\"", skipped);
+
+        // Added, there is nothing to ask.
+        await App.PostAsync(client, at + "/investor", at + "/investor/nominee/add");
+        var added = await client.GetStringAsync(at + "/investor");
+        Assert.DoesNotContain("id=\"ciiNomineeAsk\"", added);
+        Assert.Contains("id=\"nominee\"", added);
     }
 
     [Fact]

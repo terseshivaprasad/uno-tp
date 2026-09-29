@@ -23,8 +23,33 @@
     mobile: [/^[6-9]\d{9}$/, 'Enter a 10-digit mobile number'],
     email: [/^[^@\s]+@[^@\s]+\.[^@\s]+$/, 'Enter a valid e-mail'],
     pin: [/^[1-9]\d{5}$/, 'Enter a 6-digit PIN code'],
-    account: [/^\d{6,18}$/, 'Enter the account number, 6 to 18 digits']
+    account: [/^\d{6,18}$/, 'Enter the account number, 6 to 18 digits'],
+    name: [/^[A-Za-z][A-Za-z .'\-]*$/, 'Enter letters only'],
+    text: [/^[A-Za-z0-9 ,.\-\/#&()']+$/, 'No special characters'],
+    code: [/^[A-Z0-9\-\/]+$/, 'Letters and digits only']
   };
+
+  // What a field takes as it is typed, by its kind - data-chars, or the data-check
+  // kind: anything else is dropped at once, and a PAN or a code is put in capitals.
+  // The check on Proceed then has only the shape left to say.
+  var filters = {
+    pan: [/[^A-Za-z0-9]/g, true], code: [/[^A-Za-z0-9\-\/]/g, true],
+    mobile: [/\D/g], pin: [/\D/g], account: [/\D/g], digits: [/\D/g], match: [/\D/g], aadhaar: [/[^\d ]/g],
+    email: [/[^A-Za-z0-9@._+\-]/g], name: [/[^A-Za-z .'\-]/g], text: [/[^A-Za-z0-9 ,.\-\/#&()']/g], search: [/[^A-Za-z0-9 .\-&]/g]
+  };
+  document.addEventListener('input', function (e) {
+    var el = e.target;
+    if (!el.matches || !el.matches('input')) return;
+    var kind = (el.getAttribute('data-chars') || el.getAttribute('data-check') || '').split(':')[0];
+    var filter = filters[kind];
+    if (!filter) return;
+    var clean = el.value.replace(filter[0], '');
+    if (filter[1]) clean = clean.toUpperCase();
+    if (clean === el.value) return;
+    var at = el.selectionStart, dropped = el.value.length - clean.length;
+    el.value = clean;
+    if (at != null) try { el.setSelectionRange(at - dropped, at - dropped); } catch (_) { /* not a text box */ }
+  });
 
   function valueOf(el) {
     if (el.matches('[role=group], .csi-date')) {
@@ -55,7 +80,7 @@
     var name = check.split(':')[0];
     var arg = check.slice(name.length + 1);
     if (shapes[name]) {
-      var v = name === 'pan' ? value.toUpperCase() : name === 'account' ? value.replace(/\D/g, '') : value;
+      var v = name === 'pan' || name === 'code' ? value.toUpperCase() : name === 'account' ? value.replace(/\D/g, '') : value;
       return shapes[name][0].test(v) ? null : shapes[name][1];
     }
     if (name === 'digits') return new RegExp('^\\d{' + arg + '}$').test(value) ? null : 'Enter the ' + arg + '-digit number';

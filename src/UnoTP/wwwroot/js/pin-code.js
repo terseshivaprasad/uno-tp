@@ -12,7 +12,9 @@
   function place(input) {
     var box = document.querySelector('[data-place-for="' + input.id + '"]');
     if (!box) return;
-    var pin = input.value.trim();
+    // Digits alone, whatever was typed.
+    var pin = input.value.replace(/\D+/g, '');
+    if (pin !== input.value) input.value = pin;
     if (!/^[1-9]\d{5}$/.test(pin)) { input.removeAttribute('data-placed'); show(box, '—', '—'); return; }
     if (input.getAttribute('data-placed') === pin) return;
     input.setAttribute('data-placed', pin);

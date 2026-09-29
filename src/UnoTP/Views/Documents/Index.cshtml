@@ -452,7 +452,7 @@
                searched field offers its register as the browser's own suggestions. *@
             <div class="cud-col">
                 <label class="csi-label" for="cudSourceCode">@(mode?.CodeLabel ?? "Broker Code")</label>
-                <input class="csi-control @Invalid("cudSourceCode")" id="cudSourceCode" name="sourceCode" form="cudForm" value="@s.SourceCode" maxlength="12" autocomplete="off" spellcheck="false"
+                <input class="csi-control @Invalid("cudSourceCode")" id="cudSourceCode" name="sourceCode" data-chars="code" form="cudForm" value="@s.SourceCode" maxlength="12" autocomplete="off" spellcheck="false"
                        disabled="@sourceShut" list="@(sourceRegister.Count > 0 ? "cudSourceCodeRegister" : null)" autofocus="@Focus("cudSourceCode")">
                 @if (sourceRegister.Count > 0)
                 {
@@ -471,7 +471,7 @@
                 <label class="csi-label" for="cudSubBroker">Sub Broker Code
                     @if (!subRequired && !subShut) { <span class="cud-optional">(Non-mandatory)</span> }
                 </label>
-                <input class="csi-control @Invalid("cudSubBroker")" id="cudSubBroker" name="subBroker" form="cudForm" value="@s.SubBroker" maxlength="12" autocomplete="off" spellcheck="false"
+                <input class="csi-control @Invalid("cudSubBroker")" id="cudSubBroker" name="subBroker" data-chars="code" form="cudForm" value="@s.SubBroker" maxlength="12" autocomplete="off" spellcheck="false"
                        disabled="@subShut" list="@(subRegister.Count > 0 ? "cudSubBrokerRegister" : null)" autofocus="@Focus("cudSubBroker")">
                 @if (subRegister.Count > 0)
                 {
@@ -520,7 +520,7 @@
                 @* An employee deposit is booked against a staff record. *@
                 <div class="cud-col">
                     <label class="csi-label" for="cudEmpCode">Employee Code</label>
-                    <input class="csi-control @Invalid("cudEmpCode")" id="cudEmpCode" name="empCode" form="cudForm" value="@s.EmpCode" maxlength="10" autocomplete="off" spellcheck="false" autofocus="@Focus("cudEmpCode")">
+                    <input class="csi-control @Invalid("cudEmpCode")" id="cudEmpCode" name="empCode" data-chars="code" form="cudForm" value="@s.EmpCode" maxlength="10" autocomplete="off" spellcheck="false" autofocus="@Focus("cudEmpCode")">
                     <p class="cud-resolved">Employee Name &mdash; <strong class="@(empName is null ? "cud-resolved__none" : null)">@(empName ?? (s.EmpCode.Length > 0 ? "not found" : "—"))</strong></p>
                     @if (s.EmpCode.Length > 0 && empName is null)
                     {
@@ -534,7 +534,7 @@
 
                 <div class="cud-col">
                     <label class="csi-label" for="cudEmpCompany">Employee Company Name</label>
-                    <input class="csi-control @Invalid("cudEmpCompany")" id="cudEmpCompany" name="empCompany" form="cudForm" value="@s.EmpCompany" maxlength="60" autocomplete="off" autofocus="@Focus("cudEmpCompany")">
+                    <input class="csi-control @Invalid("cudEmpCompany")" id="cudEmpCompany" name="empCompany" data-chars="text" form="cudForm" value="@s.EmpCompany" maxlength="60" autocomplete="off" autofocus="@Focus("cudEmpCompany")">
                     @{ await FieldError("cudEmpCompany"); }
                 </div>
 
@@ -567,7 +567,7 @@
                 <label class="csi-label" for="cudFormNo">Physical Application Form No.
                     @if (!physical) { <span class="cud-optional">(No paper form &mdash; filed as 0000)</span> }
                 </label>
-                <input class="csi-control @Invalid("cudFormNo")" id="cudFormNo" name="formNo" form="cudForm" value="@s.FormNo" maxlength="20" autocomplete="off" spellcheck="false" readonly="@(!physical)" autofocus="@Focus("cudFormNo")">
+                <input class="csi-control @Invalid("cudFormNo")" id="cudFormNo" name="formNo" data-chars="code" form="cudForm" value="@s.FormNo" maxlength="20" autocomplete="off" spellcheck="false" readonly="@(!physical)" autofocus="@Focus("cudFormNo")">
                 @{ await FieldError("cudFormNo"); }
             </div>
 

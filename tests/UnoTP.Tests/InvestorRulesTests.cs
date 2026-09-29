@@ -26,6 +26,45 @@ public class InvestorRulesTests
     public void A_PIN_code_is_six_digits_not_starting_with_zero(string pin, bool valid) =>
         Assert.Equal(valid, InvestorViewModel.IsPin(pin));
 
+    [Theory]
+    [InlineData("ANJALI VIKRAM PATIL", true)]
+    [InlineData("Karan D. Mehta", true)]
+    [InlineData("O'Brien-Smith", true)]
+    [InlineData("ANJALI 2", false)]
+    [InlineData("ANJALI@PATIL", false)]
+    [InlineData("<script>", false)]
+    [InlineData(" ANJALI", false)]
+    public void A_name_is_letters_only(string value, bool ok) => Assert.Equal(ok, InvestorViewModel.IsName(value));
+
+    [Theory]
+    [InlineData("Flat 4, Sea View", true)]
+    [InlineData("12/3 M.G. Road (near SBI) #2 & Co.", true)]
+    [InlineData("Flat 4; drop table", false)]
+    [InlineData("Flat <b>4</b>", false)]
+    [InlineData("Flat 4 @ Sea View", false)]
+    public void An_address_line_carries_no_special_characters(string value, bool ok) => Assert.Equal(ok, InvestorViewModel.IsText(value));
+
+    [Fact]
+    public void A_name_or_address_with_special_characters_is_refused_and_a_blank_optional_line_is_not()
+    {
+        var state = new InvestorInfoState { Nominee = true };
+        state.Fields["Nominee.Name"] = "ARJUN #1";
+        state.Fields["Nominee.Relation"] = "Son";
+        var born = DateTime.Today.AddYears(-10);
+        state.Fields["Nominee.Dd"] = born.Day.ToString(); state.Fields["Nominee.Mm"] = born.Month.ToString(); state.Fields["Nominee.Yyyy"] = born.Year.ToString();
+        state.Fields["Nominee.GuardianName"] = "VIKRAM PATIL";
+        state.Fields["Nominee.GuardianAddress.Line1"] = "Flat 4, Sea View";
+        state.Fields["Nominee.GuardianAddress.Line2"] = "";
+        state.Fields["Nominee.GuardianAddress.Line3"] = "Bandra <west>";
+        state.Fields["Nominee.GuardianAddress.PinCode"] = "400050";
+        state.Fields["Nominee.GuardianAddress.City"] = "Mumbai";
+
+        var missing = InvestorViewModel.Unfilled(state, [], 18);
+
+        Assert.Equal([("Nominee.Name", InvestorViewModel.LettersOnly), ("Nominee.GuardianAddress.Line3", InvestorViewModel.NoSpecialCharacters)],
+            missing.Select(u => (u.Field, u.Error)));
+    }
+
     [Fact]
     public void An_adult_nominee_needs_a_name_date_of_birth_and_relation_but_no_guardian()
     {

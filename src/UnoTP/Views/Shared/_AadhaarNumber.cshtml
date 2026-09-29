@@ -9,7 +9,7 @@
         <span class="cud-retry__text">The Aadhaar is filed. Type its 12-digit number to check the link; it is not saved with the application.</span>
     </div>
     <div class="cud-retry__ask">
-        <input class="csi-control @(Model.Error is null ? null : "is-invalid")" id="@Model.Field" name="@Model.Field" value=""
+        <input class="csi-control @(Model.Error is null ? null : "is-invalid")" id="@Model.Field" name="@Model.Field" data-chars="aadhaar" value=""
                inputmode="numeric" maxlength="14" pattern="[0-9 ]*" autocomplete="off" spellcheck="false"
                placeholder="XXXX XXXX XXXX" aria-label="12-digit Aadhaar number" aria-describedby="@(Model.Field)Error">
         <button type="submit" class="csi-btn csi-btn--primary" formaction="@Model.PostUrl" formnovalidate data-loader="Checking the PAN–Aadhaar link&hellip;">Check link</button>

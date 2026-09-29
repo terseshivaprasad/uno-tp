@@ -11,7 +11,7 @@
             <span class="cud-retry__text">Type the name exactly as printed on the PAN card, and NSDL is asked again.</span>
         </div>
         <div class="cud-retry__ask">
-            <input class="csi-control csi-control--caps @(retry.Error is null ? null : "is-invalid")" id="@retry.Field" name="@retry.Field" value="@retry.Value"
+            <input class="csi-control csi-control--caps @(retry.Error is null ? null : "is-invalid")" id="@retry.Field" name="@retry.Field" data-check="name" value="@retry.Value"
                    maxlength="60" autocomplete="off" spellcheck="false" aria-label="Name exactly as printed on the PAN" aria-describedby="@(retry.Field)Error">
             <button type="submit" class="csi-btn csi-btn--primary" formaction="@Model.RetryUrl" formnovalidate data-loader="Asking NSDL again&hellip;">Retry NSDL</button>
         </div>

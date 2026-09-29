@@ -77,7 +77,7 @@
                 <input class="csi-control @Invalid(key + ".Ifsc")" id="@(id)-ifsc" name="@(key).Ifsc" value="@account.Ifsc" maxlength="60" autocomplete="off" spellcheck="false" placeholder="e.g. HDFC Andheri or HDFC0000521"
                        data-required="Search for the bank and pick its branch"
                        role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="@(id)-suggest"
-                       data-bank-search="@Url.Action("Branches")" data-find="bank-find-@(key.ToLowerInvariant())"
+                       data-chars="search" data-bank-search="@Url.Action("Branches")" data-find="bank-find-@(key.ToLowerInvariant())"
                        aria-invalid="@InvalidAria(key + ".Ifsc")" aria-describedby="@DescribedBy(key + ".Ifsc", id + "-ifsc")">
                 <ul class="bank-suggest" id="@(id)-suggest" role="listbox" aria-label="Branches found" hidden></ul>
                 @{ await FieldError(key + ".Ifsc", id + "-ifsc"); }
@@ -185,7 +185,7 @@
                     <div class="cud-col">
                         <label class="csi-label" for="cms-location">Axis @Glossary.Term("CMS") Branch</label>
                         @* Typed, with the backend's branches offered as the browser's own suggestions. *@
-                        <input class="csi-control @Invalid("Cheque.CmsLocation")" id="cms-location" name="Cheque.CmsLocation" value="@f.Cheque.CmsLocation" list="cms-locations" placeholder="Start typing a branch" autocomplete="off" spellcheck="false" data-required="Enter the Axis CMS branch" aria-invalid="@InvalidAria("Cheque.CmsLocation")" aria-describedby="@(DescribedBy("Cheque.CmsLocation", "cms-location") ?? "cms-location-hint")">
+                        <input class="csi-control @Invalid("Cheque.CmsLocation")" id="cms-location" name="Cheque.CmsLocation" data-chars="text" value="@f.Cheque.CmsLocation" list="cms-locations" placeholder="Start typing a branch" autocomplete="off" spellcheck="false" data-required="Enter the Axis CMS branch" aria-invalid="@InvalidAria("Cheque.CmsLocation")" aria-describedby="@(DescribedBy("Cheque.CmsLocation", "cms-location") ?? "cms-location-hint")">
                         <datalist id="cms-locations">
                             @foreach (var location in Model.CmsLocations) { <option value="@location"></option> }
                         </datalist>

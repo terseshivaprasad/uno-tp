@@ -18,7 +18,18 @@
        checked behind an info mark, then View and Replace - or, for a copy that is
        final, a lock saying why it cannot be replaced. Out of the box, so every box
        keeps one height whatever it holds. The box itself opens the copy too. *@
-    @if (v.Used && filed)
+    @if (v.Used && !filed && v.Read is not null && !v.Spent && v.Locked is null)
+    {
+    @* An address the folio holds stands in the box; a newer proof may be filed over it. *@
+    <div class="cud-slot__tools">
+        <label class="cud-tool" for="file-@key" title="File a newer @v.Def.Label">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16.5V4.5"></path><path d="M7.5 9L12 4.5 16.5 9"></path><path d="M4.5 15v3.5a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5V15"></path></svg>
+            <span>Newer proof</span>
+        </label>
+        <input type="file" id="file-@key" name="file_@key" accept="@v.Def.Accepts.Mime" hidden data-submit="upload-@key" form="@form" data-shrink="2560">
+    </div>
+    }
+    else if (v.Used && filed)
     {
     <div class="cud-slot__tools">
         @* A check that failed asks for a new copy, so it stays written out under the box. *@
@@ -51,10 +62,11 @@
     </div>
     }
     <div class="cud-slot__frame">
-        @if (!v.Used && v.Read is { } held)
+        @if (!filed && v.Read is { } held)
         {
             @* An address the folio already holds stands where its proof would be:
-               on record, so ticked, but nothing on this step confirmed it. *@
+               on record, so ticked, but nothing on this step confirmed it. Where a
+               newer proof may be filed, the tool over the box takes it. *@
             <div class="cud-drop is-filled is-held">
                 <span class="cud-drop__done">
                     <span class="cud-drop__check" aria-hidden="true">
