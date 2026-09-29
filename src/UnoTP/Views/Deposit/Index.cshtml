@@ -66,7 +66,7 @@
 <div class="csi">
     <partial name="_ClassicSteps" model="4" />
 
-    <form class="csi-main" id="fdConfigForm" data-guard method="post" data-partial novalidate data-partial-focus="@focus" data-quote-url="@Url.Action("Quote")">
+    <form class="csi-main" id="fdConfigForm" data-guard method="post" enctype="multipart/form-data" data-partial novalidate data-partial-focus="@focus" data-quote-url="@Url.Action("Quote")">
         @* Pressed for the partner whenever a choice changes: the deposit is saved and redrawn. *@
         <button type="submit" class="visually-hidden" id="fdRefresh" name="refresh" value="" formnovalidate tabindex="-1">Update</button>
 
@@ -189,8 +189,18 @@
                             <input type="hidden" name="NoTds" value="false">
                         </label>
                         <div class="fd-note" data-show-when="NoTds=true" hidden="@(!f.NoTds)">
-                            <div class="fd-note__text"><strong>@Model.TdsForm is needed for the primary holder</strong>, by the investor&rsquo;s date of birth. Turning this off removes the requirement; TDS is then deducted at the applicable rate.</div>
+                            <div class="fd-note__text"><strong>@Model.TdsForm is needed for the primary holder</strong>, by the investor&rsquo;s date of birth: file the signed form below before proceeding. Turning this off removes the requirement; TDS is then deducted at the applicable rate.</div>
                         </div>
+                        @* The form itself, filed here as a document is on Upload Documents; shut with the switch. *@
+                        <fieldset class="cud-choice fd-tds-form" data-show-when="NoTds=true" hidden="@(!f.NoTds)" disabled="@(!f.NoTds)">
+                            <div class="cud-grid cud-grid--docs">
+                                <div class="cud-col">
+                                    <div class="cud-col__head"><span class="csi-label">@Model.TdsForm</span></div>
+                                    <partial name="_DocSlot" model="@(new DocSlotBlock(Model.Docs.View(DocumentsViewModel.TdsFormSlot), Url.Action("Upload")!, "fdConfigForm"))" />
+                                </div>
+                            </div>
+                            @{ await FieldError("TdsForm", "slot-tdsform"); }
+                        </fieldset>
                     </section>
 
                     @* ── Delivery ───────────────────────────────────────────────── *@

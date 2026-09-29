@@ -465,11 +465,13 @@
 
             @* Both code fields stand under every mode: what changes is what they are
                called, which of them is typed, and which the mode fills itself. A
-               searched field offers its register as the browser's own suggestions. *@
+               searched field offers its register as the browser's own suggestions.
+               A code typed posts as the field is left, so its name from the register
+               is shown at once, not with the next choice made. *@
             <div class="cud-col">
                 <label class="csi-label" for="cudSourceCode">@(mode?.CodeLabel ?? "Broker Code")</label>
                 <input class="csi-control @Invalid("cudSourceCode")" id="cudSourceCode" name="sourceCode" data-chars="code" form="cudForm" value="@s.SourceCode" maxlength="12" autocomplete="off" spellcheck="false"
-                       disabled="@sourceShut" list="@(sourceRegister.Count > 0 ? "cudSourceCodeRegister" : null)" autofocus="@Focus("cudSourceCode")">
+                       disabled="@sourceShut" data-submit="cudRefresh" list="@(sourceRegister.Count > 0 ? "cudSourceCodeRegister" : null)" autofocus="@Focus("cudSourceCode")">
                 @if (sourceRegister.Count > 0)
                 {
                     <datalist id="cudSourceCodeRegister">
@@ -487,7 +489,7 @@
                 <label class="csi-label" for="cudSubBroker">Sub Broker Code
                     @if (!subRequired && !subShut) { <span class="cud-optional">(Non-mandatory)</span> }
                 </label>
-                <input class="csi-control @Invalid("cudSubBroker")" id="cudSubBroker" name="subBroker" data-chars="code" form="cudForm" value="@s.SubBroker" maxlength="12" autocomplete="off" spellcheck="false"
+                <input class="csi-control @Invalid("cudSubBroker")" id="cudSubBroker" name="subBroker" data-chars="code" form="cudForm" value="@s.SubBroker" maxlength="12" autocomplete="off" spellcheck="false" data-submit="cudRefresh"
                        disabled="@subShut" list="@(subRegister.Count > 0 ? "cudSubBrokerRegister" : null)" autofocus="@Focus("cudSubBroker")">
                 @if (subRegister.Count > 0)
                 {

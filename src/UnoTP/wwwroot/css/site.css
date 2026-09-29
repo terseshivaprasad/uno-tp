@@ -1289,6 +1289,10 @@ html.is-saving::before {
   .cud-check__lines { grid-column: 1 / -1; grid-row: 2; }
 }
 
+/* The Form 15G/15H box on FD Configuration, under the switch that asks for it. */
+.fd-tds-form { margin: 14px 0 0; padding: 0; border: 0; }
+.fd-tds-form[hidden] { display: none; }
+
 /* A typed address's district and state, the PIN code's: shown beside it, never typed,
    level with the PIN code's box. */
 .cii-place { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-content: start; padding-top: 4px; }

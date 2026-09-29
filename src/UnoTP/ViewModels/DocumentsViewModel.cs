@@ -480,7 +480,17 @@ public class DocumentsViewModel(
     public static readonly SlotDef PaymentSlot = new("payment", "the instrument", Image);
     public static readonly SlotDef EmpProofSlot = new("empproof", "Employee Proof", Proof);
 
-    public static readonly SlotDef[] Slots = [FormSlot, PanSlot, PhotoSlot, PoaSlot, MailSlot, PaymentSlot, EmpProofSlot];
+    /// <summary>Form 15G or 15H, filed on FD Configuration when no TDS is to be deducted.</summary>
+    public static readonly SlotDef TdsFormSlot = new("tdsform", "Form 15G/15H", Form);
+
+    public static readonly SlotDef[] Slots = [FormSlot, PanSlot, PhotoSlot, PoaSlot, MailSlot, PaymentSlot, EmpProofSlot, TdsFormSlot];
+
+    /// <summary>
+    /// Set while FD Configuration is drawn: its Form 15G/15H box is asked for by the
+    /// switch on the page, before the deposit is saved with it. Elsewhere the box is
+    /// asked for by the deposit as saved.
+    /// </summary>
+    public bool TdsFormWanted { get; set; }
 
     /// <summary>What every holder files for themselves: the investor on this step, and
     /// each joint holder on Investor Information. The rest belong to the application.</summary>
@@ -542,6 +552,7 @@ public class DocumentsViewModel(
             "payment" => IsRenewal ? (false, $"The maturing deposit {Renewal!.DepositNumber} pays for the new one, so there is no instrument to copy.")
                 : (s.PayMode.Length == 0 || DocumentOf(s.PayMode) is not null, $"{s.PayMode} is settled electronically, so there is no instrument to copy."),
             "empproof" => (IsEmployee(s.Category), "Only a deposit booked against a staff record carries an employee proof."),
+            "tdsform" => (TdsFormWanted || App.Deposit?.NoTds == true, "Asked only when no TDS is to be deducted: the switch on FD Configuration."),
             _ => (true, (string?)null),
         };
 
