@@ -11,7 +11,8 @@ namespace UnoTP.Backend.Mock.External;
 /// and the bank hold, unless the copy is named as a mismatch. An Aadhaar also reads
 /// as an Aadhaar number no real one can be - they never start with 0 - so the
 /// PAN-Aadhaar link has one to be asked with - unless the copy is named as masked,
-/// when only its last four digits are read. The mock does not hold out for the
+/// when only its last four digits are read and the number is typed on the page
+/// instead. The mock does not hold out for the
 /// holder's consent the way IDfy does.
 /// </summary>
 public sealed class MockOcr : IOcrService

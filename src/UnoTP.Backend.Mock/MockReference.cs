@@ -77,7 +77,7 @@ public sealed class MockReference : IReferenceApi
                 ],
                 [
                     "The PAN copy is collected first, before any proof of address.",
-                    "An Aadhaar is filed unmasked — all 12 digits must be readable. A masked e-Aadhaar is not accepted.",
+                    "An Aadhaar is accepted masked or unmasked, when the name and date of birth on it match the PAN. Where its 12-digit number cannot be read, it is typed for the PAN–Aadhaar link.",
                 ]),
             new("Sole Proprietorship",
                 [

@@ -94,7 +94,7 @@ public sealed class MockStore(IConfiguration config)
     {
         Sweep();
         return entries.Values.Where(e => e.Owner == owner).OrderByDescending(e => e.Seen)
-            .Select(e => Read(e, owner)).OfType<Application>().ToList();
+            .Select(e => Read(e, owner, touch: false)).OfType<Application>().ToList();
     }
 
     public void File(string owner, string appNo, string slot, UploadFile copy)
@@ -117,13 +117,14 @@ public sealed class MockStore(IConfiguration config)
 
     public string NextRejectRef() => "REJ-" + Interlocked.Increment(ref rejectSeq);
 
-    // An application is only ever handed to the partner who opened it.
-    private static Application? Read(Entry entry, string owner)
+    // An application is only ever handed to the partner who opened it. Opening it
+    // touches it; listing it does not, or every list would turn the order round.
+    private static Application? Read(Entry entry, string owner, bool touch = true)
     {
         if (entry.Owner != owner) return null;
         lock (entry.Gate)
         {
-            entry.Seen = DateTime.UtcNow;
+            if (touch) entry.Seen = DateTime.UtcNow;
             return JsonSerializer.Deserialize<Application>(entry.Json, Json);
         }
     }

@@ -122,6 +122,8 @@ public sealed class MockDemo : IDemoApi
         "A proof of address whose file name includes \"otherface\" or \"noface\" fails the PAN–POA face match; it is filed anyway.",
         "A driving licence whose file name includes \"issuedate\" has its issue date read as the expiry; Sarathi's date replaces it.",
         "A PAN copy whose file name includes \"otherpan\" or \"otherdob\" reads as another PAN or date of birth, and is refused.",
+        "An Aadhaar whose file name includes \"othername\" or \"otherdob\" reads another name or date of birth than the PAN's, and is refused.",
+        "An Aadhaar whose file name includes \"masked\" has no whole number read: it is filed, and the number is typed for the PAN–Aadhaar link — 234567890124 is a valid test number.",
         "Any other valid PAN still works: its last digit decides the outcome — 0 no such pair, 1 name mismatch, anything else all three match.",
     ];
 }
