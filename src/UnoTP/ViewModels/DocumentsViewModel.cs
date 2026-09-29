@@ -179,10 +179,11 @@ public class DocumentsViewModel(
 
     /// <summary>
     /// Whether "What the PAN was checked with" is shown for a holder: only one with no
-    /// folio yet. A holder on a folio was checked when it opened - NSDL and the
+    /// folio yet, and only once their PAN copy is filed, since every check starts
+    /// from it. A holder on a folio was checked when it opened - NSDL and the
     /// PAN-Aadhaar link are not asked again - so the section is left off.
     /// </summary>
-    public static bool PanChecksShown(DocHolder h) => h.Who.Folio.Length == 0;
+    public bool PanChecksShown(DocHolder h) => h.Who.Folio.Length == 0 && State.Docs.ContainsKey(h.Key("pan"));
 
     /// <summary>Whether a holder's post goes to an address other than the permanent one.</summary>
     public bool MailDifferentOf(DocHolder h) =>
@@ -531,7 +532,8 @@ public class DocumentsViewModel(
             "mail" => !MailCanDiffer(h) ? (false, MailWhy(h))
                 : MailTyped(h) ? (false, MailTypedWhy)
                 : MailDifferentOf(h) ? (true, null) : (false, "Post goes to the permanent address, so there is no other address to prove."),
-            "payment" => (DocumentOf(s.PayMode) is not null, $"{(s.PayMode.Length > 0 ? s.PayMode : "This mode")} is settled electronically, so there is no instrument to copy."),
+            // Until a mode is chosen the box waits on the choice (locked below).
+            "payment" => (s.PayMode.Length == 0 || DocumentOf(s.PayMode) is not null, $"{s.PayMode} is settled electronically, so there is no instrument to copy."),
             "empproof" => (IsEmployee(s.Category), "Only a deposit booked against a staff record carries an employee proof."),
             _ => (true, (string?)null),
         };
@@ -546,6 +548,7 @@ public class DocumentsViewModel(
             "poa" when !AutoProofType && proofType.Length == 0 => "Choose the proof of address first",
             "mail" when !AutoProofType && proofType.Length == 0 => "Choose the communication address proof first",
             "empproof" when s.EmpProofType.Length == 0 => "Choose the employee proof first",
+            "payment" when s.PayMode.Length == 0 => "Choose the payment mode first",
             _ => null,
         };
 

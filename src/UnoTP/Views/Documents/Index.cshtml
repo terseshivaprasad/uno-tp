@@ -384,7 +384,7 @@
            proofs above - what a proof was read to say, or what the folio holds -
            so they have no cards here. An investor on a folio is not checked again,
            so has no section. *@
-        @if (M.PanChecksShown(Model.Investor))
+        @if (Model.PanChecksShown(Model.Investor))
         {
             <section class="cud-read">
                 <h2 class="cud-read__title">What the PAN was checked with</h2>
@@ -413,7 +413,10 @@
                     @{ await FieldError("cudPayMode"); }
                 </div>
                 <div class="cud-pay__slot">@{ await Choices("payMode", new[] { "" }.Concat(Model.PaymentModes.Select(m => m.Name)).Select(m => (m, m == s.PayMode)), PaymentAs); }</div>
-                <div class="cud-pay__card">
+                @* The account read off the instrument: only for a mode that carries one,
+                   shown or hidden with the mode as it is chosen. *@
+                @{ var instrumentModes = string.Join("|", Model.PaymentModes.Where(m => m.Document is not null).Select(m => m.Name)); }
+                <div class="cud-pay__card" data-show-when="payMode=@instrumentModes" hidden="@(!Model.View(M.PaymentSlot).Used || s.PayMode.Length == 0)">
                     <partial name="_ReadCard" model="@(new ReadCardBlock(Model.PaymentRead()))" />
                 </div>
             </div>
