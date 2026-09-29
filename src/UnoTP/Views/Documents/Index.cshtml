@@ -183,7 +183,9 @@
                 </div>
             </div>
             @* Post going anywhere but the permanent address is proved with a copy of
-               its own, in the box beside the proof of address below. Only where a
+               its own, in the box beside the proof of address below - or, while that
+               upload is switched off (CommProofUpload), typed on Investor Information,
+               which the note beside the choice says. Only where a
                proof of address is asked for - a folio that holds the address has it
                as the mailing address too - and not once CKYC is fetched, whose
                record brings it. *@
@@ -199,6 +201,10 @@
                         </label>
                     }
                 </div>
+                @if (!Model.CommProofUpload)
+                {
+                    <span class="cud-apptype__note" data-show-when="mailing=different" hidden="@(!Model.MailDifferentOf(Model.Investor))">Typed on Investor Information</span>
+                }
             </div>
         </div>
 
@@ -327,6 +333,9 @@
                 @{ await Slot(views["poa"]); }
             </div>
 
+            @* The communication address proof, only while its upload is switched on. *@
+            @if (Model.CommProofUpload)
+            {
             <div class="cud-col">
                 <div class="cud-col__head">
                 @if (Model.AutoProofType)
@@ -360,6 +369,7 @@
                     await Slot(views["mail"]);
                 }
             </div>
+            }
 
             @* An Aadhaar filed whose number OCR could not read: the number typed for
                the PAN-Aadhaar link, across the row under the proofs of address. *@

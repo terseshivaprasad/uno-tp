@@ -43,8 +43,10 @@ public sealed class ReviewViewModel(DocumentsViewModel docs, DepositQuote? quote
     [
         .. Docs.JointHolders.Prepend(Docs.Investor).Select(h => new ReviewHolder(
             h, DetailsOf(h), Docs.ReadsOf(h)[0].Card, Docs.PoaTypeOf(h),
-            Docs.MailDifferentOf(h) ? Docs.MailReadOf(h).Lines : "Same as permanent",
-            Docs.MailDifferentOf(h) ? Docs.MailReadOf(h).State : "")),
+            Docs.MailTyped(h) ? (Docs.TypedMailOf(h) is { } typed ? DocumentsViewModel.Lines(typed) : "Not typed yet")
+                : Docs.MailDifferentOf(h) ? Docs.MailReadOf(h).Lines : "Same as permanent",
+            Docs.MailTyped(h) ? (Docs.TypedMailOf(h) is null ? "" : "Typed")
+                : Docs.MailDifferentOf(h) ? Docs.MailReadOf(h).State : "")),
     ];
 
     /// <summary>Every document each holder files, and the payment's and the staff proof's.</summary>
@@ -58,6 +60,8 @@ public sealed class ReviewViewModel(DocumentsViewModel docs, DepositQuote? quote
                 var who = h.Joint ? $"holder {int.Parse(h.Code)}" : "investor";
                 foreach (var def in DocumentsViewModel.HolderSlots)
                 {
+                    // No proof of a communication address while its upload is off.
+                    if (def.Key == DocumentsViewModel.MailSlot.Key && !Docs.CommProofUpload) continue;
                     var v = Docs.View(def, h);
                     list.Add(new ReviewDocument($"{Cap(def.Key == "poa" ? "proof of address" : def.Label)} · {who}",
                         !v.Used ? v.NotApplicable ?? "" : v.Doc is { } d ? (d.Check.Length > 0 ? d.Check : "Filed") : "Not filed yet",
@@ -88,6 +92,7 @@ public sealed class ReviewViewModel(DocumentsViewModel docs, DepositQuote? quote
                 if (h.Details.Mobile.Length == 0) list.Add(("Investor Information", $"the mobile number of {who}"));
                 if (h.Details.Email.Length == 0) list.Add(("Investor Information", $"the e-mail of {who}"));
                 if (h.Details.ParentName.Length == 0) list.Add(("Investor Information", $"the father, mother or spouse name of {who}"));
+                if (Docs.MailTyped(h.Holder) && Docs.TypedMailOf(h.Holder) is null) list.Add(("Investor Information", $"the communication address of {who}"));
             }
             if (Payment is null) list.Add(("Bank Details & Payment", "the payment and repayment accounts"));
             if (Deposit is null || Deposit.Amount == 0) list.Add(("FD Configuration", "the deposit"));

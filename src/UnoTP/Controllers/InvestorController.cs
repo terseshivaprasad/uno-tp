@@ -27,6 +27,7 @@ namespace UnoTP.Controllers;
 public class InvestorController(
     HolderSearch search,
     IApplicationApi applications,
+    IPlaceApi places,
     IServiceProvider services) : Controller
 {
     private const string AlreadyOn = "This PAN is already on the application";
@@ -62,6 +63,7 @@ public class InvestorController(
             Unfinished = TempData["unfinished"] as int?,
             Errors = TempData["errors"] is string errors ? JsonSerializer.Deserialize<Dictionary<string, string>>(errors)! : new Dictionary<string, string>(),
             Focus = docs.Shown?.Focus ?? TempData["focus"] as string,
+            Places = await PlacesAsync(state),
         };
 
         // Each joint holder checked from what the session holds. A PAN already on the
@@ -108,7 +110,7 @@ public class InvestorController(
         // saying whether they are, or are related to, a politically exposed person.
         // Everything missing is marked at once, and the first takes the caret.
         var holders = docs.JointHolders.Select(h => (int.Parse(h.Code), h)).Prepend((1, docs.Investor));
-        if (InvestorViewModel.Unfilled(state, holders, docs.Config.MinAge) is [var first, ..] unfilled)
+        if (InvestorViewModel.Unfilled(state, holders, docs.Config.MinAge, docs.MailTyped, await PlacesAsync(state)) is [var first, ..] unfilled)
         {
             TempData["errors"] = JsonSerializer.Serialize(unfilled.ToDictionary(u => u.Field, u => u.Error));
             return Back(first.Id);
@@ -120,6 +122,26 @@ public class InvestorController(
         return docs.Said is null
             ? RedirectToAction(nameof(PaymentController.Index), "Payment")
             : Back(at);
+    }
+
+    /// <summary>
+    /// The district and state of a PIN code typed for a communication address, asked
+    /// by the page once all six digits are in: 404 for a PIN code with no place.
+    /// </summary>
+    [HttpGet("pincode/{pin}")]
+    public async Task<IActionResult> PinCode(string pin)
+    {
+        if (!InvestorViewModel.IsPin(pin)) return NotFound();
+        return await places.PinCodeAsync(pin) is { } place ? Json(new { place.District, place.State }) : NotFound();
+    }
+
+    // Every PIN code the page holds, placed; one with no place is left out.
+    private async Task<IReadOnlyDictionary<string, PinPlace>> PlacesAsync(InvestorInfoState state)
+    {
+        var found = new Dictionary<string, PinPlace>();
+        foreach (var pin in InvestorViewModel.PinCodes(state))
+            if (await places.PinCodeAsync(pin) is { } place) found[pin] = place;
+        return found;
     }
 
     /// <summary>Clear All: the page as it opened, and no joint holder left on the application.</summary>
@@ -277,7 +299,7 @@ public class InvestorController(
         if (now != kept) await applications.SavePageAsync(appNo, Page, now);
 
         if (!HttpMethods.IsPost(Request.Method)) return;
-        var details = InvestorDetailsForm.ToDetails(State);
+        var details = InvestorDetailsForm.ToDetails(State, await PlacesAsync(State));
         for (var tries = 0; tries < 2; tries++)
         {
             if (await applications.FindAsync(appNo) is not { } app) return;

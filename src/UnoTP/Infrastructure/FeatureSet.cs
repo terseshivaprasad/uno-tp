@@ -32,6 +32,7 @@ public sealed class FeatureSet(FeatureFlags flags, IReadOnlyList<string>? overri
             ["admin"] = (f, on) => f.Admin = on,
             ["demo"] = (f, on) => f.DemoData = on,
             ["doc-identify"] = (f, on) => f.DocIdentification = on,
+            ["comm-proof"] = (f, on) => f.CommProofUpload = on,
         };
 
     public FeatureFlags Flags { get; } = flags;

@@ -21,6 +21,7 @@ public static class CachedBackend
     {
         services.Decorate<ISourcingApi>((inner, sp) => new CachedSourcingApi(inner, Cache(sp), Minutes(sp)));
         services.Decorate<IDepositApi>((inner, sp) => new CachedDepositApi(inner, Cache(sp)));
+        services.Decorate<IPlaceApi>((inner, sp) => new CachedPlaceApi(inner, Cache(sp)));
         services.Decorate<IConsoleApi>((inner, sp) => new CachedConsoleApi(inner, Cache(sp)));
         services.Decorate<IDemoApi>((inner, sp) => new CachedDemoApi(inner, Cache(sp), Minutes(sp)));
         services.Decorate<IPartnerApi>((inner, sp) => new CachedPartnerApi(inner, Cache(sp), sp.GetRequiredService<IPartner>()));
@@ -93,6 +94,13 @@ internal sealed class CachedDepositApi(IDepositApi inner, IMemoryCache cache) : 
             cache.Set(key, found, new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5), Size = 1 });
         return found;
     }
+}
+
+/// <summary>Where a PIN code is: a place found is kept a day, and a PIN not found is never kept.</summary>
+internal sealed class CachedPlaceApi(IPlaceApi inner, IMemoryCache cache) : IPlaceApi
+{
+    public Task<PinPlace?> PinCodeAsync(string pin, CancellationToken ct = default) =>
+        cache.KeptAsync(("backend:pin", pin.Trim()), TimeSpan.FromDays(1), () => inner.PinCodeAsync(pin, ct));
 }
 
 /// <summary>

@@ -27,8 +27,15 @@ public static class InvestorDetailsForm
 {
     private const string Yes = "on";
 
-    /// <summary>What the form last posted, as the backend saves it.</summary>
-    public static ApplicationDetails ToDetails(InvestorInfoState state)
+    /// <summary>The fields a typed communication address posts as, after "Holder{n}.".</summary>
+    public const string Comm = "Comm.";
+
+    /// <summary>
+    /// What the form last posted, as the backend saves it. A communication address
+    /// typed carries the district and state <paramref name="places"/> gives its PIN
+    /// code - the backend's, never what a browser sent.
+    /// </summary>
+    public static ApplicationDetails ToDetails(InvestorInfoState state, IReadOnlyDictionary<string, PinPlace>? places = null)
     {
         string F(string name) => state.Fields.GetValueOrDefault(name, "").Trim();
         var details = new ApplicationDetails();
@@ -45,7 +52,18 @@ public static class InvestorDetailsForm
                 F(p + "AnnualIncome"), F(p + "Occupation"), F(p + "SubOccupation"), F(p + "MaritalStatus"),
                 F(p + "Mobile"), F(p + "Email").ToUpperInvariant(),
                 F(p + "FatcaTaxResident") is Yes or "true", F(p + "FatcaPermanentResident") is Yes or "true",
-                F(p + "Pep"), F(p + "PepRelated")));
+                F(p + "Pep"), F(p + "PepRelated"),
+                Typed(p + Comm)));
+        }
+        // Only a holder whose address fields were posted - their post goes elsewhere
+        // and nothing proves it - has one typed.
+        TypedAddress? Typed(string c)
+        {
+            if (!state.Fields.ContainsKey(c + "Line1")) return null;
+            var pin = F(c + "PinCode");
+            var place = places?.GetValueOrDefault(pin);
+            return new TypedAddress(F(c + "Line1"), F(c + "Line2"), F(c + "Line3"), F(c + "City"), pin,
+                place?.District ?? "", place?.State ?? "");
         }
         if (state.Nominee)
         {
@@ -74,6 +92,12 @@ public static class InvestorDetailsForm
             if (h.FatcaTaxResident) Set("FatcaTaxResident", Yes);
             if (h.FatcaPermanentResident) Set("FatcaPermanentResident", Yes);
             Set("Pep", h.Pep); Set("PepRelated", h.PepRelated);
+            if (h.Communication is { } c)
+            {
+                state.Fields[p + Comm + "Line1"] = c.Line1;
+                Set(Comm + "Line2", c.Line2); Set(Comm + "Line3", c.Line3);
+                Set(Comm + "City", c.City); Set(Comm + "PinCode", c.PinCode);
+            }
         }
         state.Nominee = details.Nominee is not null;
         if (details.Nominee is { } n)
@@ -204,7 +228,8 @@ public sealed class InvestorViewModel(InvestorInfoState state, DocumentsViewMode
     /// fields and PEP answers, then the nominee's, and a minor nominee's guardian's.
     /// Each comes with the id of the control to bring the partner to.
     /// </summary>
-    public static List<(string Field, string Id, string Error)> Unfilled(InvestorInfoState state, IEnumerable<(int Holder, DocumentsViewModel.DocHolder Who)> holders, int minorUnder)
+    public static List<(string Field, string Id, string Error)> Unfilled(InvestorInfoState state, IEnumerable<(int Holder, DocumentsViewModel.DocHolder Who)> holders, int minorUnder,
+        Func<DocumentsViewModel.DocHolder, bool>? typesMail = null, IReadOnlyDictionary<string, PinPlace>? places = null)
     {
         var found = new List<(string, string, string)>();
         var fields = state.Fields;
@@ -220,6 +245,16 @@ public sealed class InvestorViewModel(InvestorInfoState state, DocumentsViewMode
         {
             foreach (var (field, id, empty) in HolderFields)
             {
+                // The communication address stands between what nothing read and More Information.
+                if (field == "AnnualIncome" && typesMail?.Invoke(who) == true)
+                {
+                    var c = $"Holder{holder}.{InvestorDetailsForm.Comm}";
+                    Need(c + "Line1", $"h{holder}-comm1", "Enter the first line of the address");
+                    Need(c + "City", $"h{holder}-commcity", "Enter the city");
+                    Need(c + "PinCode", $"h{holder}-commpin", "Enter the PIN code", "Enter a 6-digit PIN code", IsPin);
+                    if (IsPin(Of(c + "PinCode")) && places?.ContainsKey(Of(c + "PinCode")) == false)
+                        found.Add((c + "PinCode", $"h{holder}-commpin", "No district is found for this PIN code; check it"));
+                }
                 var name = $"Holder{holder}.{field}";
                 if (field == "Gender" && !fields.ContainsKey(name)) continue;
                 var at = string.Format(id, holder);
@@ -258,4 +293,13 @@ public sealed class InvestorViewModel(InvestorInfoState state, DocumentsViewMode
 
     /// <summary>The part of the page the last post was about.</summary>
     public string? Focus { get; init; }
+
+    /// <summary>The district and state of each PIN code typed on the page, by PIN code.</summary>
+    public IReadOnlyDictionary<string, PinPlace> Places { get; init; } = new Dictionary<string, PinPlace>();
+
+    /// <summary>Every 6-digit PIN code typed for a communication address, to be placed.</summary>
+    public static IEnumerable<string> PinCodes(InvestorInfoState state) =>
+        state.Fields.Where(f => f.Key.EndsWith("." + InvestorDetailsForm.Comm + "PinCode") && IsPin(f.Value.Trim())).Select(f => f.Value.Trim()).Distinct();
+
+    public static bool IsPin(string value) => Regex.IsMatch(value, @"^[1-9]\d{5}$");
 }

@@ -50,6 +50,13 @@ public sealed class FeatureFlags
     public bool DocIdentification { get; set; } = true;
 
     /// <summary>
+    /// A holder whose post goes to an address other than the permanent one uploads a
+    /// proof of it, read and checked like the proof of address. Off for this release:
+    /// the box is hidden, and the address is typed on Investor Information instead.
+    /// </summary>
+    public bool CommProofUpload { get; set; }
+
+    /// <summary>
     /// Whether ?ff= and the unotp.ff cookie may change these switches for a
     /// browser. Off unless configured on, and configured on nowhere: only the
     /// configuration sets what is on, and nothing a request carries can.

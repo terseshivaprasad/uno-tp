@@ -103,6 +103,27 @@ public class DocumentsViewModel(
     /// </summary>
     public bool AutoProofType => features.Flags.DocIdentification;
 
+    /// <summary>
+    /// Whether a communication address other than the permanent one is proved with an
+    /// upload (the CommProofUpload feature, off for this release). Off, the box is not
+    /// shown, and the address is typed on Investor Information.
+    /// </summary>
+    public bool CommProofUpload => features.Flags.CommProofUpload;
+
+    /// <summary>Whether a holder's communication address is typed on Investor Information: it differs, and no proof of it is uploaded.</summary>
+    public bool MailTyped(DocHolder h) => MailDifferentOf(h) && !CommProofUpload;
+
+    /// <summary>The communication address typed for a holder, as last saved; null until one is.</summary>
+    public TypedAddress? TypedMailOf(DocHolder h) =>
+        App.Details?.Holders.FirstOrDefault(d => d.Holder == h.Code)?.Communication is { Line1.Length: > 0 } typed ? typed : null;
+
+    public const string MailTypedWhy = "The communication address is typed on Investor Information, so no proof of it is uploaded.";
+
+    /// <summary>A typed address on lines of its own, as a read card and the review show it.</summary>
+    public static string Lines(TypedAddress a) => string.Join(", ",
+        new[] { a.Line1, a.Line2, a.Line3, a.City, a.District, a.State }.Where(x => x.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase))
+        + (a.PinCode.Length > 0 ? " - " + a.PinCode : "");
+
     /// <summary>The proof of address chosen for a holder.</summary>
     public string PoaTypeOf(DocHolder h) => h.Joint ? State.Joint[h.Code].PoaType : State.PoaType;
 
@@ -501,6 +522,7 @@ public class DocumentsViewModel(
                 : held is not null && h.Who.Address.Length > 0 ? (false, "The address is on the folio, so no proof of it is asked for.")
                 : s.Ckyc && !h.Joint ? (false, CkycWhy) : (true, null),
             "mail" => !MailCanDiffer(h) ? (false, MailWhy(h))
+                : MailTyped(h) ? (false, MailTypedWhy)
                 : MailDifferentOf(h) ? (true, null) : (false, "Post goes to the permanent address, so there is no other address to prove."),
             "payment" => (DocumentOf(s.PayMode) is not null, $"{(s.PayMode.Length > 0 ? s.PayMode : "This mode")} is settled electronically, so there is no instrument to copy."),
             "empproof" => (IsEmployee(s.Category), "Only a deposit booked against a staff record carries an employee proof."),
@@ -583,14 +605,19 @@ public class DocumentsViewModel(
         List<ReadItem> cards =
         [
             ("Permanent address", State.Reads[h.Key("poa")]),
-            ("Communication address", MailDifferentOf(h) ? MailReadOf(h)
+            ("Communication address", MailTyped(h) ? TypedMailOf(h) is { } typed
+                    ? new ReadCard("Typed", Lines(typed), "Typed on Investor Information; the district and state are the PIN code's.")
+                    : NotRead("To be typed", "Different from permanent: typed on Investor Information.",
+                        "No proof of it is uploaded in this release; it is entered with the holder's details.")
+                : MailDifferentOf(h) ? MailReadOf(h)
                 : !MailCanDiffer(h) && h.Who.Folio.Length > 0 && h.Who.Address.Length > 0 ? FolioAddress(h, "post goes there.")
                 : !MailCanDiffer(h) && h.Who.Folio.Length > 0 ? NotRead("Same as permanent", "Post goes to the address on the folio.",
                     "The system holds the address, and it is the mailing address too.")
                 : !MailCanDiffer(h) ? NotRead("From CKYC", "The communication address comes with the CKYC record.",
                     "It is fetched once the investor consents, with the permanent address and the photograph.")
                 : NotRead("Same as permanent", "Post goes to the permanent address, so there is no other address to read.",
-                    "Choose Different from Permanent to file a proof of another address.")),
+                    CommProofUpload ? "Choose Different from Permanent to file a proof of another address."
+                        : "Choose Different from Permanent to type another address on Investor Information.")),
         ];
         if (h.Joint || NsdlApplies(h)) cards.Add(NsdlCard(h));
         // The link is asked with the number an Aadhaar carries. Its card stands once

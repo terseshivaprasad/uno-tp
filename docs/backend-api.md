@@ -54,6 +54,7 @@ their query.
 | `Idfy:TimeoutSeconds` | Default 75. The Idfy.Api guide asks for at least 70. |
 | `Entry:DemoUserId`, `Entry:DemoSysCode` | The user the demo comes in as when the app is opened without the portal's values. Used only while `Features:DemoData` is on; leave empty in production. |
 | `Backend:ReferenceCacheMinutes` | Minutes the lists and rules (`GET reference`, `GET config`) are kept for. Default 10; 0 asks every time. |
+| `Features:CommProofUpload` | Default false (off for this release). On, a holder whose post goes to an address other than the permanent one uploads a proof of it on Upload Documents. Off, that box is hidden and the address is typed on Investor Information (`communication` in `ApplicationDetails`). |
 
 In the environment, use a double underscore, for example `Backend__BaseUrl`.
 
@@ -68,6 +69,7 @@ Nothing that was not found is kept, and no failure is: the next request asks aga
 | `GET reference`, `GET config` (every list and rule) | `Backend:ReferenceCacheMinutes`, default 10 | The same for every partner |
 | `GET sourcing/brokers`, `GET sourcing/staff` | `Backend:ReferenceCacheMinutes` | The same for every partner |
 | `GET ifsc/{code}` | 1 hour | Only a branch that was found; a new IFSC is found at once |
+| `GET pincodes/{pin}` | 1 day | Only a PIN code that was found |
 | `GET ifsc?q=` (the bank search) | 5 minutes, and 1 minute in the browser | Only a search that found something; a new bank is found by the next search |
 | `POST deposits/quote` | 1 minute, never past the day | Keyed by amount, tenure, payout and category - nothing of the investor's |
 | `GET console/schedule` | 30 seconds | Dropped the moment the app adds, ends or removes a window or notice |
@@ -117,6 +119,7 @@ again; a failed answer is not kept.
 | GET | `me` | | `PartnerProfile`: `name`, `code`, `agencyType`, `brokerCode` of the signed-in partner. The `sourcingAgency` in `config` chooses the sourcing mode, broker code and deposit category; any other type sources as a broker under `brokerCode`, with the category set from the holder's date of birth and gender. While `Features:DemoData` is on, `?agency=2001&broker=BR10874` shows the app as another kind of partner for the session. |
 | POST | `deposits/quote` | `{ amount, tenureMonths, payout, category, startsOn? }` | `DepositQuote`: `rate`, `interestEach`, `maturityAmount`, `maturesOn`, `rateAsOn` |
 | GET | `ifsc/{code}` | | `BankBranch`: `ifsc`, `bank`, `branch`, `micr`, or 404 |
+| GET | `pincodes/{pin}` | | `PinPlace`: `pinCode`, `district`, `state` for a 6-digit PIN code, or 404 — shown beside a communication address typed on Investor Information, and saved with it. The page asks once all six digits are typed; nothing is suggested while typing. |
 | GET | `ifsc?q={text}` | | `BankBranch[]`: the branches whose bank name, branch, IFSC or MICR holds every word of the text, best first, at most 20 — the bank search on Bank Details &amp; Payment |
 | GET | `demo/cases` | | `DemoCases`: `dob`, `cases` (`{ pan, dob, folios, shows }`; an empty `dob` is none on record, no `folios` a new investor) and `notes`, for the Test data card on Investor Identification while `Features:DemoData` is on. A live backend answers 404 and the card is not shown. |
 | GET | `demo/banks` | | `DemoBanks`: `branches` (`BankBranch[]`) and `notes`, for the Test data card on Bank Details &amp; Payment while `Features:DemoData` is on. A live backend answers 404 and the card is not shown. |
@@ -181,7 +184,11 @@ again; a failed answer is not kept.
 - **`ApplicationDetails`:** Investor Information: `holders` (one per holder
   type: `holder` 01/02/03, `gender`, `nameType`, `parentName`, `annualIncome`,
   `occupation`, `subOccupation`, `maritalStatus`, `mobile`, `email`,
-  `fatcaTaxResident`, `fatcaPermanentResident`, `pep`, `pepRelated`) and
+  `fatcaTaxResident`, `fatcaPermanentResident`, `pep`, `pepRelated`, and
+  `communication` — the address post goes to, typed, while
+  `Features:CommProofUpload` is off: `line1`-`3`, `city`, `pinCode`, and the
+  `district` and `state` from `GET pincodes/{pin}`; null when post goes to the
+  permanent address) and
   `nominee` (`name`, `dob`, `relation`, `guardianName`, `guardianLine1`-`3`,
   `guardianPinCode`, `guardianCity`) or null.
 - **`PaymentDetails`:** `payment` and `repayment` as `{ ifsc, accountNumber }`,

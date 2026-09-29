@@ -1226,6 +1226,9 @@ html.is-saving::before {
    the mailing question below it. */
 .cud-apptype { display: flex; align-items: center; gap: 14px 36px; flex-wrap: wrap; padding: 18px 0 2px; }
 .cud-apptype__group { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.cud-apptype__note { font-size: 12px; color: var(--muted); }
+/* A typed address's district and state, the PIN code's: shown beside it, never typed. */
+.cii-place { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-content: start; }
 .cud-apptype .csi-label { padding: 0; }
 
 /* The arrow is the page's own, so the control matches the text fields beside it. */

@@ -116,6 +116,7 @@ public sealed class ApplicationDetails
 
 /// <param name="Pep">"yes", "no", or "" unanswered; the same for <paramref name="PepRelated"/>. Asked only of a holder with no folio.</param>
 /// <param name="FatcaTaxResident">A tax resident of another country: such a holder invests offline.</param>
+/// <param name="Communication">Where post goes, typed by hand, when it is not the permanent address and no proof of it is uploaded; null otherwise.</param>
 public sealed record HolderDetails(
     string Holder,
     string Gender = "",
@@ -130,7 +131,18 @@ public sealed record HolderDetails(
     bool FatcaTaxResident = false,
     bool FatcaPermanentResident = false,
     string Pep = "",
-    string PepRelated = "");
+    string PepRelated = "",
+    TypedAddress? Communication = null);
+
+/// <summary>An address typed by hand. The district and state are the backend's for the PIN code, not typed.</summary>
+public sealed record TypedAddress(
+    string Line1 = "",
+    string Line2 = "",
+    string Line3 = "",
+    string City = "",
+    string PinCode = "",
+    string District = "",
+    string State = "");
 
 /// <param name="Dob">dd-MM-yyyy. A guardian is named for a nominee under the minimum age.</param>
 public sealed record NomineeDetails(
