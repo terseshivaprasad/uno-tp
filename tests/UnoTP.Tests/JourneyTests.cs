@@ -159,6 +159,9 @@ public class JourneyTests(App app)
         Assert.Contains("4 deposits against PAN XXXXA1001A", page);
         foreach (var status in new[] { "Due for renewal", "Running", "Entry closed" }) Assert.Contains($">{status}<", page);
         Assert.Equal(2, Regex.Matches(page, ">Renew</button>").Count);
+        // The row's form posts to the deposit's own Start, with the token: a form that posts nowhere looks like a dead button.
+        Assert.Matches("<form method=\"post\" action=\"/unotp/renew/FD2023001234/start[?][^\"]*\"[^>]*>\\s*<button", page);
+        Assert.Contains("__RequestVerificationToken", Regex.Match(page, "<form method=\"post\" action=\"/unotp/renew/FD2023001234/start.*?</form>", RegexOptions.Singleline).Value);
         Assert.Contains("Renewal entry opens 61 days before maturity", page);
         Assert.Contains("Renewal entry closed 7 days before maturity", page);
         Assert.Contains("tagged for auto renewal", page);

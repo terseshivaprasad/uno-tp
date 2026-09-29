@@ -178,7 +178,7 @@
                                 <td data-label="" class="su-table__act">
                                     @if (d.Renewable)
                                     {
-                                        <form method="post" asp-action="Start" asp-route-number="@d.Number" asp-all-route-data="asked">
+                                        <form method="post" action="@Url.Action("Start", "Renew", asked.Concat([KeyValuePair.Create("number", d.Number)]).ToDictionary())" asp-antiforgery="true">
                                             <button type="submit" class="csi-btn csi-btn--primary" data-loader="Opening the renewal&hellip;">Renew</button>
                                         </form>
                                     }
