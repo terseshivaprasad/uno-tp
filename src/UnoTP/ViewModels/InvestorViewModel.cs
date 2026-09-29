@@ -245,8 +245,8 @@ public sealed class InvestorViewModel(InvestorInfoState state, DocumentsViewMode
         {
             foreach (var (field, id, empty) in HolderFields)
             {
-                // The communication address stands between what nothing read and More Information.
-                if (field == "AnnualIncome" && typesMail?.Invoke(who) == true)
+                // The communication address stands first, straight under the holder's record.
+                if (field == HolderFields[0].Field && typesMail?.Invoke(who) == true)
                 {
                     var c = $"Holder{holder}.{InvestorDetailsForm.Comm}";
                     Need(c + "Line1", $"h{holder}-comm1", "Enter the first line of the address");

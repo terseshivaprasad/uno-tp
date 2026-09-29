@@ -1,10 +1,26 @@
 @model ReadCardsBlock
-@* What copies were read to say, and who confirmed it: a card per thing read, all
-   of one size. Where NSDL holds a PAN against another name, the name printed on
-   the card is asked for by _NsdlRetry, under the PAN's own row of documents. *@
-<div class="cud-read__cards">
+@* What the PAN was checked with: a slim row per check - what it is, where it
+   stands, what it matched - with the explanation behind the info mark at the end.
+   Only a failure keeps its explanation written out, under its row, since it says
+   what is wrong and what follows. Where NSDL holds a PAN against another name, the
+   name printed on the card is asked for by _NsdlRetry, under the PAN's own box. *@
+<ul class="cud-checks">
     @foreach (var item in Model.Items)
     {
-        <partial name="_ReadCard" model="@(new ReadCardBlock(item))" />
+        var card = item.Card;
+        var explainInline = card.Kind == "is-failed" && card.From.Length > 0;
+        <li class="cud-check @card.Kind" id="@(item.Id is null ? null : "read-" + item.Id)" tabindex="@(item.Id is null ? null : "-1")">
+            <span class="cud-check__kind">@item.Kind</span>
+            <span class="cud-check__state"><span class="cud-check__dot" aria-hidden="true"></span>@card.State</span>
+            <span class="cud-check__lines" title="@card.Lines">@card.Lines</span>
+            @if (!explainInline && card.From.Length > 0)
+            {
+                <span class="tip tip--info tip--mark cud-check__tip" tabindex="0" data-tip="@card.From"><span class="visually-hidden">@card.From</span></span>
+            }
+            @if (explainInline)
+            {
+                <p class="cud-check__from">@card.From</p>
+            }
+        </li>
     }
-</div>
+</ul>

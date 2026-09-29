@@ -199,11 +199,15 @@
             }
         </div>
 
-        @* The addresses are in the panel below, so only the PAN's checks stand here. *@
-        <section class="cud-read">
-            <h2 class="cud-read__title">What the PAN was checked with</h2>
-            <partial name="_ReadCards" model="@panReads" />
-        </section>
+        @* The addresses are in the panel below, so only the PAN's checks stand here -
+           and only for a holder with no folio: one on a folio is not checked again. *@
+        if (DocumentsViewModel.PanChecksShown(h))
+        {
+            <section class="cud-read">
+                <h2 class="cud-read__title">What the PAN was checked with</h2>
+                <partial name="_ReadCards" model="@panReads" />
+            </section>
+        }
     }
 
     // A joint holder's card, laid out as the investor's: until they are added,
@@ -255,8 +259,8 @@
             {
                 await JointRecord(holder, h, search.Record);
                 await Documents(holder, h);
-                await ManualEntry(holder, search.Record?.Gender ?? "");
                 await CommAddress(holder, h);
+                await ManualEntry(holder, search.Record?.Gender ?? "");
                 await MoreInformation(holder, lists);
                 await Pep(holder, h);
             }
@@ -301,14 +305,16 @@
     }
 
     // A holder's addresses, as their folio and their documents give them: the lower
-    // part of the holder's read-only panel, under the record.
+    // part of the holder's read-only panel, under the record. The permanent address
+    // and its proof, then - apart - where post goes: the same, or what its proof was
+    // read to say. One typed by hand has its own box under the panel (CommAddress).
     private async Task Address(DocumentsViewModel.DocHolder h)
     {
         var docs = Model.Docs;
         var poa = docs.ReadsOf(h)[0].Card;
         <div class="inv-panel__part">
             <div class="inv-section-head" style="padding-bottom:10px">
-                <div class="inv-panel__label" style="flex:1;min-width:0">Address &amp; proof of address &middot; from the folio and the @(h.Joint ? "documents below" : "documents on Upload Documents")</div>
+                <div class="inv-panel__label" style="flex:1;min-width:0">Permanent address &amp; proof &middot; from the folio and the @(h.Joint ? "documents below" : "documents on Upload Documents")</div>
                 @if (!h.Joint)
                 {
                     <a class="inv-panel__action" asp-controller="Documents" asp-action="Index">Open documents</a>
@@ -316,26 +322,30 @@
             </div>
             <div class="inv-kv-grid">
                 <div class="inv-kv inv-kv--wide"><div class="inv-kv__k">Permanent address</div><div class="inv-kv__v">@poa.Lines</div></div>
-                <div class="inv-kv"><div class="inv-kv__k">Permanent @Glossary.Term("POA") type</div><div class="inv-kv__v">@(docs.PoaTypeOf(h) is { Length: > 0 } poaType ? poaType : "—")</div></div>
+                <div class="inv-kv"><div class="inv-kv__k">@Glossary.Term("POA") type</div><div class="inv-kv__v">@(docs.PoaTypeOf(h) is { Length: > 0 } poaType ? poaType : "—")</div></div>
                 <div class="inv-kv"><div class="inv-kv__k">@Glossary.Term("POA") reference number</div><div class="inv-kv__v">@(poa.Number.Length > 0 ? poa.Number : "—")</div></div>
                 <div class="inv-kv"><div class="inv-kv__k">@Glossary.Term("POA") expiry date</div><div class="inv-kv__v">@(poa.Expiry.Length > 0 ? Dates.Show(poa.Expiry) : "—")</div></div>
                 <div class="inv-kv"><div class="inv-kv__k">Verification</div><div class="inv-kv__v">@poa.State</div></div>
-                @if (docs.MailTyped(h))
-                {
-                    <div class="inv-kv inv-kv--wide"><div class="inv-kv__k">Communication address</div><div class="inv-kv__v">Different from permanent &middot; typed below</div></div>
-                }
-                else if (docs.MailDifferentOf(h))
-                {
-                    var mail = docs.MailReadOf(h);
-                    <div class="inv-kv inv-kv--wide"><div class="inv-kv__k">Communication address</div><div class="inv-kv__v">@mail.Lines</div></div>
-                    <div class="inv-kv"><div class="inv-kv__k">Communication proof</div><div class="inv-kv__v">@(docs.MailTypeOf(h) is { Length: > 0 } mailType ? mailType : "—") &middot; @mail.State</div></div>
-                }
-                else
-                {
-                    <div class="inv-kv inv-kv--wide"><div class="inv-kv__k">Communication address</div><div class="inv-kv__v">Same as permanent</div></div>
-                }
             </div>
         </div>
+        @if (!docs.MailTyped(h))
+        {
+            <div class="inv-panel__part">
+                <div class="inv-panel__label" style="padding-bottom:10px">Communication address</div>
+                <div class="inv-kv-grid">
+                    @if (docs.MailDifferentOf(h))
+                    {
+                        var mail = docs.MailReadOf(h);
+                        <div class="inv-kv inv-kv--wide"><div class="inv-kv__k">Where post goes</div><div class="inv-kv__v">@mail.Lines</div></div>
+                        <div class="inv-kv"><div class="inv-kv__k">Proof</div><div class="inv-kv__v">@(docs.MailTypeOf(h) is { Length: > 0 } mailType ? mailType : "—") &middot; @mail.State</div></div>
+                    }
+                    else
+                    {
+                        <div class="inv-kv inv-kv--wide"><div class="inv-kv__k">Where post goes</div><div class="inv-kv__v">Same as permanent address</div></div>
+                    }
+                </div>
+            </div>
+        }
         await Task.CompletedTask;
     }
 
@@ -382,9 +392,11 @@
     }
 
     // Where post goes, typed, for a holder whose post goes elsewhere while no proof
-    // of it is uploaded (CommProofUpload off): three lines, the city and the PIN code.
-    // The district and state are the PIN code's, shown, never typed - fetched once all
-    // six digits are in (pin-code.js), and drawn here from what the backend says.
+    // of it is uploaded (CommProofUpload off): a manual-entry box of its own straight
+    // under the read-only panel, apart from the permanent address in it. Three lines,
+    // the city and the PIN code; the district and state are the PIN code's, shown,
+    // never typed - fetched once all six digits are in (pin-code.js), and drawn here
+    // from what the backend says.
     private async Task CommAddress(int holder, DocumentsViewModel.DocHolder h)
     {
         if (!Model.Docs.MailTyped(h)) return;
@@ -394,27 +406,34 @@
         var place = Model.Places.GetValueOrDefault(pin);
         var (district, state) = place is not null ? (place.District, place.State)
             : InvestorViewModel.IsPin(pin) ? ("Not found for this PIN code", "—") : ("—", "—");
-        <h3 class="cii-section" id="@id">Communication Address</h3>
-        <p class="cii-note">Post goes to an address other than the permanent one. Type it as the holder gives it.</p>
-        <div class="cud-grid">
-            @foreach (var (field, suffix, label, required) in new[] { ("Line1", "1", "Address Line 1", "Enter the first line of the address"), ("Line2", "2", "Address Line 2 (Non-mandatory)", null), ("Line3", "3", "Address Line 3 (Non-mandatory)", null), ("City", "city", "City", "Enter the city") })
-            {
-                var name = c + field;
-                <div class="cud-col">
-                    <label class="csi-label" for="@(id)@suffix">@label</label>
-                    <input class="csi-control @Invalid(name)" id="@(id)@suffix" name="@name" value="@Model.Value(name)" maxlength="60" autocomplete="off" data-required="@required" aria-invalid="@(Invalid(name) is not null ? "true" : null)" aria-describedby="@DescribedBy(name, id + suffix)">
-                    @{ await FieldError(name, id + suffix); }
+        <div class="cii-record">
+            <div class="inv-manual" id="@id">
+                <div class="inv-section-head">
+                    <div class="inv-manual__title">Communication address &middot; different from permanent</div>
+                    <span class="inv-manual__badge">Manual entry</span>
                 </div>
-            }
-            <div class="cud-col">
-                <label class="csi-label" for="@(id)pin">PIN Code</label>
-                <input class="csi-control @Invalid(c + "PinCode")" id="@(id)pin" name="@(c)PinCode" value="@pin" inputmode="numeric" maxlength="6" autocomplete="off" data-required="Enter the PIN code" data-check="pin"
-                       data-pin-url="@Url.Action("PinCode", new { pin = "PIN" })" data-placed="@(place is not null ? pin : null)" aria-invalid="@(Invalid(c + "PinCode") is not null ? "true" : null)" aria-describedby="@DescribedBy(c + "PinCode", id + "pin")">
-                @{ await FieldError(c + "PinCode", id + "pin"); }
-            </div>
-            <div class="cud-col cii-place" data-place-for="@(id)pin" aria-live="polite">
-                <div class="inv-kv"><div class="inv-kv__k">District</div><div class="inv-kv__v" data-place="district">@district</div></div>
-                <div class="inv-kv"><div class="inv-kv__k">State</div><div class="inv-kv__v" data-place="state">@state</div></div>
+                <div class="inv-manual__text">Post goes here, not to the permanent address above. Type it as the holder gives it; the district and state come from the PIN code.</div>
+                <div class="inv-grid">
+                    @foreach (var (field, suffix, label, required) in new[] { ("Line1", "1", "Address Line 1", "Enter the first line of the address"), ("Line2", "2", "Address Line 2", null), ("Line3", "3", "Address Line 3", null), ("City", "city", "City", "Enter the city") })
+                    {
+                        var name = c + field;
+                        <div class="inv-field inv-field--sm @(required is null ? "inv-field--optional" : null)">
+                            <label for="@(id)@suffix">@label @if (required is not null) { <span class="required">*</span> } else { <span class="cud-optional">(Non-mandatory)</span> }</label>
+                            <input class="inv-control @(Invalid(name) is not null ? "inv-control--error" : null)" id="@(id)@suffix" name="@name" value="@Model.Value(name)" maxlength="60" autocomplete="off" data-required="@required" aria-invalid="@(Invalid(name) is not null ? "true" : null)" aria-describedby="@DescribedBy(name, id + suffix)">
+                            @{ await FieldError(name, id + suffix); }
+                        </div>
+                    }
+                    <div class="inv-field inv-field--sm">
+                        <label for="@(id)pin">PIN Code <span class="required">*</span></label>
+                        <input class="inv-control @(Invalid(c + "PinCode") is not null ? "inv-control--error" : null)" id="@(id)pin" name="@(c)PinCode" value="@pin" inputmode="numeric" maxlength="6" autocomplete="off" data-required="Enter the PIN code" data-check="pin"
+                               data-pin-url="@Url.Action("PinCode", new { pin = "PIN" })" data-placed="@(place is not null ? pin : null)" aria-invalid="@(Invalid(c + "PinCode") is not null ? "true" : null)" aria-describedby="@DescribedBy(c + "PinCode", id + "pin")">
+                        @{ await FieldError(c + "PinCode", id + "pin"); }
+                    </div>
+                    <div class="cii-place" data-place-for="@(id)pin" aria-live="polite">
+                        <div class="inv-kv"><div class="inv-kv__k">District</div><div class="inv-kv__v" data-place="district">@district</div></div>
+                        <div class="inv-kv"><div class="inv-kv__k">State</div><div class="inv-kv__v" data-place="state">@state</div></div>
+                    </div>
+                </div>
             </div>
         </div>
         await Task.CompletedTask;
@@ -535,8 +554,8 @@
                     </div>
                 </div>
             </div>
-            @{ await ManualEntry(1, investorGender); }
             @{ await CommAddress(1, investor); }
+            @{ await ManualEntry(1, investorGender); }
             @{ await MoreInformation(1, lists); }
             @{ await Pep(1, Model.Docs.Investor); }
         </section>

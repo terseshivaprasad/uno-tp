@@ -177,6 +177,13 @@ public class DocumentsViewModel(
     /// </summary>
     public static bool LinkApplies(DocHolder h) => h.Who.Folio.Length == 0;
 
+    /// <summary>
+    /// Whether "What the PAN was checked with" is shown for a holder: only one with no
+    /// folio yet. A holder on a folio was checked when it opened - NSDL and the
+    /// PAN-Aadhaar link are not asked again - so the section is left off.
+    /// </summary>
+    public static bool PanChecksShown(DocHolder h) => h.Who.Folio.Length == 0;
+
     /// <summary>Whether a holder's post goes to an address other than the permanent one.</summary>
     public bool MailDifferentOf(DocHolder h) =>
         MailCanDiffer(h) && (h.Joint ? State.Joint[h.Code].MailDifferent : State.MailDifferent);

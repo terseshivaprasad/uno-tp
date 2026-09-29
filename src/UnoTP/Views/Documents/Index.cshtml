@@ -382,17 +382,21 @@
 
         @* What the PAN was checked with. The addresses stand in the boxes of the
            proofs above - what a proof was read to say, or what the folio holds -
-           so they have no cards here. *@
-        <section class="cud-read">
-            <h2 class="cud-read__title">What the PAN was checked with</h2>
-            <partial name="_ReadCards" model="@panReads" />
-        </section>
+           so they have no cards here. An investor on a folio is not checked again,
+           so has no section. *@
+        @if (M.PanChecksShown(Model.Investor))
+        {
+            <section class="cud-read">
+                <h2 class="cud-read__title">What the PAN was checked with</h2>
+                <partial name="_ReadCards" model="@panReads" />
+            </section>
+        }
 
         @* How the deposit is paid is the application's, not the investor's KYC: the
            mode, the instrument it carries and what that was read to say stand in a
-           row of their own under the KYC documents. *@
-        <section class="cud-read cud-pay" id="cudPayment">
-            <h2 class="cud-read__title">Payment</h2>
+           row of their own under the KYC documents. The mode's label heads it, as a
+           document's label heads its box - no second "Payment" title over it. *@
+        <section class="cud-read cud-pay" id="cudPayment" aria-label="Payment">
             @* The mode above its box, and the card beside the box, level with it. *@
             <div class="cud-pay__grid">
                 <div class="cud-pay__mode">
