@@ -31,17 +31,21 @@
     }
     var problemCount = Model.Problems.Count(p => p.Key != "banner");
 
-    // The line under "Repayment Bank Details".
-    var repaymentNote = "Interest and the maturity amount are paid into this account";
+    // Two separate things the card says: how the deposit is paid, at its head (only
+    // where that is not a cheque, which has its own card), and what the repayment
+    // account is for, right over its fields.
+    string? howPaid = null;
     if (Model.IsRenewal)
     {
-        repaymentNote += $" · the maturing deposit {Model.Docs.Renewal!.DepositNumber} pays for the new one, and its account is filled in below";
+        howPaid = $"The maturing deposit {Model.Docs.Renewal!.DepositNumber} pays for the new one; its repayment account is filled in below.";
     }
     else if (!Model.ByCheque)
     {
         var payMode = Model.PayMode.Length > 0 ? Model.PayMode : "the mode chosen on Upload Documents";
-        repaymentNote += $" · paid by {payMode}";
+        var paidHow = payMode == "Online" ? "online" : $"by {payMode}";
+        howPaid = $"The deposit is paid {paidHow}, through the payment link sent on submit, so there is no payment account to enter here.";
     }
+    var repaymentNote = "Interest and the maturity amount are paid into this account.";
 }
 @* Bank Details & Payment: the account the deposit is paid from, then the account
    interest and the maturity amount are paid into. Only a cheque is drawn on an
@@ -243,7 +247,10 @@
         @* ===== The account interest and the maturity amount go to ===== *@
         <section class="page-card section-card" id="repayment">
             @{ await CardHead("Repayment Bank Details", first: !Model.ByCheque); }
-            <p class="page-note">@repaymentNote</p>
+            @if (howPaid is not null)
+            {
+                <p class="page-note">@howPaid</p>
+            }
 
             @* The accounts used on the folio's earlier deposits, each with Use, which fills the
                repayment fields from it and opens them (the switch above them goes off).
@@ -290,6 +297,7 @@
             @* The repayment account is always drawn, so the toggle shows or hides it at once
                (data-show-when). Hidden, it is disabled and not posted. *@
             <fieldset class="doc-choice" data-show-when="Repayment.SameAsPayment!=true" hidden="@sameAsPayment" disabled="@sameAsPayment">
+                <p class="page-note">@repaymentNote</p>
                 @{ await AccountFields("Repayment", "repay", form.Repayment); }
                 <div class="bank-after">@{ await BranchPanel(Model.RepaymentBranch, form.Repayment.CleanIfsc, "repay-lookup"); }</div>
             </fieldset>
