@@ -614,8 +614,8 @@
     }
 
     // The nominees named on the folio's earlier deposits, each with Use, which fills
-    // the nominee's fields from it: under the question, in the open card and in the
-    // Proceed dialog. Nothing for an investor without a folio.
+    // the nominee's fields from it: under the question and in the open card, not in
+    // the Proceed dialog, which stays a short prompt. Nothing for an investor without a folio.
     private async Task NomineesOnRecordList()
     {
         if (Model.NomineesOnRecord.Count == 0) return;
@@ -870,7 +870,7 @@
                 </header>
                 <div class="doc-ckyc__body">
                     <p><strong>We strongly advise adding a nominee.</strong> With one named, the deposit is paid to them directly; without one, it passes to the legal heirs only after succession is settled.</p>
-                    @{ await NomineesOnRecordList(); }
+                    <p>A nominee can be added now, in a minute, or the application can go on without one.</p>
                 </div>
                 <footer class="doc-ckyc__foot">
                     <button type="button" class="btn btn-outline-primary" data-nominee-skip>Skip</button>
