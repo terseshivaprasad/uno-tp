@@ -74,7 +74,7 @@
     private async Task CardHead(string title, bool first)
     {
         <div class="page-head" data-pin-head="@(first ? "" : null)">
-            <h2 class="page-title">@title</h2>
+            <h1 class="page-title">@title</h1>
             @if (first)
             {
                 <span class="page-app-number">Application No: <strong>@Model.Docs.AppNo</strong>

@@ -3,6 +3,10 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    @* A partner's page: never for a search engine (the X-Robots-Tag header says it too). *@
+    <meta name="robots" content="noindex, nofollow" />
+    @* The Latin face is on every page: fetched before the stylesheet asks for it. *@
+    <link rel="preload" href="~/fonts/georama-latin.woff2" as="font" type="font/woff2" crossorigin asp-append-version="true" />
     <title>@ViewData["Title"] - E-Sarathi | Uno TP</title>
     @* Fonts are served from wwwroot, so nothing on the page reaches outside the app. *@
     @* Shared styles are the layout's: Bootstrap 5.3 (lib/bootstrap) themed to the

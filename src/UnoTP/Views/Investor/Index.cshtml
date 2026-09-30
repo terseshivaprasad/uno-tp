@@ -649,7 +649,7 @@
                 </button>
             </div>
             <div class="page-head" data-pin-head>
-                <h2 class="page-title">Investor Details</h2>
+                <h1 class="page-title">Investor Details</h1>
                 @* Clear All asks first: it takes the joint holders and the nominee off too. *@
                 <button type="submit" form="investorInfoForm" class="link-button link-button--muted investor-clear" formaction="@Url.Action("Clear")" formnovalidate
                         data-confirm="Clear everything typed on this step, and remove the joint holders and the nominee?">Clear All</button>
@@ -818,7 +818,7 @@
                     <p>A nominee can be added now, in a minute, or the application can go on without one.</p>
                 </div>
                 <footer class="doc-ckyc__foot">
-                    <button type="button" class="link-button" data-nominee-skip>Skip</button>
+                    <button type="button" class="btn btn-outline-primary" data-nominee-skip>Skip</button>
                     <button type="submit" form="investorInfoForm" class="btn btn-primary" formaction="@Url.Action("NomineeAdd")" formnovalidate data-loader="Opening the nominee&rsquo;s card&hellip;">Add nominee</button>
                 </footer>
             </div>

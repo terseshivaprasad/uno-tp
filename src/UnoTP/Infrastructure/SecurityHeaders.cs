@@ -7,7 +7,9 @@ namespace UnoTP.Infrastructure;
 /// previewed only from it, forms posted only to it, and the pages framed by no other
 /// site unless Security:FrameAncestors names it (the portal, if it ever frames them).
 /// Inline styles are allowed - a few attributes and the required-documents rules
-/// set them; inline script is not, and the pages have none.
+/// set them; inline script is not, and the pages have none. A page is never kept by
+/// the browser's cache or a proxy (it carries an investor's details) and never
+/// indexed by a search engine; the stylesheets and scripts are cached as usual.
 /// </summary>
 public static class SecurityHeaders
 {
@@ -41,7 +43,20 @@ public static class SecurityHeaders
                 headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
                 headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(), payment=(), usb=()";
                 headers["Cross-Origin-Opener-Policy"] = "same-origin";
+                headers["X-Robots-Tag"] = "noindex, nofollow";
                 headers.Remove("X-Powered-By");
+
+                var isPage = (context.Response.ContentType ?? "").StartsWith("text/html", StringComparison.OrdinalIgnoreCase);
+                if (isPage)
+                {
+                    headers.CacheControl = "no-store";
+                    headers.Pragma = "no-cache";
+                }
+                // Only ever over HTTPS, which the browser then insists on for a year.
+                if (context.Request.IsHttps)
+                {
+                    headers.StrictTransportSecurity = "max-age=31536000; includeSubDomains";
+                }
                 return Task.CompletedTask;
             });
             await next();
