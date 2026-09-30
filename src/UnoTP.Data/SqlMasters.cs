@@ -124,35 +124,88 @@ public sealed class SqlMasters(Db db, SqlReference reference) : IInvestorApi, IS
 
     // ----- The rate card ----------------------------------------------------------------
 
+    private sealed record RateRow(string Category, int TenureMonths, string Scheme, string Payout, decimal Rate,
+        long MinAmount, long? MaxAmount, DateTime EffectiveFrom);
+
     /// <summary>
-    /// The card rate in effect on the day the deposit starts, for its category or,
-    /// failing one of its own, defaultRateCategory's. A cumulative deposit compounds
-    /// compoundingPerYear times a year; one that pays out pays simple interest each period.
+    /// The rate card in effect on the day the deposit starts, for the deposit's category
+    /// (or, failing rows of its own, defaultRateCategory's), the holder's gender and the
+    /// application type: one row per tenure, payout and minimum amount, the latest in
+    /// effect. A row with a blank gender or application type stands for every one.
+    /// Rows come in the order the tenures and payouts are listed.
+    /// </summary>
+    public async Task<IReadOnlyList<RateOption>> RatesAsync(RatesRequest request, CancellationToken ct = default)
+    {
+        var starts = request.StartsOn ?? DateOnly.FromDateTime(DateTime.Today);
+        var fallback = await reference.SettingAsync("defaultRateCategory", ct);
+        var lists = await reference.ReferenceAsync(ct);
+
+        await using var connection = await db.OpenAsync(ct);
+        var rows = await connection.QueryAsync<RateRow>("""
+            SELECT c_Category AS Category, n_Tenure_Months AS TenureMonths, c_Scheme AS Scheme, c_Payout AS Payout, n_Rate AS Rate,
+                   n_Min_Amount AS MinAmount, n_Max_Amount AS MaxAmount, d_Effective_From AS EffectiveFrom
+            FROM dbo.t_Unotp_Rate_Card
+            WHERE c_Category IN (@Category, @Fallback)
+              AND c_Gender IN (@Gender, '')
+              AND c_App_Type IN (@ApplicationType, '')
+              AND f_Active = 1 AND d_Effective_From <= @Starts
+            ORDER BY CASE WHEN c_Category = @Category THEN 0 ELSE 1 END, d_Effective_From DESC
+            """, new { request.Category, Fallback = fallback, request.Gender, request.ApplicationType, Starts = starts.ToDateTime(TimeOnly.MinValue) });
+
+        // The rows come the category's own first and the latest first, so the first
+        // row seen for a tenure, payout and minimum amount is the one that stands.
+        var seen = new HashSet<(int, string, long)>();
+        var lines = new List<RateOption>();
+        foreach (var row in rows)
+        {
+            if (!seen.Add((row.TenureMonths, row.Payout, row.MinAmount))) continue;
+            lines.Add(new RateOption(row.TenureMonths, row.Scheme, row.Payout, row.Rate, row.MinAmount, row.MaxAmount, DateOnly.FromDateTime(row.EffectiveFrom)));
+        }
+
+        // In the order the page lists the tenures and payouts.
+        var ordered = new List<RateOption>();
+        foreach (var tenure in lists.Tenures)
+        {
+            foreach (var payout in lists.Payouts)
+            {
+                foreach (var line in lines)
+                {
+                    if (line.TenureMonths == tenure && line.Payout == payout.Code) ordered.Add(line);
+                }
+            }
+        }
+        return ordered;
+    }
+
+    /// <summary>
+    /// The card rate for the deposit as it stands and what it comes to. A cumulative
+    /// deposit compounds compoundingPerYear times a year (DepositMaths); one that pays
+    /// out pays simple interest each period.
     /// </summary>
     public async Task<DepositQuote> QuoteAsync(QuoteRequest request, CancellationToken ct = default)
     {
         var today = DateOnly.FromDateTime(DateTime.Today);
-        var starts = request.StartsOn ?? today;
-        var fallback = await reference.SettingAsync("defaultRateCategory", ct);
+        var starts = request.Card.StartsOn ?? today;
         var compounding = await reference.NumberAsync("compoundingPerYear", ct);
         var payout = (await reference.ReferenceAsync(ct)).Payouts.FirstOrDefault(p => p.Code == request.Payout)
             ?? throw new ArgumentException($"No payout called {request.Payout}.");
 
-        await using var connection = await db.OpenAsync(ct);
-        var card = await connection.QueryFirstOrDefaultAsync<(decimal Rate, DateTime From)>("""
-            SELECT TOP 1 n_Rate, d_Effective_From FROM dbo.t_Unotp_Rate_Card
-            WHERE c_Category IN (@Category, @Fallback) AND n_Tenure_Months = @Tenure AND f_Active = 1 AND d_Effective_From <= @Starts
-            ORDER BY CASE WHEN c_Category = @Category THEN 0 ELSE 1 END, d_Effective_From DESC
-            """, new { Category = request.Category ?? "", Fallback = fallback, Tenure = request.TenureMonths, Starts = starts.ToDateTime(TimeOnly.MinValue) });
-        if (card.Rate <= 0) throw new ArgumentException($"The rate card has no rate for {request.TenureMonths} months on {starts:dd-MM-yyyy}.");
+        RateOption? line = null;
+        foreach (var option in await RatesAsync(request.Card with { StartsOn = starts }, ct))
+        {
+            if (option.TenureMonths != request.TenureMonths) continue;
+            if (option.Payout != request.Payout) continue;
+            if (!option.Offers(request.Amount)) continue;
+            line = option;
+            break;
+        }
+        if (line is null) throw new ArgumentException($"The rate card offers no {payout.Name} payout for {request.TenureMonths} months on a deposit of {request.Amount} on {starts:dd-MM-yyyy}.");
 
         decimal amount = request.Amount;
-        var maturity = payout.PerYear == 0
-            ? Math.Round(amount * (decimal)Math.Pow(1 + (double)card.Rate / 100 / compounding, request.TenureMonths * compounding / 12.0), 0, MidpointRounding.AwayFromZero)
-            : amount;
-        // Half a rupee rounds up, as the page always rounded it.
-        var each = payout.PerYear == 0 ? 0 : Math.Round(amount * card.Rate / 100 / payout.PerYear, 0, MidpointRounding.AwayFromZero);
-        return new DepositQuote(card.Rate, each, maturity, starts.AddMonths(request.TenureMonths), DateOnly.FromDateTime(card.From));
+        var maturity = amount;
+        if (payout.PerYear == 0) maturity = DepositMaths.MaturityAmount(amount, line.Rate, request.TenureMonths, compounding);
+        var each = DepositMaths.InterestEach(amount, line.Rate, payout.PerYear);
+        return new DepositQuote(line.Rate, each, maturity, starts.AddMonths(request.TenureMonths), line.AsOn);
     }
 
     // ----- Searching ---------------------------------------------------------------------

@@ -83,8 +83,13 @@
   opacity: 0;
   pointer-events: none;
 }
+/* Fills its row and centres its text, so a face with a limit line under it and
+   one without stand the same height side by side */
 .deposit-option__face {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 100%;
   padding: 12px 8px;
   border-radius: 6px;
   border: 1px solid var(--border-3);
@@ -107,6 +112,26 @@
 .deposit-option input:focus-visible + .deposit-option__face {
   outline: 2px solid var(--ink);
   outline-offset: 2px;
+}
+
+/* A choice the rate card does not offer at the amount: shut, with the limit under it */
+.deposit-option--off {
+  cursor: not-allowed;
+}
+.deposit-option--off .deposit-option__face {
+  color: var(--muted);
+  background: var(--tint);
+  border-style: dashed;
+}
+.deposit-option--off:hover .deposit-option__face {
+  border-color: var(--border-3);
+}
+.deposit-option__why {
+  display: block;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 16px;
+  color: var(--muted);
 }
 .deposit-section {
   border-top: 1px solid var(--divider);

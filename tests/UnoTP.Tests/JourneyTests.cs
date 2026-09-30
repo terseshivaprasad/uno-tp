@@ -270,6 +270,34 @@ public class JourneyTests(App app)
     }
 
     [Fact]
+    public async Task FD_Configuration_quotes_the_card_rate_before_an_amount_and_shuts_a_payout_under_its_minimum()
+    {
+        var client = await app.SignedInAsync();
+        var at = await App.NewApplicationAsync(client, NewInvestor);
+        var deposit = App.Step(at, "deposit");
+
+        // Before an amount is typed the rate is quoted at the standing ₹50,000, where every payout is open.
+        var opened = await client.GetStringAsync(deposit);
+        Assert.Contains("6.60%", opened);
+        Assert.Contains("of ₹ 50,000 as on", System.Net.WebUtility.HtmlDecode(opened));
+        Assert.DoesNotContain("deposit-option--off", opened);
+
+        // At ₹10,000 a monthly payout is under the chart's ₹50,000 minimum: shut, with the limit on it.
+        var quoted = await App.PostAsync(client, deposit, deposit + "/quote",
+            ("Amount", "10,000"), ("TenureMonths", "12"), ("InterestPayout", "monthly"), ("DeliveryType", "ereceipt"));
+        var panel = System.Net.WebUtility.HtmlDecode(await quoted.Content.ReadAsStringAsync());
+        Assert.Contains("data-offer=\"InterestPayout\" data-value=\"monthly\" data-why=\"from ₹ 50,000\"", panel);
+        Assert.Contains("data-offer=\"InterestPayout\" data-value=\"maturity\" data-why=\"\"", panel);
+        Assert.Contains("A monthly payout is from ₹ 50,000", panel);
+
+        // Proceed with that choice is refused for the same reason.
+        var refused = await App.PostAsync(client, deposit, deposit,
+            ("Amount", "10,000"), ("TenureMonths", "12"), ("InterestPayout", "monthly"), ("DeliveryType", "ereceipt"));
+        Assert.StartsWith("/FDConfiguration/", refused.RequestMessage!.RequestUri!.AbsolutePath);
+        Assert.Contains("A monthly payout is from ₹ 50,000", System.Net.WebUtility.HtmlDecode(await refused.Content.ReadAsStringAsync()));
+    }
+
+    [Fact]
     public async Task No_TDS_needs_Form_121_filed_on_FD_Configuration_before_Proceed()
     {
         var client = await app.SignedInAsync();

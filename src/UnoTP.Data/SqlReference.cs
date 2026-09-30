@@ -49,7 +49,8 @@ public sealed class SqlReference(Db db, IMemoryCache cache) : IReferenceApi
             Long("minAmount"), Long("maxAmount"), Long("amountStep"), ReadInt("cancellationDays"), ReadInt("draftDays"),
             s.Where(p => p.Key.StartsWith(hours, StringComparison.OrdinalIgnoreCase))
                 .ToDictionary(p => p.Key[hours.Length..], p => int.Parse(p.Value, CultureInfo.InvariantCulture)),
-            ReadInt("renewFromDays"), ReadInt("renewUntilDays"), ReadInt("renewUntilDaysAutoRenewal"), ReadInt("closeToCancelDays"));
+            ReadInt("renewFromDays"), ReadInt("renewUntilDays"), ReadInt("renewUntilDaysAutoRenewal"), ReadInt("closeToCancelDays"),
+            QuoteAmount: Long("quoteAmount"));
     }
 
     // ----- Reference lists -----------------------------------------------------------

@@ -106,6 +106,7 @@ public sealed record FeatureOption(string Code, string Name, string Group, strin
 /// <param name="RenewFromDays">A renewal can be entered from this many days before the deposit matures...</param>
 /// <param name="RenewUntilDays">...until this many days before maturity; nearer, it is Operations'.</param>
 /// <param name="RenewUntilDaysAutoRenewal">The same, for a deposit tagged for auto renewal.</param>
+/// <param name="QuoteAmount">The amount FD Configuration quotes the rate at before one is entered.</param>
 public sealed record AppConfig(
     string SourcingAgency,
     int MinAge,
@@ -121,7 +122,8 @@ public sealed record AppConfig(
     int RenewFromDays = 61,
     int RenewUntilDays = 7,
     int RenewUntilDaysAutoRenewal = 10,
-    int CloseToCancelDays = 3);
+    int CloseToCancelDays = 3,
+    long QuoteAmount = 50_000);
 
 /// <summary>Who the app is being used by: GET me, from the signed-in partner.</summary>
 public interface IPartnerApi
@@ -134,9 +136,17 @@ public interface IPartnerApi
 /// application is sourced; any other type sources as a broker under <paramref name="BrokerCode"/>.</param>
 public sealed record PartnerProfile(string Name, string Code, string AgencyType, string BrokerCode);
 
-/// <summary>What the backend works out for a deposit: the rate and what it comes to, and a bank branch by IFSC.</summary>
+/// <summary>What the backend works out for a deposit: the rate table, the rate and what it comes to, and a bank branch by IFSC.</summary>
 public interface IDepositApi
 {
+    /// <summary>
+    /// GET deposits/rates: the rate card for a category, gender and application type -
+    /// every tenure, scheme and payout frequency it offers, the rate of each, and the
+    /// amounts it is offered for. FD Configuration draws its choices from this, at the
+    /// amount entered (the standing <see cref="AppConfig.QuoteAmount"/> before one is).
+    /// </summary>
+    Task<IReadOnlyList<RateOption>> RatesAsync(RatesRequest request, CancellationToken ct = default);
+
     /// <summary>POST deposits/quote: the card rate and the returns for a deposit as it stands.</summary>
     Task<DepositQuote> QuoteAsync(QuoteRequest request, CancellationToken ct = default);
 
@@ -147,10 +157,50 @@ public interface IDepositApi
     Task<IReadOnlyList<BankBranch>> SearchBranchesAsync(string query, CancellationToken ct = default);
 }
 
-/// <param name="Payout">A <see cref="PayoutOption.Code"/>.</param>
-/// <param name="Category">A <see cref="CategoryOption.Code"/>.</param>
+/// <summary>Whose rate card: the deposit's category, the holder's gender and what the application is for.</summary>
+/// <param name="Category">A <see cref="CategoryOption.Code"/>: from the holder's date of birth and gender, or the sourcing agency's choice.</param>
+/// <param name="Gender">"M" or "F"; "M" when the holder's is not known.</param>
+/// <param name="ApplicationType"><see cref="RateCard.Purchase"/> or <see cref="RateCard.Renew"/>.</param>
 /// <param name="StartsOn">The day the deposit is taken to start; the backend's today when null.</param>
-public sealed record QuoteRequest(long Amount, int TenureMonths, string Payout, string Category, DateOnly? StartsOn = null);
+public sealed record RatesRequest(string Category, string Gender, string ApplicationType, DateOnly? StartsOn = null);
+
+/// <summary>The words the rate card is keyed by.</summary>
+public static class RateCard
+{
+    /// <summary>A new deposit.</summary>
+    public const string Purchase = "PURCHASE";
+
+    /// <summary>A maturing deposit renewed.</summary>
+    public const string Renew = "RENEW";
+
+    /// <summary>Interest paid with the principal at maturity.</summary>
+    public const string Cumulative = "CUMULATIVE";
+
+    /// <summary>Interest paid out through the tenure.</summary>
+    public const string NonCumulative = "NON-CUMULATIVE";
+}
+
+/// <summary>One row of the rate card: a tenure, scheme and payout frequency, the rate, and the amounts it is offered for.</summary>
+/// <param name="Scheme"><see cref="RateCard.Cumulative"/> or <see cref="RateCard.NonCumulative"/>.</param>
+/// <param name="Payout">A <see cref="PayoutOption.Code"/>: the frequency.</param>
+/// <param name="Rate">% a year.</param>
+/// <param name="MinAmount">The smallest deposit the row is offered for, in rupees.</param>
+/// <param name="MaxAmount">The largest, or null for no ceiling.</param>
+/// <param name="AsOn">The day the rate took effect.</param>
+public sealed record RateOption(int TenureMonths, string Scheme, string Payout, decimal Rate, long MinAmount, long? MaxAmount, DateOnly AsOn)
+{
+    /// <summary>Whether the row is offered for a deposit of this amount.</summary>
+    public bool Offers(long amount)
+    {
+        if (amount < MinAmount) return false;
+        if (MaxAmount is not null && amount > MaxAmount) return false;
+        return true;
+    }
+}
+
+/// <param name="Payout">A <see cref="PayoutOption.Code"/>.</param>
+/// <param name="Card">Whose rate card the deposit is quoted from.</param>
+public sealed record QuoteRequest(long Amount, int TenureMonths, string Payout, RatesRequest Card);
 
 /// <param name="Rate">The card rate, % a year, locked when the application is submitted.</param>
 /// <param name="InterestEach">What each payout pays, for a non-cumulative deposit; 0 for a cumulative one.</param>

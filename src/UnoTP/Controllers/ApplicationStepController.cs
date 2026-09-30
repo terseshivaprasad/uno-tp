@@ -35,11 +35,30 @@ public abstract class ApplicationStepController(IApplicationApi applications, ID
         (payment.Length == 11 ? await deposits.BranchAsync(payment) : null,
          repayment.Length == 11 ? await deposits.BranchAsync(repayment) : null);
 
-    // What the backend quotes for a deposit that has an amount (kept a minute: CachedBackend).
-    protected async Task<DepositQuote?> QuoteAsync(DocumentsViewModel docs, DepositDetails? deposit) =>
-        deposit is { Amount: > 0 } d && docs.Ref.Tenures.Contains(d.TenureMonths) && docs.Ref.Payouts.Any(p => p.Code == d.Payout)
-            ? await deposits.QuoteAsync(new QuoteRequest(d.Amount, d.TenureMonths, d.Payout, docs.State.Category))
-            : null;
+    /// <summary>
+    /// The rate card as FD Configuration offers it: at the amount given, or at the
+    /// standing quoteAmount before one is entered. Whose card - the category, the
+    /// holder's gender, purchase or renewal - the application says.
+    /// </summary>
+    protected async Task<RateTable> RateTableAsync(DocumentsViewModel docs, long amount)
+    {
+        if (amount <= 0) amount = docs.Config.QuoteAmount;
+        var card = await deposits.RatesAsync(docs.App.RateCardRequest());
+        return new RateTable(card, docs.Ref, amount);
+    }
+
+    /// <summary>
+    /// What the backend quotes for a deposit with an amount the card offers its tenure
+    /// and payout at; null before then (kept a minute: CachedBackend).
+    /// </summary>
+    protected async Task<DepositQuote?> QuoteAsync(DocumentsViewModel docs, DepositDetails? deposit)
+    {
+        if (deposit is null) return null;
+        if (deposit.Amount <= 0) return null;
+        var rates = await RateTableAsync(docs, deposit.Amount);
+        if (rates.Row(deposit.TenureMonths, deposit.Payout) is null) return null;
+        return await deposits.QuoteAsync(new QuoteRequest(deposit.Amount, deposit.TenureMonths, deposit.Payout, docs.App.RateCardRequest()));
+    }
 
     // What a post found, said once on the page it redirects to.
     protected Dictionary<string, string> Said() =>

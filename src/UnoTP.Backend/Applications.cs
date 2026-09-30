@@ -110,6 +110,26 @@ public sealed class Application
     /// picked up again opens where it was left. Opaque to the backend.
     /// </summary>
     public Dictionary<string, string> Pages { get; set; } = [];
+
+    /// <summary>
+    /// Whose rate card the deposit is quoted from: the deposit's category (from Upload
+    /// Documents), the holder's gender - the folio's, else an Aadhaar's read on Upload
+    /// Documents, else "M" - and whether this is a purchase or a renewal. A renewal is
+    /// quoted as on its maturity date.
+    /// </summary>
+    public RatesRequest RateCardRequest()
+    {
+        var gender = Holder.Gender;
+        if (gender.Length == 0 && Upload is not null) gender = Upload.Gender;
+
+        var letter = "M";
+        if (gender.StartsWith('F') || gender.StartsWith('f')) letter = "F";
+
+        var applicationType = RateCard.Purchase;
+        if (Renewal is not null) applicationType = RateCard.Renew;
+
+        return new RatesRequest(Upload?.Category ?? "", letter, applicationType, Renewal?.MaturesOn);
+    }
 }
 
 /// <summary>Investor Information, as saved: each holder's details, and the nominee's.</summary>

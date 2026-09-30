@@ -15,13 +15,15 @@ public class DepositController(IApplicationApi applications, IDepositApi deposit
     public async Task<IActionResult> Index()
     {
         if (await LoadAsync() is not { } docs) return Start();
-        var form = DepositForm.From(docs.App.Deposit, docs.Ref);
+        var rates = await RateTableAsync(docs, docs.App.Deposit?.Amount ?? 0);
+        var form = DepositForm.From(docs.App.Deposit, rates);
         var problems = Said();
         // The Form 121 box stands on this page, shown by the switch; what the last
         // upload had to say about it comes with the page.
         docs.TdsFormWanted = true;
         docs.Shown = TempData[FlashKey(docs)] is string said ? JsonSerializer.Deserialize<Flash>(said) : null;
-        return View(new DepositViewModel(docs, form, await QuoteAsync(docs, docs.IsRenewal || form.AmountProblem(docs.Config) is null ? docs.App.Deposit : null), problems));
+        var quote = await QuoteAsync(docs, AmountAccepted(docs, form) ? docs.App.Deposit : null);
+        return View(new DepositViewModel(docs, form, rates, quote, problems));
     }
 
     /// <summary>
@@ -38,7 +40,8 @@ public class DepositController(IApplicationApi applications, IDepositApi deposit
             return Back(nameof(Index), new() { ["banner"] = Changed });
         // Save draft: kept as it stands, checked only on Proceed.
         if (draft is not null) return Back(nameof(Index), new());
-        var problems = form.Problems(docs.Config, docs.Ref, docs.IsRenewal);
+        var rates = await RateTableAsync(docs, form.AmountValue);
+        var problems = form.Problems(docs.Config, rates, docs.IsRenewal);
         // No TDS is a claim the investor signs: the form is filed here before Proceed.
         docs.TdsFormWanted = form.NoTds;
         if (form.NoTds && docs.View(DocumentsViewModel.TdsFormSlot).Doc is null) problems["TdsForm"] = "Upload the Form 121 before proceeding, or turn the switch off";
@@ -91,8 +94,15 @@ public class DepositController(IApplicationApi applications, IDepositApi deposit
     {
         if (await LoadAsync() is not { } docs) return NotFound();
         if (docs.IsRenewal) form.Amount = Money.Group(docs.Renewal!.Amount);
-        var deposit = form.ToDetails();
-        var quote = await QuoteAsync(docs, docs.IsRenewal || form.AmountProblem(docs.Config) is null ? deposit : null);
-        return PartialView("_Quote", new DepositViewModel(docs, form, quote, new Dictionary<string, string>()));
+        var rates = await RateTableAsync(docs, form.AmountValue);
+        var quote = await QuoteAsync(docs, AmountAccepted(docs, form) ? form.ToDetails() : null);
+        return PartialView("_Quote", new DepositViewModel(docs, form, rates, quote, new Dictionary<string, string>()));
+    }
+
+    // The returns are worked out once the amount passes its own checks; a renewal's amount always does.
+    private static bool AmountAccepted(DocumentsViewModel docs, DepositForm form)
+    {
+        if (docs.IsRenewal) return true;
+        return form.AmountProblem(docs.Config) is null;
     }
 }

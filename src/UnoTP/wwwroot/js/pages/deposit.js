@@ -32,6 +32,7 @@
         var panel = document.getElementById('deposit-quote');
         if (panel) panel.innerHTML = html;
         showAmountMessage(sayProblem);
+        showWhatTheCardOffers();
       })
       .catch(function () {
         // No quote this time - the connection dropped: the panel says so, and the
@@ -79,6 +80,36 @@
     input.classList.add('is-invalid');
     input.setAttribute('aria-invalid', 'true');
     input.setAttribute('aria-describedby', 'deposit-amountError');
+  }
+
+  // The answer says which tenures and payouts the rate card offers at the amount
+  // (on the chart a monthly payout needs ₹50,000): each choice is opened or shut
+  // to match, with the limit written on a shut one.
+  function showWhatTheCardOffers() {
+    var offers = document.querySelectorAll('#deposit-quote [data-offer]');
+    for (var i = 0; i < offers.length; i++) {
+      var name = offers[i].getAttribute('data-offer');
+      var value = offers[i].getAttribute('data-value');
+      var why = offers[i].getAttribute('data-why') || '';
+      var input = form.querySelector('input[name="' + name + '"][value="' + value + '"]');
+      if (!input) continue;
+      var option = input.closest('.deposit-option');
+      var face = option ? option.querySelector('.deposit-option__face') : null;
+      var whyLine = face ? face.querySelector('.deposit-option__why') : null;
+      input.disabled = why !== '';
+      if (option) option.classList.toggle('deposit-option--off', why !== '');
+      if (!face) continue;
+      if (why === '') {
+        if (whyLine) whyLine.remove();
+        continue;
+      }
+      if (!whyLine) {
+        whyLine = document.createElement('span');
+        whyLine.className = 'deposit-option__why';
+        face.appendChild(whyLine);
+      }
+      whyLine.textContent = why;
+    }
   }
 
   // Renew for the same tenure: said as the tenure is chosen.

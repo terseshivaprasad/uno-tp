@@ -1,7 +1,10 @@
 @model DepositViewModel
 @* What the backend quotes for the deposit as it stands. Drawn with FD Configuration, and
-   on its own in answer to Quote each time a choice changes (deposit.js). The hidden line
-   at the end carries what the amount field should say under it, for the script. *@
+   on its own in answer to Quote each time a choice changes (deposit.js). The rate comes
+   off the card as soon as the page opens, at the standing amount until one is entered;
+   the returns once the amount is valid. The hidden lines at the end carry, for the
+   script, what the amount field should say under it and which tenures and payouts the
+   card offers at the amount. *@
 @{
     var form = Model.Form;
     var quote = Model.Quote;
@@ -15,9 +18,11 @@
 
     var amountText = form.AmountValue > 0 ? Money.Rupees(form.AmountValue) : "—";
     var payoutName = payout?.Name ?? "—";
-    var schemeText = Model.Cumulative ? "Cumulative" : "Non-cumulative";
+    var schemeText = Model.Scheme;
 
     var rateText = "—";
+    if (Model.Row is not null) rateText = $"{Model.Row.Rate:0.00}%";
+
     var maturityText = "—";
     var maturesOnText = "—";
     if (quote is not null)
@@ -52,13 +57,18 @@
     <div><div class="deposit-key-value__key">Matures on</div><div class="deposit-key-value__value">@maturesOnText</div></div>
 </div>
 <div class="deposit-summary__note">
-    @if (quote is null)
+    @Model.QuoteNote
+    @if (quote is not null)
     {
-        @:The rate and the returns are quoted once a valid amount is entered.
-    }
-    else
-    {
-        @:Rate is the card rate for a @form.TenureMonths-month deposit as on @Money.Day(quote.RateAsOn), and is locked when the application is submitted. @tdsNote
+        @tdsNote
     }
 </div>
 <p hidden data-deposit-amount data-problem="@amountProblem" data-hint="@amountHint"></p>
+@foreach (var tenure in Model.Tenures)
+{
+    <span hidden data-offer="TenureMonths" data-value="@tenure" data-why="@Model.Rates.TenureBlockedReason(tenure)"></span>
+}
+@foreach (var option in Model.Payouts)
+{
+    <span hidden data-offer="InterestPayout" data-value="@option.Code" data-why="@Model.Rates.PayoutBlockedReason(option.Code)"></span>
+}

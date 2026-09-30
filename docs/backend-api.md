@@ -75,7 +75,8 @@ Nothing that was not found is kept, and no failure is: the next request asks aga
 | `GET pincodes/{pin}` | 1 day | Only a PIN code that was found |
 | `GET ifsc?q=` (the bank search) | 5 minutes, and 1 minute in the browser | Only a search that found something; a new bank is found by the next search |
 | `GET sourcing/brokers?q=`, `GET sourcing/staff?q=` | 5 minutes, and 1 minute in the browser | The same: only a search that found something |
-| `POST deposits/quote` | 1 minute, never past the day | Keyed by amount, tenure, payout and category - nothing of the investor's |
+| `GET deposits/rates` | 1 minute, never past the day | Keyed by category, gender, application type and start date - nothing of the investor's |
+| `POST deposits/quote` | 1 minute, never past the day | Keyed by amount, tenure, payout and the same card key - nothing of the investor's |
 | `GET console/schedule` | 30 seconds | Dropped the moment the app adds, ends or removes a window or notice |
 | `GET me` | 5 minutes | Per user and per session; a new session asks again |
 | `GET demo/*` | `Backend:ReferenceCacheMinutes` | |
@@ -121,7 +122,8 @@ again; a failed answer is not kept.
 | GET | `reference` | | `ReferenceData`: every list the pages offer (see below) |
 | GET | `config` | | `AppConfig`: the limits and rules the pages check |
 | GET | `me` | | `PartnerProfile`: `name`, `code`, `agencyType`, `brokerCode` of the signed-in partner. The `sourcingAgency` in `config` chooses the sourcing mode, broker code and deposit category; any other type sources as a broker under `brokerCode`, with the category set from the holder's date of birth and gender. While `Features:DemoData` is on, `?agency=2001&broker=BR10874` shows the app as another kind of partner for the session. |
-| POST | `deposits/quote` | `{ amount, tenureMonths, payout, category, startsOn? }` | `DepositQuote`: `rate`, `interestEach`, `maturityAmount`, `maturesOn`, `rateAsOn` |
+| GET | `deposits/rates` | `{ category, gender, applicationType, startsOn? }` - `gender` M or F (M when not known), `applicationType` PURCHASE or RENEW | The rate card for that key, one `RateOption` per line: `tenureMonths`, `scheme` (CUMULATIVE or NON-CUMULATIVE), `payout` (the frequency), `rate`, `minAmount`, `maxAmount`, `asOn`. FD Configuration draws its tenures and payouts from it at the amount entered, or at `config.quoteAmount` (₹50,000) before one is; a payout under its `minAmount` is shown shut. |
+| POST | `deposits/quote` | `{ amount, tenureMonths, payout, card: { category, gender, applicationType, startsOn? } }` | `DepositQuote`: `rate`, `interestEach`, `maturityAmount`, `maturesOn`, `rateAsOn`. A cumulative deposit compounds `compoundingPerYear` times a year, the months after the last whole period at simple interest. |
 | GET | `ifsc/{code}` | | `BankBranch`: `ifsc`, `bank`, `branch`, `micr`, or 404 |
 | GET | `pincodes/{pin}` | | `PinPlace`: `pinCode`, `district`, `state` for a 6-digit PIN code, or 404 — shown beside a communication address typed on Investor Information, and saved with it. The page asks once all six digits are typed; nothing is suggested while typing. |
 | GET | `ifsc?q={text}` | | `BankBranch[]`: the branches whose bank name, branch, IFSC or MICR holds every word of the text, best first, at most 20 — the bank search on Bank Details &amp; Payment |

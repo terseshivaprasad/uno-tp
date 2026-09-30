@@ -96,6 +96,9 @@ internal sealed class CachedSourcingApi(ISourcingApi inner, IMemoryCache cache, 
 /// </summary>
 internal sealed class CachedDepositApi(IDepositApi inner, IMemoryCache cache) : IDepositApi
 {
+    public Task<IReadOnlyList<RateOption>> RatesAsync(RatesRequest request, CancellationToken ct = default) =>
+        cache.KeptAsync(("backend:rates", DateTime.Today, request), TimeSpan.FromMinutes(1), () => inner.RatesAsync(request, ct));
+
     public Task<DepositQuote> QuoteAsync(QuoteRequest request, CancellationToken ct = default) =>
         cache.KeptAsync(("backend:quote", DateTime.Today, request), TimeSpan.FromMinutes(1), () => inner.QuoteAsync(request, ct));
 

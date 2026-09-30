@@ -216,6 +216,7 @@ public sealed class MockReference : IReferenceApi
         DraftDays: 14,
         LinkValidityHours: new Dictionary<string, int> { ["payment"] = PaymentLinkHours, ["acceptance"] = 72 },
         RenewFromDays: MockRenewals.FromDays, RenewUntilDays: MockRenewals.UntilDays, RenewUntilDaysAutoRenewal: MockRenewals.UntilDaysAutoRenewal,
+        QuoteAmount: 50_000,
         CloseToCancelDays: 3);
 
     public Task<ReferenceData> ReferenceAsync(CancellationToken ct = default) => Task.FromResult(Data);
@@ -255,17 +256,52 @@ public sealed class MockPartner(IPartner partner) : IPartnerApi
 }
 
 /// <summary>
-/// The card rates and a handful of bank branches. A cumulative deposit compounds
-/// half-yearly; one that pays out pays simple interest each period.
+/// The Samruddhi rate chart and a handful of bank branches. A cumulative deposit
+/// compounds yearly, as the chart's "amount payable" column does; one that pays out
+/// pays simple interest each period.
 /// </summary>
 public sealed class MockDeposits : IDepositApi
 {
-    // Card rates for a public deposit, by tenure in months. The mock quotes every
-    // category at them; the backend's rate card sets its own.
-    private static readonly Dictionary<int, decimal> Rates = new()
+    /// <summary>The day the chart took effect.</summary>
+    public static readonly DateOnly ChartFrom = new(2026, 8, 3);
+
+    // The chart's public rates by tenure: cumulative, then monthly, quarterly,
+    // half-yearly and yearly payouts.
+    private static readonly (int Months, decimal Maturity, decimal Monthly, decimal Quarterly, decimal HalfYearly, decimal Yearly)[] Chart =
+    [
+        (12, 6.60m, 6.40m, 6.45m, 6.50m, 6.60m),
+        (18, 6.60m, 6.40m, 6.45m, 6.50m, 6.60m),
+        (24, 6.85m, 6.65m, 6.70m, 6.75m, 6.85m),
+        (30, 6.85m, 6.65m, 6.70m, 6.75m, 6.85m),
+        (36, 7.40m, 7.15m, 7.20m, 7.25m, 7.40m),
+        (42, 7.40m, 7.15m, 7.20m, 7.25m, 7.40m),
+        (48, 7.45m, 7.20m, 7.25m, 7.30m, 7.45m),
+        (60, 7.45m, 7.20m, 7.25m, 7.30m, 7.45m),
+    ];
+
+    // The smallest deposit each payout is offered for; the chart applies up to 5 crore.
+    private static readonly (string Payout, long AmountFrom)[] MinimumAmounts =
+    [
+        ("maturity", 5_000),
+        ("monthly", 50_000),
+        ("quarterly", 50_000),
+        ("halfyearly", 25_000),
+        ("yearly", 25_000),
+    ];
+    private const long ChartCeiling = 5_00_00_000;
+
+    // What a category earns over the public rate: senior citizens and employees 0.35, women 0.05.
+    private static readonly Dictionary<string, decimal> ExtraRate = new()
     {
-        [12] = 7.25m, [18] = 7.40m, [24] = 7.60m, [30] = 7.70m, [36] = 7.85m, [42] = 7.90m, [48] = 8.00m, [60] = 8.10m,
+        ["PUBLIC/GENERAL"] = 0m,
+        ["WOMEN"] = 0.05m,
+        ["SR CITIZEN"] = 0.35m,
+        ["SR CITIZEN WOMEN"] = 0.40m,
+        ["EMPLOYEE"] = 0.35m,
+        ["EMPLOYEE WOMEN"] = 0.40m,
     };
+
+    private const int CompoundingPerYear = 1;
 
     private static readonly Dictionary<string, int> PerYear = new()
     {
@@ -281,23 +317,64 @@ public sealed class MockDeposits : IDepositApi
         new("UTIB0000014", "Axis Bank", "Naupada, Thane", "400211003"),
     ];
 
-    public Task<DepositQuote> QuoteAsync(QuoteRequest request, CancellationToken ct = default)
+    /// <summary>
+    /// The chart for a category: the public rate plus what the category earns over
+    /// it, the same for either gender and for a purchase or a renewal. An unknown
+    /// category earns the public rate.
+    /// </summary>
+    public Task<IReadOnlyList<RateOption>> RatesAsync(RatesRequest request, CancellationToken ct = default)
     {
-        var today = DateOnly.FromDateTime(DateTime.Today);
-        var starts = request.StartsOn ?? today;
-        var rate = Rates.TryGetValue(request.TenureMonths, out var r) ? r : throw new ArgumentException($"No card rate for {request.TenureMonths} months.");
-        var perYear = PerYear.TryGetValue(request.Payout, out var p) ? p : throw new ArgumentException($"No payout called {request.Payout}.");
-        decimal amount = request.Amount;
-        var maturity = MaturityOf(amount, rate, request.TenureMonths, perYear);
-        // Half a rupee rounds up, as the page always rounded it.
-        var each = perYear == 0 ? 0 : Math.Round(amount * rate / 100 / perYear, 0, MidpointRounding.AwayFromZero);
-        return Task.FromResult(new DepositQuote(rate, each, maturity, starts.AddMonths(request.TenureMonths), today));
+        var extra = ExtraRate.GetValueOrDefault(request.Category, 0m);
+        var lines = new List<RateOption>();
+        foreach (var row in Chart)
+        {
+            foreach (var (payout, minAmount) in MinimumAmounts)
+            {
+                var scheme = RateCard.NonCumulative;
+                var rate = row.Yearly;
+                if (payout == "maturity")
+                {
+                    scheme = RateCard.Cumulative;
+                    rate = row.Maturity;
+                }
+                if (payout == "monthly") rate = row.Monthly;
+                if (payout == "quarterly") rate = row.Quarterly;
+                if (payout == "halfyearly") rate = row.HalfYearly;
+                lines.Add(new RateOption(row.Months, scheme, payout, rate + extra, minAmount, ChartCeiling, ChartFrom));
+            }
+        }
+        return Task.FromResult<IReadOnlyList<RateOption>>(lines);
     }
 
-    /// <summary>What a deposit comes to at maturity: compounded half-yearly for a cumulative one, the amount itself otherwise.</summary>
-    internal static decimal MaturityOf(decimal amount, decimal rate, int months, int perYear) => perYear == 0
-        ? Math.Round(amount * (decimal)Math.Pow(1 + (double)rate / 200, months / 6.0), 0, MidpointRounding.AwayFromZero)
-        : amount;
+    public async Task<DepositQuote> QuoteAsync(QuoteRequest request, CancellationToken ct = default)
+    {
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var starts = request.Card.StartsOn ?? today;
+        var perYear = PerYear.TryGetValue(request.Payout, out var p) ? p : throw new ArgumentException($"No payout called {request.Payout}.");
+
+        RateOption? line = null;
+        foreach (var option in await RatesAsync(request.Card, ct))
+        {
+            if (option.TenureMonths != request.TenureMonths) continue;
+            if (option.Payout != request.Payout) continue;
+            if (!option.Offers(request.Amount)) continue;
+            line = option;
+            break;
+        }
+        if (line is null) throw new ArgumentException($"The rate chart offers no {request.Payout} payout for {request.TenureMonths} months on a deposit of {request.Amount}.");
+
+        decimal amount = request.Amount;
+        var maturity = MaturityOf(amount, line.Rate, request.TenureMonths, perYear);
+        var each = DepositMaths.InterestEach(amount, line.Rate, perYear);
+        return new DepositQuote(line.Rate, each, maturity, starts.AddMonths(request.TenureMonths), line.AsOn);
+    }
+
+    /// <summary>What a deposit comes to at maturity: compounded yearly for a cumulative one, the amount itself otherwise.</summary>
+    internal static decimal MaturityOf(decimal amount, decimal rate, int months, int perYear)
+    {
+        if (perYear != 0) return amount;
+        return DepositMaths.MaturityAmount(amount, rate, months, CompoundingPerYear);
+    }
 
     public Task<BankBranch?> BranchAsync(string ifsc, CancellationToken ct = default) =>
         Task.FromResult(Branches.FirstOrDefault(b => b.Ifsc.Equals(ifsc.Trim(), StringComparison.OrdinalIgnoreCase)));

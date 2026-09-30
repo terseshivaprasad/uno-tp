@@ -87,19 +87,4 @@ SELECT v.p, v.d, v.s, 'DEVSEED' FROM (VALUES
     (N'751001', N'Khordha', N'Odisha')
 ) v (p, d, s) WHERE NOT EXISTS (SELECT 1 FROM dbo.t_Unotp_Pincode_Mst x WHERE x.c_Pin_Code = v.p);
 GO
--- One card for every category at the public rates, from the start of the year.
-INSERT dbo.t_Unotp_Rate_Card (c_Category, n_Tenure_Months, n_Rate, d_Effective_From, c_Created_By)
-SELECT c.c_Code, v.t, v.r, '2026-01-01', 'DEVSEED'
-FROM dbo.t_Unotp_Ref_List c CROSS JOIN (VALUES
-    (12, 7.25),
-    (18, 7.40),
-    (24, 7.60),
-    (30, 7.70),
-    (36, 7.85),
-    (42, 7.90),
-    (48, 8.00),
-    (60, 8.10)
-) v (t, r)
-WHERE c.c_List = 'categories'
-  AND NOT EXISTS (SELECT 1 FROM dbo.t_Unotp_Rate_Card x WHERE x.c_Category = c.c_Code AND x.n_Tenure_Months = v.t AND x.d_Effective_From = '2026-01-01');
-GO
+-- The rate card is not dev data: db/007 loads the published chart.

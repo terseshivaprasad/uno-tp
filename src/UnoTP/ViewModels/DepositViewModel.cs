@@ -21,12 +21,12 @@ public sealed class DepositForm
     public long AmountValue => long.TryParse(new string(Amount.Where(char.IsAsciiDigit).ToArray()), out var n) ? n : 0;
 
     /// <summary>The deposit as the backend last saved it, or the first of each list before it ever was.</summary>
-    public static DepositForm From(DepositDetails? saved, ReferenceData reference) => saved is null
+    public static DepositForm From(DepositDetails? saved, RateTable rates) => saved is null
         ? new DepositForm
         {
-            TenureMonths = reference.Tenures.FirstOrDefault(),
-            InterestPayout = reference.Payouts.FirstOrDefault()?.Code ?? "",
-            DeliveryType = reference.DeliveryTypes.FirstOrDefault()?.Code ?? "",
+            TenureMonths = rates.Tenures.FirstOrDefault(),
+            InterestPayout = rates.Payouts.FirstOrDefault()?.Code ?? "",
+            DeliveryType = rates.Reference.DeliveryTypes.FirstOrDefault()?.Code ?? "",
         }
         : new DepositForm
         {
@@ -54,27 +54,88 @@ public sealed class DepositForm
     }
 
     /// <summary>What stops the step, by field.</summary>
+    /// <param name="rates">The rate card at the amount posted: the tenure and payout must be on it, and offered at the amount.</param>
     /// <param name="amountFixed">A renewal: the amount is the deposit's maturity amount, not the partner's to change or the limits' to check.</param>
-    public Dictionary<string, string> Problems(AppConfig config, ReferenceData reference, bool amountFixed = false)
+    public Dictionary<string, string> Problems(AppConfig config, RateTable rates, bool amountFixed = false)
     {
+        var reference = rates.Reference;
         var problems = new Dictionary<string, string>();
         if (!amountFixed && AmountProblem(config) is { } amount) problems["Amount"] = amount;
-        if (!reference.Tenures.Contains(TenureMonths)) problems["TenureMonths"] = "Choose the tenure";
-        if (reference.Payouts.All(p => p.Code != InterestPayout)) problems["InterestPayout"] = "Choose the interest payout";
+
+        if (!rates.Tenures.Contains(TenureMonths))
+        {
+            problems["TenureMonths"] = "Choose the tenure";
+        }
+        else if (rates.TenureBlockedReason(TenureMonths) is { } tenureBlocked)
+        {
+            problems["TenureMonths"] = $"A {TenureMonths}-month deposit is {tenureBlocked}";
+        }
+
+        var payout = rates.Payouts.FirstOrDefault(p => p.Code == InterestPayout);
+        if (payout is null)
+        {
+            problems["InterestPayout"] = "Choose the interest payout";
+        }
+        else if (rates.PayoutBlockedReason(InterestPayout) is { } payoutBlocked)
+        {
+            problems["InterestPayout"] = $"A {payout.Name.ToLowerInvariant()} payout is {payoutBlocked}";
+        }
+
         if (AutoRenewal && reference.RenewInstructions.All(r => r.Code != RenewInstruction)) problems["RenewInstruction"] = "Required — choose what auto renewal renews";
         if (reference.DeliveryTypes.All(d => d.Code != DeliveryType)) problems["DeliveryType"] = "Choose the delivery type";
         return problems;
     }
 }
 
-/// <summary>FD Configuration: the deposit as configured, and what the backend quotes for it.</summary>
-public sealed class DepositViewModel(DocumentsViewModel docs, DepositForm form, DepositQuote? quote, IReadOnlyDictionary<string, string> problems)
+/// <summary>FD Configuration: the deposit as configured, the rate card it is offered from, and what the backend quotes for it.</summary>
+public sealed class DepositViewModel(DocumentsViewModel docs, DepositForm form, RateTable rates, DepositQuote? quote, IReadOnlyDictionary<string, string> problems)
 {
     public DocumentsViewModel Docs { get; } = docs;
     public DepositForm Form { get; } = form;
 
-    /// <summary>The backend's quote, once the amount is valid.</summary>
+    /// <summary>The rate card at the amount entered, or at the standing amount before one is.</summary>
+    public RateTable Rates { get; } = rates;
+
+    /// <summary>The tenures the card offers, for the page's choices.</summary>
+    public IReadOnlyList<int> Tenures => Rates.Tenures;
+
+    /// <summary>The payouts the card offers, for the page's choices.</summary>
+    public IReadOnlyList<PayoutOption> Payouts => Rates.Payouts;
+
+    /// <summary>The card's row for the tenure and payout chosen, at the amount; null when it is not offered at it.</summary>
+    public RateOption? Row => Rates.Row(Form.TenureMonths, Form.InterestPayout);
+
+    /// <summary>The backend's quote, once the amount is valid and the card offers the tenure and payout at it.</summary>
     public DepositQuote? Quote { get; } = quote;
+
+    /// <summary>The scheme as the card names it: "Cumulative" or "Non-cumulative".</summary>
+    public string Scheme
+    {
+        get
+        {
+            if (Row is not null) return Row.Scheme == RateCard.Cumulative ? "Cumulative" : "Non-cumulative";
+            return Cumulative ? "Cumulative" : "Non-cumulative";
+        }
+    }
+
+    /// <summary>What the quote panel says under the figures.</summary>
+    public string QuoteNote
+    {
+        get
+        {
+            if (Quote is not null) return $"Rate is the card rate for a {Form.TenureMonths}-month deposit as on {Money.Day(Quote.RateAsOn)}, and is locked when the application is submitted.";
+            if (Row is null && Payout is not null && Rates.PayoutBlockedReason(Form.InterestPayout) is { } blocked)
+            {
+                return $"A {Payout.Name.ToLowerInvariant()} payout is {blocked}. Choose another payout, or change the amount.";
+            }
+            if (Row is null && Rates.TenureBlockedReason(Form.TenureMonths) is { } tenureBlocked)
+            {
+                return $"A {Form.TenureMonths}-month deposit is {tenureBlocked}. Choose another tenure, or change the amount.";
+            }
+            if (Row is null) return "The rate and the returns are quoted once a valid amount is entered.";
+            return $"Rate is the card rate for a {Form.TenureMonths}-month deposit of {Money.Rupees(Rates.Amount)} as on {Money.Day(Row.AsOn)}. The returns are worked out once a valid amount is entered.";
+        }
+    }
 
     public IReadOnlyDictionary<string, string> Problems { get; } = problems;
     public ReferenceData Ref => Docs.Ref;

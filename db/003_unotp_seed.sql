@@ -42,7 +42,8 @@ SELECT v.k, v.v, v.d, 'SEED' FROM (VALUES
     (N'appNoPrefix', N'FBBMFL', N'Application numbers: {prefix}{yy}F{running number}'),
     (N'slipNoPrefix', N'AXPIS', N'Pay-in slip numbers: {prefix}{running number}'),
     (N'defaultRateCategory', N'PUBLIC/GENERAL', N'The rate card category a deposit takes when its own has no rate'),
-    (N'compoundingPerYear', N'2', N'Times a year a cumulative deposit compounds')
+    (N'compoundingPerYear', N'1', N'Times a year a cumulative deposit compounds; the months after the last whole period earn simple interest'),
+    (N'quoteAmount', N'50000', N'The amount FD Configuration quotes the rate at before one is entered')
 ) v (k, v, d)
 WHERE NOT EXISTS (SELECT 1 FROM dbo.t_Unotp_App_Config c WHERE c.c_Key = v.k);
 GO

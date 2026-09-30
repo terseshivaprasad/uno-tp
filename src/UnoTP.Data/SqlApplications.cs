@@ -264,7 +264,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
         if (seen is null) return (SaveOutcome.NotFound, null);
         if (seen.Version != version || seen.Submitted is not null) return (SaveOutcome.Conflict, null);
         var quote = seen.Deposit is { } d
-            ? await deposits.QuoteAsync(new QuoteRequest(d.Amount, d.TenureMonths, d.Payout, seen.Upload?.Category ?? "", seen.Renewal?.MaturesOn), ct)
+            ? await deposits.QuoteAsync(new QuoteRequest(d.Amount, d.TenureMonths, d.Payout, seen.RateCardRequest()), ct)
             : null;
         var hours = (await reference.ConfigAsync(ct)).LinkValidityHours.GetValueOrDefault("payment");
         var resends = await reference.NumberAsync("linkResends", ct);

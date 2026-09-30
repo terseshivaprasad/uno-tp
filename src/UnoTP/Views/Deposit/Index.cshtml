@@ -11,8 +11,8 @@
     (string Key, string Id)[] fieldIds =
     [
         ("Amount", "deposit-amount"),
-        ("TenureMonths", "deposit-tenure-" + Model.Ref.Tenures.FirstOrDefault()),
-        ("InterestPayout", "deposit-payout-" + (Model.Ref.Payouts.FirstOrDefault()?.Code ?? "")),
+        ("TenureMonths", "deposit-tenure-" + Model.Tenures.FirstOrDefault()),
+        ("InterestPayout", "deposit-payout-" + (Model.Payouts.FirstOrDefault()?.Code ?? "")),
         ("RenewInstruction", "deposit-renew"),
         ("DeliveryType", "deposit-delivery"),
     ];
@@ -134,13 +134,27 @@
                         <div class="investor-section-head">
                             <div class="deposit-label" id="deposit-tenure-label">Tenure &middot; months</div>
                         </div>
+                        @* The tenures the rate card carries. One not offered at the amount is shown
+                           shut, with the limit it is offered from (deposit.js keeps this up to date
+                           as the amount changes). *@
                         <div class="deposit-options deposit-options--tenure">
-                            @foreach (var tenure in Model.Ref.Tenures)
+                            @foreach (var tenure in Model.Tenures)
                             {
-                                <label class="deposit-option">
-                                    <input type="radio" id="deposit-tenure-@tenure" name="TenureMonths" value="@tenure" checked="@(tenure == form.TenureMonths)" data-quote>
-                                    <span class="deposit-option__face">@tenure</span>
-                                </label>
+                                var blocked = Model.Rates.TenureBlockedReason(tenure);
+                                if (blocked is null)
+                                {
+                                    <label class="deposit-option">
+                                        <input type="radio" id="deposit-tenure-@tenure" name="TenureMonths" value="@tenure" checked="@(tenure == form.TenureMonths)" data-quote>
+                                        <span class="deposit-option__face">@tenure</span>
+                                    </label>
+                                }
+                                else
+                                {
+                                    <label class="deposit-option deposit-option--off">
+                                        <input type="radio" id="deposit-tenure-@tenure" name="TenureMonths" value="@tenure" checked="@(tenure == form.TenureMonths)" data-quote disabled>
+                                        <span class="deposit-option__face">@tenure<span class="deposit-option__why">@blocked</span></span>
+                                    </label>
+                                }
                             }
                         </div>
                         @{ await FieldError("TenureMonths", "deposit-tenure"); }
@@ -152,13 +166,27 @@
                             <div class="deposit-label" id="deposit-payout-label">Interest payout</div>
                             <div class="deposit-aside">a payout on maturity makes the deposit cumulative</div>
                         </div>
+                        @* The payouts the rate card carries, shut where the amount is under the
+                           payout's minimum: on the chart a monthly or quarterly payout needs
+                           ₹50,000, a half-yearly or yearly one ₹25,000. *@
                         <div class="deposit-options deposit-options--payout">
-                            @foreach (var payout in Model.Ref.Payouts)
+                            @foreach (var payout in Model.Payouts)
                             {
-                                <label class="deposit-option">
-                                    <input type="radio" id="deposit-payout-@payout.Code" name="InterestPayout" value="@payout.Code" checked="@(payout.Code == form.InterestPayout)" data-quote>
-                                    <span class="deposit-option__face">@payout.Name</span>
-                                </label>
+                                var blocked = Model.Rates.PayoutBlockedReason(payout.Code);
+                                if (blocked is null)
+                                {
+                                    <label class="deposit-option">
+                                        <input type="radio" id="deposit-payout-@payout.Code" name="InterestPayout" value="@payout.Code" checked="@(payout.Code == form.InterestPayout)" data-quote>
+                                        <span class="deposit-option__face">@payout.Name</span>
+                                    </label>
+                                }
+                                else
+                                {
+                                    <label class="deposit-option deposit-option--off">
+                                        <input type="radio" id="deposit-payout-@payout.Code" name="InterestPayout" value="@payout.Code" checked="@(payout.Code == form.InterestPayout)" data-quote disabled>
+                                        <span class="deposit-option__face">@payout.Name<span class="deposit-option__why">@blocked</span></span>
+                                    </label>
+                                }
                             }
                         </div>
                         @{ await FieldError("InterestPayout", "deposit-payout"); }
