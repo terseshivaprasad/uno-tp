@@ -43,6 +43,8 @@ public class DocumentsViewModel(
     IFaceMatchService faces,
     IMaskingService masking,
     INameScreeningService screening,
+    INameMatchService names,
+    OutsideSwitches switches,
     UnoTP.Infrastructure.Lookups lookups,
     UnoTP.Infrastructure.CurrentPartner currentPartner,
     ISourcingApi sourcing)
@@ -122,7 +124,8 @@ public class DocumentsViewModel(
     /// upload (the document identification feature, on by default). Off, it is chosen
     /// from a drop-down first, and the box waits for it.
     /// </summary>
-    public bool AutoProofType => features.Flags.DocIdentification;
+    /// <summary>Whether a proof of address's type is detected off the copy: the feature on, and identification not switched off.</summary>
+    public bool AutoProofType => features.Flags.DocIdentification && switches.IsOn(DocumentIdentifierClient.Name);
 
     /// <summary>
     /// Whether a communication address other than the permanent one is proved with an
@@ -844,31 +847,20 @@ public class DocumentsViewModel(
 
     /// <summary>How a name read off a document stands against the holder's:
     /// "match", "partial" (initials, or a name left out) or "mismatch".</summary>
-    public static string NameMatch(string read, string holder)
-    {
-        static string[] Words(string name) =>
-            System.Text.RegularExpressions.Regex.Replace(name.ToUpperInvariant(), "[^A-Z ]", " ")
-                .Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        var (a, b) = (Words(read), Words(holder));
-        if (a.Length == 0 || b.Length == 0) return "mismatch";
-        if (a.SequenceEqual(b) || a.Order().SequenceEqual(b.Order())) return "match";
-        // Every word of the shorter name stands in the longer one, whole or as its
-        // initial - KARAN D MEHTA against KARAN DEEPAK MEHTA - and the first and
-        // last names are among them.
-        var (shorter, longer) = a.Length <= b.Length ? (a, b) : (b, a);
-        var left = longer.ToList();
-        foreach (var w in shorter)
-        {
-            var i = left.FindIndex(l => l == w || w.Length == 1 && l[0] == w[0] || l.Length == 1 && w[0] == l[0]);
-            if (i < 0) return "mismatch";
-            left.RemoveAt(i);
-        }
-        return shorter.Any(w => w.Length > 1) ? "partial" : "mismatch";
-    }
-
-    private void Details(DocHolder h, OcrReading reading, string type, LogEntry entry)
+    // The name and date of birth on a proof of address against the PAN's: the name
+    // by the name match service, the date of birth exactly. What it found stands in
+    // the "PAN-POA name & DOB" card and the history.
+    private async Task DetailsAsync(DocHolder h, OcrReading reading, string type, LogEntry entry)
     {
         var named = Printed(type);
+        // With OCR switched off nothing was read to compare: not asked, and Operations check.
+        if (!switches.IsOn(OcrClient.Name))
+        {
+            State.Reads[h.Key("details")] = new ReadCard("Not asked", $"OCR is {OutsideSwitches.Off}, so nothing was read off the {named} to compare.",
+                "The proof is filed; Operations compare the name and date of birth.", "is-na");
+            entry.Add($"Name and date of birth on the {named} not compared: OCR is {OutsideSwitches.Off}.", "warn");
+            return;
+        }
         string nameSays, dobSays;
         bool nameOk, dobOk, dobNa = false;
         var name = reading.Name.Trim();
@@ -876,11 +868,18 @@ public class DocumentsViewModel(
         else if (name.Length == 0) (nameSays, nameOk) = ("name could not be read", false);
         else
         {
-            var match = NameMatch(name, h.Who.Name);
+            var match = (await names.MatchAsync(name, h.Who.Name)).Outcome;
+            if (match == NameMatchOutcome.NotAsked)
+            {
+                State.Reads[h.Key("details")] = new ReadCard("Not asked", $"The name match is {OutsideSwitches.Off}, so the name on the {named} was not compared.",
+                    "The proof is filed; Operations compare the name and date of birth.", "is-na");
+                entry.Add($"Name on the {named} not compared: the name match is {OutsideSwitches.Off}.", "warn");
+                return;
+            }
             (nameSays, nameOk) = match switch
             {
-                "match" => ("name matches", true),
-                "partial" => ($"name partly matches ({name})", false),
+                NameMatchOutcome.Match => ("name matches", true),
+                NameMatchOutcome.Partial => ($"name partly matches ({name})", false),
                 _ => ($"name does not match ({name})", false),
             };
         }
@@ -1347,6 +1346,7 @@ public class DocumentsViewModel(
         return card.State switch
         {
             "Linked with Aadhaar" => null,
+            "Not asked" => null,
             "Not linked" => "The PAN is not linked with Aadhaar. The investor links it with the Income Tax department; the application cannot proceed until it is.",
             "Aadhaar number needed" => "Type the Aadhaar number in the row under the proofs of address, so the PAN-Aadhaar link can be asked.",
             "Link not checked" => "The PAN-Aadhaar link could not be checked. Upload the Aadhaar again, or type its number, to ask again.",
@@ -1360,6 +1360,7 @@ public class DocumentsViewModel(
         var card = State.Reads.GetValueOrDefault(h.Key("details"));
         if (card is null) return "The name on the proof of address must be matched with the PAN's before proceeding.";
         if (card.Kind == "is-done") return null;
+        if (card.Kind == "is-na") return null;
         return "The name and date of birth on the proof of address must match the PAN's before proceeding. Upload a clearer copy of the holder's own proof.";
     }
 
@@ -1753,11 +1754,13 @@ public class DocumentsViewModel(
                 ($"Identified as a {type.ToLowerInvariant()}, which proves only a communication address.", "bad"));
             return;
         }
-        entry.Add($"Identified as {(proof ? "a proof of address: " + type : rule.What)}.", "ok");
+        if (switches.IsOn(DocumentIdentifierClient.Name)) entry.Add($"Identified as {(proof ? "a proof of address: " + type : rule.What)}.", "ok");
+        else entry.Add($"Identification is {OutsideSwitches.Off}: taken as {(proof ? type : rule.What)} as handed in; Operations check the copy.", "warn");
 
         // 2. OCR. An Aadhaar is taken only when the name and date of birth it reads
         // are the PAN's; masked or not, its number need not be read (see ReadAddressAsync).
         var reading = await ocr.ReadAsync(rule.Kind, type, copy, new OcrSubject(h.Who.Pan, h.Who.Dob, h.Who.Name), AadhaarConsent);
+        if (!switches.IsOn(OcrClient.Name)) entry.Add($"OCR is {OutsideSwitches.Off}: nothing is read off the copy, and it is taken as the holder's own; Operations check it.", "warn");
         // A PAN copy has to be the holder's own: the PAN and date of birth it reads
         // as are the ones already on the application, which cannot be changed here.
         if (def.Key == "pan" && PanCopyMismatch(reading, h.Who.Pan, h.Who.Dob) is { } notTheirs)
@@ -1771,7 +1774,7 @@ public class DocumentsViewModel(
         if (def.Key == "pan")
             State.Reads[h.Key("panocr")] = new ReadCard("", NewApplicationViewModel.NormaliseName(reading.Name), "")
                 { Number = reading.Pan.Replace(" ", "").ToUpperInvariant(), Dob = reading.Dob };
-        if (proof && type == "Aadhaar" && AadhaarMismatch(h, reading) is { } notTheirs2)
+        if (proof && type == "Aadhaar" && await AadhaarMismatchAsync(h, reading) is { } notTheirs2)
         {
             await RefuseAsync(notTheirs2, $"Upload {(h.Joint ? "this holder's" : "the investor's")} own Aadhaar, clear enough to read the name and date of birth.",
                 ($"OCR read: name {(reading.Name.Trim().Length > 0 ? reading.Name.Trim() : "none")}, date of birth {(reading.Dob.Length > 0 ? MaskDate(reading.Dob) : "none")}.", ""),
@@ -1818,7 +1821,7 @@ public class DocumentsViewModel(
         // 5. The PAN-Aadhaar link, with the number read before masking.
         if (proof && type == "Aadhaar") await LinkAfterFilingAsync(h, reading, entry);
 
-        if (def.Key == "poa") Details(h, reading, type, entry);
+        if (def.Key == "poa") await DetailsAsync(h, reading, type, entry);
 
         // Both copies filed: the faces on them are compared - again, when either is replaced.
         if (def.Key is "poa" or "pan") await FaceAsync(h, entry);
@@ -2064,13 +2067,14 @@ public class DocumentsViewModel(
     // PAN's: the name as NSDL or the folio holds it - or, until NSDL verifies it,
     // as read off the PAN copy - allowing initials and a name left out, and the
     // date of birth exactly. Null when they match; otherwise why not.
-    private string? AadhaarMismatch(DocHolder h, OcrReading reading)
+    private async Task<string?> AadhaarMismatchAsync(DocHolder h, OcrReading reading)
     {
         var panName = h.Who.Name.Length > 0 ? h.Who.Name
             : State.Reads.TryGetValue(h.Key("panocr"), out var panRead) ? panRead.Lines : "";
         var name = reading.Name.Trim();
         if (panName.Length == 0) return "The PAN's name is not known yet, so the Aadhaar cannot be matched with it — file the PAN copy first";
-        var nameOk = name.Length > 0 && NameMatch(name, panName) != "mismatch";
+        // The name match switched off is not a mismatch: the Aadhaar is taken, and Operations compare.
+        var nameOk = name.Length > 0 && !(await names.MatchAsync(name, panName)).IsMismatch;
         var dobOk = reading.Dob.Length > 0 && reading.Dob == h.Who.Dob;
         return (nameOk, dobOk) switch
         {
@@ -2197,6 +2201,12 @@ public class DocumentsViewModel(
                 (card.State, card.Kind) = ("Not linked", "is-failed");
                 card.From = $"{Capitalize(PanAuthority)} holds no Aadhaar against this PAN. The application cannot proceed until the investor links it.";
                 entry.Add("No Aadhaar against this PAN.", "warn");
+                break;
+            case PanAadhaarLink.NotAsked:
+                card.Lines = pan + " · link with Aadhaar not asked";
+                (card.State, card.Kind) = ("Not asked", "is-na");
+                card.From = $"The PAN-Aadhaar link is {OutsideSwitches.Off}. The application goes on; Operations check the link.";
+                entry.Add($"PAN-Aadhaar link not asked: {OutsideSwitches.Off}.", "warn");
                 break;
             case PanAadhaarLink.NeedsAadhaar when AadhaarFiled(h):
                 // An Aadhaar is filed, but its number was not read: it is typed.

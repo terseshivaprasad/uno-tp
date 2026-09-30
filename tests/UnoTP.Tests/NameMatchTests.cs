@@ -11,14 +11,14 @@ public class NameMatchTests
     [InlineData("PATIL ANJALI VIKRAM", "ANJALI VIKRAM PATIL")]
     [InlineData("ANJALI  VIKRAM-PATIL", "ANJALI VIKRAM PATIL")]
     public void Same_words_match_whatever_the_case_order_or_punctuation(string read, string holder) =>
-        Assert.Equal("match", DocumentsViewModel.NameMatch(read, holder));
+        Assert.Equal("match", UnoTP.Backend.Mock.External.MockNameMatch.Compare(read, holder));
 
     [Theory]
     [InlineData("KARAN D MEHTA", "KARAN DEEPAK MEHTA")]
     [InlineData("K D MEHTA", "KARAN DEEPAK MEHTA")]
     [InlineData("KARAN MEHTA", "KARAN DEEPAK MEHTA")]
     public void Initials_or_a_name_left_out_are_a_partial_match(string read, string holder) =>
-        Assert.Equal("partial", DocumentsViewModel.NameMatch(read, holder));
+        Assert.Equal("partial", UnoTP.Backend.Mock.External.MockNameMatch.Compare(read, holder));
 
     [Theory]
     [InlineData("RAHUL SUDHIR TAMBE", "ANJALI VIKRAM PATIL")]
@@ -27,5 +27,5 @@ public class NameMatchTests
     [InlineData("", "ANJALI VIKRAM PATIL")]
     [InlineData("ANJALI VIKRAM PATIL", "")]
     public void Anything_else_is_a_mismatch(string read, string holder) =>
-        Assert.Equal("mismatch", DocumentsViewModel.NameMatch(read, holder));
+        Assert.Equal("mismatch", UnoTP.Backend.Mock.External.MockNameMatch.Compare(read, holder));
 }

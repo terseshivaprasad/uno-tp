@@ -156,7 +156,8 @@ underscore (`ConnectionStrings__UnoTP`).
 |---|---|
 | `ConnectionStrings:UnoTP` | The database. Blank runs the mock, which only Development or a demo (`Features:DemoData`) may do. Set it in the environment or a secret store, never in appsettings. |
 | `ConnectionStrings:UnoTP_Masters`, `UnoTP_Folios`, `UnoTP_Links`, `UnoTP_Errors` | Where an area lives in a database of its own, as the old portal keeps them: the masters (brokers, staff, IFSC, PIN codes, rate card, config, features, lists), the investor folios, the payment links behind Short URL, and the error log. Blank, the area's tables are in the main database. No query joins across areas. |
-| `Backend:External:{Nsdl, Identify, Masking, Ocr, Verification, PanAadhaarLink, FaceMatch, Decrypt, NameScreening}` | Each outside service's address. Blank in Development, its mock answers; elsewhere each must be set (IDfy covers Masking, PanAadhaarLink and FaceMatch). |
+| `Backend:Switches:{Identify, Ocr, Verification, PanAadhaarLink, FaceMatch, NameScreening, NameMatch}` | `false` switches the service off: it is not called, the page goes on, and the check is marked as not asked for Operations. Masking, NSDL and decryption have no switch. |
+| `Backend:External:{Nsdl, Identify, Masking, Ocr, Verification, PanAadhaarLink, FaceMatch, Decrypt, NameScreening, NameMatch}` | Each outside service's address. Blank in Development, its mock answers; elsewhere each must be set (IDfy covers Masking, PanAadhaarLink and FaceMatch). |
 | `Dms:Root` | Where filed copies are kept until DMS is wired in. |
 | `Idfy:BaseUrl`, `Idfy:ClientId` | Idfy.Api for the document checks it has an endpoint for, and the name the app calls itself by on its `X-Client-Id` header (`unotp`). |
 | `Shortener:BaseUrl`, `Shortener:ClientId` | UrlShortener.Api, which shortens the payment link on submit, and the `X-Client-Id` it is called with. Blank, the mock shortens; on the database the link goes in full. |

@@ -32,6 +32,7 @@ public static class MockBackendServiceCollectionExtensions
         services.AddScoped<ISessionApi, MockSessions>();
         services.AddSingleton<IDecryptionService, MockDecryption>();
         services.AddSingleton<INameScreeningService, MockNameScreening>();
+        services.AddSingleton<INameMatchService, MockNameMatch>();
 
         // The outside services.
         services.AddSingleton<INsdlService, MockNsdl>();

@@ -23,6 +23,9 @@ public enum PanAadhaarLink
 
     /// <summary>Not asked: there is no Aadhaar number to ask with yet.</summary>
     NeedsAadhaar,
+
+    /// <summary>Not asked: the service is switched off (OutsideSwitches); the application goes on, and Operations check.</summary>
+    NotAsked,
 }
 
 /// <summary>POST check { pan, aadhaarNumber } → { link }.</summary>

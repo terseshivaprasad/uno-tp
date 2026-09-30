@@ -183,6 +183,7 @@ internal static class Sections
         if (u.Screening.TryGetValue(code, out var screening))
         {
             screeningStatus = screening.Allowed ? "allowed" : "blocked";
+            if (screening.Reference == UnoTP.Backend.External.OutsideSwitches.Off) screeningStatus = "skipped";
             screeningRef = screening.Reference;
             screenedOn = screening.At;
         }
