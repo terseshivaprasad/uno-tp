@@ -607,10 +607,36 @@
     {
         <section class="page-card investor-question" id="@id">
             <p class="investor-question__question">@question</p>
+            @if (id == "investorAddNominee")
+            {
+                await NomineesOnRecordList();
+            }
             @{ await PostButton(action, null, "investor-add", PlusIcon + label); }
         </section>
     }
 
+    // The nominees named on the folio's earlier deposits, each with Use, which fills
+    // the nominee's fields from it: under the question and in the open card, not in
+    // the Proceed dialog, which stays a short prompt. Nothing for an investor without a folio.
+    private async Task NomineesOnRecordList()
+    {
+        if (Model.NomineesOnRecord.Count == 0) return;
+        <div class="on-record">
+            <div class="on-record__title">Nominees on this folio</div>
+            <ul class="on-record__list">
+                @for (var i = 0; i < Model.NomineesOnRecord.Count; i++)
+                {
+                    var nominee = Model.NomineesOnRecord[i];
+                    var born = nominee.Dob.Length > 0 ? nominee.Dob.Replace("-", "/") : "date of birth to be entered";
+                    @* One line: the name, the date of birth and the relation. Use fills the guardian too, where there is one. *@
+                    <li class="on-record__row">
+                        <span class="on-record__main">@nominee.Name · @born · @nominee.Relation</span>
+                        <button type="submit" form="investorInfoForm" class="btn btn-outline-primary btn-sm on-record__use" formaction="@Url.Action("NomineeUse", new { n = i })" formnovalidate data-loader="Filling the nominee&rsquo;s details&hellip;">Use</button>
+                    </li>
+                }
+            </ul>
+        </div>
+    }
 }
 
 @* Once the investor's card head has scrolled away, this strip keeps who the step is for
@@ -748,6 +774,7 @@
                     <h2 class="page-title">Nominee Details</h2>
                     @{ await PostButton("NomineeRemove", null, "investor-remove", RemoveLabel); }
                 </div>
+                @{ await NomineesOnRecordList(); }
                 <div class="doc-grid">
                     <div class="doc-column">
                         <label class="field-label" for="investorNomineeName">Name</label>

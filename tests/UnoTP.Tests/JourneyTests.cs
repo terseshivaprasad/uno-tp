@@ -449,23 +449,23 @@ public class JourneyTests(App app)
     }
 
     [Fact]
-    public async Task A_nominee_on_the_folio_opens_the_nominee_card_filled_in()
+    public async Task A_nominee_on_the_folio_fills_the_nominee_fields_with_Use()
     {
         var client = await app.SignedInAsync();
         var at = await App.NewApplicationAsync(client, OnFolioComplete);
         var investor = App.Step(at, "investor");
 
-        // The latest nominee on record fills the card the first time the page opens.
         var page = await client.GetStringAsync(investor);
-        Assert.Contains("id=\"investorNomineeName\" name=\"Nominee.Name\" maxlength=\"50\" value=\"MEERA ANIL JOSHI\"", page);
-        Assert.Contains("name=\"Nominee.Dd\" value=\"14\"", page);
-        Assert.Contains("name=\"Nominee.Yyyy\" value=\"1988\"", page);
-        Assert.DoesNotContain("Nominees on this folio", page);
+        Assert.Contains("Nominees on this folio", page);
+        Assert.Contains("MEERA ANIL JOSHI", page);
+        Assert.Contains("AARAV SHIVAPRASAD TERSE", page);
 
-        // Removed, it stays removed on the next visit: the partner's choice stands.
-        await App.PostAsync(client, investor, investor + "/nominee/remove");
-        var again = await client.GetStringAsync(investor);
-        Assert.DoesNotContain("value=\"MEERA ANIL JOSHI\"", again);
+        var used = await App.PostAsync(client, investor, investor + "/nominee/use/1");
+        var filled = await used.Content.ReadAsStringAsync();
+        Assert.Contains("id=\"investorNomineeName\" name=\"Nominee.Name\" maxlength=\"50\" value=\"AARAV SHIVAPRASAD TERSE\"", filled);
+        Assert.Contains("name=\"Nominee.Dd\" value=\"05\"", filled);
+        Assert.Contains("name=\"Nominee.Yyyy\" value=\"2016\"", filled);
+        Assert.Contains("MEERA ANIL JOSHI", Regex.Match(filled, "id=\"investorNomineeGuardian\"[^>]*").Value);
     }
 
     [Fact]
@@ -486,6 +486,39 @@ public class JourneyTests(App app)
         Assert.Contains("value=\"HDFC0000521\"", filled);
         Assert.Contains("value=\"50100123456789\"", filled);
         Assert.Contains("Andheri East", filled);
+    }
+
+    [Fact]
+    public async Task A_complete_application_is_submitted_and_Submitted_opens()
+    {
+        var client = await app.SignedInAsync();
+        var at = await App.NewApplicationAsync(client, OnFolioComplete);
+        var documents = App.Step(at, "documents");
+        var investor = App.Step(at, "investor");
+        var bank = App.Step(at, "payment");
+        var deposit = App.Step(at, "deposit");
+        var review = App.Step(at, "review");
+
+        var step1 = await App.PostAsync(client, documents, documents + "/proceed", ("appType", "DIGITAL"), ("payMode", "Online"), ("Sourcing", "1"), ("Category", "PUBLIC/GENERAL"));
+        Assert.Contains("/InvestorInformation/", step1.RequestMessage!.RequestUri!.AbsolutePath);
+
+        var step2 = await App.PostAsync(client, investor, investor, InvestorCard);
+        Assert.Contains("/BankDetails/", step2.RequestMessage!.RequestUri!.AbsolutePath);
+
+        var step3 = await App.PostAsync(client, bank, bank, ("Repayment.SameAsPayment", "false"), ("Repayment.Ifsc", "HDFC0000521"), ("Repayment.AccountNumber", "50100123456789"), ("Repayment.AccountNumberConfirm", "50100123456789"));
+        Assert.Contains("/FDConfiguration/", step3.RequestMessage!.RequestUri!.AbsolutePath);
+
+        var step4 = await App.PostAsync(client, deposit, deposit, ("Amount", "100000"), ("TenureMonths", "12"), ("InterestPayout", "maturity"), ("DeliveryType", "ereceipt"));
+        Assert.Contains("/ReviewSummary/", step4.RequestMessage!.RequestUri!.AbsolutePath);
+
+        var submitted = await App.PostAsync(client, review, review + "/submit", ("declarations", "0"), ("declarations", "1"), ("declarations", "2"));
+        Assert.Contains("/ApplicationSubmitted/", submitted.RequestMessage!.RequestUri!.AbsolutePath);
+        Assert.Equal(HttpStatusCode.OK, submitted.StatusCode);
+        var page = await submitted.Content.ReadAsStringAsync();
+        Assert.Contains("payment link", page, StringComparison.OrdinalIgnoreCase);
+
+        var again = await client.GetAsync(App.Step(at, "submitted"));
+        Assert.Equal(HttpStatusCode.OK, again.StatusCode);
     }
 
     [Fact]

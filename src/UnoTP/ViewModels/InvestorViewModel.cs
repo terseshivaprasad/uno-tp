@@ -16,9 +16,6 @@ public sealed class InvestorInfoState
     public List<SearchState> Joint { get; init; } = [];
 
     public bool Nominee { get; set; }
-
-    /// <summary>Set once the nominee's card was filled from the folio's record, so a nominee the partner removes is not filled in again.</summary>
-    public bool NomineeFilledFromRecord { get; set; }
 }
 
 /// <summary>
@@ -188,6 +185,9 @@ public sealed class InvestorViewModel(InvestorInfoState state, DocumentsViewMode
 
     /// <summary>Proceed stopped: the category on Upload Documents is a women's one and the applicant is male. Corrected there.</summary>
     public string? CategoryConflict { get; init; }
+
+    /// <summary>The nominees on record against the investor's folio, to fill the nominee's fields from; empty without a folio.</summary>
+    public IReadOnlyList<NomineeOnRecord> NomineesOnRecord { get; init; } = [];
 
     /// <summary>Proceed stopped: name screening does not allow these holders (their names, a comma between) to invest online.</summary>
     public string? ScreeningNotAllowed { get; init; }

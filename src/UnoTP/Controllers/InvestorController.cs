@@ -58,15 +58,6 @@ public class InvestorController(
         // A page opened afresh - a new session, or a new visit - opens on what the
         // backend holds for it.
         if (state.Fields.Count == 0 && docs.App.Details is { } saved) InvestorDetailsForm.FromDetails(state, saved);
-        // A page opened for the first time, for an investor whose folio has a nominee on
-        // record: the nominee's card opens filled from the latest one, for the partner
-        // to check, change or remove.
-        if (state.Fields.Count == 0 && docs.App.Details is null && !state.Nominee && !state.NomineeFilledFromRecord)
-        {
-            var onRecord = await NomineesOnRecordAsync(docs);
-            if (onRecord.Count > 0) FillNominee(state, onRecord[0]);
-            state.NomineeFilledFromRecord = true;
-        }
         Recover(state, docs);
         var model = new InvestorViewModel(state, docs)
         {
@@ -77,6 +68,7 @@ public class InvestorController(
             ScreeningNotAllowed = TempData["screeningNotAllowed"] as string,
             Focus = docs.Shown?.Focus ?? TempData["focus"] as string,
             Places = await PlacesAsync(state),
+            NomineesOnRecord = await NomineesOnRecordAsync(docs),
         };
 
         // Each joint holder checked from what the session holds. A PAN already on the
@@ -334,10 +326,20 @@ public class InvestorController(
         return Back("nominee");
     }
 
-    // The nominee's fields filled from a nominee on record - name, date of birth,
-    // relation, the guardian - with the card open.
-    private static void FillNominee(InvestorInfoState state, NomineeOnRecord nominee)
+    /// <summary>
+    /// A nominee on record against the folio, picked: the nominee's fields are filled
+    /// from the record - name, date of birth, relation, the guardian - and the card
+    /// opens for the partner to check and change.
+    /// </summary>
+    [HttpPost("nominee/use/{n:int}")]
+    public async Task<IActionResult> NomineeUse(int n, IFormCollection form)
     {
+        var state = KeepTypedFields(form);
+        if (await LoadAsync() is not { } docs) return Start();
+        var onRecord = await NomineesOnRecordAsync(docs);
+        if (n < 0 || n >= onRecord.Count) return Back("nominee");
+
+        var nominee = onRecord[n];
         var dob = nominee.Dob.Split('-');
         state.Fields["Nominee.Name"] = nominee.Name;
         state.Fields["Nominee.Dd"] = dob.Length == 3 ? dob[0] : "";
@@ -346,6 +348,8 @@ public class InvestorController(
         state.Fields["Nominee.Relation"] = nominee.Relation;
         state.Fields["Nominee.GuardianName"] = nominee.GuardianName;
         state.Nominee = true;
+        State = state;
+        return Back("nominee");
     }
 
     // The nominees named on the folio's earlier deposits; none for an investor without a folio.
