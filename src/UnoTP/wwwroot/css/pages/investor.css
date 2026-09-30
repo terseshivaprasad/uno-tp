@@ -299,6 +299,7 @@
   display: flex;
   align-items: center;
   gap: 16px;
+  flex-wrap: wrap;
 }
 .investor-question__question {
   flex: 1;
@@ -361,4 +362,11 @@
     align-items: stretch;
     gap: 12px;
   }
+}
+
+/* The nominees on record, offered under the question, on a row of their own */
+.investor-question .on-record {
+  flex-basis: 100%;
+  order: 3;
+  margin-bottom: 0;
 }
