@@ -5,9 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - E-Sarathi | Uno TP</title>
     @* Fonts are served from wwwroot, so nothing on the page reaches outside the app. *@
-    <link rel="stylesheet" href="~/css/fonts.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/topbar.css" asp-append-version="true" />
+    @* Shared styles are the layout's: css/shared/. A page adds only its own body's,
+       css/pages/{page}.css, in its Styles section - between the shared ones and the
+       top bar's, the order the rules were written in. *@
+    <link rel="stylesheet" href="~/css/shared/fonts.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/shared/base.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/shared/wizard.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/shared/registers.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
+    <link rel="stylesheet" href="~/css/shared/topbar.css" asp-append-version="true" />
     @await RenderSectionAsync("Head", required: false)
 </head>
 <body>
@@ -125,12 +131,18 @@
             <p class="loader__hint" id="appLoaderHint" hidden></p>
         </div>
     </div>
-    <script src="~/js/loader.js" asp-append-version="true"></script>
+    @* Shared scripts are the layout's: js/shared/. A page adds only its own body's,
+       js/pages/{page}.js, in its Scripts section, after these. *@
+    <script src="~/js/shared/loader.js" asp-append-version="true"></script>
     @* Before the pages' own scripts, so a field found wrong stops a post before it goes. *@
-    <script src="~/js/checks.js" asp-append-version="true"></script>
-    <script src="~/js/notices.js" asp-append-version="true"></script>
-    <script src="~/js/topbar.js" asp-append-version="true"></script>
-    <script src="~/js/date-parts.js" asp-append-version="true"></script>
+    <script src="~/js/shared/checks.js" asp-append-version="true"></script>
+    <script src="~/js/shared/notices.js" asp-append-version="true"></script>
+    <script src="~/js/shared/topbar.js" asp-append-version="true"></script>
+    <script src="~/js/shared/date-parts.js" asp-append-version="true"></script>
+    <script src="~/js/shared/partial-forms.js" asp-append-version="true"></script>
+    <script src="~/js/shared/image-shrink.js" asp-append-version="true"></script>
+    <script src="~/js/shared/pin.js" asp-append-version="true"></script>
+    <script src="~/js/shared/console.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

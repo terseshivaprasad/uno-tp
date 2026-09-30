@@ -1,0 +1,555 @@
+/* Every page: design tokens, the layout and header, buttons, inputs, cards, tooltips, the loader and toast, and what more than one kind of page shares. */
+
+/* ===== Design tokens (from Uno-TP Portal Wireframes mockup) ===== */
+:root {
+  --red: #E31837;
+  --red-dark: #B3132B;
+  --ink: #231F20;
+  --text: #4D4D4F;
+  --muted: #6B7280;
+  --muted-2: #9AA1AB; /* disabled controls and placeholders only: too light for text that is read */
+  --border: #E7EAEE;
+  --border-2: #D9DEE5;
+  --border-3: #ced4da;
+  --page-bg: #E9EDF2;
+  --card-bg: #fff;
+  --tint: #F5F8FB;
+  --divider: #EDEFF3;
+  --divider-2: #DCDCDC;
+  --amber: #664d03;
+  --amber-bg: #FFF3CD;
+  --green: #146C34;
+  --green-2: #1E9E52;
+  --blue: #1063A8;
+  --pink-bg: #FDECEF;
+  /* Tints for status panels and chips, each the family of the text token above it. */
+  --green-bg: #E8F5EC;
+  --green-border: #CBE7D5;
+  --blue-bg: #E8F1FB;
+  --blue-border: #CBDFF3;
+  --pink-tint: #FFF8F9;
+  --pink-border: #F3C9D1;
+  --amber-tint: #FFFBF0;
+  --amber-border: #F0D98A;
+  --amber-accent: #E8A700;
+  /* One height for every document box and every check card on Upload Documents
+     and Investor Information, whatever each says, so all of them line up. Tall
+     enough for a filed proof's four lines; its View and Replace sit under it. A
+     phone's is taller, as its boxes stack the mark over the text. */
+  --doc-card-h: 184px;
+}
+@media (min-width: 761px) {
+  :root { --doc-card-h: 144px; }
+}
+* , *::before, *::after { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  background: var(--page-bg);
+  font-family: 'Georama', system-ui, sans-serif;
+  color: var(--ink);
+  letter-spacing: 0;
+  -webkit-font-smoothing: antialiased;
+}
+/* Headings sit a touch tighter than body text, as large type needs. */
+h1, h2, h3, .cii-title, .cud-head__name, .inv-title, .classic-steps__title, .status-card__title { letter-spacing: -.01em; }
+a { color: var(--red); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, p { margin: 0; }
+/* The page is a column the height of the window, so the legal strip closes it at
+   the foot of the window rather than partway up a page short of content. */
+body { min-height: 100vh; display: flex; flex-direction: column; }
+.app-shell { max-width: 1536px; width: 100%; margin: 0 auto; padding: 16px; flex: 1; }
+/* The thin legal strip that closes Board 00 - Laptop. Sits outside .app-shell so
+   it runs the full width of the viewport, as it does the full width of the frame. */
+.app-footer {
+  height: 34px; background: #fff; border-top: 1px solid var(--divider);
+  display: flex; align-items: center; padding: 0 16px; font-size: 10.5px; color: var(--muted);
+}
+/* ===== Cards ===== */
+.card {
+  background: var(--card-bg);
+  border-radius: 8px;
+  padding: 18px 20px;
+}
+.card + .card { margin-top: 16px; }
+.card__header {
+  display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap;
+  border-bottom: 1px solid var(--divider-2); padding-bottom: 12px; margin-bottom: 14px;
+}
+.card__title { font-size: 16px; font-weight: 500; color: var(--text); flex: 1; min-width: 0; }
+.card__subtitle { font-size: 11.5px; color: var(--muted); }
+/* Board 00's console cards title smaller and darker than the wizard cards do. */
+.card--console .card__title { font-size: 14.5px; font-weight: 600; color: var(--ink); }
+.card--console .card__subtitle { font-size: 11px; line-height: 1.45; }
+.card__header--plain { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
+.card__header-actions { display: flex; align-items: center; gap: 10px; flex: none; }
+/* ===== Buttons ===== */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  border-radius: 6px; padding: 12px 22px; font-family: inherit; font-size: 14px; font-weight: 600;
+  border: 1px solid transparent; cursor: pointer; white-space: nowrap;
+}
+.btn-primary { background: var(--red); color: #fff; }
+.btn-primary:hover { background: var(--red-dark); text-decoration: none; color: #fff; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+/* Controls that are semantically buttons but must render as plain text in the
+   mock — profile rows, "Edit pinned", "Export", the pagination numbers. */
+.btn-reset {
+  background: none; border: 0; padding: 0; margin: 0;
+  font: inherit; color: inherit; text-align: left; cursor: pointer;
+}
+/* ===== Inputs (44px) ===== */
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field label { font-size: 12px; font-weight: 500; color: var(--text); }
+.field .required { color: var(--red); }
+.field input, .field select, .field textarea {
+  height: 44px; border: 1px solid var(--border-3); border-radius: 8px;
+  padding: 0 12px; font-size: 14px; font-family: inherit; background: #fff; color: var(--ink);
+}
+.field textarea { height: auto; padding: 10px 12px; }
+/* Board 02 draws a field that already carries a value with an ink border rather than
+   the resting grey, so the prefilled PAN reads as answered next to the empty ones.
+   Qualified by .field to outweigh the `.field input` border shorthand above. */
+.field .field__input--filled { border-color: var(--ink); }
+.js-page--active { color: var(--ink); font-weight: 700; }
+.text-danger { color: var(--red-dark); font-weight: 600; }
+.text-amber { color: var(--amber); font-weight: 600; }
+.text-success { color: var(--green); font-weight: 600; }
+.text-muted { color: var(--muted); }
+/* ===== Wizard ===== */
+.wizard__body { display: grid; grid-template-columns: 240px minmax(0,1fr); gap: 16px; align-items: start; }
+.wizard__rail { background: #fff; border-radius: 8px; padding: 12px 8px; display: flex; flex-direction: column; gap: 2px; }
+.wizard__content { background: #fff; border-radius: 8px; padding: 24px; display: flex; flex-direction: column; gap: 22px; }
+.wizard__actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 16px; border-top: 1px solid var(--divider-2); }
+.wizard__actions-left { display: flex; gap: 10px; }
+.wizard__actions-right { display: flex; gap: 10px; }
+.tag { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; padding: 2px 8px; border-radius: 9px; }
+.tag--primary { background: var(--tint); color: var(--text); }
+.tag--optional { background: var(--tint); color: var(--muted); }
+.tag--success { background: var(--green-bg); color: var(--green); }
+.tag--warn { background: var(--amber-bg); color: var(--amber); }
+.tag--danger { background: var(--pink-bg); color: var(--red-dark); }
+.callout { border-left: 3px solid var(--red); background: var(--pink-tint); border-radius: 0 8px 8px 0; padding: 16px 18px; display: flex; flex-direction: column; gap: 9px; }
+.callout--info { border-left-color: var(--blue); background: var(--blue-bg); color: var(--blue); }
+.callout--warn { border-left-color: var(--amber); background: var(--amber-bg); }
+/* Flat mint panel the mockups use for a failed check and its "what to do" line —
+   no accent rule, the red lead sentence carries the signal. */
+.callout--mint { border-left: none; background: var(--green-bg); border-radius: 6px; }
+.callout--sm { padding: 10px 13px; border-radius: 6px; gap: 4px; font-size: 11px; line-height: 1.5; }
+/* Room at the bottom of the wizard so the fixed footer bar (.csi-bar) never covers
+   the last field or button. */
+.wizard { padding-bottom: 84px; }
+@media (max-width: 560px) {
+  .wizard { padding-bottom: 110px; }
+}
+/* Small status chip (as opposed to .tag, which is an uppercase pill) */
+.chip { display: inline-flex; align-items: center; font-size: 10.5px; font-weight: 700; border-radius: 3px; padding: 2px 7px; white-space: nowrap; }
+.chip--primary { background: var(--blue-bg); color: var(--blue); }
+.chip--muted { background: var(--divider); color: var(--muted); }
+.chip--success { background: var(--green-bg); color: var(--green); }
+.chip--warn { background: var(--amber-bg); color: var(--amber); }
+.chip--ok { background: var(--green-bg); color: var(--green); }
+.chip--muted { background: var(--tint); color: var(--muted); }
+.chip--danger { background: var(--pink-bg); color: var(--red-dark); }
+.kv-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px 20px; }
+.kv-grid--2 { grid-template-columns: repeat(2, minmax(0,1fr)); }
+.kv-grid--4 { grid-template-columns: repeat(4, minmax(0,1fr)); }
+.kv { display: flex; flex-direction: column; gap: 3px; }
+.kv dt { font-size: 10.5px; color: var(--muted); font-weight: 600; }
+.kv dd { margin: 0; font-size: 13px; font-weight: 500; color: var(--ink); }
+/* ===== Modal overlay (11A payment-link dialog on Review Summary) ===== */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(35,31,32,.45);
+  display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 100;
+}
+.modal-overlay[hidden] { display: none; }
+.modal-dialog {
+  background: #fff; border-radius: 8px; padding: 28px; max-width: 560px; width: 100%;
+  max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(31,41,55,.25);
+}
+/* ===== Toast (lightweight, mock-only feedback) ===== */
+.toast {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(8px);
+  background: var(--ink); color: #fff; font-size: 12.5px; font-weight: 500; padding: 10px 18px;
+  border-radius: 6px; box-shadow: 0 8px 24px rgba(0,0,0,.25); z-index: 200; opacity: 0;
+  pointer-events: none; transition: opacity .15s ease, transform .15s ease;
+}
+.toast--visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+tbody tr[hidden] { display: none; }
+@media (max-width: 560px) {
+  /* The mobile boards end on their last card, without the legal strip. */
+  .app-footer { display: none; }
+}
+@media (max-width: 560px) {
+  .wizard__body { gap: 12px; }
+  .wizard .wizard__rail { display: none; }
+  .wizard--menu-open .wizard__rail { display: flex; flex-direction: column; overflow: visible; }
+  .wizard .callout--info { font-size: 11.5px; line-height: 1.55; padding: 12px 14px; }
+  .wizard { padding-bottom: 110px; }
+  /* Upload Documents (07): the application number and type toggle drop under the summary line. */
+  .docs-head { gap: 10px; }
+  .docs-head > div:last-child { flex: 1 1 100% !important; }
+}
+/* ===== Responsive / mobile ===== */
+@media (max-width: 900px) {
+  .kv-grid, .kv-grid--2, .kv-grid--4 { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .wizard__body { grid-template-columns: 1fr; }
+  /* A grid item defaults to min-width:auto, so the scrolling rail would otherwise
+       push the whole column - and the page - wider than the viewport. */
+  .wizard__body > * { min-width: 0; }
+  .wizard__rail { flex-direction: row; overflow-x: auto; }
+}
+@media (max-width: 560px) {
+  .kv-grid, .kv-grid--2, .kv-grid--4 { grid-template-columns: 1fr; }
+  .wizard__content { padding: 16px; }
+  .card { padding: 14px 16px; }
+  .wizard__actions { flex-direction: column; align-items: stretch; }
+  .wizard__actions-left, .wizard__actions-right { justify-content: stretch; }
+  .wizard__actions-left .btn, .wizard__actions-right .btn { flex: 1; }
+}
+.inv-field .required { color: var(--red); }
+.inv-control {
+  width: 100%; height: 40px; border: 1px solid var(--border-3); border-radius: 8px; background: #fff;
+  padding: 0 12px; font-family: inherit; font-size: 14.5px; font-weight: 500; color: var(--ink); letter-spacing: inherit;
+}
+.inv-control:focus { outline: none; border-color: var(--ink); }
+select.inv-control {
+  appearance: none; -webkit-appearance: none; padding-right: 30px; cursor: pointer;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0h10L5 6z' fill='%236B7280'/%3E%3C/svg%3E") no-repeat right 12px center;
+}
+/* An unanswered select shows its blank or "Select" option in the placeholder grey. */
+select.inv-control:has(option[value=""]:checked) { color: var(--muted-2); }
+.inv-control[readonly] { background: var(--tint); border-color: var(--divider); cursor: default; }
+.inv-control--error, .inv-control--error:focus { border-color: var(--red); }
+.inv-field--sm .inv-control { height: 36px; border-radius: 6px; border-color: var(--red); padding: 0 10px; font-size: 13px; }
+.inv-field--sm select.inv-control { padding-right: 28px; background-position: right 10px center; }
+.cii-head { display: flex; align-items: center; gap: 12px; padding-bottom: 6px; }
+.cii-title { flex: 1; min-width: 0; margin: 0; font-size: 16px; font-weight: 500; color: var(--text); }
+.cii-note { margin: 14px 0 0; font-size: 12.5px; color: var(--muted); }
+.csi-card > .cii-note { margin-top: 12px; }
+/* FD Configuration: tenure and payout as the classic radios, in a wrapping row. */
+.fd-radios { display: flex; flex-wrap: wrap; gap: 14px 0; padding-top: 18px; }
+.fd-amount {
+  height: 48px; border: 1px solid var(--ink); border-radius: 8px; background: #fff;
+  display: flex; align-items: center; gap: 6px; padding: 0 6px 0 14px;
+  font-size: 19px; font-weight: 600; color: var(--ink);
+}
+.fd-amount--error { border-color: var(--red); }
+.rv-holder {
+  border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: #fff;
+  display: grid; grid-template-columns: 232px minmax(0,1.05fr) minmax(0,1.15fr) minmax(0,1.25fr);
+}
+.rv-holder__id { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; background: var(--green-bg); border-left: 4px solid var(--green-2); }
+.rv-holder__photo {
+  width: 48px; height: 58px; flex: none; border-radius: 6px; background: #fff; border: 1px solid var(--divider);
+  display: flex; align-items: center; justify-content: center; font-size: 8px; color: var(--muted); letter-spacing: .04em;
+}
+.rv-holder__id-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.rv-holder__name-row { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+.rv-holder__name { font-size: 14px; font-weight: 700; color: var(--ink); letter-spacing: -.1px; }
+.rv-holder__meta { font-size: 10.5px; color: var(--muted); line-height: 1.5; }
+.rv-holder__count { display: flex; flex-direction: column; gap: 5px; padding-top: 4px; }
+.rv-holder__count-label { font-size: 10.5px; font-weight: 700; color: var(--green); line-height: 1.35; }
+.rv-holder__bar { height: 4px; border-radius: 2px; background: var(--divider); overflow: hidden; }
+.rv-holder__bar > div { width: 100%; height: 100%; background: var(--green-2); }
+.rv-holder__consent { font-size: 10px; color: var(--muted); line-height: 1.5; padding-top: 1px; }
+.rv-holder__col { padding: 14px 16px; border-left: 1px solid var(--tint); display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.rv-holder__col--poa { background: var(--green-bg); }
+.rv-holder__col--flag { background: var(--pink-bg); }
+.rv-holder__col-head { display: flex; align-items: baseline; gap: 8px; }
+.rv-holder__col-label { flex: 1; min-width: 0; font-size: 9.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.rv-holder__poa-note { font-size: 10.5px; font-weight: 500; color: var(--green); line-height: 1.5; border-top: 1px solid var(--green-border); padding-top: 9px; }
+/* Board 11 - Mobile stacks each holder's columns and runs the sections one above another. */
+@media (max-width: 1100px) {
+  .rv-holder { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .rv-holder__col:nth-child(3) { border-left: none; }
+  .rv-holder__col { border-top: 1px solid var(--tint); }
+  .rv-holder__col:nth-child(2) { border-top: none; }
+}
+@media (max-width: 560px) {
+  .rv-holder { grid-template-columns: 1fr; }
+  .rv-holder__col, .rv-holder__col:nth-child(2) { border-left: none; border-top: 1px solid var(--tint); }
+}
+/* The dashboard runs its cards a little roomier than the base .card the wizard
+   pages use, so the three paddings the board asks for are modifiers rather than
+   a change to .card itself. */
+.card--hero { padding: 20px 24px; }
+.card--wide { padding: 22px 24px; }
+.card--side { padding: 20px; }
+/* Below the two-column breakpoint the attention grid cannot hold six columns;
+   it stacks into a card-per-row with the action on the first line. */
+@media (max-width: 560px) {
+  .card--hero, .card--wide, .card--side { padding: 14px 16px; }
+}
+/* Below 1100px the seven columns get too narrow for the status lines, so each
+   record becomes a two-column card with the column name above each value. */
+#dmsZoomOut, #dmsZoomIn { font-size: 14px; line-height: 1; width: 16px; }
+/* Below 1200px the table needs the full width, so the viewer drops beneath it
+   and stops following the scroll. */
+/* Below 900px each document becomes a card: its type and class on top, the file
+   name across the full width, and the dates and ID two-up with their labels. */
+#dmsuForm { display: flex; flex-direction: column; gap: 20px; }
+#dmsuForm[hidden] { display: none; }
+#dmsuForm .inv-control { font-size: 13px; }
+#dmsuForm select.inv-control:disabled { background-color: var(--tint); color: var(--muted-2); cursor: not-allowed; }
+/* The profile beside the panel is the portal's card, drawn tighter: the classic
+   console gives the applications the width, not the rail. The rail is only beside
+   the panel above the breakpoint, and the width is set there so it cannot outrank
+   the one-column rules further down the file. */
+/* On a phone the profile card is in the menu behind the hamburger, so the panel
+   has the screen to itself: it runs edge to edge between the bar and the strip at
+   the foot, without the shell's gutters or its own rounded corners. */
+/* ===== Uno TP classic dashboard =====
+   The old WA_FD_UNOTP/Dashboard, kept for partners who still work from it: one
+   white panel, the four booking steps down the left and big icon tiles right.
+   Sizes are measured off the live page at 1470px: a 430px step column, 126px
+   tiles 27px apart, and small type, mostly 14-15px, with 12px notes. */
+/* The page behind the panel is --page-bg, as on every other page. */
+.classic { background: #fff; border-radius: 8px; padding: 34px 34px 56px; display: grid; grid-template-columns: minmax(0,447px) minmax(0,1fr); }
+/* Old Bootstrap's lg split: a third for the steps once the four tiles no longer
+   fit beside a full-width step column, then stacked below 992px. */
+@media (max-width: 1180px) {
+  .classic { grid-template-columns: minmax(0,1fr) minmax(0,2fr); }
+}
+@media (max-width: 991px) {
+  .classic { grid-template-columns: minmax(0,1fr); padding: 24px 16px; }
+}
+/* ===== Uno TP classic - investor search (the old searchinvestor page) =====
+   The step rail beside one card of fields, over a bar of actions pinned to the
+   foot of the window. Sizes follow the live page at 1470px. */
+.csi { display: grid; grid-template-columns: 222px minmax(0,1fr); gap: 15px; align-items: start; }
+/* The rail stays put under the 44px header while the card beside it scrolls;
+   if the window is too short for it, the rail scrolls inside itself. */
+.csi-rail { position: sticky; top: 60px; max-height: calc(100vh - 128px); overflow-y: auto; background: #fff; border-radius: 8px; padding: 16px 12px; display: flex; flex-direction: column; gap: 12px; }
+.csi-card { background: #fff; border-radius: 8px; padding: 20px 22px 26px; margin-bottom: 70px; }
+.csi-label { display: block; font-size: 12.5px; font-weight: 600; color: var(--ink); padding: 0 0 6px; }
+.csi-searchby { margin: 18px 0 0; padding: 0; border: 0; }
+.csi-searchby .csi-label { padding-bottom: 10px; }
+.csi-radio { display: inline-flex; align-items: center; gap: 8px; margin-right: 26px; font-size: 13px; color: var(--text); cursor: pointer; }
+.csi-radio input {
+  appearance: none; -webkit-appearance: none; margin: 0; width: 17px; height: 17px; flex: none;
+  border: 1.5px solid var(--muted-2); border-radius: 50%; background: #fff; cursor: pointer;
+}
+.csi-radio input:checked { border: 2px solid var(--red); box-shadow: inset 0 0 0 2.5px #fff, inset 0 0 0 9px var(--red); }
+.csi-radio input:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.csi-field[hidden] { display: none; }
+.csi-control, .csi-date {
+  width: 100%; height: 36px; padding: 0 10px; border: 1px solid var(--border-3); border-radius: 6px;
+  background: #fff; font-family: inherit; font-size: 13px; color: var(--ink);
+}
+.csi-control:focus, .csi-date:focus-within { outline: none; border-color: var(--muted); }
+.csi-control.is-invalid, .csi-date.is-invalid { border-color: var(--red); }
+.csi-date { display: flex; align-items: center; gap: 2px; }
+.csi-date__part { width: 38px; border: 0; padding: 0; background: none; font: inherit; color: var(--ink); font-weight: 500; text-align: center; }
+.csi-date__part--year { width: 52px; }
+.csi-date__part::placeholder { color: var(--muted); font-weight: 400; }
+.csi-date__part:focus { outline: none; }
+.csi-date__sep { color: var(--muted-2); }
+.csi-error { margin: 5px 0 0; font-size: 11.5px; font-weight: 500; color: var(--red); }
+.csi-error[hidden] { display: none; }
+.csi-btn { display: inline-flex; align-items: center; justify-content: center; height: 34px; padding: 0 22px; border: 1px solid var(--red); border-radius: 6px; font-family: inherit; font-size: 13px; font-weight: 500; cursor: pointer; }
+.csi-btn--back { background: #fff; color: var(--red); }
+.csi-btn--back:hover { background: var(--pink-bg); text-decoration: none; }
+.csi-btn--primary { background: var(--red); color: #fff; }
+.csi-btn--primary:disabled { background: #E7EAEE; border-color: #E7EAEE; color: var(--muted-2); cursor: not-allowed; }
+.csi-link:disabled { color: var(--muted-2); cursor: not-allowed; text-decoration: none; }
+.csi-btn--primary:hover { background: var(--red-dark); border-color: var(--red-dark); }
+.csi-link { border: 0; background: none; padding: 0; font-family: inherit; font-size: 13px; font-weight: 500; color: var(--red); cursor: pointer; }
+.csi-link:hover { text-decoration: underline; }
+@media (max-width: 900px) {
+  .csi { grid-template-columns: minmax(0,1fr); }
+  /* The rail lies down over the card and scrolls sideways if it has to. */
+  .csi-rail { position: static; max-height: none; flex-direction: row; gap: 6px; overflow-x: auto; overflow-y: hidden; padding: 10px; }
+}
+/* ===== The wizard on a phone =====
+   Five steps will not go across a phone, and a rail that scrolls sideways hides
+   the one you are on. It becomes a line that says where you are and a bar that
+   shows how far in, which is what the rail was for. */
+@media (max-width: 760px) {
+  .csi-rail { flex-direction: column; gap: 9px; padding: 12px 14px; overflow: visible; }
+  /* Two rows of bar to clear, not one. */
+  .csi-card, .csi-main { margin-bottom: 104px; }
+}
+@media (max-width: 560px) {
+  .csi-card { padding: 16px; }
+  .csi-radio { margin-right: 16px; }
+  .csi-btn { padding: 0 16px; }
+}
+.csi-field--check { padding-bottom: 0; }
+.csi-hint { padding-top: 10px; font-size: 11.5px; color: var(--muted); }
+.csi-hint[hidden] { display: none; }
+/* Search By swaps the fields without a script: the checked radio hides the
+   other route's fields and hint. */
+/* Search By swaps the fields. A holder searched inside a larger form carries the
+   field under a prefix (Joint2.By), so the name is matched at its end too. */
+.csi-search:has(input:is([name="by"], [name$=".By"])[value="pan"]:checked) [data-for="folio"],
+.csi-search:has(input:is([name="by"], [name$=".By"])[value="folio"]:checked) [data-for="pan"] { display: none; }
+/* A change on its way to the server (partial-forms.js): a thin bar running across
+   the top of the window, so a slow connection is seen to be working while the
+   page stays usable. */
+html.is-saving::before {
+  content: ""; position: fixed; z-index: 1000; top: 0; left: 0; width: 40%; height: 3px;
+  background: var(--red); animation: is-saving 1.1s ease-in-out infinite;
+}
+@keyframes is-saving { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+@media (prefers-reduced-motion: reduce) {
+  html.is-saving::before { width: 100%; animation: none; opacity: .6; }
+}
+@media (max-width: 1100px) {
+  .csi-field--check { grid-column: 1 / -1; }
+}
+/* Text only a screen reader needs, such as the header of an action column. */
+.visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+/* Drafts under the search card: the applications this partner started and can
+   pick up again, in the old page's plain table style. */
+.csi-drafts { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--divider); }
+.csi-drafts__title { font-size: 16px; font-weight: 500; color: var(--text); }
+.csi-drafts__table { width: 100%; border-collapse: collapse; font-size: 12.5px; color: var(--text); }
+.csi-drafts__table th { padding: 10px 10px 8px 0; font-size: 10.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); text-align: left; border-bottom: 1px solid var(--divider); }
+.csi-drafts__table td { padding: 11px 10px 11px 0; border-bottom: 1px solid var(--divider); vertical-align: top; }
+.csi-drafts__table tr:last-child td { border-bottom: 0; }
+.csi-drafts__table strong { color: var(--ink); font-weight: 600; }
+.csi-drafts__detail { padding-top: 3px; font-size: 11px; color: var(--muted); }
+.csi-drafts__act { display: flex; justify-content: flex-end; gap: 14px; white-space: nowrap; }
+@media (max-width: 900px) {
+  /* Each row becomes its own block, every cell labelled by its column. */
+  .csi-drafts__table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .csi-drafts__table tr { display: block; padding: 12px 0; border-bottom: 1px solid var(--divider); }
+  .csi-drafts__table tr:last-child { border-bottom: 0; }
+  .csi-drafts__table td { display: flex; gap: 10px; padding: 3px 0; border: 0; }
+  .csi-drafts__table td::before { content: attr(data-label); flex: none; width: 108px; font-size: 11px; color: var(--muted); }
+  .csi-drafts__act { justify-content: flex-end; }
+}
+/* On a phone a label beside every cell makes five lines of a draft and a screen
+   of scrolling for five drafts. Each one becomes a card instead: what it is and
+   what it is worth on the first line, who it is for under it, and the way back
+   into it at the foot. */
+@media (max-width: 760px) {
+  .csi-drafts__table tr {
+      display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 3px 12px;
+      margin-top: 10px; padding: 12px 14px;
+      border: 1px solid var(--border); border-radius: 8px;
+    
+  }
+  .csi-drafts__table tr:last-child { border-bottom: 1px solid var(--border); }
+  .csi-drafts__table td { display: block; padding: 0; }
+  .csi-drafts__table td::before { content: none; }
+  .csi-drafts__table td:nth-child(1) { grid-column: 1; grid-row: 1; }
+  .csi-drafts__table td:nth-child(1) strong { font-size: 13px; }
+  /* What the application is worth, against its number. */
+  .csi-drafts__table td:nth-child(5) { grid-column: 2; grid-row: 1; font-size: 13px; font-weight: 700; color: var(--ink); text-align: right; }
+  .csi-drafts__table td:nth-child(2) { grid-column: 1 / -1; grid-row: 2; font-size: 12.5px; color: var(--text); }
+  /* The masked identifiers, quieter than the name they belong to. */
+  .csi-drafts__table td:nth-child(3) { grid-column: 1; grid-row: 3; }
+  .csi-drafts__table td:nth-child(4) { grid-column: 2; grid-row: 3; text-align: right; }
+  .csi-drafts__table td:nth-child(3), .csi-drafts__table td:nth-child(4) { font-size: 11.5px; color: var(--muted); }
+  /* Qualified by the table, or the display:block above it would outrank the
+       flex row this cell is, and Continue would sit against the left edge. */
+  .csi-drafts__table .csi-drafts__act { grid-column: 1 / -1; grid-row: 4; display: flex; justify-content: flex-end; padding-top: 6px; }
+}
+/* A field filled from a record rather than typed, and the name behind a code. */
+.csi-control[readonly], .csi-control:disabled { background: var(--tint); color: var(--muted); cursor: default; }
+/* In a manual-entry box, a line that may be left blank is not outlined as one that must be typed. */
+.inv-field--sm.inv-field--optional .inv-control:not(.inv-control--error) { border-color: var(--border-3); }
+/* The arrow is the page's own, so the control matches the text fields beside it. */
+.cud-select { position: relative; }
+.cud-select select { width: 100%; appearance: none; padding-right: 36px; background: #fff; cursor: pointer; }
+.cud-select::after { content: ""; position: absolute; right: 14px; top: 50%; width: 8px; height: 8px; margin-top: -6px; border-right: 1.8px solid var(--muted); border-bottom: 1.8px solid var(--muted); transform: rotate(45deg); pointer-events: none; }
+@keyframes cud-spin { to { transform: rotate(360deg); } }
+@media (min-width: 761px) {
+  .cud-slot .csi-error { text-align: left; }
+}
+/* ----- The wait ------------------------------------------------------------
+   One screen for every wait in the app. It covers what is behind it rather than
+   greying a button, because the thing it is protecting against is a second press
+   on a step that opens applications and files documents. */
+.loader { position: fixed; inset: 0; z-index: 900; display: flex; align-items: center; justify-content: center; padding: 24px; background: rgba(23, 27, 35, .42); backdrop-filter: blur(1.5px); }
+.loader[hidden] { display: none; }
+.loader__box { display: flex; flex-direction: column; align-items: center; gap: 10px; min-width: 232px; max-width: 360px; padding: 26px 30px; border-radius: 8px; background: #fff; box-shadow: 0 18px 44px rgba(16, 24, 40, .22); text-align: center; }
+.loader__spinner { width: 26px; height: 26px; border: 2.5px solid var(--pink-bg); border-top-color: var(--red); border-radius: 50%; animation: cud-spin .7s linear infinite; }
+.loader__what { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+.loader__hint { font-size: 11.5px; line-height: 1.5; color: var(--muted); }
+.loader__hint[hidden] { display: none; }
+body.is-waiting { overflow: hidden; }
+@media (prefers-reduced-motion: reduce) {
+  .loader__spinner { animation-duration: 2.4s; }
+}
+.cud-slot .csi-error { text-align: left; }
+.su-table { width: 100%; table-layout: fixed; border-collapse: collapse; margin-top: 4px; font-size: 13px; color: var(--text); }
+.su-table th { padding: 12px 12px 9px 0; font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); text-align: left; border-bottom: 1px solid var(--border); }
+.su-table td { padding: 13px 12px 13px 0; border-bottom: 1px solid var(--divider); vertical-align: middle; overflow-wrap: anywhere; }
+.su-table tr:last-child td { border-bottom: 0; }
+/* A button in a row's action cell keeps to one line, whatever the cell's width. */
+.su-table__act .csi-btn { white-space: nowrap; padding-left: 16px; padding-right: 16px; }
+.su-table__act form { display: inline; }
+.su-table strong { color: var(--ink); font-weight: 600; }
+.su-table__sub { padding-top: 3px; font-size: 11.5px; color: var(--muted); }
+.su-table__act { padding-right: 0; text-align: right; }
+.su-table tbody tr:hover td { background: var(--tint); }
+@media (max-width: 900px) {
+  /* Each link becomes its own block, every cell labelled by its column. */
+  .su-table, .su-table tbody, .su-table tr, .su-table td { display: block; width: auto; }
+  .su-table colgroup, .su-table thead { display: none; }
+  .su-table tr { padding: 12px 0; border-bottom: 1px solid var(--divider); }
+  .su-table td { display: flex; gap: 10px; padding: 3px 0; border: 0; }
+  .su-table td::before { content: attr(data-label); flex: none; width: 104px; font-size: 11px; color: var(--muted); }
+  .su-table__act { justify-content: flex-end; }
+  .su-table__act::before { content: none; }
+}
+.pis-table__amt { font-weight: 600; color: var(--ink); white-space: nowrap; }
+.adm-when .csi-date { width: auto; }
+/* ===== E-Sarathi classic login =====
+   The old WA_FD_ESARATHI_LOGIN: the artwork down the left, and on the right the
+   E-Sarathi mark over two pill fields, the LOGIN button and the two forgot
+   links. Nothing else is on the page, and it sits on the flat grey the live page
+   uses rather than the portal's blue-grey. Sizes are read off the live page at
+   1470px: a 356px field 44px tall, 18px apart, a 152x40 button 22px under them,
+   and the forgot links 40px under that. */
+html:has(.clogin), html:has(.clogin) body { background: var(--border); }
+.app-shell:has(.clogin) { max-width: 1280px; }
+.fd-label .required { color: var(--red); }
+/* ----- Lists: the data shapes the table ------------------------------------
+   Amounts line up by place value, right-aligned in figures of one width. A
+   status is a chip, coloured by what it means. A row that is over - expired,
+   lapsed, cancelled - steps back, so the rows still in play are what the eye
+   finds. */
+.pis-table__amt { text-align: right; font-variant-numeric: tabular-nums; }
+.su-table th.pis-table__amt { text-align: right; }
+.su-table tr:is([data-state="expired"], [data-state="lapsed"], [data-state="cancelled"], [data-state="closed"]) td { color: var(--muted); }
+.su-table tr:is([data-state="expired"], [data-state="lapsed"], [data-state="cancelled"]) :is(strong, .pis-table__amt) { color: var(--muted); font-weight: 500; }
+@media (max-width: 760px) {
+  .pis-table__amt, .su-table th.pis-table__amt { text-align: left; }
+}
+/* ----- A term explained --------------------------------------------------
+   Glossary.Term: a dotted underline, and on hover or focus the meaning in a
+   small dark label above it. It reads the same whatever the text around it is. */
+.tip { position: relative; text-decoration: none; border-bottom: 1px dotted currentColor; cursor: help; }
+.tip:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; border-radius: 2px; }
+.tip::after {
+  content: attr(data-tip); position: absolute; left: 50%; bottom: calc(100% + 8px); z-index: 70;
+  width: max-content; max-width: 260px; padding: 6px 9px; border-radius: 6px;
+  background: var(--ink); color: #fff; font-size: 12px; font-weight: 400; line-height: 1.4;
+  letter-spacing: 0; text-transform: none; text-align: left; white-space: normal;
+  transform: translateX(-50%); pointer-events: none; opacity: 0; transition: opacity .12s ease;
+}
+.tip:hover::after, .tip:focus-visible::after { opacity: 1; }
+/* What a check said is behind an info mark; its words are there on hover or
+   focus. Only a failure that asks for a new copy stays written out. */
+.tip--info { display: inline-flex; align-items: center; gap: 5px; border-bottom: 0; font-size: 11.5px; color: var(--muted); }
+.tip--info::before { content: "i"; display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; border: 1px solid currentColor; border-radius: 50%; font-size: 9.5px; font-weight: 700; font-style: normal; }
+.tip--info:hover { color: var(--ink); }
+.tip--info::after { left: 0; transform: none; max-width: 300px; }
+/* The mark alone, with no words beside it: beside a box's tools, or a card's title. */
+.tip--mark { gap: 0; }
+.tip--mark.is-warn { color: var(--amber, #b45309); }
+.tip--mark.is-bad { color: var(--red); }
+/* ----- Feedback in proportion ------------------------------------------------
+   Every press is felt: buttons sink a little while held. A quick action spins on
+   its own button while it is under way, and a toast says when it is done. A copy
+   button says "Copied" where it was pressed. */
+.btn:active:not(:disabled), .csi-btn:active:not(:disabled), .cud-tool:active, .csi-link:active { transform: translateY(1px); }
+.btn:active:not(:disabled), .csi-btn:active:not(:disabled) { filter: brightness(.94); }
+.is-busy { position: relative; color: transparent !important; pointer-events: none; }
+.is-busy::after { content: ""; position: absolute; left: 50%; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border: 2px solid var(--pink-bg); border-top-color: var(--red); border-radius: 50%; animation: cud-spin .7s linear infinite; }
+[data-copy] { position: relative; }
+[data-copy].is-copied::after { content: "Copied"; position: absolute; left: 50%; bottom: calc(100% + 6px); transform: translateX(-50%); padding: 3px 7px; border-radius: 4px; background: var(--ink); color: #fff; font-size: 11px; font-weight: 600; white-space: nowrap; pointer-events: none; }

@@ -7,6 +7,10 @@
    An entry already in a table is left as it is, so running this again never
    overwrites a value that was changed since.
 
+   Order matters in two lists: the first of 'employeeHolders' is the primary
+   holder, and the first of 'employeeRelations' is Self - an employee who is the
+   primary holder is Self, and no other holder can be.
+
    Not seeded: t_Ref_List 'cmsLocations' (the Axis CMS locations cheques are
    presented at) must be loaded from Axis's own list before go-live, and the
    partners and their menus come from the portal's user master.

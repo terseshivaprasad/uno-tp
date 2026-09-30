@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using UnoTP.Backend.External;
@@ -6,54 +7,41 @@ namespace UnoTP.Backend;
 
 public static class BackendServiceCollectionExtensions
 {
-    /// <summary>
-    /// Every contract, answered over HTTP: the backend's own data by
-    /// <see cref="BackendClient"/> at Backend:BaseUrl, and each outside service by
-    /// its own client at its own address. The app supplies <see cref="IPartner"/>.
-    /// </summary>
-    public static IServiceCollection AddBackendApi(this IServiceCollection services)
-    {
-        services.AddHttpClient<BackendClient>((sp, http) =>
-        {
-            var options = sp.GetRequiredService<IOptions<BackendOptions>>().Value;
-            // Routes are relative, so the base keeps its own path only with a closing slash.
-            http.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + "/");
-            http.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
-        });
-        services.AddTransient<IInvestorApi>(sp => sp.GetRequiredService<BackendClient>());
-        services.AddTransient<IApplicationApi>(sp => sp.GetRequiredService<BackendClient>());
-        services.AddTransient<IDocumentApi>(sp => sp.GetRequiredService<BackendClient>());
-        services.AddTransient<ISourcingApi>(sp => sp.GetRequiredService<BackendClient>());
-        services.AddTransient<IPayInSlipApi>(sp => sp.GetRequiredService<BackendClient>());
-        services.AddTransient<ILinkApi>(sp => sp.GetRequiredService<BackendClient>());
-        services.AddTransient<IConsoleApi>(sp => sp.GetRequiredService<BackendClient>());
-        services.AddTransient<IReferenceApi>(sp => sp.GetRequiredService<BackendClient>());
-        services.AddTransient<IPartnerApi>(sp => sp.GetRequiredService<BackendClient>());
-        services.AddTransient<IDepositApi>(sp => sp.GetRequiredService<BackendClient>());
-        services.AddTransient<IPlaceApi>(sp => sp.GetRequiredService<BackendClient>());
-        services.AddTransient<IRenewalApi>(sp => sp.GetRequiredService<BackendClient>());
-        services.AddTransient<IDemoApi>(sp => sp.GetRequiredService<BackendClient>());
-        services.AddTransient<ISessionApi>(sp => sp.GetRequiredService<BackendClient>());
+    /// <summary>Every outside service by the name its address goes under (Backend:External:{name}).</summary>
+    public static readonly string[] OutsideServices =
+    [
+        NsdlClient.Name, DocumentIdentifierClient.Name, MaskingClient.Name, OcrClient.Name, VerificationClient.Name,
+        PanAadhaarLinkClient.Name, FaceMatchClient.Name, DecryptionClient.Name,
+    ];
 
-        // The outside services, one client each.
-        services.External<INsdlService, NsdlClient>(NsdlClient.Name);
-        services.External<IDocumentIdentifier, DocumentIdentifierClient>(DocumentIdentifierClient.Name);
-        services.External<IMaskingService, MaskingClient>(MaskingClient.Name);
-        services.External<IOcrService, OcrClient>(OcrClient.Name);
-        services.External<IVerificationService, VerificationClient>(VerificationClient.Name);
-        services.External<IPanAadhaarLinkService, PanAadhaarLinkClient>(PanAadhaarLinkClient.Name);
-        services.External<IFaceMatchService, FaceMatchClient>(FaceMatchClient.Name);
-        services.External<IDecryptionService, DecryptionClient>(DecryptionClient.Name);
+    /// <summary>
+    /// Each outside service that has an address (Backend:External:{name}) answered by
+    /// its own HTTP client, in place of whatever answered for it before. The app
+    /// supplies <see cref="IPartner"/>.
+    /// </summary>
+    public static IServiceCollection AddOutsideServices(this IServiceCollection services, IConfiguration config)
+    {
+        services.External<INsdlService, NsdlClient>(config, NsdlClient.Name);
+        services.External<IDocumentIdentifier, DocumentIdentifierClient>(config, DocumentIdentifierClient.Name);
+        services.External<IMaskingService, MaskingClient>(config, MaskingClient.Name);
+        services.External<IOcrService, OcrClient>(config, OcrClient.Name);
+        services.External<IVerificationService, VerificationClient>(config, VerificationClient.Name);
+        services.External<IPanAadhaarLinkService, PanAadhaarLinkClient>(config, PanAadhaarLinkClient.Name);
+        services.External<IFaceMatchService, FaceMatchClient>(config, FaceMatchClient.Name);
+        services.External<IDecryptionService, DecryptionClient>(config, DecryptionClient.Name);
         return services;
     }
 
-    private static void External<TService, TClient>(this IServiceCollection services, string name)
+    private static void External<TService, TClient>(this IServiceCollection services, IConfiguration config, string name)
         where TService : class
-        where TClient : class, TService =>
+        where TClient : class, TService
+    {
+        if (!BackendOptions.HasAddress(config, name)) return;
         services.AddHttpClient<TService, TClient>((sp, http) =>
         {
             var options = sp.GetRequiredService<IOptions<BackendOptions>>().Value;
             http.BaseAddress = options.UrlOf(name);
             http.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
         });
+    }
 }

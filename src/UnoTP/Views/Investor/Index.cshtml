@@ -640,12 +640,14 @@
                     @{ await Select("ciiNomRelation", "Nominee.Relation", "Relation with primary holder", relations, required: "Select the relation with the primary holder"); }
                 </div>
 
-                @* Only a minor nominee has a guardian. Shut, the fields are not posted, so
-                   nothing typed for a guardian is kept against an adult nominee. The page
-                   opens or shuts this as the date of birth is typed. *@
-                <fieldset class="cii-guardian" id="ciiGuardian" data-cii-guardian hidden="@(!Model.NomineeMinor)" disabled="@(!Model.NomineeMinor)">
+                @* Only a minor nominee has a guardian. The section always stands, and is
+                   disabled until the date of birth typed makes the nominee one: disabled,
+                   its fields are not posted, so nothing typed for a guardian is kept
+                   against an adult nominee. *@
+                <fieldset class="cii-guardian" id="ciiGuardian" data-cii-guardian data-minor-under="@Model.MinorUnder" disabled="@(!Model.NomineeMinor)">
                 <h3 class="cii-section">Guardian Details</h3>
-                <p class="cii-note">The nominee is under @Model.MinorUnder, so a guardian acts for them.</p>
+                <p class="cii-note cii-guardian__minor">The nominee is under @Model.MinorUnder, so a guardian acts for them.</p>
+                <p class="cii-note cii-guardian__when">Needed only for a nominee under @Model.MinorUnder: filled in once the nominee's date of birth makes them one.</p>
                 <div class="cud-grid">
                     <div class="cud-col">
                         <label class="csi-label" for="ciiNomGuardian">Guardian Name</label>
@@ -725,55 +727,9 @@
 </footer>
 
 @section Scripts {
-    <script src="~/js/partial-forms.js" asp-append-version="true"></script>
-    <script src="~/js/image-shrink.js" asp-append-version="true"></script>
-    <script src="~/js/pin.js" asp-append-version="true"></script>
-    <script src="~/js/pin-code.js" asp-append-version="true"></script>
-    <script>
-        // A guardian is named only for a minor nominee: the section opens once the
-        // date of birth typed makes them one, and shuts - its fields no longer
-        // posted - once it does not. The server draws it the same way from what was
-        // posted last.
-        document.addEventListener('input', function (e) {
-            var box = e.target.closest && e.target.closest('#nominee .csi-date');
-            var guardian = document.getElementById('ciiGuardian');
-            if (!box || !guardian) return;
-            var part = function (n) { return box.querySelector('[name="Nominee.' + n + '"]').value; };
-            var d = +part('Dd'), m = +part('Mm'), y = +part('Yyyy');
-            var born = new Date(y, m - 1, d);
-            var whole = part('Yyyy').length === 4 && y >= 1900 && born.getMonth() === m - 1 && born.getDate() === d;
-            var today = new Date();
-            var adult = new Date(y + @Model.MinorUnder, m - 1, d);
-            var minor = whole && born <= today && adult > today;
-            guardian.hidden = !minor;
-            guardian.disabled = !minor;
-        });
+    <script src="~/js/pages/investor.js" asp-append-version="true"></script>
+}
 
-        // Proceed with no nominee named asks first. Skip is kept with the form, so
-        // once answered the question is not asked again; Add posts to NomineeAdd.
-        document.addEventListener('click', function (e) {
-            var proceed = e.target.closest && e.target.closest('[data-ask-nominee]');
-            var ask = proceed && document.getElementById('ciiNomineeAsk');
-            if (!ask || !ask.showPopover) return;
-            var skipped = document.getElementById('ciiNomineeSkipped');
-            if (skipped && skipped.value === 'yes') return;
-            e.preventDefault();
-            e.stopImmediatePropagation();
-            ask.showPopover();
-        }, true);
-        document.addEventListener('click', function (e) {
-            if (!e.target.closest || !e.target.closest('[data-nominee-skip]')) return;
-            document.getElementById('ciiNomineeAsk').hidePopover();
-            var skipped = document.getElementById('ciiNomineeSkipped');
-            if (skipped) skipped.value = 'yes';
-            var proceed = document.querySelector('[data-ask-nominee]');
-            if (proceed) proceed.click();
-        });
-
-        // The offline alert closes on its cross; Proceed with a FATCA Yes brings it back.
-        document.addEventListener('click', function (e) {
-            var close = e.target.closest && e.target.closest('[data-cii-close]');
-            if (close) document.getElementById(close.dataset.ciiClose).hidden = true;
-        });
-    </script>
+@section Styles {
+    <link rel="stylesheet" href="~/css/pages/investor.css" asp-append-version="true" />
 }

@@ -16,6 +16,12 @@ public interface ISessionApi
 
     /// <summary>GET menu: the menus the session's user may open, by the console's feature keys.</summary>
     Task<IReadOnlyList<MenuItem>> MenuAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// Whether the partner's session is still open: not ended, expired, or taken out of
+    /// use with the partner. Asked on every page, so ending one signs the partner out.
+    /// </summary>
+    Task<bool> IsOpenAsync(CancellationToken ct = default) => Task.FromResult(true);
 }
 
 /// <param name="SessionId">Sent back with every call made for the user, as X-Session-Id.</param>

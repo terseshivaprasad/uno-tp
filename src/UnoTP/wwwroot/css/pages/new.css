@@ -1,0 +1,10 @@
+/* The new page only. Loaded after base.css and components/wizard.css. */
+
+.csi-holder .csi-result .inv-kv__note { padding-top: 4px; }
+.csi-holder .csi-onrecord.inv-panel__part { margin-top: 16px; padding-top: 16px; gap: 12px; }
+.csi-holder .csi-onrecord__label { font-size: 12.5px; font-weight: 600; }
+.csi-holder .csi-onrecord__list { gap: 8px; }
+.csi-holder .csi-onrecord__item { padding: 4px 10px 4px 8px; font-size: 12px; }
+.csi-holder .csi-onrecord__foot { font-size: 12.5px; }
+.csi-demo__none { color: var(--muted); }
+.csi-demo__no { display: inline-block; min-width: 20px; height: 20px; border-radius: 50%; background: var(--border-2); color: #fff; font-size: 11px; font-weight: 700; line-height: 20px; text-align: center; }

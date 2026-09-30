@@ -14,55 +14,91 @@
     var filed = v.Doc is not null;
 }
 <div class="cud-slot @(v.Error is not null ? "is-invalid" : null) @(v.Unconfirmed ? "is-unconfirmed" : null) @(Model.IsNext ? "is-next" : null)" id="@(Model.Alternate ? null : "slot-" + key)" tabindex="-1">
-    @* At the top, on the label line over the box, at its right: how the copy was
-       checked behind an info mark, then View and Replace - or, for a copy that is
-       final, a lock saying why it cannot be replaced. Out of the box, so every box
-       keeps one height whatever it holds. The box itself opens the copy too. *@
-    @if (v.Used && !filed && v.Read is not null && !v.Spent && v.Locked is null)
-    {
-    @* An address the folio holds stands in the box; a newer proof may be filed over it. *@
-    <div class="cud-slot__tools">
-        <label class="cud-tool" for="file-@key" title="File a newer @v.Def.Label">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16.5V4.5"></path><path d="M7.5 9L12 4.5 16.5 9"></path><path d="M4.5 15v3.5a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5V15"></path></svg>
-            <span>Newer proof</span>
-        </label>
-        <input type="file" id="file-@key" name="file_@key" accept="@v.Def.Accepts.Mime" hidden data-submit="upload-@key" form="@form" data-shrink="2560">
-    </div>
+    @* At the top, on the label line over the box, at its right, on every card and
+       always in this order: what the checks are (or said), View, and the action -
+       Upload, Replace, Newer proof, or a lock. What cannot be done now is shown
+       disabled with the reason on it, never left out, so the toolbar stands still
+       as the card changes. Out of the box, so every box keeps one height. *@
+    @{
+        var held = !filed ? v.Read : null;
+        var info = !v.Used ? v.NotApplicable ?? "Not asked for on this application."
+            : filed ? (v.Doc!.Check.Length > 0 ? v.Doc.Check : "Filed.")
+            : held is not null ? $"{held.State}. {held.From}"
+            : v.With ?? M.NoCheckOf(v.Def.Key);
+        var infoTone = filed ? v.Doc!.CheckKind switch { "warn" => "is-warn", "bad" => "is-bad", _ => null } : null;
+        var canView = filed && !v.Doc!.Before;
+        var noView = !v.Used ? "Not applicable to this application."
+            : filed ? "Filed before this step: there is no copy here to show."
+            : held is not null ? "Held on record: there is no copy on this application to show."
+            : "Nothing uploaded yet.";
+        // The action: what it says, and why not when it cannot be done now.
+        var (act, why) = !v.Used ? ("Upload", v.NotApplicable ?? "Not applicable to this application.")
+            : v.Final is not null ? ("Final", v.Final)
+            : v.Spent ? ("No tries left", v.Tries ?? "Refused too many times in a row: this document now goes to Operations.")
+            : filed ? ("Replace", (string?)null)
+            : v.Locked is not null ? ("Upload", v.Locked)
+            : held is not null ? ("Newer proof", null)
+            : ("Upload", null);
     }
-    else if (v.Used && filed)
-    {
     <div class="cud-slot__tools">
-        @* A check that failed asks for a new copy, so it stays written out under the box. *@
-        @if (v.Doc!.Check.Length > 0 && v.Doc.CheckKind != "bad")
+        <span class="tip tip--info tip--mark @infoTone" tabindex="0" data-tip="@info"><span class="visually-hidden">About this document: @info</span></span>
+        @if (canView)
         {
-            <span class="tip tip--info tip--mark @(v.Doc.CheckKind == "warn" ? "is-warn" : null)" tabindex="0" data-tip="@v.Doc.Check"><span class="visually-hidden">How it was checked: @v.Doc.Check</span></span>
+            <button type="button" class="cud-tool" popovertarget="preview-@key" title="View @v.Def.Label">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.8 12S5.5 5.5 12 5.5 22.2 12 22.2 12 18.5 18.5 12 18.5 1.8 12 1.8 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                <span>View</span>
+            </button>
         }
-        <button type="button" class="cud-tool" popovertarget="preview-@key" title="View @v.Def.Label">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.8 12S5.5 5.5 12 5.5 22.2 12 22.2 12 18.5 18.5 12 18.5 1.8 12 1.8 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-            <span>View</span>
-        </button>
-        @* Three refused in a row and a filed document cannot be swapped here either;
-           nor can a PAN copy NSDL verified, which is final. *@
+        else
+        {
+            <span class="cud-tool tip" aria-disabled="true" tabindex="0" data-tip="@noView">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.8 12S5.5 5.5 12 5.5 22.2 12 22.2 12 18.5 18.5 12 18.5 1.8 12 1.8 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                <span>View</span><span class="visually-hidden">: @noView</span>
+            </span>
+        }
         @if (v.Final is not null)
         {
+            @* A PAN copy NSDL verified is final: the lock stands where Replace would. *@
             <span class="cud-tool cud-tool--final tip" tabindex="0" data-tip="@v.Final">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10.5" width="14" height="9.5" rx="1.6"></rect><path d="M8.5 10.5V7.8a3.5 3.5 0 0 1 7 0v2.7"></path></svg>
                 <span>Final</span><span class="visually-hidden">: @v.Final</span>
             </span>
         }
-        else if (!v.Spent)
+        else if (why is not null)
         {
-            <label class="cud-tool" for="file-@key" title="Replace @v.Def.Label">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 12a8.5 8.5 0 0 1-14.6 5.9"></path><path d="M3.5 12a8.5 8.5 0 0 1 14.6-5.9"></path><path d="M18.5 2.5V7H14"></path><path d="M5.5 21.5V17H10"></path></svg>
-                <span>Replace</span>
+            <span class="cud-tool tip" aria-disabled="true" tabindex="0" data-tip="@why">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16.5V4.5"></path><path d="M7.5 9L12 4.5 16.5 9"></path><path d="M4.5 15v3.5a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5V15"></path></svg>
+                <span>@act</span><span class="visually-hidden">: @why</span>
+            </span>
+        }
+        else if (filed || held is not null)
+        {
+            @* Replace, or a newer proof over the address on record: the picker is here, as the box shows what is filed. *@
+            <label class="cud-tool" for="file-@key" title="@(filed ? "Replace" : "File a newer") @v.Def.Label">
+                @if (filed)
+                {
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 12a8.5 8.5 0 0 1-14.6 5.9"></path><path d="M3.5 12a8.5 8.5 0 0 1 14.6-5.9"></path><path d="M18.5 2.5V7H14"></path><path d="M5.5 21.5V17H10"></path></svg>
+                }
+                else
+                {
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16.5V4.5"></path><path d="M7.5 9L12 4.5 16.5 9"></path><path d="M4.5 15v3.5a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5V15"></path></svg>
+                }
+                <span>@act</span>
             </label>
             <input type="file" id="file-@key" name="file_@key" accept="@v.Def.Accepts.Mime" hidden data-submit="upload-@key" form="@form"
                    data-shrink="@(v.Def.Key == DocumentsViewModel.FormSlot.Key ? null : "2560")">
         }
+        else
+        {
+            @* Empty: the box below is the picker, and this opens it too. *@
+            <label class="cud-tool" for="file-@key" title="Upload @v.Def.Label">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16.5V4.5"></path><path d="M7.5 9L12 4.5 16.5 9"></path><path d="M4.5 15v3.5a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5V15"></path></svg>
+                <span>Upload</span>
+            </label>
+        }
     </div>
-    }
     <div class="cud-slot__frame">
-        @if (!filed && v.Read is { } held)
+        @if (held is not null)
         {
             @* An address the folio already holds stands where its proof would be:
                on record, so ticked, but nothing on this step confirmed it. Where a

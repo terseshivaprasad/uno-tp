@@ -1,0 +1,3 @@
+/* The renew page only. Loaded after base.css and components/wizard.css. */
+
+.csi-chip--success { background: var(--green-bg); border-color: var(--green-border); color: var(--green); }

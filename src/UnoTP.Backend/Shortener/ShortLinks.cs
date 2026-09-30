@@ -80,9 +80,13 @@ public static class ShortenerServiceCollectionExtensions
         return services;
     }
 
-    /// <summary>With no shortener configured, links go unshortened - unless the mock is answering.</summary>
-    public static IServiceCollection AddUnshortenedLinks(this IServiceCollection services)
+    /// <summary>
+    /// With no shortener configured, links go unshortened - unless the mock is
+    /// answering and <paramref name="overMock"/> is false, when it shortens them.
+    /// </summary>
+    public static IServiceCollection AddUnshortenedLinks(this IServiceCollection services, bool overMock = false)
     {
+        if (overMock) services.RemoveAll<IShortLinkService>();
         services.TryAddSingleton<IShortLinkService, UnshortenedLinks>();
         return services;
     }

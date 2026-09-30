@@ -70,7 +70,7 @@ public class EntryController(
             HttpContext.Session.SignIn(started, []);
             menu = await sessions.MenuAsync();
         }
-        catch (HttpRequestException e)
+        catch (Exception e) when (e is HttpRequestException or System.Data.Common.DbException)
         {
             HttpContext.Session.Clear();
             log.LogWarning(e, "Entry: the backend did not start a session or give a menu.");

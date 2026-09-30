@@ -26,16 +26,20 @@ public class JourneyTests(App app)
         // The proof of address waits on the PAN, and names the four proofs it takes.
         Assert.Contains("Upload the PAN copy first", page);
         Assert.Contains("Accepted: Aadhaar, Passport, Driving Licence or Voter ID.", page);
-        // No communication address proof box while its upload is switched off.
-        Assert.DoesNotContain("Communication address proof", page);
+        // The communication address proof box stands while its upload is switched
+        // off, not applicable, saying why - it is not left out.
+        var mail = Regex.Match(page, "id=\"slot-mail\".*?cud-slot__notes", RegexOptions.Singleline).Value;
+        Assert.Contains("Communication address proof", page);
+        Assert.Contains("Not applicable", mail);
         // Nothing has been checked yet, so there is no list of checks.
         Assert.DoesNotContain("What the PAN was checked with", page);
         // The payment box waits on the mode - every mode's box is in the page, and
-        // the one shown is for no mode chosen - and the account card is not shown.
+        // the one shown is for no mode chosen - and the account card stands greyed.
         var noMode = Regex.Match(page, "<fieldset class=\"cud-choice\" data-show-when=\"payMode=\">.*?</fieldset>", RegexOptions.Singleline).Value;
         Assert.Contains("Choose the payment mode first", noMode);
         Assert.DoesNotContain("settled electronically", noMode);
-        Assert.Matches("<div class=\"cud-pay__card\"[^>]*\\shidden", page);
+        Assert.Matches("<div class=\"cud-pay__card\"[^>]*aria-disabled=\"true\"", page);
+        Assert.DoesNotMatch("<div class=\"cud-pay__card\"[^>]*\\shidden", page);
     }
 
     [Fact]

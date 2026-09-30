@@ -1,5 +1,5 @@
-# Built from the repository root, where Render looks for it: the app and the two
-# backend libraries it references, under src/.
+# Built from the repository root, where Render looks for it: the app and the
+# libraries it references, under src/.
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /repo
 
@@ -7,6 +7,7 @@ COPY global.json ./
 COPY src/UnoTP/UnoTP.csproj src/UnoTP/
 COPY src/UnoTP.Backend/UnoTP.Backend.csproj src/UnoTP.Backend/
 COPY src/UnoTP.Backend.Mock/UnoTP.Backend.Mock.csproj src/UnoTP.Backend.Mock/
+COPY src/UnoTP.Data/UnoTP.Data.csproj src/UnoTP.Data/
 RUN dotnet restore src/UnoTP/UnoTP.csproj
 
 COPY src/ src/

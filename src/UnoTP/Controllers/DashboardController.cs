@@ -77,7 +77,7 @@ public class DashboardController(
         {
             return await ask();
         }
-        catch (Exception e) when (e is HttpRequestException or TaskCanceledException)
+        catch (Exception e) when (e is HttpRequestException or TaskCanceledException or System.Data.Common.DbException)
         {
             log.LogWarning(e, "A work list for the dashboard could not be read; it is left out.");
             return [];

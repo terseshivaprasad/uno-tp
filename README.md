@@ -10,8 +10,9 @@ the deposit, review, submit. ASP.NET Core 8 MVC, server-rendered pages, no SPA.
 dotnet run --project src/UnoTP --launch-profile http
 ```
 
-Then open <http://localhost:5102/unotp>. With no backend configured the app runs on
-its in-memory mock, and demo mode signs you in without the portal. The other
+Then open <http://localhost:5102/unotp>. With no database configured the app runs on
+its in-memory mock, and demo mode signs you in without the portal (see Data below
+to run it on SQL Server). The other
 E-Sarathi apps it links to run beside it: the login portal on 5100, the console on
 5101 (see `src/UnoTP/appsettings.Development.json`).
 
@@ -24,23 +25,49 @@ dotnet test          # unit tests for the rules, and the pages driven in a test 
 | Project | What it is |
 |---|---|
 | `src/UnoTP` | The web app: controllers, view models, Razor views, `wwwroot` |
-| `src/UnoTP.Backend` | The typed client for the backend API, and one client per outside service (NSDL, OCR, masking, face match, PAN–Aadhaar link, IDfy) |
+| `src/UnoTP.Backend` | The interfaces the pages read and their records, and one HTTP client per outside service (NSDL, OCR, masking, face match, PAN–Aadhaar link, decryption, IDfy, the shortener) |
+| `src/UnoTP.Data` | The interfaces answered from SQL Server through Dapper, in process, and the document store |
 | `src/UnoTP.Backend.Mock` | An in-memory stand-in for all of it, with the test records the demo uses |
-| `src/UnoTP.Api` | The backend API itself: applications kept in SQL Server through Dapper, everything else answered by the mock for now (see Backend API below) |
-| `db/` | The SQL Server scripts for the application tables |
+| `db/` | The SQL Server scripts: tables, the platform seed, the masters, a development seed |
 | `tests/UnoTP.Tests` | xUnit: the rules, and the routes and journey on the mock |
-| `docs/backend-api.md` | Every call the app makes, for the backend team (also as PDF) |
+| `docs/backend-api.md` | What the pages ask of the data layer, interface by interface |
 | `docs/BRAND_GUIDELINES.md` | The visual rules every page keeps |
 
 Inside `src/UnoTP`: `Controllers/` one per page, the application steps sharing
 `ApplicationStepController`; `ViewModels/` one per page, `DocumentsViewModel` holding
 the document rules; `Views/{Page}/`; `Infrastructure/` for routing, features, caching
-and the session; `wwwroot/js` one small script per behaviour, `wwwroot/css/site.css`.
+and the session.
 
-The app never touches a database. Everything an application holds is saved against
-it on the backend, under its number (the `appNo` in every URL), so a page can be
-reopened from any browser and every change is audited. The server session holds only
-the sign-in.
+### Styles and scripts, page by page
+
+The shared layout (`Views/Shared/_Layout.cshtml`) loads everything shared; a page
+adds only what its own body needs, in its `Styles` and `Scripts` sections.
+
+| | Shared - loaded by the layout | A page's own |
+|---|---|---|
+| CSS | `css/shared/`: `fonts.css`, `base.css` (tokens, header, controls, cards), `wizard.css` (what the purchase journey's steps share: rail, form controls, document and read cards), `registers.css` (what the list pages share), `topbar.css` | `css/pages/{page}.css` |
+| JS | `js/shared/`: `loader.js`, `checks.js`, `notices.js`, `topbar.js`, `date-parts.js`, `partial-forms.js`, `image-shrink.js`, `pin.js`, `console.js` | `js/pages/{page}.js` |
+
+| Page | CSS | JS |
+|---|---|---|
+| Dashboard | `pages/dashboard.css` | — |
+| Investor Identification | `pages/new.css` | — |
+| Upload Documents | `pages/documents.css` | `pages/documents.js` (code search) |
+| Investor Information | `pages/investor.css` | `pages/investor.js` (PIN code, guardian, nominee prompt) |
+| Bank Details & Payment | `pages/payment.css` | `pages/payment.js` (bank search) |
+| FD Configuration | `pages/deposit.css` | `pages/deposit.js` (quote) |
+| Review Summary, Submitted | `pages/review.css`, `pages/submitted.css` | `pages/review.js` |
+| View Application, Pay-in Slips, Short URL, Console Admin | `pages/applications.css`, `pay-in-slips.css`, `links.css`, `admin.css` | the same names |
+| Renew FD | `pages/renew.css` | — |
+| Session Expired, Unauthorized, Error (`_StatusLayout`) | `pages/status.css` | — |
+
+No page has a script or style block of its own inside its markup; what a script
+needs from the server is on the page as `data-` attributes.
+
+The pages never touch the database: they read and write through the interfaces in
+`UnoTP.Backend`, which `UnoTP.Data` answers. Everything an application holds is saved
+under its number (the `appNo` in every URL), so a page can be reopened from any
+browser and every change is audited. The server session holds only the sign-in.
 
 ## Pages
 
@@ -59,14 +86,17 @@ the sign-in.
 
 The old addresses (`/Home`, `/Dashboard`, `/Apps/UnoTp/...`) redirect to these.
 
-## Backend API
+## Data
 
-`src/UnoTP.Api` answers every route in `docs/backend-api.md` from SQL Server through
-Dapper: the purchase journey end to end, the dashboard's lists, sign-in and menus,
-the lists and rules, and the console. Still on the mock: the deposits Renew FD lists,
-and the outside services (NSDL, OCR, identification, verification, masking, the
-PAN-Aadhaar link, face match, the portal's decryption). Documents are kept under
-`Dms:Root` until DMS is wired in, and no SMS or e-mail gateway is: sends are logged.
+One app: the pages and the data layer run in the same process, behind a WAF or
+reverse proxy, with SQL Server in its own zone. `UnoTP.Data` answers the pages'
+interfaces from SQL Server through Dapper: the purchase journey end to end, the
+dashboard's lists, sign-in and menus, the lists and rules, and the console. Still on
+the mock: the deposits Renew FD lists. The outside services (NSDL, OCR,
+identification, verification, masking, the PAN-Aadhaar link, face match, the
+portal's decryption) each answer at `Backend:External:{name}`, or IDfy's for the
+checks it has. Documents are kept under `Dms:Root` until DMS is wired in, and no SMS
+or e-mail gateway is: sends are logged.
 
 ```sh
 sqlcmd -d UnoTP -i db/001_unotp_tables.sql       # the application tables
@@ -74,17 +104,21 @@ sqlcmd -d UnoTP -i db/002_unotp_platform.sql     # config, features, lists, part
 sqlcmd -d UnoTP -i db/003_unotp_seed.sql         # config, features and lists: review with the business
 sqlcmd -d UnoTP -i db/004_unotp_masters.sql      # folios, brokers, staff, IFSC, PIN codes, rate card
 sqlcmd -d UnoTP -i db/900_dev_seed.sql           # development only: demo partners and master records
-dotnet run --project src/UnoTP.Api --launch-profile http          # on 5110
-Backend__BaseUrl=http://localhost:5110 dotnet run --project src/UnoTP --launch-profile http
+export ConnectionStrings__UnoTP='Server=...;Database=UnoTP;...'   # never in a committed file
+dotnet run --project src/UnoTP --launch-profile http
 ```
 
 Every script is safe to run again. No table has a foreign key: each row is written
-inside the transaction that locks its application. The masters in `004` are loaded
-from their sources of record before go-live (the FD system, the broker and staff
-masters, the RBI's IFSC list, India Post, the rate card), as is `cmsLocations` in
-`t_Ref_List`. The API needs `ConnectionStrings:UnoTP`, and refuses a call without an
-open session (`X-Session-Id`) except entry, `reference` and `config`. The tests run
-against it with `Backend__BaseUrl=http://localhost:5110 dotnet test`.
+inside the transaction that locks its application. Every table has `f_Active`; only
+active rows are read. The masters in `004` are loaded from their sources of record
+before go-live (the FD system, the broker and staff masters, the RBI's IFSC list,
+India Post, the rate card), as is `cmsLocations` in `t_Ref_List`. Every page checks
+the partner's session in `t_User_Session` (at most 30 seconds old), so ending it, or
+taking the partner out of use, signs them out. The tests run on the database with
+`ConnectionStrings__UnoTP` set.
+
+Outside Development (or a demo, `Features:DemoData`) the app will not start without
+`ConnectionStrings:UnoTP`, or with an outside service left without an address.
 
 **How an application is kept.** `t_Application_Mst` holds one row per application:
 its number, its partner, who it was opened for, and its version. Everything entered
@@ -107,13 +141,15 @@ trail. A page's working state (`t_Page_State`) is scratch and is overwritten.
 ## Configuration
 
 Settings are in `src/UnoTP/appsettings.json`; in the environment use a double
-underscore (`Backend__BaseUrl`).
+underscore (`ConnectionStrings__UnoTP`).
 
 | Setting | Meaning |
 |---|---|
-| `Backend:BaseUrl` | The backend API. Blank runs the mock, which only Development or a demo (`Features:DemoData`) may do: anywhere else the app will not start without it. |
+| `ConnectionStrings:UnoTP` | The database. Blank runs the mock, which only Development or a demo (`Features:DemoData`) may do. Set it in the environment or a secret store, never in appsettings. |
+| `Backend:External:{Nsdl, Identify, Masking, Ocr, Verification, PanAadhaarLink, FaceMatch, Decrypt}` | Each outside service's address. Blank in Development, its mock answers; elsewhere each must be set (IDfy covers Masking, PanAadhaarLink and FaceMatch). |
+| `Dms:Root` | Where filed copies are kept until DMS is wired in. |
 | `Idfy:BaseUrl`, `Idfy:ClientId` | Idfy.Api for the document checks it has an endpoint for, and the name the app calls itself by on its `X-Client-Id` header (`unotp`). |
-| `Shortener:BaseUrl`, `Shortener:ClientId` | UrlShortener.Api, which shortens the payment link on submit, and the `X-Client-Id` it is called with. Blank, the mock shortens; on a real backend the link goes in full. |
+| `Shortener:BaseUrl`, `Shortener:ClientId` | UrlShortener.Api, which shortens the payment link on submit, and the `X-Client-Id` it is called with. Blank, the mock shortens; on the database the link goes in full. |
 | `PaymentLink:Template` | The page the investor pays on, with `{appNo}` for the application's number. Blank, the app sends no link and the backend makes its own. |
 | `Apps:eSarathiLogin`, `Apps:eSarathiConsole`, … | The other apps' addresses, for the links out and the session-expired redirect. |
 | `Entry:DemoUserId`, `Entry:DemoSysCode` | The user demo mode signs in as. |
@@ -133,6 +169,6 @@ Feature switches, under `Features`:
 
 `render.yaml` builds the `Dockerfile` and checks `/health`, which asks nothing of the
 backend. That deployment is the demo, so `render.yaml` turns `Features__DemoData` on
-with a demo user. Before a deployment reaches a real backend: set `Backend__BaseUrl`,
+with a demo user. Before a deployment reaches real data: set `ConnectionStrings__UnoTP` and the outside services,
 take those demo settings out, and set `Apps__eSarathiLogin` so an expired session
 returns to the portal.

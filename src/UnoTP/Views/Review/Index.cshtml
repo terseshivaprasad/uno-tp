@@ -277,7 +277,7 @@
         @* ── Declarations ──────────────────────────────────────────────────── *@
         <section class="csi-card cii-card" id="rv-declarations">
             <div class="cii-head"><h2 class="cii-title">Declarations</h2><span class="csi-status">Every one required</span></div>
-            <form method="post" asp-action="Submit" class="rv-declarations" id="reviewForm" novalidate>
+            <form method="post" asp-action="Submit" class="rv-declarations" id="reviewForm" novalidate data-ready="@(Model.Ready ? "true" : "false")">
                 @for (var i = 0; i < Model.Ref.Declarations.Count; i++)
                 {
                     <label class="rv-declaration">
@@ -325,33 +325,9 @@
 </div>
 
 @section Scripts {
-    <script src="~/js/pin.js" asp-append-version="true"></script>
-    <script>
-        (function () {
-            var form = document.getElementById('reviewForm');
-            var boxes = form.querySelectorAll('.rv-declaration__box');
-            var modal = document.getElementById('paymentLinkModal');
-            var submit = document.getElementById('openPaymentLinkModal');
-            var closeBtn = document.getElementById('closePaymentLinkModal');
-            var ready = @(Model.Ready ? "true" : "false");
+    <script src="~/js/pages/review.js" asp-append-version="true"></script>
+}
 
-            // Submit holds until nothing is missing and every declaration is signed.
-            function sync() {
-                var unsigned = 0;
-                boxes.forEach(function (box) {
-                    box.closest('.rv-declaration').classList.toggle('rv-declaration--unsigned', !box.checked);
-                    if (!box.checked) unsigned++;
-                });
-                submit.disabled = !ready || unsigned > 0;
-            }
-            function openDialog() { modal.hidden = false; document.body.style.overflow = 'hidden'; closeBtn.focus(); }
-            function closeDialog() { modal.hidden = true; document.body.style.overflow = ''; submit.focus(); }
-            form.addEventListener('change', sync);
-            submit.addEventListener('click', function () { if (!submit.disabled) openDialog(); });
-            closeBtn.addEventListener('click', closeDialog);
-            modal.addEventListener('click', function (e) { if (e.target === modal) closeDialog(); });
-            document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !modal.hidden) closeDialog(); });
-            sync();
-        })();
-    </script>
+@section Styles {
+    <link rel="stylesheet" href="~/css/pages/review.css" asp-append-version="true" />
 }

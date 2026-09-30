@@ -7,6 +7,7 @@ using UnoTP.Backend;
 using UnoTP.Backend.Idfy;
 using UnoTP.Backend.Mock;
 using UnoTP.Backend.Shortener;
+using UnoTP.Data;
 using UnoTP.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -32,11 +33,12 @@ builder.Services.AddSingleton<AppUrls>();
 // redirect to another step carries it on (see ApplicationUrls).
 builder.Services.AddSingleton<Microsoft.AspNetCore.Mvc.Routing.IUrlHelperFactory>(
     new ApplicationUrlHelperFactory(new Microsoft.AspNetCore.Mvc.Routing.UrlHelperFactory()));
-// All data comes from the backend API, and every outside check - NSDL, document
-// identification, masking, OCR, verification, the PAN-Aadhaar link - from a
-// service of its own. With no Backend:BaseUrl set, the mock answers for all of
-// them from memory. With Idfy:BaseUrl set, IDfy answers the checks it has an
-// endpoint for, and whatever answered before keeps the rest.
+// The app's data is in SQL Server (ConnectionStrings:UnoTP), read in process through
+// the same interfaces the mock answers (UnoTP.Data). Every outside check - NSDL,
+// document identification, masking, OCR, verification, the PAN-Aadhaar link, face
+// match, the portal's decryption - is a service of its own at Backend:External:{name}.
+// With Idfy:BaseUrl set, IDfy answers the checks it has an endpoint for, and whatever
+// answered before keeps the rest.
 builder.Services.Configure<BackendOptions>(builder.Configuration.GetSection(BackendOptions.Section));
 builder.Services.Configure<IdfyOptions>(builder.Configuration.GetSection(IdfyOptions.Section));
 builder.Services.Configure<ShortenerOptions>(builder.Configuration.GetSection(ShortenerOptions.Section));
@@ -44,16 +46,30 @@ builder.Services.Configure<PaymentLinkOptions>(builder.Configuration.GetSection(
 builder.Services.AddScoped<IPartner, SessionPartner>();
 // Investor Identification's steps, for the primary holder and each joint holder alike.
 builder.Services.AddScoped<UnoTP.ViewModels.HolderSearch>();
-if (BackendOptions.Configured(builder.Configuration)) builder.Services.AddBackendApi();
-// The mock answers with made-up investors and lists: it is for development, or a
-// demo that says so. Anywhere else a missing backend is a mistake, not a fallback.
-else if (builder.Environment.IsDevelopment() || builder.Configuration.GetValue<bool>("Features:DemoData")) builder.Services.AddMockBackend();
-else throw new InvalidOperationException("Backend:BaseUrl is not set. Outside Development the app runs only against the backend API (or with Features:DemoData on, as a demo).");
-if (IdfyOptions.Configured(builder.Configuration)) builder.Services.AddIdfy();
+// The mock answers with made-up investors, lists and checks: it is for development,
+// or a demo that says so. Anywhere else, anything left to it is a mistake.
+var mockAllowed = builder.Environment.IsDevelopment() || builder.Configuration.GetValue<bool>("Features:DemoData");
+var sql = SqlDataServiceCollectionExtensions.Configured(builder.Configuration);
+if (sql) builder.Services.AddSqlData();
+else if (mockAllowed) builder.Services.AddMockBackend();
+else throw new InvalidOperationException("ConnectionStrings:UnoTP is not set. Outside Development the app runs only on its database (or with Features:DemoData on, as a demo).");
+builder.Services.AddOutsideServices(builder.Configuration);
+var idfy = IdfyOptions.Configured(builder.Configuration);
+if (idfy) builder.Services.AddIdfy();
+if (!mockAllowed)
+{
+    // IDfy takes masking, the PAN-Aadhaar link and face match over whole; for the
+    // others it answers only some documents, and hands the rest to the service's own address.
+    string[] takenByIdfy = [UnoTP.Backend.External.MaskingClient.Name, UnoTP.Backend.External.PanAadhaarLinkClient.Name, UnoTP.Backend.External.FaceMatchClient.Name];
+    var missing = BackendServiceCollectionExtensions.OutsideServices
+        .Where(s => !BackendOptions.HasAddress(builder.Configuration, s) && !(idfy && takenByIdfy.Contains(s))).ToList();
+    if (missing.Count > 0)
+        throw new InvalidOperationException($"No address for {string.Join(", ", missing.Select(m => "Backend:External:" + m))}: outside Development each outside service must answer for real.");
+}
 // The payment link is shortened on submit by UrlShortener.Api when Shortener:BaseUrl
-// is set; otherwise by the mock while it answers, and not at all on a real backend.
+// is set; otherwise by the mock in development, and not at all on the database.
 if (ShortenerOptions.Configured(builder.Configuration)) builder.Services.AddShortener();
-else builder.Services.AddUnshortenedLinks();
+else builder.Services.AddUnshortenedLinks(overMock: sql);
 // The backend's slow-changing answers kept in memory, around whichever answers (see CachedBackend).
 builder.Services.AddBackendCaching();
 // The console's schedule, read once per request for the gate, the tiles and the bell.
@@ -170,8 +186,8 @@ if (!string.IsNullOrWhiteSpace(pathBase))
 }
 
 // Configure the HTTP request pipeline.
-// Whatever a page lets through is logged and shown as the error page, or as
-// Session Expired when the backend has ended the session (see GlobalExceptionMiddleware).
+// Whatever a page lets through is logged and shown as the error page (see
+// GlobalExceptionMiddleware).
 // Development keeps the developer page, which shows the exception itself.
 if (app.Environment.IsDevelopment()) app.UseDeveloperExceptionPage();
 else

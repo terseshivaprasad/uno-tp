@@ -1,14 +1,16 @@
-# Uno TP backend API
+# Uno TP data layer
 
-This document lists every call the Uno TP web app makes for its data. The app
-never connects to a database. It reads and writes everything through the
-backend API described here, plus a few outside services for document checks.
-The client code is in `src/UnoTP.Backend`. `BackendClient.cs` holds the
-backend routes, and there is one file per outside service in `External/` and
-`Idfy/`.
+This document lists everything the Uno TP pages ask of their data. The pages read
+and write only through the interfaces in `src/UnoTP.Backend` (`IApplicationApi`,
+`IReferenceApi` and the rest). `src/UnoTP.Data` answers them from SQL Server, in
+the same process; `src/UnoTP.Backend.Mock` answers them from memory for
+development and tests. The tables are in `db/`. The outside services for the
+document checks are reached over HTTP, one client each in `External/` and `Idfy/`.
 
-These routes are the ones the app proposes. If the backend's routes differ,
-change `BackendClient.cs`: the pages depend only on the interfaces.
+Each call is written below as a route, `GET applications/{appNo}`, with the
+interface method it stands for named in the code beside it: the routes are how the
+contract was first agreed, and keep each call's inputs and answers in one line.
+None is served over HTTP now.
 
 ## Pages
 
@@ -48,16 +50,16 @@ their query.
 
 | Setting | Meaning |
 |---|---|
-| `Backend:BaseUrl` | The backend API. If blank, the app runs on the in-memory mock (`src/UnoTP.Backend.Mock`). |
-| `Backend:TimeoutSeconds` | Default 30. |
-| `Backend:External:{Nsdl,Identify,Masking,Ocr,Verification,PanAadhaarLink,FaceMatch,Decrypt}` | Optional address for each outside service. The default is `{Backend:BaseUrl}/external/{name}/`, which means the backend proxies it. |
+| `ConnectionStrings:UnoTP` | The database. If blank, the app runs on the in-memory mock (`src/UnoTP.Backend.Mock`), which only Development or a demo may do. |
+| `Backend:TimeoutSeconds` | Seconds an outside service is given. Default 30. |
+| `Backend:External:{Nsdl,Identify,Masking,Ocr,Verification,PanAadhaarLink,FaceMatch,Decrypt}` | Each outside service's address. Blank in Development, its mock answers; elsewhere each must be set (IDfy covers Masking, PanAadhaarLink and FaceMatch). |
 | `Idfy:BaseUrl` | Idfy.Api. When set, IDfy handles the checks it has an endpoint for (see below). |
 | `Idfy:TimeoutSeconds` | Default 75. The Idfy.Api guide asks for at least 70. |
 | `Entry:DemoUserId`, `Entry:DemoSysCode` | The user the demo comes in as when the app is opened without the portal's values. Used only while `Features:DemoData` is on; leave empty in production. |
 | `Backend:ReferenceCacheMinutes` | Minutes the lists and rules (`GET reference`, `GET config`) are kept for. Default 10; 0 asks every time. |
 | `Features:CommProofUpload` | Default false (off for this release). On, a holder whose post goes to an address other than the permanent one uploads a proof of it on Upload Documents. Off, that box is hidden and the address is typed on Investor Information (`communication` in `ApplicationDetails`). |
 
-In the environment, use a double underscore, for example `Backend__BaseUrl`.
+In the environment, use a double underscore, for example `ConnectionStrings__UnoTP`.
 
 ## What the app keeps, and for how long
 
@@ -81,13 +83,13 @@ Nothing that was not found is kept, and no failure is: the next request asks aga
 A backend that changes one of these and needs it seen sooner should say so; the
 times are set in `CachedBackend.cs`. The cache holds at most 50,000 entries.
 
-## Common to every backend call
+## Common to every call
 
-- **Partner:** every request carries `X-Partner-Id`, the user the portal sent
-  in, and `X-Session-Id`, the session the backend started for them. The backend
-  must return only that user's applications, and answer `404` for anyone
-  else's. A `401` on any call means the session has ended: the app shows
-  Session Expired.
+- **Partner:** every call is made for the user the portal sent in and the session
+  started for them (`IPartner`, from the server session). Only that user's
+  applications are returned; anyone else's is not found. Every page checks the
+  session is still open (`ISessionApi.IsOpenAsync`, at most 30 seconds old): one
+  ended, expired or taken out of use shows Session Expired.
 - **JSON:** camelCase in both directions.
 - **Not found:** `404` means not found wherever a route below says "or 404".
   Any other failure status is treated as an error.

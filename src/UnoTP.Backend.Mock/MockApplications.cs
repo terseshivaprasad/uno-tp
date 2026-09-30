@@ -63,8 +63,12 @@ public sealed class MockApplications(MockStore store, IPartner partner) : IAppli
     public Task<IReadOnlyList<DraftSummary>> DraftsAsync(CancellationToken ct = default) =>
         Task.FromResult<IReadOnlyList<DraftSummary>>(store.List(partner.Id)
             .Where(a => a.Submitted is null)
-            .Select(a => new DraftSummary(a.AppNo, Masks.Name(a.Holder.Name), Masks.Pan(a.Holder.Pan), Masks.Dob(a.Holder.Dob), a.Deposit?.Amount ?? 0))
+            .Select(a => new DraftSummary(a.AppNo, Masks.Name(KnownName(a)), Masks.Pan(a.Holder.Pan), Masks.Dob(a.Holder.Dob), a.Deposit?.Amount ?? 0))
             .ToList());
+
+    // As NSDL verified it, else as read off the PAN copy, else as the folio has it.
+    private static string KnownName(Application a) =>
+        a.Upload is { Name.Length: > 0 } u ? u.Name : a.Upload is { NsdlName.Length: > 0 } n ? n.NsdlName : a.Holder.Name;
 
     public Task<IReadOnlyList<ApplicationRecord>> ListAsync(CancellationToken ct = default) =>
         Task.FromResult<IReadOnlyList<ApplicationRecord>>(MockApplicationList.Build());

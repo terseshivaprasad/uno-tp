@@ -379,6 +379,7 @@ public sealed class LogEntry(string id, string document, int attempt, string at,
 }
 
 /// <summary>A saved application the partner can pick up again, its holder masked.</summary>
+/// <param name="Name">As NSDL verified it, else as read off the PAN copy, else as the folio has it; empty until one of them is known.</param>
 public sealed record DraftSummary(string AppNo, string Name, string Pan, string Dob, long Amount);
 
 /// <summary>One application as the console lists it.</summary>

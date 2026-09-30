@@ -20,7 +20,7 @@
         {
             <tr>
                 <td data-label="Application"><strong>@d.AppNo</strong></td>
-                <td data-label="Name">@d.Name</td>
+                <td data-label="Name">@if (d.Name.Length > 0) { @d.Name } else { <span class="text-muted">PAN not read yet</span> }</td>
                 <td data-label="PAN">@d.Pan</td>
                 <td data-label="Date of birth">@d.Dob</td>
                 <td data-label="Amount">@PayInSlipsViewModel.Rupees(d.Amount)</td>

@@ -1,0 +1,14 @@
+/* The pay-in-slips page only. Loaded after base.css and components/registers.css. */
+
+#pisError { padding-top: 12px; font-size: 12px; }
+#pisScope { padding-top: 10px; }
+/* What is held back, in one line. The rule itself is in the rail and on each
+   blocked row, so this only carries the count and where to act. */
+.pis-flag { display: flex; align-items: center; gap: 10px; margin-top: 18px; padding: 11px 14px; border: 1px solid var(--pink-border); border-left: 3px solid var(--red); border-radius: 6px; background: var(--pink-bg); font-size: 12.5px; line-height: 1.45; color: var(--red-dark); }
+.pis-flag svg { flex: none; color: var(--red); }
+.pis-flag strong { font-weight: 600; }
+.pis-table__slip [data-slip-detail]:empty { display: none; }
+/* The action is one short link per row; it never wraps. */
+.pis-table .su-table__act { white-space: nowrap; }
+/* A row whose slip is held back for an acceptance. */
+.pis-table tbody tr[data-blocked="yes"] td { background: var(--pink-tint); }

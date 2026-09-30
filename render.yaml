@@ -28,9 +28,12 @@ services:
       #   value: https://<dms-service>.onrender.com
       # - key: Apps__OvdExplorer
       #   value: https://<ovd-service>.onrender.com
-      # The backend API all data comes from (see UnoTP.Backend/BackendOptions.cs),
-      # and Idfy.Api for the document checks. Left out, the app runs on the mock.
-      # - key: Backend__BaseUrl
-      #   value: https://<backend-service>
+      # The database all data is kept in (db/ has the scripts), the outside services
+      # by name (see UnoTP.Backend/BackendOptions.cs), and Idfy.Api for the document
+      # checks. Left out, this demo runs on the mock.
+      # - key: ConnectionStrings__UnoTP
+      #   value: Server=<sql-host>;Database=UnoTP;User Id=<user>;Password=<secret>;Encrypt=True
+      # - key: Backend__External__Nsdl
+      #   value: https://<nsdl-service>/
       # - key: Idfy__BaseUrl
       #   value: https://<idfy-api-host>

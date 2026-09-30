@@ -346,8 +346,17 @@
                 @{ await Slot(views["poa"]); }
             </div>
 
-            @* The communication address proof, only while its upload is switched on. *@
-            @if (Model.CommProofUpload)
+            @* The communication address proof. While its upload is switched off it
+               stands too, not applicable, saying the address is typed on Investor
+               Information - so the row keeps its shape. *@
+            @if (!Model.CommProofUpload)
+            {
+            <div class="cud-col">
+                <div class="cud-col__head"><span class="csi-label">Communication address proof</span></div>
+                @{ await Slot(views["mail"] with { Used = false, NotApplicable = views["mail"].NotApplicable ?? M.MailTypedWhy }); }
+            </div>
+            }
+            else
             {
             <div class="cud-col">
                 <div class="cud-col__head">
@@ -430,10 +439,10 @@
                     }
                 </div>
                 <div class="cud-pay__slot">@{ await Choices("payMode", new[] { "" }.Concat(Model.PaymentModes.Select(m => m.Name)).Select(m => (m, m == s.PayMode)), PaymentAs); }</div>
-                @* The account read off the instrument: only for a mode that carries one,
-                   shown or hidden with the mode as it is chosen. *@
+                @* The account read off the instrument, under every mode: greyed, saying
+                   why, for a mode that carries none, as the mode is chosen. *@
                 @{ var instrumentModes = string.Join("|", Model.PaymentModes.Where(m => m.Document is not null).Select(m => m.Name)); }
-                <div class="cud-pay__card" data-show-when="payMode=@instrumentModes" hidden="@(!Model.View(M.PaymentSlot).Used || s.PayMode.Length == 0)">
+                <div class="cud-pay__card" data-enable-when="payMode=@instrumentModes" aria-disabled="@(Model.View(M.PaymentSlot).Used && s.PayMode.Length > 0 ? "false" : "true")">
                     <partial name="_ReadCard" model="@(new ReadCardBlock(Model.PaymentRead()))" />
                 </div>
             </div>
@@ -480,9 +489,15 @@
                 {
                     <ul class="bank-suggest" id="cudSourceCodeSuggest" role="listbox" aria-label="@(mode?.NameLabel ?? "Brokers") found" hidden></ul>
                 }
+                @* The name the code stands for, always under the field: a dash until
+                   there is a code, so nothing appears or moves as one is typed. *@
                 @if (sourceName is { } sn)
                 {
                     <p class="cud-resolved @(sn.Found ? null : "cud-resolved__none")">@sn.Text</p>
+                }
+                else
+                {
+                    <p class="cud-resolved">@(mode?.NameLabel ?? "Broker Name") &mdash; <strong class="cud-resolved__none">&mdash;</strong></p>
                 }
                 @{ await FieldError("cudSourceCode"); }
             </div>
@@ -502,6 +517,10 @@
                 @if (subName is { } bn)
                 {
                     <p class="cud-resolved @(bn.Found ? null : "cud-resolved__none")">@bn.Text</p>
+                }
+                else
+                {
+                    <p class="cud-resolved">Sub Broker Name &mdash; <strong class="cud-resolved__none">&mdash;</strong></p>
                 }
                 @{ await FieldError("cudSubBroker"); }
             </div>
@@ -573,13 +592,19 @@
                 </div>
 
                 <div class="cud-col">
+                    @* The primary holder is the employee themselves: the relation is Self,
+                       fixed and disabled - its value posted by the field beside it, as a
+                       disabled one is not. Any other holder chooses, and cannot be Self. *@
                     <label class="csi-label" for="cudEmpRelation">Emp Relation with holder</label>
                     <div class="cud-select">
-                        <select class="csi-control @Invalid("cudEmpRelation")" id="cudEmpRelation" name="empRelation" form="cudForm" autofocus="@Focus("cudEmpRelation")">
+                        <select class="csi-control @Invalid("cudEmpRelation")" id="cudEmpRelation" name="empRelation" form="cudForm" autofocus="@Focus("cudEmpRelation")"
+                                disabled="@Model.EmployeeIsPrimary" data-fixed-by="empHolder" data-fixed-when="@Model.PrimaryHolder" data-fixed-value="@Model.SelfRelation" aria-describedby="cudEmpRelationWhy">
                             <option value="">Select</option>
-                            @foreach (var r in Model.EmployeeRelations) { <option value="@r" selected="@(s.EmpRelation == r)">@r</option> }
+                            @foreach (var r in Model.EmployeeRelations) { <option value="@r" selected="@(s.EmpRelation == r)" disabled="@(r == Model.SelfRelation && !Model.EmployeeIsPrimary)">@r</option> }
                         </select>
                     </div>
+                    <input type="hidden" id="cudEmpRelationFixed" name="empRelation" value="@Model.SelfRelation" form="cudForm" disabled="@(!Model.EmployeeIsPrimary)">
+                    <p class="csi-hint" id="cudEmpRelationWhy">@Model.SelfRelation when the employee is the @Model.PrimaryHolder.ToLowerInvariant(); otherwise chosen here.</p>
                     @{ await FieldError("cudEmpRelation"); }
                 </div>
             }
@@ -671,8 +696,9 @@
 </div>
 
 @section Scripts {
-    <script src="~/js/partial-forms.js" asp-append-version="true"></script>
-    <script src="~/js/register-search.js" asp-append-version="true"></script>
-    <script src="~/js/image-shrink.js" asp-append-version="true"></script>
-    <script src="~/js/pin.js" asp-append-version="true"></script>
+    <script src="~/js/pages/documents.js" asp-append-version="true"></script>
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/pages/documents.css" asp-append-version="true" />
 }

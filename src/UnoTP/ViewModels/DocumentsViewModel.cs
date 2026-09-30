@@ -422,6 +422,15 @@ public class DocumentsViewModel(
 
     public IReadOnlyList<string> EmployeeRelations => Ref.EmployeeRelations;
 
+    /// <summary>The primary holder, as the employee holders list names it: its first entry.</summary>
+    public string PrimaryHolder => EmployeeHolders.FirstOrDefault() ?? "";
+
+    /// <summary>The employee's relation with the primary holder when they are the primary holder: the relations list's first entry.</summary>
+    public string SelfRelation => EmployeeRelations.FirstOrDefault() ?? "";
+
+    /// <summary>The employee is the primary holder, so the relation is Self and is not chosen.</summary>
+    public bool EmployeeIsPrimary => PrimaryHolder.Length > 0 && State.EmpHolder == PrimaryHolder;
+
     public IReadOnlyList<string> EmployeeProofs => Ref.EmployeeProofs;
 
     // ----- The address the application carries ---------------------------------
@@ -1271,6 +1280,9 @@ public class DocumentsViewModel(
             if (Posted.EmpCompany is not null) s.EmpCompany = Posted.EmpCompany.Trim();
             if (Posted.EmpHolder is not null) s.EmpHolder = EmployeeHolders.Contains(Posted.EmpHolder) ? Posted.EmpHolder : "";
             if (Posted.EmpRelation is not null) s.EmpRelation = EmployeeRelations.Contains(Posted.EmpRelation) ? Posted.EmpRelation : "";
+            // The primary holder is the employee themselves; anyone else cannot be.
+            if (EmployeeIsPrimary) s.EmpRelation = SelfRelation;
+            else if (s.EmpRelation == SelfRelation) s.EmpRelation = "";
             if (Posted.EmpProofType is not null) s.EmpProofType = EmployeeProofs.Contains(Posted.EmpProofType) ? Posted.EmpProofType : "";
         }
         else
@@ -1452,6 +1464,9 @@ public class DocumentsViewModel(
 
     // Not every document has somebody behind it to ask: the card says who does
     // look at the copy instead, and when.
+    /// <summary>What happens to a document no register outside answers for, once uploaded.</summary>
+    public static string NoCheckOf(string slot) => NoCheck.GetValueOrDefault(slot, "Filed as handed over.");
+
     private static readonly Dictionary<string, string> NoCheck = new()
     {
         ["form"] = "Filed as handed over. No register outside answers for an application form — Operations check it against the application before the deposit is booked.",

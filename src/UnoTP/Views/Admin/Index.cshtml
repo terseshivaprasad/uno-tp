@@ -314,11 +314,9 @@
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 @section Scripts {
-    <script src="~/js/console.js" asp-append-version="true"></script>
-    <script src="~/js/admin.js" asp-append-version="true"></script>
-    @if (ViewData["Toast"] is string toast)
-    {
-        @* What the last post came to, said once. *@
-        <script>window.showToast(@Json.Serialize(toast));</script>
-    }
+    <script src="~/js/pages/admin.js" asp-append-version="true"></script>
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/pages/admin.css" asp-append-version="true" />
 }

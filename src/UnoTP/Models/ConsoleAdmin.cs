@@ -210,7 +210,7 @@ public sealed class ConsoleState(IConsoleApi api, UnoTP.Infrastructure.Lookups l
         {
             features = ((await lookups.ReferenceAsync()).Features ?? []).Select(ConsoleFeature.From).ToList();
         }
-        catch (Exception e) when (e is HttpRequestException or TaskCanceledException)
+        catch (Exception e) when (e is HttpRequestException or TaskCanceledException or System.Data.Common.DbException)
         {
             log.LogWarning(e, "The console's features could not be read; the dashboard shows no tiles.");
             features = [];
@@ -219,7 +219,7 @@ public sealed class ConsoleState(IConsoleApi api, UnoTP.Infrastructure.Lookups l
         {
             return ConsoleBoard.From(features, await api.ScheduleAsync());
         }
-        catch (Exception e) when (e is HttpRequestException or TaskCanceledException)
+        catch (Exception e) when (e is HttpRequestException or TaskCanceledException or System.Data.Common.DbException)
         {
             log.LogWarning(e, "The console schedule could not be read; showing no windows or notices.");
             return new ConsoleBoard(features, [], []);

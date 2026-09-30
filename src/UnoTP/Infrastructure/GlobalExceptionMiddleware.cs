@@ -5,10 +5,10 @@ namespace UnoTP.Infrastructure;
 
 /// <summary>
 /// Catches whatever a page lets through. Every failure is logged once, with the
-/// reference the partner is shown, so support can find it. The backend saying the
-/// session has ended (401) sends the partner to Session Expired; anything else
-/// shows the error page - or, to a caller that asked for JSON, a problem with the
-/// same reference. Nothing of the exception itself reaches the partner.
+/// reference the partner is shown, so support can find it, and the error page is
+/// shown - or, to a caller that asked for JSON, a problem with the same reference.
+/// Nothing of the exception itself reaches the partner. (A session that has ended is
+/// caught before the page, by SessionAuthenticationFilter.)
 /// </summary>
 public sealed class GlobalExceptionMiddleware(RequestDelegate next, ILogger<GlobalExceptionMiddleware> log)
 {
@@ -26,14 +26,6 @@ public sealed class GlobalExceptionMiddleware(RequestDelegate next, ILogger<Glob
                 // Too late to show anything else: the page is already on its way.
                 log.LogError(e, "Unhandled error after the response started, {Method} {Path} (ref {Reference}).", ctx.Request.Method, ctx.Request.Path, reference);
                 throw;
-            }
-
-            if (e is HttpRequestException { StatusCode: HttpStatusCode.Unauthorized })
-            {
-                log.LogInformation("The backend ended the session, {Method} {Path} (ref {Reference}).", ctx.Request.Method, ctx.Request.Path, reference);
-                ctx.Response.Clear();
-                ctx.Response.Redirect($"{ctx.Request.PathBase}/unotp/session-expired");
-                return;
             }
 
             log.LogError(e, "Unhandled error, {Method} {Path} (ref {Reference}).", ctx.Request.Method, ctx.Request.Path, reference);
