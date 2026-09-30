@@ -282,19 +282,55 @@ public class JourneyTests(App app)
         Assert.Contains("of ₹ 50,000 as on", System.Net.WebUtility.HtmlDecode(opened));
         Assert.DoesNotContain("deposit-option--off", opened);
 
-        // At ₹10,000 a monthly payout is under the chart's ₹50,000 minimum: shut, with the limit on it.
+        // At ₹10,000 a monthly payout is under the chart's ₹50,000 minimum: shut.
         var quoted = await App.PostAsync(client, deposit, deposit + "/quote",
             ("Amount", "10,000"), ("TenureMonths", "12"), ("InterestPayout", "monthly"), ("DeliveryType", "ereceipt"));
         var panel = System.Net.WebUtility.HtmlDecode(await quoted.Content.ReadAsStringAsync());
-        Assert.Contains("data-offer=\"InterestPayout\" data-value=\"monthly\" data-why=\"from ₹ 50,000\"", panel);
-        Assert.Contains("data-offer=\"InterestPayout\" data-value=\"maturity\" data-why=\"\"", panel);
-        Assert.Contains("A monthly payout is from ₹ 50,000", panel);
+        Assert.Contains("data-offer=\"InterestPayout\" data-value=\"monthly\" data-offered=\"no\"", panel);
+        Assert.Contains("data-offer=\"InterestPayout\" data-value=\"maturity\" data-offered=\"yes\"", panel);
+        Assert.Contains("A monthly payout is not offered for this amount", panel);
 
         // Proceed with that choice is refused for the same reason.
         var refused = await App.PostAsync(client, deposit, deposit,
             ("Amount", "10,000"), ("TenureMonths", "12"), ("InterestPayout", "monthly"), ("DeliveryType", "ereceipt"));
         Assert.StartsWith("/FDConfiguration/", refused.RequestMessage!.RequestUri!.AbsolutePath);
-        Assert.Contains("A monthly payout is from ₹ 50,000", System.Net.WebUtility.HtmlDecode(await refused.Content.ReadAsStringAsync()));
+        Assert.Contains("A monthly payout is not offered for this amount", System.Net.WebUtility.HtmlDecode(await refused.Content.ReadAsStringAsync()));
+    }
+
+    [Fact]
+    public async Task The_source_of_funds_is_asked_of_a_homemaker_whose_deposits_pass_a_crore()
+    {
+        var client = await app.SignedInAsync();
+        var at = await App.NewApplicationAsync(client, NewInvestor);
+        var investor = App.Step(at, "investor");
+        var deposit = App.Step(at, "deposit");
+        await App.PostAsync(client, investor, investor, ("Holder1.Occupation", "Homemaker"), ("Holder1.AnnualIncome", "Rs.10,00,000 - Rs.25,00,000"));
+
+        // A new investor holds nothing with us: at ₹50 lakh the field is shut, with the rule under it.
+        var opened = System.Net.WebUtility.HtmlDecode(await client.GetStringAsync(deposit));
+        Assert.Contains("id=\"deposit-source-of-funds\" name=\"SourceOfFunds\" disabled", opened);
+        Assert.Contains("Asked when the investor's deposits with us, with this one, pass ₹ 1,00,00,000 (they hold ₹ 0 now)", opened);
+
+        // At ₹1.5 crore it is asked: the quote says so, and Proceed wants it.
+        (string, string)[] chosen = [("Amount", "1,50,00,000"), ("TenureMonths", "12"), ("InterestPayout", "maturity"), ("DeliveryType", "ereceipt")];
+        var quoted = await App.PostAsync(client, deposit, deposit + "/quote", chosen);
+        var panel = System.Net.WebUtility.HtmlDecode(await quoted.Content.ReadAsStringAsync());
+        Assert.Contains("data-source-of-funds data-asked=\"yes\"", panel);
+        Assert.Contains("their occupation is homemaker", panel);
+
+        var refused = await App.PostAsync(client, deposit, deposit, chosen);
+        Assert.StartsWith("/FDConfiguration/", refused.RequestMessage!.RequestUri!.AbsolutePath);
+        Assert.Contains("Required — choose the source of funds", System.Net.WebUtility.HtmlDecode(await refused.Content.ReadAsStringAsync()));
+
+        // "Other" wants a remark; a source named goes on to Review Summary, which shows it.
+        var other = await App.PostAsync(client, deposit, deposit, [.. chosen, ("SourceOfFunds", "other")]);
+        Assert.Contains("Required — say what the source of funds is", System.Net.WebUtility.HtmlDecode(await other.Content.ReadAsStringAsync()));
+
+        var proceeded = await App.PostAsync(client, deposit, deposit, [.. chosen, ("SourceOfFunds", "other"), ("SourceOfFundsRemark", "Sale of a car")]);
+        Assert.Contains("/ReviewSummary/", proceeded.RequestMessage!.RequestUri!.AbsolutePath);
+        var review = await proceeded.Content.ReadAsStringAsync();
+        Assert.Contains("Source of funds", review);
+        Assert.Contains("Sale of a car", review);
     }
 
     [Fact]

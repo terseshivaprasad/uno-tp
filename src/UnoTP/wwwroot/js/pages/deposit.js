@@ -33,6 +33,7 @@
         if (panel) panel.innerHTML = html;
         showAmountMessage(sayProblem);
         showWhatTheCardOffers();
+        showWhetherSourceOfFundsIsAsked();
       })
       .catch(function () {
         // No quote this time - the connection dropped: the panel says so, and the
@@ -83,34 +84,45 @@
   }
 
   // The answer says which tenures and payouts the rate card offers at the amount
-  // (on the chart a monthly payout needs ₹50,000): each choice is opened or shut
-  // to match, with the limit written on a shut one.
+  // (on the chart a monthly payout needs ₹50,000): each choice is opened or shut to match.
   function showWhatTheCardOffers() {
     var offers = document.querySelectorAll('#deposit-quote [data-offer]');
     for (var i = 0; i < offers.length; i++) {
       var name = offers[i].getAttribute('data-offer');
       var value = offers[i].getAttribute('data-value');
-      var why = offers[i].getAttribute('data-why') || '';
+      var offered = offers[i].getAttribute('data-offered') === 'yes';
       var input = form.querySelector('input[name="' + name + '"][value="' + value + '"]');
       if (!input) continue;
+      input.disabled = !offered;
       var option = input.closest('.deposit-option');
-      var face = option ? option.querySelector('.deposit-option__face') : null;
-      var whyLine = face ? face.querySelector('.deposit-option__why') : null;
-      input.disabled = why !== '';
-      if (option) option.classList.toggle('deposit-option--off', why !== '');
-      if (!face) continue;
-      if (why === '') {
-        if (whyLine) whyLine.remove();
-        continue;
-      }
-      if (!whyLine) {
-        whyLine = document.createElement('span');
-        whyLine.className = 'deposit-option__why';
-        face.appendChild(whyLine);
-      }
-      whyLine.textContent = why;
+      if (option) option.classList.toggle('deposit-option--off', !offered);
     }
   }
+
+  // The answer says whether the source of funds is asked at this amount (the
+  // investor's deposits with us pass ₹1 crore, and who they are): the field opens
+  // or shuts to match, with the rule under it.
+  function showWhetherSourceOfFundsIsAsked() {
+    var said = document.querySelector('#deposit-quote [data-source-of-funds]');
+    var select = document.getElementById('deposit-source-of-funds');
+    if (!said || !select) return;
+    select.disabled = said.getAttribute('data-asked') !== 'yes';
+    var why = document.getElementById('deposit-source-of-funds-why');
+    if (why) why.textContent = said.getAttribute('data-why') || '';
+    openRemarkForOther();
+  }
+
+  // The remark box is open while the source of funds is asked and "Other" is chosen.
+  function openRemarkForOther() {
+    var select = document.getElementById('deposit-source-of-funds');
+    var remark = document.getElementById('deposit-source-of-funds-remark');
+    if (!select || !remark) return;
+    remark.disabled = select.disabled || select.value !== 'other';
+  }
+
+  form.addEventListener('change', function (e) {
+    if (e.target.id === 'deposit-source-of-funds') openRemarkForOther();
+  });
 
   // Renew for the same tenure: said as the tenure is chosen.
   function showRenewSameTenure() {

@@ -23,7 +23,8 @@ public class DepositController(IApplicationApi applications, IDepositApi deposit
         docs.TdsFormWanted = true;
         docs.Shown = TempData[FlashKey(docs)] is string said ? JsonSerializer.Deserialize<Flash>(said) : null;
         var quote = await QuoteAsync(docs, AmountAccepted(docs, form) ? docs.App.Deposit : null);
-        return View(new DepositViewModel(docs, form, rates, quote, problems));
+        var sourceOfFunds = await SourceOfFundsAsync(docs, form.AmountValue);
+        return View(new DepositViewModel(docs, form, rates, quote, sourceOfFunds, problems));
     }
 
     /// <summary>
@@ -36,12 +37,15 @@ public class DepositController(IApplicationApi applications, IDepositApi deposit
         if (await LoadAsync() is not { } docs) return Start();
         // A renewal's amount is the deposit's, whatever was posted.
         if (docs.IsRenewal) form.Amount = Money.Group(docs.Renewal!.Amount);
+        // The source of funds is kept only where it is asked.
+        var sourceOfFunds = await SourceOfFundsAsync(docs, form.AmountValue);
+        if (!sourceOfFunds.Asked) form.DropSourceOfFunds();
         if (await Applications.SaveDepositAsync(docs.AppNo, docs.App.Version, form.ToDetails()) is null)
             return Back(nameof(Index), new() { ["banner"] = Changed });
         // Save draft: kept as it stands, checked only on Proceed.
         if (draft is not null) return Back(nameof(Index), new());
         var rates = await RateTableAsync(docs, form.AmountValue);
-        var problems = form.Problems(docs.Config, rates, docs.IsRenewal);
+        var problems = form.Problems(docs.Config, rates, sourceOfFunds, docs.IsRenewal);
         // No TDS is a claim the investor signs: the form is filed here before Proceed.
         docs.TdsFormWanted = form.NoTds;
         if (form.NoTds && docs.View(DocumentsViewModel.TdsFormSlot).Doc is null) problems["TdsForm"] = "Upload the Form 121 before proceeding, or turn the switch off";
@@ -96,7 +100,8 @@ public class DepositController(IApplicationApi applications, IDepositApi deposit
         if (docs.IsRenewal) form.Amount = Money.Group(docs.Renewal!.Amount);
         var rates = await RateTableAsync(docs, form.AmountValue);
         var quote = await QuoteAsync(docs, AmountAccepted(docs, form) ? form.ToDetails() : null);
-        return PartialView("_Quote", new DepositViewModel(docs, form, rates, quote, new Dictionary<string, string>()));
+        var sourceOfFunds = await SourceOfFundsAsync(docs, form.AmountValue);
+        return PartialView("_Quote", new DepositViewModel(docs, form, rates, quote, sourceOfFunds, new Dictionary<string, string>()));
     }
 
     // The returns are worked out once the amount passes its own checks; a renewal's amount always does.

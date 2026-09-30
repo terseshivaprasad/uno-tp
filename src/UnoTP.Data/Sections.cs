@@ -145,19 +145,19 @@ internal static class Sections
         var u = upload ?? new UploadState();
         return db.ExecuteAsync("""
             INSERT dbo.t_Unotp_Investment_Dtls (c_App_No, n_App_Version, c_Status, n_Amount, n_Tenure_Months, c_Payout,
-                f_Auto_Renewal, c_Renew_Instruction, f_No_Tds, c_Delivery_Type,
+                f_Auto_Renewal, c_Renew_Instruction, f_No_Tds, c_Delivery_Type, c_Source_Of_Funds, c_Source_Of_Funds_Remark,
                 c_App_Type, c_Form_No, c_Category, c_Sourcing, c_Source_Code, c_Sub_Broker,
                 c_Emp_Code, c_Emp_Company, c_Emp_Holder, c_Emp_Relation, c_Emp_Proof_Type, c_Renew_Dep_No,
                 n_Rate, n_Interest_Each, n_Maturity_Amount, d_Matures_On, d_Rate_As_On, c_Created_By)
             VALUES (@AppNo, @Version, @Status, @Amount, @TenureMonths, @Payout,
-                @AutoRenewal, @RenewInstruction, @NoTds, @DeliveryType,
+                @AutoRenewal, @RenewInstruction, @NoTds, @DeliveryType, @SourceOfFunds, @SourceOfFundsRemark,
                 @AppType, @FormNo, @Category, @Sourcing, @SourceCode, @SubBroker,
                 @EmpCode, @EmpCompany, @EmpHolder, @EmpRelation, @EmpProofType, @Renews,
                 @Rate, @InterestEach, @MaturityAmount, @MaturesOn, @RateAsOn, @By)
             """, new
         {
             at.AppNo, at.Version, at.Status, deposit.Amount, deposit.TenureMonths, deposit.Payout,
-            deposit.AutoRenewal, deposit.RenewInstruction, deposit.NoTds, deposit.DeliveryType,
+            deposit.AutoRenewal, deposit.RenewInstruction, deposit.NoTds, deposit.DeliveryType, deposit.SourceOfFunds, deposit.SourceOfFundsRemark,
             u.AppType, u.FormNo, u.Category, u.Sourcing, u.SourceCode, u.SubBroker,
             u.EmpCode, u.EmpCompany, u.EmpHolder, u.EmpRelation, u.EmpProofType, Renews = renews,
             quote?.Rate, quote?.InterestEach, quote?.MaturityAmount,

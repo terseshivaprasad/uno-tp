@@ -112,12 +112,13 @@ public sealed class Application
     public Dictionary<string, string> Pages { get; set; } = [];
 
     /// <summary>
-    /// Whose rate card the deposit is quoted from: the deposit's category (from Upload
-    /// Documents), the holder's gender - the folio's, else an Aadhaar's read on Upload
-    /// Documents, else "M" - and whether this is a purchase or a renewal. A renewal is
-    /// quoted as on its maturity date.
+    /// Whose rate card the deposit is quoted from: the deposit's category, the holder's
+    /// gender - the folio's, else an Aadhaar's read on Upload Documents, else "M" - and
+    /// whether this is a purchase or a renewal. A renewal is quoted as on its maturity
+    /// date. The category is passed in: a page has it settled before the upload step is
+    /// saved (Upload Documents sets it from the holder for a broker partner).
     /// </summary>
-    public RatesRequest RateCardRequest()
+    public RatesRequest RateCardRequest(string category)
     {
         var gender = Holder.Gender;
         if (gender.Length == 0 && Upload is not null) gender = Upload.Gender;
@@ -128,7 +129,7 @@ public sealed class Application
         var applicationType = RateCard.Purchase;
         if (Renewal is not null) applicationType = RateCard.Renew;
 
-        return new RatesRequest(Upload?.Category ?? "", letter, applicationType, Renewal?.MaturesOn);
+        return new RatesRequest(category, letter, applicationType, Renewal?.MaturesOn);
     }
 }
 
@@ -203,6 +204,8 @@ public sealed record RenewalOf(string DepositNumber, long Amount, DateOnly Matur
 
 /// <summary>FD Configuration, as saved. Codes are the reference lists'.</summary>
 /// <param name="NoTds">Form 121, the TDS declaration, is submitted, so no TDS is deducted.</param>
+/// <param name="SourceOfFunds">A sourcesOfFunds code, where the deposit asks for one (AppConfig.SourceOfFundsFrom); empty otherwise.</param>
+/// <param name="SourceOfFundsRemark">What the source is, typed, when the code is "other".</param>
 public sealed record DepositDetails(
     long Amount,
     int TenureMonths,
@@ -210,7 +213,9 @@ public sealed record DepositDetails(
     bool AutoRenewal,
     string RenewInstruction,
     bool NoTds,
-    string DeliveryType);
+    string DeliveryType,
+    string SourceOfFunds = "",
+    string SourceOfFundsRemark = "");
 
 /// <param name="Status">Where the application stands once submitted: "payment-pending", then the backend's own.</param>
 /// <param name="LinkSentTo">The mobile number the link went to by SMS, masked.</param>

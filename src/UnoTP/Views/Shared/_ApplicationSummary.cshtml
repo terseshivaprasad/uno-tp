@@ -96,6 +96,10 @@
                                 await Kv("Auto renewal", d.AutoRenewal ? $"On · {review.Option(review.Ref.RenewInstructions, d.RenewInstruction)}" : "Off");
                                 await Kv("TDS", d.NoTds ? "Not deducted — exemption claimed" : "Deducted at the applicable rate");
                                 await Kv("Delivery type", review.Option(review.Ref.DeliveryTypes, d.DeliveryType), Or(review.DetailsOf(docs.Investor).Email, ""));
+                                if (d.SourceOfFunds.Length > 0)
+                                {
+                                    await Kv("Source of funds", review.Option(review.Ref.SourcesOfFunds ?? [], d.SourceOfFunds), d.SourceOfFundsRemark.Length > 0 ? d.SourceOfFundsRemark : null);
+                                }
                             }
                         </div>
                     }

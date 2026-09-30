@@ -24,7 +24,8 @@ public class ReviewController(
         if (docs.App.Submitted is not null) return RedirectToAction(nameof(SubmittedController.Index), "Submitted");
         var payment = docs.App.Payment;
         var (pay, repay) = await BranchesAsync(payment?.Payment?.Ifsc ?? "", payment?.Repayment?.Ifsc ?? "");
-        return View(new ReviewViewModel(docs, await QuoteAsync(docs, docs.App.Deposit), pay, repay)
+        var sourceOfFunds = await SourceOfFundsAsync(docs, docs.App.Deposit?.Amount ?? 0);
+        return View(new ReviewViewModel(docs, await QuoteAsync(docs, docs.App.Deposit), pay, repay, sourceOfFunds)
         {
             Refused = Said().GetValueOrDefault("banner"),
         });
@@ -39,7 +40,7 @@ public class ReviewController(
     public async Task<IActionResult> Submit(int[]? declarations)
     {
         if (await LoadAsync() is not { } docs) return Start();
-        var review = new ReviewViewModel(docs, null, null, null);
+        var review = new ReviewViewModel(docs, null, null, null, await SourceOfFundsAsync(docs, docs.App.Deposit?.Amount ?? 0));
         if (!review.Ready) return Back(nameof(Index), new() { ["banner"] = "Something is still missing, so the application was not submitted." });
         if ((declarations ?? []).Distinct().Count(i => i >= 0 && i < docs.Ref.Declarations.Count) != docs.Ref.Declarations.Count)
             return Back(nameof(Index), new() { ["banner"] = "Every declaration has to be signed before the application is submitted." });

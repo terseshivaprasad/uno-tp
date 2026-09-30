@@ -14,6 +14,8 @@
         ("TenureMonths", "deposit-tenure-" + Model.Tenures.FirstOrDefault()),
         ("InterestPayout", "deposit-payout-" + (Model.Payouts.FirstOrDefault()?.Code ?? "")),
         ("RenewInstruction", "deposit-renew"),
+        ("SourceOfFunds", "deposit-source-of-funds"),
+        ("SourceOfFundsRemark", "deposit-source-of-funds-remark"),
         ("DeliveryType", "deposit-delivery"),
     ];
     string? focus = null;
@@ -134,14 +136,12 @@
                         <div class="investor-section-head">
                             <div class="deposit-label" id="deposit-tenure-label">Tenure &middot; months</div>
                         </div>
-                        @* The tenures the rate card carries. One not offered at the amount is shown
-                           shut, with the limit it is offered from (deposit.js keeps this up to date
-                           as the amount changes). *@
+                        @* The tenures the rate card carries. One not offered at the amount is shut
+                           (deposit.js keeps this up to date as the amount changes). *@
                         <div class="deposit-options deposit-options--tenure">
                             @foreach (var tenure in Model.Tenures)
                             {
-                                var blocked = Model.Rates.TenureBlockedReason(tenure);
-                                if (blocked is null)
+                                if (Model.Rates.OffersTenure(tenure))
                                 {
                                     <label class="deposit-option">
                                         <input type="radio" id="deposit-tenure-@tenure" name="TenureMonths" value="@tenure" checked="@(tenure == form.TenureMonths)" data-quote>
@@ -152,7 +152,7 @@
                                 {
                                     <label class="deposit-option deposit-option--off">
                                         <input type="radio" id="deposit-tenure-@tenure" name="TenureMonths" value="@tenure" checked="@(tenure == form.TenureMonths)" data-quote disabled>
-                                        <span class="deposit-option__face">@tenure<span class="deposit-option__why">@blocked</span></span>
+                                        <span class="deposit-option__face">@tenure</span>
                                     </label>
                                 }
                             }
@@ -172,8 +172,7 @@
                         <div class="deposit-options deposit-options--payout">
                             @foreach (var payout in Model.Payouts)
                             {
-                                var blocked = Model.Rates.PayoutBlockedReason(payout.Code);
-                                if (blocked is null)
+                                if (Model.Rates.OffersPayout(payout.Code))
                                 {
                                     <label class="deposit-option">
                                         <input type="radio" id="deposit-payout-@payout.Code" name="InterestPayout" value="@payout.Code" checked="@(payout.Code == form.InterestPayout)" data-quote>
@@ -184,7 +183,7 @@
                                 {
                                     <label class="deposit-option deposit-option--off">
                                         <input type="radio" id="deposit-payout-@payout.Code" name="InterestPayout" value="@payout.Code" checked="@(payout.Code == form.InterestPayout)" data-quote disabled>
-                                        <span class="deposit-option__face">@payout.Name<span class="deposit-option__why">@blocked</span></span>
+                                        <span class="deposit-option__face">@payout.Name</span>
                                     </label>
                                 }
                             }
@@ -248,6 +247,33 @@
                             </div>
                             @{ await FieldError("TdsForm", "slot-tdsform"); }
                         </fieldset>
+                    </section>
+
+                    @* ===== Source of funds ===== *@
+                    @* Asked once the investor's deposits with us, with this one, pass ₹1 crore and
+                       they are a homemaker, student or retired, or earn up to ₹5 lakh a year
+                       (SourceOfFundsCheck). Shut otherwise, with the rule under it; deposit.js
+                       opens and shuts it as the amount changes. "Other" opens the remark. *@
+                    <section class="deposit-section deposit-grid-2">
+                        <div class="doc-column">
+                            <label class="field-label" for="deposit-source-of-funds">Source of funds</label>
+                            <div class="doc-select">
+                                <select class="field-input @Invalid("SourceOfFunds")" id="deposit-source-of-funds" name="SourceOfFunds" disabled="@(!Model.SourceOfFunds.Asked)" data-quote aria-invalid="@AriaInvalid("SourceOfFunds")" aria-describedby="deposit-source-of-funds-why">
+                                    <option value="" selected="@(form.SourceOfFunds.Length == 0)">Choose</option>
+                                    @foreach (var source in Model.SourcesOfFunds)
+                                    {
+                                        <option value="@source.Code" selected="@(source.Code == form.SourceOfFunds)">@source.Name</option>
+                                    }
+                                </select>
+                            </div>
+                            @{ await FieldError("SourceOfFunds", "deposit-source-of-funds"); }
+                            <p class="field-hint" id="deposit-source-of-funds-why">@Model.SourceOfFunds.Why</p>
+                        </div>
+                        <div class="doc-column">
+                            <label class="field-label" for="deposit-source-of-funds-remark">If other, what</label>
+                            <input class="field-input @Invalid("SourceOfFundsRemark")" id="deposit-source-of-funds-remark" name="SourceOfFundsRemark" value="@form.SourceOfFundsRemark" maxlength="200" autocomplete="off" disabled="@(!Model.RemarkOpen)" aria-invalid="@AriaInvalid("SourceOfFundsRemark")">
+                            @{ await FieldError("SourceOfFundsRemark", "deposit-source-of-funds-remark"); }
+                        </div>
                     </section>
 
                     @* ===== Delivery ===== *@

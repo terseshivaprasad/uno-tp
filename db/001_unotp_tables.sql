@@ -387,6 +387,8 @@ CREATE TABLE dbo.t_Unotp_Investment_Dtls
     c_Renew_Instruction  VARCHAR(20)    NOT NULL CONSTRAINT DF_Investment_Renew DEFAULT (''),
     f_No_Tds             BIT            NOT NULL CONSTRAINT DF_Investment_No_Tds DEFAULT (0),   -- Form 121 filed
     c_Delivery_Type      VARCHAR(20)    NOT NULL CONSTRAINT DF_Investment_Delivery DEFAULT (''),
+    c_Source_Of_Funds    VARCHAR(30)    NOT NULL CONSTRAINT DF_Investment_Source_Of_Funds DEFAULT (''),   -- a sourcesOfFunds code, asked once the investor's deposits pass sourceOfFundsFrom
+    c_Source_Of_Funds_Remark NVARCHAR(200) NOT NULL CONSTRAINT DF_Investment_Source_Of_Funds_Remark DEFAULT (''),   -- typed, for "other"
 
     c_App_Type           VARCHAR(10)    NOT NULL CONSTRAINT DF_Investment_App_Type DEFAULT (''),   -- DIGITAL, PHYSICAL
     c_Form_No            VARCHAR(20)    NOT NULL CONSTRAINT DF_Investment_Form_No DEFAULT (''),

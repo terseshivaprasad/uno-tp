@@ -147,7 +147,8 @@ internal sealed class InvestmentRow
 {
     public const string Columns = """
         n_Amount AS Amount, n_Tenure_Months AS TenureMonths, c_Payout AS Payout, f_Auto_Renewal AS AutoRenewal,
-        c_Renew_Instruction AS RenewInstruction, f_No_Tds AS NoTds, c_Delivery_Type AS DeliveryType
+        c_Renew_Instruction AS RenewInstruction, f_No_Tds AS NoTds, c_Delivery_Type AS DeliveryType,
+        c_Source_Of_Funds AS SourceOfFunds, c_Source_Of_Funds_Remark AS SourceOfFundsRemark
         """;
 
     public long Amount { get; set; }
@@ -157,6 +158,8 @@ internal sealed class InvestmentRow
     public string RenewInstruction { get; set; } = "";
     public bool NoTds { get; set; }
     public string DeliveryType { get; set; } = "";
+    public string SourceOfFunds { get; set; } = "";
+    public string SourceOfFundsRemark { get; set; } = "";
 }
 
 /// <summary>One application as View Application lists it, before it is masked.</summary>

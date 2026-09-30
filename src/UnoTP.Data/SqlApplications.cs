@@ -132,7 +132,8 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
             Details = h.DetailsVer is null ? null : DetailsOf(kyc, addresses, nominee),
             Payment = pay is null || repay is null ? null : PaymentOf(pay, repay),
             Deposit = deposit is null ? null : new DepositDetails(deposit.Amount, deposit.TenureMonths, deposit.Payout,
-                deposit.AutoRenewal, deposit.RenewInstruction, deposit.NoTds, deposit.DeliveryType),
+                deposit.AutoRenewal, deposit.RenewInstruction, deposit.NoTds, deposit.DeliveryType,
+                deposit.SourceOfFunds, deposit.SourceOfFundsRemark),
             Submitted = SubmissionOf(h),
             Renewal = h.RenewDepNo is null ? null : new RenewalOf(h.RenewDepNo, h.RenewAmount ?? 0,
                 DateOnly.FromDateTime(h.RenewMaturesOn ?? DateTime.MinValue), h.RenewRate ?? 0, h.RenewTenure ?? 0, h.RenewPayout ?? ""),
@@ -264,7 +265,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
         if (seen is null) return (SaveOutcome.NotFound, null);
         if (seen.Version != version || seen.Submitted is not null) return (SaveOutcome.Conflict, null);
         var quote = seen.Deposit is { } d
-            ? await deposits.QuoteAsync(new QuoteRequest(d.Amount, d.TenureMonths, d.Payout, seen.RateCardRequest()), ct)
+            ? await deposits.QuoteAsync(new QuoteRequest(d.Amount, d.TenureMonths, d.Payout, seen.RateCardRequest(seen.Upload?.Category ?? "")), ct)
             : null;
         var hours = (await reference.ConfigAsync(ct)).LinkValidityHours.GetValueOrDefault("payment");
         var resends = await reference.NumberAsync("linkResends", ct);

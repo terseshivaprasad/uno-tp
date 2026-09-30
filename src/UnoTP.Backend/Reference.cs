@@ -22,7 +22,8 @@ public sealed record Option(string Code, string Name);
 /// <param name="Employee">Booked against a staff record, and open only to the sourcing agency.</param>
 /// <param name="Women">For a woman holder.</param>
 /// <param name="Senior">For a holder at the senior citizen age or over.</param>
-public sealed record CategoryOption(string Code, string Name, bool Employee, bool Women, bool Senior);
+/// <param name="ExtraRate">What the category earns over the public rate, % a year (the chart's "additional rates"); 0 for the public category.</param>
+public sealed record CategoryOption(string Code, string Name, bool Employee, bool Women, bool Senior, decimal ExtraRate = 0);
 
 /// <summary>A payment mode, and the instrument a copy of is filed for it, if any.</summary>
 public sealed record PaymentModeOption(string Name, string? Document);
@@ -79,7 +80,8 @@ public sealed record ReferenceData(
     IReadOnlyList<string> Declarations,
     IReadOnlyList<string> NoticeKinds,
     IReadOnlyList<string> RenewalNotes,
-    IReadOnlyList<FeatureOption>? Features = null);
+    IReadOnlyList<FeatureOption>? Features = null,
+    IReadOnlyList<Option>? SourcesOfFunds = null);
 
 /// <summary>
 /// A console feature: a dashboard tile, the menu key that opens it, and what it is
@@ -107,6 +109,9 @@ public sealed record FeatureOption(string Code, string Name, string Group, strin
 /// <param name="RenewUntilDays">...until this many days before maturity; nearer, it is Operations'.</param>
 /// <param name="RenewUntilDaysAutoRenewal">The same, for a deposit tagged for auto renewal.</param>
 /// <param name="QuoteAmount">The amount FD Configuration quotes the rate at before one is entered.</param>
+/// <param name="SourceOfFundsFrom">The source of funds is asked once the investor's active deposits, with the new one, pass this many rupees...</param>
+/// <param name="SourceOfFundsOccupations">...and their occupation is one of these (homemaker, student, retired)...</param>
+/// <param name="SourceOfFundsIncomeBands">...or their annual income band is one of these (up to ₹5 lakh).</param>
 public sealed record AppConfig(
     string SourcingAgency,
     int MinAge,
@@ -123,7 +128,10 @@ public sealed record AppConfig(
     int RenewUntilDays = 7,
     int RenewUntilDaysAutoRenewal = 10,
     int CloseToCancelDays = 3,
-    long QuoteAmount = 50_000);
+    long QuoteAmount = 50_000,
+    long SourceOfFundsFrom = 1_00_00_000,
+    IReadOnlyList<string>? SourceOfFundsOccupations = null,
+    IReadOnlyList<string>? SourceOfFundsIncomeBands = null);
 
 /// <summary>Who the app is being used by: GET me, from the signed-in partner.</summary>
 public interface IPartnerApi

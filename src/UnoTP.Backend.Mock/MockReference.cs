@@ -18,12 +18,13 @@ public sealed class MockReference : IReferenceApi
         ApplicationTypes: [new("DIGITAL", "Digital"), new("PHYSICAL", "Physical")],
         Categories:
         [
+            // ExtraRate is the chart's "additional rates": senior citizens and employees 0.35, women 0.05.
             new("PUBLIC/GENERAL", "Public / General", Employee: false, Women: false, Senior: false),
-            new("WOMEN", "Women", Employee: false, Women: true, Senior: false),
-            new("SR CITIZEN", "Senior citizen", Employee: false, Women: false, Senior: true),
-            new("SR CITIZEN WOMEN", "Senior citizen women", Employee: false, Women: true, Senior: true),
-            new("EMPLOYEE", "Employee", Employee: true, Women: false, Senior: false),
-            new("EMPLOYEE WOMEN", "Employee women", Employee: true, Women: true, Senior: false),
+            new("WOMEN", "Women", Employee: false, Women: true, Senior: false, ExtraRate: 0.05m),
+            new("SR CITIZEN", "Senior citizen", Employee: false, Women: false, Senior: true, ExtraRate: 0.35m),
+            new("SR CITIZEN WOMEN", "Senior citizen women", Employee: false, Women: true, Senior: true, ExtraRate: 0.40m),
+            new("EMPLOYEE", "Employee", Employee: true, Women: false, Senior: false, ExtraRate: 0.35m),
+            new("EMPLOYEE WOMEN", "Employee women", Employee: true, Women: true, Senior: false, ExtraRate: 0.40m),
         ],
         PaymentModes: [new("Online", null), new("RTGS", null), new("Cheque", "cheque")],
         // The four modes the old screen offers, in its own order and under its own numbers.
@@ -201,6 +202,18 @@ public sealed class MockReference : IReferenceApi
             new("app-status", "Application status", "FD Services", "Where an application stands, holder by holder.", "Under revamp"),
             new("renew", "Renew FD", "FD Services", "Rolling a maturing deposit over into a new one.", "Coming soon"),
             new("admin", "Console Admin", "Administration", "Scheduling downtime windows and notices for the console.", "Unavailable", Tile: false),
+        ],
+        // Asked on FD Configuration once the investor's deposits with us pass the limit (AppConfig.SourceOfFundsFrom).
+        SourcesOfFunds:
+        [
+            new("salary", "Salary"),
+            new("business", "Business income"),
+            new("savings", "Savings"),
+            new("property", "Sale of property"),
+            new("inheritance", "Inheritance or gift"),
+            new("investments", "Maturity of investments"),
+            new("loan", "Loan"),
+            new("other", "Other"),
         ]);
 
     private static readonly AppConfig Config = new(
@@ -217,7 +230,10 @@ public sealed class MockReference : IReferenceApi
         LinkValidityHours: new Dictionary<string, int> { ["payment"] = PaymentLinkHours, ["acceptance"] = 72 },
         RenewFromDays: MockRenewals.FromDays, RenewUntilDays: MockRenewals.UntilDays, RenewUntilDaysAutoRenewal: MockRenewals.UntilDaysAutoRenewal,
         QuoteAmount: 50_000,
-        CloseToCancelDays: 3);
+        CloseToCancelDays: 3,
+        SourceOfFundsFrom: 1_00_00_000,
+        SourceOfFundsOccupations: ["Homemaker", "Student", "Retired"],
+        SourceOfFundsIncomeBands: ["Upto Rs.5,00,000"]);
 
     public Task<ReferenceData> ReferenceAsync(CancellationToken ct = default) => Task.FromResult(Data);
 

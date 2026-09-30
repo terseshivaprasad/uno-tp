@@ -43,8 +43,35 @@ public abstract class ApplicationStepController(IApplicationApi applications, ID
     protected async Task<RateTable> RateTableAsync(DocumentsViewModel docs, long amount)
     {
         if (amount <= 0) amount = docs.Config.QuoteAmount;
-        var card = await deposits.RatesAsync(docs.App.RateCardRequest());
+        var card = await deposits.RatesAsync(docs.App.RateCardRequest(docs.State.Category));
         return new RateTable(card, docs.Ref, amount);
+    }
+
+    /// <summary>
+    /// Whether the source of funds is asked for a deposit of this amount: the investor's
+    /// active deposits with us come from the deposits register, by folio or, for an
+    /// investor without one, by PAN and date of birth. A renewal leaves out the deposit
+    /// it renews, which the new one replaces.
+    /// </summary>
+    protected async Task<SourceOfFundsCheck> SourceOfFundsAsync(DocumentsViewModel docs, long amount)
+    {
+        var renewals = services.GetRequiredService<IRenewalApi>();
+        var holder = docs.App.Holder;
+
+        IReadOnlyList<HeldDeposit>? held;
+        if (holder.Folio.Length > 0) held = await renewals.DepositsByFolioAsync(holder.Folio);
+        else held = await renewals.DepositsByPanAsync(holder.Pan, holder.Dob);
+
+        long heldTotal = 0;
+        foreach (var deposit in held ?? [])
+        {
+            if (deposit.Status is "matured" or "renewed") continue;
+            if (docs.Renewal is not null && deposit.Number == docs.Renewal.DepositNumber) continue;
+            heldTotal += deposit.Amount;
+        }
+
+        var investor = docs.App.Details?.Holders.FirstOrDefault(h => h.Holder == HolderType.Investor);
+        return SourceOfFundsCheck.For(docs.Config, heldTotal, amount, investor);
     }
 
     /// <summary>
@@ -57,7 +84,7 @@ public abstract class ApplicationStepController(IApplicationApi applications, ID
         if (deposit.Amount <= 0) return null;
         var rates = await RateTableAsync(docs, deposit.Amount);
         if (rates.Row(deposit.TenureMonths, deposit.Payout) is null) return null;
-        return await deposits.QuoteAsync(new QuoteRequest(deposit.Amount, deposit.TenureMonths, deposit.Payout, docs.App.RateCardRequest()));
+        return await deposits.QuoteAsync(new QuoteRequest(deposit.Amount, deposit.TenureMonths, deposit.Payout, docs.App.RateCardRequest(docs.State.Category)));
     }
 
     // What a post found, said once on the page it redirects to.

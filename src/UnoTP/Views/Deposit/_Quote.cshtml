@@ -40,6 +40,10 @@
 <div>
     <div class="deposit-key-value__key">Amount</div>
     <div class="deposit-summary__amount">@amountText</div>
+    @if (Model.AmountInWords.Length > 0)
+    {
+        <div class="deposit-summary__words">@Model.AmountInWords</div>
+    }
 </div>
 <div class="deposit-summary__grid">
     <div><div class="deposit-key-value__key">Interest rate</div><div class="deposit-key-value__value deposit-key-value__value--rate">@rateText</div></div>
@@ -63,12 +67,17 @@
         @tdsNote
     }
 </div>
+@if (Model.ExtraRateBanner is not null)
+{
+    <div class="deposit-summary__banner">@Model.ExtraRateBanner</div>
+}
 <p hidden data-deposit-amount data-problem="@amountProblem" data-hint="@amountHint"></p>
+<span hidden data-source-of-funds data-asked="@(Model.SourceOfFunds.Asked ? "yes" : "no")" data-why="@Model.SourceOfFunds.Why"></span>
 @foreach (var tenure in Model.Tenures)
 {
-    <span hidden data-offer="TenureMonths" data-value="@tenure" data-why="@Model.Rates.TenureBlockedReason(tenure)"></span>
+    <span hidden data-offer="TenureMonths" data-value="@tenure" data-offered="@(Model.Rates.OffersTenure(tenure) ? "yes" : "no")"></span>
 }
 @foreach (var option in Model.Payouts)
 {
-    <span hidden data-offer="InterestPayout" data-value="@option.Code" data-why="@Model.Rates.PayoutBlockedReason(option.Code)"></span>
+    <span hidden data-offer="InterestPayout" data-value="@option.Code" data-offered="@(Model.Rates.OffersPayout(option.Code) ? "yes" : "no")"></span>
 }

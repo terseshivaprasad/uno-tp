@@ -19,10 +19,14 @@ public sealed record ReviewDocument(string Title, string Detail, bool Done, bool
 /// Review Summary: everything the application holds, as the backend has it, and what
 /// still stands between it and submitting.
 /// </summary>
-public sealed class ReviewViewModel(DocumentsViewModel docs, DepositQuote? quote, BankBranch? paymentBranch, BankBranch? repaymentBranch)
+public sealed class ReviewViewModel(DocumentsViewModel docs, DepositQuote? quote, BankBranch? paymentBranch, BankBranch? repaymentBranch,
+    SourceOfFundsCheck? sourceOfFunds = null)
 {
     public DocumentsViewModel Docs { get; } = docs;
     public DepositQuote? Quote { get; } = quote;
+
+    /// <summary>Whether FD Configuration asks the source of funds for this deposit; null where the page does not check it.</summary>
+    public SourceOfFundsCheck? SourceOfFunds { get; } = sourceOfFunds;
     public BankBranch? PaymentBranch { get; } = paymentBranch;
     public BankBranch? RepaymentBranch { get; } = repaymentBranch;
 
@@ -98,6 +102,7 @@ public sealed class ReviewViewModel(DocumentsViewModel docs, DepositQuote? quote
             if (Payment is null) list.Add(("Bank Details & Payment", "the payment and repayment accounts"));
             if (Deposit?.NoTds == true && Docs.View(DocumentsViewModel.TdsFormSlot).Doc is null) list.Add(("FD Configuration", "the Form 121"));
             if (Deposit is null || Deposit.Amount == 0) list.Add(("FD Configuration", "the deposit"));
+            if (SourceOfFunds is { Asked: true } && (Deposit?.SourceOfFunds ?? "").Length == 0) list.Add(("FD Configuration", "the source of funds"));
             return list;
         }
     }

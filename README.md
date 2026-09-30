@@ -107,6 +107,8 @@ sqlcmd -d UnoTP -i db/004_unotp_masters.sql      # folios, brokers, staff, IFSC,
 sqlcmd -d UnoTP -i db/005_unotp_status.sql       # penny drop and KYC verification, written by the Operations feed
 sqlcmd -d UnoTP -i db/006_unotp_logs.sql         # the error log, t_Unotp_Logs
 sqlcmd -d UnoTP -i db/007_unotp_rate_chart.sql   # the rate card by chart line, and the Samruddhi chart of 3 Aug 2026
+sqlcmd -d UnoTP -i db/008_unotp_source_of_funds.sql # the source of funds on FD Configuration: columns, settings, list
+sqlcmd -d UnoTP -i db/009_unotp_category_extra_rate.sql # what each category earns over the public rate, for the page's wording
 sqlcmd -d UnoTP -i db/900_dev_seed.sql           # development only: demo partners and master records
 export ConnectionStrings__UnoTP='Server=...;Database=UnoTP;...'   # never in a committed file
 dotnet run --project src/UnoTP --launch-profile http

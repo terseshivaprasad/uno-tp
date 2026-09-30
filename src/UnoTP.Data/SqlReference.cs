@@ -50,7 +50,19 @@ public sealed class SqlReference(Db db, IMemoryCache cache) : IReferenceApi
             s.Where(p => p.Key.StartsWith(hours, StringComparison.OrdinalIgnoreCase))
                 .ToDictionary(p => p.Key[hours.Length..], p => int.Parse(p.Value, CultureInfo.InvariantCulture)),
             ReadInt("renewFromDays"), ReadInt("renewUntilDays"), ReadInt("renewUntilDaysAutoRenewal"), ReadInt("closeToCancelDays"),
-            QuoteAmount: Long("quoteAmount"));
+            QuoteAmount: Long("quoteAmount"),
+            SourceOfFundsFrom: Long("sourceOfFundsFrom"),
+            SourceOfFundsOccupations: await Names("sourceOfFundsOccupations"),
+            SourceOfFundsIncomeBands: await Names("sourceOfFundsIncomeBands"));
+    }
+
+    // A setting that lists names, one after another with a semicolon between:
+    // "Homemaker; Student; Retired". A semicolon, because the names themselves can
+    // carry commas ("Upto Rs.5,00,000").
+    private async Task<IReadOnlyList<string>> Names(string key)
+    {
+        var text = await SettingAsync(key);
+        return text.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
     }
 
     // ----- Reference lists -----------------------------------------------------------
@@ -84,7 +96,7 @@ public sealed class SqlReference(Db db, IMemoryCache cache) : IReferenceApi
 
         return new ReferenceData(
             ApplicationTypes: Options("applicationTypes"),
-            Categories: Of("categories").Select(e => Attrs(e, a => new CategoryOption(e.Code, e.Name, ReadBool(a, "employee"), ReadBool(a, "women"), ReadBool(a, "senior")))).ToList(),
+            Categories: Of("categories").Select(e => Attrs(e, a => new CategoryOption(e.Code, e.Name, ReadBool(a, "employee"), ReadBool(a, "women"), ReadBool(a, "senior"), ReadDecimal(a, "extraRate")))).ToList(),
             PaymentModes: Of("paymentModes").Select(e => Attrs(e, a => new PaymentModeOption(e.Name, ReadString(a, "document")))).ToList(),
             SourcingModes: Of("sourcingModes").Select(e => Attrs(e, a => new SourcingModeOption(e.Code, e.Name,
                 ReadString(a, "codeLabel") ?? "", ReadString(a, "nameLabel") ?? "", ReadString(a, "house") ?? "", ReadString(a, "search") ?? "",
@@ -111,7 +123,8 @@ public sealed class SqlReference(Db db, IMemoryCache cache) : IReferenceApi
             Declarations: Names("declarations"),
             NoticeKinds: Names("noticeKinds"),
             RenewalNotes: Names("renewalNotes"),
-            Features: features);
+            Features: features,
+            SourcesOfFunds: Of("sourcesOfFunds").Select(e => new Option(e.Code, e.Name)).ToList());
     }
 
     // ----- An entry's attributes, j_Attrs -------------------------------------------
@@ -124,6 +137,14 @@ public sealed class SqlReference(Db db, IMemoryCache cache) : IReferenceApi
 
     /// <summary>A true/false attribute of a JSON entry (false when missing).</summary>
     private static bool ReadBool(JsonElement a, string name) => a.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.True;
+
+    // A number in the attributes, or 0 when it is not there.
+    private static decimal ReadDecimal(JsonElement a, string name)
+    {
+        if (!a.TryGetProperty(name, out var v)) return 0;
+        if (v.ValueKind != JsonValueKind.Number) return 0;
+        return v.GetDecimal();
+    }
 
     /// <summary>A whole-number attribute of a JSON entry (0 when missing).</summary>
     private static int ReadInt(JsonElement a, string name) => a.TryGetProperty(name, out var v) && v.TryGetInt32(out var n) ? n : 0;
