@@ -21,13 +21,13 @@ public class SubmittedController(IApplicationApi applications, IDepositApi depos
         });
     }
 
-    /// <summary>Sends the payment link again, while a resend is left.</summary>
+    /// <summary>Sends a new payment link, while the application's window is open: it runs for the full validity again.</summary>
     [HttpPost("resend")]
     public async Task<IActionResult> Resend()
     {
         if (HttpContext.CurrentApplication() is not { } appNo) return Start();
         return await Applications.ResendLinkAsync(appNo) is null
-            ? Back(nameof(Index), new() { ["banner"] = "The link could not be sent again: no resend is left." })
+            ? Back(nameof(Index), new() { ["banner"] = "A new link could not be sent: the application is paid, cancelled, or past its window." })
             : RedirectToAction(nameof(Index));
     }
 }

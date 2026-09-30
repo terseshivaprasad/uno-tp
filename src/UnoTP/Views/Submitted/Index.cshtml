@@ -64,11 +64,19 @@
             </ol>
         </div>
 
+        @{
+            var canRegenerate = sub.CanRegenerate(DateTime.Now);
+            var regenerateNote = sub.RegenerateUntil is { } until
+                ? (canRegenerate
+                    ? $"A new link can be sent till {Money.Day(until)}; after that the application cancels itself."
+                    : $"The window for a new link closed on {Money.Day(until)}: the application has cancelled itself.")
+                : "";
+        }
         <form method="post" asp-action="Resend" class="submitted-actions">
-            <button type="submit" class="btn btn-primary submitted-actions__primary" disabled="@(sub.ResendsLeft == 0)" data-loader="Sending the link again&hellip;">@(sub.ResendsLeft == 0 ? "Payment link resent" : "Resend payment link")</button>
+            <button type="submit" class="btn btn-primary submitted-actions__primary" disabled="@(!canRegenerate)" data-loader="Sending a new link&hellip;">Regenerate payment link</button>
             <a class="submitted-actions__link submitted-actions__link--plain" asp-controller="Dashboard" asp-action="Index">Back to dashboard</a>
         </form>
-        <div class="submitted-note">@(sub.ResendsLeft == 0 ? $"No resends left. The link still expires {Money.Day(sub.LinkValidUntil)}." : $"{sub.ResendsLeft} resend{(sub.ResendsLeft == 1 ? " is" : "s are")} available.")</div>
+        <div class="submitted-note">@regenerateNote</div>
     </div>
 
     <div class="submitted-side">

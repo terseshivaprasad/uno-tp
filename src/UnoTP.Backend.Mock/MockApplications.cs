@@ -47,15 +47,16 @@ public sealed class MockApplications(MockStore store, IPartner partner) : IAppli
             var investor = app.Details?.Holders.FirstOrDefault(h => h.Holder == HolderType.Investor);
             var now = DateTime.Now;
             app.Submitted = new Submission(now, "payment-pending", Masks.Mobile(investor?.Mobile ?? ""),
-                now.AddHours(MockReference.PaymentLinkHours), ResendsLeft: 1, LinkEmailedTo: Masks.Email(investor?.Email ?? ""),
-                ShortUrl: link?.ShortUrl ?? "");
+                now.AddHours(MockReference.PaymentLinkHours), ResendsLeft: 0, LinkEmailedTo: Masks.Email(investor?.Email ?? ""),
+                ShortUrl: link?.ShortUrl ?? "", RegenerateUntil: now.AddDays(MockWindow.Days));
         }));
 
-    // One resend, which does not move the link's expiry.
+    // A new link, allowed until the window closes, running for the full validity again.
     public Task<Submission?> ResendLinkAsync(string appNo, CancellationToken ct = default)
     {
-        if (store.Get(partner.Id, appNo) is not { Submitted: { ResendsLeft: > 0 } } app) return Task.FromResult<Submission?>(null);
-        return Task.FromResult(store.Save(partner.Id, appNo, app.Version, a => a.Submitted = a.Submitted! with { ResendsLeft = a.Submitted.ResendsLeft - 1 })?.Submitted);
+        if (store.Get(partner.Id, appNo) is not { Submitted: { } sent } app) return Task.FromResult<Submission?>(null);
+        if (!sent.CanRegenerate(DateTime.Now)) return Task.FromResult<Submission?>(null);
+        return Task.FromResult(store.Save(partner.Id, appNo, app.Version, a => a.Submitted = a.Submitted! with { LinkValidUntil = DateTime.Now.AddHours(MockReference.PaymentLinkHours) })?.Submitted);
     }
 
     // The partner's own applications, opened here and not yet submitted - nothing

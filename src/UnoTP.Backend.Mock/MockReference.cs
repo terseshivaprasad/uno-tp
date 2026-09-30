@@ -10,7 +10,7 @@ public sealed class MockReference : IReferenceApi
     public const string SourcingAgency = "1033";
 
     /// <summary>How long a payment link stays open.</summary>
-    public const int PaymentLinkHours = 48;
+    public const int PaymentLinkHours = 72;
 
     private static readonly string[] Public = ["PUBLIC/GENERAL", "WOMEN", "SR CITIZEN", "SR CITIZEN WOMEN"];
 

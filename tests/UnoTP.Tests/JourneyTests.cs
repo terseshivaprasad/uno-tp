@@ -519,6 +519,15 @@ public class JourneyTests(App app)
 
         var again = await client.GetAsync(App.Step(at, "submitted"));
         Assert.Equal(HttpStatusCode.OK, again.StatusCode);
+
+        // A new link can be sent while the application's window is open, and runs for the full validity again.
+        Assert.Contains("Regenerate payment link", page);
+        Assert.Contains("A new link can be sent till", page);
+        var submittedPage = App.Step(at, "submitted");
+        var regenerated = await App.PostAsync(client, submittedPage, submittedPage + "/resend");
+        Assert.Equal(HttpStatusCode.OK, regenerated.StatusCode);
+        Assert.Contains("/ApplicationSubmitted/", regenerated.RequestMessage!.RequestUri!.AbsolutePath);
+        Assert.DoesNotContain("could not be sent", await regenerated.Content.ReadAsStringAsync());
     }
 
     [Fact]

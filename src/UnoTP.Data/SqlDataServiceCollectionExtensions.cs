@@ -44,6 +44,8 @@ public static class SqlDataServiceCollectionExtensions
         services.AddScoped<IDocumentApi, FileDocuments>();
         // Errors, with the request and the partner, to dbo.t_Unotp_Logs.
         services.AddSqlErrorLog();
+        // An unpaid application cancels itself cancellationDays after it was created.
+        services.AddHostedService<SqlAutoCancel>();
         // A live database has no test data to show: the Test data cards are left out.
         services.AddSingleton<IDemoApi, NoDemoData>();
         return services;

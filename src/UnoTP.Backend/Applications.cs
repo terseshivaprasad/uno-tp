@@ -220,9 +220,15 @@ public sealed record DepositDetails(
 /// <param name="Status">Where the application stands once submitted: "payment-pending", then the backend's own.</param>
 /// <param name="LinkSentTo">The mobile number the link went to by SMS, masked.</param>
 /// <param name="LinkEmailedTo">The e-mail address it went to as well, masked; empty when there is none.</param>
-/// <param name="LinkValidUntil">When the payment link stops working.</param>
-/// <param name="ResendsLeft">Times the link can still be sent again.</param>
-public sealed record Submission(DateTime At, string Status, string LinkSentTo, DateTime LinkValidUntil, int ResendsLeft, string LinkEmailedTo = "", string ShortUrl = "");
+/// <param name="LinkValidUntil">When the payment link stops working (linkValidityHours.payment from when it was last sent).</param>
+/// <param name="ResendsLeft">Kept for the row; the rule is <paramref name="RegenerateUntil"/>.</param>
+/// <param name="RegenerateUntil">A new link can be sent until then: cancellationDays after the application was created, when an unpaid application cancels itself.</param>
+public sealed record Submission(DateTime At, string Status, string LinkSentTo, DateTime LinkValidUntil, int ResendsLeft, string LinkEmailedTo = "", string ShortUrl = "",
+    DateTime? RegenerateUntil = null)
+{
+    /// <summary>Whether a new link can still be sent.</summary>
+    public bool CanRegenerate(DateTime now) => RegenerateUntil is { } until && now <= until;
+}
 
 /// <summary>
 /// The payment link an application is submitted with: the page the investor pays

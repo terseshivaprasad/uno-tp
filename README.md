@@ -112,6 +112,7 @@ sqlcmd -d UnoTP -i db/009_unotp_category_extra_rate.sql # what each category ear
 sqlcmd -d UnoTP -i db/010_unotp_name_screening.sql # name screening's answer on the KYC row
 sqlcmd -d UnoTP -i db/011_unotp_any_amount.sql     # any whole-rupee amount, not only multiples of 1,000
 sqlcmd -d UnoTP -i db/012_unotp_amount_limit_and_sub_occupations.sql # the 5 crore maximum and its message; sub occupations by occupation
+sqlcmd -d UnoTP -i db/013_unotp_link_validity.sql  # the payment link runs 3 days; a new one until the application cancels itself
 sqlcmd -d UnoTP -i db/900_dev_seed.sql           # development only: demo partners and master records
 export ConnectionStrings__UnoTP='Server=...;Database=UnoTP;...'   # never in a committed file
 dotnet run --project src/UnoTP --launch-profile http

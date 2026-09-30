@@ -102,7 +102,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
     {
         await using var connection = await db.OpenAsync(ct);
         var header = await HeaderAsync(connection, null, appNo, locked: false);
-        return header is null ? null : await AssembleAsync(connection, null, header);
+        return header is null ? null : await AssembleAsync(connection, null, header, await CancellationDaysAsync());
     }
 
     private async Task<HeaderRow?> HeaderAsync(IDbConnection connection, IDbTransaction? tx, string appNo, bool locked) =>
@@ -113,7 +113,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
 
     // The application as it stands: each section from its rows at the version the
     // header holds for it.
-    private static async Task<Application> AssembleAsync(IDbConnection connection, IDbTransaction? tx, HeaderRow h)
+    private static async Task<Application> AssembleAsync(IDbConnection connection, IDbTransaction? tx, HeaderRow h, int cancellationDays)
     {
         using var read = await connection.QueryMultipleAsync($"""
             SELECT j_Upload FROM dbo.t_Unotp_Upload_State WHERE c_App_No = @AppNo AND n_App_Version = @UploadVer AND f_Active = 1;
@@ -146,7 +146,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
             Deposit = deposit is null ? null : new DepositDetails(deposit.Amount, deposit.TenureMonths, deposit.Payout,
                 deposit.AutoRenewal, deposit.RenewInstruction, deposit.NoTds, deposit.DeliveryType,
                 deposit.SourceOfFunds, deposit.SourceOfFundsRemark),
-            Submitted = SubmissionOf(h),
+            Submitted = SubmissionOf(h, cancellationDays),
             Renewal = h.RenewDepNo is null ? null : new RenewalOf(h.RenewDepNo, h.RenewAmount ?? 0,
                 DateOnly.FromDateTime(h.RenewMaturesOn ?? DateTime.MinValue), h.RenewRate ?? 0, h.RenewTenure ?? 0, h.RenewPayout ?? ""),
             Pages = pages,
@@ -177,9 +177,12 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
         repay.SameAsPayment,
         pay.ChequeNo is null ? null : new ChequeDetails(pay.ChequeNo, Dates.FromDb(pay.ChequeDate), pay.CmsLocation ?? ""));
 
-    private static Submission? SubmissionOf(HeaderRow h) => h.SubmittedOn is not { } at ? null
+    private static Submission? SubmissionOf(HeaderRow h, int cancellationDays) => h.SubmittedOn is not { } at ? null
         : new Submission(at, h.SubStatus ?? "", h.LinkSentTo ?? "", h.LinkValidUntil ?? at, h.ResendsLeft ?? 0,
-            h.LinkEmailedTo ?? "", h.ShortUrl ?? "");
+            h.LinkEmailedTo ?? "", h.ShortUrl ?? "", RegenerateUntil: h.CreatedOn.AddDays(cancellationDays));
+
+    // Days after its creation an unpaid application cancels itself: until then a new link may be sent.
+    private async Task<int> CancellationDaysAsync() => (await reference.ConfigAsync(CancellationToken.None)).CancellationDays;
 
     // ----- Saving a step -----------------------------------------------------
 
@@ -290,7 +293,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
         if (header.Version != version || header.Submitted) return (SaveOutcome.Conflict, null);
 
         // Read again under the lock, so what is written as submitted is what stands.
-        var app = await AssembleAsync(connection, tx, header);
+        var app = await AssembleAsync(connection, tx, header, await CancellationDaysAsync());
         var next = header.Version + 1;
         var at = new Stamp(appNo, next, RowStatus.Approved, partner.Id);
         if (app.Upload is { } upload) await Sections.WriteUploadAsync(connection, tx, at, upload);
@@ -317,7 +320,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
             Next = next, LinkSentTo = Masks.Mobile(investor?.Mobile ?? ""), LinkEmailedTo = Masks.Email(investor?.Email ?? ""),
             Hours = hours, Resends = resends, ShortUrl = link?.ShortUrl ?? "", Partner = partner.Id, AppNo = appNo,
         }, tx);
-        var submission = SubmissionOf(submitted)!;
+        var submission = SubmissionOf(submitted, await CancellationDaysAsync())!;
         await tx.CommitAsync(ct);
         await RecordLinkAsync(appNo, link?.Url ?? "", link?.ShortUrl ?? "", submission, ct);
 
@@ -355,18 +358,23 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
         return (last.Url ?? "", last.ShortUrl ?? "");
     }
 
-    // A resend, while one is left, which does not move the link's expiry.
+    // A new link, allowed until cancellationDays after the application was created,
+    // while it is unpaid and not cancelled; it runs for the full validity again.
     public async Task<Submission?> ResendLinkAsync(string appNo, CancellationToken ct = default)
     {
+        var days = await CancellationDaysAsync();
+        var hours = (await reference.ConfigAsync(ct)).LinkValidityHours.GetValueOrDefault("payment");
         await using var connection = await db.OpenAsync(ct);
         await using var tx = await connection.BeginTransactionAsync(ct);
         var header = await connection.QuerySingleOrDefaultAsync<HeaderRow>($"""
-            UPDATE dbo.t_Unotp_Application_Mst SET n_Resends_Left = n_Resends_Left - 1, c_Updated_By = @Partner, d_Updated_On = SYSDATETIME()
+            UPDATE dbo.t_Unotp_Application_Mst
+            SET d_Link_Valid_Until = DATEADD(HOUR, @Hours, SYSDATETIME()), c_Updated_By = @Partner, d_Updated_On = SYSDATETIME()
             OUTPUT {Inserted}
-            WHERE c_App_No = @AppNo AND c_Partner_Id = @Partner AND c_Status = 'APR' AND n_Resends_Left > 0 AND f_Active = 1
-            """, new { AppNo = appNo, Partner = partner.Id }, tx);
+            WHERE c_App_No = @AppNo AND c_Partner_Id = @Partner AND c_Status = 'APR' AND f_Active = 1
+              AND d_Paid_On IS NULL AND d_Cancelled_On IS NULL AND d_Created_On >= DATEADD(DAY, -@Days, SYSDATETIME())
+            """, new { AppNo = appNo, Partner = partner.Id, Hours = hours, Days = days }, tx);
         if (header is null) return null;
-        var submission = SubmissionOf(header)!;
+        var submission = SubmissionOf(header, days)!;
         await tx.CommitAsync(ct);
         var last = await LastLinkAsync(appNo, ct);
         await RecordLinkAsync(appNo, last.Url, last.ShortUrl, submission, ct);
