@@ -32,14 +32,14 @@
 .classic-docs:hover em { text-decoration: underline; text-underline-offset: 3px; }
 .classic-docs:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
 /* The note is read, so it is body size on a tinted panel. */
-.classic-note { margin-top: 16px; padding: 12px 16px; border-radius: 6px; background: var(--tint); border: 1px solid var(--border); font-size: 14px; line-height: 20px; color: var(--text); }
+.classic-note { margin-top: 16px; padding: 12px 16px; border-radius: 6px; background: var(--tint); border: 1px solid var(--border); font-size: 12px; line-height: 16px; color: var(--text); }
 .classic-note__title { font-weight: 600; color: var(--ink); }
 .classic-note ul { margin: 4px 0 0; padding-left: 16px; }
 .classic-note li + li { margin-top: 8px; }
 
 /* ----- The actions: tiles, what is waiting, drafts --------------------------- */
 .classic-actions { padding-left: 40px; }
-.classic-actions__title { margin: 0; font-size: 16px; font-weight: 600; line-height: 24px; color: var(--ink); }
+.classic-actions__title { margin: 0; font-size: 16px; font-weight: 400; line-height: 24px; color: var(--text); }
 .classic-actions__rule { border: 0; border-top: 1px solid var(--border-2); margin: 32px 0; }
 .classic-tiles { display: flex; flex-wrap: wrap; gap: 24px; padding-top: 16px; }
 @media (max-width: 991px) {
@@ -59,12 +59,12 @@
 /* A tile the console's search has filtered out: display:flex above would otherwise
    outrank the browser's own [hidden] rule. */
 .classic-tile[hidden] { display: none; }
-/* One icon size on every tile, open or not: 40px over a 14px name - the name
-   carries the tile, the icon only marks it (a 48px drawing out-weighed its words). */
-.classic-tile__icon { display: flex; align-items: center; justify-content: center; height: 40px; }
-.classic-tile__icon svg { width: 40px; height: 40px; }
+/* One icon size on every tile, open or not: 48px over a 14px name, as on the old
+   eSarathi dashboard. */
+.classic-tile__icon { display: flex; align-items: center; justify-content: center; height: 48px; }
+.classic-tile__icon svg { width: 48px; height: 48px; }
 /* Two-line labels ("PIS Generation - Axis") centre on the same line as one-line ones. */
-.classic-tile__title { flex: 1; display: flex; align-items: center; font-size: 14px; font-weight: 600; line-height: 20px; color: var(--text); padding-bottom: 16px; }
+.classic-tile__title { flex: 1; display: flex; align-items: center; font-size: 14px; font-weight: 600; line-height: 20px; color: var(--text); padding-bottom: 12px; }
 /* A tile that cannot be opened yet: flat, greyed, with the reason under it as a
    chip (a Bootstrap badge) at full strength - the tile steps back, the reason does not. */
 .classic-tile--off { background: var(--tint); border-style: dashed; box-shadow: none; color: var(--muted-2); cursor: help; padding: 8px; gap: 4px; justify-content: center; }

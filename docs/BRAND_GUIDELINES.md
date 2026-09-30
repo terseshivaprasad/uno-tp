@@ -27,10 +27,10 @@ Bootstrap component - `app-dialog` and `app-toast` are ours for exactly that rea
 The rules the research behind this settled on (NN/g, GOV.UK, IBM Carbon, Material,
 Apple HIG, WCAG 2.2):
 
-- **Type:** a few sizes with clear roles - 12px captions, helper text, chips and
-  the small labels over a fact; 14px body, field labels, controls and buttons;
-  16px section titles; 20px page titles (the investor's name on a step) - never
-  below 12px; line heights on a 4px grid (16/20/24/28); headings semibold, body
+- **Type:** a few sizes with clear roles - 12px captions, helper text, chips,
+  field labels, step-rail labels and the small labels over a fact; 14px body,
+  controls and buttons; 16px section and step titles (the investor's name on a
+  step); 20px only for the dashboard's title - never below 12px; line heights on a 4px grid (16/20/24/28); headings semibold, body
   regular. No uppercase eyebrows: a caption is sentence case in `--muted`.
 - **Hierarchy:** one thing leads each block. A step's head is caption (the step),
   title (the name), then the facts; a document card's head is its label at the
@@ -101,13 +101,18 @@ Font: **Georama** (Google Fonts, weights 300–700), loaded in `_Layout.cshtml` 
 
 | Role | Size / line | Weight | Color | Example |
 |---|---|---|---|---|
-| Page title | 20 / 28px | 600 | `--ink` | `.cud-head__name`, `.classic-steps__title` |
-| Section title | 16 / 24px | 600 | `--ink` | `.cud-extra__title`, `.classic-actions__title` |
+| Dashboard title | 20 / 28px | 400 | `--text` | `.classic-steps__title` |
+| Step / page title | 16 / 24px | 600 | `--ink` | `.cud-head__name`, `.cii-title` |
+| Section title | 16 / 24px | 600 (400 on the dashboard) | `--ink` | `.cud-extra__title`, `.classic-actions__title` |
 | Body, field text, controls | 14 / 20px | 400–500 | `--ink` / `--text` | `.csi-control`, `.seg-toggle__opt` |
-| Field label | 14 / 20px | 600 | `--ink` | `.csi-label`, `.form-label` |
-| Button | 14px | 500–600 | — | `.btn`, `.csi-btn` (40px high) |
+| Field label, rail label | 12 / 16px | 600 | `--ink` | `.csi-label`, `.form-label`, `.csi-rail__label` |
+| Button | 14px | 500–600 | — | `.btn` (36px high, as tall as a field) |
 | Caption, helper, meta | 12 / 16px | 400–500 | `--muted` | `.csi-hint`, `.cud-head__step` |
 | Chip / status tag | 12 / 16px | 600 | varies | `.badge`, `.cud-held__tag` |
+
+Sizes follow the old eSarathi screens' scale (measured at 1470px): fields and
+buttons 36px, the step rail 224px with 16px icons, document boxes 136px, dashboard
+tiles 128px with 48px icons.
 | Small tool | 12 / 16px | 600 | `--red` | `.cud-tool` (26px high) |
 
 Nothing is set below 12px and nothing is uppercase. Icon glyphs (the "i" of an info

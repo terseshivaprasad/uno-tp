@@ -39,7 +39,7 @@
   --doc-card-h: 184px;
 }
 @media (min-width: 761px) {
-  :root { --doc-card-h: 144px; }
+  :root { --doc-card-h: 136px; }
 }
 /* One box to a row on a phone: nothing beside it to line up with, so each is as
    tall as what it says. */
@@ -220,7 +220,7 @@ tbody tr[hidden] { display: none; }
 }
 .inv-field .required { color: var(--red); }
 .inv-control {
-  width: 100%; height: 40px; border: 1px solid var(--border-3); border-radius: 6px; background: #fff;
+  width: 100%; height: 36px; border: 1px solid var(--border-3); border-radius: 6px; background: #fff;
   padding: 0 12px; font-family: inherit; font-size: 14px; font-weight: 500; color: var(--ink); letter-spacing: inherit;
 }
 .inv-control:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 2px var(--blue-bg); }
@@ -235,7 +235,7 @@ select.inv-control:has(option[value=""]:checked) { color: var(--muted-2); }
 .inv-field--sm .inv-control { border-color: var(--red); }
 /* A page's or a card's title: 20px semibold in ink, the one thing that leads it. */
 .cii-head { display: flex; align-items: center; gap: 12px; padding-bottom: 8px; }
-.cii-title { flex: 1; min-width: 0; margin: 0; font-size: 20px; font-weight: 600; line-height: 28px; color: var(--ink); }
+.cii-title { flex: 1; min-width: 0; margin: 0; font-size: 16px; font-weight: 600; line-height: 24px; color: var(--ink); }
 /* A second list on a page under its title (the drafts on Investor Identification),
    or a card that is one section of a page led by another (Review Summary), is a section. */
 .cii-title.drafts__title, .cii-title--section { font-size: 16px; line-height: 24px; }
@@ -316,12 +316,12 @@ select.inv-control:has(option[value=""]:checked) { color: var(--muted-2); }
 /* ===== Uno TP classic - investor search (the old searchinvestor page) =====
    The step rail beside one card of fields, over a bar of actions pinned to the
    foot of the window. Sizes follow the live page at 1470px. */
-.csi { display: grid; grid-template-columns: 256px minmax(0,1fr); gap: 16px; align-items: start; }
+.csi { display: grid; grid-template-columns: 224px minmax(0,1fr); gap: 16px; align-items: start; }
 /* The rail stays put under the 44px header while the card beside it scrolls;
    if the window is too short for it, the rail scrolls inside itself. */
 .csi-rail { position: sticky; top: 60px; max-height: calc(100vh - 128px); overflow-y: auto; background: #fff; border-radius: 8px; padding: 16px 8px; display: flex; flex-direction: column; gap: 8px; }
 .csi-card { background: #fff; border-radius: 8px; padding: 20px 24px 28px; margin-bottom: 72px; }
-.csi-label { display: block; font-size: 14px; font-weight: 600; line-height: 20px; color: var(--ink); padding: 0 0 8px; }
+.csi-label { display: block; font-size: 12px; font-weight: 600; line-height: 16px; color: var(--ink); padding: 0 0 4px; }
 .csi-searchby { margin: 24px 0 0; padding: 0; border: 0; }
 .csi-searchby .csi-label { padding-bottom: 8px; }
 .csi-radio { display: inline-flex; align-items: center; gap: 8px; margin-right: 24px; font-size: 14px; color: var(--text); cursor: pointer; }
@@ -333,7 +333,7 @@ select.inv-control:has(option[value=""]:checked) { color: var(--muted-2); }
 .csi-radio input:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
 .csi-field[hidden] { display: none; }
 .csi-control, .csi-date {
-  width: 100%; height: 40px; padding: 0 12px; border: 1px solid var(--border-3); border-radius: 6px;
+  width: 100%; height: 36px; padding: 0 12px; border: 1px solid var(--border-3); border-radius: 6px;
   background: #fff; font-family: inherit; font-size: 14px; color: var(--ink);
 }
 .csi-control:focus, .csi-date:focus-within { outline: none; border-color: var(--muted); }

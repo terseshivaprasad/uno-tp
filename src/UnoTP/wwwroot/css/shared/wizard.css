@@ -5,7 +5,7 @@
    outline, red-dark text - and lifted off the track; the rest are plain text on
    it. A toggle made of radios is lit by the checked radio alone, so a click moves
    the selection at once, never two lit while the server answers. */
-.seg-toggle { display: inline-flex; align-items: stretch; gap: 2px; height: 40px; padding: 3px; border: 1px solid var(--border-2); border-radius: 999px; background: var(--tint); flex: none; }
+.seg-toggle { display: inline-flex; align-items: stretch; gap: 2px; height: 36px; padding: 3px; border: 1px solid var(--border-2); border-radius: 999px; background: var(--tint); flex: none; }
 .seg-toggle__opt {
   display: inline-flex; align-items: center; justify-content: center; padding: 0 16px;
   border: 1px solid transparent; border-radius: 999px; background: transparent;
@@ -95,12 +95,12 @@
 /* Every step has the same inset, so the icons of all of them line up and the
    current one's tint has room round what it holds - 12px each side, as a list
    item's highlight should. */
-.csi-rail__step { display: flex; align-items: center; gap: 12px; color: var(--text); padding: 8px 12px; border-radius: 6px; }
+.csi-rail__step { display: flex; align-items: center; gap: 10px; color: var(--text); padding: 6px 12px; border-radius: 6px; }
 /* Only the step the partner is on is marked out: the rest are a quiet list - regular
    weight, the icon in the muted grey - so the rail guides without pulling the eye
    from the card. */
-.csi-rail__step > svg:first-child { flex: none; width: 20px; height: 20px; color: var(--muted); }
-.csi-rail__label { flex: 1; min-width: 0; font-size: 14px; font-weight: 500; line-height: 20px; color: var(--text); }
+.csi-rail__step > svg:first-child { flex: none; width: 16px; height: 16px; color: var(--muted); }
+.csi-rail__label { flex: 1; min-width: 0; font-size: 12px; font-weight: 600; line-height: 16px; color: var(--text); }
 /* An empty tick: the step is not complete until the wizard says so. */
 .csi-rail__check { flex: none; width: 12px; height: 12px; color: var(--border-2); }
 /* The step the page is on: tinted row, red label and a red marker. */
@@ -117,7 +117,7 @@
 .csi-rail__num { display: block; font-size: 12px; font-weight: 500; line-height: 16px; color: var(--muted); }
 .csi-rail__step--current .csi-rail__num { color: var(--red-dark); }
 .csi-rail__rule { margin: 0 12px; border: 0; border-top: 1px dashed var(--border-2); }
-.csi-rail__step--end:not(.csi-rail__step--current) .csi-rail__label { color: var(--text); font-weight: 500; }
+.csi-rail__step--end:not(.csi-rail__step--current) .csi-rail__label { color: var(--text); font-weight: 600; }
 .csi-fields { display: grid; grid-template-columns: minmax(0,300px) minmax(0,230px) auto; gap: 24px; padding-top: 16px; align-items: end; justify-content: start; }
 .csi-note { display: flex; gap: 8px; margin-top: 20px; margin-bottom: 0; }
 .csi-note__icon { flex: none; margin-top: 2px; }
@@ -338,7 +338,7 @@
    White is a card there is something to do with - a file to pick, a document to
    look at. The tint is a card there is nothing to do with yet: not applicable,
    shut until a type is chosen, being checked, or out of attempts. */
-.cud-drop { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 124px; padding: 16px 16px; border: 1px solid var(--border-2); border-radius: 8px; background: #fff; font-family: inherit; text-align: center; cursor: pointer; }
+.cud-drop { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 124px; padding: 12px 16px; border: 1px solid var(--border-2); border-radius: 8px; background: #fff; font-family: inherit; text-align: center; cursor: pointer; }
 .cud-drop[hidden] { display: none; }
 /* A slot this application has no use for draws the same card as the rest, with
    the same mark on the left - struck through, because there is nothing to file
@@ -385,7 +385,7 @@
 @media (prefers-reduced-motion: reduce) {
   .cud-drop__spinner { animation-duration: 2.4s; }
 }
-.cud-drop__icon { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; margin-bottom: 4px; border-radius: 50%; background: var(--pink-bg); color: var(--red); }
+.cud-drop__icon { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; margin-bottom: 4px; border-radius: 50%; background: var(--pink-bg); color: var(--red); }
 .cud-drop__title { font-size: 14px; font-weight: 500; line-height: 20px; color: var(--text); }
 .cud-drop__hint { font-size: 12px; line-height: 16px; color: var(--muted); }
 /* What the document itself has to be, beyond its format. Amber: it is a rule the
@@ -399,7 +399,7 @@
 .cud-drop__file { max-width: 100%; font-size: 14px; font-weight: 600; line-height: 20px; color: var(--ink); overflow-wrap: anywhere; }
 .cud-drop__size { font-size: 12px; line-height: 16px; color: var(--muted); }
 /* An address the folio holds, standing in the box of the proof it needs no copy of. */
-.cud-drop.is-held { cursor: default; padding-bottom: 16px; }
+.cud-drop.is-held { cursor: default; padding-bottom: 12px; }
 .cud-drop.is-held:hover { border-color: var(--border-2); background: #fff; }
 /* The tick spans every line beside it, centred like the Not applicable mark. */
 @media (min-width: 761px) {
@@ -471,7 +471,7 @@ label.cud-tool { cursor: pointer; }
 @media (min-width: 761px) {
   /* One size for every box, no taller than its fullest state needs: a proof of
        address read to its tag, two lines of address, the PIN and a note. */
-  .cud-drop, .cud-slot__na { padding: 16px 20px; }
+  .cud-drop, .cud-slot__na { padding: 12px 16px; }
   .cud-drop { justify-content: flex-start; text-align: left; }
   .cud-drop__idle, .cud-drop__busy, .cud-drop__locked, .cud-drop__done {
       display: grid; width: 100%; grid-template-columns: auto minmax(0, 1fr);
@@ -486,7 +486,7 @@ label.cud-tool { cursor: pointer; }
     .cud-drop__locked > :not(.cud-drop__lock),
     .cud-drop__busy > :not(.cud-drop__spinner),
     .cud-drop__done > :not(.cud-drop__check) { grid-column: 2; }
-  .cud-drop__icon { width: 40px; height: 40px; }
+  .cud-drop__icon { width: 36px; height: 36px; }
   .cud-drop__check { width: 38px; height: 38px; }
   .cud-drop__title { font-size: 14px; }
   /* The panel that stands where a picker would keeps the picker's height, and
@@ -649,7 +649,7 @@ body:has(.cud-pin:not([hidden])) .csi-rail { top: 100px; max-height: calc(100vh 
   .cii-docs-head .cud-apptype__group, .cud-apptype .cud-apptype__group { width: 100%; gap: 8px; }
   /* Full width, halves each; an option too long for its half wraps onto a second
      line (the track grows with it) rather than running past the edge. */
-  .cii-docs-head .seg-toggle, .cud-apptype .seg-toggle { width: 100%; height: auto; min-height: 40px; border-radius: 20px; }
+  .cii-docs-head .seg-toggle, .cud-apptype .seg-toggle { width: 100%; height: auto; min-height: 36px; border-radius: 18px; }
   .cii-docs-head .seg-toggle__opt, .cud-apptype .seg-toggle__opt { flex: 1 1 0; min-width: 0; justify-content: center; padding: 6px 8px; border-radius: 16px; white-space: normal; text-align: center; line-height: 16px; }
   .cii-docs-head .csi-label, .cud-apptype .csi-label { width: 100%; }
 }

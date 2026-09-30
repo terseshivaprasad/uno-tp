@@ -82,7 +82,7 @@
   --bs-focus-ring-color: var(--blue);
 }
 
-/* Buttons: 14px semibold, 40px high - as tall as a field, so a button beside one
+/* Buttons: 14px semibold, 36px high - as tall as a field, so a button beside one
    lines up with it - with an icon and its words centred together; red fills the
    main action. A disabled button says so in its colours, at full opacity. */
 .btn {
@@ -91,7 +91,7 @@
   --bs-btn-font-weight: 600;
   --bs-btn-line-height: 20px;
   --bs-btn-padding-x: 24px;
-  --bs-btn-padding-y: 9px;
+  --bs-btn-padding-y: 7px;
   --bs-btn-border-radius: 6px;
   --bs-btn-disabled-opacity: 1;
   --bs-btn-focus-box-shadow: 0 0 0 2px var(--card-bg), 0 0 0 4px var(--blue);
@@ -153,7 +153,7 @@
 /* Form controls: 44px high, the brand's input border, blue focus. */
 .form-control,
 .form-select {
-  min-height: 44px;
+  min-height: 36px;
   font-size: 14px;
   color: var(--ink);
   border-color: var(--border-3);
@@ -164,7 +164,7 @@
   border-color: var(--blue);
   box-shadow: 0 0 0 2px var(--blue-bg);
 }
-.form-label { font-size: 14px; font-weight: 600; line-height: 20px; color: var(--ink); }
+.form-label { margin-bottom: 4px; font-size: 12px; font-weight: 600; line-height: 16px; color: var(--ink); }
 .form-text { font-size: 12px; line-height: 16px; color: var(--muted); }
 
 /* Cards: white, 8px, a hairline, the brand's padding. */

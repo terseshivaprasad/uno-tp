@@ -1,7 +1,7 @@
 /* The admin page only. Loaded after base.css and components/registers.css. */
 
 /* A card's title leads it: 20px semibold in ink, as every page's title does. */
-.csi-card__title { margin: 0; font-size: 20px; font-weight: 600; line-height: 28px; letter-spacing: -.01em; color: var(--ink); padding-bottom: 8px; }
+.csi-card__title { margin: 0; font-size: 16px; font-weight: 600; line-height: 24px; color: var(--ink); padding-bottom: 8px; }
 .csi-drafts__head { padding-bottom: 4px; }
 .csi-drafts__sub { padding: 4px 0 12px; font-size: 12px; color: var(--muted); }
 .csi-card__title--plain { padding-bottom: 0; border-bottom: 0; }

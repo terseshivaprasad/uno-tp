@@ -29,7 +29,7 @@
 .cud-head { display: flex; align-items: flex-start; gap: 24px; flex-wrap: wrap; padding-bottom: 20px; border-bottom: 1px solid var(--divider); }
 .cud-head__who { min-width: 0; }
 .cud-head__step { margin: 0; font-size: 12px; font-weight: 500; line-height: 16px; color: var(--muted); }
-.cud-head__name { margin: 0; padding-top: 4px; font-size: 20px; font-weight: 600; line-height: 28px; letter-spacing: -.01em; color: var(--ink); }
+.cud-head__name { margin: 0; padding-top: 4px; font-size: 16px; font-weight: 600; line-height: 24px; color: var(--ink); }
 /* The two identifiers read as a pair of facts, each after its own label and set
    apart by the space between them rather than by a middot inside one line. */
 .cud-head__ids { display: flex; flex-wrap: wrap; gap: 4px 24px; margin: 0; padding-top: 8px; font-size: 14px; font-weight: 500; line-height: 20px; color: var(--text); font-variant-numeric: tabular-nums; }
