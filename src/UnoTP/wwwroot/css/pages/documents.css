@@ -1,7 +1,7 @@
-/* The documents page only. Loaded after layout-and-controls.css and shared/journey-steps.css. */
+/* Styles for the Upload Documents page only. Loaded after layout-and-controls.css
+   and journey-steps.css, which hold the document cards themselves. */
 
-/* The count of what is still to go opens the whole list, above the bar, so nothing
-   has to be scrolled for. */
+/* The "N things still to go" line in the action bar; a click opens the whole list. */
 .page-remaining {
   position: relative;
 }
@@ -48,8 +48,7 @@
 .page-remaining__list li::marker {
   color: var(--muted);
 }
-/* What the draft holds and when it was put there, beside the button that saved
-   it. Quiet: it is a receipt, not an instruction. */
+/* "Draft saved HH:mm" beside the Save draft button. */
 .page-action-bar__saved {
   font-size: 12px;
   line-height: 16px;
@@ -59,13 +58,10 @@
 .page-action-bar__saved[hidden] {
   display: none;
 }
-/* ===== Uno TP classic - Upload Documents =====
-   Three document slots across the top, the one the payment carries under them,
-   and the details the application is sourced under in a card of its own. */
-/* Who the step is for on the left, what it is filed under on the right, set off
-   from the step's choices by a rule. One thing leads: the investor's name, the
-   page's title at 20px. The step over it and the labels of the facts under and
-   beside it are 12px captions, so the eye goes name, then facts, then the page. */
+/* ===== The page: the document cards across the top, the payment under them, and the
+   sourcing details in a card of their own ===== */
+/* The head: who the step is for on the left (the name leads, at 16px), what the
+   application is filed under on the right, and a rule under both. */
 .doc-head {
   display: flex;
   align-items: flex-start;
@@ -92,8 +88,7 @@
   line-height: 24px;
   color: var(--ink);
 }
-/* The two identifiers read as a pair of facts, each after its own label and set
-   apart by the space between them rather than by a middot inside one line. */
+/* PAN and date of birth under the name: each after its own small label. */
 .doc-head__ids {
   display: flex;
   flex-wrap: wrap;
@@ -163,9 +158,8 @@
   font-style: italic;
   color: var(--muted);
 }
-/* Something worth knowing about a field, in the informational blue the rest of
-   the wizard uses - never the red of something that stops the application. */
-/* A note under a field is a hint beside it, so it is the compact alert: 12px. */
+/* An informational note under a field: blue, never the red of an error. */
+/* The note is the compact alert: 12px. */
 .doc-note {
   display: flex;
   gap: 8px;
@@ -182,9 +176,8 @@
   flex: none;
   margin-top: 2px;
 }
-/* How the application arrived, on a row of its own above the documents: the
-   label and the design's segmented toggle side by side, on the same rhythm as
-   the mailing question below it. */
+/* The two toggles above the documents: application type and communication address,
+   each a label beside a segmented toggle. */
 .doc-app-type {
   display: flex;
   align-items: center;
@@ -224,7 +217,7 @@
   line-height: 16px;
   color: var(--ink);
 }
-/* What the check is doing, in the colour of where it got to. */
+/* The state of a check, in the colour of how far it got. */
 .doc-read-result__state {
   flex: none;
   font-size: 12px;
@@ -250,14 +243,14 @@
 .doc-read-result__card.is-failed .doc-read-result__state {
   color: var(--red-dark);
 }
-/* Nothing to read for this card: said, and set back. */
+/* A card with nothing read yet. */
 .doc-read-result__card.is-na {
   background: var(--tint);
 }
 .doc-read-result__card.is-na .doc-read-result__lines {
   color: var(--muted);
 }
-/* An address the folio holds: shown in full, but nothing here confirmed it. */
+/* An address the folio already holds: shown in full, but nothing on this step confirmed it. */
 .doc-read-result__card.is-unverified {
   border-color: var(--amber-border);
 }
@@ -287,8 +280,7 @@
 .doc-history__none[hidden] {
   display: none;
 }
-/* A row of fields - label, box, hint - stands 24px from the next: three times the
-   8px between a label and its box, so each field reads as one group. */
+/* Rows of fields are 24px apart, so each label, box and hint reads as one group. */
 .doc-grid--details {
   gap: 24px;
 }
@@ -303,10 +295,9 @@
   align-items: center;
   gap: 6px;
 }
-/* ===== The KYC route =====
-   On the page rather than behind the button, because what it says decides
-   whether the pickers below are worth filling at all. Informational blue while
-   it is an offer; green once the application is on that route. */
+/* ===== The "Fetch from CKYC" section =====
+   On the page rather than behind the button, because it decides whether the cards below
+   need filling at all. Blue while it is an offer; green once the application is on that route. */
 .doc-kyc-route {
   display: flex;
   align-items: flex-start;
@@ -356,9 +347,7 @@
 .doc-kyc-route.is-on .doc-kyc-route__title {
   color: var(--green);
 }
-/* Not a route this application can take: a physical one is signed and filed by
-   hand, and CERSAI's consent is given online. Greyed while its button is disabled,
-   which follows the application type as it is chosen. */
+/* Greyed while the button is disabled: a physical application cannot fetch from CKYC. */
 .doc-kyc-route:has(.doc-ckyc-btn:disabled) {
   border-color: var(--border-2);
   border-left-color: var(--border-2);
@@ -386,7 +375,7 @@
 .doc-ckyc-ask__note[hidden] {
   display: none;
 }
-/* Once it has been asked for, the head says so in place of the link. */
+/* Once fetched, the head says so in place of the button. */
 .doc-ckyc-on {
   font-size: 14px;
   font-weight: 600;
@@ -397,10 +386,8 @@
 .doc-ckyc-on[hidden] {
   display: none;
 }
-/* Every read card starts at the size of a document box, and grows rather than
-   cutting off what it read. NSDL asking for the name printed on the PAN does so
-   in a row under the cards (.doc-retry), not in its card. The card itself does not
-   clip, so an info mark's words can spill over its edge. */
+/* "What the PAN was checked with": one row per check. A row grows rather than cutting
+   off what it read. NSDL asking for the printed name is a row under the cards (.doc-retry). */
 .doc-read-result__card {
   min-height: var(--doc-card-h);
   display: flex;
@@ -420,8 +407,8 @@
     grid-row: 3;
   }
 }
-/* The payment row: the mode above its box, and what the cheque read beside the
-   box, level with it and the same size. */
+/* The payment row: the mode above the instrument's card, and what the instrument was
+   read to say beside the card, level with it. */
 .doc-payment__grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -438,8 +425,7 @@
 .doc-payment__slot .doc-slot {
   padding-top: 0;
 }
-/* The read card beside the box drops by the toolbar's line (.doc-slot__bar: 28px
-   and 8px under it), level with the box. */
+/* The read card drops by the height of the card toolbar (.doc-slot__bar), so it lines up with the box. */
 .doc-payment__card {
   grid-column: 2;
   grid-row: 2;
@@ -466,7 +452,7 @@
   transform: translateX(-50%);
   max-width: 240px;
 }
-/* Detail kept a click away: "How it works" under a short line. */
+/* "How it works": detail kept a click away under a short line. */
 .doc-more-info {
   margin-top: 8px;
   font-size: 14px;

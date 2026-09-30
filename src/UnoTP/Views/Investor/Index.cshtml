@@ -165,20 +165,23 @@
             </div>
         </div>
         <div class="doc-grid doc-grid--docs">
-            @* Each card's label heads it on one line with its toolbar; where the proof's
-               type is chosen first, the label and its picker stand over the card. *@
+            @* Each card's label heads it on one line with its toolbar. Where the proof's type is
+               chosen first, the label and its picker stand above the card instead (no Label). *@
             @{
-                Func<object?, IHtmlContent> panHead = @<span class="field-label">PAN @if (pan.Optional) { <span class="doc-optional">(Non-mandatory)</span> }</span>;
-                Func<object?, IHtmlContent> photoHead = @<span class="field-label">Photo</span>;
-                Func<object?, IHtmlContent>? poaHead = null, mailHead = null;
+                string? poaLabel = null;
+                string? mailLabel = null;
+                string? poaType = null;
+                string? mailType = null;
                 if (docs.AutoProofType)
                 {
-                    poaHead = @<span class="field-label">Proof of address <partial name="_ProofType" model="@(poa.Used ? docs.PoaTypeOf(h) : null)" /></span>;
-                    mailHead = @<span class="field-label">Communication address proof <partial name="_ProofType" model="@(mail.Used ? docs.MailTypeOf(h) : null)" /></span>;
+                    poaLabel = "Proof of address";
+                    mailLabel = "Communication address proof";
+                    if (poa.Used) poaType = docs.PoaTypeOf(h);
+                    if (mail.Used) mailType = docs.MailTypeOf(h);
                 }
             }
             <div class="doc-column">
-                <partial name="_DocSlot" model="@(new DocSlotBlock(pan, upload, Head: panHead))" />
+                <partial name="_DocSlot" model="@(new DocSlotBlock(pan, upload, Label: "PAN", LabelOptional: pan.Optional))" />
             </div>
             @* NSDL asking for the name printed on the PAN: across the row straight
                under the PAN's box. *@
@@ -187,23 +190,23 @@
                 <div class="doc-retry-row"><partial name="_NsdlRetry" model="@panReads" /></div>
             }
             <div class="doc-column">
-                <partial name="_DocSlot" model="@(new DocSlotBlock(docs.View(DocumentsViewModel.PhotoSlot, h), upload, Head: photoHead))" />
+                <partial name="_DocSlot" model="@(new DocSlotBlock(docs.View(DocumentsViewModel.PhotoSlot, h), upload, Label: "Photo"))" />
             </div>
             <div class="doc-column">
-                @if (poaHead is null)
+                @if (!docs.AutoProofType)
                 {
                     <div class="doc-column__head">@{ await ProofLabel(h, "poaType", "Proof of address", poa.Used, docs.PoaTypeOf(h)); }</div>
                 }
-                <partial name="_DocSlot" model="@(new DocSlotBlock(poa, upload, Head: poaHead))" />
+                <partial name="_DocSlot" model="@(new DocSlotBlock(poa, upload, Label: poaLabel, ShowsProofType: docs.AutoProofType, ProofType: poaType))" />
             </div>
             @if (docs.CommProofUpload)
             {
                 <div class="doc-column">
-                    @if (mailHead is null)
+                    @if (!docs.AutoProofType)
                     {
                         <div class="doc-column__head">@{ await ProofLabel(h, "mailType", "Communication address proof", mail.Used, docs.MailTypeOf(h)); }</div>
                     }
-                    <partial name="_DocSlot" model="@(new DocSlotBlock(mail, upload, Head: mailHead))" />
+                    <partial name="_DocSlot" model="@(new DocSlotBlock(mail, upload, Label: mailLabel, ShowsProofType: docs.AutoProofType, ProofType: mailType))" />
                 </div>
             }
             @* An Aadhaar filed whose number OCR could not read: the number typed for

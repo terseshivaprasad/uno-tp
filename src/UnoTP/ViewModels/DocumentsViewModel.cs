@@ -549,6 +549,71 @@ public class DocumentsViewModel(
     // will be asked reaches for the copy UIDAI would recognise.
     private const string Run = "Once uploaded: identified, read by OCR, then ";
 
+    /// <summary>A document card as one value of a choice would leave it. Now: this value is the one chosen.</summary>
+    public sealed record SlotAlternative(string Value, bool Now, SlotView Slot);
+
+    /// <summary>
+    /// One document card per value a choice can take, for the choices that reshape a card:
+    /// the application type (the form's card), the communication address (the proof's
+    /// card) and the payment mode (the instrument's card). The page draws every card and
+    /// hides all but the chosen one, so it can swap them in the moment the choice changes.
+    /// </summary>
+    /// <param name="field">The choice's form field: appType, mailing or payMode.</param>
+    public IReadOnlyList<SlotAlternative> AlternativesFor(string field)
+    {
+        var alternatives = new List<SlotAlternative>();
+
+        if (field == "appType")
+        {
+            foreach (var type in ApplicationTypes)
+            {
+                alternatives.Add(new SlotAlternative(type.Code, type.Code == State.AppType, ViewWithAppType(type.Code)));
+            }
+        }
+        else if (field == "mailing")
+        {
+            var different = MailDifferentOf(Investor);
+            alternatives.Add(new SlotAlternative("same", !different, ViewWithMailDifferent(false)));
+            alternatives.Add(new SlotAlternative("different", different, ViewWithMailDifferent(true)));
+        }
+        else if (field == "payMode")
+        {
+            alternatives.Add(new SlotAlternative("", State.PayMode == "", ViewWithPayMode("")));
+            foreach (var mode in PaymentModes)
+            {
+                alternatives.Add(new SlotAlternative(mode.Name, mode.Name == State.PayMode, ViewWithPayMode(mode.Name)));
+            }
+        }
+
+        return alternatives;
+    }
+
+    // The three helpers below draw a card as it would stand with the choice set to a
+    // value: the choice is set on the state for the moment the card is worked out, then put back.
+    private SlotView ViewWithAppType(string type)
+    {
+        var was = State.AppType;
+        State.AppType = type;
+        try { return View(FormSlot); }
+        finally { State.AppType = was; }
+    }
+
+    private SlotView ViewWithMailDifferent(bool different)
+    {
+        var was = State.MailDifferent;
+        State.MailDifferent = different;
+        try { return View(MailSlot); }
+        finally { State.MailDifferent = was; }
+    }
+
+    private SlotView ViewWithPayMode(string mode)
+    {
+        var was = State.PayMode;
+        State.PayMode = mode;
+        try { return View(PaymentSlot); }
+        finally { State.PayMode = was; }
+    }
+
     /// <summary>How a document slot stands for the investor: its copy, its checks and what can be done.</summary>
     public SlotView View(SlotDef def) => View(def, Investor);
 

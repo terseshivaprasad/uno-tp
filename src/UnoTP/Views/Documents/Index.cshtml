@@ -1,51 +1,66 @@
 @model DocumentsViewModel
-@using M = UnoTP.ViewModels.DocumentsViewModel
 @{
     ViewData["Title"] = "Upload Documents";
 
-    // The old WA_FD_UNOTP/UploadInvestorDocuments: the documents across the top,
-    // the one the payment carries under them, and the details the application is
-    // sourced under. Every change posts the form and the controller answers:
-    // partial-forms.js swaps the answer in without a reload, and without it the
-    // same forms post the ordinary way.
-    var s = Model.State;
+    var state = Model.State;
     var flash = Model.Shown;
-    var mode = Model.ModeOf(s.Sourcing);
-    var views = M.Slots.ToDictionary(d => d.Key, Model.View);
-    var physical = s.AppType == M.Physical;
+    var isPhysical = state.AppType == DocumentsViewModel.Physical;
+    var uploadUrl = Url.Action("Upload")!;
+    var nextSlotKey = Model.NextSlot();
+    var stillToDo = Model.Outstanding();
+
+    // The document cards.
+    var panSlot = Model.View(DocumentsViewModel.PanSlot);
+    var photoSlot = Model.View(DocumentsViewModel.PhotoSlot);
+    var poaSlot = Model.View(DocumentsViewModel.PoaSlot);
+    var mailSlot = Model.View(DocumentsViewModel.MailSlot);
+    var paymentSlot = Model.View(DocumentsViewModel.PaymentSlot);
+    var employeeProofSlot = Model.View(DocumentsViewModel.EmpProofSlot);
+    var poaUsed = poaSlot.Used;
+    var mailUsed = mailSlot.Used;
+
     // What the PAN was checked with, and where a name typed for NSDL posts.
     var panReads = new ReadCardsBlock(Model.PanReadsOf(Model.Investor), Url.Action("Nsdl"));
-    // The communication proof's box switches in place with the toggle, while nothing is filed there.
-    var mailInstant = Model.MailCanDiffer(Model.Investor) && views["mail"].Doc is null;
-    var poaUsed = views["poa"].Used;
-    var mailUsed = views["mail"].Used;
-    var employee = Model.IsEmployee(s.Category);
-    // Agency type 1033 chooses the mode, the code and the category; anyone else
-    // sources as a broker under their own code, booked as the holder's details say.
-    var chooses = Model.Chooses;
-    var left = Model.Outstanding();
 
-    string? Err(string key) => flash?.Errors.GetValueOrDefault(key);
-    string? Invalid(string key) => Err(key) is null ? null : "is-invalid";
-    bool Focus(string key) => flash?.Focus == key;
+    // The communication address: whether it may differ from the permanent one, and whether
+    // its proof's card can be switched in place (only while nothing is filed there).
+    var mailDifferent = Model.MailDifferentOf(Model.Investor);
+    var mailCanDiffer = Model.MailCanDiffer(Model.Investor);
+    var mailSwitchesInPlace = mailCanDiffer && mailSlot.Doc is null;
 
-    var sourceRegister = M.RegisterName(mode, sub: false);
-    var subRegister = M.RegisterName(mode, sub: true);
-    var registerSearch = Url.Action("Sourcing");
-    var sourceShut = !chooses || mode is null || mode.House.Length > 0;
-    var subShut = mode is null || mode.Sub is M.SubField.House or M.SubField.Shut or M.SubField.EmployeeShut;
-    var subRequired = mode is not null && M.SubRequired(mode);
-    var sourceName = Model.Resolved(mode, sub: false);
-    var subName = Model.Resolved(mode, sub: true);
-    IReadOnlyList<string> categories = chooses ? mode?.Categories ?? [] : [s.Category];
-    var empName = Model.StaffName(s.EmpCode);
+    // Sourcing. Agency type 1033 chooses the mode, the code and the category; anyone else
+    // sources as a broker under their own code.
+    var partnerChoosesSourcing = Model.Chooses;
+    var sourcingMode = Model.ModeOf(state.Sourcing);
+    var sourceRegister = DocumentsViewModel.RegisterName(sourcingMode, sub: false);
+    var subRegister = DocumentsViewModel.RegisterName(sourcingMode, sub: true);
+    var registerSearchUrl = Url.Action("Sourcing");
+    var sourceCodeDisabled = !partnerChoosesSourcing || sourcingMode is null || sourcingMode.House.Length > 0;
+    var subBrokerDisabled = sourcingMode is null
+        || sourcingMode.Sub is DocumentsViewModel.SubField.House or DocumentsViewModel.SubField.Shut or DocumentsViewModel.SubField.EmployeeShut;
+    var subBrokerRequired = sourcingMode is not null && DocumentsViewModel.SubRequired(sourcingMode);
+    var sourceCodeName = Model.Resolved(sourcingMode, sub: false);
+    var subBrokerName = Model.Resolved(sourcingMode, sub: true);
+    var sourceCodeLabel = sourcingMode?.CodeLabel ?? "Broker Code";
+    var sourceNameLabel = sourcingMode?.NameLabel ?? "Broker Name";
+
+    IReadOnlyList<string> categories = [state.Category];
+    if (partnerChoosesSourcing) categories = sourcingMode?.Categories ?? [];
+
+    var isEmployeeCategory = Model.IsEmployee(state.Category);
+    var employeeName = Model.StaffName(state.EmpCode);
+
+    (string Value, string Label)[] mailingOptions = [("same", "Same as Permanent"), ("different", "Different from Permanent")];
 }
+@* Upload Documents: the documents across the top, the payment's instrument under them,
+   and the details the application is sourced under. Every change posts the form and the
+   controller answers; partial-forms.js swaps the answer in without a reload, and without
+   a script the same forms post the ordinary way. *@
 
 @functions {
-    // .NET 8 Razor leaves the body of a tag helper inside a helper below async with
-    // nothing to await (fixed in Razor 9); nothing runs differently for it.
-#pragma warning disable CS1998
-    // A field's error line, when the last post left one.
+#pragma warning disable CS1998 // Razor makes these helpers async; there is nothing to await in them.
+
+    // The error message a field's last post left, or nothing.
     async Task FieldError(string key)
     {
         var message = Model.Shown?.Errors.GetValueOrDefault(key);
@@ -53,60 +68,32 @@
         {
             <p class="field-error" id="@(key)Error" role="alert">@message</p>
         }
-        await Task.CompletedTask;
     }
 
-    // One document slot, drawn by the partial Investor Information shares.
-    // Its label, where one is given, heads the card on one line with its toolbar.
-    async Task Slot(M.SlotView v, string? form = null, Func<object?, IHtmlContent>? head = null)
+    // "is-invalid" when the field's last post left an error.
+    string? Invalid(string key)
     {
-        <partial name="_DocSlot" model="@(new DocSlotBlock(v, Url.Action("Upload")!, form, IsNext: v.Key == Model.NextSlot(), Head: head))" />
+        var hasError = Model.Shown?.Errors.GetValueOrDefault(key) is not null;
+        return hasError ? "is-invalid" : null;
     }
 
-    // A slot as each value of a choice leaves it, every one drawn and all but the
-    // one standing hidden, so the page shows the right one the moment the choice
-    // changes (data-show-when, partial-forms.js) while the change is saved. A hidden
-    // one is a disabled fieldset, so nothing in it is posted. Each is worked out by
-    // setting the choice on the state for a moment and putting it back.
-    async Task Choices(string field, IEnumerable<(string Value, bool Now)> values, Func<string, M.SlotView> slotAs, Func<object?, IHtmlContent>? head = null)
-    {
-        foreach (var (value, now) in values)
-        {
-            <fieldset class="doc-choice" data-show-when="@field=@value" hidden="@(!now)" disabled="@(!now)">
-                <partial name="_DocSlot" model="@(new DocSlotBlock(slotAs(value), Url.Action("Upload")!, Alternate: !now, Head: head))" />
-            </fieldset>
-        }
-    }
+    // Whether the field is the one the page came back to.
+    bool Focus(string key) => Model.Shown?.Focus == key;
 
-    M.SlotView FormAs(string type)
+    // A note under a field: a compact informational alert.
+    async Task Note(string text)
     {
-        var state = Model.State;
-        var was = state.AppType;
-        state.AppType = type;
-        try { return Model.View(M.FormSlot); } finally { state.AppType = was; }
-    }
-
-    M.SlotView MailAs(string mailing)
-    {
-        var state = Model.State;
-        var was = state.MailDifferent;
-        state.MailDifferent = mailing == "different";
-        try { return Model.View(M.MailSlot); } finally { state.MailDifferent = was; }
-    }
-
-    M.SlotView PaymentAs(string mode)
-    {
-        var state = Model.State;
-        var was = state.PayMode;
-        state.PayMode = mode;
-        try { return Model.View(M.PaymentSlot); } finally { state.PayMode = was; }
+        <p class="alert alert-info doc-note">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 11v6"></path><circle cx="12" cy="7.5" r=".7" fill="currentColor"></circle></svg>
+            <span>@text</span>
+        </p>
     }
 }
 
 <div class="doc-page" data-partial-focus="@(flash?.Focus)">
 
-@* Once the head has scrolled off, this holds what every screenshot of this step
-   needs to be worth anything: who it is for and which application it is. *@
+@* Once the head has scrolled away, this strip keeps who the step is for and the
+   application number in view (sticky-app-strip.js). *@
 <div class="app-sticky-strip" id="docsPin" hidden>
     <div class="app-sticky-strip__inner">
         <span class="app-sticky-strip__who">@Model.HolderName</span>
@@ -128,12 +115,10 @@
 <div class="page-layout">
     <partial name="_ClassicSteps" model="1" />
 
-    @* Both cards share the column beside the rail; the page grid holds two
-       columns, so a card left loose lands under the rail instead. *@
     <div class="page-main">
     <form class="page-card" id="docsForm" data-guard method="post" enctype="multipart/form-data" data-partial novalidate>
-        @* Who the step is for is not in the form: the server knows the application from the session. *@
-        @* What a change that reshapes the step posts through. Shown only without a script. *@
+        @* The application is known from the session, so the form carries no identifier.
+           The Update button is what a choice posts through; it is shown only without a script. *@
         <button type="submit" class="identify-check-button doc-refresh" id="docsRefresh" name="refresh" value="" asp-action="Refresh">Update</button>
 
         @if (flash?.Banner is not null)
@@ -144,6 +129,7 @@
             </div>
         }
 
+        @* The head: who the step is for on the left, what it is filed under on the right. *@
         <div class="doc-head" data-pin-head>
             <div class="doc-head__who">
                 <p class="doc-head__step">Upload documents</p>
@@ -161,7 +147,6 @@
                     </div>
                     @if (Model.IsRenewal)
                     {
-                        @* A renewal: the deposit receipt it renews, beside the folio. *@
                         <div>
                             <dt>Renews</dt>
                             <dd>FDR @Model.Renewal!.DepositNumber</dd>
@@ -169,7 +154,6 @@
                     }
                     <div>
                         <dt>Application</dt>
-                        @* The number every question about this application starts with. *@
                         <dd class="doc-head__ref">@Model.AppNo
                             <button type="button" class="doc-copy" data-copy="@Model.AppNo" title="Copy the application number" aria-label="Copy the application number">
                                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="1.6"></rect><path d="M15 6.5V5.4A1.4 1.4 0 0 0 13.6 4H5.4A1.4 1.4 0 0 0 4 5.4v8.2A1.4 1.4 0 0 0 5.4 15h1.1"></path></svg>
@@ -180,63 +164,66 @@
             </div>
         </div>
 
-        @* How the application arrived, and where the investor's post goes. Two ways
-           each and no third, so both are the segmented toggle the new design uses
-           for exactly this. *@
+        @* Two choices with two answers each: how the application arrived, and where the
+           investor's post goes. *@
         <div class="doc-app-type">
             <div class="doc-app-type__group">
                 <span class="field-label" id="docsAppTypeLabel">Application Type</span>
                 <div class="choice-toggle" role="radiogroup" aria-labelledby="docsAppTypeLabel">
-                    @foreach (var t in Model.ApplicationTypes)
+                    @foreach (var type in Model.ApplicationTypes)
                     {
-                        var shut = s.Ckyc && t.Code == M.Physical;
-                        <label class="choice-toggle__option" title="@(shut ? "A CKYC application is completed online, so it cannot be filed on paper." : null)">
-                            <input class="visually-hidden" type="radio" name="appType" id="docsAppType@(t.Code)" value="@t.Code" checked="@(s.AppType == t.Code)" disabled="@shut">@t.Name
+                        // A CKYC application is completed online, so it cannot be filed on paper.
+                        var disabledForCkyc = state.Ckyc && type.Code == DocumentsViewModel.Physical;
+                        string? title = disabledForCkyc ? "A CKYC application is completed online, so it cannot be filed on paper." : null;
+                        <label class="choice-toggle__option" title="@title">
+                            <input class="visually-hidden" type="radio" name="appType" id="docsAppType@(type.Code)" value="@type.Code" checked="@(state.AppType == type.Code)" disabled="@disabledForCkyc">@type.Name
                         </label>
                     }
                 </div>
             </div>
-            @* Post going anywhere but the permanent address is proved with a copy of
-               its own, in the box beside the proof of address below - or, while that
-               upload is switched off (CommProofUpload), typed on Investor Information,
-               which the note beside the choice says. Only where a
-               proof of address is asked for - a folio that holds the address has it
-               as the mailing address too - and not once CKYC is fetched, whose
-               record brings it. *@
+
+            @* Post going anywhere but the permanent address is proved with a copy of its own, in
+               the card beside the proof of address below. While that upload is switched off
+               (CommProofUpload), the address is typed on Investor Information instead. *@
             <div class="doc-app-type__group">
                 <span class="field-label" id="docsMailingLabel">Communication Address</span>
                 <div class="choice-toggle" role="radiogroup" aria-labelledby="docsMailingLabel">
-                    @foreach (var (value, label) in new[] { ("same", "Same as Permanent"), ("different", "Different from Permanent") })
+                    @foreach (var option in mailingOptions)
                     {
-                        var on = Model.MailDifferentOf(Model.Investor) == (value == "different");
-                        var shut = value == "different" && !Model.MailCanDiffer(Model.Investor);
-                        <label class="choice-toggle__option" title="@(shut ? Model.View(M.MailSlot).NotApplicable : null)">
-                            <input class="visually-hidden" type="radio" name="mailing" id="docsMailing-@value" value="@value" checked="@on" disabled="@shut" data-submit="@(mailInstant ? null : "docsRefresh")" data-confirm="@(value == "same" && !on && Model.View(M.MailSlot).Doc is not null ? M.MailDropAsk : null)">@label
+                        var isDifferent = option.Value == "different";
+                        var isOn = mailDifferent == isDifferent;
+                        var disabled = isDifferent && !mailCanDiffer;
+                        string? title = disabled ? mailSlot.NotApplicable : null;
+
+                        // Without a script this choice posts through Update; when the card can be
+                        // switched in place no post is needed. Going back to "same" with a proof filed
+                        // asks first, because the proof is taken off.
+                        string? submitVia = mailSwitchesInPlace ? null : "docsRefresh";
+                        var asksBeforeDroppingProof = option.Value == "same" && !isOn && mailSlot.Doc is not null;
+                        string? confirm = asksBeforeDroppingProof ? DocumentsViewModel.MailDropAsk : null;
+
+                        <label class="choice-toggle__option" title="@title">
+                            <input class="visually-hidden" type="radio" name="mailing" id="docsMailing-@option.Value" value="@option.Value" checked="@isOn" disabled="@disabled" data-submit="@submitVia" data-confirm="@confirm">@option.Label
                         </label>
                     }
                 </div>
                 @if (!Model.CommProofUpload)
                 {
-                    <span class="doc-app-type__note" data-show-when="mailing=different" hidden="@(!Model.MailDifferentOf(Model.Investor))">Typed on Investor Information</span>
+                    <span class="doc-app-type__note" data-show-when="mailing=different" hidden="@(!mailDifferent)">Typed on Investor Information</span>
                 }
             </div>
         </div>
 
-        @* Only where the register holds nothing: an investor who already has a
-           folio has been through KYC, so there is no CERSAI record to fetch. It is
-           offered before any PAN copy is uploaded, on the PAN the investor was
-           identified with; once a copy is uploaded, only while NSDL verifies it
-           (CkycPanVerified). It
-           applies to a digital application only: consent is given online, so a
-           physical one, signed and filed by hand, never fetches it. Choosing
-           Physical disables the button and greys the section at once
-           (data-enable-when, data-show-when), so it reads as not applicable
-           rather than missing; the server refuses it too. *@
+        @* Fetch from CKYC. Offered only to an investor without a folio (one with a folio has
+           been through KYC already), before any PAN copy is uploaded or once NSDL has verified
+           the uploaded one (CkycPanVerified), and only for a digital application: consent is
+           given online, so a physical application never fetches it. *@
         @if (!Model.HasFolio)
         {
-            <section class="doc-kyc-route @(s.Ckyc ? "is-on" : null)" id="docsRoute">
+            var routeClass = state.Ckyc ? "is-on" : null;
+            <section class="doc-kyc-route @routeClass" id="docsRoute">
                 <div class="doc-kyc-route__text">
-                    @if (s.Ckyc)
+                    @if (state.Ckyc)
                     {
                         <h2 class="doc-kyc-route__title">KYC from @Glossary.Term("CERSAI")</h2>
                         <p class="doc-kyc-route__p">The addresses and the photograph come from the record; only the PAN copy is filed below.</p>
@@ -258,20 +245,19 @@
                     }
                 </div>
                 <div class="doc-kyc-route__actions">
-                    @if (s.Ckyc)
+                    @if (state.Ckyc)
                     {
                         <p class="doc-ckyc-on">KYC from @Glossary.Term("CKYC")</p>
                     }
                     else
                     {
-                        @* Not offered on an uploaded PAN copy NSDL has not verified: the button
-                           then stands disabled, saying what it waits on, whatever the type. *@
-                        var panReady = Model.CkycPanVerified;
-                        @* Razor writes a data- attribute even when it is null, so the button
-                           that may follow the application type is drawn only once it can. *@
-                        if (panReady)
+                        var panVerifiedForCkyc = Model.CkycPanVerified;
+
+                        @* Razor writes a data- attribute even when its value is null, so the button that
+                           follows the application type is a separate element from the plain disabled one. *@
+                        if (panVerifiedForCkyc)
                         {
-                            <button type="button" class="btn btn-secondary btn-sm doc-ckyc-btn" popovertarget="docsCkycAsk" disabled="@physical" data-enable-when="appType=@M.Digital">
+                            <button type="button" class="btn btn-secondary btn-sm doc-ckyc-btn" popovertarget="docsCkycAsk" disabled="@isPhysical" data-enable-when="appType=@DocumentsViewModel.Digital">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5v11"></path><path d="M7.5 10L12 14.5 16.5 10"></path><path d="M4.5 15.5v3a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5v-3"></path></svg>
                                 Fetch from CKYC
                             </button>
@@ -283,20 +269,21 @@
                                 Fetch from CKYC
                             </button>
                         }
-                        @if (!panReady)
+
+                        @if (!panVerifiedForCkyc)
                         {
-                            <p class="doc-ckyc-ask__note">@M.CkycWaitsOnPan</p>
+                            <p class="doc-ckyc-ask__note">@DocumentsViewModel.CkycWaitsOnPan</p>
                         }
                         else
                         {
-                            <p class="doc-ckyc-ask__note" data-show-when="appType=@M.Digital" hidden="@physical">Once fetched, this cannot be undone on this application.</p>
-                            <p class="doc-ckyc-ask__note" data-show-when="appType=@M.Physical" hidden="@(!physical)">Not applicable: a physical application is signed and filed by hand, so the CERSAI record is not fetched for it.</p>
+                            <p class="doc-ckyc-ask__note" data-show-when="appType=@DocumentsViewModel.Digital" hidden="@isPhysical">Once fetched, this cannot be undone on this application.</p>
+                            <p class="doc-ckyc-ask__note" data-show-when="appType=@DocumentsViewModel.Physical" hidden="@(!isPhysical)">Not applicable: a physical application is signed and filed by hand, so the CERSAI record is not fetched for it.</p>
                         }
                     }
                 </div>
             </section>
 
-            @* The investor's decision, not the partner's, so it is asked before it is done. *@
+            @* Fetching is the investor's decision, so it is confirmed before it is done. *@
             <div class="doc-sheet doc-ckyc-pop" id="docsCkycAsk" popover role="dialog" aria-modal="true" aria-labelledby="docsCkycTitle">
                 <div class="doc-ckyc__sheet">
                     <header class="doc-ckyc__head">
@@ -320,35 +307,42 @@
             </div>
         }
 
+        @* The document cards. A card a choice reshapes (the form's, the communication proof's)
+           is drawn once per value of the choice, all but the chosen one hidden, so the page
+           can swap them the moment the choice changes (data-show-when, partial-forms.js). A hidden
+           one is a disabled fieldset, so nothing in it is posted. *@
         <div class="doc-grid doc-grid--docs">
             <div class="doc-column">
-                @{ await Choices("appType", Model.ApplicationTypes.Select(t => (t.Code, t.Code == s.AppType)), FormAs, @<span class="field-label">Application form</span>); }
+                @foreach (var alternative in Model.AlternativesFor("appType"))
+                {
+                    <fieldset class="doc-choice" data-show-when="appType=@alternative.Value" hidden="@(!alternative.Now)" disabled="@(!alternative.Now)">
+                        <partial name="_DocSlot" model="@(new DocSlotBlock(alternative.Slot, uploadUrl, Alternate: !alternative.Now, Label: "Application form"))" />
+                    </fieldset>
+                }
             </div>
 
-            @* The PAN copy the application is filed with. It comes over already
-               filed when the step before uploaded or matched one. *@
+            @* The PAN copy. It comes over already filed when the step before uploaded or matched one. *@
             <div class="doc-column">
-                @{ await Slot(views["pan"], head: @<span class="field-label">PAN @if (views["pan"].Optional) { <span class="doc-optional">(Non-mandatory)</span> }</span>); }
+                <partial name="_DocSlot" model="@(new DocSlotBlock(panSlot, uploadUrl, IsNext: panSlot.Key == nextSlotKey, Label: "PAN", LabelOptional: panSlot.Optional))" />
             </div>
 
-            @* NSDL asking for the name printed on the PAN: across the row straight
-               under the PAN's box, however many boxes a row holds. *@
+            @* NSDL asking for the name printed on the PAN: a row straight under the PAN's card. *@
             @if (panReads.AsksName)
             {
                 <div class="doc-retry-row doc-retry-row--pan-second"><partial name="_NsdlRetry" model="@panReads" /></div>
             }
 
             <div class="doc-column">
-                @{ await Slot(views["photo"], head: @<span class="field-label">Photo</span>); }
+                <partial name="_DocSlot" model="@(new DocSlotBlock(photoSlot, uploadUrl, IsNext: photoSlot.Key == nextSlotKey, Label: "Photo"))" />
             </div>
 
+            @* Proof of address. With document identification on, the type is what the copy is
+               identified as, shown beside the label. Without it, the type is chosen first. *@
             <div class="doc-column">
-                @* With document identification, the type is what the copy is identified
-                   as once it is uploaded, shown beside the label. Without it, the type is
-                   chosen first, and the box waits for it. *@
                 @if (Model.AutoProofType)
                 {
-                    await Slot(views["poa"], head: @<span class="field-label">Proof of address <partial name="_ProofType" model="@(poaUsed ? s.PoaType : null)" /></span>);
+                    string? poaType = poaUsed ? state.PoaType : null;
+                    <partial name="_DocSlot" model="@(new DocSlotBlock(poaSlot, uploadUrl, IsNext: poaSlot.Key == nextSlotKey, Label: "Proof of address", ShowsProofType: true, ProofType: poaType))" />
                 }
                 else
                 {
@@ -357,71 +351,71 @@
                     <div class="doc-select">
                         <select class="field-input @Invalid("docsPoaType")" id="docsPoaType" name="poaType" disabled="@(!poaUsed)" data-submit="docsRefresh" autofocus="@Focus("docsPoaType")">
                             <option value="">@(poaUsed ? "Select" : "Not Applicable")</option>
-                            @foreach (var p in Model.ProofsFor(M.PoaSlot.Key))
+                            @foreach (var proof in Model.ProofsFor(DocumentsViewModel.PoaSlot.Key))
                             {
-                                <option value="@p" selected="@(s.PoaType == p)">@p</option>
+                                <option value="@proof" selected="@(state.PoaType == proof)">@proof</option>
                             }
                         </select>
                     </div>
                     @{ await FieldError("docsPoaType"); }
                 </div>
-                    await Slot(views["poa"]);
+                    <partial name="_DocSlot" model="@(new DocSlotBlock(poaSlot, uploadUrl, IsNext: poaSlot.Key == nextSlotKey))" />
                 }
             </div>
 
-            @* The communication address proof. While its upload is switched off it
-               stands too, not applicable, saying the address is typed on Investor
-               Information - so the row keeps its shape. *@
+            @* The communication address proof. *@
             @if (!Model.CommProofUpload)
             {
+                @* Its upload is switched off: the card stands, not applicable, saying the address is
+                   typed on Investor Information, so the row keeps its shape. *@
+                var mailSlotTyped = mailSlot with { Used = false, NotApplicable = mailSlot.NotApplicable ?? DocumentsViewModel.MailTypedWhy };
             <div class="doc-column">
-                @{ await Slot(views["mail"] with { Used = false, NotApplicable = views["mail"].NotApplicable ?? M.MailTypedWhy }, head: @<span class="field-label">Communication address proof</span>); }
+                <partial name="_DocSlot" model="@(new DocSlotBlock(mailSlotTyped, uploadUrl, IsNext: mailSlotTyped.Key == nextSlotKey, Label: "Communication address proof"))" />
             </div>
             }
             else
             {
+                // The label heads the card only when the type is identified from the upload;
+                // otherwise the label and its picker stand above the card.
+                string? mailLabel = Model.AutoProofType ? "Communication address proof" : null;
+                string? mailType = mailUsed ? state.MailPoaType : null;
             <div class="doc-column">
-                @* Identified from the upload, the type is beside the label, which heads
-                   the card; chosen first, the label and its picker stand over it. *@
-                @{
-                    Func<object?, IHtmlContent>? mailHead = null;
-                    if (Model.AutoProofType)
-                    {
-                        mailHead = @<span class="field-label">Communication address proof <partial name="_ProofType" model="@(mailUsed ? s.MailPoaType : null)" /></span>;
-                    }
-                }
                 @if (!Model.AutoProofType)
                 {
                 <div class="doc-column__head">
                     <label class="field-label" for="docsMailType">Communication address proof</label>
                     <div class="doc-select">
                         <select class="field-input @Invalid("docsMailType")" id="docsMailType" name="mailType" disabled="@(!mailUsed)" data-submit="docsRefresh" autofocus="@Focus("docsMailType")"
-                                data-enable-when="@(mailInstant ? "mailing=different" : null)">
+                                data-enable-when="@(mailSwitchesInPlace ? "mailing=different" : null)">
                             <option value="">@(mailUsed ? "Select" : "Not Applicable")</option>
-                            @foreach (var p in Model.ProofsOfAddress)
+                            @foreach (var proof in Model.ProofsOfAddress)
                             {
-                                <option value="@p" selected="@(s.MailPoaType == p)">@p</option>
+                                <option value="@proof" selected="@(state.MailPoaType == proof)">@proof</option>
                             }
                         </select>
                     </div>
                     @{ await FieldError("docsMailType"); }
                 </div>
                 }
-                @* Switched in place only while nothing is filed there: taking a filed
-                   proof off is asked about, and the page redrawn after it. *@
-                @if (mailInstant)
+                @if (mailSwitchesInPlace)
                 {
-                    await Choices("mailing", new[] { ("same", !Model.MailDifferentOf(Model.Investor)), ("different", Model.MailDifferentOf(Model.Investor)) }, MailAs, mailHead);
+                    @* Nothing is filed there yet, so the card follows the toggle at once. *@
+                    foreach (var alternative in Model.AlternativesFor("mailing"))
+                    {
+                        <fieldset class="doc-choice" data-show-when="mailing=@alternative.Value" hidden="@(!alternative.Now)" disabled="@(!alternative.Now)">
+                            <partial name="_DocSlot" model="@(new DocSlotBlock(alternative.Slot, uploadUrl, Alternate: !alternative.Now, Label: mailLabel, ShowsProofType: Model.AutoProofType, ProofType: mailType))" />
+                        </fieldset>
+                    }
                 }
                 else
                 {
-                    await Slot(views["mail"], head: mailHead);
+                    <partial name="_DocSlot" model="@(new DocSlotBlock(mailSlot, uploadUrl, IsNext: mailSlot.Key == nextSlotKey, Label: mailLabel, ShowsProofType: Model.AutoProofType, ProofType: mailType))" />
                 }
             </div>
             }
 
-            @* An Aadhaar filed whose number OCR could not read: the number typed for
-               the PAN-Aadhaar link, across the row under the proofs of address. *@
+            @* An Aadhaar is filed but OCR could not read its number: it is typed here for the
+               PAN-Aadhaar link, in a row under the proofs of address. *@
             @if (Model.AsksAadhaarNumber(Model.Investor))
             {
                 var (aadhaarField, aadhaarError) = Model.AadhaarNumberField(Model.Investor);
@@ -429,10 +423,7 @@
             }
         </div>
 
-        @* What the PAN was checked with. The addresses stand in the boxes of the
-           proofs above - what a proof was read to say, or what the folio holds -
-           so they have no cards here. An investor on a folio is not checked again,
-           so has no section. *@
+        @* What the PAN was checked with. An investor on a folio is not checked again, so has no section. *@
         @if (Model.PanChecksShown(Model.Investor))
         {
             <section class="doc-read-result">
@@ -441,21 +432,18 @@
             </section>
         }
 
-        @* How the deposit is paid is the application's, not the investor's KYC: the
-           mode, the instrument it carries and what that was read to say stand in a
-           row of their own under the KYC documents. The mode's label heads it, as a
-           document's label heads its box - no second "Payment" title over it. *@
+        @* The payment: the mode, the instrument's card (one per mode, the chosen one shown),
+           and what the instrument was read to say. *@
         <section class="doc-read-result doc-payment" id="docsPayment" aria-label="Payment">
-            @* The mode above its box, and the card beside the box, level with it. *@
             <div class="doc-payment__grid">
                 <div class="doc-payment__mode">
                     <label class="field-label" for="docsPayMode">Payment Mode</label>
                     <div class="doc-select">
                         <select class="field-input @Invalid("docsPayMode")" id="docsPayMode" name="payMode" autofocus="@Focus("docsPayMode")" disabled="@(Model.IsRenewal)">
                             <option value="">@(Model.IsRenewal ? "Not applicable" : "Select")</option>
-                            @foreach (var m in Model.PaymentModes)
+                            @foreach (var mode in Model.PaymentModes)
                             {
-                                <option value="@m.Name" selected="@(s.PayMode == m.Name)">@m.Name</option>
+                                <option value="@mode.Name" selected="@(state.PayMode == mode.Name)">@mode.Name</option>
                             }
                         </select>
                     </div>
@@ -465,11 +453,20 @@
                         <p class="field-hint">No payment: the maturing deposit @Model.Renewal!.DepositNumber pays for the new one.</p>
                     }
                 </div>
-                <div class="doc-payment__slot">@{ await Choices("payMode", new[] { "" }.Concat(Model.PaymentModes.Select(m => m.Name)).Select(m => (m, m == s.PayMode)), PaymentAs); }</div>
-                @* The account read off the instrument, under every mode: greyed, saying
-                   why, for a mode that carries none, as the mode is chosen. *@
-                @{ var instrumentModes = string.Join("|", Model.PaymentModes.Where(m => m.Document is not null).Select(m => m.Name)); }
-                <div class="doc-payment__card" data-enable-when="payMode=@instrumentModes" aria-disabled="@(Model.View(M.PaymentSlot).Used && s.PayMode.Length > 0 ? "false" : "true")">
+                <div class="doc-payment__slot">
+                    @foreach (var alternative in Model.AlternativesFor("payMode"))
+                    {
+                        <fieldset class="doc-choice" data-show-when="payMode=@alternative.Value" hidden="@(!alternative.Now)" disabled="@(!alternative.Now)">
+                            <partial name="_DocSlot" model="@(new DocSlotBlock(alternative.Slot, uploadUrl, Alternate: !alternative.Now))" />
+                        </fieldset>
+                    }
+                </div>
+                @* The account read off the instrument. Greyed, saying why, for a mode that carries no instrument. *@
+                @{
+                    var instrumentModes = string.Join("|", Model.PaymentModes.Where(m => m.Document is not null).Select(m => m.Name));
+                    var instrumentReadable = paymentSlot.Used && state.PayMode.Length > 0;
+                }
+                <div class="doc-payment__card" data-enable-when="payMode=@instrumentModes" aria-disabled="@(instrumentReadable ? "false" : "true")">
                     <partial name="_ReadCard" model="@(new ReadCardBlock(Model.PaymentRead()))" />
                 </div>
             </div>
@@ -482,68 +479,63 @@
             <div class="doc-column">
                 <label class="field-label" for="docsSourcing">Sourcing Mode</label>
                 <div class="doc-select">
-                    <select class="field-input @Invalid("docsSourcing")" id="docsSourcing" name="sourcing" form="docsForm" data-submit="docsRefresh" disabled="@(!chooses)" autofocus="@Focus("docsSourcing")">
+                    <select class="field-input @Invalid("docsSourcing")" id="docsSourcing" name="sourcing" form="docsForm" data-submit="docsRefresh" disabled="@(!partnerChoosesSourcing)" autofocus="@Focus("docsSourcing")">
                         <option value="">Select</option>
-                        @foreach (var m in Model.SourcingModes)
+                        @foreach (var mode in Model.SourcingModes)
                         {
-                            <option value="@m.Code" selected="@(s.Sourcing == m.Code)">@m.Name</option>
+                            <option value="@mode.Code" selected="@(state.Sourcing == mode.Code)">@mode.Name</option>
                         }
                     </select>
                 </div>
-                @if (!chooses)
+                @if (!partnerChoosesSourcing)
                 {
-                    <p class="alert alert-info doc-note">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 11v6"></path><circle cx="12" cy="7.5" r=".7" fill="currentColor"></circle></svg>
-                        <span>Sourced as a broker under your business broker code.</span>
-                    </p>
+                    await Note("Sourced as a broker under your business broker code.");
                 }
                 @{ await FieldError("docsSourcing"); }
             </div>
 
-            @* Both code fields stand under every mode: what changes is what they are
-               called, which of them is typed, and which the mode fills itself. A
-               searched field offers its register as the browser's own suggestions.
-               A searched field is looked up on the backend as it is typed
-               (register-search.js), and a code picked or typed posts as the field is
-               left, so its name is shown at once, not with the next choice made. *@
+            @* The two code fields stand under every mode; the mode decides what they are called,
+               which is typed, and which the mode fills itself. A searched field looks its register
+               up on the backend as it is typed (documents.js) and posts as it is left. *@
             <div class="doc-column">
-                <label class="field-label" for="docsSourceCode">@(mode?.CodeLabel ?? "Broker Code")</label>
-                <input class="field-input @Invalid("docsSourceCode")" id="docsSourceCode" name="sourceCode" data-chars="code" form="docsForm" value="@s.SourceCode" maxlength="12" autocomplete="off" spellcheck="false"
-                       disabled="@sourceShut" data-submit="docsRefresh" autofocus="@Focus("docsSourceCode")"
-                       data-register-search="@(sourceRegister is null ? null : registerSearch)" data-register="@sourceRegister" data-name-label="@(mode?.NameLabel ?? "Broker Name")"
+                <label class="field-label" for="docsSourceCode">@sourceCodeLabel</label>
+                <input class="field-input @Invalid("docsSourceCode")" id="docsSourceCode" name="sourceCode" data-chars="code" form="docsForm" value="@state.SourceCode" maxlength="12" autocomplete="off" spellcheck="false"
+                       disabled="@sourceCodeDisabled" data-submit="docsRefresh" autofocus="@Focus("docsSourceCode")"
+                       data-register-search="@(sourceRegister is null ? null : registerSearchUrl)" data-register="@sourceRegister" data-name-label="@sourceNameLabel"
                        role="@(sourceRegister is null ? null : "combobox")" aria-autocomplete="@(sourceRegister is null ? null : "list")" aria-expanded="@(sourceRegister is null ? null : "false")" aria-controls="@(sourceRegister is null ? null : "docsSourceCodeSuggest")">
                 @if (sourceRegister is not null)
                 {
-                    <ul class="bank-suggest" id="docsSourceCodeSuggest" role="listbox" aria-label="@(mode?.NameLabel ?? "Brokers") found" hidden></ul>
+                    <ul class="bank-suggest" id="docsSourceCodeSuggest" role="listbox" aria-label="@sourceNameLabel found" hidden></ul>
                 }
-                @* The name the code stands for, always under the field: a dash until
-                   there is a code, so nothing appears or moves as one is typed. *@
-                @if (sourceName is { } sn)
+                @* The name the code stands for, always under the field: a dash until there is a code. *@
+                @if (sourceCodeName is not null)
                 {
-                    <p class="doc-resolved @(sn.Found ? null : "doc-resolved__none")">@sn.Text</p>
+                    var nameClass = sourceCodeName.Value.Found ? null : "doc-resolved__none";
+                    <p class="doc-resolved @nameClass">@sourceCodeName.Value.Text</p>
                 }
                 else
                 {
-                    <p class="doc-resolved">@(mode?.NameLabel ?? "Broker Name") &mdash; <strong class="doc-resolved__none">&mdash;</strong></p>
+                    <p class="doc-resolved">@sourceNameLabel &mdash; <strong class="doc-resolved__none">&mdash;</strong></p>
                 }
                 @{ await FieldError("docsSourceCode"); }
             </div>
 
             <div class="doc-column">
                 <label class="field-label" for="docsSubBroker">Sub Broker Code
-                    @if (!subRequired && !subShut) { <span class="doc-optional">(Non-mandatory)</span> }
+                    @if (!subBrokerRequired && !subBrokerDisabled) { <span class="doc-optional">(Non-mandatory)</span> }
                 </label>
-                <input class="field-input @Invalid("docsSubBroker")" id="docsSubBroker" name="subBroker" data-chars="code" form="docsForm" value="@s.SubBroker" maxlength="12" autocomplete="off" spellcheck="false" data-submit="docsRefresh"
-                       disabled="@subShut" autofocus="@Focus("docsSubBroker")"
-                       data-register-search="@(subRegister is null ? null : registerSearch)" data-register="@subRegister" data-name-label="Sub Broker Name"
+                <input class="field-input @Invalid("docsSubBroker")" id="docsSubBroker" name="subBroker" data-chars="code" form="docsForm" value="@state.SubBroker" maxlength="12" autocomplete="off" spellcheck="false" data-submit="docsRefresh"
+                       disabled="@subBrokerDisabled" autofocus="@Focus("docsSubBroker")"
+                       data-register-search="@(subRegister is null ? null : registerSearchUrl)" data-register="@subRegister" data-name-label="Sub Broker Name"
                        role="@(subRegister is null ? null : "combobox")" aria-autocomplete="@(subRegister is null ? null : "list")" aria-expanded="@(subRegister is null ? null : "false")" aria-controls="@(subRegister is null ? null : "docsSubBrokerSuggest")">
                 @if (subRegister is not null)
                 {
                     <ul class="bank-suggest" id="docsSubBrokerSuggest" role="listbox" aria-label="Sub brokers found" hidden></ul>
                 }
-                @if (subName is { } bn)
+                @if (subBrokerName is not null)
                 {
-                    <p class="doc-resolved @(bn.Found ? null : "doc-resolved__none")">@bn.Text</p>
+                    var nameClass = subBrokerName.Value.Found ? null : "doc-resolved__none";
+                    <p class="doc-resolved @nameClass">@subBrokerName.Value.Text</p>
                 }
                 else
                 {
@@ -552,58 +544,54 @@
                 @{ await FieldError("docsSubBroker"); }
             </div>
 
-            @* What a deposit may be booked as belongs to the mode. *@
+            @* What a deposit may be booked as belongs to the sourcing mode. *@
             <div class="doc-column">
                 <label class="field-label" for="docsCategory">Deposit Category</label>
                 <div class="doc-select">
-                    <select class="field-input @Invalid("docsCategory")" id="docsCategory" name="category" form="docsForm" disabled="@(!chooses || mode is null)" data-submit="docsRefresh" autofocus="@Focus("docsCategory")">
+                    <select class="field-input @Invalid("docsCategory")" id="docsCategory" name="category" form="docsForm" disabled="@(!partnerChoosesSourcing || sourcingMode is null)" data-submit="docsRefresh" autofocus="@Focus("docsCategory")">
                         <option value="">Select</option>
-                        @foreach (var c in categories)
+                        @foreach (var category in categories)
                         {
-                            <option value="@c" selected="@(s.Category == c)">@Model.CategoryName(c)</option>
+                            <option value="@category" selected="@(state.Category == category)">@Model.CategoryName(category)</option>
                         }
                     </select>
                 </div>
-                @if (!chooses)
+                @if (!partnerChoosesSourcing)
                 {
-                    <p class="alert alert-info doc-note">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 11v6"></path><circle cx="12" cy="7.5" r=".7" fill="currentColor"></circle></svg>
-                        <span>@Model.SetCategoryWhy</span>
-                    </p>
+                    await Note(Model.SetCategoryWhy);
                 }
                 else if (categories.Count == 1)
                 {
-                    <p class="alert alert-info doc-note">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 11v6"></path><circle cx="12" cy="7.5" r=".7" fill="currentColor"></circle></svg>
-                        <span>An application sourced as @mode!.Name can only be booked as @Model.CategoryName(categories[0]), so it is chosen here.</span>
-                    </p>
+                    await Note($"An application sourced as {sourcingMode!.Name} can only be booked as {Model.CategoryName(categories[0])}, so it is chosen here.");
                 }
                 @{ await FieldError("docsCategory"); }
             </div>
 
-            @if (employee)
+            @if (isEmployeeCategory)
             {
                 @* An employee deposit is booked against a staff record. *@
+                var employeeNameClass = employeeName is null ? "doc-resolved__none" : null;
+                var employeeNameText = "—";
+                if (employeeName is not null) employeeNameText = employeeName;
+                else if (state.EmpCode.Length > 0) employeeNameText = "not found";
+
                 <div class="doc-column">
                     <label class="field-label" for="docsEmployeeCode">Employee Code</label>
-                    <input class="field-input @Invalid("docsEmployeeCode")" id="docsEmployeeCode" name="empCode" data-chars="code" form="docsForm" value="@s.EmpCode" maxlength="10" autocomplete="off" spellcheck="false" autofocus="@Focus("docsEmployeeCode")"
-                           data-register-search="@registerSearch" data-register="staff" data-name-label="Employee Name" data-submit="docsRefresh"
+                    <input class="field-input @Invalid("docsEmployeeCode")" id="docsEmployeeCode" name="empCode" data-chars="code" form="docsForm" value="@state.EmpCode" maxlength="10" autocomplete="off" spellcheck="false" autofocus="@Focus("docsEmployeeCode")"
+                           data-register-search="@registerSearchUrl" data-register="staff" data-name-label="Employee Name" data-submit="docsRefresh"
                            role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="docsEmployeeCodeSuggest">
                     <ul class="bank-suggest" id="docsEmployeeCodeSuggest" role="listbox" aria-label="Staff found" hidden></ul>
-                    <p class="doc-resolved">Employee Name &mdash; <strong class="@(empName is null ? "doc-resolved__none" : null)">@(empName ?? (s.EmpCode.Length > 0 ? "not found" : "—"))</strong></p>
-                    @if (s.EmpCode.Length > 0 && empName is null)
+                    <p class="doc-resolved">Employee Name &mdash; <strong class="@employeeNameClass">@employeeNameText</strong></p>
+                    @if (state.EmpCode.Length > 0 && employeeName is null)
                     {
-                        <p class="alert alert-info doc-note">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 11v6"></path><circle cx="12" cy="7.5" r=".7" fill="currentColor"></circle></svg>
-                            <span>No name against this code here. You can still proceed &mdash; Operations check it against the staff register before the deposit is booked.</span>
-                        </p>
+                        await Note("No name against this code here. You can still proceed — Operations check it against the staff register before the deposit is booked.");
                     }
                     @{ await FieldError("docsEmployeeCode"); }
                 </div>
 
                 <div class="doc-column">
                     <label class="field-label" for="docsEmployeeCompany">Employee Company Name</label>
-                    <input class="field-input @Invalid("docsEmployeeCompany")" id="docsEmployeeCompany" name="empCompany" data-chars="text" form="docsForm" value="@s.EmpCompany" maxlength="60" autocomplete="off" autofocus="@Focus("docsEmployeeCompany")">
+                    <input class="field-input @Invalid("docsEmployeeCompany")" id="docsEmployeeCompany" name="empCompany" data-chars="text" form="docsForm" value="@state.EmpCompany" maxlength="60" autocomplete="off" autofocus="@Focus("docsEmployeeCompany")">
                     @{ await FieldError("docsEmployeeCompany"); }
                 </div>
 
@@ -612,22 +600,28 @@
                     <div class="doc-select">
                         <select class="field-input @Invalid("docsEmployeeHolder")" id="docsEmployeeHolder" name="empHolder" form="docsForm" autofocus="@Focus("docsEmployeeHolder")">
                             <option value="">Select</option>
-                            @foreach (var h in Model.EmployeeHolders) { <option value="@h" selected="@(s.EmpHolder == h)">@h</option> }
+                            @foreach (var holder in Model.EmployeeHolders)
+                            {
+                                <option value="@holder" selected="@(state.EmpHolder == holder)">@holder</option>
+                            }
                         </select>
                     </div>
                     @{ await FieldError("docsEmployeeHolder"); }
                 </div>
 
+                @* When the employee is the primary holder the relation is Self, fixed and disabled;
+                   the hidden field beside it posts the value a disabled one would not. *@
                 <div class="doc-column">
-                    @* The primary holder is the employee themselves: the relation is Self,
-                       fixed and disabled - its value posted by the field beside it, as a
-                       disabled one is not. Any other holder chooses, and cannot be Self. *@
                     <label class="field-label" for="docsEmployeeRelation">Emp Relation with holder</label>
                     <div class="doc-select">
                         <select class="field-input @Invalid("docsEmployeeRelation")" id="docsEmployeeRelation" name="empRelation" form="docsForm" autofocus="@Focus("docsEmployeeRelation")"
                                 disabled="@Model.EmployeeIsPrimary" data-fixed-by="empHolder" data-fixed-when="@Model.PrimaryHolder" data-fixed-value="@Model.SelfRelation" aria-describedby="docsEmployeeRelationWhy">
                             <option value="">Select</option>
-                            @foreach (var r in Model.EmployeeRelations) { <option value="@r" selected="@(s.EmpRelation == r)" disabled="@(r == Model.SelfRelation && !Model.EmployeeIsPrimary)">@r</option> }
+                            @foreach (var relation in Model.EmployeeRelations)
+                            {
+                                var selfNotAllowed = relation == Model.SelfRelation && !Model.EmployeeIsPrimary;
+                                <option value="@relation" selected="@(state.EmpRelation == relation)" disabled="@selfNotAllowed">@relation</option>
+                            }
                         </select>
                     </div>
                     <input type="hidden" id="docsEmployeeRelationFixed" name="empRelation" value="@Model.SelfRelation" form="docsForm" disabled="@(!Model.EmployeeIsPrimary)">
@@ -636,46 +630,46 @@
                 </div>
             }
 
-            @* A paper application has to carry its form number; a digital one has no
-               paper, so the field stands but is filed as 0000. *@
+            @* A paper application carries its form number; a digital one is filed as 0000. *@
             <div class="doc-column">
                 <label class="field-label" for="docsFormNo">Physical Application Form No.
-                    @if (!physical) { <span class="doc-optional">(No paper form &mdash; filed as 0000)</span> }
+                    @if (!isPhysical) { <span class="doc-optional">(No paper form &mdash; filed as 0000)</span> }
                 </label>
-                <input class="field-input @Invalid("docsFormNo")" id="docsFormNo" name="formNo" data-chars="code" form="docsForm" value="@s.FormNo" maxlength="20" autocomplete="off" spellcheck="false" readonly="@(!physical)" autofocus="@Focus("docsFormNo")">
+                <input class="field-input @Invalid("docsFormNo")" id="docsFormNo" name="formNo" data-chars="code" form="docsForm" value="@state.FormNo" maxlength="20" autocomplete="off" spellcheck="false" readonly="@(!isPhysical)" autofocus="@Focus("docsFormNo")">
                 @{ await FieldError("docsFormNo"); }
             </div>
 
-            @if (employee)
+            @if (isEmployeeCategory)
             {
                 <div class="doc-column">
                     <label class="field-label" for="docsEmployeeProofType">Employee Proof</label>
                     <div class="doc-select">
                         <select class="field-input @Invalid("docsEmployeeProofType")" id="docsEmployeeProofType" name="empProofType" form="docsForm" data-submit="docsRefresh" autofocus="@Focus("docsEmployeeProofType")">
                             <option value="">Select</option>
-                            @foreach (var p in Model.EmployeeProofs) { <option value="@p" selected="@(s.EmpProofType == p)">@p</option> }
+                            @foreach (var proof in Model.EmployeeProofs)
+                            {
+                                <option value="@proof" selected="@(state.EmpProofType == proof)">@proof</option>
+                            }
                         </select>
                     </div>
                     @{ await FieldError("docsEmployeeProofType"); }
-                    @{ await Slot(views["empproof"], form: "docsForm"); }
+                    <partial name="_DocSlot" model="@(new DocSlotBlock(employeeProofSlot, uploadUrl, "docsForm", IsNext: employeeProofSlot.Key == nextSlotKey))" />
                 </div>
             }
         </div>
     </section>
 
-    @* Three attempts for each document in a session, counted separately. Each
-       attempt is kept as the checks it went through, so a refusal is never just a
-       red line that has since been cleared away. *@
+    @* Every upload attempt this session, newest first, with the checks it went through. *@
     <section class="page-card doc-history">
         <h2 class="doc-section__title">Upload, @Glossary.Term("OCR") and verification history</h2>
         <p class="doc-history__sub">Every attempt, newest first. Three refusals in a row send a document to Operations.</p>
-        @if (s.Log.Count == 0)
+        @if (state.Log.Count == 0)
         {
             <p class="doc-history__none">Nothing uploaded against this application yet.</p>
         }
         else
         {
-            <partial name="_DocLog" model="@s.Log" />
+            <partial name="_DocLog" model="@state.Log" />
         }
     </section>
     </div>
@@ -686,32 +680,33 @@
         <a class="btn btn-outline-primary" asp-controller="NewApplication" asp-action="Index"
            data-loader="Going back to Investor Identification"
            data-loader-hint="Nothing filed here is lost — it is kept against this application.">Back</a>
-        @* What Proceed would ask for next, so the partner is never sent looking for
-           it - and, with more than one thing left, the whole list on a click. *@
-        @if (left.Count == 0)
+
+        @* What Proceed would ask for next; with more than one thing left, the whole list on a click. *@
+        @if (stillToDo.Count == 0)
         {
             <p class="page-action-bar__hint">Everything is in &mdash; <strong>ready to proceed</strong></p>
         }
-        else if (left.Count == 1)
+        else if (stillToDo.Count == 1)
         {
-            <p class="page-action-bar__hint">1 thing still to go &mdash; <strong>@left[0]</strong></p>
+            <p class="page-action-bar__hint">1 thing still to go &mdash; <strong>@stillToDo[0]</strong></p>
         }
         else
         {
             <details class="page-action-bar__hint page-remaining">
-                <summary>@left.Count things still to go &mdash; <strong>@left[0]</strong> first<span class="page-remaining__more">See all</span></summary>
+                <summary>@stillToDo.Count things still to go &mdash; <strong>@stillToDo[0]</strong> first<span class="page-remaining__more">See all</span></summary>
                 <ol class="page-remaining__list">
-                    @foreach (var need in left)
+                    @foreach (var need in stillToDo)
                     {
                         <li>@need</li>
                     }
                 </ol>
             </details>
         }
+
         <div class="page-action-bar__right">
-            @if (s.SavedAt is { } saved)
+            @if (state.SavedAt is not null)
             {
-                <span class="page-action-bar__saved">Draft saved @saved.ToString("HH:mm")</span>
+                <span class="page-action-bar__saved">Draft saved @state.SavedAt.Value.ToString("HH:mm")</span>
             }
             <button type="submit" class="btn btn-outline-primary" form="docsForm" asp-action="Save" data-toast="Draft saved">Save draft</button>
             <button type="submit" class="btn btn-primary" form="docsForm" asp-action="Proceed"

@@ -195,8 +195,7 @@
                         <fieldset class="doc-choice deposit-tds-form" data-show-when="NoTds=true" hidden="@(!f.NoTds)" disabled="@(!f.NoTds)">
                             <div class="doc-grid doc-grid--docs">
                                 <div class="doc-column">
-                                    @{ Func<object?, IHtmlContent> tdsHead = @<span class="field-label">@Model.TdsForm</span>; }
-                                    <partial name="_DocSlot" model="@(new DocSlotBlock(Model.Docs.View(DocumentsViewModel.TdsFormSlot), Url.Action("Upload")!, "depositConfigForm", Head: tdsHead))" />
+                                    <partial name="_DocSlot" model="@(new DocSlotBlock(Model.Docs.View(DocumentsViewModel.TdsFormSlot), Url.Action("Upload")!, "depositConfigForm", Label: Model.TdsForm))" />
                                 </div>
                             </div>
                             @{ await FieldError("TdsForm", "slot-tdsform"); }
