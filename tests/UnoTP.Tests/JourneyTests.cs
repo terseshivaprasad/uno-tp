@@ -444,8 +444,9 @@ public class JourneyTests(App app)
         var stopped = await App.PostAsync(client, investor, investor, [.. InvestorCard, ("Holder1.Gender", "Male")]);
         Assert.StartsWith("/InvestorInformation/", stopped.RequestMessage!.RequestUri!.AbsolutePath);
         var page = await stopped.Content.ReadAsStringAsync();
-        Assert.Contains("Not allowed to invest online", page);
-        Assert.Contains("kindly reach out to the nearest Mahindra Finance branch", page);
+        Assert.Contains("Cannot proceed: not allowed to invest online", page);
+        Assert.Contains("What to do:", page);
+        Assert.Contains("visit the nearest Mahindra Finance branch to invest offline", page);
     }
 
     [Fact]

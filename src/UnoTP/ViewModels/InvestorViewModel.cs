@@ -192,6 +192,39 @@ public sealed class InvestorViewModel(InvestorInfoState state, DocumentsViewMode
     /// <summary>Proceed stopped: name screening does not allow these holders (their names, a comma between) to invest online.</summary>
     public string? ScreeningNotAllowed { get; init; }
 
+    /// <summary>
+    /// What stopped Proceed, said as an error the partner can act on: what is wrong,
+    /// what to do about it, and where. Null while nothing has.
+    /// </summary>
+    public StopNotice? Stopped
+    {
+        get
+        {
+            if (CategoryConflict is not null)
+            {
+                return new StopNotice("Cannot proceed: the deposit category does not fit the applicant",
+                    CategoryConflict,
+                    "Open Upload Documents, choose a category that is not a women's one, and come back to Proceed.",
+                    "Go to Upload Documents", "Documents");
+            }
+            if (ScreeningNotAllowed is not null)
+            {
+                return new StopNotice("Cannot proceed: not allowed to invest online",
+                    $"Name screening does not allow {ScreeningNotAllowed} to invest online.",
+                    "This investment cannot be made here. Kindly ask the investor to visit the nearest Mahindra Finance branch to invest offline; a list of all branches is on our website.",
+                    null, null);
+            }
+            if (Offline)
+            {
+                return new StopNotice("Cannot proceed: the investment has to be made offline",
+                    "A holder is a tax or permanent resident of a country other than India.",
+                    "Kindly ask the investor to visit the nearest Mahindra Finance branch to invest offline; a list of all branches is on our website.",
+                    null, null);
+            }
+            return null;
+        }
+    }
+
     /// <summary>What the page says when name screening does not allow a holder to invest online.</summary>
     public static string ScreeningOffline(string names) =>
         $"This investment is not allowed online for {names}. It has to be made offline: kindly reach out to the nearest Mahindra Finance branch. A list of all our branches is available on our website.";
@@ -424,3 +457,6 @@ public sealed class InvestorViewModel(InvestorInfoState state, DocumentsViewMode
     public const string LettersOnly = InputRules.LettersOnly;
     public const string NoSpecialCharacters = InputRules.OnlyAllowed;
 }
+
+/// <summary>A stop on a page, said as an error: the title, what is wrong, what to do, and a link to where it is done (null when there is nowhere to go).</summary>
+public sealed record StopNotice(string Title, string Why, string WhatToDo, string? LinkText, string? LinkController);

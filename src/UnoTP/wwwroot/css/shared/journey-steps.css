@@ -465,6 +465,11 @@
   color: var(--muted);
   text-align: center;
 }
+/* A stop: the fix beside Proceed, in the error colour */
+.page-action-bar__hint--stopped {
+  color: var(--red-dark);
+  font-weight: 500;
+}
 .page-action-bar__hint strong {
   color: var(--ink);
   font-weight: 600;

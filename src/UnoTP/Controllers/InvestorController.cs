@@ -100,7 +100,7 @@ public class InvestorController(
         if (page.On("Holder1.FatcaTaxResident") || page.On("Holder1.FatcaPermanentResident"))
         {
             TempData["offline"] = true;
-            return Back("investorFatcaAlert");
+            return Back("investorStopped");
         }
         var unfinished = state.Joint.FindIndex(j => !j.Added);
         if (unfinished >= 0)
@@ -132,7 +132,7 @@ public class InvestorController(
         if (outcome.Conflict is not null)
         {
             TempData["categoryConflict"] = outcome.Conflict;
-            return Back("investorCategoryConflict");
+            return Back("investorStopped");
         }
         if (outcome.MovedTo is not null)
         {
@@ -164,7 +164,7 @@ public class InvestorController(
         {
             await SaveAsync(docs);
             TempData["screeningNotAllowed"] = string.Join(", ", notAllowed);
-            return Back("investorScreeningStopped");
+            return Back("investorStopped");
         }
 
         docs.KeepJoint(form);

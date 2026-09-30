@@ -668,27 +668,22 @@
             </div>
         }
 
-        @* The category on Upload Documents does not fit the applicant's gender: Proceed
-           stops here until it is corrected there. *@
-        @if (Model.CategoryConflict is not null)
+        @* A rule stopped Proceed - the category against the gender, name screening, FATCA:
+           said as an error, with what is wrong, what to do and where, and the page comes
+           back here. The same fix is repeated beside Proceed. *@
+        @if (Model.Stopped is { } stopped)
         {
-            <div class="alert alert-danger page-missing-items investor-unfinished" role="alert" id="investorCategoryConflict" tabindex="-1">
+            <div class="alert alert-danger page-missing-items investor-unfinished" role="alert" id="investorStopped" tabindex="-1">
                 <svg class="page-missing-items__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 7v6"></path><circle cx="12" cy="16.8" r=".8" fill="currentColor"></circle></svg>
                 <div class="page-missing-items__body">
-                    <div class="page-missing-items__title">The deposit category does not fit the applicant</div>
-                    <p>@Model.CategoryConflict <a asp-controller="Documents" asp-action="Index" data-loader="Going to Upload Documents">Go to Upload Documents</a></p>
-                </div>
-            </div>
-        }
-
-        @* Name screening does not allow a holder to invest online: Proceed stops here. *@
-        @if (Model.ScreeningNotAllowed is not null)
-        {
-            <div class="alert alert-danger page-missing-items investor-unfinished" role="alert" id="investorScreeningStopped" tabindex="-1">
-                <svg class="page-missing-items__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 7v6"></path><circle cx="12" cy="16.8" r=".8" fill="currentColor"></circle></svg>
-                <div class="page-missing-items__body">
-                    <div class="page-missing-items__title">Not allowed to invest online</div>
-                    <p>@InvestorViewModel.ScreeningOffline(Model.ScreeningNotAllowed)</p>
+                    <div class="page-missing-items__title">@stopped.Title</div>
+                    <p>@stopped.Why</p>
+                    <p><strong>What to do:</strong> @stopped.WhatToDo
+                        @if (stopped.LinkController is not null)
+                        {
+                            <a asp-controller="@stopped.LinkController" asp-action="Index" data-loader="Going to Upload Documents">@stopped.LinkText</a>
+                        }
+                    </p>
                 </div>
             </div>
         }
@@ -886,7 +881,14 @@
 <footer class="page-action-bar">
     <div class="page-action-bar__inner">
         <a class="btn btn-outline-primary" asp-controller="Documents" asp-action="Index" data-loader="Going back to Upload Documents">Back</a>
-        <p class="page-action-bar__hint">Add any joint holders and the nominee, then proceed to <strong>Bank Details &amp; Payment</strong></p>
+        @if (Model.Stopped is { } stop)
+        {
+            <p class="page-action-bar__hint page-action-bar__hint--stopped" role="alert">@stop.Title. @stop.WhatToDo</p>
+        }
+        else
+        {
+            <p class="page-action-bar__hint">Add any joint holders and the nominee, then proceed to <strong>Bank Details &amp; Payment</strong></p>
+        }
         <div class="page-action-bar__right">
             <button type="submit" form="investorInfoForm" class="btn btn-outline-primary" formaction="@Url.Action("Save")" formnovalidate data-toast="Draft saved">Save draft</button>
             <button type="submit" form="investorInfoForm" class="btn btn-primary" data-validate="form"
