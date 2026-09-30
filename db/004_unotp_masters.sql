@@ -120,36 +120,24 @@ CREATE TABLE dbo.t_Unotp_Pincode_Mst
 GO
 
 /* ----- t_Unotp_Rate_Card -----------------------------------------------------------
-   The published rate chart, one row per line of it: the deposit category, the
-   tenure, the scheme (CUMULATIVE or NON-CUMULATIVE), the payout frequency, the
-   rate, the smallest and largest deposit the line is offered for, the holder's
-   gender (M, F, or blank for either) and the application type (PURCHASE, RENEW,
-   or blank for both), from the day the chart takes effect.
-
-   A new chart is new rows with a later d_Effective_From: the rate a deposit gets
-   is the latest in effect on the day it starts (a renewal: on its maturity date).
-   A category with no row of its own takes defaultRateCategory's
-   (t_Unotp_App_Config). db/007 loads the Samruddhi chart of 3 August 2026.
+   The card rate by deposit category and tenure, from the day it takes effect. A
+   new card is new rows with a later d_Effective_From: the rate a deposit gets is
+   the latest one in effect on the day it starts (a renewal: on its maturity date).
+   A category with no row of its own takes defaultRateCategory's (t_Unotp_App_Config).
    ----------------------------------------------------------------------------- */
 IF OBJECT_ID(N'dbo.t_Unotp_Rate_Card', N'U') IS NULL
 CREATE TABLE dbo.t_Unotp_Rate_Card
 (
     n_Id                 INT IDENTITY(1,1) NOT NULL,
-    c_Category           VARCHAR(30)    NOT NULL,   -- a categories code in t_Unotp_Ref_List
+    c_Category           VARCHAR(30)    NOT NULL,
     n_Tenure_Months      INT            NOT NULL,
-    c_Scheme             VARCHAR(20)    NOT NULL,   -- CUMULATIVE or NON-CUMULATIVE
-    c_Payout             VARCHAR(20)    NOT NULL,   -- a payouts code in t_Unotp_Ref_List: the frequency
     n_Rate               DECIMAL(5,2)   NOT NULL,   -- % a year
-    n_Min_Amount         BIGINT         NOT NULL CONSTRAINT DF_Rate_Card_Min_Amount DEFAULT (0),   -- rupees
-    n_Max_Amount         BIGINT         NULL,       -- rupees; NULL for no ceiling
-    c_Gender             VARCHAR(1)     NOT NULL CONSTRAINT DF_Rate_Card_Gender DEFAULT (''),      -- M, F or blank for either
-    c_App_Type           VARCHAR(10)    NOT NULL CONSTRAINT DF_Rate_Card_App_Type DEFAULT (''),    -- PURCHASE, RENEW or blank for both
     d_Effective_From     DATE           NOT NULL,
     c_Created_By         VARCHAR(20)    NOT NULL,
     d_Created_On         DATETIME2(3)   NOT NULL CONSTRAINT DF_Rate_Card_Created DEFAULT (SYSDATETIME()),
     f_Active             BIT            NOT NULL CONSTRAINT DF_Rate_Card_Active DEFAULT (1),   -- 0 takes the row out of use without deleting it
     CONSTRAINT PK_Rate_Card PRIMARY KEY CLUSTERED (n_Id),
-    CONSTRAINT UQ_Rate_Card_Line UNIQUE (c_Category, n_Tenure_Months, c_Payout, n_Min_Amount, c_Gender, c_App_Type, d_Effective_From),
+    CONSTRAINT UQ_Rate_Card UNIQUE (c_Category, n_Tenure_Months, d_Effective_From),
     CONSTRAINT CK_Rate_Card_Rate CHECK (n_Rate > 0 AND n_Rate < 100)
 );
 GO

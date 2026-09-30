@@ -42,11 +42,7 @@ SELECT v.k, v.v, v.d, 'SEED' FROM (VALUES
     (N'appNoPrefix', N'FBBMFL', N'Application numbers: {prefix}{yy}F{running number}'),
     (N'slipNoPrefix', N'AXPIS', N'Pay-in slip numbers: {prefix}{running number}'),
     (N'defaultRateCategory', N'PUBLIC/GENERAL', N'The rate card category a deposit takes when its own has no rate'),
-    (N'compoundingPerYear', N'1', N'Times a year a cumulative deposit compounds; the months after the last whole period earn simple interest'),
-    (N'quoteAmount', N'50000', N'The amount FD Configuration quotes the rate at before one is entered'),
-    (N'sourceOfFundsFrom', N'10000000', N'The source of funds is asked once the investor''s active deposits, with the new one, pass this many rupees...'),
-    (N'sourceOfFundsOccupations', N'Homemaker; Student; Retired', N'...and their occupation is one of these (occupations names, a semicolon between)...'),
-    (N'sourceOfFundsIncomeBands', N'Upto Rs.5,00,000', N'...or their annual income band is one of these (incomeBands names, a semicolon between)')
+    (N'compoundingPerYear', N'2', N'Times a year a cumulative deposit compounds')
 ) v (k, v, d)
 WHERE NOT EXISTS (SELECT 1 FROM dbo.t_Unotp_App_Config c WHERE c.c_Key = v.k);
 GO
@@ -68,13 +64,12 @@ INSERT dbo.t_Unotp_Ref_List (c_List, n_Seq, c_Code, c_Name, j_Attrs, c_Created_B
 SELECT v.l, v.s, v.c, v.n, v.a, 'SEED' FROM (VALUES
     (N'applicationTypes', 1, N'DIGITAL', N'Digital', NULL),
     (N'applicationTypes', 2, N'PHYSICAL', N'Physical', NULL),
-    -- extraRate: what the category earns over the public rate, the chart's "additional rates"
-    (N'categories', 1, N'PUBLIC/GENERAL', N'Public / General', N'{"employee":false,"women":false,"senior":false,"extraRate":0}'),
-    (N'categories', 2, N'WOMEN', N'Women', N'{"employee":false,"women":true,"senior":false,"extraRate":0.05}'),
-    (N'categories', 3, N'SR CITIZEN', N'Senior citizen', N'{"employee":false,"women":false,"senior":true,"extraRate":0.35}'),
-    (N'categories', 4, N'SR CITIZEN WOMEN', N'Senior citizen women', N'{"employee":false,"women":true,"senior":true,"extraRate":0.40}'),
-    (N'categories', 5, N'EMPLOYEE', N'Employee', N'{"employee":true,"women":false,"senior":false,"extraRate":0.35}'),
-    (N'categories', 6, N'EMPLOYEE WOMEN', N'Employee women', N'{"employee":true,"women":true,"senior":false,"extraRate":0.40}'),
+    (N'categories', 1, N'PUBLIC/GENERAL', N'Public / General', N'{"employee":false,"women":false,"senior":false}'),
+    (N'categories', 2, N'WOMEN', N'Women', N'{"employee":false,"women":true,"senior":false}'),
+    (N'categories', 3, N'SR CITIZEN', N'Senior citizen', N'{"employee":false,"women":false,"senior":true}'),
+    (N'categories', 4, N'SR CITIZEN WOMEN', N'Senior citizen women', N'{"employee":false,"women":true,"senior":true}'),
+    (N'categories', 5, N'EMPLOYEE', N'Employee', N'{"employee":true,"women":false,"senior":false}'),
+    (N'categories', 6, N'EMPLOYEE WOMEN', N'Employee women', N'{"employee":true,"women":true,"senior":false}'),
     (N'paymentModes', 1, N'Online', N'Online', N'{"document":null}'),
     (N'paymentModes', 2, N'RTGS', N'RTGS', N'{"document":null}'),
     (N'paymentModes', 3, N'Cheque', N'Cheque', N'{"document":"cheque"}'),
@@ -102,14 +97,6 @@ SELECT v.l, v.s, v.c, v.n, v.a, 'SEED' FROM (VALUES
     (N'incomeBands', 2, N'Rs.5,00,000 - Rs.10,00,000', N'Rs.5,00,000 - Rs.10,00,000', NULL),
     (N'incomeBands', 3, N'Rs.10,00,000 - Rs.25,00,000', N'Rs.10,00,000 - Rs.25,00,000', NULL),
     (N'incomeBands', 4, N'Above Rs.25,00,000', N'Above Rs.25,00,000', NULL),
-    (N'sourcesOfFunds', 1, N'salary', N'Salary', NULL),
-    (N'sourcesOfFunds', 2, N'business', N'Business income', NULL),
-    (N'sourcesOfFunds', 3, N'savings', N'Savings', NULL),
-    (N'sourcesOfFunds', 4, N'property', N'Sale of property', NULL),
-    (N'sourcesOfFunds', 5, N'inheritance', N'Inheritance or gift', NULL),
-    (N'sourcesOfFunds', 6, N'investments', N'Maturity of investments', NULL),
-    (N'sourcesOfFunds', 7, N'loan', N'Loan', NULL),
-    (N'sourcesOfFunds', 8, N'other', N'Other', NULL),
     (N'occupations', 1, N'Salaried', N'Salaried', NULL),
     (N'occupations', 2, N'Self-employed', N'Self-employed', NULL),
     (N'occupations', 3, N'Business', N'Business', NULL),

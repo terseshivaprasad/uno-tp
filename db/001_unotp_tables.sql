@@ -216,9 +216,6 @@ CREATE TABLE dbo.t_Unotp_Kyc_Dtls
     c_Nsdl_Name          NVARCHAR(150)  NOT NULL CONSTRAINT DF_Kyc_Dtls_Nsdl_Name DEFAULT (''),
     f_Ckyc               BIT            NOT NULL CONSTRAINT DF_Kyc_Dtls_Ckyc DEFAULT (0),   -- KYC from CERSAI (the investor only)
     f_Mail_Different     BIT            NOT NULL CONSTRAINT DF_Kyc_Dtls_Mail_Diff DEFAULT (0),   -- post goes to another address
-    c_Screening_Status   VARCHAR(10)    NOT NULL CONSTRAINT DF_Kyc_Dtls_Screening DEFAULT (''),   -- name screening: '', allowed, blocked
-    c_Screening_Ref      VARCHAR(50)    NOT NULL CONSTRAINT DF_Kyc_Dtls_Screening_Ref DEFAULT (''),   -- the service's reference
-    d_Screened_On        DATETIME2(3)   NULL,
 
     c_Created_By         VARCHAR(20)    NOT NULL,
     d_Created_On         DATETIME2(3)   NOT NULL CONSTRAINT DF_Kyc_Dtls_Created DEFAULT (SYSDATETIME()),
@@ -390,8 +387,6 @@ CREATE TABLE dbo.t_Unotp_Investment_Dtls
     c_Renew_Instruction  VARCHAR(20)    NOT NULL CONSTRAINT DF_Investment_Renew DEFAULT (''),
     f_No_Tds             BIT            NOT NULL CONSTRAINT DF_Investment_No_Tds DEFAULT (0),   -- Form 121 filed
     c_Delivery_Type      VARCHAR(20)    NOT NULL CONSTRAINT DF_Investment_Delivery DEFAULT (''),
-    c_Source_Of_Funds    VARCHAR(30)    NOT NULL CONSTRAINT DF_Investment_Source_Of_Funds DEFAULT (''),   -- a sourcesOfFunds code, asked once the investor's deposits pass sourceOfFundsFrom
-    c_Source_Of_Funds_Remark NVARCHAR(200) NOT NULL CONSTRAINT DF_Investment_Source_Of_Funds_Remark DEFAULT (''),   -- typed, for "other"
 
     c_App_Type           VARCHAR(10)    NOT NULL CONSTRAINT DF_Investment_App_Type DEFAULT (''),   -- DIGITAL, PHYSICAL
     c_Form_No            VARCHAR(20)    NOT NULL CONSTRAINT DF_Investment_Form_No DEFAULT (''),
