@@ -106,9 +106,9 @@ public class EntryController(
 
     /// <summary>A feature the user's menu does not open, reached by its address.</summary>
     [HttpGet("unotp/unauthorized")]
-    public IActionResult Unauthorized(string? feature) =>
+    public async Task<IActionResult> Unauthorized(string? feature, [FromServices] UnoTP.Models.ConsoleState console) =>
         Refused(feature is not null && FeatureSet.MenuKeys.Contains(feature)
-            ? $"{UnoTP.Models.ConsoleAdmin.NameOf(feature)} is not in your menu. Ask your administrator if you need it."
+            ? $"{(await console.BoardAsync()).NameOf(feature)} is not in your menu. Ask your administrator if you need it."
             : "You do not have access to this page.");
 
     [HttpGet("unotp/error")]

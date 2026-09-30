@@ -7,7 +7,7 @@ using UnoTP.ViewModels;
 namespace UnoTP.Controllers;
 
 /// <summary>
-/// The classic dashboard: the partner's own work waiting on them, beside the tiles
+/// The dashboard: the partner's own work waiting on them, beside the tiles
 /// that start new work. <c>off</c> names a feature FeatureGate closed on the way here.
 /// </summary>
 public class DashboardController(
@@ -59,7 +59,7 @@ public class DashboardController(
         {
             var closing = a.Where(x => x.State is not ("booked" or "cancelled"))
                 .Select(x => (App: x, Left: config.CancellationDays - (today - x.Applied.Date).Days))
-                .Where(x => x.Left is >= 0 and <= 3)
+                .Where(x => x.Left >= 0 && x.Left <= config.CloseToCancelDays)
                 .OrderBy(x => x.Left).ToList();
             if (closing.Count > 0)
                 work.Add(new WorkItem("closing", "Close to auto-cancel", closing.Count,

@@ -5,16 +5,21 @@ using UnoTP.Infrastructure;
 namespace UnoTP.Models;
 
 /// <summary>
-/// A feature of the classic console that can be taken off the air for a while.
+/// A feature of the console that can be taken off the air for a while, as the
+/// backend lists it (reference: features).
 /// </summary>
-/// <param name="Key">What a window names when it disables the feature.</param>
+/// <param name="Key">What a window names when it disables the feature, and the menu key that opens it.</param>
 /// <param name="Name">The feature as the dashboard labels it.</param>
 /// <param name="Group">Where the partner meets it.</param>
 /// <param name="Detail">What stops working while it is off.</param>
 /// <param name="OffReason">What its tile says while it is switched off in the
 /// "Features" section of appsettings, e.g. while it is rebuilt. A feature that is
 /// switched off takes no window.</param>
-public record ConsoleFeature(string Key, string Name, string Group, string Detail, string OffReason = "Unavailable");
+/// <param name="Tile">False for one switched like a feature with no tile of its own (Console Admin).</param>
+public record ConsoleFeature(string Key, string Name, string Group, string Detail, string OffReason = "Unavailable", bool Tile = true)
+{
+    public static ConsoleFeature From(FeatureOption f) => new(f.Code, f.Name, f.Group, f.Detail, f.OffReason, f.Tile);
+}
 
 /// <summary>
 /// One stretch of time in which the features it names are off. A window with a
@@ -48,11 +53,6 @@ public record FeatureWindow(
 
     public string Away => Live ? "on now" : ConsoleAdmin.Away(From);
 
-    // What the bell says under the notice: the screens that stop working, which
-    // the window knows and the line partners were shown may not say.
-    public string Affects =>
-        "Affects " + ConsoleAdmin.Names(Features) + ".";
-
     // How long it lasts, said the way the announcement says it.
     public string Length
     {
@@ -72,40 +72,12 @@ public record FeatureWindow(
 }
 
 /// <summary>
-/// The console's features, and how the screens write the times and names that
-/// go with them. What is scheduled against the features comes from the backend
+/// How the console's screens write the times that go with its windows and
+/// notices. The features themselves, and their names, come from the backend
 /// (see <see cref="ConsoleBoard"/>).
 /// </summary>
 public static class ConsoleAdmin
 {
-    // The classic dashboard's own tiles, in the order it lays them out. Nothing
-    // else belongs here: a service behind the wizard is not something this
-    // screen can switch, and is told about with a notice instead. Whether each is
-    // switched on at all comes from the "Features" section of appsettings; the
-    // backend's windows only take a switched-on feature off for a while.
-    public static readonly ConsoleFeature[] Features =
-    {
-        new("new-fd", "Create New FD", "Apply for a new FD",
-            "The booking wizard end to end, from investor search to submission."),
-        new("pis", "PIS Generation — Axis", "Apply for a new FD",
-            "Making and reprinting Axis pay-in slips. A slip already printed stays valid."),
-        new("view-app", "View existing application", "Apply for a new FD",
-            "Looking an application up by number, folio or date."),
-        new("short-url", "Short URL", "Apply for a new FD",
-            "The payment and acceptance links sent to investors. A link already sent stops opening."),
-        new("app-status", "Application status", "FD Services",
-            "Where an application stands, holder by holder.", OffReason: "Under revamp"),
-        new("renew", "Renew FD", "FD Services",
-            "Rolling a maturing deposit over into a new one.", OffReason: "Coming soon"),
-    };
-
-    public static ConsoleFeature Feature(string key) => Features.First(f => f.Key == key);
-
-    // The name a feature goes by, including the admin screen, which is switched
-    // like a feature but is not one of the partner's tiles.
-    public static string NameOf(string key) =>
-        Features.FirstOrDefault(f => f.Key == key)?.Name ?? (key == "admin" ? "Console Admin" : key);
-
     private static DateTime Today => DateTime.Today;
 
     public static string Stamp(DateTime t) => t.ToString("ddd d MMM, h:mm tt");
@@ -136,15 +108,6 @@ public static class ConsoleAdmin
         "Maintenance" => "text-amber",
         _ => "text-success",
     };
-
-    // The features a window names, written out as a sentence lists them.
-    public static string Names(IReadOnlyList<string> keys)
-    {
-        var names = keys.Select(k => Feature(k).Name).ToList();
-        return names.Count == 1
-            ? names[0]
-            : string.Join(", ", names.Take(names.Count - 1)) + " and " + names[^1];
-    }
 }
 
 /// <summary>
@@ -153,16 +116,38 @@ public static class ConsoleAdmin
 /// bell in the top bar is written from here, so an announcement and the window it
 /// belongs to can never drift apart.
 /// </summary>
-public sealed class ConsoleBoard(IReadOnlyList<FeatureWindow> windows, IReadOnlyList<AnnouncementRecord> announcements)
+public sealed class ConsoleBoard(IReadOnlyList<ConsoleFeature> features, IReadOnlyList<FeatureWindow> windows, IReadOnlyList<AnnouncementRecord> announcements)
 {
-    public static readonly ConsoleBoard Empty = new([], []);
+    /// <summary>The console's features, in the order the dashboard lays them out.</summary>
+    public IReadOnlyList<ConsoleFeature> Features { get; } = features;
+
+    /// <summary>The features with a tile of their own on the dashboard.</summary>
+    public IEnumerable<ConsoleFeature> Tiles => Features.Where(f => f.Tile);
+
+    public ConsoleFeature? Feature(string key) => Features.FirstOrDefault(f => f.Key == key);
+
+    /// <summary>The name a feature goes by; its key when the backend lists no such feature.</summary>
+    public string NameOf(string key) => Feature(key)?.Name ?? key;
+
+    // The features a window names, written out as a sentence lists them.
+    public string Names(IReadOnlyList<string> keys)
+    {
+        var names = keys.Select(NameOf).ToList();
+        return names.Count == 1
+            ? names[0]
+            : string.Join(", ", names.Take(names.Count - 1)) + " and " + names[^1];
+    }
+
+    // What the bell says under a window's notice: the screens that stop working,
+    // which the window knows and the line partners were shown may not say.
+    public string AffectsOf(FeatureWindow w) => "Affects " + Names(w.Features) + ".";
 
     public IReadOnlyList<FeatureWindow> Windows { get; } = windows;
 
     public IReadOnlyList<AnnouncementRecord> Announcements { get; } = announcements;
 
-    public static ConsoleBoard From(ConsoleSchedule schedule) =>
-        new(schedule.Windows.Select(w => new FeatureWindow(w.Id, w.Features, w.From, w.To, w.Notice, w.SetBy, w.SetOn)).ToList(),
+    public static ConsoleBoard From(IReadOnlyList<ConsoleFeature> features, ConsoleSchedule schedule) =>
+        new(features, schedule.Windows.Select(w => new FeatureWindow(w.Id, w.Features, w.From, w.To, w.Notice, w.SetBy, w.SetOn)).ToList(),
             schedule.Announcements);
 
     // The window a feature is in now, or the next one it is in. A feature that is
@@ -187,7 +172,7 @@ public sealed class ConsoleBoard(IReadOnlyList<FeatureWindow> windows, IReadOnly
     // pages behind a feature are closed on the same answer (see FeatureGate).
     public string? OffLabel(string key, FeatureFlags flags)
     {
-        var feature = ConsoleAdmin.Features.FirstOrDefault(f => f.Key == key);
+        var feature = Feature(key);
         if (!flags.IsOn(key)) return feature?.OffReason ?? "Unavailable";
         var window = feature is null ? null : WindowFor(key);
         return window is { Live: true } ? $"Back at {ConsoleAdmin.Clock(window.To)}" : null;
@@ -197,7 +182,7 @@ public sealed class ConsoleBoard(IReadOnlyList<FeatureWindow> windows, IReadOnly
     // together, soonest first. Anything already past drops off by itself.
     public List<Notice> Bell() =>
         Windows.Where(w => w.Announced && !w.Ended)
-            .Select(w => (At: w.From, Notice: new Notice("Downtime", ConsoleAdmin.Tone("Downtime"), w.Notice, w.When, w.Away, w.Affects, w.Id, w.From)))
+            .Select(w => (At: w.From, Notice: new Notice("Downtime", ConsoleAdmin.Tone("Downtime"), w.Notice, w.When, w.Away, AffectsOf(w), w.Id, w.From)))
             .Concat(Announcements
                 .Where(a => a.At.Date >= DateTime.Today)
                 .Select(a => (At: a.At, Notice: new Notice(a.Kind, ConsoleAdmin.Tone(a.Kind), a.Title, ConsoleAdmin.Stamp(a.At), ConsoleAdmin.Away(a.At), a.Detail, a.Id, a.At))))
@@ -212,7 +197,7 @@ public sealed class ConsoleBoard(IReadOnlyList<FeatureWindow> windows, IReadOnly
 /// bell, so a backend that cannot be reached leaves it empty and the tiles open
 /// rather than taking every page down with it.
 /// </summary>
-public sealed class ConsoleState(IConsoleApi api, ILogger<ConsoleState> log)
+public sealed class ConsoleState(IConsoleApi api, UnoTP.Infrastructure.Lookups lookups, ILogger<ConsoleState> log)
 {
     private Task<ConsoleBoard>? board;
 
@@ -220,14 +205,24 @@ public sealed class ConsoleState(IConsoleApi api, ILogger<ConsoleState> log)
 
     private async Task<ConsoleBoard> Load()
     {
+        IReadOnlyList<ConsoleFeature> features;
         try
         {
-            return ConsoleBoard.From(await api.ScheduleAsync());
+            features = ((await lookups.ReferenceAsync()).Features ?? []).Select(ConsoleFeature.From).ToList();
+        }
+        catch (Exception e) when (e is HttpRequestException or TaskCanceledException)
+        {
+            log.LogWarning(e, "The console's features could not be read; the dashboard shows no tiles.");
+            features = [];
+        }
+        try
+        {
+            return ConsoleBoard.From(features, await api.ScheduleAsync());
         }
         catch (Exception e) when (e is HttpRequestException or TaskCanceledException)
         {
             log.LogWarning(e, "The console schedule could not be read; showing no windows or notices.");
-            return ConsoleBoard.Empty;
+            return new ConsoleBoard(features, [], []);
         }
     }
 }

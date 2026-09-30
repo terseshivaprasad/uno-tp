@@ -45,7 +45,10 @@ builder.Services.AddScoped<IPartner, SessionPartner>();
 // Investor Identification's steps, for the primary holder and each joint holder alike.
 builder.Services.AddScoped<UnoTP.ViewModels.HolderSearch>();
 if (BackendOptions.Configured(builder.Configuration)) builder.Services.AddBackendApi();
-else builder.Services.AddMockBackend();
+// The mock answers with made-up investors and lists: it is for development, or a
+// demo that says so. Anywhere else a missing backend is a mistake, not a fallback.
+else if (builder.Environment.IsDevelopment() || builder.Configuration.GetValue<bool>("Features:DemoData")) builder.Services.AddMockBackend();
+else throw new InvalidOperationException("Backend:BaseUrl is not set. Outside Development the app runs only against the backend API (or with Features:DemoData on, as a demo).");
 if (IdfyOptions.Configured(builder.Configuration)) builder.Services.AddIdfy();
 // The payment link is shortened on submit by UrlShortener.Api when Shortener:BaseUrl
 // is set; otherwise by the mock while it answers, and not at all on a real backend.

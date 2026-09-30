@@ -341,7 +341,7 @@ Example answers, as the mock gives them (identifiers masked by the backend):
 ```json
 { "sourcingAgency": "1033", "minAge": 18, "seniorAge": 60, "maxJointHolders": 2,
   "maxAttempts": 3, "minAmount": 5000, "maxAmount": 20000000, "amountStep": 1000,
-  "cancellationDays": 14, "draftDays": 30,
+  "cancellationDays": 14, "draftDays": 14,
   "linkValidityHours": { "payment": 48, "acceptance": 72 } }
 ```
 

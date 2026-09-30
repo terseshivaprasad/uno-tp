@@ -1,6 +1,6 @@
 @model AdminViewModel
 @{
-    ViewData["Title"] = "Console Admin (classic)";
+    ViewData["Title"] = "Console Admin";
 
     // The screen behind the classic console: which features are on, and what the
     // bell in the top bar tells partners is coming. The two are one thing here -
@@ -66,7 +66,7 @@
             <div class="csi-drafts__head">
                 <h1 class="csi-card__title csi-card__title--plain">Tile availability</h1>
                 <p class="csi-drafts__sub">
-                    The @Model.Features.Length tiles on the classic dashboard.
+                    The @Model.Features.Count tiles on the dashboard.
                     <span id="admSummary">@(off == 0 ? "All on" : $"{off} off now") &middot; @queued scheduled to go off.</span>
                 </p>
             </div>
@@ -88,7 +88,7 @@
                     {
                         var w = Model.Board.WindowFor(f.Key);
                         var state = Model.Board.StateOf(f.Key, Model.Flags);
-                        var others = w?.Features.Where(k => k != f.Key).Select(k => ConsoleAdmin.Feature(k).Name).ToList() ?? new List<string>();
+                        var others = w?.Features.Where(k => k != f.Key).Select(Model.Board.NameOf).ToList() ?? new List<string>();
                         <tr data-feature="@f.Key" data-state="@state" data-window="@(w?.Id ?? "")" data-name="@f.Name">
                             <td data-label="Tile">
                                 <strong>@f.Name</strong>
@@ -225,7 +225,7 @@
                        that stand on their own. *@
                     @{
                         var bell = Model.Upcoming.Where(w => w.Announced)
-                            .Select(w => (w.From, w.Id, Kind: "Downtime", Title: w.Notice, Detail: w.Affects, w.When, w.Away, By: w.SetBy, Sub: $"with window {w.Id}", Source: "window"))
+                            .Select(w => (w.From, w.Id, Kind: "Downtime", Title: w.Notice, Detail: Model.Board.AffectsOf(w), w.When, w.Away, By: w.SetBy, Sub: $"with window {w.Id}", Source: "window"))
                             .Concat(Model.Notices.Select(n => (From: n.At, n.Id, n.Kind, n.Title, n.Detail, When: ConsoleAdmin.Stamp(n.At), Away: ConsoleAdmin.Away(n.At), By: n.SetBy, Sub: n.SetOn.ToString("dd/MM, HH:mm"), Source: "standalone")))
                             .OrderBy(x => x.From);
                     }
@@ -268,7 +268,7 @@
                 <input type="hidden" name="at" id="admAtValue" />
                 <p class="va-flag">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 11v6"></path><circle cx="12" cy="7.5" r=".7" fill="currentColor"></circle></svg>
-                    <span><strong>This tells, it does not disable.</strong> Use it for a rate change, or for a service behind the wizard such as DMS. To take a classic tile off the air, set a window above.</span>
+                    <span><strong>This tells, it does not disable.</strong> Use it for a rate change, or for a service behind the wizard such as DMS. To take a dashboard tile off the air, set a window above.</span>
                 </p>
 
                 <div class="adm-form__row">

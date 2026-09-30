@@ -12,7 +12,6 @@ namespace UnoTP.ViewModels;
 /// </summary>
 public record DashboardTile(string Key, string Title, string Glyph, string? Controller, string? Off, string? Why = null);
 
-/// <summary>The classic dashboard: its tiles, and why a closed page sent the partner here.</summary>
 /// <summary>Work waiting on the partner: how many, what the first of them is, and the page that handles it.</summary>
 /// <param name="Tone">amber, blue or red: how pressing it is.</param>
 public sealed record WorkItem(string Key, string Title, int Count, string Detail, string Controller, string Tone);
@@ -51,43 +50,47 @@ public class DashboardViewModel(FeatureSet features, ConsoleBoard board, string?
 
     private IReadOnlyList<DashboardTile>? newFd;
 
-    public IReadOnlyList<DashboardTile> NewFd => newFd ??=
+    public IReadOnlyList<DashboardTile> NewFd => newFd ??= Listed(
     [
         // A new page with a plus.
-        Tile("new-fd", "Create New FD", Sheet + $"<path d=\"M13 11.5v8M9 15.5h8\" {White} stroke-width=\"2.4\"></path>", "NewApplication"),
+        Tile("new-fd", Sheet + $"<path d=\"M13 11.5v8M9 15.5h8\" {White} stroke-width=\"2.4\"></path>", "NewApplication"),
         // A pay-in slip: a torn-off receipt with the rupee on it.
-        Tile("pis", "PIS Generation - Axis", "<path d=\"M5 3.5a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v18l-2.3-1.5-2.4 1.5-2.3-1.5-2.3 1.5-2.4-1.5L5 21.5z\" fill=\"currentColor\"></path>"
+        Tile("pis", "<path d=\"M5 3.5a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v18l-2.3-1.5-2.4 1.5-2.3-1.5-2.3 1.5-2.4-1.5L5 21.5z\" fill=\"currentColor\"></path>"
             + $"<path d=\"M9 7h6M9 10h6M12.3 7c2.6 0 2.6 5-.8 5H9.4l4.8 4.3\" {White} stroke-width=\"1.8\" fill=\"none\"></path>", "PayInSlips"),
         // Looking an application up: a page with a magnifier.
-        Tile("view-app", "View existing application", Sheet + $"<circle cx=\"12.5\" cy=\"14.5\" r=\"3.2\" {White} stroke-width=\"2\"></circle><path d=\"M14.9 16.9l2.6 2.6\" {White} stroke-width=\"2.2\"></path>", "Applications"),
+        Tile("view-app", Sheet + $"<circle cx=\"12.5\" cy=\"14.5\" r=\"3.2\" {White} stroke-width=\"2\"></circle><path d=\"M14.9 16.9l2.6 2.6\" {White} stroke-width=\"2.2\"></path>", "Applications"),
         // Two chain links.
-        Tile("short-url", "Short URL", $"<g {Slate} stroke-width=\"2.8\"><path d=\"M10 14a4.5 4.5 0 0 0 6.4 0l3.2-3.2a4.5 4.5 0 0 0-6.4-6.4L11.6 6\"></path><path d=\"M14 10a4.5 4.5 0 0 0-6.4 0l-3.2 3.2a4.5 4.5 0 0 0 6.4 6.4l1.6-1.6\"></path></g>", "Links"),
-    ];
+        Tile("short-url", $"<g {Slate} stroke-width=\"2.8\"><path d=\"M10 14a4.5 4.5 0 0 0 6.4 0l3.2-3.2a4.5 4.5 0 0 0-6.4-6.4L11.6 6\"></path><path d=\"M14 10a4.5 4.5 0 0 0-6.4 0l-3.2 3.2a4.5 4.5 0 0 0 6.4 6.4l1.6-1.6\"></path></g>", "Links"),
+    ]);
 
     private IReadOnlyList<DashboardTile>? services;
 
-    public IReadOnlyList<DashboardTile> Services => services ??=
+    public IReadOnlyList<DashboardTile> Services => services ??= Listed(
     [
         // Where an application stands: a clipboard with a tick.
-        Tile("app-status", "Application status", "<rect x=\"4.5\" y=\"3.5\" width=\"15\" height=\"19\" rx=\"2\" fill=\"currentColor\"></rect><rect x=\"8.5\" y=\"1.5\" width=\"7\" height=\"4\" rx=\"1\" fill=\"currentColor\" stroke=\"#fff\" stroke-width=\"1.4\"></rect>"
+        Tile("app-status", "<rect x=\"4.5\" y=\"3.5\" width=\"15\" height=\"19\" rx=\"2\" fill=\"currentColor\"></rect><rect x=\"8.5\" y=\"1.5\" width=\"7\" height=\"4\" rx=\"1\" fill=\"currentColor\" stroke=\"#fff\" stroke-width=\"1.4\"></rect>"
             + $"<path d=\"M8.5 14l2.5 2.5 4.8-5\" {White} stroke-width=\"2.2\" fill=\"none\"></path>", null),
         // Rolling a deposit over: arrows turning round the rupee.
-        Tile("renew", "Renew FD", $"<g {Slate} stroke-width=\"2.3\"><path d=\"M20.5 12a8.5 8.5 0 0 1-15 5.5\"></path><path d=\"M3.5 12a8.5 8.5 0 0 1 15-5.5\"></path><path d=\"M19.5 2.5V7H15\"></path><path d=\"M4.5 21.5V17H9\"></path></g>"
+        Tile("renew", $"<g {Slate} stroke-width=\"2.3\"><path d=\"M20.5 12a8.5 8.5 0 0 1-15 5.5\"></path><path d=\"M3.5 12a8.5 8.5 0 0 1 15-5.5\"></path><path d=\"M19.5 2.5V7H15\"></path><path d=\"M4.5 21.5V17H9\"></path></g>"
             + $"<path d=\"M10.2 9.2h3.6M10.2 11h3.6M12.1 9.2c1.6 0 1.6 3.4-.6 3.4h-1.3l3 2.6\" {Slate} stroke-width=\"1.4\"></path>", "Renew"),
-    ];
+    ]);
+
+    // Only the tiles whose feature the backend lists, in its order.
+    private IReadOnlyList<DashboardTile> Listed(IReadOnlyList<DashboardTile> tiles) =>
+        Board.Features.Select(f => tiles.FirstOrDefault(t => t.Key == f.Key)).OfType<DashboardTile>().ToList();
 
     /// <summary>Console Admin, shown only while the Admin feature is on.</summary>
     private IReadOnlyList<DashboardTile>? admin;
 
     public IReadOnlyList<DashboardTile> Admin => admin ??= features.Flags.Admin
-        ?
+        ? Listed(
         [
             // Sliders: three settings, each with its own knob.
-            Tile("admin", "Console Admin", $"<g {Slate} stroke-width=\"2.4\"><path d=\"M3.5 7h17M3.5 12h17M3.5 17h17\"></path></g>"
+            Tile("admin", $"<g {Slate} stroke-width=\"2.4\"><path d=\"M3.5 7h17M3.5 12h17M3.5 17h17\"></path></g>"
                 + "<circle cx=\"9\" cy=\"7\" r=\"2.9\" fill=\"currentColor\" stroke=\"#fff\" stroke-width=\"1.6\"></circle>"
                 + "<circle cx=\"15\" cy=\"12\" r=\"2.9\" fill=\"currentColor\" stroke=\"#fff\" stroke-width=\"1.6\"></circle>"
                 + "<circle cx=\"7\" cy=\"17\" r=\"2.9\" fill=\"currentColor\" stroke=\"#fff\" stroke-width=\"1.6\"></circle>", "Admin"),
-        ]
+        ])
         : [];
 
     /// <summary>What is scheduled against the features, which the tiles are drawn from.</summary>
@@ -104,11 +107,11 @@ public class DashboardViewModel(FeatureSet features, ConsoleBoard board, string?
     private static string? ClosedLine(FeatureSet features, ConsoleBoard board, string? off)
     {
         if (off is null) return null;
-        if (features.NotInMenu.Contains(off)) return $"{ConsoleAdmin.NameOf(off)} is not in your menu.";
+        if (features.NotInMenu.Contains(off)) return $"{board.NameOf(off)} is not in your menu.";
         var reason = board.OffLabel(off, features.Flags);
         // The feature may have come back on between the redirect and this page.
         if (reason is null) return null;
-        var name = ConsoleAdmin.NameOf(off);
+        var name = board.NameOf(off);
         return features.Flags.IsOn(off)
             ? $"{name} is off for a scheduled window. {reason}."
             : reason == "Unavailable"
@@ -116,13 +119,15 @@ public class DashboardViewModel(FeatureSet features, ConsoleBoard board, string?
                 : $"{name} is not available: {reason.ToLowerInvariant()}.";
     }
 
-    // A tile with no page behind it yet cannot open even when its feature is on,
-    // so it reads as coming rather than as a button that does nothing.
-    private DashboardTile Tile(string key, string title, string glyph, string? controller)
+    // A tile is named as the backend names its feature. One with no page behind it
+    // yet cannot open even when its feature is on, so it says what the feature says
+    // while it is off rather than being a button that does nothing.
+    private DashboardTile Tile(string key, string glyph, string? controller)
     {
+        var title = Board.NameOf(key);
         var off = (features.NotInMenu.Contains(key) ? "Not in your menu" : null)
-            ?? Board.OffLabel(key, features.Flags) ?? (controller is null ? "Coming soon" : null);
+            ?? Board.OffLabel(key, features.Flags) ?? (controller is null ? Board.Feature(key)?.OffReason ?? "Unavailable" : null);
         return new(key, title, glyph, controller, off,
-            off is null ? null : ClosedLine(features, Board, key) ?? $"{title} is coming soon.");
+            off is null ? null : ClosedLine(features, Board, key) ?? $"{title} is not available yet.");
     }
 }

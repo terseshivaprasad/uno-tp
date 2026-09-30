@@ -7,7 +7,8 @@ namespace UnoTP.ViewModels;
 /// <summary>Console Admin: which features are on, and what the bell tells partners is coming.</summary>
 public class AdminViewModel(FeatureSet features, ConsoleBoard board)
 {
-    public ConsoleFeature[] Features => ConsoleAdmin.Features;
+    /// <summary>The dashboard's tiles, as the backend lists the features.</summary>
+    public IReadOnlyList<ConsoleFeature> Features => Board.Tiles.ToList();
 
     public FeatureFlags Flags => features.Flags;
 

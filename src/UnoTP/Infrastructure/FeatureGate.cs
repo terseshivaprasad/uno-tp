@@ -6,8 +6,8 @@ using UnoTP.Models;
 namespace UnoTP.Infrastructure;
 
 /// <summary>
-/// Names the console feature a controller or action belongs to (see
-/// <see cref="ConsoleAdmin.Features"/>), so it closes whenever the feature's tile
+/// Names the console feature a controller or action belongs to (the backend's
+/// features, see <see cref="ConsoleBoard.Features"/>), so it closes whenever the feature's tile
 /// is greyed out.
 /// </summary>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]

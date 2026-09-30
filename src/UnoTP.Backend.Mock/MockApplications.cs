@@ -6,7 +6,7 @@ namespace UnoTP.Backend.Mock;
 /// The mock backend's applications, and the documents filed against them, for the
 /// partner asking.
 /// </summary>
-public sealed class MockApplications(MockStore store, IPartner partner) : IApplicationApi, IDocumentApi
+public sealed class MockApplications(MockStore store, IPartner partner) : IApplicationApi, IDocumentApi, IRenewalOpener
 {
     // ----- Applications ------------------------------------------------------
 
@@ -69,8 +69,7 @@ public sealed class MockApplications(MockStore store, IPartner partner) : IAppli
     public Task<IReadOnlyList<ApplicationRecord>> ListAsync(CancellationToken ct = default) =>
         Task.FromResult<IReadOnlyList<ApplicationRecord>>(MockApplicationList.Build());
 
-    /// <summary>A renewal's application: opened as any other, with the deposit and what comes over from it already on it.</summary>
-    internal Task<Application> OpenRenewalAsync(Holder holder, RenewalOf renewal, UploadState upload, PaymentDetails payment, DepositDetails deposit)
+    public Task<Application> OpenRenewalAsync(Holder holder, RenewalOf renewal, UploadState upload, PaymentDetails payment, DepositDetails deposit)
     {
         Application app;
         do app = new() { AppNo = NewAppNo(), Holder = holder, Prior = PriorAttempts(holder).ToList(), Renewal = renewal, Upload = upload, Payment = payment, Deposit = deposit };

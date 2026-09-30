@@ -17,6 +17,7 @@ public static class MockBackendServiceCollectionExtensions
         services.AddScoped<MockApplications>();
         services.AddScoped<IApplicationApi>(sp => sp.GetRequiredService<MockApplications>());
         services.AddScoped<IDocumentApi>(sp => sp.GetRequiredService<MockApplications>());
+        services.AddScoped<IRenewalOpener>(sp => sp.GetRequiredService<MockApplications>());
         services.AddSingleton<IInvestorApi, MockInvestors>();
         services.AddSingleton<ISourcingApi, MockSourcing>();
         services.AddSingleton<IPayInSlipApi, MockPayInSlips>();

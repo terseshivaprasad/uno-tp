@@ -7,7 +7,7 @@ namespace UnoTP.Backend.Mock;
 /// application as a new deposit does, with the deposit's holders, repayment
 /// account and maturity amount on it; from then on it is the application that moves.
 /// </summary>
-public sealed class MockRenewals(MockApplications applications, IInvestorApi investors, IReferenceApi reference) : IRenewalApi
+public sealed class MockRenewals(IRenewalOpener applications, IInvestorApi investors, IReferenceApi reference) : IRenewalApi
 {
     /// <summary>A renewal may be entered from this many days before maturity...</summary>
     public const int FromDays = 61;

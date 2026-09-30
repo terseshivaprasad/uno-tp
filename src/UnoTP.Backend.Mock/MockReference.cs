@@ -191,6 +191,16 @@ public sealed class MockReference : IReferenceApi
             "Changes in the Second holder/Third holder OR any other information shall be executed as per the details mentioned in Renewal Application/FDR.",
             "Any renewal of Deposit in advance of its maturity date, will be subject to the rate of interest and other terms & conditions prevailing on the date of said maturity.",
             $"The Auto renewal tag cases will be able to make renewal entry in this module only from {MockRenewals.FromDays} days up to {MockRenewals.UntilDaysAutoRenewal} days prior to maturity.",
+        ],
+        Features:
+        [
+            new("new-fd", "Create New FD", "Apply for a new FD", "The booking wizard end to end, from investor search to submission.", "Unavailable"),
+            new("pis", "PIS Generation - Axis", "Apply for a new FD", "Making and reprinting Axis pay-in slips. A slip already printed stays valid.", "Unavailable"),
+            new("view-app", "View existing application", "Apply for a new FD", "Looking an application up by number, folio or date.", "Unavailable"),
+            new("short-url", "Short URL", "Apply for a new FD", "The payment and acceptance links sent to investors. A link already sent stops opening.", "Unavailable"),
+            new("app-status", "Application status", "FD Services", "Where an application stands, holder by holder.", "Under revamp"),
+            new("renew", "Renew FD", "FD Services", "Rolling a maturing deposit over into a new one.", "Coming soon"),
+            new("admin", "Console Admin", "Administration", "Scheduling downtime windows and notices for the console.", "Unavailable", Tile: false),
         ]);
 
     private static readonly AppConfig Config = new(
@@ -203,9 +213,10 @@ public sealed class MockReference : IReferenceApi
         MaxAmount: 2_00_00_000,
         AmountStep: 1_000,
         CancellationDays: MockWindow.Days,
-        DraftDays: 30,
+        DraftDays: 14,
         LinkValidityHours: new Dictionary<string, int> { ["payment"] = PaymentLinkHours, ["acceptance"] = 72 },
-        RenewFromDays: MockRenewals.FromDays, RenewUntilDays: MockRenewals.UntilDays, RenewUntilDaysAutoRenewal: MockRenewals.UntilDaysAutoRenewal);
+        RenewFromDays: MockRenewals.FromDays, RenewUntilDays: MockRenewals.UntilDays, RenewUntilDaysAutoRenewal: MockRenewals.UntilDaysAutoRenewal,
+        CloseToCancelDays: 3);
 
     public Task<ReferenceData> ReferenceAsync(CancellationToken ct = default) => Task.FromResult(Data);
 

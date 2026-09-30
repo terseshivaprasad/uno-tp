@@ -29,7 +29,7 @@ public class AdminController(FeatureSet features, ConsoleState console, IConsole
     [HttpPost("window")]
     public async Task<IActionResult> AddWindow(string[]? features, string? from, string? to, string? notice)
     {
-        var known = ConsoleAdmin.Features.Select(f => f.Key).ToHashSet();
+        var known = (await console.BoardAsync()).Tiles.Select(f => f.Key).ToHashSet();
         var picked = (features ?? []).Where(known.Contains).Distinct().ToList();
         if (picked.Count == 0 || When(from) is not { } start || When(to) is not { } end || end <= start || start < DateTime.Now.AddMinutes(-1))
         {

@@ -78,7 +78,18 @@ public sealed record ReferenceData(
     IReadOnlyList<string> DashboardNotes,
     IReadOnlyList<string> Declarations,
     IReadOnlyList<string> NoticeKinds,
-    IReadOnlyList<string> RenewalNotes);
+    IReadOnlyList<string> RenewalNotes,
+    IReadOnlyList<FeatureOption>? Features = null);
+
+/// <summary>
+/// A console feature: a dashboard tile, the menu key that opens it, and what it is
+/// called and says wherever the app names it.
+/// </summary>
+/// <param name="Group">The dashboard section its tile sits in.</param>
+/// <param name="Detail">What stops working while it is off.</param>
+/// <param name="OffReason">What its tile says while the app has it switched off.</param>
+/// <param name="Tile">False for one switched like a feature but with no tile of its own (Console Admin).</param>
+public sealed record FeatureOption(string Code, string Name, string Group, string Detail, string OffReason, bool Tile = true);
 
 /// <summary>The limits and rules the pages check against. The backend checks them again on save.</summary>
 /// <param name="SourcingAgency">The agency type that chooses how an application is sourced.</param>
@@ -90,7 +101,7 @@ public sealed record ReferenceData(
 /// <param name="MaxAmount">The largest deposit booked online, in rupees.</param>
 /// <param name="AmountStep">A deposit is a multiple of this, in rupees.</param>
 /// <param name="CancellationDays">Days an unpaid application stands before it cancels itself.</param>
-/// <param name="DraftDays">Days a saved, unsubmitted application is kept.</param>
+/// <param name="DraftDays">Days since its last save an unsubmitted application stays on the lists to continue.</param>
 /// <param name="LinkValidityHours">How long a link to the investor stays open, by what it asks of them ("payment", "acceptance").</param>
 /// <param name="RenewFromDays">A renewal can be entered from this many days before the deposit matures...</param>
 /// <param name="RenewUntilDays">...until this many days before maturity; nearer, it is Operations'.</param>
@@ -109,7 +120,8 @@ public sealed record AppConfig(
     IReadOnlyDictionary<string, int> LinkValidityHours,
     int RenewFromDays = 61,
     int RenewUntilDays = 7,
-    int RenewUntilDaysAutoRenewal = 10);
+    int RenewUntilDaysAutoRenewal = 10,
+    int CloseToCancelDays = 3);
 
 /// <summary>Who the app is being used by: GET me, from the signed-in partner.</summary>
 public interface IPartnerApi
