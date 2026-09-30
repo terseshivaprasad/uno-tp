@@ -2,6 +2,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using UnoTP.Backend;
+using UnoTP.Backend.External;
 using UnoTP.Infrastructure;
 using UnoTP.Models;
 using UnoTP.ViewModels;
@@ -63,6 +64,7 @@ public class InvestorController(
             Unfinished = TempData["unfinished"] as int?,
             Errors = TempData["errors"] is string errors ? JsonSerializer.Deserialize<Dictionary<string, string>>(errors)! : new Dictionary<string, string>(),
             CategoryConflict = TempData["categoryConflict"] as string,
+            ScreeningNotAllowed = TempData["screeningNotAllowed"] as string,
             Focus = docs.Shown?.Focus ?? TempData["focus"] as string,
             Places = await PlacesAsync(state),
         };
@@ -135,6 +137,31 @@ public class InvestorController(
             docs.State.Category = outcome.MovedTo.Code;
             docs.Said = new Flash { Banner = outcome.MovedMessage };
             await SaveAsync(docs);
+            return Back("holder-1");
+        }
+
+        // Every holder is screened by name before the application goes on. One not
+        // allowed to invest online invests offline, at a branch: the page says so and
+        // stops. What screening said is saved with the application either way.
+        var notAllowed = new List<string>();
+        try
+        {
+            foreach (var h in docs.JointHolders.Prepend(docs.Investor))
+            {
+                var screened = await docs.ScreenAsync(h);
+                if (!screened.Allowed) notAllowed.Add(h.Who.Name);
+            }
+        }
+        catch (ExternalServiceException e)
+        {
+            docs.Said = new Flash { Banner = e.Message };
+            await SaveAsync(docs);
+            return Back("holder-1");
+        }
+        if (notAllowed.Count > 0)
+        {
+            await SaveAsync(docs);
+            TempData["screeningNotAllowed"] = string.Join(", ", notAllowed);
             return Back("holder-1");
         }
 

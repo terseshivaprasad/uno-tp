@@ -52,7 +52,7 @@ their query.
 |---|---|
 | `ConnectionStrings:UnoTP` | The database. If blank, the app runs on the in-memory mock (`src/UnoTP.Backend.Mock`), which only Development or a demo may do. |
 | `Backend:TimeoutSeconds` | Seconds an outside service is given. Default 30. |
-| `Backend:External:{Nsdl,Identify,Masking,Ocr,Verification,PanAadhaarLink,FaceMatch,Decrypt}` | Each outside service's address. Blank in Development, its mock answers; elsewhere each must be set (IDfy covers Masking, PanAadhaarLink and FaceMatch). |
+| `Backend:External:{Nsdl,Identify,Masking,Ocr,Verification,PanAadhaarLink,FaceMatch,Decrypt,NameScreening}` | Each outside service's address. Blank in Development, its mock answers; elsewhere each must be set (IDfy covers Masking, PanAadhaarLink and FaceMatch). |
 | `Idfy:BaseUrl` | Idfy.Api. When set, IDfy handles the checks it has an endpoint for (see below). |
 | `Idfy:TimeoutSeconds` | Default 75. The Idfy.Api guide asks for at least 70. |
 | `Entry:DemoUserId`, `Entry:DemoSysCode` | The user the demo comes in as when the app is opened without the portal's values. Used only while `Features:DemoData` is on; leave empty in production. |
@@ -107,6 +107,7 @@ ended, the partner sees Session Expired. A refused entry shows Unauthorized.
 | Method | Route | Body | Returns |
 |---|---|---|---|
 | POST | `external/decrypt/decrypt` (or `Backend:External:Decrypt`) | `{ value }` | `{ value }` in plain text, or `400` when it cannot be decrypted |
+| POST | `external/namescreening/screen` (or `Backend:External:NameScreening`) | `{ name, pan, dob }` | `{ status, reference }`: `status` "allowed" or "blocked". Asked of every holder on Investor Information before it goes on; a holder answered once, under the same name, is not asked again. A blocked holder invests offline, at a branch. The answer is kept on the holder's KYC row (`c_Screening_Status`, `c_Screening_Ref`, `d_Screened_On`). |
 | POST | `sessions` | `{ userId, sysCode }` | `UserSession`: `sessionId`, `userId`, `expiresAt`. `401`, `403` or `404` when the user or system code is refused. |
 | GET | `menu` | | `MenuItem[]` (`key`, `name`) for the session's user. `key` is a console feature: `new-fd`, `pis`, `view-app`, `short-url`, `app-status`, `renew` or `admin`. A feature the menu leaves out is closed, and its address shows Unauthorized. An empty menu refuses entry. |
 

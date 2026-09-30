@@ -41,6 +41,7 @@ public class DocumentsViewModel(
     IVerificationService verification,
     IPanAadhaarLinkService panLink,
     IFaceMatchService faces,
+    INameScreeningService screening,
     UnoTP.Infrastructure.Lookups lookups,
     UnoTP.Infrastructure.CurrentPartner currentPartner,
     ISourcingApi sourcing)
@@ -409,6 +410,23 @@ public class DocumentsViewModel(
         if (Who.Gender.Length > 0) return Who.Gender;
         if (s.Gender.Length > 0) return s.Gender;
         return InvestorInformationGender;
+    }
+
+    /// <summary>
+    /// Whether a holder may invest online, from the name screening service. Asked
+    /// once per holder and name - the answer is kept on the application, and a call
+    /// may be charged - so a holder answered already, under the same name, is not
+    /// asked again. Throws ExternalServiceException when the service is not answering.
+    /// </summary>
+    public async Task<ScreeningOutcome> ScreenAsync(DocHolder h)
+    {
+        var s = State;
+        if (s.Screening.TryGetValue(h.Code, out var kept) && kept.Name == h.Who.Name) return kept;
+
+        var result = await screening.ScreenAsync(new NameScreeningRequest(h.Who.Name, h.Who.Pan, h.Who.Dob));
+        var outcome = new ScreeningOutcome(result.Allowed, result.Reference, h.Who.Name, DateTime.Now);
+        s.Screening[h.Code] = outcome;
+        return outcome;
     }
 
     /// <summary>The investor's gender as Investor Information saved it, for a holder nothing read one for; empty until then.</summary>

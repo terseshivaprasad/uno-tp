@@ -186,6 +186,13 @@ public sealed class InvestorViewModel(InvestorInfoState state, DocumentsViewMode
     /// <summary>Proceed stopped: the category on Upload Documents is a women's one and the applicant is male. Corrected there.</summary>
     public string? CategoryConflict { get; init; }
 
+    /// <summary>Proceed stopped: name screening does not allow these holders (their names, a comma between) to invest online.</summary>
+    public string? ScreeningNotAllowed { get; init; }
+
+    /// <summary>What the page says when name screening does not allow a holder to invest online.</summary>
+    public static string ScreeningOffline(string names) =>
+        $"This investment is not allowed online for {names}. It has to be made offline: kindly reach out to the nearest Mahindra Finance branch. A list of all our branches is available on our website.";
+
     /// <summary>The joint holder Proceed stopped at, not yet added.</summary>
     public int? Unfinished { get; init; }
 

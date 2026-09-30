@@ -216,6 +216,9 @@ CREATE TABLE dbo.t_Unotp_Kyc_Dtls
     c_Nsdl_Name          NVARCHAR(150)  NOT NULL CONSTRAINT DF_Kyc_Dtls_Nsdl_Name DEFAULT (''),
     f_Ckyc               BIT            NOT NULL CONSTRAINT DF_Kyc_Dtls_Ckyc DEFAULT (0),   -- KYC from CERSAI (the investor only)
     f_Mail_Different     BIT            NOT NULL CONSTRAINT DF_Kyc_Dtls_Mail_Diff DEFAULT (0),   -- post goes to another address
+    c_Screening_Status   VARCHAR(10)    NOT NULL CONSTRAINT DF_Kyc_Dtls_Screening DEFAULT (''),   -- name screening: '', allowed, blocked
+    c_Screening_Ref      VARCHAR(50)    NOT NULL CONSTRAINT DF_Kyc_Dtls_Screening_Ref DEFAULT (''),   -- the service's reference
+    d_Screened_On        DATETIME2(3)   NULL,
 
     c_Created_By         VARCHAR(20)    NOT NULL,
     d_Created_On         DATETIME2(3)   NOT NULL CONSTRAINT DF_Kyc_Dtls_Created DEFAULT (SYSDATETIME()),

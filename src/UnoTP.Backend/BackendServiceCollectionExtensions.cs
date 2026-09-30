@@ -11,7 +11,7 @@ public static class BackendServiceCollectionExtensions
     public static readonly string[] OutsideServices =
     [
         NsdlClient.Name, DocumentIdentifierClient.Name, MaskingClient.Name, OcrClient.Name, VerificationClient.Name,
-        PanAadhaarLinkClient.Name, FaceMatchClient.Name, DecryptionClient.Name,
+        PanAadhaarLinkClient.Name, FaceMatchClient.Name, DecryptionClient.Name, NameScreeningClient.Name,
     ];
 
     /// <summary>
@@ -29,6 +29,7 @@ public static class BackendServiceCollectionExtensions
         services.External<IPanAadhaarLinkService, PanAadhaarLinkClient>(config, PanAadhaarLinkClient.Name);
         services.External<IFaceMatchService, FaceMatchClient>(config, FaceMatchClient.Name);
         services.External<IDecryptionService, DecryptionClient>(config, DecryptionClient.Name);
+        services.External<INameScreeningService, NameScreeningClient>(config, NameScreeningClient.Name);
         return services;
     }
 

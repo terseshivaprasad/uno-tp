@@ -81,6 +81,9 @@ public sealed class MockInvestors : IInvestorApi
 
         new("XXXXE1005E", DemoDob, "", "ROHIT SANJAY KULKARNI", "pan-dob",
             "No folio. On Upload Documents NSDL holds no such PAN and date of birth, so the application cannot go on: start again with the right details."),
+
+        new("XXXXK1011K", DemoDob, "SAMEER RAJAN DESHPANDE", "SAMEER RAJAN DESHPANDE", "all",
+            "No folio. NSDL matches all three, but name screening does not allow him to invest online: Investor Information stops at Proceed and sends the investor to a branch."),
     };
 
     /// <summary>

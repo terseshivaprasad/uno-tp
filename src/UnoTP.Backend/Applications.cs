@@ -297,6 +297,9 @@ public sealed class UploadState
     /// <summary>Every attempt, newest first.</summary>
     public List<LogEntry> Log { get; init; } = [];
 
+    /// <summary>What name screening said of each holder, by holder type (01, 02, 03), once Investor Information asked.</summary>
+    public Dictionary<string, ScreeningOutcome> Screening { get; init; } = [];
+
     /// <summary>
     /// The joint holders added on Investor Information, by holder type: 02 the second
     /// holder, 03 the third. Their documents are in <see cref="Docs"/>,
@@ -382,6 +385,9 @@ public sealed class ReadCard
 public sealed record ReadFace(string State, string Lines, string From, string Kind);
 
 public sealed record LogStage(string Text, string Kind = "");
+
+/// <summary>Name screening's answer for one holder: whether they may invest online, the service's reference, the name it was asked for, and when.</summary>
+public sealed record ScreeningOutcome(bool Allowed, string Reference, string Name, DateTime At);
 
 public sealed class LogEntry(string id, string document, int attempt, string at, string file)
 {

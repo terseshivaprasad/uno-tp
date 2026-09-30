@@ -388,6 +388,20 @@ public class JourneyTests(App app)
     }
 
     [Fact]
+    public async Task A_holder_name_screening_does_not_allow_is_stopped_on_Investor_Information_and_sent_to_a_branch()
+    {
+        var client = await app.SignedInAsync();
+        var at = await App.NewApplicationAsync(client, UnoTP.Backend.Mock.MockNameScreening.NotAllowedPan);
+        var investor = App.Step(at, "investor");
+
+        var stopped = await App.PostAsync(client, investor, investor, [.. InvestorCard, ("Holder1.Gender", "Male")]);
+        Assert.StartsWith("/InvestorInformation/", stopped.RequestMessage!.RequestUri!.AbsolutePath);
+        var page = await stopped.Content.ReadAsStringAsync();
+        Assert.Contains("Not allowed to invest online", page);
+        Assert.Contains("kindly reach out to the nearest Mahindra Finance branch", page);
+    }
+
+    [Fact]
     public async Task No_TDS_needs_Form_121_filed_on_FD_Configuration_before_Proceed()
     {
         var client = await app.SignedInAsync();

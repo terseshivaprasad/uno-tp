@@ -67,6 +67,20 @@
   color: var(--amber);
   line-height: 16px;
 }
+/* One part of the card: the communication address, or what nothing read */
+.investor-manual__part {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--amber-border);
+}
+.investor-manual__subtitle {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 20px;
+  color: var(--ink);
+}
 .investor-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0,1fr));

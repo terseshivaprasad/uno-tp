@@ -31,6 +31,7 @@ public static class MockBackendServiceCollectionExtensions
         services.AddSingleton<IDemoApi, MockDemo>();
         services.AddScoped<ISessionApi, MockSessions>();
         services.AddSingleton<IDecryptionService, MockDecryption>();
+        services.AddSingleton<INameScreeningService, MockNameScreening>();
 
         // The outside services.
         services.AddSingleton<INsdlService, MockNsdl>();

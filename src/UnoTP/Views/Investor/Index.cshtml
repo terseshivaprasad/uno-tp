@@ -289,8 +289,7 @@
                     <div class="investor-folded-holder__tools">@{ await RemoveButton(holder); }</div>
                     @{ await JointHolderRecord(h, search.Record); }
                     @{ await JointHolderDocuments(holder, h); }
-                    @{ await CommunicationAddressEntry(holder, h); }
-                    @{ await ManualEntry(holder, search.Record?.Gender ?? ""); }
+                    @{ await ManualEntries(holder, h, search.Record?.Gender ?? ""); }
                     @{ await MoreInformation(holder, lists); }
                     @{ await PepQuestions(holder, h); }
                 </details>
@@ -403,54 +402,49 @@
         }
     }
 
-    // What nothing read for a holder, typed by hand: the gender when the record holds none,
-    // and the father's, mother's or spouse's name, which OCR does not read.
-    private async Task ManualEntry(int holder, string gender)
+    // What a holder types by hand, in one card: the communication address when post
+    // goes elsewhere and no proof of it is uploaded, and what nothing read - the gender
+    // when the record holds none, and the father's, mother's or spouse's name, which
+    // OCR does not read.
+    private async Task ManualEntries(int holder, DocumentsViewModel.DocHolder h, string gender)
+    {
+        <div class="investor-record">
+            <div class="investor-manual">
+                <div class="investor-section-head">
+                    <div class="investor-manual__title">Typed by hand for this holder</div>
+                    <span class="investor-manual__badge">Manual entry</span>
+                </div>
+                <div class="investor-manual__text">Type each exactly as the holder gives it &mdash; everything that was read stays read-only above.</div>
+                @{ await CommunicationAddressPart(holder, h); }
+                @{ await UnreadFieldsPart(holder, gender); }
+            </div>
+        </div>
+    }
+
+    // The gender when the record holds none, and the father's, mother's or spouse's name.
+    private async Task UnreadFieldsPart(int holder, string gender)
     {
         var prefix = $"Holder{holder}";
         var genderUnread = gender.Length == 0;
-        var howMany = genderUnread ? "Two fields" : "One field";
+        var subtitle = genderUnread ? "Gender, and the father's, mother's or spouse's name" : "Father's, mother's or spouse's name";
         var whatIsMissing = genderUnread ? "Neither the record nor OCR gives a gender or a parent or spouse name" : "OCR does not read a parent or spouse name";
-        var themOrIt = genderUnread ? "them" : "it";
         var nameTypes = Model.Docs.Ref.NameTypes;
         var nameTypeSelected = Model.Value($"{prefix}.NameType", nameTypes.FirstOrDefault() ?? "");
         var genderSelected = Model.Value($"{prefix}.Gender");
 
-        <div class="investor-record">
-            <div class="investor-manual" id="h@(holder)-manual">
-                <div class="investor-section-head">
-                    <div class="investor-manual__title">@howMany could not be read for this holder</div>
-                    <span class="investor-manual__badge">Manual entry</span>
-                </div>
-                <div class="investor-manual__text">@whatIsMissing for this holder. Type @themOrIt exactly as printed &mdash; everything that was read stays read-only above.</div>
+        <div class="investor-manual__part" id="h@(holder)-manual">
+            <div class="investor-manual__subtitle">@subtitle</div>
+            <div class="investor-manual__text">@whatIsMissing for this holder.</div>
                 <div class="investor-grid">
-                    @if (genderUnread)
-                    {
-                        <div class="investor-field investor-field--sm">
-                            <label for="h@(holder)-gender">Gender</label>
-                            <select id="h@(holder)-gender" name="@(prefix).Gender" class="investor-control @InvalidControl($"{prefix}.Gender")" required data-required="Select the gender" aria-invalid="@AriaInvalid($"{prefix}.Gender")" aria-describedby="@DescribedBy($"{prefix}.Gender", $"h{holder}-gender")">
-                                <option value="">Select</option>
-                                @foreach (var option in Model.Docs.Ref.Genders)
-                                {
-                                    if (option == genderSelected)
-                                    {
-                                        <option selected>@option</option>
-                                    }
-                                    else
-                                    {
-                                        <option>@option</option>
-                                    }
-                                }
-                            </select>
-                            @{ await FieldError($"{prefix}.Gender", $"h{holder}-gender"); }
-                        </div>
-                    }
+                @if (genderUnread)
+                {
                     <div class="investor-field investor-field--sm">
-                        <label for="h@(holder)-nametype">Name type</label>
-                        <select id="h@(holder)-nametype" name="@(prefix).NameType" class="investor-control investor-control--strong @InvalidControl($"{prefix}.NameType")" required aria-describedby="@DescribedBy($"{prefix}.NameType", $"h{holder}-nametype")">
-                            @foreach (var option in nameTypes)
+                        <label for="h@(holder)-gender">Gender</label>
+                        <select id="h@(holder)-gender" name="@(prefix).Gender" class="investor-control @InvalidControl($"{prefix}.Gender")" required data-required="Select the gender" aria-invalid="@AriaInvalid($"{prefix}.Gender")" aria-describedby="@DescribedBy($"{prefix}.Gender", $"h{holder}-gender")">
+                            <option value="">Select</option>
+                            @foreach (var option in Model.Docs.Ref.Genders)
                             {
-                                if (option == nameTypeSelected)
+                                if (option == genderSelected)
                                 {
                                     <option selected>@option</option>
                                 }
@@ -460,13 +454,30 @@
                                 }
                             }
                         </select>
-                        @{ await FieldError($"{prefix}.NameType", $"h{holder}-nametype"); }
+                        @{ await FieldError($"{prefix}.Gender", $"h{holder}-gender"); }
                     </div>
-                    <div class="investor-field investor-field--sm">
-                        <label for="h@(holder)-parent">Father / Mother / Spouse name</label>
-                        <input id="h@(holder)-parent" name="@(prefix).ParentName" class="investor-control @InvalidControl($"{prefix}.ParentName")" value="@Model.Value($"{prefix}.ParentName")" required data-required="Enter the father's, mother's or spouse's name" data-check="name" aria-invalid="@AriaInvalid($"{prefix}.ParentName")" aria-describedby="@DescribedBy($"{prefix}.ParentName", $"h{holder}-parent")" />
-                        @{ await FieldError($"{prefix}.ParentName", $"h{holder}-parent"); }
-                    </div>
+                }
+                <div class="investor-field investor-field--sm">
+                    <label for="h@(holder)-nametype">Name type</label>
+                    <select id="h@(holder)-nametype" name="@(prefix).NameType" class="investor-control investor-control--strong @InvalidControl($"{prefix}.NameType")" required aria-describedby="@DescribedBy($"{prefix}.NameType", $"h{holder}-nametype")">
+                        @foreach (var option in nameTypes)
+                        {
+                            if (option == nameTypeSelected)
+                            {
+                                <option selected>@option</option>
+                            }
+                            else
+                            {
+                                <option>@option</option>
+                            }
+                        }
+                    </select>
+                    @{ await FieldError($"{prefix}.NameType", $"h{holder}-nametype"); }
+                </div>
+                <div class="investor-field investor-field--sm">
+                    <label for="h@(holder)-parent">Father / Mother / Spouse name</label>
+                    <input id="h@(holder)-parent" name="@(prefix).ParentName" class="investor-control @InvalidControl($"{prefix}.ParentName")" value="@Model.Value($"{prefix}.ParentName")" required data-required="Enter the father's, mother's or spouse's name" data-check="name" aria-invalid="@AriaInvalid($"{prefix}.ParentName")" aria-describedby="@DescribedBy($"{prefix}.ParentName", $"h{holder}-parent")" />
+                    @{ await FieldError($"{prefix}.ParentName", $"h{holder}-parent"); }
                 </div>
             </div>
         </div>
@@ -475,7 +486,7 @@
     // The communication address typed by hand, for a holder whose post goes elsewhere while
     // no proof of it is uploaded (CommProofUpload off). Three lines, the city and the PIN
     // code; the district and state come from the PIN code (investor.js, and the backend on post).
-    private async Task CommunicationAddressEntry(int holder, DocumentsViewModel.DocHolder h)
+    private async Task CommunicationAddressPart(int holder, DocumentsViewModel.DocHolder h)
     {
         if (!Model.Docs.MailTyped(h)) return;
 
@@ -506,13 +517,9 @@
             ("City", "city", "City", "Enter the city"),
         ];
 
-        <div class="investor-record">
-            <div class="investor-manual" id="@id">
-                <div class="investor-section-head">
-                    <div class="investor-manual__title">Communication address &middot; different from permanent</div>
-                    <span class="investor-manual__badge">Manual entry</span>
-                </div>
-                <div class="investor-manual__text">Post goes here, not to the permanent address above. Type it as the holder gives it; the district and state come from the PIN code.</div>
+        <div class="investor-manual__part" id="@id">
+            <div class="investor-manual__subtitle">Communication address &middot; different from permanent</div>
+            <div class="investor-manual__text">Post goes here, not to the permanent address above; the district and state come from the PIN code.</div>
                 <div class="investor-grid">
                     @foreach (var line in lines)
                     {
@@ -536,7 +543,6 @@
                         <div class="investor-key-value"><div class="investor-key-value__key">State</div><div class="investor-key-value__value" data-place="state">@stateName</div></div>
                     </div>
                 </div>
-            </div>
         </div>
     }
 
@@ -619,6 +625,18 @@
             </div>
         }
 
+        @* Name screening does not allow a holder to invest online: Proceed stops here. *@
+        @if (Model.ScreeningNotAllowed is not null)
+        {
+            <div class="alert alert-danger page-missing-items investor-unfinished" role="alert">
+                <svg class="page-missing-items__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 7v6"></path><circle cx="12" cy="16.8" r=".8" fill="currentColor"></circle></svg>
+                <div class="page-missing-items__body">
+                    <div class="page-missing-items__title">Not allowed to invest online</div>
+                    <p>@InvestorViewModel.ScreeningOffline(Model.ScreeningNotAllowed)</p>
+                </div>
+            </div>
+        }
+
         @* ===== The investor ===== *@
         <section class="page-card section-card" id="holder-1">
             @* A holder who is a tax or permanent resident of another country invests offline:
@@ -673,8 +691,7 @@
                     </div>
                 </div>
             </div>
-            @{ await CommunicationAddressEntry(1, investor); }
-            @{ await ManualEntry(1, investorGender); }
+            @{ await ManualEntries(1, investor, investorGender); }
             @{ await MoreInformation(1, lists); }
             @{ await PepQuestions(1, investor); }
         </section>

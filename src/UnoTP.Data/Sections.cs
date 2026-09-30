@@ -56,17 +56,17 @@ internal static class Sections
                 INSERT dbo.t_Unotp_Kyc_Dtls (c_App_No, n_App_Version, c_Status, c_Holder_Type, c_Pan, d_Dob, c_Name, c_Folio,
                     c_Gender, c_Name_Type, c_Parent_Name, c_Annual_Income, c_Occupation, c_Sub_Occupation, c_Marital_Status,
                     c_Mobile, c_Email, f_Fatca_Tax_Res, f_Fatca_Perm_Res, c_Pep, c_Pep_Related,
-                    c_Nsdl_Status, c_Nsdl_Name, f_Ckyc, f_Mail_Different, c_Created_By)
+                    c_Nsdl_Status, c_Nsdl_Name, f_Ckyc, f_Mail_Different, c_Screening_Status, c_Screening_Ref, d_Screened_On, c_Created_By)
                 VALUES (@AppNo, @Version, @Status, @HolderType, @Pan, @Dob, @Name, @Folio,
                     @Gender, @NameType, @ParentName, @AnnualIncome, @Occupation, @SubOccupation, @MaritalStatus,
                     @Mobile, @Email, @FatcaTaxResident, @FatcaPermanentResident, @Pep, @PepRelated,
-                    @Nsdl, @NsdlName, @Ckyc, @MailDifferent, @By)
+                    @Nsdl, @NsdlName, @Ckyc, @MailDifferent, @ScreeningStatus, @ScreeningRef, @ScreenedOn, @By)
                 """, new
             {
                 at.AppNo, at.Version, at.Status, HolderType = h.Holder, who.Pan, Dob = Dates.ParseDdMmYyyy(who.Dob), who.Name, who.Folio,
                 h.Gender, h.NameType, h.ParentName, h.AnnualIncome, h.Occupation, h.SubOccupation, h.MaritalStatus,
                 h.Mobile, h.Email, h.FatcaTaxResident, h.FatcaPermanentResident, h.Pep, h.PepRelated,
-                kyc.Nsdl, kyc.NsdlName, kyc.Ckyc, kyc.MailDifferent, at.By,
+                kyc.Nsdl, kyc.NsdlName, kyc.Ckyc, kyc.MailDifferent, kyc.ScreeningStatus, kyc.ScreeningRef, kyc.ScreenedOn, at.By,
             }, tx);
 
             if (who.Address.Length > 0)
@@ -168,14 +168,29 @@ internal static class Sections
     // ----- Holders -------------------------------------------------------------
 
     /// <summary>Where a holder's KYC stands: the NSDL result and name, whether CKYC was fetched, and whether the mailing address differs.</summary>
-    private sealed record Kyc(string Nsdl, string NsdlName, bool Ckyc, bool MailDifferent);
+    private sealed record Kyc(string Nsdl, string NsdlName, bool Ckyc, bool MailDifferent, string ScreeningStatus, string ScreeningRef, DateTime? ScreenedOn);
 
     // Where a holder's KYC stands on Upload Documents. CKYC is fetched for the investor only.
-    private static Kyc KycOf(string code, UploadState? u) =>
-        u is null ? new Kyc("", "", false, false)
-        : code == HolderType.Investor ? new Kyc(u.Nsdl, u.NsdlName, u.Ckyc, u.MailDifferent)
-        : u.Joint.GetValueOrDefault(code) is { } j ? new Kyc(j.Nsdl, j.NsdlName, false, j.MailDifferent)
-        : new Kyc("", "", false, false);
+    // Where a holder's KYC stands, off the upload step: the NSDL result and name, CKYC,
+    // the mailing address, and what name screening said of them.
+    private static Kyc KycOf(string code, UploadState? u)
+    {
+        if (u is null) return new Kyc("", "", false, false, "", "", null);
+
+        var screeningStatus = "";
+        var screeningRef = "";
+        DateTime? screenedOn = null;
+        if (u.Screening.TryGetValue(code, out var screening))
+        {
+            screeningStatus = screening.Allowed ? "allowed" : "blocked";
+            screeningRef = screening.Reference;
+            screenedOn = screening.At;
+        }
+
+        if (code == HolderType.Investor) return new Kyc(u.Nsdl, u.NsdlName, u.Ckyc, u.MailDifferent, screeningStatus, screeningRef, screenedOn);
+        if (u.Joint.GetValueOrDefault(code) is { } j) return new Kyc(j.Nsdl, j.NsdlName, false, j.MailDifferent, screeningStatus, screeningRef, screenedOn);
+        return new Kyc("", "", false, false, screeningStatus, screeningRef, screenedOn);
+    }
 
     private sealed record Document(string HolderType, string DocType, string SubType, StoredDoc Doc);
 
