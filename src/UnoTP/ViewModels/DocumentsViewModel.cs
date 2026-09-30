@@ -81,7 +81,7 @@ public class DocumentsViewModel(
 
     public string HolderFolio => HasFolio ? Who.Folio : "Opens with this application";
 
-    public string HolderPan => Mask(Who.Pan);
+    public string HolderPan => MaskPan(Who.Pan);
 
     public string HolderDob => MaskDate(Who.Dob);
 
@@ -100,6 +100,7 @@ public class DocumentsViewModel(
     {
         public bool Joint => Code != HolderType.Investor;
 
+        /// <summary>The key a document slot is stored under: the slot itself for the investor, prefixed h{n}- for a joint holder.</summary>
         public string Key(string slot) => Joint ? $"h{Code}-{slot}" : slot;
     }
 
@@ -245,14 +246,15 @@ public class DocumentsViewModel(
     {
         var read = reading.Pan.Replace(" ", "").ToUpperInvariant();
         if (read.Length == 0) return "OCR could not read the PAN number on it";
-        if (read != pan.ToUpperInvariant()) return $"The PAN on it reads as {Mask(read)}, not {Mask(pan)}";
+        if (read != pan.ToUpperInvariant()) return $"The PAN on it reads as {MaskPan(read)}, not {MaskPan(pan)}";
         if (dob.Length == 0) return null;
         if (reading.Dob.Length == 0) return "OCR could not read the date of birth on it";
         if (reading.Dob != dob) return $"The date of birth on it does not match the one entered ({MaskDate(dob)})";
         return null;
     }
 
-    public static string Mask(string pan) =>
+    /// <summary>A PAN with its middle hidden, as the pages show it.</summary>
+    public static string MaskPan(string pan) =>
         pan.Length == 10 ? pan[..5] + "••••" + pan[9..] : pan;
 
     public static string MaskDate(string dob) =>
@@ -547,8 +549,10 @@ public class DocumentsViewModel(
     // will be asked reaches for the copy UIDAI would recognise.
     private const string Run = "Once uploaded: identified, read by OCR, then ";
 
+    /// <summary>How a document slot stands for the investor: its copy, its checks and what can be done.</summary>
     public SlotView View(SlotDef def) => View(def, Investor);
 
+    /// <summary>How a document slot stands for a holder: its copy, its checks and what can be done.</summary>
     public SlotView View(SlotDef def, DocHolder h)
     {
         var s = State;
@@ -676,7 +680,7 @@ public class DocumentsViewModel(
         // and, for a holder on a folio, once an Aadhaar is filed, to say it is not asked.
         if (AadhaarFiled(h) || LinkApplies(h) && PanOnApplication(h))
             cards.Add(new ReadItem("PAN–Aadhaar link", LinkApplies(h) ? State.Reads[h.Key("pan")]
-                : NotRead("Not applicable", $"{Mask(h.Who.Pan)} · on the folio",
+                : NotRead("Not applicable", $"{MaskPan(h.Who.Pan)} · on the folio",
                     "The PAN–Aadhaar link is asked only for a holder with no folio yet."), h.Key("link")));
         if (View(PoaSlot, h).Used)
         {
@@ -753,7 +757,7 @@ public class DocumentsViewModel(
         var (state, kind) = nameOk && dobOk ? (dobNa ? "Name matches" : "Details match", "is-done")
             : bad ? ("Do not match", "is-failed")
             : ("Partly match", "is-failed");
-        State.Reads[h.Key("details")] = new ReadCard(state, $"{Cap(nameSays)} · {dobSays}.",
+        State.Reads[h.Key("details")] = new ReadCard(state, $"{Capitalize(nameSays)} · {dobSays}.",
             kind == "is-done" ? $"Read off the {named} and matched with the holder's name{(dobNa ? "" : " and date of birth")}."
                 : $"Read off the {named}. The proof is filed; Operations check the details.", kind);
         entry.Add($"Name and date of birth on the {named}: {nameSays}; {dobSays}.", kind == "is-done" ? "ok" : bad ? "bad" : "warn");
@@ -792,7 +796,7 @@ public class DocumentsViewModel(
             };
         return new ReadCard(state, name.Length > 0 ? name : "Name not read", "", kind)
         {
-            Number = $"PAN {Mask(pan)}" + (dob.Length > 0 ? $" · DOB {MaskDate(dob)}" : ""),
+            Number = $"PAN {MaskPan(pan)}" + (dob.Length > 0 ? $" · DOB {MaskDate(dob)}" : ""),
         };
     }
 
@@ -841,12 +845,12 @@ public class DocumentsViewModel(
     {
         var key = h.Key("face");
         var type = PoaTypeOf(h);
-        void Say(string state, string lines, string from, string kind) => State.Reads[key] = new ReadCard(state, lines, from, kind);
+        void FlashMessages(string state, string lines, string from, string kind) => State.Reads[key] = new ReadCard(state, lines, from, kind);
 
         if (!State.Docs.ContainsKey(h.Key("poa"))) return;
         if (!HasPhoto(type))
         {
-            Say("Not applicable", $"A {type.ToLowerInvariant()} carries no photograph.", "There is no face on the proof to compare with the PAN copy.", "is-na");
+            FlashMessages("Not applicable", $"A {type.ToLowerInvariant()} carries no photograph.", "There is no face on the proof to compare with the PAN copy.", "is-na");
             return;
         }
         // Only a PAN copy filed on this application can be sent: one the folio holds,
@@ -856,7 +860,7 @@ public class DocumentsViewModel(
         var proof = await documents.CopyAsync(AppNo, FiledUnder(PoaSlot, h), PoaSlot.Key);
         if (pan is null || proof is null)
         {
-            Say("Not compared", "No PAN copy was filed on this application to compare with.",
+            FlashMessages("Not compared", "No PAN copy was filed on this application to compare with.",
                 "The PAN copy is on the folio or was filed before this step, so Operations compare the faces.", "is-na");
             entry.Add("Face match not asked: no PAN copy on this application to compare with.", "warn");
             return;
@@ -868,24 +872,24 @@ public class DocumentsViewModel(
         }
         catch (ExternalServiceException e)
         {
-            Say("Could not answer", "The face match could not be asked.", $"{e.Message} The proof is filed; Operations compare the faces.", "is-failed");
+            FlashMessages("Could not answer", "The face match could not be asked.", $"{e.Message} The proof is filed; Operations compare the faces.", "is-failed");
             entry.Add($"Face match could not answer: {e.Message}", "warn");
             return;
         }
         var named = Printed(type);
         if (answer.Unsure is { } why)
         {
-            Say("Not sure", $"Score {answer.Score} of 100", $"{Cap(why)}. The proof is filed; Operations compare the faces.", "is-failed");
+            FlashMessages("Not sure", $"Score {answer.Score} of 100", $"{Capitalize(why)}. The proof is filed; Operations compare the faces.", "is-failed");
             entry.Add($"Face match not sure: {why}.", "warn");
         }
         else if (answer.Matched)
         {
-            Say("Faces match", $"Score {answer.Score} of 100", $"The photograph on the PAN copy and on the {named} are the same person.", "is-done");
+            FlashMessages("Faces match", $"Score {answer.Score} of 100", $"The photograph on the PAN copy and on the {named} are the same person.", "is-done");
             entry.Add($"Face match: the PAN copy and the {named} are the same person (score {answer.Score}).", "ok");
         }
         else
         {
-            Say("Faces do not match", $"Score {answer.Score} of 100", $"The photograph on the {named} is not the one on the PAN copy. The proof is filed; Operations look into it.", "is-failed");
+            FlashMessages("Faces do not match", $"Score {answer.Score} of 100", $"The photograph on the {named} is not the one on the PAN copy. The proof is filed; Operations look into it.", "is-failed");
             entry.Add($"Face match: the {named} is not the person on the PAN copy (score {answer.Score}).", "bad");
         }
     }
@@ -911,7 +915,7 @@ public class DocumentsViewModel(
     // against another name - where the name printed on the card is typed to ask again.
     private ReadItem NsdlCard(DocHolder h)
     {
-        var pan = Mask(h.Who.Pan);
+        var pan = MaskPan(h.Who.Pan);
         if (!NsdlApplies(h))
             return new("PAN – NSDL", NotRead("Not applicable", $"{pan} · on the folio", "A holder on a folio is not asked about with NSDL again."));
         var (nsdlState, nsdlName) = (NsdlOf(h), NsdlNameOf(h));
@@ -991,7 +995,7 @@ public class DocumentsViewModel(
     // it came with, and the address the folio holds.
     private static void OpenHolder(UploadState s, DocHolder h)
     {
-        var pan = Mask(h.Who.Pan);
+        var pan = MaskPan(h.Who.Pan);
         s.Reads[h.Key("pan")] = h.Who.PanFiled
             ? new ReadCard("Waiting on an Aadhaar", pan + " · link with Aadhaar not asked yet",
                 $"PAN confirmed with NSDL. {LinkWaitsShort}")
@@ -1031,7 +1035,7 @@ public class DocumentsViewModel(
         foreach (var def in HolderSlots)
         {
             var key = h.Key(def.Key);
-            Drop(key);
+            TakeOffApplication(key);
             State.Attempts.Remove(key);
             State.Reads.Remove(key);
         }
@@ -1056,7 +1060,8 @@ public class DocumentsViewModel(
     // once the save that takes them off has gone through (see SettleAsync).
     private readonly HashSet<(string Holder, string Slot)> dropped = [];
 
-    private void Drop(string key)
+    /// <summary>Takes a document off the application; a copy that was already filed is deleted from DMS once the save goes through.</summary>
+    private void TakeOffApplication(string key)
     {
         if (DmsOf(key) is { } at && State.Docs.Remove(key, out var doc) && !doc.Before) dropped.Add(at);
     }
@@ -1115,14 +1120,14 @@ public class DocumentsViewModel(
         {
             s.Ckyc = true;
             s.PoaType = "";
-            Drop("poa");
-            Drop("photo");
+            TakeOffApplication("poa");
+            TakeOffApplication("photo");
             s.Reads["poa"].Reset();
             ForgetMail(Investor);
             SetMail(Investor, false, "");
-            Say().Banner = "The addresses and the photograph will come from CKYC once the investor consents.";
+            FlashMessages().Banner = "The addresses and the photograph will come from CKYC once the investor consents.";
         }
-        return "cudRoute";
+        return "docsRoute";
     }
 
     // Proceed says what is missing where it is missing, and the page comes back
@@ -1131,7 +1136,7 @@ public class DocumentsViewModel(
     {
         Keep();
         var s = State;
-        var flash = Say();
+        var flash = FlashMessages();
         void Need(bool ok, string key, string message)
         {
             if (ok) return;
@@ -1141,27 +1146,27 @@ public class DocumentsViewModel(
 
         var mode = ModeOf(s.Sourcing);
         // A type chosen from the drop-down, when it is not set from the upload.
-        if (!AutoProofType && View(PoaSlot).Used) Need(s.PoaType.Length > 0, "cudPoaType", "Choose the proof of address");
-        if (!AutoProofType && View(MailSlot).Used) Need(s.MailPoaType.Length > 0, "cudMailType", "Choose the communication address proof");
-        if (!IsRenewal) Need(s.PayMode.Length > 0, "cudPayMode", "Choose the payment mode");
-        Need(s.Sourcing.Length > 0, "cudSourcing", "Choose the sourcing mode");
+        if (!AutoProofType && View(PoaSlot).Used) Need(s.PoaType.Length > 0, "docsPoaType", "Choose the proof of address");
+        if (!AutoProofType && View(MailSlot).Used) Need(s.MailPoaType.Length > 0, "docsMailType", "Choose the communication address proof");
+        if (!IsRenewal) Need(s.PayMode.Length > 0, "docsPayMode", "Choose the payment mode");
+        Need(s.Sourcing.Length > 0, "docsSourcing", "Choose the sourcing mode");
         if (mode is not null)
         {
-            Need(s.SourceCode.Length > 0, "cudSourceCode", $"Enter the {mode.CodeLabel.ToLowerInvariant()}");
-            if (SubRequired(mode)) Need(s.SubBroker.Length > 0, "cudSubBroker", "Enter the sub broker code");
+            Need(s.SourceCode.Length > 0, "docsSourceCode", $"Enter the {mode.CodeLabel.ToLowerInvariant()}");
+            if (SubRequired(mode)) Need(s.SubBroker.Length > 0, "docsSubBroker", "Enter the sub broker code");
         }
-        Need(s.Category.Length > 0, "cudCategory", "Choose the deposit category");
+        Need(s.Category.Length > 0, "docsCategory", "Choose the deposit category");
         if (IsEmployee(s.Category))
         {
             // A code this screen cannot put a name to is not a reason to stop:
             // the staff register is Operations' to check.
-            Need(s.EmpCode.Length > 0, "cudEmpCode", "Enter the employee code");
-            Need(s.EmpCompany.Length > 0, "cudEmpCompany", "Enter the employee company name");
-            Need(s.EmpHolder.Length > 0, "cudEmpHolder", "Choose which holder is the employee");
-            Need(s.EmpRelation.Length > 0, "cudEmpRelation", "Choose the relation with the holder");
-            Need(s.EmpProofType.Length > 0, "cudEmpProofType", "Choose the employee proof");
+            Need(s.EmpCode.Length > 0, "docsEmployeeCode", "Enter the employee code");
+            Need(s.EmpCompany.Length > 0, "docsEmployeeCompany", "Enter the employee company name");
+            Need(s.EmpHolder.Length > 0, "docsEmployeeHolder", "Choose which holder is the employee");
+            Need(s.EmpRelation.Length > 0, "docsEmployeeRelation", "Choose the relation with the holder");
+            Need(s.EmpProofType.Length > 0, "docsEmployeeProofType", "Choose the employee proof");
         }
-        if (s.AppType == Physical) Need(s.TypedFormNo.Length > 0, "cudFormNo", "Enter the physical form number");
+        if (s.AppType == Physical) Need(s.TypedFormNo.Length > 0, "docsFormNo", "Enter the physical form number");
 
         foreach (var slot in Slots.Select(View).Where(v => v.Missing))
         {
@@ -1183,7 +1188,8 @@ public class DocumentsViewModel(
         return flash.Focus;
     }
 
-    private Flash Say() => Said ??= new Flash();
+    /// <summary>The messages this post will show on the page it returns to (made on first use).</summary>
+    private Flash FlashMessages() => Said ??= new Flash();
 
     /// <summary>
     /// What Proceed on Investor Information asks of each joint holder, the same way
@@ -1192,7 +1198,7 @@ public class DocumentsViewModel(
     /// </summary>
     public string? ProceedJoint()
     {
-        var flash = Say();
+        var flash = FlashMessages();
         void Need(string key, string message, string? focus = null)
         {
             flash.Errors[key] = message;
@@ -1237,7 +1243,7 @@ public class DocumentsViewModel(
     // The proof of another address, and what it was read to say, taken off.
     private void ForgetMail(DocHolder h)
     {
-        Drop(h.Key("mail"));
+        TakeOffApplication(h.Key("mail"));
         State.Reads[h.Key("mail")] = MailCard();
     }
 
@@ -1259,7 +1265,7 @@ public class DocumentsViewModel(
         else if (typed.Length == 0 && s.AppType == Physical && Posted.FormNo is not null) s.TypedFormNo = "";
         s.FormNo = s.AppType == Physical ? s.TypedFormNo : DigitalFormNo;
         // A slot the application has no use for keeps nothing.
-        if (s.AppType != Physical) Drop("form");
+        if (s.AppType != Physical) TakeOffApplication("form");
 
         // A type chosen from the drop-down, when it is not set from the upload.
         if (!AutoProofType && Posted.PoaType is not null) s.PoaType = ProofsFor(PoaSlot.Key).Contains(Posted.PoaType) ? Posted.PoaType : "";
@@ -1279,7 +1285,7 @@ public class DocumentsViewModel(
             s.PayMode = PaymentModes.Any(m => m.Name == Posted.PayMode) ? Posted.PayMode : "";
             if (DocumentOf(s.PayMode) is null)
             {
-                Drop("payment");
+                TakeOffApplication("payment");
                 s.Reads["payment"].Reset();
             }
         }
@@ -1301,7 +1307,7 @@ public class DocumentsViewModel(
         {
             // Every other category asks none of it, and anything typed goes with the block.
             (s.EmpCode, s.EmpCompany, s.EmpHolder, s.EmpRelation, s.EmpProofType) = ("", "", "", "", "");
-            Drop("empproof");
+            TakeOffApplication("empproof");
         }
     }
 
@@ -1383,7 +1389,7 @@ public class DocumentsViewModel(
         }
         if (refuse is not null)
         {
-            Say().Errors[view.Key] = refuse;
+            FlashMessages().Errors[view.Key] = refuse;
             return;
         }
 
@@ -1522,8 +1528,8 @@ public class DocumentsViewModel(
             entry.Add($"{e.Service} could not answer: {e.Message}", "bad");
             if (e.TraceId is not null) entry.Add("Trace " + e.TraceId);
             entry.End("Not checked", "bad");
-            Say().Errors[key] = $"{e.Message} Nothing was filed, and it does not count as a refusal.";
-            Say().ErrorLog[key] = entry.Id;
+            FlashMessages().Errors[key] = $"{e.Message} Nothing was filed, and it does not count as a refusal.";
+            FlashMessages().ErrorLog[key] = entry.Id;
         }
     }
 
@@ -1555,8 +1561,8 @@ public class DocumentsViewModel(
             foreach (var (text, kind) in stages) entry.Add(text, kind);
             entry.Add($"Copy kept for analysis as {kept.Ref} until {kept.KeptUntil:dd MMM yyyy}, and deleted after.", "warn");
             entry.End("Refused", "bad");
-            Say().Errors[key] = message;
-            Say().ErrorLog[key] = entry.Id;
+            FlashMessages().Errors[key] = message;
+            FlashMessages().ErrorLog[key] = entry.Id;
         }
 
         if (!identified.Matches)
@@ -1582,7 +1588,7 @@ public class DocumentsViewModel(
         if (def.Key == "pan" && PanCopyMismatch(reading, h.Who.Pan, h.Who.Dob) is { } notTheirs)
         {
             await RefuseAsync(notTheirs, $"Upload {(h.Joint ? "this holder's" : "the investor's")} own PAN card, clear enough to read.",
-                ($"OCR read: PAN {(reading.Pan.Length > 0 ? Mask(reading.Pan) : "none")}, date of birth {(reading.Dob.Length > 0 ? MaskDate(reading.Dob) : "none")}.", ""),
+                ($"OCR read: PAN {(reading.Pan.Length > 0 ? MaskPan(reading.Pan) : "none")}, date of birth {(reading.Dob.Length > 0 ? MaskDate(reading.Dob) : "none")}.", ""),
                 ("It does not match the PAN and date of birth on the application.", "bad"));
             return;
         }
@@ -1640,7 +1646,8 @@ public class DocumentsViewModel(
         await documents.FileAsync(AppNo, under, def.Key, copy);
     }
 
-    private static string Cap(string words) => char.ToUpperInvariant(words[0]) + words[1..];
+    /// <summary>The words with the first letter in capitals.</summary>
+    private static string Capitalize(string words) => char.ToUpperInvariant(words[0]) + words[1..];
 
     // The issuer behind that proof is asked whether the address OCR read is the
     // one they hold. Only a clean answer replaces the address the application carries.
@@ -1671,12 +1678,12 @@ public class DocumentsViewModel(
         if (answer.Confirmed && answer.Expiry.Length > 0 && answer.Expiry != card.Expiry)
         {
             entry.Add(card.Expiry.Length > 0
-                ? $"{Cap(issuer)} holds it valid till {Dates.Show(answer.Expiry)}; the copy read {Dates.Show(card.Expiry)}, which is set aside."
-                : $"{Cap(issuer)} holds it valid till {Dates.Show(answer.Expiry)}; no expiry could be read off the copy.");
+                ? $"{Capitalize(issuer)} holds it valid till {Dates.Show(answer.Expiry)}; the copy read {Dates.Show(card.Expiry)}, which is set aside."
+                : $"{Capitalize(issuer)} holds it valid till {Dates.Show(answer.Expiry)}; no expiry could be read off the copy.");
             card.Expiry = answer.Expiry;
         }
         if (answer.Confirmed && answer.Standing.Length > 0 && !answer.Standing.Equals("Active", StringComparison.OrdinalIgnoreCase))
-            entry.Add($"{Cap(issuer)} holds it as {answer.Standing}.", "warn");
+            entry.Add($"{Capitalize(issuer)} holds it as {answer.Standing}.", "warn");
 
         // An Aadhaar carries the number the PAN-Aadhaar link is asked with, so a PAN
         // already on the application can be asked about now. Where OCR could not
@@ -1695,8 +1702,8 @@ public class DocumentsViewModel(
         if (answer.NotAsked is { } why)
         {
             (card.State, card.Kind) = ("With Operations", "is-failed");
-            card.From = $"{Cap(issuer)} could not be asked: {why}. The {what} is left as it stands for Operations to settle.";
-            entry.Add($"{Cap(issuer)} not asked: {why}.", "warn");
+            card.From = $"{Capitalize(issuer)} could not be asked: {why}. The {what} is left as it stands for Operations to settle.";
+            entry.Add($"{Capitalize(issuer)} not asked: {why}.", "warn");
             entry.End($"Filed, {what} unchanged", "warn");
             return ($"Read, but {issuer} could not be asked: {why}. The copy is filed and Operations settle the {what}; the application keeps the one it carries until they do.", "warn");
         }
@@ -1723,7 +1730,7 @@ public class DocumentsViewModel(
         (card.State, card.Kind) = ($"Verified with {issuer}", "is-done");
         card.From = $"Read off the {named} filed above and confirmed with {issuer}.";
         entry.Add($"{issuer} confirmed that address.", "ok");
-        entry.Add(before.Length > 0 ? $"{Cap(what)} on the application replaced. Was: " + before : $"{Cap(what)} on the application set.", "ok");
+        entry.Add(before.Length > 0 ? $"{Capitalize(what)} on the application replaced. Was: " + before : $"{Capitalize(what)} on the application set.", "ok");
         entry.End("Filed", "ok");
         return ($"Identified, read and confirmed with {issuer}. The {what} on the application now comes from this proof.", "ok");
     }
@@ -1763,7 +1770,7 @@ public class DocumentsViewModel(
     // the application: TDS runs at the higher rate until the investor links it.
     private async Task<(string, string)> ReadPanAsync(DocHolder h, OcrReading reading, LogEntry entry)
     {
-        entry.Add("OCR read: PAN " + Mask(reading.Pan.Length > 0 ? reading.Pan : h.Who.Pan));
+        entry.Add("OCR read: PAN " + MaskPan(reading.Pan.Length > 0 ? reading.Pan : h.Who.Pan));
         if (NsdlApplies(h) && NsdlOf(h) != "verified")
         {
             // Not verified: the link waits for NSDL, and the copy and its card say why.
@@ -1778,7 +1785,7 @@ public class DocumentsViewModel(
         {
             // On a folio: the link is not asked.
             entry.End("Filed", "ok");
-            return ($"Identified and read as PAN {Mask(h.Who.Pan)}.", "ok");
+            return ($"Identified and read as PAN {MaskPan(h.Who.Pan)}.", "ok");
         }
         var link = await LinkAsync(h, entry);
         entry.End(link switch
@@ -1795,7 +1802,7 @@ public class DocumentsViewModel(
     private void LinkWaitsOnNsdl(DocHolder h)
     {
         var card = State.Reads[h.Key("pan")];
-        card.Lines = Mask(h.Who.Pan) + " · link with Aadhaar not asked yet";
+        card.Lines = MaskPan(h.Who.Pan) + " · link with Aadhaar not asked yet";
         (card.State, card.Kind, card.From) = NsdlOf(h) == "failed"
             ? ("Not asked", "is-failed", "NSDL did not verify the PAN, so the link is not asked.")
             : ("Waiting on NSDL", "", $"Asked once NSDL verifies the PAN{(AadhaarOf(h).Length > 0 ? ", with the Aadhaar already read" : "")}.");
@@ -1820,7 +1827,7 @@ public class DocumentsViewModel(
     private void LinkWaitsOnNumber(DocHolder h)
     {
         var card = State.Reads[h.Key("pan")];
-        card.Lines = Mask(h.Who.Pan) + " · link with Aadhaar not asked yet";
+        card.Lines = MaskPan(h.Who.Pan) + " · link with Aadhaar not asked yet";
         (card.State, card.Kind) = ("Aadhaar number needed", "is-failed");
         card.From = "OCR could not read the whole Aadhaar number off the copy. Type it in the row under the proofs of address, and the link is asked.";
     }
@@ -1850,7 +1857,7 @@ public class DocumentsViewModel(
         var number = new string((typed ?? "").Where(char.IsAsciiDigit).ToArray());
         if (!AadhaarNumbers.IsValid(number))
         {
-            Say().Errors[key] = number.Length != 12 ? "Enter the 12-digit Aadhaar number" : "That is not a valid Aadhaar number — check it against the card";
+            FlashMessages().Errors[key] = number.Length != 12 ? "Enter the 12-digit Aadhaar number" : "That is not a valid Aadhaar number — check it against the card";
             return "row-" + key;
         }
         var entry = new LogEntry(Guid.NewGuid().ToString("n")[..8], "PAN–Aadhaar link · number typed", 1,
@@ -1917,7 +1924,7 @@ public class DocumentsViewModel(
         var name = NewApplicationViewModel.NormaliseName(typed);
         if (name.Length < 3 || !InvestorViewModel.IsName(name))
         {
-            Say().Errors[key] = name.Length < 3 ? "Enter the name as printed on the PAN" : "Enter the name as printed on the PAN: letters only";
+            FlashMessages().Errors[key] = name.Length < 3 ? "Enter the name as printed on the PAN" : "Enter the name as printed on the PAN: letters only";
             return "read-" + key;
         }
         var entry = new LogEntry(Guid.NewGuid().ToString("n")[..8], $"{PanSlot.Label} · NSDL again", 1,
@@ -1931,14 +1938,14 @@ public class DocumentsViewModel(
         {
             entry.Add($"{e.Service} could not answer: {e.Message}", "bad");
             entry.End("Not checked", "bad");
-            Say().Errors[key] = e.Message;
+            FlashMessages().Errors[key] = e.Message;
             return "read-" + key;
         }
         h = Again(h);
         if (NsdlOf(h) != "verified")
         {
             entry.End("Not verified", "warn");
-            Say().Errors[key] = $"NSDL does not hold PAN {Mask(h.Who.Pan)} against that name";
+            FlashMessages().Errors[key] = $"NSDL does not hold PAN {MaskPan(h.Who.Pan)} against that name";
             return "read-" + key;
         }
         // Verified: the link can be asked now, and the copy says what came of it.
@@ -1972,7 +1979,7 @@ public class DocumentsViewModel(
     private async Task<PanAadhaarLink?> LinkAsync(DocHolder h, LogEntry entry)
     {
         var card = State.Reads[h.Key("pan")];
-        var pan = Mask(h.Who.Pan);
+        var pan = MaskPan(h.Who.Pan);
         PanAadhaarLink link;
         try
         {
@@ -1992,12 +1999,12 @@ public class DocumentsViewModel(
                 card.Lines = pan + " · linked with Aadhaar";
                 (card.State, card.Kind) = ("Linked with Aadhaar", "is-done");
                 card.From = $"Confirmed with {PanAuthority} against the Aadhaar number on this application, read off the copy or typed.";
-                entry.Add($"{Cap(PanAuthority)} holds an Aadhaar against this PAN.", "ok");
+                entry.Add($"{Capitalize(PanAuthority)} holds an Aadhaar against this PAN.", "ok");
                 break;
             case PanAadhaarLink.NotLinked:
                 card.Lines = pan + " · not linked with Aadhaar";
                 (card.State, card.Kind) = ("Not linked", "is-failed");
-                card.From = $"{Cap(PanAuthority)} holds no Aadhaar against this PAN. The deposit can still be booked, but TDS runs at the higher rate until the investor links it.";
+                card.From = $"{Capitalize(PanAuthority)} holds no Aadhaar against this PAN. The deposit can still be booked, but TDS runs at the higher rate until the investor links it.";
                 entry.Add("No Aadhaar against this PAN.", "warn");
                 break;
             case PanAadhaarLink.NeedsAadhaar when AadhaarFiled(h):
@@ -2015,7 +2022,7 @@ public class DocumentsViewModel(
         return link;
     }
 
-    private static (string, string) PanCheck(DocHolder h, PanAadhaarLink? link) => (Mask(h.Who.Pan), link) switch
+    private static (string, string) PanCheck(DocHolder h, PanAadhaarLink? link) => (MaskPan(h.Who.Pan), link) switch
     {
         (var pan, PanAadhaarLink.Linked) => ($"Identified, read as PAN {pan} and confirmed with {PanAuthority}: an Aadhaar is held against it.", "ok"),
         (var pan, PanAadhaarLink.NotLinked) => ($"Read as PAN {pan}, but {PanAuthority} holds no Aadhaar against it. The copy is filed and the deposit can be booked — TDS runs at the higher rate until the {(h.Joint ? "holder" : "investor")} links it.", "warn"),

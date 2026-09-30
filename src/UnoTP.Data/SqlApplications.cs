@@ -61,7 +61,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
             AppNo = appNo, Partner = partner.Id, Version = version,
             UploadVer = upload is null ? (int?)null : version, PaymentVer = payment is null ? (int?)null : version,
             DepositVer = deposit is null ? (int?)null : version,
-            holder.Pan, Dob = Dates.ToDb(holder.Dob), holder.Name, holder.Folio, holder.Gender, holder.Address, holder.PanFiled,
+            holder.Pan, Dob = Dates.ParseDdMmYyyy(holder.Dob), holder.Name, holder.Folio, holder.Gender, holder.Address, holder.PanFiled,
             RecPan = holder.OnRecord?.Pan, RecPhoto = holder.OnRecord?.Photo, RecPoa = holder.OnRecord?.Poa,
             RenewDepNo = renewal?.DepositNumber, RenewAmount = renewal?.Amount,
             RenewMaturesOn = renewal?.MaturesOn.ToDateTime(TimeOnly.MinValue), RenewRate = renewal?.Rate,

@@ -14,104 +14,104 @@
     var blocked = listed.Count(r => r.Blocked);
 }
 
-<div class="csi csi--wide">
-    <aside class="csi-rail csi-rail--steps">
-        <h2 class="csi-rail__title">What needs a slip</h2>
-        <div class="csi-rail__note">
+<div class="page-layout page-layout--wide">
+    <aside class="page-rail page-rail--steps">
+        <h2 class="page-rail__title">What needs a slip</h2>
+        <div class="page-rail__note">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="13" rx="2"></rect><path d="M3.5 10h17"></path></svg>
             <div>
-                <div class="csi-rail__note-title">Money arriving on paper</div>
+                <div class="page-rail__note-title">Money arriving on paper</div>
                 <p>A cheque or DD is paid in at an Axis CMS branch with a slip. Anything paid online never reaches this list.</p>
             </div>
         </div>
-        <div class="csi-rail__note">
+        <div class="page-rail__note">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 6.5V12l3.5 2.5"></path></svg>
             <div>
-                <div class="csi-rail__note-title">Raised in the last @Model.WindowDays days</div>
+                <div class="page-rail__note-title">Raised in the last @Model.WindowDays days</div>
                 <p>An older application has cancelled itself, so its cheque can no longer be paid in against it.</p>
             </div>
         </div>
-        <div class="csi-rail__note">
+        <div class="page-rail__note">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 6.5l-11 11-5.5-5.5"></path></svg>
             <div>
-                <div class="csi-rail__note-title">Accepted, if it came in digitally</div>
+                <div class="page-rail__note-title">Accepted, if it came in digitally</div>
                 <p>A physical application arrives signed. A digital one is not signed until the investor accepts it, so its slip waits on that.</p>
             </div>
         </div>
-        <div class="csi-rail__note">
+        <div class="page-rail__note">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 2.5H14l5 5v13a1 1 0 0 1-1 1H6.5a1.5 1.5 0 0 1-1.5-1.5V4a1.5 1.5 0 0 1 1.5-1.5z"></path><path d="M14 2.5v5h5"></path><path d="M8.5 13h7M8.5 16.5h4"></path></svg>
             <div>
-                <div class="csi-rail__note-title">One slip, one application</div>
+                <div class="page-rail__note-title">One slip, one application</div>
                 <p>A slip carries a single application's money to a single branch, so it is generated from that application's own row.</p>
             </div>
         </div>
     </aside>
 
-    <div class="csi-card">
-        <div class="cii-head"><h1 class="cii-title">Pay In Slip Generation &mdash; Axis</h1></div>
-        <p class="cii-note">Every application raised in the last @Model.WindowDays days whose money is coming by cheque or DD. @pending of @listed.Count @(pending == 1 ? "is" : "are") ready for a slip@(blocked > 0 ? $", and {blocked} {(blocked == 1 ? "is" : "are")} held back for acceptance" : "").</p>
+    <div class="page-card">
+        <div class="page-head"><h1 class="page-title">Pay In Slip Generation &mdash; Axis</h1></div>
+        <p class="page-note">Every application raised in the last @Model.WindowDays days whose money is coming by cheque or DD. @pending of @listed.Count @(pending == 1 ? "is" : "are") ready for a slip@(blocked > 0 ? $", and {blocked} {(blocked == 1 ? "is" : "are")} held back for acceptance" : "").</p>
 
-        <form class="pis-form" id="pisForm" novalidate>
-            <fieldset class="csi-searchby csi-searchby--first">
-                <legend class="csi-label">Search By</legend>
-                <label class="csi-radio">
-                    <input type="radio" name="pisSearchBy" value="dates" checked>
+        <form class="payin-slip-form" id="payinSlipForm" novalidate>
+            <fieldset class="search-by search-by--first">
+                <legend class="field-label">Search By</legend>
+                <label class="radio-option">
+                    <input type="radio" name="payinSlipSearchBy" value="dates" checked>
                     <span>Application date</span>
                 </label>
-                <label class="csi-radio">
-                    <input type="radio" name="pisSearchBy" value="appno">
+                <label class="radio-option">
+                    <input type="radio" name="payinSlipSearchBy" value="appno">
                     <span>Application number</span>
                 </label>
             </fieldset>
 
-            <div class="pis-form__row pis-form__row--search">
-                <div class="csi-field" data-for="dates">
-                    <span class="csi-label" id="pisFromLabel">From Date</span>
+            <div class="payin-slip-form__row payin-slip-form__row--search">
+                <div class="form-field" data-for="dates">
+                    <span class="field-label" id="payinSlipFromLabel">From Date</span>
                     @* The three-box control the old wizard steps use. *@
-                    <div class="csi-date" data-date id="pisFrom" role="group" aria-labelledby="pisFromLabel">
-                        <input class="csi-date__part" data-dd inputmode="numeric" maxlength="2" placeholder="DD" aria-label="Day" autocomplete="off" value="@earliest.ToString("dd")">
-                        <span class="csi-date__sep">/</span>
-                        <input class="csi-date__part" data-mm inputmode="numeric" maxlength="2" placeholder="MM" aria-label="Month" autocomplete="off" value="@earliest.ToString("MM")">
-                        <span class="csi-date__sep">/</span>
-                        <input class="csi-date__part csi-date__part--year" data-yyyy inputmode="numeric" maxlength="4" placeholder="YYYY" aria-label="Year" autocomplete="off" value="@earliest.ToString("yyyy")">
+                    <div class="date-input" data-date id="payinSlipFrom" role="group" aria-labelledby="payinSlipFromLabel">
+                        <input class="date-input__part" data-dd inputmode="numeric" maxlength="2" placeholder="DD" aria-label="Day" autocomplete="off" value="@earliest.ToString("dd")">
+                        <span class="date-input__sep">/</span>
+                        <input class="date-input__part" data-mm inputmode="numeric" maxlength="2" placeholder="MM" aria-label="Month" autocomplete="off" value="@earliest.ToString("MM")">
+                        <span class="date-input__sep">/</span>
+                        <input class="date-input__part date-input__part--year" data-yyyy inputmode="numeric" maxlength="4" placeholder="YYYY" aria-label="Year" autocomplete="off" value="@earliest.ToString("yyyy")">
                     </div>
                 </div>
 
-                <div class="csi-field" data-for="dates">
-                    <span class="csi-label" id="pisToLabel">To Date</span>
-                    <div class="csi-date" data-date id="pisTo" role="group" aria-labelledby="pisToLabel">
-                        <input class="csi-date__part" data-dd inputmode="numeric" maxlength="2" placeholder="DD" aria-label="Day" autocomplete="off" value="@today.ToString("dd")">
-                        <span class="csi-date__sep">/</span>
-                        <input class="csi-date__part" data-mm inputmode="numeric" maxlength="2" placeholder="MM" aria-label="Month" autocomplete="off" value="@today.ToString("MM")">
-                        <span class="csi-date__sep">/</span>
-                        <input class="csi-date__part csi-date__part--year" data-yyyy inputmode="numeric" maxlength="4" placeholder="YYYY" aria-label="Year" autocomplete="off" value="@today.ToString("yyyy")">
+                <div class="form-field" data-for="dates">
+                    <span class="field-label" id="payinSlipToLabel">To Date</span>
+                    <div class="date-input" data-date id="payinSlipTo" role="group" aria-labelledby="payinSlipToLabel">
+                        <input class="date-input__part" data-dd inputmode="numeric" maxlength="2" placeholder="DD" aria-label="Day" autocomplete="off" value="@today.ToString("dd")">
+                        <span class="date-input__sep">/</span>
+                        <input class="date-input__part" data-mm inputmode="numeric" maxlength="2" placeholder="MM" aria-label="Month" autocomplete="off" value="@today.ToString("MM")">
+                        <span class="date-input__sep">/</span>
+                        <input class="date-input__part date-input__part--year" data-yyyy inputmode="numeric" maxlength="4" placeholder="YYYY" aria-label="Year" autocomplete="off" value="@today.ToString("yyyy")">
                     </div>
                 </div>
 
-                <div class="csi-field pis-field--appno" data-for="appno" hidden>
-                    <label class="csi-label" for="pisAppNo">Application Number</label>
-                    <input class="csi-control" id="pisAppNo" data-chars="code" maxlength="18" autocomplete="off" spellcheck="false" placeholder="e.g. FBBMFL26F10000">
+                <div class="form-field payin-slip-field--appno" data-for="appno" hidden>
+                    <label class="field-label" for="payinSlipAppNo">Application Number</label>
+                    <input class="field-input" id="payinSlipAppNo" data-chars="code" maxlength="18" autocomplete="off" spellcheck="false" placeholder="e.g. FBBMFL26F10000">
                 </div>
 
-                <div class="csi-field csi-field--check pis-field--actions">
-                    <button type="submit" class="btn btn-primary pis-btn--search">Search</button>
-                    <button type="button" class="btn btn-outline-primary" id="pisClear">Clear</button>
+                <div class="form-field form-field--check payin-slip-field--actions">
+                    <button type="submit" class="btn btn-primary payin-slip-btn--search">Search</button>
+                    <button type="button" class="btn btn-outline-primary" id="payinSlipClear">Clear</button>
                 </div>
             </div>
 
-            <p class="csi-error" id="pisError" hidden></p>
-            <p class="csi-hint" id="pisScope">Showing the last @Model.WindowDays days &mdash; @earliest.ToString("dd/MM/yyyy") to @today.ToString("dd/MM/yyyy").</p>
+            <p class="field-error" id="payinSlipError" hidden></p>
+            <p class="field-hint" id="payinSlipScope">Showing the last @Model.WindowDays days &mdash; @earliest.ToString("dd/MM/yyyy") to @today.ToString("dd/MM/yyyy").</p>
         </form>
 
         @if (blocked > 0)
         {
-            <p class="pis-flag">
+            <p class="payin-slip-flag">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>
                 <span><strong>@blocked digital @(blocked == 1 ? "application is" : "applications are") waiting on the investor's acceptance</strong> &mdash; no slip until it is in. Send the link from the row.</span>
             </p>
         }
 
-        <table class="su-table pis-table">
+        <table class="register-table payin-slip-table">
             <colgroup>
                 <col style="width:16%"><col style="width:11%"><col style="width:9%"><col style="width:12%">
                 <col style="width:11%"><col style="width:13%"><col style="width:9%"><col style="width:11%">
@@ -121,16 +121,16 @@
                 <tr>
                     <th scope="col">Application</th>
                     <th scope="col">Investor</th>
-                    <th scope="col" class="pis-table__amt">Amount</th>
+                    <th scope="col" class="payin-slip-table__amount">Amount</th>
                     <th scope="col">Instrument</th>
                     <th scope="col">Type</th>
                     <th scope="col">@Glossary.Term("CMS") branch</th>
                     <th scope="col">Applied</th>
                     <th scope="col">Slip</th>
-                    <th scope="col" class="su-table__act"><span class="visually-hidden">Action</span></th>
+                    <th scope="col" class="register-table__actions"><span class="visually-hidden">Action</span></th>
                 </tr>
             </thead>
-            <tbody id="pisRows">
+            <tbody id="payinSlipRows">
                 @* The cancelled applications are in the table but never listed: only a
                    search by number reaches them, so they can say what became of them. *@
                 @foreach (var r in listed.Concat(Model.Lapsed))
@@ -140,49 +140,49 @@
                         data-blocked="@(r.Blocked ? "yes" : "no")" hidden="@(!r.InWindow)">
                         <td data-label="Application">
                             <strong>@r.AppNo</strong>
-                            <div class="su-table__sub@(r.Urgent ? " su-table__sub--urgent" : "")">@r.Countdown</div>
+                            <div class="register-table__sub@(r.Urgent ? " register-table__sub--urgent" : "")">@r.Countdown</div>
                         </td>
                         <td data-label="Investor">@r.Investor</td>
-                        <td data-label="Amount" class="pis-table__amt">@PayInSlipsViewModel.Rupees(r.Amount)</td>
+                        <td data-label="Amount" class="payin-slip-table__amount">@PayInSlipsViewModel.Rupees(r.Amount)</td>
                         <td data-label="Instrument">
                             @r.Instrument @r.InstrumentNo
-                            <div class="su-table__sub">@r.DrawnOn</div>
+                            <div class="register-table__sub">@r.DrawnOn</div>
                         </td>
                         <td data-label="Type">
                             <span class="badge @(r.Digital ? "bg-info-subtle text-info-emphasis" : "bg-secondary-subtle text-secondary-emphasis")">@r.Tag</span>
-                            <div class="su-table__sub@(r.Blocked ? " su-table__sub--urgent" : "")">@r.TagNote</div>
+                            <div class="register-table__sub@(r.Blocked ? " register-table__sub--urgent" : "")">@r.TagNote</div>
                         </td>
                         <td data-label="CMS branch">@r.Branch</td>
                         <td data-label="Applied">@r.Applied.ToString("dd/MM/yyyy")</td>
-                        <td data-label="Slip" class="pis-table__slip">
+                        <td data-label="Slip" class="payin-slip-table__slip">
                             <span class="@Tones.Badge(r.SlipTone)" data-status>@r.SlipLabel</span>
-                            <div class="su-table__sub" data-slip-detail>@r.SlipNote</div>
+                            <div class="register-table__sub" data-slip-detail>@r.SlipNote</div>
                         </td>
-                        <td class="su-table__act">
+                        <td class="register-table__actions">
                             @if (r.Blocked)
                             {
                                 <form method="post" asp-action="SendAcceptance">
                                     <input type="hidden" name="appNo" value="@r.AppNo" />
-                                    <button type="submit" class="csi-link" data-loader="Sending the acceptance link&hellip;">Send link</button>
+                                    <button type="submit" class="link-button" data-loader="Sending the acceptance link&hellip;">Send link</button>
                                 </form>
                             }
                             else if (r.State == "pending")
                             {
                                 <form method="post" asp-action="Generate">
                                     <input type="hidden" name="appNo" value="@r.AppNo" />
-                                    <button type="submit" class="csi-link" data-loader="Generating the slip&hellip;">Generate</button>
+                                    <button type="submit" class="link-button" data-loader="Generating the slip&hellip;">Generate</button>
                                 </form>
                             }
                             else if (r.State == "generated")
                             {
                                 <form method="post" asp-action="Generate">
                                     <input type="hidden" name="appNo" value="@r.AppNo" />
-                                    <button type="submit" class="csi-link" data-loader="Reprinting the slip&hellip;">Reprint</button>
+                                    <button type="submit" class="link-button" data-loader="Reprinting the slip&hellip;">Reprint</button>
                                 </form>
                             }
                             else
                             {
-                                <span class="su-nolink">&mdash;</span>
+                                <span class="register-no-link">&mdash;</span>
                             }
                         </td>
                     </tr>
@@ -190,14 +190,14 @@
             </tbody>
         </table>
 
-        <p class="su-empty" id="pisEmpty" hidden></p>
+        <p class="register-empty" id="payinSlipEmpty" hidden></p>
 
-        <div class="su-pager">
-            <p class="su-pager__count" id="pisCount"></p>
-            <div class="su-pager__nav">
-                <button type="button" class="su-page su-page--step" id="pisPrev" aria-label="Previous page">&lsaquo;</button>
-                <div class="su-pager__pages" id="pisPages"></div>
-                <button type="button" class="su-page su-page--step" id="pisNext" aria-label="Next page">&rsaquo;</button>
+        <div class="register-pager">
+            <p class="register-pager__count" id="payinSlipCount"></p>
+            <div class="register-pager__nav">
+                <button type="button" class="register-page register-page--step" id="payinSlipPrev" aria-label="Previous page">&lsaquo;</button>
+                <div class="register-pager__pages" id="payinSlipPages"></div>
+                <button type="button" class="register-page register-page--step" id="payinSlipNext" aria-label="Next page">&rsaquo;</button>
             </div>
         </div>
     </div>

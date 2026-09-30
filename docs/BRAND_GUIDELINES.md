@@ -11,7 +11,7 @@ doc, the prototype wins — update this doc to match and note which board you ch
 
 Pages are built on **Bootstrap 5.3** (`wwwroot/lib/bootstrap`, MIT, served locally,
 never from a CDN) with **vanilla JavaScript** - Bootstrap 5 needs no jQuery, and the
-app uses none. `css/shared/theme.css` points Bootstrap's variables at the brand
+app uses none. `css/shared/bootstrap-theme.css` points Bootstrap's variables at the brand
 tokens below, so a Bootstrap button, form control, card, badge, table or list group
 comes out in the brand: Mahindra red for the main action and for what is wrong,
 Georama, ink text, 8px cards, 6px buttons and controls, 3px chips, a blue focus ring.
@@ -20,7 +20,7 @@ Page by page, a page's hand-made styles give way to Bootstrap's components and
 utilities, keeping its layout: use `.btn .btn-primary`, `.form-control`,
 `.form-select`, `.card`, `.badge`, `.table`, `.list-group`, the spacing utilities
 (`p-3`, `gap-2`, `mb-4` - Bootstrap's 4/8px steps) rather than a new rule. Name a
-class of our own with a prefix of its own (`cud-`, `cii-`, `app-`): never a
+class of our own with a prefix of its own (`doc-`, `investor-`, `app-`): never a
 Bootstrap name (`modal-dialog`, `toast`, `card` ...) for something that is not that
 Bootstrap component - `app-dialog` and `app-toast` are ours for exactly that reason.
 
@@ -101,19 +101,19 @@ Font: **Georama** (Google Fonts, weights 300–700), loaded in `_Layout.cshtml` 
 
 | Role | Size / line | Weight | Color | Example |
 |---|---|---|---|---|
-| Dashboard title | 20 / 28px | 400 | `--text` | `.classic-steps__title` |
-| Step / page title | 16 / 24px | 600 | `--ink` | `.cud-head__name`, `.cii-title` |
-| Section title | 16 / 24px | 600 (400 on the dashboard) | `--ink` | `.cud-extra__title`, `.classic-actions__title` |
-| Body, field text, controls | 14 / 20px | 400–500 | `--ink` / `--text` | `.csi-control`, `.seg-toggle__opt` |
-| Field label, rail label | 12 / 16px | 600 | `--ink` | `.csi-label`, `.form-label`, `.csi-rail__label` |
+| Dashboard title | 20 / 28px | 400 | `--text` | `.dashboard-steps__title` |
+| Step / page title | 16 / 24px | 600 | `--ink` | `.doc-head__name`, `.page-title` |
+| Section title | 16 / 24px | 600 (400 on the dashboard) | `--ink` | `.doc-section__title`, `.dashboard-actions__title` |
+| Body, field text, controls | 14 / 20px | 400–500 | `--ink` / `--text` | `.field-input`, `.choice-toggle__option` |
+| Field label, rail label | 12 / 16px | 600 | `--ink` | `.field-label`, `.form-label`, `.page-rail__label` |
 | Button | 14px | 500–600 | — | `.btn` (36px high, as tall as a field) |
-| Caption, helper, meta | 12 / 16px | 400–500 | `--muted` | `.csi-hint`, `.cud-head__step` |
-| Chip / status tag | 12 / 16px | 600 | varies | `.badge`, `.cud-held__tag` |
+| Caption, helper, meta | 12 / 16px | 400–500 | `--muted` | `.field-hint`, `.doc-head__step` |
+| Chip / status tag | 12 / 16px | 600 | varies | `.badge`, `.doc-on-file__tag` |
 
 Sizes follow the old eSarathi screens' scale (measured at 1470px): fields and
 buttons 36px, the step rail 224px with 16px icons, document boxes 136px, dashboard
 tiles 128px with 48px icons.
-| Small tool | 12 / 16px | 600 | `--red` | `.cud-tool` (26px high) |
+| Small tool | 12 / 16px | 600 | `--red` | `.doc-tool` (26px high) |
 
 Nothing is set below 12px and nothing is uppercase. Icon glyphs (the "i" of an info
 mark) are drawings, not text, and are exempt.
@@ -155,7 +155,7 @@ on hover and focus.
   mobile (`<560px`).
 - Card-to-card gap: `16px` vertical.
 - Grid gaps: `16px` (form grids, wizard body), `11px` (app tile grid), `12px 20px`
-  (kv-grid).
+  (key-value-grid).
 - Border radius: **8px** for cards/panels/dialogs/sheets, **6px** for buttons and
   icon buttons, **3px** for chips (the agency badge, a card's status tag), **9px**
   for tag pills, **999px** for a full capsule (toggles, filter pills), **50%** for
@@ -198,14 +198,14 @@ on hover and focus.
 | Data table | `.data-table` | Zebra/attention row via `.attention` class |
 | Callout | `.callout` (red) / `.callout .callout--info` (blue) | Left-border accent box |
 | Numbered holder badge | `.holder-num .holder-num--{current,done,todo,warn}` | Circular step/holder indicator |
-| Segmented toggle | `.seg-toggle .seg-toggle__opt .seg-toggle__opt--active` | e.g. Offline/Digital consent choice |
+| Segmented toggle | `.choice-toggle .choice-toggle__option .choice-toggle__option--active` | e.g. Offline/Digital consent choice |
 | Radio-style toggle | `.radio-toggle .radio-toggle__dot .radio-toggle__dot--checked` | Custom radio look |
 
 ## Verification status
 
 Confirmed against decompressed prototype boards (colors, spacing, type, components):
 Board 00, 01 (dashboard/console — desktop + mobile), Board 02, 02A, 02B, 03, 04, 05,
-06 (holder identification sub-steps, desktop). **Not yet checked**: Board 07–11
+06 (holder identification submitted-steps, desktop). **Not yet checked**: Board 07–11
 (later wizard steps — upload documents, bank details, FD configuration, review,
 submitted) and the mobile variants of Board 02–06. Before styling those pages,
 decompress their prototype exports the same way (see git history around commit

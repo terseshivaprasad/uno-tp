@@ -10,15 +10,16 @@ namespace UnoTP.Data;
 /// </summary>
 public static class DmsPaths
 {
+    /// <summary>Where a document is kept: application / holder / slot, with the file's own extension.</summary>
     public static string Of(string appNo, string holder, string slot, string fileName) =>
-        $"{Safe(appNo)}/{Safe(holder)}/{Safe(slot)}{Extension(fileName)}";
+        $"{SafePathSegment(appNo)}/{SafePathSegment(holder)}/{SafePathSegment(slot)}{Extension(fileName)}";
 
     // The uploaded file's own extension, so the copy opens as what it is.
     private static string Extension(string fileName) =>
         Path.GetExtension(fileName).ToLowerInvariant() is { Length: > 1 and <= 6 } ext && ext[1..].All(char.IsAsciiLetterOrDigit) ? ext : "";
 
     // A path segment from the request, with nothing in it that climbs out of the root.
-    public static string Safe(string segment)
+    public static string SafePathSegment(string segment)
     {
         var clean = new string(segment.Where(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_' or '.').ToArray()).Trim('.');
         return clean.Length > 0 ? clean : "_";
@@ -35,6 +36,7 @@ public sealed class FileDocuments(Db db, IPartner partner, IConfiguration config
 {
     private readonly string root = Path.GetFullPath(config["Dms:Root"] is { Length: > 0 } r ? r : Path.Combine(AppContext.BaseDirectory, "dms"));
 
+    /// <summary>What is kept beside a stored file: its original name and content type.</summary>
     private sealed record Meta(string FileName, string ContentType);
 
     // A slot holds one copy: whatever was filed there before goes first.
@@ -59,7 +61,7 @@ public sealed class FileDocuments(Db db, IPartner partner, IConfiguration config
         var reference = "REJ-" + DateTime.UtcNow.ToString("yyMMddHHmmssfff");
         var dir = Path.Combine(root, "refused", reference);
         Directory.CreateDirectory(dir);
-        await File.WriteAllBytesAsync(Path.Combine(dir, DmsPaths.Safe(file.FileName)), file.Bytes, ct);
+        await File.WriteAllBytesAsync(Path.Combine(dir, DmsPaths.SafePathSegment(file.FileName)), file.Bytes, ct);
         return new RefusedCopy(reference, DateTime.Today.AddDays(7));
     }
 
@@ -73,8 +75,8 @@ public sealed class FileDocuments(Db db, IPartner partner, IConfiguration config
     // The copy in a slot, whatever its extension.
     private IEnumerable<string> CopiesIn(string appNo, string holder, string slot)
     {
-        var dir = Path.Combine(root, DmsPaths.Safe(appNo), DmsPaths.Safe(holder));
-        var name = DmsPaths.Safe(slot);
+        var dir = Path.Combine(root, DmsPaths.SafePathSegment(appNo), DmsPaths.SafePathSegment(holder));
+        var name = DmsPaths.SafePathSegment(slot);
         return Directory.Exists(dir)
             ? Directory.EnumerateFiles(dir).Where(f => !f.EndsWith(".json", StringComparison.Ordinal)
                 && (Path.GetFileNameWithoutExtension(f) == name || Path.GetFileName(f) == name))

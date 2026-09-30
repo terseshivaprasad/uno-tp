@@ -83,7 +83,7 @@ public class DepositController(IApplicationApi applications, IDepositApi deposit
 
     /// <summary>
     /// A choice on FD Configuration, made without the page: the backend's quote for
-    /// the deposit as it stands, drawn alone (_Quote) for fd-quote.js to put in
+    /// the deposit as it stands, drawn alone (_Quote) for deposit-quote.js to put in
     /// place. It saves nothing - as on a bank's form, the step is saved by Proceed.
     /// </summary>
     [HttpPost("quote")]

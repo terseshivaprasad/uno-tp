@@ -51,7 +51,7 @@
         var message = Model.Shown?.Errors.GetValueOrDefault(key);
         if (message is not null)
         {
-            <p class="csi-error" id="@(key)Error" role="alert">@message</p>
+            <p class="field-error" id="@(key)Error" role="alert">@message</p>
         }
         await Task.CompletedTask;
     }
@@ -72,7 +72,7 @@
     {
         foreach (var (value, now) in values)
         {
-            <fieldset class="cud-choice" data-show-when="@field=@value" hidden="@(!now)" disabled="@(!now)">
+            <fieldset class="doc-choice" data-show-when="@field=@value" hidden="@(!now)" disabled="@(!now)">
                 <partial name="_DocSlot" model="@(new DocSlotBlock(slotAs(value), Url.Action("Upload")!, Alternate: !now, Head: head))" />
             </fieldset>
         }
@@ -103,61 +103,61 @@
     }
 }
 
-<div class="cud-page" data-partial-focus="@(flash?.Focus)">
+<div class="doc-page" data-partial-focus="@(flash?.Focus)">
 
 @* Once the head has scrolled off, this holds what every screenshot of this step
    needs to be worth anything: who it is for and which application it is. *@
-<div class="cud-pin" id="cudPin" hidden>
-    <div class="cud-pin__inner">
-        <span class="cud-pin__who">@Model.HolderName</span>
-        <span class="cud-pin__pan">PAN @Model.HolderPan</span>
+<div class="app-sticky-strip" id="docsPin" hidden>
+    <div class="app-sticky-strip__inner">
+        <span class="app-sticky-strip__who">@Model.HolderName</span>
+        <span class="app-sticky-strip__pan">PAN @Model.HolderPan</span>
         @if (Model.IsRenewal)
         {
-            <span class="cud-pin__pan">FDR @Model.Renewal!.DepositNumber</span>
+            <span class="app-sticky-strip__pan">FDR @Model.Renewal!.DepositNumber</span>
         }
-        <span class="cud-pin__app">
-            <span class="cud-pin__label">Application</span>
+        <span class="app-sticky-strip__app">
+            <span class="app-sticky-strip__label">Application</span>
             @Model.AppNo
-            <button type="button" class="cud-copy" data-copy="@Model.AppNo" title="Copy the application number" aria-label="Copy the application number">
+            <button type="button" class="doc-copy" data-copy="@Model.AppNo" title="Copy the application number" aria-label="Copy the application number">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="1.6"></rect><path d="M15 6.5V5.4A1.4 1.4 0 0 0 13.6 4H5.4A1.4 1.4 0 0 0 4 5.4v8.2A1.4 1.4 0 0 0 5.4 15h1.1"></path></svg>
             </button>
         </span>
     </div>
 </div>
 
-<div class="csi">
+<div class="page-layout">
     <partial name="_ClassicSteps" model="1" />
 
     @* Both cards share the column beside the rail; the page grid holds two
        columns, so a card left loose lands under the rail instead. *@
-    <div class="csi-main">
-    <form class="csi-card" id="cudForm" data-guard method="post" enctype="multipart/form-data" data-partial novalidate>
+    <div class="page-main">
+    <form class="page-card" id="docsForm" data-guard method="post" enctype="multipart/form-data" data-partial novalidate>
         @* Who the step is for is not in the form: the server knows the application from the session. *@
         @* What a change that reshapes the step posts through. Shown only without a script. *@
-        <button type="submit" class="csi-check cud-refresh" id="cudRefresh" name="refresh" value="" asp-action="Refresh">Update</button>
+        <button type="submit" class="identify-check-button doc-refresh" id="docsRefresh" name="refresh" value="" asp-action="Refresh">Update</button>
 
         @if (flash?.Banner is not null)
         {
-            <div class="alert alert-success cud-banner" role="status">
+            <div class="alert alert-success doc-banner" role="status">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M8 12.5l2.8 2.8L16.5 9.5"></path></svg>
                 <span>@flash.Banner</span>
             </div>
         }
 
-        <div class="cud-head" data-pin-head>
-            <div class="cud-head__who">
-                <p class="cud-head__step">Upload documents</p>
-                <h1 class="cud-head__name">@Model.HolderName</h1>
-                <p class="cud-head__ids">
+        <div class="doc-head" data-pin-head>
+            <div class="doc-head__who">
+                <p class="doc-head__step">Upload documents</p>
+                <h1 class="doc-head__name">@Model.HolderName</h1>
+                <p class="doc-head__ids">
                     <span><em>PAN</em>@Model.HolderPan</span>
                     <span><em>DOB</em>@Model.HolderDob</span>
                 </p>
             </div>
-            <div class="cud-head__right">
-                <dl class="cud-head__refs">
+            <div class="doc-head__right">
+                <dl class="doc-head__refs">
                     <div>
                         <dt>Folio</dt>
-                        <dd class="@(Model.HasFolio ? null : "cud-head__pending")">@Model.HolderFolio</dd>
+                        <dd class="@(Model.HasFolio ? null : "doc-head__pending")">@Model.HolderFolio</dd>
                     </div>
                     @if (Model.IsRenewal)
                     {
@@ -170,8 +170,8 @@
                     <div>
                         <dt>Application</dt>
                         @* The number every question about this application starts with. *@
-                        <dd class="cud-head__ref">@Model.AppNo
-                            <button type="button" class="cud-copy" data-copy="@Model.AppNo" title="Copy the application number" aria-label="Copy the application number">
+                        <dd class="doc-head__ref">@Model.AppNo
+                            <button type="button" class="doc-copy" data-copy="@Model.AppNo" title="Copy the application number" aria-label="Copy the application number">
                                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="1.6"></rect><path d="M15 6.5V5.4A1.4 1.4 0 0 0 13.6 4H5.4A1.4 1.4 0 0 0 4 5.4v8.2A1.4 1.4 0 0 0 5.4 15h1.1"></path></svg>
                             </button>
                         </dd>
@@ -183,15 +183,15 @@
         @* How the application arrived, and where the investor's post goes. Two ways
            each and no third, so both are the segmented toggle the new design uses
            for exactly this. *@
-        <div class="cud-apptype">
-            <div class="cud-apptype__group">
-                <span class="csi-label" id="cudAppTypeLabel">Application Type</span>
-                <div class="seg-toggle" role="radiogroup" aria-labelledby="cudAppTypeLabel">
+        <div class="doc-app-type">
+            <div class="doc-app-type__group">
+                <span class="field-label" id="docsAppTypeLabel">Application Type</span>
+                <div class="choice-toggle" role="radiogroup" aria-labelledby="docsAppTypeLabel">
                     @foreach (var t in Model.ApplicationTypes)
                     {
                         var shut = s.Ckyc && t.Code == M.Physical;
-                        <label class="seg-toggle__opt" title="@(shut ? "A CKYC application is completed online, so it cannot be filed on paper." : null)">
-                            <input class="visually-hidden" type="radio" name="appType" id="cudAppType@(t.Code)" value="@t.Code" checked="@(s.AppType == t.Code)" disabled="@shut">@t.Name
+                        <label class="choice-toggle__option" title="@(shut ? "A CKYC application is completed online, so it cannot be filed on paper." : null)">
+                            <input class="visually-hidden" type="radio" name="appType" id="docsAppType@(t.Code)" value="@t.Code" checked="@(s.AppType == t.Code)" disabled="@shut">@t.Name
                         </label>
                     }
                 </div>
@@ -203,21 +203,21 @@
                proof of address is asked for - a folio that holds the address has it
                as the mailing address too - and not once CKYC is fetched, whose
                record brings it. *@
-            <div class="cud-apptype__group">
-                <span class="csi-label" id="cudMailingLabel">Communication Address</span>
-                <div class="seg-toggle" role="radiogroup" aria-labelledby="cudMailingLabel">
+            <div class="doc-app-type__group">
+                <span class="field-label" id="docsMailingLabel">Communication Address</span>
+                <div class="choice-toggle" role="radiogroup" aria-labelledby="docsMailingLabel">
                     @foreach (var (value, label) in new[] { ("same", "Same as Permanent"), ("different", "Different from Permanent") })
                     {
                         var on = Model.MailDifferentOf(Model.Investor) == (value == "different");
                         var shut = value == "different" && !Model.MailCanDiffer(Model.Investor);
-                        <label class="seg-toggle__opt" title="@(shut ? Model.View(M.MailSlot).NotApplicable : null)">
-                            <input class="visually-hidden" type="radio" name="mailing" id="cudMailing-@value" value="@value" checked="@on" disabled="@shut" data-submit="@(mailInstant ? null : "cudRefresh")" data-confirm="@(value == "same" && !on && Model.View(M.MailSlot).Doc is not null ? M.MailDropAsk : null)">@label
+                        <label class="choice-toggle__option" title="@(shut ? Model.View(M.MailSlot).NotApplicable : null)">
+                            <input class="visually-hidden" type="radio" name="mailing" id="docsMailing-@value" value="@value" checked="@on" disabled="@shut" data-submit="@(mailInstant ? null : "docsRefresh")" data-confirm="@(value == "same" && !on && Model.View(M.MailSlot).Doc is not null ? M.MailDropAsk : null)">@label
                         </label>
                     }
                 </div>
                 @if (!Model.CommProofUpload)
                 {
-                    <span class="cud-apptype__note" data-show-when="mailing=different" hidden="@(!Model.MailDifferentOf(Model.Investor))">Typed on Investor Information</span>
+                    <span class="doc-app-type__note" data-show-when="mailing=different" hidden="@(!Model.MailDifferentOf(Model.Investor))">Typed on Investor Information</span>
                 }
             </div>
         </div>
@@ -234,33 +234,33 @@
            rather than missing; the server refuses it too. *@
         @if (!Model.HasFolio)
         {
-            <section class="cud-route @(s.Ckyc ? "is-on" : null)" id="cudRoute">
-                <div class="cud-route__text">
+            <section class="doc-kyc-route @(s.Ckyc ? "is-on" : null)" id="docsRoute">
+                <div class="doc-kyc-route__text">
                     @if (s.Ckyc)
                     {
-                        <h2 class="cud-route__title">KYC from @Glossary.Term("CERSAI")</h2>
-                        <p class="cud-route__p">The addresses and the photograph come from the record; only the PAN copy is filed below.</p>
-                        <details class="cud-more">
+                        <h2 class="doc-kyc-route__title">KYC from @Glossary.Term("CERSAI")</h2>
+                        <p class="doc-kyc-route__p">The addresses and the photograph come from the record; only the PAN copy is filed below.</p>
+                        <details class="doc-more-info">
                             <summary>How it works</summary>
-                            <p class="cud-route__p">The investor is asked for consent once the application is completed online: a link goes to their registered mobile number and email address, and they enter the OTP sent to the CERSAI-registered mobile number.</p>
-                            <p class="cud-route__p">The addresses &mdash; permanent and communication &mdash; and the photograph are CERSAI&rsquo;s to send. They are not uploaded here, and the record cannot be fetched again. Joint holders file their own documents on Investor Information.</p>
+                            <p class="doc-kyc-route__p">The investor is asked for consent once the application is completed online: a link goes to their registered mobile number and email address, and they enter the OTP sent to the CERSAI-registered mobile number.</p>
+                            <p class="doc-kyc-route__p">The addresses &mdash; permanent and communication &mdash; and the photograph are CERSAI&rsquo;s to send. They are not uploaded here, and the record cannot be fetched again. Joint holders file their own documents on Investor Information.</p>
                         </details>
                     }
                     else
                     {
-                        <h2 class="cud-route__title">Fetch the KYC from @Glossary.Term("CERSAI")</h2>
-                        <p class="cud-route__p">Take the addresses and the photograph from the investor&rsquo;s record instead of uploading them.</p>
-                        <details class="cud-more">
+                        <h2 class="doc-kyc-route__title">Fetch the KYC from @Glossary.Term("CERSAI")</h2>
+                        <p class="doc-kyc-route__p">Take the addresses and the photograph from the investor&rsquo;s record instead of uploading them.</p>
+                        <details class="doc-more-info">
                             <summary>How it works</summary>
-                            <p class="cud-route__p">If the record is fetched, the investor is asked for consent once the application is completed online: a link goes to their registered mobile number and email address, and they enter the OTP sent to the CERSAI-registered mobile number.</p>
-                            <p class="cud-route__p">The addresses &mdash; permanent and communication &mdash; and the photograph then come from CERSAI instead of being filed here, and anything uploaded for them is not used. The PAN copy is filed here either way, and the record is fetched for the investor only: joint holders file their own documents on Investor Information. Nothing changes until the record is fetched.</p>
+                            <p class="doc-kyc-route__p">If the record is fetched, the investor is asked for consent once the application is completed online: a link goes to their registered mobile number and email address, and they enter the OTP sent to the CERSAI-registered mobile number.</p>
+                            <p class="doc-kyc-route__p">The addresses &mdash; permanent and communication &mdash; and the photograph then come from CERSAI instead of being filed here, and anything uploaded for them is not used. The PAN copy is filed here either way, and the record is fetched for the investor only: joint holders file their own documents on Investor Information. Nothing changes until the record is fetched.</p>
                         </details>
                     }
                 </div>
-                <div class="cud-route__act">
+                <div class="doc-kyc-route__actions">
                     @if (s.Ckyc)
                     {
-                        <p class="cud-ckyc-on">KYC from @Glossary.Term("CKYC")</p>
+                        <p class="doc-ckyc-on">KYC from @Glossary.Term("CKYC")</p>
                     }
                     else
                     {
@@ -271,91 +271,91 @@
                            that may follow the application type is drawn only once it can. *@
                         if (panReady)
                         {
-                            <button type="button" class="btn btn-secondary btn-sm cud-ckyc-btn" popovertarget="cudCkycAsk" disabled="@physical" data-enable-when="appType=@M.Digital">
+                            <button type="button" class="btn btn-secondary btn-sm doc-ckyc-btn" popovertarget="docsCkycAsk" disabled="@physical" data-enable-when="appType=@M.Digital">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5v11"></path><path d="M7.5 10L12 14.5 16.5 10"></path><path d="M4.5 15.5v3a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5v-3"></path></svg>
                                 Fetch from CKYC
                             </button>
                         }
                         else
                         {
-                            <button type="button" class="btn btn-secondary btn-sm cud-ckyc-btn" disabled>
+                            <button type="button" class="btn btn-secondary btn-sm doc-ckyc-btn" disabled>
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5v11"></path><path d="M7.5 10L12 14.5 16.5 10"></path><path d="M4.5 15.5v3a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5v-3"></path></svg>
                                 Fetch from CKYC
                             </button>
                         }
                         @if (!panReady)
                         {
-                            <p class="cud-ckyc-ask__note">@M.CkycWaitsOnPan</p>
+                            <p class="doc-ckyc-ask__note">@M.CkycWaitsOnPan</p>
                         }
                         else
                         {
-                            <p class="cud-ckyc-ask__note" data-show-when="appType=@M.Digital" hidden="@physical">Once fetched, this cannot be undone on this application.</p>
-                            <p class="cud-ckyc-ask__note" data-show-when="appType=@M.Physical" hidden="@(!physical)">Not applicable: a physical application is signed and filed by hand, so the CERSAI record is not fetched for it.</p>
+                            <p class="doc-ckyc-ask__note" data-show-when="appType=@M.Digital" hidden="@physical">Once fetched, this cannot be undone on this application.</p>
+                            <p class="doc-ckyc-ask__note" data-show-when="appType=@M.Physical" hidden="@(!physical)">Not applicable: a physical application is signed and filed by hand, so the CERSAI record is not fetched for it.</p>
                         }
                     }
                 </div>
             </section>
 
             @* The investor's decision, not the partner's, so it is asked before it is done. *@
-            <div class="cud-sheet cud-ckyc-pop" id="cudCkycAsk" popover role="dialog" aria-modal="true" aria-labelledby="cudCkycTitle">
-                <div class="cud-ckyc__sheet">
-                    <header class="cud-ckyc__head">
-                        <span class="cud-ckyc__mark" aria-hidden="true">
+            <div class="doc-sheet doc-ckyc-pop" id="docsCkycAsk" popover role="dialog" aria-modal="true" aria-labelledby="docsCkycTitle">
+                <div class="doc-ckyc__sheet">
+                    <header class="doc-ckyc__head">
+                        <span class="doc-ckyc__mark" aria-hidden="true">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 11v6"></path><circle cx="12" cy="7.5" r=".7" fill="currentColor"></circle></svg>
                         </span>
-                        <h2 class="cud-ckyc__title" id="cudCkycTitle">Fetch the KYC record from CERSAI?</h2>
-                        <button type="button" class="cud-preview__close" popovertarget="cudCkycAsk" popovertargetaction="hide" aria-label="Close">
+                        <h2 class="doc-ckyc__title" id="docsCkycTitle">Fetch the KYC record from CERSAI?</h2>
+                        <button type="button" class="doc-preview__close" popovertarget="docsCkycAsk" popovertargetaction="hide" aria-label="Close">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19"></path></svg>
                         </button>
                     </header>
-                    <div class="cud-ckyc__body">
+                    <div class="doc-ckyc__body">
                         <p>The addresses &mdash; permanent and communication &mdash; and the photograph will come from the CERSAI record instead of being filed here, and the investor will be asked for OTP consent once the application is completed online.</p>
                         <p><strong>This cannot be undone on this application:</strong> the record cannot be fetched twice, and the application can no longer be filed as a physical one &mdash; consent is given online.</p>
                     </div>
-                    <footer class="cud-ckyc__foot">
-                        <button type="button" class="csi-link" popovertarget="cudCkycAsk" popovertargetaction="hide">Cancel</button>
+                    <footer class="doc-ckyc__foot">
+                        <button type="button" class="link-button" popovertarget="docsCkycAsk" popovertargetaction="hide">Cancel</button>
                         <button type="submit" class="btn btn-primary" asp-action="Ckyc">Proceed <span aria-hidden="true">&rarr;</span></button>
                     </footer>
                 </div>
             </div>
         }
 
-        <div class="cud-grid cud-grid--docs">
-            <div class="cud-col">
-                @{ await Choices("appType", Model.ApplicationTypes.Select(t => (t.Code, t.Code == s.AppType)), FormAs, @<span class="csi-label">Application form</span>); }
+        <div class="doc-grid doc-grid--docs">
+            <div class="doc-column">
+                @{ await Choices("appType", Model.ApplicationTypes.Select(t => (t.Code, t.Code == s.AppType)), FormAs, @<span class="field-label">Application form</span>); }
             </div>
 
             @* The PAN copy the application is filed with. It comes over already
                filed when the step before uploaded or matched one. *@
-            <div class="cud-col">
-                @{ await Slot(views["pan"], head: @<span class="csi-label">PAN @if (views["pan"].Optional) { <span class="cud-optional">(Non-mandatory)</span> }</span>); }
+            <div class="doc-column">
+                @{ await Slot(views["pan"], head: @<span class="field-label">PAN @if (views["pan"].Optional) { <span class="doc-optional">(Non-mandatory)</span> }</span>); }
             </div>
 
             @* NSDL asking for the name printed on the PAN: across the row straight
                under the PAN's box, however many boxes a row holds. *@
             @if (panReads.AsksName)
             {
-                <div class="cud-retry-row cud-retry-row--pan-second"><partial name="_NsdlRetry" model="@panReads" /></div>
+                <div class="doc-retry-row doc-retry-row--pan-second"><partial name="_NsdlRetry" model="@panReads" /></div>
             }
 
-            <div class="cud-col">
-                @{ await Slot(views["photo"], head: @<span class="csi-label">Photo</span>); }
+            <div class="doc-column">
+                @{ await Slot(views["photo"], head: @<span class="field-label">Photo</span>); }
             </div>
 
-            <div class="cud-col">
+            <div class="doc-column">
                 @* With document identification, the type is what the copy is identified
                    as once it is uploaded, shown beside the label. Without it, the type is
                    chosen first, and the box waits for it. *@
                 @if (Model.AutoProofType)
                 {
-                    await Slot(views["poa"], head: @<span class="csi-label">Proof of address <partial name="_ProofType" model="@(poaUsed ? s.PoaType : null)" /></span>);
+                    await Slot(views["poa"], head: @<span class="field-label">Proof of address <partial name="_ProofType" model="@(poaUsed ? s.PoaType : null)" /></span>);
                 }
                 else
                 {
-                <div class="cud-col__head">
-                    <label class="csi-label" for="cudPoaType">Proof of address</label>
-                    <div class="cud-select">
-                        <select class="csi-control @Invalid("cudPoaType")" id="cudPoaType" name="poaType" disabled="@(!poaUsed)" data-submit="cudRefresh" autofocus="@Focus("cudPoaType")">
+                <div class="doc-column__head">
+                    <label class="field-label" for="docsPoaType">Proof of address</label>
+                    <div class="doc-select">
+                        <select class="field-input @Invalid("docsPoaType")" id="docsPoaType" name="poaType" disabled="@(!poaUsed)" data-submit="docsRefresh" autofocus="@Focus("docsPoaType")">
                             <option value="">@(poaUsed ? "Select" : "Not Applicable")</option>
                             @foreach (var p in Model.ProofsFor(M.PoaSlot.Key))
                             {
@@ -363,7 +363,7 @@
                             }
                         </select>
                     </div>
-                    @{ await FieldError("cudPoaType"); }
+                    @{ await FieldError("docsPoaType"); }
                 </div>
                     await Slot(views["poa"]);
                 }
@@ -374,28 +374,28 @@
                Information - so the row keeps its shape. *@
             @if (!Model.CommProofUpload)
             {
-            <div class="cud-col">
-                @{ await Slot(views["mail"] with { Used = false, NotApplicable = views["mail"].NotApplicable ?? M.MailTypedWhy }, head: @<span class="csi-label">Communication address proof</span>); }
+            <div class="doc-column">
+                @{ await Slot(views["mail"] with { Used = false, NotApplicable = views["mail"].NotApplicable ?? M.MailTypedWhy }, head: @<span class="field-label">Communication address proof</span>); }
             </div>
             }
             else
             {
-            <div class="cud-col">
+            <div class="doc-column">
                 @* Identified from the upload, the type is beside the label, which heads
                    the card; chosen first, the label and its picker stand over it. *@
                 @{
                     Func<object?, IHtmlContent>? mailHead = null;
                     if (Model.AutoProofType)
                     {
-                        mailHead = @<span class="csi-label">Communication address proof <partial name="_ProofType" model="@(mailUsed ? s.MailPoaType : null)" /></span>;
+                        mailHead = @<span class="field-label">Communication address proof <partial name="_ProofType" model="@(mailUsed ? s.MailPoaType : null)" /></span>;
                     }
                 }
                 @if (!Model.AutoProofType)
                 {
-                <div class="cud-col__head">
-                    <label class="csi-label" for="cudMailType">Communication address proof</label>
-                    <div class="cud-select">
-                        <select class="csi-control @Invalid("cudMailType")" id="cudMailType" name="mailType" disabled="@(!mailUsed)" data-submit="cudRefresh" autofocus="@Focus("cudMailType")"
+                <div class="doc-column__head">
+                    <label class="field-label" for="docsMailType">Communication address proof</label>
+                    <div class="doc-select">
+                        <select class="field-input @Invalid("docsMailType")" id="docsMailType" name="mailType" disabled="@(!mailUsed)" data-submit="docsRefresh" autofocus="@Focus("docsMailType")"
                                 data-enable-when="@(mailInstant ? "mailing=different" : null)">
                             <option value="">@(mailUsed ? "Select" : "Not Applicable")</option>
                             @foreach (var p in Model.ProofsOfAddress)
@@ -404,7 +404,7 @@
                             }
                         </select>
                     </div>
-                    @{ await FieldError("cudMailType"); }
+                    @{ await FieldError("docsMailType"); }
                 </div>
                 }
                 @* Switched in place only while nothing is filed there: taking a filed
@@ -425,7 +425,7 @@
             @if (Model.AsksAadhaarNumber(Model.Investor))
             {
                 var (aadhaarField, aadhaarError) = Model.AadhaarNumberField(Model.Investor);
-                <div class="cud-retry-row cud-retry-row--end"><partial name="_AadhaarNumber" model="@(new AadhaarNumberBlock(aadhaarField, Url.Action("AadhaarNumber")!, aadhaarError))" /></div>
+                <div class="doc-retry-row doc-retry-row--end"><partial name="_AadhaarNumber" model="@(new AadhaarNumberBlock(aadhaarField, Url.Action("AadhaarNumber")!, aadhaarError))" /></div>
             }
         </div>
 
@@ -435,8 +435,8 @@
            so has no section. *@
         @if (Model.PanChecksShown(Model.Investor))
         {
-            <section class="cud-read">
-                <h2 class="cud-read__title">What the PAN was checked with</h2>
+            <section class="doc-read-result">
+                <h2 class="doc-read-result__title">What the PAN was checked with</h2>
                 <partial name="_ReadCards" model="@panReads" />
             </section>
         }
@@ -445,13 +445,13 @@
            mode, the instrument it carries and what that was read to say stand in a
            row of their own under the KYC documents. The mode's label heads it, as a
            document's label heads its box - no second "Payment" title over it. *@
-        <section class="cud-read cud-pay" id="cudPayment" aria-label="Payment">
+        <section class="doc-read-result doc-payment" id="docsPayment" aria-label="Payment">
             @* The mode above its box, and the card beside the box, level with it. *@
-            <div class="cud-pay__grid">
-                <div class="cud-pay__mode">
-                    <label class="csi-label" for="cudPayMode">Payment Mode</label>
-                    <div class="cud-select">
-                        <select class="csi-control @Invalid("cudPayMode")" id="cudPayMode" name="payMode" autofocus="@Focus("cudPayMode")" disabled="@(Model.IsRenewal)">
+            <div class="doc-payment__grid">
+                <div class="doc-payment__mode">
+                    <label class="field-label" for="docsPayMode">Payment Mode</label>
+                    <div class="doc-select">
+                        <select class="field-input @Invalid("docsPayMode")" id="docsPayMode" name="payMode" autofocus="@Focus("docsPayMode")" disabled="@(Model.IsRenewal)">
                             <option value="">@(Model.IsRenewal ? "Not applicable" : "Select")</option>
                             @foreach (var m in Model.PaymentModes)
                             {
@@ -459,30 +459,30 @@
                             }
                         </select>
                     </div>
-                    @{ await FieldError("cudPayMode"); }
+                    @{ await FieldError("docsPayMode"); }
                     @if (Model.IsRenewal)
                     {
-                        <p class="csi-hint">No payment: the maturing deposit @Model.Renewal!.DepositNumber pays for the new one.</p>
+                        <p class="field-hint">No payment: the maturing deposit @Model.Renewal!.DepositNumber pays for the new one.</p>
                     }
                 </div>
-                <div class="cud-pay__slot">@{ await Choices("payMode", new[] { "" }.Concat(Model.PaymentModes.Select(m => m.Name)).Select(m => (m, m == s.PayMode)), PaymentAs); }</div>
+                <div class="doc-payment__slot">@{ await Choices("payMode", new[] { "" }.Concat(Model.PaymentModes.Select(m => m.Name)).Select(m => (m, m == s.PayMode)), PaymentAs); }</div>
                 @* The account read off the instrument, under every mode: greyed, saying
                    why, for a mode that carries none, as the mode is chosen. *@
                 @{ var instrumentModes = string.Join("|", Model.PaymentModes.Where(m => m.Document is not null).Select(m => m.Name)); }
-                <div class="cud-pay__card" data-enable-when="payMode=@instrumentModes" aria-disabled="@(Model.View(M.PaymentSlot).Used && s.PayMode.Length > 0 ? "false" : "true")">
+                <div class="doc-payment__card" data-enable-when="payMode=@instrumentModes" aria-disabled="@(Model.View(M.PaymentSlot).Used && s.PayMode.Length > 0 ? "false" : "true")">
                     <partial name="_ReadCard" model="@(new ReadCardBlock(Model.PaymentRead()))" />
                 </div>
             </div>
         </section>
     </form>
 
-    <section class="csi-card cud-extra">
-        <h2 class="cud-extra__title">Additional Details</h2>
-        <div class="cud-grid cud-grid--details">
-            <div class="cud-col">
-                <label class="csi-label" for="cudSourcing">Sourcing Mode</label>
-                <div class="cud-select">
-                    <select class="csi-control @Invalid("cudSourcing")" id="cudSourcing" name="sourcing" form="cudForm" data-submit="cudRefresh" disabled="@(!chooses)" autofocus="@Focus("cudSourcing")">
+    <section class="page-card doc-section">
+        <h2 class="doc-section__title">Additional Details</h2>
+        <div class="doc-grid doc-grid--details">
+            <div class="doc-column">
+                <label class="field-label" for="docsSourcing">Sourcing Mode</label>
+                <div class="doc-select">
+                    <select class="field-input @Invalid("docsSourcing")" id="docsSourcing" name="sourcing" form="docsForm" data-submit="docsRefresh" disabled="@(!chooses)" autofocus="@Focus("docsSourcing")">
                         <option value="">Select</option>
                         @foreach (var m in Model.SourcingModes)
                         {
@@ -492,12 +492,12 @@
                 </div>
                 @if (!chooses)
                 {
-                    <p class="alert alert-info cud-note">
+                    <p class="alert alert-info doc-note">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 11v6"></path><circle cx="12" cy="7.5" r=".7" fill="currentColor"></circle></svg>
                         <span>Sourced as a broker under your business broker code.</span>
                     </p>
                 }
-                @{ await FieldError("cudSourcing"); }
+                @{ await FieldError("docsSourcing"); }
             </div>
 
             @* Both code fields stand under every mode: what changes is what they are
@@ -506,57 +506,57 @@
                A searched field is looked up on the backend as it is typed
                (register-search.js), and a code picked or typed posts as the field is
                left, so its name is shown at once, not with the next choice made. *@
-            <div class="cud-col">
-                <label class="csi-label" for="cudSourceCode">@(mode?.CodeLabel ?? "Broker Code")</label>
-                <input class="csi-control @Invalid("cudSourceCode")" id="cudSourceCode" name="sourceCode" data-chars="code" form="cudForm" value="@s.SourceCode" maxlength="12" autocomplete="off" spellcheck="false"
-                       disabled="@sourceShut" data-submit="cudRefresh" autofocus="@Focus("cudSourceCode")"
+            <div class="doc-column">
+                <label class="field-label" for="docsSourceCode">@(mode?.CodeLabel ?? "Broker Code")</label>
+                <input class="field-input @Invalid("docsSourceCode")" id="docsSourceCode" name="sourceCode" data-chars="code" form="docsForm" value="@s.SourceCode" maxlength="12" autocomplete="off" spellcheck="false"
+                       disabled="@sourceShut" data-submit="docsRefresh" autofocus="@Focus("docsSourceCode")"
                        data-register-search="@(sourceRegister is null ? null : registerSearch)" data-register="@sourceRegister" data-name-label="@(mode?.NameLabel ?? "Broker Name")"
-                       role="@(sourceRegister is null ? null : "combobox")" aria-autocomplete="@(sourceRegister is null ? null : "list")" aria-expanded="@(sourceRegister is null ? null : "false")" aria-controls="@(sourceRegister is null ? null : "cudSourceCodeSuggest")">
+                       role="@(sourceRegister is null ? null : "combobox")" aria-autocomplete="@(sourceRegister is null ? null : "list")" aria-expanded="@(sourceRegister is null ? null : "false")" aria-controls="@(sourceRegister is null ? null : "docsSourceCodeSuggest")">
                 @if (sourceRegister is not null)
                 {
-                    <ul class="bank-suggest" id="cudSourceCodeSuggest" role="listbox" aria-label="@(mode?.NameLabel ?? "Brokers") found" hidden></ul>
+                    <ul class="bank-suggest" id="docsSourceCodeSuggest" role="listbox" aria-label="@(mode?.NameLabel ?? "Brokers") found" hidden></ul>
                 }
                 @* The name the code stands for, always under the field: a dash until
                    there is a code, so nothing appears or moves as one is typed. *@
                 @if (sourceName is { } sn)
                 {
-                    <p class="cud-resolved @(sn.Found ? null : "cud-resolved__none")">@sn.Text</p>
+                    <p class="doc-resolved @(sn.Found ? null : "doc-resolved__none")">@sn.Text</p>
                 }
                 else
                 {
-                    <p class="cud-resolved">@(mode?.NameLabel ?? "Broker Name") &mdash; <strong class="cud-resolved__none">&mdash;</strong></p>
+                    <p class="doc-resolved">@(mode?.NameLabel ?? "Broker Name") &mdash; <strong class="doc-resolved__none">&mdash;</strong></p>
                 }
-                @{ await FieldError("cudSourceCode"); }
+                @{ await FieldError("docsSourceCode"); }
             </div>
 
-            <div class="cud-col">
-                <label class="csi-label" for="cudSubBroker">Sub Broker Code
-                    @if (!subRequired && !subShut) { <span class="cud-optional">(Non-mandatory)</span> }
+            <div class="doc-column">
+                <label class="field-label" for="docsSubBroker">Sub Broker Code
+                    @if (!subRequired && !subShut) { <span class="doc-optional">(Non-mandatory)</span> }
                 </label>
-                <input class="csi-control @Invalid("cudSubBroker")" id="cudSubBroker" name="subBroker" data-chars="code" form="cudForm" value="@s.SubBroker" maxlength="12" autocomplete="off" spellcheck="false" data-submit="cudRefresh"
-                       disabled="@subShut" autofocus="@Focus("cudSubBroker")"
+                <input class="field-input @Invalid("docsSubBroker")" id="docsSubBroker" name="subBroker" data-chars="code" form="docsForm" value="@s.SubBroker" maxlength="12" autocomplete="off" spellcheck="false" data-submit="docsRefresh"
+                       disabled="@subShut" autofocus="@Focus("docsSubBroker")"
                        data-register-search="@(subRegister is null ? null : registerSearch)" data-register="@subRegister" data-name-label="Sub Broker Name"
-                       role="@(subRegister is null ? null : "combobox")" aria-autocomplete="@(subRegister is null ? null : "list")" aria-expanded="@(subRegister is null ? null : "false")" aria-controls="@(subRegister is null ? null : "cudSubBrokerSuggest")">
+                       role="@(subRegister is null ? null : "combobox")" aria-autocomplete="@(subRegister is null ? null : "list")" aria-expanded="@(subRegister is null ? null : "false")" aria-controls="@(subRegister is null ? null : "docsSubBrokerSuggest")">
                 @if (subRegister is not null)
                 {
-                    <ul class="bank-suggest" id="cudSubBrokerSuggest" role="listbox" aria-label="Sub brokers found" hidden></ul>
+                    <ul class="bank-suggest" id="docsSubBrokerSuggest" role="listbox" aria-label="Sub brokers found" hidden></ul>
                 }
                 @if (subName is { } bn)
                 {
-                    <p class="cud-resolved @(bn.Found ? null : "cud-resolved__none")">@bn.Text</p>
+                    <p class="doc-resolved @(bn.Found ? null : "doc-resolved__none")">@bn.Text</p>
                 }
                 else
                 {
-                    <p class="cud-resolved">Sub Broker Name &mdash; <strong class="cud-resolved__none">&mdash;</strong></p>
+                    <p class="doc-resolved">Sub Broker Name &mdash; <strong class="doc-resolved__none">&mdash;</strong></p>
                 }
-                @{ await FieldError("cudSubBroker"); }
+                @{ await FieldError("docsSubBroker"); }
             </div>
 
             @* What a deposit may be booked as belongs to the mode. *@
-            <div class="cud-col">
-                <label class="csi-label" for="cudCategory">Deposit Category</label>
-                <div class="cud-select">
-                    <select class="csi-control @Invalid("cudCategory")" id="cudCategory" name="category" form="cudForm" disabled="@(!chooses || mode is null)" data-submit="cudRefresh" autofocus="@Focus("cudCategory")">
+            <div class="doc-column">
+                <label class="field-label" for="docsCategory">Deposit Category</label>
+                <div class="doc-select">
+                    <select class="field-input @Invalid("docsCategory")" id="docsCategory" name="category" form="docsForm" disabled="@(!chooses || mode is null)" data-submit="docsRefresh" autofocus="@Focus("docsCategory")">
                         <option value="">Select</option>
                         @foreach (var c in categories)
                         {
@@ -566,98 +566,98 @@
                 </div>
                 @if (!chooses)
                 {
-                    <p class="alert alert-info cud-note">
+                    <p class="alert alert-info doc-note">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 11v6"></path><circle cx="12" cy="7.5" r=".7" fill="currentColor"></circle></svg>
                         <span>@Model.SetCategoryWhy</span>
                     </p>
                 }
                 else if (categories.Count == 1)
                 {
-                    <p class="alert alert-info cud-note">
+                    <p class="alert alert-info doc-note">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 11v6"></path><circle cx="12" cy="7.5" r=".7" fill="currentColor"></circle></svg>
                         <span>An application sourced as @mode!.Name can only be booked as @Model.CategoryName(categories[0]), so it is chosen here.</span>
                     </p>
                 }
-                @{ await FieldError("cudCategory"); }
+                @{ await FieldError("docsCategory"); }
             </div>
 
             @if (employee)
             {
                 @* An employee deposit is booked against a staff record. *@
-                <div class="cud-col">
-                    <label class="csi-label" for="cudEmpCode">Employee Code</label>
-                    <input class="csi-control @Invalid("cudEmpCode")" id="cudEmpCode" name="empCode" data-chars="code" form="cudForm" value="@s.EmpCode" maxlength="10" autocomplete="off" spellcheck="false" autofocus="@Focus("cudEmpCode")"
-                           data-register-search="@registerSearch" data-register="staff" data-name-label="Employee Name" data-submit="cudRefresh"
-                           role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="cudEmpCodeSuggest">
-                    <ul class="bank-suggest" id="cudEmpCodeSuggest" role="listbox" aria-label="Staff found" hidden></ul>
-                    <p class="cud-resolved">Employee Name &mdash; <strong class="@(empName is null ? "cud-resolved__none" : null)">@(empName ?? (s.EmpCode.Length > 0 ? "not found" : "—"))</strong></p>
+                <div class="doc-column">
+                    <label class="field-label" for="docsEmployeeCode">Employee Code</label>
+                    <input class="field-input @Invalid("docsEmployeeCode")" id="docsEmployeeCode" name="empCode" data-chars="code" form="docsForm" value="@s.EmpCode" maxlength="10" autocomplete="off" spellcheck="false" autofocus="@Focus("docsEmployeeCode")"
+                           data-register-search="@registerSearch" data-register="staff" data-name-label="Employee Name" data-submit="docsRefresh"
+                           role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="docsEmployeeCodeSuggest">
+                    <ul class="bank-suggest" id="docsEmployeeCodeSuggest" role="listbox" aria-label="Staff found" hidden></ul>
+                    <p class="doc-resolved">Employee Name &mdash; <strong class="@(empName is null ? "doc-resolved__none" : null)">@(empName ?? (s.EmpCode.Length > 0 ? "not found" : "—"))</strong></p>
                     @if (s.EmpCode.Length > 0 && empName is null)
                     {
-                        <p class="alert alert-info cud-note">
+                        <p class="alert alert-info doc-note">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 11v6"></path><circle cx="12" cy="7.5" r=".7" fill="currentColor"></circle></svg>
                             <span>No name against this code here. You can still proceed &mdash; Operations check it against the staff register before the deposit is booked.</span>
                         </p>
                     }
-                    @{ await FieldError("cudEmpCode"); }
+                    @{ await FieldError("docsEmployeeCode"); }
                 </div>
 
-                <div class="cud-col">
-                    <label class="csi-label" for="cudEmpCompany">Employee Company Name</label>
-                    <input class="csi-control @Invalid("cudEmpCompany")" id="cudEmpCompany" name="empCompany" data-chars="text" form="cudForm" value="@s.EmpCompany" maxlength="60" autocomplete="off" autofocus="@Focus("cudEmpCompany")">
-                    @{ await FieldError("cudEmpCompany"); }
+                <div class="doc-column">
+                    <label class="field-label" for="docsEmployeeCompany">Employee Company Name</label>
+                    <input class="field-input @Invalid("docsEmployeeCompany")" id="docsEmployeeCompany" name="empCompany" data-chars="text" form="docsForm" value="@s.EmpCompany" maxlength="60" autocomplete="off" autofocus="@Focus("docsEmployeeCompany")">
+                    @{ await FieldError("docsEmployeeCompany"); }
                 </div>
 
-                <div class="cud-col">
-                    <label class="csi-label" for="cudEmpHolder">Employee holder</label>
-                    <div class="cud-select">
-                        <select class="csi-control @Invalid("cudEmpHolder")" id="cudEmpHolder" name="empHolder" form="cudForm" autofocus="@Focus("cudEmpHolder")">
+                <div class="doc-column">
+                    <label class="field-label" for="docsEmployeeHolder">Employee holder</label>
+                    <div class="doc-select">
+                        <select class="field-input @Invalid("docsEmployeeHolder")" id="docsEmployeeHolder" name="empHolder" form="docsForm" autofocus="@Focus("docsEmployeeHolder")">
                             <option value="">Select</option>
                             @foreach (var h in Model.EmployeeHolders) { <option value="@h" selected="@(s.EmpHolder == h)">@h</option> }
                         </select>
                     </div>
-                    @{ await FieldError("cudEmpHolder"); }
+                    @{ await FieldError("docsEmployeeHolder"); }
                 </div>
 
-                <div class="cud-col">
+                <div class="doc-column">
                     @* The primary holder is the employee themselves: the relation is Self,
                        fixed and disabled - its value posted by the field beside it, as a
                        disabled one is not. Any other holder chooses, and cannot be Self. *@
-                    <label class="csi-label" for="cudEmpRelation">Emp Relation with holder</label>
-                    <div class="cud-select">
-                        <select class="csi-control @Invalid("cudEmpRelation")" id="cudEmpRelation" name="empRelation" form="cudForm" autofocus="@Focus("cudEmpRelation")"
-                                disabled="@Model.EmployeeIsPrimary" data-fixed-by="empHolder" data-fixed-when="@Model.PrimaryHolder" data-fixed-value="@Model.SelfRelation" aria-describedby="cudEmpRelationWhy">
+                    <label class="field-label" for="docsEmployeeRelation">Emp Relation with holder</label>
+                    <div class="doc-select">
+                        <select class="field-input @Invalid("docsEmployeeRelation")" id="docsEmployeeRelation" name="empRelation" form="docsForm" autofocus="@Focus("docsEmployeeRelation")"
+                                disabled="@Model.EmployeeIsPrimary" data-fixed-by="empHolder" data-fixed-when="@Model.PrimaryHolder" data-fixed-value="@Model.SelfRelation" aria-describedby="docsEmployeeRelationWhy">
                             <option value="">Select</option>
                             @foreach (var r in Model.EmployeeRelations) { <option value="@r" selected="@(s.EmpRelation == r)" disabled="@(r == Model.SelfRelation && !Model.EmployeeIsPrimary)">@r</option> }
                         </select>
                     </div>
-                    <input type="hidden" id="cudEmpRelationFixed" name="empRelation" value="@Model.SelfRelation" form="cudForm" disabled="@(!Model.EmployeeIsPrimary)">
-                    <p class="csi-hint" id="cudEmpRelationWhy">@Model.SelfRelation when the employee is the @Model.PrimaryHolder.ToLowerInvariant(); otherwise chosen here.</p>
-                    @{ await FieldError("cudEmpRelation"); }
+                    <input type="hidden" id="docsEmployeeRelationFixed" name="empRelation" value="@Model.SelfRelation" form="docsForm" disabled="@(!Model.EmployeeIsPrimary)">
+                    <p class="field-hint" id="docsEmployeeRelationWhy">@Model.SelfRelation when the employee is the @Model.PrimaryHolder.ToLowerInvariant(); otherwise chosen here.</p>
+                    @{ await FieldError("docsEmployeeRelation"); }
                 </div>
             }
 
             @* A paper application has to carry its form number; a digital one has no
                paper, so the field stands but is filed as 0000. *@
-            <div class="cud-col">
-                <label class="csi-label" for="cudFormNo">Physical Application Form No.
-                    @if (!physical) { <span class="cud-optional">(No paper form &mdash; filed as 0000)</span> }
+            <div class="doc-column">
+                <label class="field-label" for="docsFormNo">Physical Application Form No.
+                    @if (!physical) { <span class="doc-optional">(No paper form &mdash; filed as 0000)</span> }
                 </label>
-                <input class="csi-control @Invalid("cudFormNo")" id="cudFormNo" name="formNo" data-chars="code" form="cudForm" value="@s.FormNo" maxlength="20" autocomplete="off" spellcheck="false" readonly="@(!physical)" autofocus="@Focus("cudFormNo")">
-                @{ await FieldError("cudFormNo"); }
+                <input class="field-input @Invalid("docsFormNo")" id="docsFormNo" name="formNo" data-chars="code" form="docsForm" value="@s.FormNo" maxlength="20" autocomplete="off" spellcheck="false" readonly="@(!physical)" autofocus="@Focus("docsFormNo")">
+                @{ await FieldError("docsFormNo"); }
             </div>
 
             @if (employee)
             {
-                <div class="cud-col">
-                    <label class="csi-label" for="cudEmpProofType">Employee Proof</label>
-                    <div class="cud-select">
-                        <select class="csi-control @Invalid("cudEmpProofType")" id="cudEmpProofType" name="empProofType" form="cudForm" data-submit="cudRefresh" autofocus="@Focus("cudEmpProofType")">
+                <div class="doc-column">
+                    <label class="field-label" for="docsEmployeeProofType">Employee Proof</label>
+                    <div class="doc-select">
+                        <select class="field-input @Invalid("docsEmployeeProofType")" id="docsEmployeeProofType" name="empProofType" form="docsForm" data-submit="docsRefresh" autofocus="@Focus("docsEmployeeProofType")">
                             <option value="">Select</option>
                             @foreach (var p in Model.EmployeeProofs) { <option value="@p" selected="@(s.EmpProofType == p)">@p</option> }
                         </select>
                     </div>
-                    @{ await FieldError("cudEmpProofType"); }
-                    @{ await Slot(views["empproof"], form: "cudForm"); }
+                    @{ await FieldError("docsEmployeeProofType"); }
+                    @{ await Slot(views["empproof"], form: "docsForm"); }
                 </div>
             }
         </div>
@@ -666,12 +666,12 @@
     @* Three attempts for each document in a session, counted separately. Each
        attempt is kept as the checks it went through, so a refusal is never just a
        red line that has since been cleared away. *@
-    <section class="csi-card cud-log">
-        <h2 class="cud-extra__title">Upload, @Glossary.Term("OCR") and verification history</h2>
-        <p class="cud-log__sub">Every attempt, newest first. Three refusals in a row send a document to Operations.</p>
+    <section class="page-card doc-history">
+        <h2 class="doc-section__title">Upload, @Glossary.Term("OCR") and verification history</h2>
+        <p class="doc-history__sub">Every attempt, newest first. Three refusals in a row send a document to Operations.</p>
         @if (s.Log.Count == 0)
         {
-            <p class="cud-log__none">Nothing uploaded against this application yet.</p>
+            <p class="doc-history__none">Nothing uploaded against this application yet.</p>
         }
         else
         {
@@ -681,8 +681,8 @@
     </div>
 </div>
 
-<footer class="csi-bar">
-    <div class="csi-bar__inner">
+<footer class="page-action-bar">
+    <div class="page-action-bar__inner">
         <a class="btn btn-outline-primary" asp-controller="NewApplication" asp-action="Index"
            data-loader="Going back to Investor Identification"
            data-loader-hint="Nothing filed here is lost — it is kept against this application.">Back</a>
@@ -690,17 +690,17 @@
            it - and, with more than one thing left, the whole list on a click. *@
         @if (left.Count == 0)
         {
-            <p class="csi-bar__hint">Everything is in &mdash; <strong>ready to proceed</strong></p>
+            <p class="page-action-bar__hint">Everything is in &mdash; <strong>ready to proceed</strong></p>
         }
         else if (left.Count == 1)
         {
-            <p class="csi-bar__hint">1 thing still to go &mdash; <strong>@left[0]</strong></p>
+            <p class="page-action-bar__hint">1 thing still to go &mdash; <strong>@left[0]</strong></p>
         }
         else
         {
-            <details class="csi-bar__hint csi-left">
-                <summary>@left.Count things still to go &mdash; <strong>@left[0]</strong> first<span class="csi-left__more">See all</span></summary>
-                <ol class="csi-left__list">
+            <details class="page-action-bar__hint page-remaining">
+                <summary>@left.Count things still to go &mdash; <strong>@left[0]</strong> first<span class="page-remaining__more">See all</span></summary>
+                <ol class="page-remaining__list">
                     @foreach (var need in left)
                     {
                         <li>@need</li>
@@ -708,13 +708,13 @@
                 </ol>
             </details>
         }
-        <div class="csi-bar__right">
+        <div class="page-action-bar__right">
             @if (s.SavedAt is { } saved)
             {
-                <span class="csi-bar__saved">Draft saved @saved.ToString("HH:mm")</span>
+                <span class="page-action-bar__saved">Draft saved @saved.ToString("HH:mm")</span>
             }
-            <button type="submit" class="btn btn-outline-primary" form="cudForm" asp-action="Save" data-toast="Draft saved">Save draft</button>
-            <button type="submit" class="btn btn-primary" form="cudForm" asp-action="Proceed"
+            <button type="submit" class="btn btn-outline-primary" form="docsForm" asp-action="Save" data-toast="Draft saved">Save draft</button>
+            <button type="submit" class="btn btn-primary" form="docsForm" asp-action="Proceed"
                     data-loader="Checking everything on this step&hellip;">Proceed</button>
         </div>
     </div>

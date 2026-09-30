@@ -105,6 +105,7 @@ public class DocumentsController(
     public Task<IActionResult> AadhaarNumber(UploadForm form) =>
         ChangeAsync(form, model => model.AadhaarNumberAsync(model.Investor, Request.Form["aadhaarNo"]));
 
+    /// <summary>Fetch from CKYC: the investor's KYC record is fetched from CERSAI instead of uploading proofs.</summary>
     [HttpPost("ckyc")]
     public Task<IActionResult> Ckyc(UploadForm form) => Change(form, model => model.Ckyc());
 

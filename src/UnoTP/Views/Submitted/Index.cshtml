@@ -19,16 +19,16 @@
     };
 }
 
-<div class="sub-page">
-    <div class="sub-main">
-        <div class="sub-title-row">
-            <div class="sub-tick" aria-hidden="true">
+<div class="submitted-page">
+    <div class="submitted-main">
+        <div class="submitted-title-row">
+            <div class="submitted-tick" aria-hidden="true">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"></path></svg>
             </div>
             <div>
-                <h1 class="sub-title">Application submitted</h1>
-                <div class="sub-meta">@Money.Day(sub.At) &middot; @appNo
-                    <button type="button" class="cud-copy" data-copy="@appNo" title="Copy the application number" aria-label="Copy the application number">
+                <h1 class="submitted-title">Application submitted</h1>
+                <div class="submitted-meta">@Money.Day(sub.At) &middot; @appNo
+                    <button type="button" class="doc-copy" data-copy="@appNo" title="Copy the application number" aria-label="Copy the application number">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="1.6"></rect><path d="M15 6.5V5.4A1.4 1.4 0 0 0 13.6 4H5.4A1.4 1.4 0 0 0 4 5.4v8.2A1.4 1.4 0 0 0 5.4 15h1.1"></path></svg>
                     </button>
                 </div>
@@ -37,81 +37,81 @@
 
         @if (Model.Refused is { } refused)
         {
-            <div class="alert alert-danger csi-gap" role="alert">
-                <svg class="csi-gap__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 7v6"></path><circle cx="12" cy="16.8" r=".8" fill="currentColor"></circle></svg>
-                <div class="csi-gap__body"><p>@refused</p></div>
+            <div class="alert alert-danger page-missing-items" role="alert">
+                <svg class="page-missing-items__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 7v6"></path><circle cx="12" cy="16.8" r=".8" fill="currentColor"></circle></svg>
+                <div class="page-missing-items__body"><p>@refused</p></div>
             </div>
         }
 
-        <div class="sub-pending">
-            <div class="sub-pending__head">
-                <div class="sub-pending__title">Waiting on the investor&rsquo;s payment</div>
-                <div class="sub-pending__tag">@(sub.Status == "payment-pending" ? "Payment pending" : sub.Status)</div>
+        <div class="submitted-pending">
+            <div class="submitted-pending__head">
+                <div class="submitted-pending__title">Waiting on the investor&rsquo;s payment</div>
+                <div class="submitted-pending__tag">@(sub.Status == "payment-pending" ? "Payment pending" : sub.Status)</div>
             </div>
-            <div class="sub-pending__text">The link was sent by SMS to <strong>@sub.LinkSentTo</strong>@if (sub.LinkEmailedTo.Length > 0) {<text> and by e-mail to <strong>@sub.LinkEmailedTo</strong></text>}, and expires <strong>@Money.Day(sub.LinkValidUntil)</strong>. Submitted is not booked &mdash; the deposit and its rate are held only until then.</div>
+            <div class="submitted-pending__text">The link was sent by SMS to <strong>@sub.LinkSentTo</strong>@if (sub.LinkEmailedTo.Length > 0) {<text> and by e-mail to <strong>@sub.LinkEmailedTo</strong></text>}, and expires <strong>@Money.Day(sub.LinkValidUntil)</strong>. Submitted is not booked &mdash; the deposit and its rate are held only until then.</div>
         </div>
 
-        <div class="sub-box">
-            <div class="sub-box__label">What happens next</div>
-            <ol class="sub-steps">
+        <div class="submitted-box">
+            <div class="submitted-box__label">What happens next</div>
+            <ol class="submitted-steps">
                 @for (var i = 0; i < nextSteps.Length; i++)
                 {
-                    <li class="sub-step @(i == 0 ? "sub-step--current" : "")">
-                        <span class="sub-step__num">@(i + 1)</span>
-                        <span class="sub-step__text"><strong>@nextSteps[i].Lead</strong>@nextSteps[i].Detail</span>
+                    <li class="submitted-step @(i == 0 ? "submitted-step--current" : "")">
+                        <span class="submitted-step__num">@(i + 1)</span>
+                        <span class="submitted-step__text"><strong>@nextSteps[i].Lead</strong>@nextSteps[i].Detail</span>
                     </li>
                 }
             </ol>
         </div>
 
-        <form method="post" asp-action="Resend" class="sub-actions">
-            <button type="submit" class="btn btn-primary sub-actions__primary" disabled="@(sub.ResendsLeft == 0)" data-loader="Sending the link again&hellip;">@(sub.ResendsLeft == 0 ? "Payment link resent" : "Resend payment link")</button>
-            <a class="sub-actions__link sub-actions__link--plain" asp-controller="Dashboard" asp-action="Index">Back to dashboard</a>
+        <form method="post" asp-action="Resend" class="submitted-actions">
+            <button type="submit" class="btn btn-primary submitted-actions__primary" disabled="@(sub.ResendsLeft == 0)" data-loader="Sending the link again&hellip;">@(sub.ResendsLeft == 0 ? "Payment link resent" : "Resend payment link")</button>
+            <a class="submitted-actions__link submitted-actions__link--plain" asp-controller="Dashboard" asp-action="Index">Back to dashboard</a>
         </form>
-        <div class="sub-note">@(sub.ResendsLeft == 0 ? $"No resends left. The link still expires {Money.Day(sub.LinkValidUntil)}." : $"{sub.ResendsLeft} resend{(sub.ResendsLeft == 1 ? " is" : "s are")} available.")</div>
+        <div class="submitted-note">@(sub.ResendsLeft == 0 ? $"No resends left. The link still expires {Money.Day(sub.LinkValidUntil)}." : $"{sub.ResendsLeft} resend{(sub.ResendsLeft == 1 ? " is" : "s are")} available.")</div>
     </div>
 
-    <div class="sub-side">
-        <section class="sub-card">
-            <div class="sub-card__head">
-                <div class="sub-card__title">Deposit summary</div>
+    <div class="submitted-side">
+        <section class="submitted-card">
+            <div class="submitted-card__head">
+                <div class="submitted-card__title">Deposit summary</div>
             </div>
             @if (d is not null)
             {
-                <div class="sub-kv-grid">
-                    <div><div class="sub-kv__k">Invested amount</div><div class="sub-kv__v sub-kv__v--lg">@Money.Rupees(d.Amount)</div></div>
-                    <div><div class="sub-kv__k">Rate of interest</div><div class="sub-kv__v sub-kv__v--lg sub-kv__v--green">@(q is null ? "—" : $"{q.Rate:0.00}% p.a.")</div></div>
-                    <div><div class="sub-kv__k">Tenure</div><div class="sub-kv__v">@d.TenureMonths months</div></div>
-                    <div><div class="sub-kv__k">Scheme</div><div class="sub-kv__v">@(payout?.PerYear == 0 ? "Cumulative" : "Non-cumulative") &middot; @Model.Docs.CategoryName(Model.Docs.State.Category)</div></div>
-                    <div><div class="sub-kv__k">Interest payout</div><div class="sub-kv__v">@(payout?.Name ?? d.Payout)</div></div>
-                    <div><div class="sub-kv__k">Maturity value</div><div class="sub-kv__v">@(q is null ? "—" : Money.Rupees(q.MaturityAmount))</div></div>
-                    <div><div class="sub-kv__k">Auto renewal</div><div class="sub-kv__v">@(d.AutoRenewal ? $"On · {Model.Option(Model.Ref.RenewInstructions, d.RenewInstruction)}" : "Off")</div></div>
-                    <div><div class="sub-kv__k">TDS</div><div class="sub-kv__v">@(d.NoTds ? "Not deducted" : "Deducted")</div></div>
-                    <div><div class="sub-kv__k">Delivery</div><div class="sub-kv__v">@Model.Option(Model.Ref.DeliveryTypes, d.DeliveryType)</div></div>
+                <div class="submitted-key-value-grid">
+                    <div><div class="submitted-key-value__key">Invested amount</div><div class="submitted-key-value__value submitted-key-value__value--lg">@Money.Rupees(d.Amount)</div></div>
+                    <div><div class="submitted-key-value__key">Rate of interest</div><div class="submitted-key-value__value submitted-key-value__value--lg submitted-key-value__value--green">@(q is null ? "—" : $"{q.Rate:0.00}% p.a.")</div></div>
+                    <div><div class="submitted-key-value__key">Tenure</div><div class="submitted-key-value__value">@d.TenureMonths months</div></div>
+                    <div><div class="submitted-key-value__key">Scheme</div><div class="submitted-key-value__value">@(payout?.PerYear == 0 ? "Cumulative" : "Non-cumulative") &middot; @Model.Docs.CategoryName(Model.Docs.State.Category)</div></div>
+                    <div><div class="submitted-key-value__key">Interest payout</div><div class="submitted-key-value__value">@(payout?.Name ?? d.Payout)</div></div>
+                    <div><div class="submitted-key-value__key">Maturity value</div><div class="submitted-key-value__value">@(q is null ? "—" : Money.Rupees(q.MaturityAmount))</div></div>
+                    <div><div class="submitted-key-value__key">Auto renewal</div><div class="submitted-key-value__value">@(d.AutoRenewal ? $"On · {Model.Option(Model.Ref.RenewInstructions, d.RenewInstruction)}" : "Off")</div></div>
+                    <div><div class="submitted-key-value__key">TDS</div><div class="submitted-key-value__value">@(d.NoTds ? "Not deducted" : "Deducted")</div></div>
+                    <div><div class="submitted-key-value__key">Delivery</div><div class="submitted-key-value__value">@Model.Option(Model.Ref.DeliveryTypes, d.DeliveryType)</div></div>
                 </div>
             }
-            <div class="sub-holders">
-                <div class="sub-holders__label">Holders</div>
-                <div class="sub-holders__names">
+            <div class="submitted-holders">
+                <div class="submitted-holders__label">Holders</div>
+                <div class="submitted-holders__names">
                     @for (var i = 0; i < Model.Holders.Count; i++)
                     {
                         var h = Model.Holders[i];
-                        @(i > 0 ? " · " : "")@h.Holder.Who.Name @if (!h.Holder.Joint) { <span class="sub-holders__role">primary</span> }
+                        @(i > 0 ? " · " : "")@h.Holder.Who.Name @if (!h.Holder.Joint) { <span class="submitted-holders__role">primary</span> }
                     }
                 </div>
             </div>
         </section>
 
-        <section class="sub-card sub-card--padded">
-            <div class="sub-card__title">Start another</div>
-            <div class="sub-tiles">
-                <a class="sub-tile" asp-controller="NewApplication" asp-action="Index">
-                    <span class="sub-tile__title">New application</span>
-                    <span class="sub-tile__text">A different investor, from the search step.</span>
+        <section class="submitted-card submitted-card--padded">
+            <div class="submitted-card__title">Start another</div>
+            <div class="submitted-tiles">
+                <a class="submitted-tile" asp-controller="NewApplication" asp-action="Index">
+                    <span class="submitted-tile__title">New application</span>
+                    <span class="submitted-tile__text">A different investor, from the search step.</span>
                 </a>
-                <a class="sub-tile" asp-controller="Applications" asp-action="Index">
-                    <span class="sub-tile__title">Track this application</span>
-                    <span class="sub-tile__text">Find it among the partner&rsquo;s applications.</span>
+                <a class="submitted-tile" asp-controller="Applications" asp-action="Index">
+                    <span class="submitted-tile__title">Track this application</span>
+                    <span class="submitted-tile__text">Find it among the partner&rsquo;s applications.</span>
                 </a>
             </div>
         </section>

@@ -34,7 +34,8 @@ internal static class Dates
 {
     private const string Format = "dd-MM-yyyy";
 
-    public static DateTime? ToDb(string? value) =>
+    /// <summary>A dd-MM-yyyy date as the database stores it, or null when it is not one.</summary>
+    public static DateTime? ParseDdMmYyyy(string? value) =>
         DateTime.TryParseExact((value ?? "").Trim(), Format, CultureInfo.InvariantCulture, DateTimeStyles.None, out var date)
             ? date
             : null;

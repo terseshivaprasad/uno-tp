@@ -31,7 +31,7 @@ public class AdminController(FeatureSet features, ConsoleState console, IConsole
     {
         var known = (await console.BoardAsync()).Tiles.Select(f => f.Key).ToHashSet();
         var picked = (features ?? []).Where(known.Contains).Distinct().ToList();
-        if (picked.Count == 0 || When(from) is not { } start || When(to) is not { } end || end <= start || start < DateTime.Now.AddMinutes(-1))
+        if (picked.Count == 0 || ParseLocalDateTime(from) is not { } start || ParseLocalDateTime(to) is not { } end || end <= start || start < DateTime.Now.AddMinutes(-1))
         {
             TempData["toast"] = "The window was not set: pick a tile, and a From in the future before the To.";
             return RedirectToAction(nameof(Index));
@@ -49,7 +49,7 @@ public class AdminController(FeatureSet features, ConsoleState console, IConsole
     public async Task<IActionResult> AddNotice(string? kind, string? at, string? title, string? detail)
     {
         var head = (title ?? "").Trim();
-        if (When(at) is not { } moment || moment < DateTime.Now.AddMinutes(-1) || head.Length == 0 || string.IsNullOrWhiteSpace(kind))
+        if (ParseLocalDateTime(at) is not { } moment || moment < DateTime.Now.AddMinutes(-1) || head.Length == 0 || string.IsNullOrWhiteSpace(kind))
         {
             TempData["toast"] = "The notice was not published: give it a heading and a moment still to come.";
             return RedirectToAction(nameof(Index));
@@ -80,6 +80,6 @@ public class AdminController(FeatureSet features, ConsoleState console, IConsole
     }
 
     // A moment as the page posts it: yyyy-MM-ddTHH:mm, local time.
-    private static DateTime? When(string? value) =>
+    private static DateTime? ParseLocalDateTime(string? value) =>
         DateTime.TryParseExact(value, "yyyy-MM-dd'T'HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out var at) ? at : null;
 }

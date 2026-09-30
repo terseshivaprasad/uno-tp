@@ -1,72 +1,287 @@
-/* The deposit page only. Loaded after base.css and components/wizard.css. */
+/* The deposit page only. Loaded after layout-and-controls.css and shared/journey-steps.css. */
 
-.fd-amount__currency { flex: none; }
-.fd-amount__input {
-  flex: 1; min-width: 0; height: 100%; border: 0; outline: none; background: transparent; padding: 0;
-  font: inherit; color: inherit; letter-spacing: inherit;
+.deposit-amount__currency {
+  flex: none;
+}
+.deposit-amount__input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  outline: none;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
 }
 /* The Form 15G/15H box on FD Configuration, under the switch that asks for it. */
-.fd-tds-form { margin: 16px 0 0; padding: 0; border: 0; }
-.fd-tds-form[hidden] { display: none; }
+.deposit-tds-form {
+  margin: 16px 0 0;
+  padding: 0;
+  border: 0;
+}
+.deposit-tds-form[hidden] {
+  display: none;
+}
 /* ----- FD Configuration ----------------------------------------------------
    The page's own design - the large amount field, the tenure and payout chips,
    the switches with their titles, and the quote card beside them - restored
    from 631033f after the style clean-up (a2433f9) took it with the old markup. */
-.fd-layout { display: grid; grid-template-columns: minmax(0,1.55fr) minmax(300px,.85fr); gap: 24px; align-items: start; }
-.fd-main { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
-.fd-group { display: flex; flex-direction: column; gap: 8px; }
-.fd-label { font-size: 12px; font-weight: 500; line-height: 22px; color: var(--ink); flex: 1; min-width: 0; }
-.fd-aside { font-size: 12px; color: var(--muted); }
-.fd-hint { font-size: 12px; color: var(--muted); line-height: 16px; margin-top: -1px; }
-.fd-hint--error { color: var(--red-dark); }
-.fd-options { display: grid; gap: 8px; }
-.fd-options--tenure { grid-template-columns: repeat(8, minmax(0,1fr)); }
-.fd-options--payout { grid-template-columns: repeat(5, minmax(0,1fr)); }
-.fd-option { display: block; min-width: 0; cursor: pointer; }
-.fd-option input { position: absolute; opacity: 0; pointer-events: none; }
-.fd-option__face { display: block; padding: 12px 8px; border-radius: 6px; border: 1px solid var(--border-3); background: #fff; color: var(--text); font-size: 14px; font-weight: 500; text-align: center; white-space: nowrap; }
-.fd-option:hover .fd-option__face { border-color: var(--text); }
-.fd-option input:checked + .fd-option__face { border-color: var(--red); background: var(--pink-bg); color: var(--red-dark); font-weight: 700; }
-.fd-option input:focus-visible + .fd-option__face { outline: 2px solid var(--ink); outline-offset: 2px; }
-.fd-section { border-top: 1px solid var(--divider); padding-top: 20px; display: flex; flex-direction: column; gap: 16px; }
-.fd-section--tight { gap: 12px; }
-.fd-toggle { display: flex; align-items: center; gap: 20px; cursor: pointer; }
-.fd-toggle__text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.fd-toggle__title { font-size: 14px; font-weight: 500; color: var(--ink); }
-.fd-toggle__desc { font-size: 12px; color: var(--muted); padding-top: 3px; line-height: 16px; }
-.fd-grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 20px; }
-.fd-grid-2[hidden] { display: none; }
-.fd-note { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 0; }
-.fd-note[hidden] { display: none; }
-.fd-note__text { flex: 1; min-width: 0; }
-.fd-note__text strong { font-weight: 700; }
-.fd-note__text a { color: var(--blue); font-weight: 600; }
-.fd-note__action { flex: none; font-size: 12px; font-weight: 600; color: var(--red); }
-.fd-summary { background: var(--tint); border-radius: 8px; padding: 20px; position: sticky; top: 16px; display: flex; flex-direction: column; gap: 20px; }
-.fd-summary__label { font-size: 12px; font-weight: 600; color: var(--muted); }
-.fd-summary__amount { font-size: 28px; font-weight: 600; padding-top: 3px; color: var(--ink); letter-spacing: -.3px; }
-.fd-summary__grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 16px; }
-.fd-summary__block { border-top: 1px solid var(--border); padding-top: 16px; display: flex; flex-direction: column; gap: 16px; }
-.fd-summary__block > [hidden] { display: none; }
-.fd-summary__note { border-top: 1px solid var(--border); padding-top: 16px; font-size: 12px; color: var(--muted); line-height: 16px; }
-.fd-kv__k { font-size: 12px; font-weight: 500; color: var(--muted); }
-.fd-kv__v { font-size: 16px; font-weight: 600; padding-top: 4px; color: var(--ink); line-height: 24px; }
-.fd-kv__v--rate { color: var(--green); }
+.deposit-layout {
+  display: grid;
+  grid-template-columns: minmax(0,1.55fr) minmax(300px,.85fr);
+  gap: 24px;
+  align-items: start;
+}
+.deposit-main {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+.deposit-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.deposit-label {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 22px;
+  color: var(--ink);
+  flex: 1;
+  min-width: 0;
+}
+.deposit-aside {
+  font-size: 12px;
+  color: var(--muted);
+}
+.deposit-hint {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 16px;
+  margin-top: -1px;
+}
+.deposit-hint--error {
+  color: var(--red-dark);
+}
+.deposit-options {
+  display: grid;
+  gap: 8px;
+}
+.deposit-options--tenure {
+  grid-template-columns: repeat(8, minmax(0,1fr));
+}
+.deposit-options--payout {
+  grid-template-columns: repeat(5, minmax(0,1fr));
+}
+.deposit-option {
+  display: block;
+  min-width: 0;
+  cursor: pointer;
+}
+.deposit-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.deposit-option__face {
+  display: block;
+  padding: 12px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border-3);
+  background: #fff;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+  white-space: nowrap;
+}
+.deposit-option:hover .deposit-option__face {
+  border-color: var(--text);
+}
+.deposit-option input:checked + .deposit-option__face {
+  border-color: var(--red);
+  background: var(--pink-bg);
+  color: var(--red-dark);
+  font-weight: 700;
+}
+.deposit-option input:focus-visible + .deposit-option__face {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.deposit-section {
+  border-top: 1px solid var(--divider);
+  padding-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.deposit-section--tight {
+  gap: 12px;
+}
+.deposit-toggle {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  cursor: pointer;
+}
+.deposit-toggle__text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.deposit-toggle__title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.deposit-toggle__desc {
+  font-size: 12px;
+  color: var(--muted);
+  padding-top: 3px;
+  line-height: 16px;
+}
+.deposit-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap: 20px;
+}
+.deposit-grid-2[hidden] {
+  display: none;
+}
+.deposit-note {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 0;
+}
+.deposit-note[hidden] {
+  display: none;
+}
+.deposit-note__text {
+  flex: 1;
+  min-width: 0;
+}
+.deposit-note__text strong {
+  font-weight: 700;
+}
+.deposit-note__text a {
+  color: var(--blue);
+  font-weight: 600;
+}
+.deposit-note__action {
+  flex: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--red);
+}
+.deposit-summary {
+  background: var(--tint);
+  border-radius: 8px;
+  padding: 20px;
+  position: sticky;
+  top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.deposit-summary__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.deposit-summary__amount {
+  font-size: 28px;
+  font-weight: 600;
+  padding-top: 3px;
+  color: var(--ink);
+  letter-spacing: -.3px;
+}
+.deposit-summary__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap: 16px;
+}
+.deposit-summary__block {
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.deposit-summary__block > [hidden] {
+  display: none;
+}
+.deposit-summary__note {
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 16px;
+}
+.deposit-key-value__key {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+.deposit-key-value__value {
+  font-size: 16px;
+  font-weight: 600;
+  padding-top: 4px;
+  color: var(--ink);
+  line-height: 24px;
+}
+.deposit-key-value__value--rate {
+  color: var(--green);
+}
 /* Under the card's head, as the fields on the steps before it sit. */
-.cii-card .fd-layout { margin-top: 20px; }
+.section-card .deposit-layout {
+  margin-top: 20px;
+}
 @media (max-width: 560px) {
   /* A note beside a label goes under it, where there is no room beside it. */
-  .fd-group .inv-section-head { flex-wrap: wrap; row-gap: 2px; }
-  .fd-group .inv-section-head .fd-aside { flex-basis: 100%; }
-  .fd-options { gap: 8px; }
-  .fd-options--payout { grid-template-columns: repeat(2, minmax(0,1fr)); }
-  .fd-grid-2 { grid-template-columns: 1fr; }
-  .fd-note { flex-direction: column; align-items: flex-start; gap: 6px; }
-  .fd-summary { padding: 16px; gap: 16px; }
-  .fd-summary__amount { font-size: 20px; }
+  .deposit-group .investor-section-head {
+    flex-wrap: wrap;
+    row-gap: 2px;
+  }
+  .deposit-group .investor-section-head .deposit-aside {
+    flex-basis: 100%;
+  }
+  .deposit-options {
+    gap: 8px;
+  }
+  .deposit-options--payout {
+    grid-template-columns: repeat(2, minmax(0,1fr));
+  }
+  .deposit-grid-2 {
+    grid-template-columns: 1fr;
+  }
+  .deposit-note {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  .deposit-summary {
+    padding: 16px;
+    gap: 16px;
+  }
+  .deposit-summary__amount {
+    font-size: 20px;
+  }
 }
 @media (max-width: 900px) {
-  .fd-layout { grid-template-columns: 1fr; }
-  .fd-summary { order: -1; position: static; }
-  .fd-options--tenure { grid-template-columns: repeat(4, minmax(0,1fr)); }
+  .deposit-layout {
+    grid-template-columns: 1fr;
+  }
+  .deposit-summary {
+    order: -1;
+    position: static;
+  }
+  .deposit-options--tenure {
+    grid-template-columns: repeat(4, minmax(0,1fr));
+  }
 }

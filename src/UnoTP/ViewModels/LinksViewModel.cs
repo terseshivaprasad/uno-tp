@@ -56,25 +56,27 @@ public class LinksViewModel(IReadOnlyList<SentLinkRecord> sent, IReadOnlyList<Pe
             "expired" => "expired",
             // A completed link closes the moment it is used.
             "done" => "closed on use",
-            _ => Left((int)Math.Round((l.ExpiresAt - now).TotalHours)),
+            _ => HoursLeftText((int)Math.Round((l.ExpiresAt - now).TotalHours)),
         };
         return new SentLink(
             l.AppNo, l.Investor, string.Join(" · ", new[] { l.Mobile, l.Email }.Where(s => s.Length > 0)), purpose.Label,
-            Ago((int)Math.Round((now - l.SentAt).TotalHours)), expires, state.Key,
+            HoursAgoText((int)Math.Round((now - l.SentAt).TotalHours)), expires, state.Key,
             state.Key == "done" ? (purpose.Key == "payment" ? "Paid" : "Accepted") : state.Text,
             state.Tone, (Today - l.Applied.Date).Days, EligibleDays, purpose.Key);
     }
 
     private static DateTime Today => DateTime.Today;
 
-    private static string Ago(int hours) => hours switch
+    /// <summary>Hours since, as the list says it: "5 hours ago", "yesterday", "3 days ago".</summary>
+    private static string HoursAgoText(int hours) => hours switch
     {
         < 24 => $"{hours} hours ago",
         < 48 => "yesterday",
         _ => $"{hours / 24} days ago",
     };
 
-    private static string Left(int hours) => hours switch
+    /// <summary>Hours to go, as the list says it: "in 5 hours", "in a day", "in 3 days".</summary>
+    private static string HoursLeftText(int hours) => hours switch
     {
         < 24 => $"in {hours} hours",
         < 48 => "in a day",

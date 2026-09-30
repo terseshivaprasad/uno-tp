@@ -1,0 +1,2530 @@
+/* The purchase journey: what two or more of its steps share - the step rail, the form controls, the document cards (Upload Documents, Investor Information, FD Configuration), the read cards. Loaded by each step page after layout-and-controls.css. */
+
+/* A segmented toggle: a capsule track holding a capsule per option, as tall as a
+   field (40px). The chosen option is drawn as every selection is - pink, a red
+   outline, red-dark text - and lifted off the track; the rest are plain text on
+   it. A toggle made of radios is lit by the checked radio alone, so a click moves
+   the selection at once, never two lit while the server answers. */
+.choice-toggle {
+  display: inline-flex;
+  align-items: stretch;
+  gap: 2px;
+  height: 36px;
+  padding: 3px;
+  border: 1px solid var(--border-2);
+  border-radius: 999px;
+  background: var(--tint);
+  flex: none;
+}
+.choice-toggle__option {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color .12s ease, border-color .12s ease, color .12s ease;
+}
+.choice-toggle__option:hover {
+  color: var(--ink);
+  background: #fff;
+}
+.choice-toggle__option--active, .choice-toggle__option:has(input:checked) {
+  background: var(--pink-bg);
+  border-color: var(--red);
+  color: var(--red-dark);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(24, 39, 75, .1);
+}
+.choice-toggle__option:has(input:focus-visible) {
+  outline: 2px solid var(--blue);
+  outline-offset: 1px;
+}
+/* An option that cannot be chosen here stays on the track, faded; its title says why. */
+.choice-toggle__option:disabled, .choice-toggle__option:has(input:disabled) {
+  background: transparent;
+  color: var(--muted-2);
+  cursor: not-allowed;
+}
+.choice-toggle__option:has(input:checked:disabled) {
+  background: var(--pink-bg);
+  border-color: var(--pink-border);
+  color: var(--muted);
+  box-shadow: none;
+}
+.choice-toggle--sm {
+  height: 32px;
+}
+.choice-toggle--sm .choice-toggle__option {
+  padding: 0 12px;
+  font-size: 12px;
+}
+/* The document table collapses to stacked rows well before the columns would
+   start truncating the OCR read-out. */
+.investor-section-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.investor-panel {
+  background: var(--tint);
+  border: 1px solid var(--tint);
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.investor-panel__label {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+  color: var(--muted);
+}
+.investor-panel__note {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 16px;
+}
+/* A fact: its label a 12px caption, its value 14px in ink under it. */
+.investor-key-value-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0,1fr));
+  gap: 16px 24px;
+}
+.investor-key-value--wide {
+  grid-column: span 2;
+}
+.investor-key-value__key {
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 16px;
+  color: var(--muted);
+}
+.investor-key-value__value {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+  padding-top: 4px;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+}
+.investor-key-value__value--unread {
+  color: var(--muted);
+}
+.investor-switch-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--text);
+  cursor: pointer;
+}
+.investor-switch-row span {
+  flex: 1;
+  min-width: 0;
+}
+.investor-switch {
+  appearance: none;
+  -webkit-appearance: none;
+  margin: 0;
+  flex: none;
+  cursor: pointer;
+  width: 44px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--border-2);
+  position: relative;
+  transition: background .15s ease;
+}
+.investor-switch::after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform .15s ease;
+}
+.investor-switch:checked {
+  background: var(--red);
+}
+.investor-switch:checked::after {
+  transform: translateX(20px);
+}
+.investor-switch:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+/* Investor Information, as the old WA_FD_UNOTP/InvestorInformation lays it out: a
+   card for the investor, one for each joint holder, and one for the nominee, down
+   one column, each titled over a rule, with its sections titled the same way. */
+.section-card {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+.section-card[hidden], .investor-question[hidden] {
+  display: none;
+}
+.page-app-number {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--muted);
+}
+.page-app-number strong {
+  font-size: 14px;
+  color: var(--ink);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+/* The investor's record under the card title: CKYC, the verified addresses, what is typed. */
+.investor-record {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 16px;
+}
+/* A section of a card: 16px semibold in ink, a step under the card's title. */
+.section-title {
+  margin: 32px 0 0;
+  padding-bottom: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+  letter-spacing: -.01em;
+  color: var(--ink);
+}
+.investor-switches {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 16px;
+}
+@media (max-width: 900px) {
+  .investor-key-value-grid {
+    grid-template-columns: repeat(2, minmax(0,1fr));
+  }
+}
+@media (max-width: 560px) {
+  .investor-key-value-grid {
+    grid-template-columns: 1fr;
+  }
+  .investor-key-value--wide {
+    grid-column: auto;
+  }
+}
+.page-main > .demo-data {
+  margin-top: 0;
+}
+/* A part a choice shows or hides in place (data-show-when): no fieldset frame. */
+.doc-choice {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.doc-choice[hidden] {
+  display: none;
+}
+/* Investor Identification's Note, across the card under its head. */
+.page-warning-note--banner {
+  margin-top: 20px;
+}
+.page-warning-note--banner .page-warning-note__title {
+  font-weight: 600;
+}
+.bank-suggest {
+  position: absolute;
+  z-index: 20;
+  left: 0;
+  right: 0;
+  top: 64px;
+  max-height: 264px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+  background: #fff;
+  border: 1px solid var(--border-3);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .12);
+}
+.bank-suggest[hidden] {
+  display: none;
+}
+.bank-suggest__option {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+.bank-suggest__option:hover, .bank-suggest__option[aria-selected="true"] {
+  background: var(--tint);
+}
+.bank-suggest__name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.bank-suggest__codes {
+  font-size: 12px;
+  color: var(--muted);
+}
+.bank-suggest__none {
+  padding: 8px 12px;
+  font-size: 14px;
+  color: var(--muted);
+}
+/* Review Summary: what a read-only value rests on, and each card's Edit. */
+.investor-key-value__note {
+  padding-top: 2px;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 16px;
+}
+.deposit-amount__clear {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  background: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--muted);
+  font-family: inherit;
+}
+.deposit-amount__clear:hover {
+  color: var(--ink);
+  background: var(--tint);
+}
+/* Every step has the same inset, so the icons of all of them line up and the
+   current one's tint has room round what it holds - 12px each side, as a list
+   item's highlight should. */
+.page-rail__step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text);
+  padding: 6px 12px;
+  border-radius: 6px;
+}
+/* Only the step the partner is on is marked out: the rest are a quiet list - regular
+   weight, the icon in the muted grey - so the rail guides without pulling the eye
+   from the card. */
+.page-rail__step > svg:first-child {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: var(--muted);
+}
+.page-rail__label {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+  color: var(--text);
+}
+/* An empty tick: the step is not complete until the wizard says so. */
+.page-rail__check {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  color: var(--border-2);
+}
+/* The step the page is on: tinted row, red label and a red marker. */
+.page-rail__step--current {
+  background: var(--tint);
+  border-radius: 6px;
+  color: var(--red);
+}
+.page-rail__step--current .page-rail__label {
+  color: var(--red);
+  font-weight: 600;
+}
+.page-rail__step--current > svg:first-child {
+  color: var(--red);
+}
+.page-rail__dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--red);
+}
+/* A step already behind the wizard: its tick is filled in. */
+.page-rail__step--done .page-rail__check {
+  color: var(--green);
+}
+.page-rail__where, .page-rail__bar {
+  display: none;
+}
+/* Over each name, what it is: "Step 1" to "Step 4" for the booking steps the
+   dashboard promises, "Start" and "Submit" for the ends, which carry no number,
+   stand apart behind a rule, and read a little quieter. */
+.page-rail__num {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+  color: var(--muted);
+}
+.page-rail__step--current .page-rail__num {
+  color: var(--red-dark);
+}
+.page-rail__rule {
+  margin: 0 12px;
+  border: 0;
+  border-top: 1px dashed var(--border-2);
+}
+.page-rail__step--end:not(.page-rail__step--current) .page-rail__label {
+  color: var(--text);
+  font-weight: 600;
+}
+.field-grid {
+  display: grid;
+  grid-template-columns: minmax(0,300px) minmax(0,230px) auto;
+  gap: 24px;
+  padding-top: 16px;
+  align-items: end;
+  justify-content: start;
+}
+.page-warning-note {
+  display: flex;
+  gap: 8px;
+  margin-top: 20px;
+  margin-bottom: 0;
+}
+.page-warning-note__icon {
+  flex: none;
+  margin-top: 2px;
+}
+.page-warning-note__body {
+  min-width: 0;
+}
+.page-warning-note__title {
+  font-weight: 700;
+}
+.page-warning-note ul {
+  margin: 4px 0 0;
+  padding-left: 16px;
+}
+.page-warning-note li + li {
+  margin-top: 4px;
+}
+/* The actions sit on a bar across the foot of the window, as they do on every
+   old wizard step. */
+.page-action-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  background: #fff;
+  border-top: 1px solid var(--divider);
+}
+.page-action-bar__inner {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.page-action-bar__hint {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--muted);
+  text-align: center;
+}
+.page-action-bar__hint strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+.page-action-bar__right {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+@media (max-width: 900px) {
+  .page-rail__step {
+    flex: none;
+    gap: 8px;
+  }
+  .page-rail__label {
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .page-rail__check {
+    display: none;
+  }
+  .page-rail__rule {
+    border-top: 0;
+    border-left: 1px dashed var(--border-2);
+    margin: 4px;
+  }
+}
+@media (max-width: 760px) {
+  .page-rail__step {
+    display: none;
+  }
+  .page-rail__rule {
+    display: none;
+  }
+  .page-rail__where {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .page-rail__count {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+    color: var(--muted);
+  }
+  .page-rail__now {
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 20px;
+    color: var(--ink);
+  }
+  .page-rail__bar {
+    display: block;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--divider-2);
+    overflow: hidden;
+  }
+  .page-rail__bar > span {
+    display: block;
+    height: 100%;
+    border-radius: 2px;
+    background: var(--red);
+  }
+  /* The bar at the foot puts its hint on a line of its own rather than squeezing
+     it between the buttons, and Proceed takes the width it is left. */
+  .page-action-bar__inner {
+    flex-wrap: wrap;
+    gap: 8px 12px;
+  }
+  .page-action-bar__hint {
+    order: -1;
+    flex: 0 0 100%;
+    text-align: left;
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .page-action-bar__right {
+    flex: 1;
+    justify-content: flex-end;
+    gap: 16px;
+  }
+  .page-action-bar__right .btn-primary {
+    flex: 1;
+    max-width: 200px;
+  }
+}
+@media (max-width: 560px) {
+  .field-grid {
+    grid-template-columns: minmax(0,1fr);
+  }
+  .page-action-bar__inner {
+    padding: 12px 12px;
+    gap: 8px 12px;
+  }
+  .page-action-bar__right {
+    gap: 12px;
+  }
+}
+.identify-holder {
+  padding-top: 20px;
+}
+.identify-holder + .identify-holder {
+  margin-top: 20px;
+  border-top: 1px solid var(--divider);
+}
+.identify-holder[hidden] {
+  display: none;
+}
+.identify-holder__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.identify-holder__no {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--red);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+}
+.identify-holder__name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.identify-status {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--red-dark);
+}
+.identify-status--ok {
+  color: var(--green);
+}
+.identify-check-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 16px;
+  border: 1px solid var(--red);
+  border-radius: 6px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--red);
+  cursor: pointer;
+}
+.identify-check-button:hover {
+  background: var(--pink-bg);
+}
+/* PANs, folios and names are held in capitals; the server upper-cases them too. */
+.field-input--caps {
+}
+.identify-result__head > form {
+  flex: none;
+}
+.identify-actions {
+  margin-top: 16px;
+}
+.demo-data__table td code + code {
+  margin-left: 6px;
+}
+/* What the check found, in place of the fields it was run from: who the investor
+   is, the record the register holds, and what it is still short of - three bands
+   of one card. */
+/* The record found: the later steps' read-only panel (investor-panel). */
+.identify-result {
+  margin: 20px 0 0;
+}
+/* The name, the folio it was found on beside it, and Search again at the far end. */
+.identify-result__head {
+  display: flex;
+  align-items: center;
+  gap: 8px 12px;
+  flex-wrap: wrap;
+  padding-bottom: 12px;
+}
+.identify-result__head > form, .identify-result__head > .identify-result__again {
+  margin-left: auto;
+}
+.identify-result__name {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.identify-result__tag {
+  padding: 2px 8px;
+  border: 1px solid var(--border-2);
+  border-radius: 4px;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.identify-result__tag--new {
+  border-color: var(--blue-border);
+  background: var(--blue-bg);
+  color: var(--blue);
+}
+.identify-result__head > form {
+  flex: none;
+}
+/* What happens next, for a new investor or one not identified: under the record. */
+.identify-result__said {
+  margin: 12px 0 0;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--muted);
+}
+/* What the register holds, under the record's divider. */
+.page-on-record.investor-panel__part {
+  padding: 16px 0 0;
+}
+.identify-result[hidden] {
+  display: none;
+}
+/* What the register holds, item by item: green for held, blue for what is
+   collected later on (see the colours under .page-missing-items). */
+.page-on-record {
+  display: flex;
+  align-items: center;
+  gap: 8px 12px;
+  flex-wrap: wrap;
+  padding: 12px 20px 16px;
+  border-top: 1px solid var(--border);
+}
+.page-on-record[hidden] {
+  display: none;
+}
+.page-on-record__label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--blue);
+}
+.page-on-record--complete .page-on-record__label {
+  color: var(--green);
+}
+.page-on-record__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.page-on-record__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 12px 3px 8px;
+  border: 1px solid var(--green-border);
+  border-radius: 4px;
+  background: var(--green-bg);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--green);
+}
+.page-on-record__item--missing {
+  border-color: var(--blue-border);
+  background: var(--blue-bg);
+  color: var(--blue);
+}
+.page-on-record__foot {
+  flex-basis: 100%;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+/* Investor Identification's investor card: its head row, then the record found,
+   spaced on a 4px rhythm - 12px inside a group, 16px between groups, 20px round
+   the panel's edge. Scoped to the card, so a joint holder's search on Investor
+   Information keeps its own. */
+.identify-holder {
+  padding-top: 20px;
+}
+.identify-holder .identify-holder__head {
+  gap: 12px;
+}
+.identify-holder .identify-result {
+  margin-top: 16px;
+  padding: 16px 20px 20px;
+}
+.identify-holder .identify-result__head {
+  padding-bottom: 12px;
+}
+.identify-holder .identify-result .investor-key-value-grid {
+  gap: 16px 24px;
+}
+/* What the register is short of, and where it is asked for again. */
+/* Three colours, three meanings: blue for what is still to be collected (the
+   application can go on), red for a check that failed and stops it, green for a
+   record that is complete. Amber stays with the standing Note below the card, so
+   nothing here is mistaken for it. */
+.page-missing-items {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+  margin-bottom: 0;
+}
+.page-missing-items[hidden] {
+  display: none;
+}
+.page-missing-items__icon {
+  flex: none;
+  margin-top: 2px;
+}
+.page-missing-items__body {
+  min-width: 0;
+}
+.page-missing-items__title {
+  font-weight: 700;
+}
+.page-missing-items ul {
+  margin: 3px 0 0;
+  padding-left: 16px;
+}
+.page-missing-items li + li {
+  margin-top: 2px;
+}
+.page-missing-items p {
+  padding-top: 6px;
+}
+
+@media (max-width: 1100px) {
+  .field-grid {
+    grid-template-columns: repeat(2, minmax(0,260px));
+  }
+}
+@media (max-width: 560px) {
+  /* The hint stands on a phone now that it has a line of its own above the
+     buttons: what is still missing is worth more there than the space it costs. */
+  .identify-status {
+    margin-left: 0;
+    width: 100%;
+  }
+}
+/* The test data at the foot of the page: what to type to reach each outcome.
+   Quieter than the drafts above it, since it belongs to the mock and not to the
+   partner's own work. */
+.demo-data {
+  margin-top: 24px;
+  padding: 16px 20px;
+  border: 1px dashed var(--border-2);
+  border-radius: 8px;
+  background: var(--tint);
+}
+.demo-data__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.demo-data__sub {
+  padding: 3px 0 12px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.demo-data__sub strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+.demo-data__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  color: var(--text);
+}
+.demo-data__table th {
+  padding: 8px 12px 8px 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-align: left;
+  border-bottom: 1px solid var(--border-2);
+}
+.demo-data__table td {
+  padding: 8px 12px 8px 0;
+  border-bottom: 1px solid var(--divider);
+  vertical-align: top;
+}
+.demo-data__table tr:last-child td {
+  border-bottom: 0;
+}
+.demo-data__table code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: var(--ink);
+}
+.demo-data__notes {
+  margin: 12px 0 0;
+  padding: 12px 0 0 16px;
+  border-top: 1px solid var(--border-2);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--muted);
+}
+.demo-data__notes strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+@media (max-width: 900px) {
+  /* Each row becomes its own block, every cell labelled by its column. */
+  .demo-data__table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+  .demo-data__table tr {
+    display: block;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--divider);
+  }
+  .demo-data__table tr:last-child {
+    border-bottom: 0;
+  }
+  .demo-data__table td {
+    display: flex;
+    gap: 12px;
+    padding: 3px 0;
+    border: 0;
+  }
+  .demo-data__table td::before {
+    content: attr(data-label);
+    flex: none;
+    width: 108px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+}
+/* Every row on the step shares one grid: three columns across the card, which
+   runs the width of the page. */
+/* A row of fields stands 24px from the next; a row of document cards 32px, each
+   card being a block of its own, so the space tells one row's cards from the next. */
+.doc-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  padding-top: 20px;
+}
+.doc-grid--docs {
+  row-gap: 32px;
+}
+.doc-column {
+  min-width: 0;
+}
+/* The label names the box under it, so it stays with it rather than floating
+   halfway between its own box and the row above. */
+.doc-column > .field-label {
+  padding-bottom: 4px;
+}
+.doc-column__spacer {
+  height: 38px;
+}
+.doc-optional {
+  font-weight: 400;
+  color: var(--muted);
+}
+/* What a proof was identified as, beside its label. */
+.doc-type {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--tint);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+  color: var(--ink);
+  vertical-align: 1px;
+}
+.doc-column[hidden] {
+  display: none;
+}
+.doc-app-type__group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+/* ----- What the PAN was checked with --------------------------------------
+   A slim row per check in one bordered list: the check, a dot and where it stands,
+   what it matched (one line; in full on hover), and the info mark. A failure's
+   explanation is written out across the row, under it. */
+.doc-checks {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  border: 1px solid var(--border-2);
+  border-radius: 8px;
+  background: #fff;
+}
+.doc-check {
+  display: grid;
+  grid-template-columns: 200px 200px minmax(0, 1fr);
+  align-items: center;
+  column-gap: 16px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--divider);
+  font-size: 14px;
+  line-height: 20px;
+}
+.doc-check:first-child {
+  border-top: 0;
+  border-top-left-radius: 7px;
+  border-top-right-radius: 7px;
+}
+.doc-check:last-child {
+  border-bottom-left-radius: 7px;
+  border-bottom-right-radius: 7px;
+}
+.doc-check:focus {
+  outline: 2px solid var(--blue);
+  outline-offset: -2px;
+}
+.doc-check__kind {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 16px;
+  color: var(--ink);
+}
+.doc-check__state {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.doc-check__dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+}
+.doc-check__lines {
+  min-width: 0;
+  font-size: 14px;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+  color: var(--text);
+}
+.doc-check .hover-hint::after {
+  left: 0;
+  transform: none;
+}
+.doc-check__from {
+  grid-column: 1 / -1;
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--red-dark);
+}
+.doc-check.is-done .doc-check__state {
+  color: var(--green);
+}
+.doc-check.is-done .doc-check__dot {
+  background: currentColor;
+}
+.doc-check.is-working .doc-check__state {
+  color: var(--blue);
+}
+.doc-check.is-unverified .doc-check__state {
+  color: var(--amber);
+}
+.doc-check.is-unverified .doc-check__dot {
+  background: currentColor;
+}
+.doc-check.is-failed {
+  background: var(--pink-tint);
+}
+.doc-check.is-failed .doc-check__state {
+  color: var(--red-dark);
+}
+.doc-check.is-failed .doc-check__dot {
+  background: currentColor;
+}
+.doc-check.is-na .doc-check__lines {
+  color: var(--muted);
+}
+@media (max-width: 700px) {
+  .doc-check {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: 3px;
+    padding: 12px 12px;
+  }
+  .doc-check__lines {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}
+.doc-slot {
+  padding-top: 8px;
+}
+/* The card and the buttons that act on it. Positioned against this rather than
+   against the slot, or an error under the card pushes the slot taller and the
+   buttons land on the words. */
+.doc-slot__frame {
+  position: relative;
+}
+/* View and Replace sit at the top, on the label line over the card they act on, at
+   its right: out of the card, so every card keeps one height whatever it holds.
+   Named as well as drawn - a magnifier and a circular arrow on their own read as
+   zoom and refresh - except where the column is too narrow for both the label and
+   the names (below). */
+.doc-slot {
+  position: relative;
+}
+/* Every card has the same header: its label at the left and the same toolbar -
+   what the checks are, View, the action - at the right, on one line over its box.
+   Where something is chosen over the card (a proof type, a payment mode), the
+   toolbar has the line under that to itself. Either way the bar is one height, so
+   every box in a row starts at the same place. */
+/* A long label wraps beside the tools rather than pushing them onto a line of
+   their own; its first line sits on the tools' baseline. */
+.doc-slot__bar {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 12px;
+  min-height: 28px;
+  padding-bottom: 8px;
+}
+.doc-slot__head {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.doc-slot__head > .field-label {
+  padding: 0;
+}
+.doc-slot__tools {
+  flex: none;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+/* A card headed by its own label starts at the top of its column. */
+.doc-slot:has(> .doc-slot__bar > .doc-slot__head) {
+  padding-top: 0;
+}
+.doc-slot__tools[hidden] {
+  display: none;
+}
+.doc-tool {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: 1px solid var(--border-2);
+  border-radius: 6px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  color: var(--red);
+  cursor: pointer;
+}
+.doc-tool svg {
+  flex: none;
+}
+.doc-tool:disabled {
+  border-color: var(--divider);
+  color: var(--muted-2);
+  cursor: not-allowed;
+}
+.doc-tool:not(:disabled):hover {
+  background: var(--pink-bg);
+  border-color: var(--red);
+  color: var(--red-dark);
+}
+/* ===== One card per document =====
+   Every slot draws the same card, whatever state it is in: the same frame, the
+   same height, the same 40px mark on the left with what it says beside it. The
+   frame stopped changing shape between states because that is what made a row of
+   six read as six different things; only the fill and the mark change now.
+
+   White is a card there is something to do with - a file to pick, a document to
+   look at. The tint is a card there is nothing to do with yet: not applicable,
+   shut until a type is chosen, being checked, or out of attempts. */
+.doc-drop {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 124px;
+  padding: 12px 16px;
+  border: 1px solid var(--border-2);
+  border-radius: 8px;
+  background: #fff;
+  font-family: inherit;
+  text-align: center;
+  cursor: pointer;
+}
+.doc-drop[hidden] {
+  display: none;
+}
+/* A slot this application has no use for draws the same card as the rest, with
+   the same mark on the left - struck through, because there is nothing to file
+   here - so a row of six stays a row of six. */
+.doc-slot__na {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  min-height: 124px;
+  padding: 16px 16px;
+  border: 1px solid var(--border-2);
+  border-radius: 8px;
+  background: var(--tint);
+  text-align: center;
+  color: var(--muted-2);
+}
+.doc-slot__na-mark {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #EDEFF3;
+  /* The bar of a "no entry" sign, drawn in the panel's own grey. */
+  background-image: linear-gradient(to right, var(--muted-2) 0 100%);
+  background-size: 15px 1.5px;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+.doc-slot__na-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.doc-slot__na-title {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 16px;
+  color: var(--muted);
+}
+/* Why it is not applicable, which is what a partner looking at a grey card wants
+   to know before they wonder what they have done wrong. */
+.doc-slot__na-why {
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 16px;
+  letter-spacing: 0;
+  color: var(--muted);
+}
+.doc-slot__na[hidden] {
+  display: none;
+}
+/* Dashed and red only while a file is over it or a cursor is on it: the box says
+   "drop here" when dropping is what you are doing, not for the whole page. */
+.doc-drop:not(:disabled):not(.is-filled):hover, .doc-drop.is-over {
+  border-color: var(--red);
+  border-style: dashed;
+  background: var(--pink-bg);
+}
+/* Room at the foot for View and Replace, which sit in that one place at every
+   width: the card's bottom right corner, on the card they act on. The document's
+   name keeps the card's whole width to be read in. */
+.doc-drop.is-filled {
+  cursor: zoom-in;
+  padding-bottom: 44px;
+}
+.doc-drop.is-filled:hover {
+  border-color: var(--border-3);
+  background: var(--tint);
+}
+.doc-drop:disabled {
+  cursor: default;
+}
+.doc-drop__idle, .doc-drop__busy, .doc-drop__locked, .doc-drop__done {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.doc-drop__idle[hidden], .doc-drop__busy[hidden], .doc-drop__locked[hidden], .doc-drop__done[hidden] {
+  display: none;
+}
+/* Shut until something above it is answered: a proof cannot be checked before
+   the type says what it is meant to be. */
+.doc-drop.is-locked {
+  cursor: not-allowed;
+  background: var(--tint);
+}
+.doc-drop.is-locked .doc-drop__lock {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #EDEFF3;
+  align-items: center;
+  justify-content: center;
+}
+.doc-drop__lock {
+  display: inline-flex;
+  margin-bottom: 6px;
+  color: var(--muted-2);
+}
+.doc-drop__locked .doc-drop__title {
+  color: var(--muted);
+}
+/* While the document is being identified the box takes nothing: it is neither a
+   picker nor a filed document until the check comes back. */
+.doc-drop.is-busy {
+  pointer-events: none;
+  background: var(--tint);
+}
+.doc-drop__spinner {
+  width: 20px;
+  height: 20px;
+  margin-bottom: 6px;
+  border: 2px solid var(--pink-bg);
+  border-top-color: var(--red);
+  border-radius: 50%;
+  animation: doc-spin .7s linear infinite;
+}
+.doc-drop__checking {
+  font-size: 14px;
+  color: var(--muted);
+}
+/* Which of the three checks is running, under the one it is running. Three
+   seconds of an unlabelled spinner is how the same file gets uploaded twice. */
+.doc-drop__step {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--muted);
+}
+.doc-drop__step:empty {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .doc-drop__spinner {
+    animation-duration: 2.4s;
+  }
+}
+.doc-drop__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin-bottom: 4px;
+  border-radius: 50%;
+  background: var(--pink-bg);
+  color: var(--red);
+}
+.doc-drop__title {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  color: var(--text);
+}
+.doc-drop__hint {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--muted);
+}
+/* What the document itself has to be, beyond its format. Amber: it is a rule the
+   copy must meet, not an error the partner has already made. */
+.doc-drop__must {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+  color: var(--amber);
+}
+.doc-drop__must[hidden] {
+  display: none;
+}
+/* What happens to the copy once it is picked, and who is asked about it. */
+.doc-drop__with {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--muted);
+}
+.doc-drop__with[hidden] {
+  display: none;
+}
+.doc-drop__check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  margin-bottom: 4px;
+  border-radius: 50%;
+  background: var(--green-bg);
+  color: var(--green);
+}
+.doc-drop__file {
+  max-width: 100%;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.doc-drop__size {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--muted);
+}
+/* An address the folio holds, standing in the box of the proof it needs no copy of. */
+.doc-drop.is-held {
+  cursor: default;
+  padding-bottom: 12px;
+}
+.doc-drop.is-held:hover {
+  border-color: var(--border-2);
+  background: #fff;
+}
+/* The tick spans every line beside it, centred like the Not applicable mark. */
+@media (min-width: 761px) {
+  .doc-drop.is-held .doc-drop__check, .doc-drop.is-read .doc-drop__check {
+    grid-row: 1 / span 4;
+    align-self: center;
+    width: 40px;
+    height: 40px;
+  }
+}
+.doc-on-file__tag {
+  display: inline-block;
+  justify-self: start;
+  padding: 2px 8px;
+  border-radius: 3px;
+  background: var(--amber-tint);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+  color: var(--amber);
+}
+.doc-on-file__lines {
+  max-width: 100%;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.doc-on-file__from {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--muted);
+}
+/* Long addresses end in an ellipsis inside the box, with the whole of it on hover,
+   and a long unbroken string breaks rather than running out of the box. */
+.doc-on-file__lines, .doc-on-file__from, .doc-slot__na-why, .doc-drop__file, .doc-read-result__lines {
+  overflow-wrap: anywhere;
+}
+.doc-drop__done {
+  min-width: 0;
+  max-width: 100%;
+}
+/* A filed proof of address: its state and the address it reads, in the box. */
+.doc-on-file__tag.is-done {
+  background: var(--green-bg);
+  color: var(--green);
+}
+.doc-on-file__tag.is-failed {
+  background: var(--pink-bg);
+  color: var(--red-dark);
+}
+.doc-on-file__tag.is-na, .doc-on-file__tag.is-working {
+  background: var(--tint);
+  color: var(--muted);
+}
+.doc-drop.is-read .doc-drop__done {
+  gap: 3px;
+}
+/* The state first, a breath under it, then what was read: one text size for what
+   was read, one for the detail under it, the same in the boxes and the cards. */
+.doc-drop.is-read .doc-on-file__tag, .doc-drop.is-held .doc-on-file__tag {
+  margin-bottom: 3px;
+}
+/* .doc-on-file__lines--one: one line of name, which now wraps like the rest. */
+.doc-slot .doc-drop.is-read .doc-drop__check {
+  background: var(--green-bg);
+  color: var(--green);
+}
+.doc-slot .doc-drop.is-read .doc-drop__check.is-failed, .doc-slot .doc-drop.is-read .doc-drop__check.is-na {
+  background: var(--amber-bg);
+  color: var(--amber);
+}
+.doc-on-file__id {
+  max-width: 100%;
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--muted);
+}
+.doc-on-file__expired {
+  color: var(--red-dark);
+  font-weight: 600;
+}
+/* The PIN code stands on a line of its own, so cutting the address to fit never loses it. */
+.doc-on-file__pin {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  color: var(--ink);
+}
+.doc-on-file__pin.is-missing {
+  font-weight: 500;
+  color: var(--amber);
+}
+/* Nothing left to try: the box stops taking files and the line under it says
+   where the document goes instead. */
+.doc-drop.is-spent {
+  cursor: not-allowed;
+  background: var(--tint);
+  opacity: .6;
+}
+/* ----- Upload step without its old script -----
+   An empty box is a label with the file picker laid over it, so a click opens the
+   picker and a file dropped on it lands in it - both the browser's own doing.
+   partial-forms.js presses the Upload and Update buttons as soon as something is
+   picked or chosen; without it they are shown, and pressed by hand. */
+.doc-drop {
+  position: relative;
+}
+.doc-drop__input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+.doc-drop__input:disabled {
+  cursor: not-allowed;
+}
+.doc-drop:has(.doc-drop__input:focus-visible) {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+.doc-drop.is-locked:hover, .doc-drop.is-spent:hover {
+  border-style: solid;
+  border-color: var(--border-2);
+  background: var(--tint);
+}
+/* Every document box starts at the same size whatever it holds - empty, filed,
+   locked, refused or not applicable - so a row of them lines up. A box that has
+   more to say grows rather than cutting it off (WCAG 1.4.12). */
+.doc-drop, .doc-slot__na {
+  min-height: var(--doc-card-h);
+}
+label.doc-tool {
+  cursor: pointer;
+}
+.doc-upload {
+  margin-top: 8px;
+}
+.has-js .doc-upload, .has-js .doc-refresh {
+  display: none;
+}
+.doc-refresh {
+  margin-bottom: 12px;
+}
+.doc-slot {
+  scroll-margin-top: 110px;
+}
+/* The preview and the CKYC question are popovers: the browser opens them, and
+   closes them on Esc or a click on the backdrop. */
+.doc-sheet[popover] {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  overflow: visible;
+}
+.doc-sheet::backdrop {
+  background: rgba(35, 31, 32, .55);
+}
+.doc-preview-pop {
+  width: min(760px, calc(100% - 32px));
+}
+.doc-ckyc-pop {
+  width: min(560px, calc(100% - 32px));
+}
+.doc-sheet .doc-preview__sheet, .doc-sheet .doc-ckyc__sheet {
+  width: 100%;
+}
+/* What the last post has to say for the whole step. */
+.doc-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.doc-banner svg {
+  flex: none;
+  margin-top: 1px;
+}
+/* "See the history" jumps to the attempt, and the attempt says it is the one. */
+.doc-history__row {
+  scroll-margin-top: 110px;
+}
+.doc-history__row:target {
+  background: var(--pink-tint);
+  border-color: var(--red);
+}
+/* A column on a laptop is near 500px wide. Stacked and centred, that leaves a
+   glyph and one line of text adrift in the middle of it with 180px of nothing
+   either side. Given the width, the box reads as a row instead: the mark of what
+   state it is in on the left, and what it says beside it, both on the same
+   baseline a form field would keep. A phone gets the stack back. */
+@media (min-width: 761px) {
+  /* One size for every box, no taller than its fullest state needs: a proof of
+     address read to its tag, two lines of address, the PIN and a note. */
+  .doc-drop, .doc-slot__na {
+    padding: 12px 16px;
+  }
+  .doc-drop {
+    justify-content: flex-start;
+    text-align: left;
+  }
+  .doc-drop__idle, .doc-drop__busy, .doc-drop__locked, .doc-drop__done {
+    display: grid;
+    width: 100%;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    column-gap: 16px;
+    row-gap: 3px;
+    text-align: left;
+  }
+  .doc-drop__icon, .doc-drop__check, .doc-drop__lock, .doc-drop__spinner {
+    grid-column: 1;
+    grid-row: 1 / -1;
+    margin-bottom: 0;
+  }
+  .doc-drop__idle > :not(.doc-drop__icon),
+    .doc-drop__locked > :not(.doc-drop__lock),
+    .doc-drop__busy > :not(.doc-drop__spinner),
+    .doc-drop__done > :not(.doc-drop__check) {
+    grid-column: 2;
+  }
+  .doc-drop__icon {
+    width: 36px;
+    height: 36px;
+  }
+  .doc-drop__check {
+    width: 38px;
+    height: 38px;
+  }
+  .doc-drop__title {
+    font-size: 14px;
+  }
+  /* The panel that stands where a picker would keeps the picker's height, and
+     says so from the same side the boxes speak from. */
+  /* It speaks from the same side as every card that has something in it. */
+  .doc-slot__na {
+    justify-content: flex-start;
+    text-align: left;
+  }
+  .doc-slot__na-mark {
+    width: 40px;
+    height: 40px;
+  }
+  .doc-drop.is-locked .doc-drop__lock {
+    width: 40px;
+    height: 40px;
+  }
+  .doc-slot__tries {
+    text-align: left;
+  }
+}
+/* The mark of the card's state - the upload arrow, the tick, the failed or
+   refused mark, the Not applicable dash, the lock - stands at the card's top
+   left at every width, and what the card says runs beside it from the top. */
+.doc-drop, .doc-slot__na {
+  align-items: flex-start;
+  justify-content: flex-start;
+  text-align: left;
+}
+.doc-drop__idle, .doc-drop__busy, .doc-drop__locked, .doc-drop__done {
+  display: grid;
+  width: 100%;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  column-gap: 16px;
+  row-gap: 3px;
+  text-align: left;
+}
+.doc-drop__icon, .doc-drop__check, .doc-drop__lock, .doc-drop__spinner {
+  grid-column: 1;
+  grid-row: 1 / -1;
+  align-self: start;
+  margin-bottom: 0;
+}
+.doc-drop__idle > :not(.doc-drop__icon),
+.doc-drop__locked > :not(.doc-drop__lock),
+.doc-drop__busy > :not(.doc-drop__spinner),
+.doc-drop__done > :not(.doc-drop__check) {
+  grid-column: 2;
+}
+.doc-drop.is-held .doc-drop__check, .doc-drop.is-read .doc-drop__check {
+  align-self: start;
+}
+.doc-slot__na-mark {
+  align-self: flex-start;
+}
+.doc-slot.is-invalid .doc-drop {
+  border-color: var(--red);
+}
+/* What the register behind the document answered. The copy is filed either way,
+   so this line carries the colour rather than the card: green where somebody
+   stood behind it, amber where there was nobody to ask, red where the answer
+   came back against it. */
+.doc-slot__check {
+  display: flex;
+  gap: 8px;
+  padding-top: 8px;
+  font-size: 12px;
+  line-height: 16px;
+  text-align: left;
+  color: var(--muted);
+}
+.doc-slot__check[hidden] {
+  display: none;
+}
+.doc-slot__check::before {
+  content: '';
+  flex: none;
+  width: 6px;
+  height: 6px;
+  margin-top: 4px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.doc-slot__check.is-ok {
+  color: var(--green);
+}
+.doc-slot__check.is-warn {
+  color: var(--amber);
+}
+.doc-slot__check.is-bad {
+  color: var(--red-dark);
+}
+/* A tick for a copy nobody confirmed reads as a clean document across the room.
+   The document is filed, so the mark stays - it just stops being green. */
+.doc-slot.is-unconfirmed .doc-drop__check {
+  background: var(--amber-bg);
+  color: var(--amber);
+}
+/* What the application has left for this document, of the three it allows. */
+.doc-slot__tries {
+  padding-top: 6px;
+  font-size: 12px;
+  text-align: left;
+  color: var(--muted);
+}
+.doc-slot__tries[hidden] {
+  display: none;
+}
+.doc-slot__tries.is-spent {
+  font-weight: 600;
+  color: var(--red-dark);
+}
+/* The way from a refusal to the entry that records it. */
+.doc-refusal-link {
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: 700;
+  color: var(--red-dark);
+  text-decoration: underline;
+  cursor: pointer;
+  white-space: nowrap;
+}
+/* ===== What a document was read to say =====
+   Under the pickers, because the pickers are what change it: OCR reads the
+   address off a proof, or the account off a cheque, and whoever stands behind
+   that document is asked to confirm it. The cards keep the same three-column
+   rhythm as the documents above them. */
+.doc-read-result {
+  padding-top: 28px;
+}
+.doc-read-result__title {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 20px;
+  color: var(--ink);
+}
+.doc-read-result__sub {
+  padding-top: 3px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--muted);
+}
+.doc-read-result__cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  padding-top: 16px;
+}
+/* The address the proof replaced, kept in sight rather than quietly overwritten. */
+.doc-read-result__was {
+  padding-top: 6px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--muted-2);
+  text-decoration: line-through;
+}
+.doc-read-result__was[hidden] {
+  display: none;
+}
+/* ===== Upload and OCR history =====
+   The card at the foot of the step: one entry per attempt, newest first, with
+   what each check made of the document under it. A refusal that has since been
+   cleared off the box is still readable here, which is the point of it. */
+.doc-history__sub {
+  padding-top: 4px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--muted);
+}
+.doc-history__list {
+  list-style: none;
+  margin: 0;
+  padding: 16px 0 0;
+}
+.doc-history__row {
+  padding: 16px 20px;
+  border: 1px solid var(--border-2);
+  border-left-width: 3px;
+  border-radius: 8px;
+}
+.doc-history__row + .doc-history__row {
+  margin-top: 12px;
+}
+.doc-history__row.is-ok {
+  border-left-color: var(--green-2);
+}
+.doc-history__row.is-warn {
+  border-left-color: var(--amber);
+}
+.doc-history__row.is-bad {
+  border-left-color: var(--red);
+}
+/* Called for from a refusal above: it says which entry was meant, briefly. */
+.doc-history__row.is-called {
+  background: var(--pink-tint);
+  border-color: var(--red);
+}
+.doc-history__top {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.doc-history__doc {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 20px;
+  color: var(--ink);
+}
+.doc-history__try {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--muted);
+}
+.doc-history__at {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+/* How the attempt ended, in the colour of the outcome. */
+.doc-history__mark {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+  color: var(--muted);
+}
+.doc-history__row.is-ok .doc-history__mark {
+  color: var(--green);
+}
+.doc-history__row.is-warn .doc-history__mark {
+  color: var(--amber);
+}
+.doc-history__row.is-bad .doc-history__mark {
+  color: var(--red-dark);
+}
+.doc-history__file {
+  padding-top: 4px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+/* What each check said, in the order it said it. */
+.doc-history__stages {
+  list-style: none;
+  margin: 0;
+  padding: 8px 0 0;
+}
+.doc-history__stage {
+  position: relative;
+  padding: 2px 0 2px 16px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--muted);
+}
+.doc-history__stage::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 8px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--border-2);
+}
+.doc-history__stage.is-ok {
+  color: var(--text);
+}
+.doc-history__stage.is-ok::before {
+  background: var(--green-2);
+}
+.doc-history__stage.is-warn::before {
+  background: var(--amber);
+}
+.doc-history__stage.is-bad {
+  color: var(--red-dark);
+}
+.doc-history__stage.is-bad::before {
+  background: var(--red);
+}
+/* The cards stacked beside the rail: the bar at the foot of the page clears the
+   last of them, not each one. */
+.page-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 72px;
+}
+.page-main .page-card {
+  margin-bottom: 0;
+}
+/* A section of the step: a heading, 16px semibold in ink, a step below the
+   page's title and a step above the labels under it. */
+.doc-section__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+  letter-spacing: -.01em;
+  color: var(--ink);
+  padding-bottom: 8px;
+}
+@media (max-width: 1100px) {
+  .doc-grid, .doc-read-result__cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 700px) {
+  .doc-grid, .doc-read-result__cards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .doc-column__spacer {
+    display: none;
+  }
+}
+/* The preview sheet: the document itself, with what to do about it under. */
+/* ===== The strip that keeps the application in shot =====
+   Under the top bar once the head has scrolled away. A partner reporting a
+   problem sends a picture of the screen, and a picture with no application
+   number on it cannot be placed by whoever picks it up. */
+.app-sticky-strip {
+  position: fixed;
+  top: 45px;
+  left: 0;
+  right: 0;
+  z-index: 35;
+  background: #fff;
+  border-bottom: 1px solid var(--divider);
+  box-shadow: 0 2px 8px rgba(24,39,75,.06);
+}
+.app-sticky-strip[hidden] {
+  display: none;
+}
+/* While the strip is pinned, the rail sits under it rather than behind it. */
+body:has(.app-sticky-strip:not([hidden])) .page-rail {
+  top: 100px;
+  max-height: calc(100vh - 168px);
+}
+.app-sticky-strip__inner {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  font-size: 12px;
+}
+.app-sticky-strip__who {
+  font-weight: 700;
+  color: var(--ink);
+}
+.app-sticky-strip__pan {
+  color: var(--muted);
+}
+.app-sticky-strip__app {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.app-sticky-strip__label {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+  color: var(--muted);
+}
+/* One press to put the number in a message to support. */
+.doc-copy {
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  margin-left: 4px;
+  border: 1px solid var(--border-2);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--muted);
+  cursor: pointer;
+  vertical-align: middle;
+}
+.doc-copy:hover {
+  border-color: var(--red);
+  color: var(--red);
+}
+.doc-copy.is-copied {
+  border-color: var(--green-2);
+  color: var(--green);
+}
+@media (max-width: 700px) {
+  .app-sticky-strip__pan {
+    display: none;
+  }
+  .app-sticky-strip__app {
+    margin-left: 0;
+  }
+}
+/* ===== Asking CKYC for the record =====
+   The dialog the old site puts in front of a partner before the consent link
+   goes out: what the investor has to do, and that nothing filed here counts
+   towards it. Same overlay as the document sheet, in a narrower card. */
+.doc-ckyc {
+  position: fixed;
+  inset: 0;
+  z-index: 61;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(35, 31, 32, .55);
+}
+.doc-ckyc[hidden] {
+  display: none;
+}
+.doc-ckyc__sheet {
+  width: min(560px, 100%);
+  max-height: min(86vh, 800px);
+  overflow-y: auto;
+  border-radius: 8px;
+  background: #fff;
+}
+.doc-ckyc__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 20px 0;
+}
+.doc-ckyc__mark {
+  display: inline-flex;
+  flex: none;
+  color: var(--blue);
+}
+.doc-ckyc__title {
+  flex: 1;
+  min-width: 0;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 24px;
+  color: var(--ink);
+}
+.doc-ckyc__head .doc-preview__close {
+  margin: 0;
+}
+.doc-ckyc__body {
+  padding: 12px 20px 4px;
+}
+.doc-ckyc__body p {
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--text);
+}
+.doc-ckyc__body p + p {
+  padding-top: 12px;
+}
+.doc-ckyc__body strong {
+  color: var(--ink);
+}
+.doc-ckyc__foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 20px;
+  padding: 20px 20px 20px;
+}
+.doc-preview {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(35, 31, 32, .55);
+}
+.doc-preview[hidden] {
+  display: none;
+}
+.doc-preview__sheet {
+  display: flex;
+  flex-direction: column;
+  width: min(760px, 100%);
+  max-height: min(86vh, 900px);
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
+}
+.doc-preview__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--divider);
+}
+.doc-preview__kind {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+  color: var(--muted);
+}
+.doc-preview__title {
+  padding-top: 4px;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.doc-preview__close {
+  margin-left: auto;
+  display: inline-flex;
+  padding: 4px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+.doc-preview__close:hover {
+  color: var(--ink);
+}
+.doc-preview__body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: var(--tint);
+}
+.doc-preview__body img {
+  max-width: 100%;
+  max-height: 62vh;
+  border-radius: 6px;
+}
+.doc-preview__body iframe {
+  width: 100%;
+  height: 62vh;
+  border: 0;
+  border-radius: 6px;
+  background: #fff;
+}
+/* A document filed before this step has nothing to show. The sheet keeps its
+   size - a dialog that changes shape with its contents reads as a mistake - and
+   the message sits in the middle of it. */
+.doc-preview__none {
+  padding: 56px 24px;
+  font-size: 14px;
+  line-height: 20px;
+  text-align: center;
+  color: var(--muted);
+}
+.doc-preview__foot {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 12px 20px;
+  border-top: 1px solid var(--divider);
+}
+.doc-preview__meta {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--muted);
+}
+@media (max-width: 900px) {
+  .investor-docs-head .doc-app-type__group, .doc-app-type .doc-app-type__group {
+    width: 100%;
+    gap: 8px;
+  }
+  /* Full width, halves each; an option too long for its half wraps onto a second
+     line (the track grows with it) rather than running past the edge. */
+  .investor-docs-head .choice-toggle, .doc-app-type .choice-toggle {
+    width: 100%;
+    height: auto;
+    min-height: 36px;
+    border-radius: 18px;
+  }
+  .investor-docs-head .choice-toggle__option, .doc-app-type .choice-toggle__option {
+    flex: 1 1 0;
+    min-width: 0;
+    justify-content: center;
+    padding: 6px 8px;
+    border-radius: 16px;
+    white-space: normal;
+    text-align: center;
+    line-height: 16px;
+  }
+  .investor-docs-head .field-label, .doc-app-type .field-label {
+    width: 100%;
+  }
+}
+/* NSDL holding a PAN against another name: the printed name asked for in a row of
+   its own under the PAN's box, the field and the button side by side. */
+/* In a document grid, the row straight under the PAN's box: across every column,
+   on the second row. Auto-placed boxes flow round it. On Upload Documents the PAN
+   is the second box, so once a phone stacks the boxes it is the third row. */
+/* In a document grid, the row straight under the PAN's box: across every column,
+   on the second row. Auto-placed boxes flow round it. On Upload Documents the PAN
+   is the second box, so once a phone stacks the boxes it is the third row. */
+.doc-grid > .doc-retry-row {
+  grid-column: 1 / -1;
+  grid-row: 2;
+}
+.doc-retry-row > .doc-retry {
+  margin-top: 0;
+}
+/* The Aadhaar number, typed for the PAN-Aadhaar link: after the last box, so across
+   the row under the proofs of address. */
+.doc-grid > .doc-retry-row--end {
+  grid-row: auto;
+}
+/* Under a box: an error, a failed check or the tries left, each on a line of its own. */
+.doc-slot__notes {
+  display: flex;
+  flex-direction: column;
+}
+/* A document column's head: its label, and the type where it is chosen. */
+.doc-column__head {
+  padding-bottom: 4px;
+}
+.doc-column__head > .field-label {
+  padding-bottom: 0;
+}
+/* A narrow column - a phone's - shows the toolbar as its icons alone, the names
+   kept for hover and screen readers, so the label beside it has room. */
+.doc-grid--docs > .doc-column, .doc-grid--details > .doc-column, .doc-payment__slot {
+  container-type: inline-size;
+}
+@container (max-width: 340px) {
+  .doc-slot__tools .doc-tool {
+    padding: 4px 8px;
+  }
+  .doc-slot__tools .doc-tool > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+.doc-retry {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  margin-top: 16px;
+  padding: 16px 20px;
+  border: 1px solid var(--pink-border);
+  border-left: 3px solid var(--red);
+  border-radius: 8px;
+  background: var(--pink-tint);
+}
+.doc-retry__say {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 280px;
+  min-width: 0;
+}
+.doc-retry__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--red-dark);
+}
+.doc-retry__text {
+  font-size: 12px;
+  color: var(--muted);
+}
+.doc-retry__ask {
+  display: flex;
+  gap: 12px;
+  flex: 1 1 420px;
+}
+.doc-retry__ask .field-input {
+  flex: 1;
+  min-width: 0;
+}
+.doc-retry__ask .btn {
+  flex: none;
+}
+.doc-retry__error {
+  flex-basis: 100%;
+  margin: 0;
+}
+/* A joint holder's address panel and manual entry, under their documents. */
+/* A holder's read-only panel: the record, then the address under a divider. The
+   panel's own margin is dropped inside a card, where the record's padding spaces it. */
+.investor-record > .investor-panel {
+  margin-bottom: 0;
+}
+.investor-panel__part {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.doc-slot__tools .hover-hint::after {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+/* A copy that is final - a PAN NSDL verified - shows a lock where Replace would be. */
+.doc-tool.doc-tool--final {
+  color: var(--green);
+  border-color: transparent;
+  background: transparent;
+  cursor: help;
+}
+/* An action that cannot be taken now stands in its place, greyed, saying why on hover or focus. */
+.doc-tool[aria-disabled="true"] {
+  border: 1px solid var(--divider);
+  background: #fff;
+  color: var(--muted-2);
+  cursor: not-allowed;
+}
+.doc-tool.doc-tool--final:hover {
+  color: var(--green);
+  background: transparent;
+}
+/* ----- Emphasis is the difference from the neighbours -----------------------
+   A card with nothing to do - not applicable, or already done - steps back; the
+   card the bar names as next is the one outlined, so the eye goes there first. */
+.doc-slot__na {
+  border-color: var(--border);
+}
+.doc-slot__na .doc-slot__na-title {
+  color: var(--muted);
+}
+.doc-drop.is-filled, .doc-drop.is-held {
+  border-color: var(--border);
+}
+/* Blue, the colour of information: red on a card would read as something wrong. */
+.doc-slot.is-next .doc-drop {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px var(--blue-bg);
+}
+/* ----- The history, as a timeline -------------------------------------------
+   One line per attempt on a thread: a dot coloured by how it ended, what it was,
+   the outcome and when. Its checks open under it. */
+.doc-history__list {
+  position: relative;
+  padding: 12px 0 0;
+}
+.doc-history__list::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 22px;
+  bottom: 12px;
+  width: 1px;
+  background: var(--border-2);
+}
+.doc-history__row {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+}
+.doc-history__row + .doc-history__row {
+  margin-top: 0;
+}
+.doc-history__row:target, .doc-history__row.is-called {
+  background: none;
+  border-color: transparent;
+}
+.doc-history__row:target .doc-history__top {
+  background: var(--pink-tint);
+}
+.doc-history__item > summary {
+  list-style: none;
+  cursor: pointer;
+}
+.doc-history__item > summary::-webkit-details-marker {
+  display: none;
+}
+.doc-history__top {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px 12px;
+  flex-wrap: wrap;
+  padding: 8px 8px 8px 24px;
+  border-radius: 6px;
+}
+.doc-history__top:hover {
+  background: var(--tint);
+}
+.doc-history__top:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 1px;
+}
+.doc-history__dot {
+  position: absolute;
+  left: 1px;
+  top: 50%;
+  width: 11px;
+  height: 11px;
+  margin-top: -5.5px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--border-2);
+}
+.doc-history__row.is-ok .doc-history__dot {
+  border-color: var(--green-2);
+  background: var(--green-2);
+}
+.doc-history__row.is-warn .doc-history__dot {
+  border-color: var(--amber-accent);
+  background: var(--amber-accent);
+}
+.doc-history__row.is-bad .doc-history__dot {
+  border-color: var(--red);
+  background: var(--red);
+}
+.doc-history__mark {
+  margin-left: 0;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: var(--tint);
+  font-size: 12px;
+}
+.doc-history__row.is-ok .doc-history__mark {
+  background: var(--green-bg);
+}
+.doc-history__row.is-warn .doc-history__mark {
+  background: var(--amber-bg);
+}
+.doc-history__row.is-bad .doc-history__mark {
+  background: var(--pink-bg);
+}
+.doc-history__try {
+  margin-left: auto;
+}
+.doc-history__top::after {
+  content: "";
+  flex: none;
+  width: 6px;
+  height: 6px;
+  margin: -3px 2px 0 0;
+  border-right: 1.6px solid var(--muted);
+  border-bottom: 1.6px solid var(--muted);
+  transform: rotate(45deg);
+  transition: transform .15s ease;
+}
+.doc-history__item[open] > .doc-history__top::after {
+  transform: rotate(-135deg);
+  margin-top: 3px;
+}
+.doc-history__body {
+  padding: 0 8px 12px 24px;
+}
+.doc-history__body .doc-history__file {
+  padding-top: 0;
+}
+@media (max-width: 760px) {
+  .doc-history__try {
+    margin-left: 0;
+  }
+}
+
+/* The documents an application carries, as its summary lists them (_ApplicationSummary:
+   Review Summary and View Application's details sheet). */
+.review-checks {
+  list-style: none;
+  margin: 0;
+  padding: 12px 0 0;
+}
+.review-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--divider);
+}
+.review-check:first-child {
+  border-top: 0;
+}
+.review-check__mark {
+  width: 14px;
+  flex: none;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--green);
+  line-height: 20px;
+}
+.review-check__mark--na {
+  color: var(--muted);
+}
+.review-check__body {
+  flex: 1;
+  min-width: 0;
+}
+.review-check__title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 20px;
+}
+.review-check__detail {
+  font-size: 12px;
+  color: var(--muted);
+  padding-top: 2px;
+  line-height: 16px;
+}

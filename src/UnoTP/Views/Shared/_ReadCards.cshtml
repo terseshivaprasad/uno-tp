@@ -4,23 +4,23 @@
    Only a failure keeps its explanation written out, under its row, since it says
    what is wrong and what follows. Where NSDL holds a PAN against another name, the
    name printed on the card is asked for by _NsdlRetry, under the PAN's own box. *@
-<ul class="cud-checks">
+<ul class="doc-checks">
     @foreach (var item in Model.Items)
     {
         var card = item.Card;
         var explainInline = card.Kind == "is-failed" && card.From.Length > 0;
-        <li class="cud-check @card.Kind" id="@(item.Id is null ? null : "read-" + item.Id)" tabindex="@(item.Id is null ? null : "-1")">
-            <span class="cud-check__kind">@item.Kind
+        <li class="doc-check @card.Kind" id="@(item.Id is null ? null : "read-" + item.Id)" tabindex="@(item.Id is null ? null : "-1")">
+            <span class="doc-check__kind">@item.Kind
                 @if (!explainInline && card.From.Length > 0)
                 {
-                    <span class="tip tip--info tip--mark" tabindex="0" data-tip="@card.From"><span class="visually-hidden">@card.From</span></span>
+                    <span class="hover-hint hover-hint--info hover-hint--mark" tabindex="0" data-tip="@card.From"><span class="visually-hidden">@card.From</span></span>
                 }
             </span>
-            <span class="cud-check__state"><span class="cud-check__dot" aria-hidden="true"></span>@card.State</span>
-            <span class="cud-check__lines" title="@card.Lines">@card.Lines</span>
+            <span class="doc-check__state"><span class="doc-check__dot" aria-hidden="true"></span>@card.State</span>
+            <span class="doc-check__lines" title="@card.Lines">@card.Lines</span>
             @if (explainInline)
             {
-                <p class="cud-check__from">@card.From</p>
+                <p class="doc-check__from">@card.From</p>
             }
         </li>
     }

@@ -16,7 +16,7 @@ public sealed class DecryptionClient(HttpClient http, IPartner partner)
     public Task<string?> DecryptAsync(string cipherText, CancellationToken ct = default) =>
         Ask(async () =>
         {
-            using var request = Request(HttpMethod.Post, "decrypt", Body(new { value = cipherText }));
+            using var request = Request(HttpMethod.Post, "decrypt", JsonBody(new { value = cipherText }));
             using var response = await SendAsync(request, ct);
             if (response.StatusCode == System.Net.HttpStatusCode.BadRequest) return null;
             response.EnsureSuccessStatusCode();

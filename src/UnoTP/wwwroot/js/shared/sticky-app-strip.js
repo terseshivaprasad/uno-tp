@@ -7,8 +7,9 @@
   // A partner reporting a problem sends a picture of the screen, and by then the
   // head has scrolled off: the strip keeps the name and the number in shot.
   var watching = null;
-  function pin() {
-    var strip = document.getElementById('cudPin');
+  // Shows the application strip under the top bar once the page head scrolls away.
+  function watchStickyStrip() {
+    var strip = document.getElementById('docsPin');
     var head = document.querySelector('[data-pin-head]');
     if (watching) watching.disconnect();
     if (!strip || !head || !window.IntersectionObserver) return;
@@ -17,9 +18,9 @@
     }, { rootMargin: '-52px 0px 0px 0px' });
     watching.observe(head);
   }
-  pin();
+  watchStickyStrip();
   // The page redraws its <main> after every post, the head with it.
-  document.addEventListener('partial:swapped', pin);
+  document.addEventListener('partial:swapped', watchStickyStrip);
 
   // The number every question about this application starts with, one press away.
   document.addEventListener('click', function (e) {

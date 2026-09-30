@@ -215,12 +215,12 @@ public sealed class InvestorViewModel(InvestorInfoState state, DocumentsViewMode
         ("Gender", "h{0}-gender", "Select the gender"),
         ("NameType", "h{0}-nametype", "Select the name type"),
         ("ParentName", "h{0}-parent", "Enter the father's, mother's or spouse's name"),
-        ("AnnualIncome", "cii{0}Income", "Select the annual income"),
-        ("Occupation", "cii{0}Occupation", "Select the occupation"),
-        ("SubOccupation", "cii{0}SubOccupation", "Select the sub occupation"),
-        ("MaritalStatus", "cii{0}Marital", "Select the marital status"),
-        ("Mobile", "cii{0}Mobile", "Enter the mobile number"),
-        ("Email", "cii{0}Email", "Enter the e-mail"),
+        ("AnnualIncome", "investor{0}Income", "Select the annual income"),
+        ("Occupation", "investor{0}Occupation", "Select the occupation"),
+        ("SubOccupation", "investor{0}SubOccupation", "Select the sub occupation"),
+        ("MaritalStatus", "investor{0}Marital", "Select the marital status"),
+        ("Mobile", "investor{0}Mobile", "Enter the mobile number"),
+        ("Email", "investor{0}Email", "Enter the e-mail"),
     ];
 
     /// <summary>
@@ -236,19 +236,19 @@ public sealed class InvestorViewModel(InvestorInfoState state, DocumentsViewMode
         if (!state.Nominee) return found;
 
         var need = new Needs(state.Fields, found);
-        need.Need("Nominee.Name", "ciiNomName", "Enter the nominee's name", LettersOnly, IsName);
+        need.Need("Nominee.Name", "investorNomineeName", "Enter the nominee's name", LettersOnly, IsName);
         var (dd, mm, yyyy) = (need.Of("Nominee.Dd"), need.Of("Nominee.Mm"), need.Of("Nominee.Yyyy"));
-        if (dd.Length == 0 || mm.Length == 0 || yyyy.Length == 0) found.Add(("Nominee.Dob", "ciiNomDd", "Enter the nominee's date of birth"));
-        else if (!IsDate(dd, mm, yyyy, DateTime.Today)) found.Add(("Nominee.Dob", "ciiNomDd", "Enter a real date of birth, not a future one"));
-        need.Need("Nominee.Relation", "ciiNomRelation", "Select the relation with the primary holder");
+        if (dd.Length == 0 || mm.Length == 0 || yyyy.Length == 0) found.Add(("Nominee.Dob", "investorNomineeDd", "Enter the nominee's date of birth"));
+        else if (!IsDate(dd, mm, yyyy, DateTime.Today)) found.Add(("Nominee.Dob", "investorNomineeDd", "Enter a real date of birth, not a future one"));
+        need.Need("Nominee.Relation", "investorNomineeRelation", "Select the relation with the primary holder");
         if (IsMinor(dd, mm, yyyy, DateTime.Today, minorUnder))
         {
-            need.Need("Nominee.GuardianName", "ciiNomGuardian", "Enter the guardian's name", LettersOnly, IsName);
-            need.Need("Nominee.GuardianAddress.Line1", "ciiGdn1", "Enter the first line of the address", NoSpecialCharacters, IsText);
-            need.Shape("Nominee.GuardianAddress.Line2", "ciiGdn2", NoSpecialCharacters, IsText);
-            need.Shape("Nominee.GuardianAddress.Line3", "ciiGdn3", NoSpecialCharacters, IsText);
-            need.Need("Nominee.GuardianAddress.PinCode", "ciiGdnPin", "Enter the PIN code", "Enter a 6-digit PIN code", IsPin);
-            need.Need("Nominee.GuardianAddress.City", "ciiGdnCity", "Enter the city", LettersOnly, IsName);
+            need.Need("Nominee.GuardianName", "investorNomineeGuardian", "Enter the guardian's name", LettersOnly, IsName);
+            need.Need("Nominee.GuardianAddress.Line1", "investorGuardian1", "Enter the first line of the address", NoSpecialCharacters, IsText);
+            need.Shape("Nominee.GuardianAddress.Line2", "investorGuardian2", NoSpecialCharacters, IsText);
+            need.Shape("Nominee.GuardianAddress.Line3", "investorGuardian3", NoSpecialCharacters, IsText);
+            need.Need("Nominee.GuardianAddress.PinCode", "investorGuardianPin", "Enter the PIN code", "Enter a 6-digit PIN code", IsPin);
+            need.Need("Nominee.GuardianAddress.City", "investorGuardianCity", "Enter the city", LettersOnly, IsName);
         }
         return found;
     }
@@ -296,8 +296,10 @@ public sealed class InvestorViewModel(InvestorInfoState state, DocumentsViewMode
     // A field that has to hold something, and hold it rightly.
     private sealed class Needs(Dictionary<string, string> fields, List<(string Field, string Id, string Error)> found)
     {
+        /// <summary>A posted field's value, trimmed ("" when missing).</summary>
         public string Of(string name) => fields.GetValueOrDefault(name)?.Trim() ?? "";
 
+        /// <summary>Records an error for a field that is empty, or filled in but not valid.</summary>
         public void Need(string name, string id, string empty, string? wrong = null, Func<string, bool>? valid = null)
         {
             var value = Of(name);
@@ -320,7 +322,7 @@ public sealed class InvestorViewModel(InvestorInfoState state, DocumentsViewMode
     public bool About(int holder, DocumentsViewModel.DocHolder h) =>
         Errors.Keys.Any(k => k.StartsWith($"Holder{holder}."))
         || (Docs.Shown?.Errors.Keys.Any(k => k.StartsWith($"h{h.Code}-")) ?? false)
-        || Focus is { } f && (f.StartsWith($"holder-{holder}") || f.StartsWith($"h{holder}-") || f.StartsWith($"cii{holder}")
+        || Focus is { } f && (f.StartsWith($"holder-{holder}") || f.StartsWith($"h{holder}-") || f.StartsWith($"investor{holder}")
             || f.StartsWith($"pep-Holder{holder}.") || f.Contains($"h{h.Code}-"));
 
     private static bool IsDate(string dd, string mm, string yyyy, DateTime today) =>

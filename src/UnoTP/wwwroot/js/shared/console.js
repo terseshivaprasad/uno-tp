@@ -1,6 +1,11 @@
+// Helpers carried over from the classic eSarathi console: the toast (a short
+// message at the foot of the screen), the table search and status pills of a
+// console list, and the dashboard tile search. Each part does nothing on a page
+// without its markup, so the file is safe on every page.
 (function () {
   var toastEl = document.getElementById('toast');
   var toastTimer = null;
+  // Shows a short message at the foot of the screen for two seconds.
   function showToast(message) {
     if (!toastEl) return;
     toastEl.textContent = message;
@@ -29,6 +34,7 @@
   var pills = document.querySelectorAll('#statusPills .status-pill[data-status]');
   var activeStatus = 'all';
 
+  // Filters the table rows by the search box and the status pill.
   function applyFilters() {
     if (!tbody) return;
     var q = (searchInput && searchInput.value || '').trim().toLowerCase();
@@ -107,12 +113,12 @@
     });
   });
 
-  // The classic console's own application search: one flat set of .classic-tile
+  // The classic console's own application search: one flat set of .dashboard-tile
   // links, with a line in their place when nothing matches.
   document.querySelectorAll('.js-classic-search').forEach(function (search) {
     var scope = document.querySelector('[data-classic-tile-scope]');
     if (!scope) return;
-    var tiles = scope.querySelectorAll('.classic-tile[data-search]');
+    var tiles = scope.querySelectorAll('.dashboard-tile[data-search]');
     var empty = scope.querySelector('.js-classic-empty');
     search.addEventListener('input', function () {
       var q = search.value.trim().toLowerCase();

@@ -75,7 +75,7 @@ public sealed class SqlMasters(Db db, SqlReference reference) : IInvestorApi, IS
         var words = Words(query, ' ');
         if (words.Length == 0) return [];
         var (where, args) = AllWords(words, "c_Code + ' ' + c_Name");
-        args.Add("First", Like(words[0]) + "%");
+        args.Add("First", EscapeLikePattern(words[0]) + "%");
         await using var connection = await db.OpenAsync(ct);
         return (await connection.QueryAsync<Party>($"""
             SELECT TOP ({Found}) c_Code AS Code, c_Name AS Name FROM dbo.{table}
@@ -101,7 +101,7 @@ public sealed class SqlMasters(Db db, SqlReference reference) : IInvestorApi, IS
         var words = Words(query, ' ', ',', '—', '-');
         if (words.Length == 0) return [];
         var (where, args) = AllWords(words, "c_Bank + ' ' + c_Branch + ' ' + c_Ifsc + ' ' + c_Micr");
-        args.Add("Start", Like(query.Trim()) + "%");
+        args.Add("Start", EscapeLikePattern(query.Trim()) + "%");
         await using var connection = await db.OpenAsync(ct);
         return (await connection.QueryAsync<BankBranch>($"""
             SELECT TOP ({Found}) c_Ifsc AS Ifsc, c_Bank AS Bank, c_Branch AS Branch, c_Micr AS Micr FROM dbo.t_Unotp_Ifsc_Mst
@@ -166,13 +166,13 @@ public sealed class SqlMasters(Db db, SqlReference reference) : IInvestorApi, IS
         var args = new DynamicParameters();
         var where = string.Join(" AND ", words.Select((w, i) =>
         {
-            args.Add("w" + i.ToString(CultureInfo.InvariantCulture), "%" + Like(w) + "%");
+            args.Add("w" + i.ToString(CultureInfo.InvariantCulture), "%" + EscapeLikePattern(w) + "%");
             return $"{text} LIKE @w{i} ESCAPE '\\'";
         }));
         return (where, args);
     }
 
     // What was typed, taken as it is: LIKE's own characters are escaped.
-    private static string Like(string value) =>
+    private static string EscapeLikePattern(string value) =>
         value.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_").Replace("[", "\\[");
 }

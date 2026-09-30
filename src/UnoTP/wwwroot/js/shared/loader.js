@@ -8,6 +8,7 @@
   var what = document.getElementById('appLoaderWhat');
   var hint = document.getElementById('appLoaderHint');
 
+  // Puts up the full-screen wait with what is under way.
   function showLoader(words, note) {
     what.textContent = words || 'Working…';
     hint.textContent = note || '';
@@ -16,6 +17,7 @@
     document.body.classList.add('is-waiting');
   }
 
+  // Takes the full-screen wait down.
   function hideLoader() {
     box.hidden = true;
     hint.hidden = true;

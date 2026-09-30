@@ -15,7 +15,7 @@ public sealed class MockApplications(MockStore store, IPartner partner) : IAppli
     public Task<Application> OpenAsync(Holder holder, CancellationToken ct = default)
     {
         Application app;
-        do app = New(NewAppNo(), holder);
+        do app = NewApplication(NewAppNo(), holder);
         while (!store.TryAdd(partner.Id, app));
         return Task.FromResult(app);
     }
@@ -86,7 +86,8 @@ public sealed class MockApplications(MockStore store, IPartner partner) : IAppli
         return Task.FromResult(app);
     }
 
-    private static Application New(string appNo, Holder holder) =>
+    /// <summary>A new draft application for the holder, under the given application number.</summary>
+    private static Application NewApplication(string appNo, Holder holder) =>
         new() { AppNo = appNo, Holder = holder, Prior = PriorAttempts(holder).ToList() };
 
     // Same shape as the application numbers the console lists.

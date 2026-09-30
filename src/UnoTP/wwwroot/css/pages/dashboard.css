@@ -1,140 +1,547 @@
-/* The dashboard page only. Loaded after the shared styles (Bootstrap, theme, base,
-   wizard, registers).
+/* Styles for the dashboard page only. Loaded after the shared stylesheets.
+   Sizes follow docs/BRAND_GUIDELINES.md: 20px page title, 16px section headings,
+   14px text, 12px notes. */
 
-   On the type scale and 4/8 spacing of docs/BRAND_GUIDELINES.md: 20px for the
-   page's one title, 16px for section headings, 14px for what is read and pressed,
-   12px for what describes it. Nothing smaller, and nothing in --muted-2 but the
-   icons of a tile that cannot be opened. */
-
-/* ----- The panel: the four steps down the left, the tiles to the right -------- */
-.classic { background: #fff; border-radius: 8px; padding: 32px 32px 56px; display: grid; grid-template-columns: minmax(0,448px) minmax(0,1fr); }
-/* A third for the steps once four tiles no longer fit beside a full step column,
-   then stacked below 992px. */
+/* ===== The panel: the four steps on the left, the tiles on the right ===== */
+.dashboard-panel {
+  background: #fff;
+  border-radius: 8px;
+  padding: 32px 32px 56px;
+  display: grid;
+  grid-template-columns: minmax(0,448px) minmax(0,1fr);
+}
+/* Narrower screens: the steps take a third of the width; below 992px the two columns stack. */
 @media (max-width: 1180px) {
-  .classic { grid-template-columns: minmax(0,1fr) minmax(0,2fr); }
+  .dashboard-panel {
+    grid-template-columns: minmax(0,1fr) minmax(0,2fr);
+  }
 }
 @media (max-width: 991px) {
-  .classic { grid-template-columns: minmax(0,1fr); padding: 24px 16px; }
+  .dashboard-panel {
+    grid-template-columns: minmax(0,1fr);
+    padding: 24px 16px;
+  }
 }
 
-/* ----- The steps ----------------------------------------------------------- */
-.classic-steps { padding-right: 24px; border-right: 1px solid var(--border-2); }
-.classic-steps__title { margin: 0; font-size: 20px; font-weight: 400; line-height: 28px; letter-spacing: -.01em; color: var(--text); }
-.classic-steps__title strong { font-weight: 600; color: var(--blue); }
-.classic-steps__list { list-style: none; margin: 48px 0 0; padding: 0; display: flex; flex-direction: column; gap: 32px; }
-.classic-step { position: relative; display: flex; align-items: center; gap: 16px; font-size: 16px; line-height: 24px; color: var(--text); }
-.classic-step svg { flex: none; width: 32px; height: 32px; color: var(--text); }
-/* The short rule under each icon that threads the steps into one line. */
-.classic-step + .classic-step::before { content: ""; position: absolute; left: 15.25px; top: -28px; height: 20px; border-left: 1.5px solid var(--muted); }
-.classic-docs { display: block; width: 100%; margin-top: 32px; padding: 12px 16px; border: 1px dashed var(--border-3); border-radius: 8px; text-align: center; font-size: 14px; line-height: 20px; color: var(--ink); cursor: pointer; }
-.classic-docs em { color: var(--blue); font-weight: 600; }
-.classic-docs:hover { border-color: var(--blue); background: var(--blue-bg); }
-.classic-docs:hover em { text-decoration: underline; text-underline-offset: 3px; }
-.classic-docs:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
-/* The note is read, so it is body size on a tinted panel. */
-.classic-note { margin-top: 16px; padding: 12px 16px; border-radius: 6px; background: var(--tint); border: 1px solid var(--border); font-size: 12px; line-height: 16px; color: var(--text); }
-.classic-note__title { font-weight: 600; color: var(--ink); }
-.classic-note ul { margin: 4px 0 0; padding-left: 16px; }
-.classic-note li + li { margin-top: 8px; }
+/* ===== The four steps ===== */
+.dashboard-steps {
+  padding-right: 24px;
+  border-right: 1px solid var(--border-2);
+}
+.dashboard-steps__title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 28px;
+  letter-spacing: -.01em;
+  color: var(--text);
+}
+.dashboard-steps__title strong {
+  font-weight: 600;
+  color: var(--blue);
+}
+.dashboard-steps__list {
+  list-style: none;
+  margin: 48px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+.dashboard-step {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 16px;
+  line-height: 24px;
+  color: var(--text);
+}
+.dashboard-step svg {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  color: var(--text);
+}
+/* The short vertical line joining one step's icon to the next. */
+.dashboard-step + .dashboard-step::before {
+  content: "";
+  position: absolute;
+  left: 15.25px;
+  top: -28px;
+  height: 20px;
+  border-left: 1.5px solid var(--muted);
+}
+.dashboard-docs {
+  display: block;
+  width: 100%;
+  margin-top: 32px;
+  padding: 12px 16px;
+  border: 1px dashed var(--border-3);
+  border-radius: 8px;
+  text-align: center;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--ink);
+  cursor: pointer;
+}
+.dashboard-docs em {
+  color: var(--blue);
+  font-weight: 600;
+}
+.dashboard-docs:hover {
+  border-color: var(--blue);
+  background: var(--blue-bg);
+}
+.dashboard-docs:hover em {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.dashboard-docs:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+/* The note under the steps. */
+.dashboard-note {
+  margin-top: 16px;
+  padding: 12px 16px;
+  border-radius: 6px;
+  background: var(--tint);
+  border: 1px solid var(--border);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--text);
+}
+.dashboard-note__title {
+  font-weight: 600;
+  color: var(--ink);
+}
+.dashboard-note ul {
+  margin: 4px 0 0;
+  padding-left: 16px;
+}
+.dashboard-note li + li {
+  margin-top: 8px;
+}
 
-/* ----- The actions: tiles, what is waiting, drafts --------------------------- */
-.classic-actions { padding-left: 40px; }
-.classic-actions__title { margin: 0; font-size: 16px; font-weight: 400; line-height: 24px; color: var(--text); }
-.classic-actions__rule { border: 0; border-top: 1px solid var(--border-2); margin: 32px 0; }
-.classic-tiles { display: flex; flex-wrap: wrap; gap: 24px; padding-top: 16px; }
+/* ===== The right column: tiles, work waiting, drafts ===== */
+.dashboard-actions {
+  padding-left: 40px;
+}
+.dashboard-actions__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+  color: var(--text);
+}
+.dashboard-actions__rule {
+  border: 0;
+  border-top: 1px solid var(--border-2);
+  margin: 32px 0;
+}
+.dashboard-tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  padding-top: 16px;
+}
 @media (max-width: 991px) {
-  .classic-steps { padding: 0 0 24px; border-right: 0; border-bottom: 1px solid var(--border-2); }
-  .classic-actions { padding: 24px 0 0; }
+  .dashboard-steps {
+    padding: 0 0 24px;
+    border-right: 0;
+    border-bottom: 1px solid var(--border-2);
+  }
+  .dashboard-actions {
+    padding: 24px 0 0;
+  }
 }
 
-/* Said on the dashboard when a closed page sent the partner back to it: a
-   Bootstrap alert, marked on its leading edge in the brand's red. */
-.classic-closed { display: flex; align-items: flex-start; gap: 8px; }
-.classic-closed svg { flex: none; margin-top: 2px; }
+/* The alert at the top when a closed page sent the partner back here. */
+.dashboard-closed {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.dashboard-closed svg {
+  flex: none;
+  margin-top: 2px;
+}
 
 /* One big tile: an icon over its name. */
-.classic-tile { width: 128px; height: 128px; padding: 20px 8px 0; border: 1px solid var(--border); border-radius: 8px; background: #fff; box-shadow: 0 4px 12px rgba(24,39,75,.07); display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 8px; color: var(--muted); cursor: pointer; text-align: center; font-family: inherit; transition: box-shadow .15s ease, border-color .15s ease; }
-.classic-tile:hover { text-decoration: none; box-shadow: 0 8px 20px rgba(24,39,75,.13); border-color: var(--border-2); }
-.classic-tile:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
-/* A tile the console's search has filtered out: display:flex above would otherwise
-   outrank the browser's own [hidden] rule. */
-.classic-tile[hidden] { display: none; }
-/* One icon size on every tile, open or not: 48px over a 14px name, as on the old
-   eSarathi dashboard. */
-.classic-tile__icon { display: flex; align-items: center; justify-content: center; height: 48px; }
-.classic-tile__icon svg { width: 48px; height: 48px; }
-/* Two-line labels ("PIS Generation - Axis") centre on the same line as one-line ones. */
-.classic-tile__title { flex: 1; display: flex; align-items: center; font-size: 14px; font-weight: 600; line-height: 20px; color: var(--text); padding-bottom: 12px; }
-/* A tile that cannot be opened yet: flat, greyed, with the reason under it as a
-   chip (a Bootstrap badge) at full strength - the tile steps back, the reason does not. */
-.classic-tile--off { background: var(--tint); border-style: dashed; box-shadow: none; color: var(--muted-2); cursor: help; padding: 8px; gap: 4px; justify-content: center; }
-.classic-tile--off:hover { box-shadow: none; border-color: var(--border); }
-.classic-tile--off .classic-tile__icon { height: auto; }
-.classic-tile--off .classic-tile__title { flex: none; color: var(--muted); padding-bottom: 0; }
-.classic-tile__off { white-space: normal; }
+.dashboard-tile {
+  width: 128px;
+  height: 128px;
+  padding: 20px 8px 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(24,39,75,.07);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  color: var(--muted);
+  cursor: pointer;
+  text-align: center;
+  font-family: inherit;
+  transition: box-shadow .15s ease, border-color .15s ease;
+}
+.dashboard-tile:hover {
+  text-decoration: none;
+  box-shadow: 0 8px 20px rgba(24,39,75,.13);
+  border-color: var(--border-2);
+}
+.dashboard-tile:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+/* A tile hidden by the console's search. Needed because display: flex above
+   would otherwise override the browser's [hidden] rule. */
+.dashboard-tile[hidden] {
+  display: none;
+}
+/* A 48px icon over a 14px name, as on the old eSarathi dashboard. */
+.dashboard-tile__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 48px;
+}
+.dashboard-tile__icon svg {
+  width: 48px;
+  height: 48px;
+}
+/* A two-line name ("PIS Generation - Axis") lines up with the one-line names. */
+.dashboard-tile__title {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  color: var(--text);
+  padding-bottom: 12px;
+}
+/* A tile that cannot be opened: flat and greyed, with the reason under it as a badge. */
+.dashboard-tile--off {
+  background: var(--tint);
+  border-style: dashed;
+  box-shadow: none;
+  color: var(--muted-2);
+  cursor: help;
+  padding: 8px;
+  gap: 4px;
+  justify-content: center;
+}
+.dashboard-tile--off:hover {
+  box-shadow: none;
+  border-color: var(--border);
+}
+.dashboard-tile--off .dashboard-tile__icon {
+  height: auto;
+}
+.dashboard-tile--off .dashboard-tile__title {
+  flex: none;
+  color: var(--muted);
+  padding-bottom: 0;
+}
+.dashboard-tile__off {
+  white-space: normal;
+}
 @media (max-width: 1180px) {
-  .classic-tiles { gap: 16px; }
+  .dashboard-tiles {
+    gap: 16px;
+  }
 }
 @media (max-width: 560px) {
-  .classic-tiles { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; }
-  .classic-tile { width: auto; }
-  .classic-steps__list { margin-top: 32px; gap: 24px; }
-  .classic-step + .classic-step::before { top: -20px; height: 12px; }
+  .dashboard-tiles {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0,1fr));
+    gap: 12px;
+  }
+  .dashboard-tile {
+    width: auto;
+  }
+  .dashboard-steps__list {
+    margin-top: 32px;
+    gap: 24px;
+  }
+  .dashboard-step + .dashboard-step::before {
+    top: -20px;
+    height: 12px;
+  }
 }
 
-/* What is waiting on the partner, one count each, in the tiles' column. The count
-   carries the colour of how pressing it is; the rest stays quiet. */
-.work-counts__list { list-style: none; margin: 0; padding: 16px 0 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(192px, 1fr)); gap: 8px; }
-.work-count { display: flex; align-items: center; gap: 12px; height: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; background: #fff; color: var(--ink); }
-.work-count:hover { border-color: var(--border-3); background: var(--tint); text-decoration: none; }
-.work-count:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
-.work-count__n { flex: none; display: inline-flex; align-items: center; justify-content: center; min-width: 32px; height: 32px; padding: 0 8px; border-radius: 6px; font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; background: var(--tint); color: var(--text); }
-.work-count--red .work-count__n { background: var(--pink-bg); color: var(--red-dark); }
-.work-count--amber .work-count__n { background: var(--amber-bg); color: var(--amber); }
-.work-count--blue .work-count__n { background: var(--blue-bg); color: var(--blue); }
-.work-count__label { font-size: 14px; font-weight: 600; line-height: 20px; }
+/* ===== Work waiting on the partner: one count per kind. The count's colour says how pressing it is. ===== */
+.work-counts__list {
+  list-style: none;
+  margin: 0;
+  padding: 16px 0 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(192px, 1fr));
+  gap: 8px;
+}
+.work-count {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+}
+.work-count:hover {
+  border-color: var(--border-3);
+  background: var(--tint);
+  text-decoration: none;
+}
+.work-count:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+.work-count__n {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 8px;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  background: var(--tint);
+  color: var(--text);
+}
+.work-count--red .work-count__n {
+  background: var(--pink-bg);
+  color: var(--red-dark);
+}
+.work-count--amber .work-count__n {
+  background: var(--amber-bg);
+  color: var(--amber);
+}
+.work-count--blue .work-count__n {
+  background: var(--blue-bg);
+  color: var(--blue);
+}
+.work-count__label {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+}
 
-/* Continue an application: the drafts list (_Drafts, styled in base.css) under
-   the counts, with a way to the rest. */
-.drafts__head { align-items: baseline; }
-.drafts .cii-note { margin-top: 8px; }
+/* ===== The drafts list (_Drafts). Its rows are styled in layout-and-controls.css. ===== */
+.drafts__head {
+  align-items: baseline;
+}
+.drafts .page-note {
+  margin-top: 8px;
+}
 
-/* ----- The required-documents dialog behind "Click here" ---------------------
-   Investor types down the side, one type's list beside them, the eSarathi note
-   pinned to the foot. It keeps one height so switching types never makes it jump.
-   A popover: the browser opens it from a popovertarget button and closes it on Esc
-   or a click on the backdrop. It only lays itself out while it is open, or it
-   would override the browser's own hiding of a closed popover. */
-.rdocs { inset: 0; margin: auto; border: 0; width: calc(100% - 40px); max-width: 760px; height: min(620px, calc(100vh - 40px)); max-height: none; padding: 0; overflow: hidden; flex-direction: column; color: var(--ink); }
-.rdocs:popover-open { display: flex; }
-.rdocs::backdrop { background: rgba(35,31,32,.45); }
-body:has(.rdocs:popover-open) { overflow: hidden; }
-.rdocs__body { flex: 1; min-height: 0; display: grid; grid-template-columns: 224px minmax(0,1fr); }
-.rdocs__types { overflow-y: auto; padding: 8px 0; border-right: 1px solid var(--divider); background: var(--tint); }
-.rdocs__type { width: 100%; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 16px 12px 20px; border-left: 3px solid transparent; font-family: inherit; font-size: 14px; line-height: 20px; color: var(--text); text-align: left; cursor: pointer; }
-.rdocs__type:hover { color: var(--ink); }
-.rdocs__type:has(input:checked) { background: #fff; border-left-color: var(--red); color: var(--ink); font-weight: 600; }
-.rdocs__type:has(input:focus-visible) { outline: 2px solid var(--blue); outline-offset: -2px; }
-.rdocs__type-count { flex: none; min-width: 24px; padding: 2px 6px; border-radius: 3px; background: var(--border); font-size: 12px; font-weight: 600; line-height: 16px; text-align: center; color: var(--text); font-variant-numeric: tabular-nums; }
-.rdocs__type:has(input:checked) .rdocs__type-count { background: var(--pink-bg); color: var(--red-dark); }
-/* Hidden until its type is checked; the partial writes the rule that shows it. */
-.rdocs__panel { display: none; overflow-y: auto; padding: 20px 24px 24px; }
-.rdocs__panel:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
-.rdocs__panel-title { margin: 0; font-size: 16px; font-weight: 600; line-height: 24px; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
-.rdocs__panel-title span { font-size: 12px; font-weight: 400; line-height: 16px; color: var(--muted); }
-.rdocs__list { list-style: none; counter-reset: rdoc; margin: 12px 0 0; padding: 0; }
-.rdocs__list li { counter-increment: rdoc; position: relative; padding: 12px 0 12px 36px; border-bottom: 1px solid var(--divider); font-size: 14px; line-height: 20px; color: var(--text); }
-.rdocs__list li:last-child { border-bottom: 0; }
-.rdocs__list li::before { content: counter(rdoc); position: absolute; left: 0; top: 8px; width: 24px; height: 24px; border-radius: 50%; background: var(--tint); border: 1px solid var(--border); font-size: 12px; font-weight: 600; line-height: 22px; text-align: center; color: var(--muted); }
-.rdocs__callout { margin: 12px 0 0; padding: 12px 16px; border-radius: 6px; background: var(--amber-bg); font-size: 14px; line-height: 20px; color: var(--amber); }
+/* ===== The required-documents dialog (_RequiredDocs) =====
+   Investor types down the side, the chosen type's list beside them. It keeps one
+   height so switching types does not make it jump. It is a browser popover, so it
+   is laid out only while open (:popover-open): a plain display: flex would override
+   the browser's hiding of a closed popover. */
+.required-docs {
+  inset: 0;
+  margin: auto;
+  border: 0;
+  width: calc(100% - 40px);
+  max-width: 760px;
+  height: min(620px, calc(100vh - 40px));
+  max-height: none;
+  padding: 0;
+  overflow: hidden;
+  flex-direction: column;
+  color: var(--ink);
+}
+.required-docs:popover-open {
+  display: flex;
+}
+.required-docs::backdrop {
+  background: rgba(35,31,32,.45);
+}
+body:has(.required-docs:popover-open) {
+  overflow: hidden;
+}
+.required-docs__body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 224px minmax(0,1fr);
+}
+.required-docs__types {
+  overflow-y: auto;
+  padding: 8px 0;
+  border-right: 1px solid var(--divider);
+  background: var(--tint);
+}
+.required-docs__type {
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 16px 12px 20px;
+  border-left: 3px solid transparent;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+.required-docs__type:hover {
+  color: var(--ink);
+}
+.required-docs__type:has(input:checked) {
+  background: #fff;
+  border-left-color: var(--red);
+  color: var(--ink);
+  font-weight: 600;
+}
+.required-docs__type:has(input:focus-visible) {
+  outline: 2px solid var(--blue);
+  outline-offset: -2px;
+}
+.required-docs__type-count {
+  flex: none;
+  min-width: 24px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: var(--border);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+  text-align: center;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.required-docs__type:has(input:checked) .required-docs__type-count {
+  background: var(--pink-bg);
+  color: var(--red-dark);
+}
+/* Hidden until its type is checked; _RequiredDocs writes the rule that shows it. */
+.required-docs__panel {
+  display: none;
+  overflow-y: auto;
+  padding: 20px 24px 24px;
+}
+.required-docs__panel:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: -2px;
+}
+.required-docs__panel-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.required-docs__panel-title span {
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 16px;
+  color: var(--muted);
+}
+.required-docs__list {
+  list-style: none;
+  counter-reset: rdoc;
+  margin: 12px 0 0;
+  padding: 0;
+}
+.required-docs__list li {
+  counter-increment: rdoc;
+  position: relative;
+  padding: 12px 0 12px 36px;
+  border-bottom: 1px solid var(--divider);
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--text);
+}
+.required-docs__list li:last-child {
+  border-bottom: 0;
+}
+.required-docs__list li::before {
+  content: counter(rdoc);
+  position: absolute;
+  left: 0;
+  top: 8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--tint);
+  border: 1px solid var(--border);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 22px;
+  text-align: center;
+  color: var(--muted);
+}
+.required-docs__callout {
+  margin: 12px 0 0;
+  padding: 12px 16px;
+  border-radius: 6px;
+  background: var(--amber-bg);
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--amber);
+}
 @media (max-width: 640px) {
-  .rdocs { width: 100%; max-width: none; height: calc(100vh - 24px); margin: auto 0 0; border-radius: 8px 8px 0 0; }
-  .rdocs__body { grid-template-columns: minmax(0,1fr); grid-template-rows: auto minmax(0,1fr); }
+  .required-docs {
+    width: 100%;
+    max-width: none;
+    height: calc(100vh - 24px);
+    margin: auto 0 0;
+    border-radius: 8px 8px 0 0;
+  }
+  .required-docs__body {
+    grid-template-columns: minmax(0,1fr);
+    grid-template-rows: auto minmax(0,1fr);
+  }
   /* The types become a swipeable chip row. */
-  .rdocs__types { display: flex; gap: 8px; overflow-x: auto; overflow-y: hidden; padding: 12px 16px; border-right: 0; border-bottom: 1px solid var(--divider); background: #fff; scrollbar-width: none; }
-  .rdocs__types::-webkit-scrollbar { display: none; }
-  .rdocs__type { width: auto; flex: none; padding: 6px 12px; border: 1px solid var(--border-2); border-radius: 999px; white-space: nowrap; }
-  .rdocs__type:has(input:checked) { border-color: var(--red); background: var(--pink-bg); color: var(--red-dark); }
-  .rdocs__type:has(input:checked) .rdocs__type-count { background: #fff; }
-  .rdocs__panel { padding: 16px; }
+  .required-docs__types {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 12px 16px;
+    border-right: 0;
+    border-bottom: 1px solid var(--divider);
+    background: #fff;
+    scrollbar-width: none;
+  }
+  .required-docs__types::-webkit-scrollbar {
+    display: none;
+  }
+  .required-docs__type {
+    width: auto;
+    flex: none;
+    padding: 6px 12px;
+    border: 1px solid var(--border-2);
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .required-docs__type:has(input:checked) {
+    border-color: var(--red);
+    background: var(--pink-bg);
+    color: var(--red-dark);
+  }
+  .required-docs__type:has(input:checked) .required-docs__type-count {
+    background: #fff;
+  }
+  .required-docs__panel {
+    padding: 16px;
+  }
 }

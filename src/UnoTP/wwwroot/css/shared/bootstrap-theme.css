@@ -1,9 +1,9 @@
 /* Bootstrap 5.3 (lib/bootstrap), themed to the Mahindra Finance brand -
    docs/BRAND_GUIDELINES.md. Bootstrap's own variables are pointed at the brand's
-   tokens (base.css), so a Bootstrap component - a button, a form control, a card,
+   tokens (layout-and-controls.css), so a Bootstrap component - a button, a form control, a card,
    a badge, a table - comes out in the brand without a rule of its own.
 
-   Loaded right after bootstrap.min.css and before base.css: the pages' own styles
+   Loaded right after bootstrap.min.css and before layout-and-controls.css: the pages' own styles
    still win where they say something, and give way to Bootstrap page by page as
    each page moves onto its components and utilities. */
 
@@ -28,7 +28,6 @@
   --bs-secondary-bg-subtle: var(--tint);
   --bs-secondary-border-subtle: var(--border);
   --bs-secondary-text-emphasis: var(--text);
-
   /* The one main action and what is wrong: Mahindra red. */
   --bs-primary: #E31837;
   --bs-primary-rgb: 227, 24, 55;
@@ -40,7 +39,6 @@
   --bs-danger-text-emphasis: var(--red-dark);
   --bs-danger-bg-subtle: var(--pink-bg);
   --bs-danger-border-subtle: var(--pink-border);
-
   /* Status, as the brand tints it: green done, amber waiting, blue information. */
   --bs-success: #146C34;
   --bs-success-rgb: 20, 108, 52;
@@ -57,14 +55,12 @@
   --bs-info-text-emphasis: var(--blue);
   --bs-info-bg-subtle: var(--blue-bg);
   --bs-info-border-subtle: var(--blue-border);
-
   /* Links are red, and underline on hover. */
   --bs-link-color: var(--red);
   --bs-link-color-rgb: 227, 24, 55;
   --bs-link-hover-color: var(--red-dark);
   --bs-link-hover-color-rgb: 179, 19, 43;
   --bs-link-decoration: none;
-
   /* Hairlines and corners: 8px cards and panels, 6px buttons and controls, 3px
      chips, a full capsule for pills. Nothing else. */
   --bs-border-color: var(--border);
@@ -75,7 +71,6 @@
   --bs-border-radius-xl: 8px;
   --bs-border-radius-xxl: 8px;
   --bs-border-radius-pill: 999px;
-
   /* Focus is blue, and always seen (WCAG 2.4.7, 2.4.11). */
   --bs-focus-ring-width: 2px;
   --bs-focus-ring-opacity: 1;
@@ -95,9 +90,15 @@
   --bs-btn-border-radius: 6px;
   --bs-btn-disabled-opacity: 1;
   --bs-btn-focus-box-shadow: 0 0 0 2px var(--card-bg), 0 0 0 4px var(--blue);
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  white-space: nowrap;
 }
-.btn:hover { text-decoration: none; }
+.btn:hover {
+  text-decoration: none;
+}
 .btn-sm {
   --bs-btn-font-size: 14px;
   --bs-btn-padding-x: 12px;
@@ -164,8 +165,18 @@
   border-color: var(--blue);
   box-shadow: 0 0 0 2px var(--blue-bg);
 }
-.form-label { margin-bottom: 4px; font-size: 12px; font-weight: 600; line-height: 16px; color: var(--ink); }
-.form-text { font-size: 12px; line-height: 16px; color: var(--muted); }
+.form-label {
+  margin-bottom: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+  color: var(--ink);
+}
+.form-text {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--muted);
+}
 
 /* Cards: white, 8px, a hairline, the brand's padding. */
 .card {
@@ -215,12 +226,24 @@
   line-height: 20px;
   border-left-width: 3px;
 }
-.alert-danger { border-left-color: var(--red); }
-.alert-warning { border-left-color: var(--amber); }
-.alert-success { border-left-color: var(--green); }
-.alert-info { border-left-color: var(--blue); }
-.alert-secondary { border-left-color: var(--border-3); }
-.alert strong { font-weight: 600; }
+.alert-danger {
+  border-left-color: var(--red);
+}
+.alert-warning {
+  border-left-color: var(--amber);
+}
+.alert-success {
+  border-left-color: var(--green);
+}
+.alert-info {
+  border-left-color: var(--blue);
+}
+.alert-secondary {
+  border-left-color: var(--border-3);
+}
+.alert strong {
+  font-weight: 600;
+}
 
 /* The close button: darker than Bootstrap's (3:1 as a control, WCAG 1.4.11), blue focus. */
 .btn-close {
@@ -231,18 +254,35 @@
 
 /* Bootstrap's colour utilities are !important: danger text stays the brand's
    darker red, as the pages have always written it. */
-.text-danger { color: var(--red-dark) !important; }
+.text-danger {
+  color: var(--red-dark) !important;
+}
 
 /* ----- Until each page moves onto Bootstrap ----------------------------------
    Bootstrap's reboot changes a few defaults the pages were drawn on. These hold
    them as they were, so adding Bootstrap moves nothing; each goes as the pages
    that rely on it move onto Bootstrap's components (docs/BRAND_GUIDELINES.md). */
-legend { float: none; width: auto; margin-bottom: 0; padding: 0; font-size: inherit; line-height: inherit; }
-legend + * { clear: none; }
-hr { opacity: 1; }
+legend {
+  float: none;
+  width: auto;
+  margin-bottom: 0;
+  padding: 0;
+  font-size: inherit;
+  line-height: inherit;
+}
+legend + * {
+  clear: none;
+}
+hr {
+  opacity: 1;
+}
 /* Bootstrap scrolls the page smoothly; the pages move it themselves - keeping a
    field in place when a choice redraws the page, bringing an error into view -
    and an animated move there reads as the page jumping. */
-:root { scroll-behavior: auto; }
-h1, h2, h3, h4, h5, h6 { line-height: normal; }
+:root {
+  scroll-behavior: auto;
+}
+h1, h2, h3, h4, h5, h6 {
+  line-height: normal;
+}
 

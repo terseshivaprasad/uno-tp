@@ -41,15 +41,15 @@ public sealed class SqlReference(Db db, IMemoryCache cache) : IReferenceApi
     {
         var s = await SettingsAsync(ct);
         string Text(string key) => s.TryGetValue(key, out var v) ? v : throw new InvalidOperationException($"t_Unotp_App_Config has no '{key}'. Run db/003_unotp_seed.sql.");
-        int Int(string key) => int.Parse(Text(key), CultureInfo.InvariantCulture);
+        int ReadInt(string key) => int.Parse(Text(key), CultureInfo.InvariantCulture);
         long Long(string key) => long.Parse(Text(key), CultureInfo.InvariantCulture);
         const string hours = "linkValidityHours.";
         return new AppConfig(
-            Text("sourcingAgency"), Int("minAge"), Int("seniorAge"), Int("maxJointHolders"), Int("maxAttempts"),
-            Long("minAmount"), Long("maxAmount"), Long("amountStep"), Int("cancellationDays"), Int("draftDays"),
+            Text("sourcingAgency"), ReadInt("minAge"), ReadInt("seniorAge"), ReadInt("maxJointHolders"), ReadInt("maxAttempts"),
+            Long("minAmount"), Long("maxAmount"), Long("amountStep"), ReadInt("cancellationDays"), ReadInt("draftDays"),
             s.Where(p => p.Key.StartsWith(hours, StringComparison.OrdinalIgnoreCase))
                 .ToDictionary(p => p.Key[hours.Length..], p => int.Parse(p.Value, CultureInfo.InvariantCulture)),
-            Int("renewFromDays"), Int("renewUntilDays"), Int("renewUntilDaysAutoRenewal"), Int("closeToCancelDays"));
+            ReadInt("renewFromDays"), ReadInt("renewUntilDays"), ReadInt("renewUntilDaysAutoRenewal"), ReadInt("closeToCancelDays"));
     }
 
     // ----- Reference lists -----------------------------------------------------------
@@ -83,12 +83,12 @@ public sealed class SqlReference(Db db, IMemoryCache cache) : IReferenceApi
 
         return new ReferenceData(
             ApplicationTypes: Options("applicationTypes"),
-            Categories: Of("categories").Select(e => Attrs(e, a => new CategoryOption(e.Code, e.Name, Bool(a, "employee"), Bool(a, "women"), Bool(a, "senior")))).ToList(),
-            PaymentModes: Of("paymentModes").Select(e => Attrs(e, a => new PaymentModeOption(e.Name, Str(a, "document")))).ToList(),
+            Categories: Of("categories").Select(e => Attrs(e, a => new CategoryOption(e.Code, e.Name, ReadBool(a, "employee"), ReadBool(a, "women"), ReadBool(a, "senior")))).ToList(),
+            PaymentModes: Of("paymentModes").Select(e => Attrs(e, a => new PaymentModeOption(e.Name, ReadString(a, "document")))).ToList(),
             SourcingModes: Of("sourcingModes").Select(e => Attrs(e, a => new SourcingModeOption(e.Code, e.Name,
-                Str(a, "codeLabel") ?? "", Str(a, "nameLabel") ?? "", Str(a, "house") ?? "", Str(a, "search") ?? "",
-                Str(a, "register") ?? "", Str(a, "sub") ?? "", Strs(a, "categories")))).ToList(),
-            ProofsOfAddress: Of("proofsOfAddress").Select(e => Attrs(e, a => new ProofOption(e.Code, Str(a, "issuer") ?? "", Bool(a, "hasPhoto")))).ToList(),
+                ReadString(a, "codeLabel") ?? "", ReadString(a, "nameLabel") ?? "", ReadString(a, "house") ?? "", ReadString(a, "search") ?? "",
+                ReadString(a, "register") ?? "", ReadString(a, "sub") ?? "", ReadStrings(a, "categories")))).ToList(),
+            ProofsOfAddress: Of("proofsOfAddress").Select(e => Attrs(e, a => new ProofOption(e.Code, ReadString(a, "issuer") ?? "", ReadBool(a, "hasPhoto")))).ToList(),
             EmployeeHolders: Names("employeeHolders"),
             EmployeeRelations: Names("employeeRelations"),
             EmployeeProofs: Names("employeeProofs"),
@@ -100,11 +100,11 @@ public sealed class SqlReference(Db db, IMemoryCache cache) : IReferenceApi
             NameTypes: Names("nameTypes"),
             NomineeRelations: Names("nomineeRelations"),
             Tenures: Of("tenures").Select(e => int.Parse(e.Code, CultureInfo.InvariantCulture)).ToList(),
-            Payouts: Of("payouts").Select(e => Attrs(e, a => new PayoutOption(e.Code, e.Name, Int(a, "perYear"), Str(a, "each") ?? ""))).ToList(),
+            Payouts: Of("payouts").Select(e => Attrs(e, a => new PayoutOption(e.Code, e.Name, ReadInt(a, "perYear"), ReadString(a, "each") ?? ""))).ToList(),
             RenewInstructions: Options("renewInstructions"),
             DeliveryTypes: Options("deliveryTypes"),
             CmsLocations: Names("cmsLocations"),
-            RequiredDocuments: Of("requiredDocuments").Select(e => Attrs(e, a => new RequiredDocumentGroup(e.Name, Strs(a, "items"), Strs(a, "notes")))).ToList(),
+            RequiredDocuments: Of("requiredDocuments").Select(e => Attrs(e, a => new RequiredDocumentGroup(e.Name, ReadStrings(a, "items"), ReadStrings(a, "notes")))).ToList(),
             IdentificationNotes: Names("identificationNotes"),
             DashboardNotes: Names("dashboardNotes"),
             Declarations: Names("declarations"),
@@ -121,12 +121,16 @@ public sealed class SqlReference(Db db, IMemoryCache cache) : IReferenceApi
         return read(doc.RootElement);
     }
 
-    private static bool Bool(JsonElement a, string name) => a.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.True;
+    /// <summary>A true/false attribute of a JSON entry (false when missing).</summary>
+    private static bool ReadBool(JsonElement a, string name) => a.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.True;
 
-    private static int Int(JsonElement a, string name) => a.TryGetProperty(name, out var v) && v.TryGetInt32(out var n) ? n : 0;
+    /// <summary>A whole-number attribute of a JSON entry (0 when missing).</summary>
+    private static int ReadInt(JsonElement a, string name) => a.TryGetProperty(name, out var v) && v.TryGetInt32(out var n) ? n : 0;
 
-    private static string? Str(JsonElement a, string name) => a.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() : null;
+    /// <summary>A text attribute of a JSON entry, or null when missing.</summary>
+    private static string? ReadString(JsonElement a, string name) => a.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() : null;
 
-    private static List<string> Strs(JsonElement a, string name) =>
+    /// <summary>A list-of-text attribute of a JSON entry (empty when missing).</summary>
+    private static List<string> ReadStrings(JsonElement a, string name) =>
         a.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Array ? v.EnumerateArray().Select(x => x.GetString() ?? "").ToList() : [];
 }

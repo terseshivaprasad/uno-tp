@@ -4,21 +4,23 @@
 // whole date pasted into any box is spread across all three. Listened for on the
 // document, so boxes drawn again after a post (partial-forms.js) work the same.
 (function () {
-  function parts(box) {
-    return Array.prototype.slice.call(box.querySelectorAll('.csi-date__part'));
+  // The DD, MM and YYYY boxes of one date input.
+  function datePartBoxes(box) {
+    return Array.prototype.slice.call(box.querySelectorAll('.date-input__part'));
   }
 
-  function boxOf(el) {
-    return el.classList && el.classList.contains('csi-date__part') ? el.closest('.csi-date') : null;
+  // The date input an element is a part box of, or null.
+  function dateInputOf(el) {
+    return el.classList && el.classList.contains('date-input__part') ? el.closest('.date-input') : null;
   }
 
   document.addEventListener('input', function (e) {
-    var box = boxOf(e.target);
+    var box = dateInputOf(e.target);
     if (!box) return;
     var part = e.target;
     var digits = part.value.replace(/\D/g, '');
     if (digits !== part.value) part.value = digits;
-    var all = parts(box);
+    var all = datePartBoxes(box);
     var next = all[all.indexOf(part) + 1];
     if (next && part.maxLength > 0 && part.value.length >= part.maxLength) {
       next.focus();
@@ -27,9 +29,9 @@
   });
 
   document.addEventListener('keydown', function (e) {
-    var box = boxOf(e.target);
+    var box = dateInputOf(e.target);
     if (!box || e.key !== 'Backspace' || e.target.value !== '') return;
-    var all = parts(box);
+    var all = datePartBoxes(box);
     var previous = all[all.indexOf(e.target) - 1];
     if (!previous) return;
     e.preventDefault();
@@ -39,9 +41,9 @@
 
   // 14-08-1988, 14/08/1988, 14.08.1988 or 14081988, into whichever box it lands in.
   document.addEventListener('paste', function (e) {
-    var box = boxOf(e.target);
+    var box = dateInputOf(e.target);
     if (!box || !e.clipboardData) return;
-    var all = parts(box);
+    var all = datePartBoxes(box);
     if (all.length !== 3) return;
     var text = e.clipboardData.getData('text').trim();
     var m = text.match(/^(\d{1,2})\D(\d{1,2})\D(\d{4})$/) || text.match(/^(\d{2})(\d{2})(\d{4})$/);

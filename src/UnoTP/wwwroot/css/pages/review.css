@@ -1,64 +1,244 @@
-/* The review page only. Loaded after base.css and components/wizard.css. */
+/* The review page only. Loaded after layout-and-controls.css and shared/journey-steps.css. */
 
-.inv-panel--stack { display: flex; flex-direction: column; gap: 16px; }
-.inv-kv-grid--divided { border-top: 1px solid var(--divider); padding-top: 16px; }
-.rv-edit { margin-left: 8px; }
-/* Board 10 - Mobile leads with the deposit read-out and wraps the option grids. */
-.rv-holders { display: flex; flex-direction: column; gap: 12px; }
-.rv-declarations { padding-top: 20px; display: flex; flex-direction: column; gap: 16px; }
-.rv-declaration { display: flex; align-items: flex-start; gap: 12px; cursor: pointer; }
-.rv-declaration__box {
-  appearance: none; -webkit-appearance: none; margin: 1px 0 0; flex: none; width: 17px; height: 17px;
-  border: 1px solid var(--red); border-radius: 3px; background: #fff; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
+.investor-panel--stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
-.rv-declaration__box:checked {  background: var(--red) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round'%3E%3Cpath d='M5 12l5 5L20 7'/%3E%3C/svg%3E") center / 11px no-repeat;}
-.rv-declaration__box:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
-.rv-declaration__text { flex: 1; min-width: 0; font-size: 14px; color: var(--text); line-height: 20px; }
+.investor-key-value-grid--divided {
+  border-top: 1px solid var(--divider);
+  padding-top: 16px;
+}
+.review-edit {
+  margin-left: 8px;
+}
+/* Board 10 - Mobile leads with the deposit read-out and wraps the option grids. */
+.review-holders {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.review-declarations {
+  padding-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.review-declaration {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+}
+.review-declaration__box {
+  appearance: none;
+  -webkit-appearance: none;
+  margin: 1px 0 0;
+  flex: none;
+  width: 17px;
+  height: 17px;
+  border: 1px solid var(--red);
+  border-radius: 3px;
+  background: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.review-declaration__box:checked {
+  background: var(--red) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round'%3E%3Cpath d='M5 12l5 5L20 7'/%3E%3C/svg%3E") center / 11px no-repeat;
+}
+.review-declaration__box:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.review-declaration__text {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  color: var(--text);
+  line-height: 20px;
+}
 /* Board 11 - Mobile. Display is set only inside the query so .phone-only keeps it hidden on a laptop. */
 @media (max-width: 560px) {
-  .rv-declarations { padding-top: 16px; }
+  .review-declarations {
+    padding-top: 16px;
+  }
 }
 /* ===== Submit · payment link dialog (11A) =====
    Opens over Review Summary. Laptop is a centred dialog that answers who the link
    goes to, for how much, how long it lives and what happens if it is never paid;
    below 560px it is a bottom sheet with the short copy and stacked buttons. */
-.pl-dialog { max-width: 508px; padding: 0; border-radius: 8px 8px 0 0; display: flex; flex-direction: column; }
-.pl-head { display: flex; align-items: center; gap: 8px; padding: 24px 24px 0; }
-.pl-head__icon { flex: none; color: var(--blue); }
-.pl-head__title { font-size: 16px; font-weight: 500; color: var(--ink); }
-.pl-body { padding: 16px 24px 0; display: flex; flex-direction: column; gap: 16px; }
-.pl-intro { font-size: 12px; color: var(--text); line-height: 1.6; }
-.pl-intro strong { font-weight: 700; color: var(--ink); }
-.pl-intro--short, .pl-lapse--short { display: none; }
-.pl-terms {
-  margin: 0; background: var(--tint); border: 1px solid var(--tint); border-radius: 6px; padding: 16px 16px;
-  display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 16px 24px;
+.pay-link-dialog {
+  max-width: 508px;
+  padding: 0;
+  border-radius: 8px 8px 0 0;
+  display: flex;
+  flex-direction: column;
 }
-.pl-terms dt { font-size: 12px; font-weight: 500; color: var(--muted); }
-.pl-terms dd { margin: 0; font-size: 14px; font-weight: 500; color: var(--ink); padding-top: 4px; }
-.pl-terms dd.pl-terms__note { font-size: 12px; font-weight: 400; color: var(--muted); padding-top: 3px; line-height: 16px; }
-.pl-lapse { border-left: 3px solid var(--amber-accent); background: var(--amber-tint); border-radius: 0 6px 6px 0; padding: 12px 16px; font-size: 12px; color: var(--amber); line-height: 16px; }
-.pl-lapse strong { font-weight: 700; }
-.pl-foot { font-size: 12px; color: var(--muted); line-height: 16px; }
-.pl-actions { display: flex; align-items: center; justify-content: flex-end; gap: 20px; padding: 20px 24px 20px; }
-.pl-actions__later { background: none; border: 0; padding: 8px 4px; font-family: inherit; font-size: 14px; font-weight: 600; color: var(--red); cursor: pointer; }
-.pl-actions__later:hover { text-decoration: underline; }
+.pay-link-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 24px 24px 0;
+}
+.pay-link-head__icon {
+  flex: none;
+  color: var(--blue);
+}
+.pay-link-head__title {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.pay-link-body {
+  padding: 16px 24px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.pay-link-intro {
+  font-size: 12px;
+  color: var(--text);
+  line-height: 1.6;
+}
+.pay-link-intro strong {
+  font-weight: 700;
+  color: var(--ink);
+}
+.pay-link-intro--short, .pay-link-lapse--short {
+  display: none;
+}
+.pay-link-terms {
+  margin: 0;
+  background: var(--tint);
+  border: 1px solid var(--tint);
+  border-radius: 6px;
+  padding: 16px 16px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap: 16px 24px;
+}
+.pay-link-terms dt {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+.pay-link-terms dd {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+  padding-top: 4px;
+}
+.pay-link-terms dd.pay-link-terms__note {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted);
+  padding-top: 3px;
+  line-height: 16px;
+}
+.pay-link-lapse {
+  border-left: 3px solid var(--amber-accent);
+  background: var(--amber-tint);
+  border-radius: 0 6px 6px 0;
+  padding: 12px 16px;
+  font-size: 12px;
+  color: var(--amber);
+  line-height: 16px;
+}
+.pay-link-lapse strong {
+  font-weight: 700;
+}
+.pay-link-foot {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 16px;
+}
+.pay-link-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 20px;
+  padding: 20px 24px 20px;
+}
+.pay-link-actions__later {
+  background: none;
+  border: 0;
+  padding: 8px 4px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--red);
+  cursor: pointer;
+}
+.pay-link-actions__later:hover {
+  text-decoration: underline;
+}
 @media (max-width: 560px) {
-  .pl-overlay { align-items: flex-end; padding: 0; }
-  .pl-dialog { max-width: none; max-height: 88vh; border-radius: 8px 8px 0 0; }
-  .pl-head { padding: 20px 16px 0; }
-  .pl-head__title { font-size: 14px; }
-  .pl-body { padding: 12px 16px 0; gap: 12px; }
-  .pl-intro { font-size: 12px; }
-  .pl-intro--long, .pl-lapse--long, .pl-terms__note, .pl-foot { display: none; }
-  .pl-intro--short, .pl-lapse--short { display: block; }
-  .pl-terms { grid-template-columns: 1fr; gap: 8px; padding: 12px 12px; }
-  .pl-terms > div { display: grid; grid-template-columns: 72px minmax(0,1fr); align-items: baseline; gap: 8px; }
-  .pl-terms dt { font-size: 12px; }
-  .pl-terms dd { padding-top: 0; font-size: 12px; }
-  .pl-lapse { font-size: 12px; padding: 12px 12px; }
-  .pl-actions { flex-direction: column-reverse; align-items: stretch; gap: 12px; padding: 16px; }
-  .pl-actions__later { border: 1px solid var(--border-3); border-radius: 6px; padding: 12px 16px; font-size: 14px; }
-  .pl-actions__later:hover { text-decoration: none; }
+  .pay-link-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+  .pay-link-dialog {
+    max-width: none;
+    max-height: 88vh;
+    border-radius: 8px 8px 0 0;
+  }
+  .pay-link-head {
+    padding: 20px 16px 0;
+  }
+  .pay-link-head__title {
+    font-size: 14px;
+  }
+  .pay-link-body {
+    padding: 12px 16px 0;
+    gap: 12px;
+  }
+  .pay-link-intro {
+    font-size: 12px;
+  }
+  .pay-link-intro--long, .pay-link-lapse--long, .pay-link-terms__note, .pay-link-foot {
+    display: none;
+  }
+  .pay-link-intro--short, .pay-link-lapse--short {
+    display: block;
+  }
+  .pay-link-terms {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 12px 12px;
+  }
+  .pay-link-terms > div {
+    display: grid;
+    grid-template-columns: 72px minmax(0,1fr);
+    align-items: baseline;
+    gap: 8px;
+  }
+  .pay-link-terms dt {
+    font-size: 12px;
+  }
+  .pay-link-terms dd {
+    padding-top: 0;
+    font-size: 12px;
+  }
+  .pay-link-lapse {
+    font-size: 12px;
+    padding: 12px 12px;
+  }
+  .pay-link-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+    gap: 12px;
+    padding: 16px;
+  }
+  .pay-link-actions__later {
+    border: 1px solid var(--border-3);
+    border-radius: 6px;
+    padding: 12px 16px;
+    font-size: 14px;
+  }
+  .pay-link-actions__later:hover {
+    text-decoration: none;
+  }
 }

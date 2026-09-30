@@ -6,7 +6,7 @@
 // amount is quoted as it is typed, once the partner pauses; what is wrong with it
 // is said once they leave the field, not while they are still typing it.
 (function () {
-  var form = document.getElementById('fdConfigForm') || document.querySelector('form[data-quote-url]');
+  var form = document.getElementById('depositConfigForm') || document.querySelector('form[data-quote-url]');
   if (!form || !window.fetch) return;
   var url = form.getAttribute('data-quote-url');
   var timer = null;
@@ -14,7 +14,8 @@
 
   var inFlight = null;
 
-  function quote(sayProblem) {
+  // Posts the form for a new quote and redraws the quote panel with the answer.
+  function refreshQuote(sayProblem) {
     var mine = ++asked;
     // A newer choice makes the one before it moot: its request is dropped, not waited for.
     if (inFlight) inFlight.abort();
@@ -28,16 +29,16 @@
       .then(function (html) {
         // A later choice is already on its way: its answer is the one to show.
         if (mine !== asked) return;
-        var panel = document.getElementById('fd-quote');
+        var panel = document.getElementById('deposit-quote');
         if (panel) panel.innerHTML = html;
-        amount(sayProblem);
+        showAmountMessage(sayProblem);
       })
       .catch(function () {
         // No quote this time - the connection dropped: the panel says so, and the
         // next choice asks again. Proceed still saves and checks everything.
         if (mine !== asked) return;
-        var panel = document.getElementById('fd-quote');
-        var note = panel && panel.querySelector('.fd-summary__note, .cii-note');
+        var panel = document.getElementById('deposit-quote');
+        var note = panel && panel.querySelector('.deposit-summary__note, .page-note');
         if (note) note.textContent = 'The quote could not be fetched just now — it is asked for again with the next change.';
       })
       .then(function () {
@@ -46,57 +47,57 @@
   }
 
   // What the answer says of the amount: the line under it, and its error once due.
-  function amount(sayProblem) {
-    var said = document.querySelector('#fd-quote [data-fd-amount]');
-    var input = document.getElementById('fd-amount');
+  function showAmountMessage(sayProblem) {
+    var said = document.querySelector('#deposit-quote [data-deposit-amount]');
+    var input = document.getElementById('deposit-amount');
     if (!said || !input) return;
-    var hint = document.getElementById('fd-amount-hint');
+    var hint = document.getElementById('deposit-amount-hint');
     if (hint) hint.textContent = said.getAttribute('data-hint') || '';
     var problem = said.getAttribute('data-problem');
-    var error = document.getElementById('fd-amountError');
+    var error = document.getElementById('deposit-amountError');
     // The amount sits in a box with the rupee sign: that box takes the red edge,
     // and the error goes under it.
-    var box = input.closest('.fd-amount') || input;
+    var box = input.closest('.deposit-amount') || input;
     if (!problem) {
-      box.classList.remove('fd-amount--error');
+      box.classList.remove('deposit-amount--error');
       input.classList.remove('is-invalid');
       input.removeAttribute('aria-invalid');
       if (error) error.remove();
-      input.setAttribute('aria-describedby', 'fd-amount-hint');
+      input.setAttribute('aria-describedby', 'deposit-amount-hint');
       return;
     }
     if (!sayProblem) return;
     if (!error) {
       error = document.createElement('p');
-      error.className = 'csi-error';
-      error.id = 'fd-amountError';
+      error.className = 'field-error';
+      error.id = 'deposit-amountError';
       error.setAttribute('role', 'alert');
       box.insertAdjacentElement('afterend', error);
     }
     error.textContent = problem;
-    box.classList.add('fd-amount--error');
+    box.classList.add('deposit-amount--error');
     input.classList.add('is-invalid');
     input.setAttribute('aria-invalid', 'true');
-    input.setAttribute('aria-describedby', 'fd-amountError');
+    input.setAttribute('aria-describedby', 'deposit-amountError');
   }
 
   // Renew for the same tenure: said as the tenure is chosen.
-  function renewFor() {
+  function showRenewSameTenure() {
     var tenure = form.querySelector('input[name="TenureMonths"]:checked');
-    var field = document.getElementById('fd-renew-for');
+    var field = document.getElementById('deposit-renew-for');
     if (tenure && field) field.value = 'Same tenure — ' + tenure.value + ' months';
   }
 
   form.addEventListener('change', function (e) {
     if (!e.target.matches('[data-quote]')) return;
     clearTimeout(timer);
-    renewFor();
-    quote(true);
+    showRenewSameTenure();
+    refreshQuote(true);
   });
 
   form.addEventListener('input', function (e) {
-    if (e.target.id !== 'fd-amount') return;
+    if (e.target.id !== 'deposit-amount') return;
     clearTimeout(timer);
-    timer = setTimeout(function () { quote(false); }, 600);
+    timer = setTimeout(function () { refreshQuote(false); }, 600);
   });
 })();

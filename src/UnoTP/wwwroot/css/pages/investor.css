@@ -1,97 +1,365 @@
-/* The investor page only. Loaded after base.css and components/wizard.css. */
+/* The investor page only. Loaded after layout-and-controls.css and shared/journey-steps.css. */
 
-.inv-panel__action { font-size: 12px; font-weight: 600; line-height: 16px; color: var(--red); flex: none; }
-.inv-ckyc { display: flex; gap: 16px; align-items: flex-start; }
-.inv-ckyc__photo--img { object-fit: cover; padding: 0; }
-.inv-ckyc__photo {
-  width: 88px; height: 88px; border-radius: 6px; background: #fff; border: 1px solid var(--divider); flex: none;
-  display: flex; align-items: center; justify-content: center; text-align: center; padding: 8px;
-  font-size: 12px; color: var(--muted); line-height: 16px;
+.investor-panel__action {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+  color: var(--red);
+  flex: none;
 }
-.inv-manual {
-  border-left: 3px solid var(--amber-accent); background: var(--amber-tint); border-radius: 0 6px 6px 0;
-  padding: 16px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 12px;
+.investor-ckyc {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
 }
-.inv-manual__title { font-size: 14px; font-weight: 700; line-height: 20px; color: var(--ink); flex: 1; min-width: 0; }
-.inv-manual__badge { font-size: 12px; font-weight: 600; line-height: 16px; color: var(--amber); background: var(--amber-bg); border: 1px solid var(--amber-border); border-radius: 3px; padding: 2px 6px; white-space: nowrap; }
-.inv-manual__text { font-size: 12px; color: var(--amber); line-height: 16px; }
-.inv-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 24px 16px; }
+.investor-ckyc__photo--img {
+  object-fit: cover;
+  padding: 0;
+}
+.investor-ckyc__photo {
+  width: 88px;
+  height: 88px;
+  border-radius: 6px;
+  background: #fff;
+  border: 1px solid var(--divider);
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 8px;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 16px;
+}
+.investor-manual {
+  border-left: 3px solid var(--amber-accent);
+  background: var(--amber-tint);
+  border-radius: 0 6px 6px 0;
+  padding: 16px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.investor-manual__title {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 20px;
+  color: var(--ink);
+  flex: 1;
+  min-width: 0;
+}
+.investor-manual__badge {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+  color: var(--amber);
+  background: var(--amber-bg);
+  border: 1px solid var(--amber-border);
+  border-radius: 3px;
+  padding: 2px 6px;
+  white-space: nowrap;
+}
+.investor-manual__text {
+  font-size: 12px;
+  color: var(--amber);
+  line-height: 16px;
+}
+.investor-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0,1fr));
+  gap: 24px 16px;
+}
 @media (max-width: 900px) {
-  .inv-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .investor-grid {
+    grid-template-columns: repeat(2, minmax(0,1fr));
+  }
 }
 @media (max-width: 560px) {
-  .inv-grid { grid-template-columns: 1fr; }
+  .investor-grid {
+    grid-template-columns: 1fr;
+  }
 }
-.inv-field { display: flex; flex-direction: column; min-width: 0; }
-.inv-field label { font-size: 12px; font-weight: 600; line-height: 16px; padding-bottom: 4px; color: var(--ink); }
-.inv-field__hint { font-size: 12px; color: var(--muted); padding-top: 4px; line-height: 16px; }
-.inv-field__hint--error { color: var(--red-dark); }
-.inv-field__hint[hidden] { display: none; }
+.investor-field {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.investor-field label {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+  padding-bottom: 4px;
+  color: var(--ink);
+}
+.investor-field__hint {
+  font-size: 12px;
+  color: var(--muted);
+  padding-top: 4px;
+  line-height: 16px;
+}
+.investor-field__hint--error {
+  color: var(--red-dark);
+}
+.investor-field__hint[hidden] {
+  display: none;
+}
 /* Inside the manual-entry callout every field is one that has to be typed, so the
-   whole set is outlined red (base.css). */
-.inv-control--strong { font-weight: 600; }
+   whole set is outlined red (layout-and-controls.css). */
+.investor-control--strong {
+  font-weight: 600;
+}
 /* The old screen's alert, laid over the top of the investor's card. */
 /* A minor nominee's guardian: a plain block, no fieldset border. */
-.cii-guardian { border: 0; margin: 0; padding: 0; min-width: 0; }
-.cii-guardian:disabled .cii-section, .cii-guardian:disabled .csi-label { color: var(--muted-2); }
-.cii-guardian__when { display: none; }
-.cii-guardian:disabled .cii-guardian__when { display: block; }
-.cii-guardian:disabled .cii-guardian__minor { display: none; }
-.cii-alert { position: absolute; top: 0; left: 50%; transform: translateX(-50%); z-index: 5; width: min(900px, calc(100% - 32px)); display: flex; align-items: flex-start; gap: 8px; padding: 12px 16px; border: 1px solid var(--pink-border); border-radius: 6px; background: var(--pink-bg); color: var(--red-dark); }
-.cii-alert[hidden] { display: none; }
-.cii-alert__icon { flex: none; margin-top: 2px; }
-.cii-alert__text { margin: 0; flex: 1; font-size: 14px; line-height: 20px; text-align: center; }
-.cii-alert__close { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; margin: -2px -6px 0 0; border-radius: 6px; color: inherit; cursor: pointer; }
-.cii-alert__close:hover { background: rgba(192, 21, 47, .1); }
-.cii-clear { margin-right: 8px; }
+.investor-guardian {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+.investor-guardian:disabled .section-title, .investor-guardian:disabled .field-label {
+  color: var(--muted-2);
+}
+.investor-guardian__when {
+  display: none;
+}
+.investor-guardian:disabled .investor-guardian__when {
+  display: block;
+}
+.investor-guardian:disabled .investor-guardian__minor {
+  display: none;
+}
+.page-alert {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  width: min(900px, calc(100% - 32px));
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px 16px;
+  border: 1px solid var(--pink-border);
+  border-radius: 6px;
+  background: var(--pink-bg);
+  color: var(--red-dark);
+}
+.page-alert[hidden] {
+  display: none;
+}
+.page-alert__icon {
+  flex: none;
+  margin-top: 2px;
+}
+.page-alert__text {
+  margin: 0;
+  flex: 1;
+  font-size: 14px;
+  line-height: 20px;
+  text-align: center;
+}
+.page-alert__close {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  margin: -2px -6px 0 0;
+  border-radius: 6px;
+  color: inherit;
+  cursor: pointer;
+}
+.page-alert__close:hover {
+  background: rgba(192, 21, 47, .1);
+}
+.investor-clear {
+  margin-right: 8px;
+}
 /* An added joint holder folds to a line once nothing on the card is left to do:
    who they are and where the card stands. Open, the card as it always was. */
-.cii-fold > summary { list-style: none; cursor: pointer; flex-wrap: wrap; }
-.cii-fold > summary::-webkit-details-marker { display: none; }
-.cii-fold > summary:focus-visible { outline: 2px solid var(--blue); outline-offset: 4px; border-radius: 4px; }
-.cii-fold__line { flex: 1 1 100%; order: 3; font-size: 14px; line-height: 20px; color: var(--muted); }
-.cii-fold[open] .cii-fold__line { display: none; }
-.cii-fold__chev { flex: none; color: var(--muted); transition: transform .15s ease; }
-.cii-fold[open] .cii-fold__chev { transform: rotate(180deg); }
-.cii-fold__tools { display: flex; justify-content: flex-end; padding-top: 2px; }
+.investor-folded-holder > summary {
+  list-style: none;
+  cursor: pointer;
+  flex-wrap: wrap;
+}
+.investor-folded-holder > summary::-webkit-details-marker {
+  display: none;
+}
+.investor-folded-holder > summary:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+.investor-folded-holder__line {
+  flex: 1 1 100%;
+  order: 3;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--muted);
+}
+.investor-folded-holder[open] .investor-folded-holder__line {
+  display: none;
+}
+.investor-folded-holder__chevron {
+  flex: none;
+  color: var(--muted);
+  transition: transform .15s ease;
+}
+.investor-folded-holder[open] .investor-folded-holder__chevron {
+  transform: rotate(180deg);
+}
+.investor-folded-holder__tools {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 2px;
+}
 @media (prefers-reduced-motion: reduce) {
-  .cii-fold__chev { transition: none; }
+  .investor-folded-holder__chevron {
+    transition: none;
+  }
 }
 /* The Documents heading of a joint holder, with where post goes beside it. */
-.cii-docs-head { display: flex; align-items: center; justify-content: space-between; gap: 12px 24px; flex-wrap: wrap; margin: 32px 0 0; padding-bottom: 12px; }
-.cii-docs-head__title { margin: 0; font-size: 16px; font-weight: 600; line-height: 24px; letter-spacing: -.01em; color: var(--ink); }
+.investor-docs-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+  flex-wrap: wrap;
+  margin: 32px 0 0;
+  padding-bottom: 12px;
+}
+.investor-docs-head__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+  letter-spacing: -.01em;
+  color: var(--ink);
+}
 /* The PEP questions: the question on the left, Yes and No on the right. */
-.cii-pep { display: flex; flex-direction: column; margin-top: 24px; border-top: 1px solid var(--divider); }
-.cii-pep__row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 24px; padding: 16px 0; border-bottom: 1px solid var(--divider); }
-.cii-pep__row:last-child { border-bottom: 0; padding-bottom: 0; }
-.cii-pep__q { flex: 1; min-width: 0; font-size: 14px; line-height: 20px; color: var(--text); }
-.cii-pep__answers { display: flex; gap: 24px; margin-left: auto; }
-.cii-pep__answer { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; line-height: 20px; font-weight: 500; color: var(--text); cursor: pointer; }
-.cii-pep__answer input { width: 18px; height: 18px; margin: 0; accent-color: var(--red); cursor: pointer; }
-.cii-pep__error { flex-basis: 100%; }
-.cii-pep__row.is-invalid .cii-pep__q { color: var(--red-dark); }
-.cii-ask { display: flex; align-items: center; gap: 16px; }
-.cii-ask__q { flex: 1; min-width: 0; margin: 0; font-size: 16px; line-height: 24px; color: var(--text); }
+.investor-pep {
+  display: flex;
+  flex-direction: column;
+  margin-top: 24px;
+  border-top: 1px solid var(--divider);
+}
+.investor-pep__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 24px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--divider);
+}
+.investor-pep__row:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.investor-pep__question {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--text);
+}
+.investor-pep__answers {
+  display: flex;
+  gap: 24px;
+  margin-left: auto;
+}
+.investor-pep__answer {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
+}
+.investor-pep__answer input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--red);
+  cursor: pointer;
+}
+.investor-pep__error {
+  flex-basis: 100%;
+}
+.investor-pep__row.is-invalid .investor-pep__question {
+  color: var(--red-dark);
+}
+.investor-question {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.investor-question__question {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 16px;
+  line-height: 24px;
+  color: var(--text);
+}
 /* Add Joint Holder and Add Nominee read as the Remove that takes them away again. */
-.cii-add, .inv-remove {
-  display: inline-flex; align-items: center; gap: 8px; flex: none; min-height: 24px;
-  font-size: 14px; line-height: 20px; font-weight: 600; color: var(--red-dark);
-  background: none; border: 0; padding: 0; cursor: pointer; font-family: inherit;
+.investor-add, .investor-remove {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  min-height: 24px;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  color: var(--red-dark);
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
 }
 /* The second holder while there is a third: not removable yet. */
-.inv-remove:disabled { color: var(--muted-2); cursor: not-allowed; }
-@media (max-width: 560px) {
-  .inv-ckyc { flex-direction: column; }
-  .inv-ckyc__photo { width: 80px; height: 80px; }
-  .cii-docs-head { gap: 12px; }
+.investor-remove:disabled {
+  color: var(--muted-2);
+  cursor: not-allowed;
 }
-.csi-link--muted { font-weight: 500; color: var(--text); }
+@media (max-width: 560px) {
+  .investor-ckyc {
+    flex-direction: column;
+  }
+  .investor-ckyc__photo {
+    width: 80px;
+    height: 80px;
+  }
+  .investor-docs-head {
+    gap: 12px;
+  }
+}
+.link-button--muted {
+  font-weight: 500;
+  color: var(--text);
+}
 /* A typed address's district and state, the PIN code's: shown beside it, never typed,
    level with the PIN code's box. */
-.cii-place { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-content: start; padding-top: 4px; }
+.investor-district-state {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  align-content: start;
+  padding-top: 4px;
+}
 /* Short of room, the choice drops under the heading it belongs to and takes the
    full width, each option an equal share, rather than crowding the heading. The
    same for the application type and communication address on Upload Documents. */
 @media (max-width: 900px) {
-  .cii-docs-head { flex-direction: column; align-items: stretch; gap: 12px; }
+  .investor-docs-head {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
 }

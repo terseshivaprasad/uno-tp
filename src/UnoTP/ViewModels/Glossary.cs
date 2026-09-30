@@ -32,6 +32,6 @@ public static class Glossary
         var text = HtmlEncoder.Default.Encode(shown ?? term);
         if (!Meanings.TryGetValue(term, out var meaning)) return new HtmlString(text);
         var tip = HtmlEncoder.Default.Encode(meaning);
-        return new HtmlString($"<abbr class=\"tip\" tabindex=\"0\" data-tip=\"{tip}\">{text}<span class=\"visually-hidden\"> ({tip})</span></abbr>");
+        return new HtmlString($"<abbr class=\"hover-hint\" tabindex=\"0\" data-tip=\"{tip}\">{text}<span class=\"visually-hidden\"> ({tip})</span></abbr>");
     }
 }

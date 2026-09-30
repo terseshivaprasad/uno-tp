@@ -61,7 +61,8 @@ public abstract class ApiClient(HttpClient http, IPartner partner)
         response.EnsureSuccessStatusCode();
     }
 
-    protected static JsonContent Body(object value) => JsonContent.Create(value, options: Json);
+    /// <summary>A request body: the value as JSON.</summary>
+    protected static JsonContent JsonBody(object value) => JsonContent.Create(value, options: Json);
 
     protected static async Task<T> Read<T>(HttpResponseMessage response, CancellationToken ct) =>
         await response.Content.ReadFromJsonAsync<T>(Json, ct)
@@ -81,5 +82,6 @@ public abstract class ApiClient(HttpClient http, IPartner partner)
         return form;
     }
 
-    protected static string Seg(string value) => Uri.EscapeDataString(value);
+    /// <summary>A value made safe to put in a URL path segment.</summary>
+    protected static string EscapePathSegment(string value) => Uri.EscapeDataString(value);
 }

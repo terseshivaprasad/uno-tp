@@ -13,19 +13,19 @@
    to the controller, which keeps the search in the session and redirects back to
    the bare page. *@
 
-<div class="csi">
+<div class="page-layout">
     <partial name="_ClassicSteps" model="0" />
 
-    <div class="csi-main">
-    <section class="csi-card cii-card">
-        <div class="cii-head"><h1 class="cii-title">Enter Basic Information</h1></div>
+    <div class="page-main">
+    <section class="page-card section-card">
+        <div class="page-head"><h1 class="page-title">Enter Basic Information</h1></div>
 
         @* What the partner is told before anything is searched, across the card as
            the later steps give their notes. *@
-        <div class="alert alert-warning csi-note">
-            <svg class="csi-note__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 11v6"></path><circle cx="12" cy="7.5" r=".7" fill="currentColor"></circle></svg>
-            <div class="csi-note__body">
-                <div class="csi-note__title">Note</div>
+        <div class="alert alert-warning page-warning-note">
+            <svg class="page-warning-note__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 11v6"></path><circle cx="12" cy="7.5" r=".7" fill="currentColor"></circle></svg>
+            <div class="page-warning-note__body">
+                <div class="page-warning-note__title">Note</div>
                 <ul>
                     @foreach (var n in (await Lookups.ReferenceAsync()).IdentificationNotes)
                     {
@@ -35,12 +35,12 @@
             </div>
         </div>
 
-        <section class="csi-holder">
-            <div class="csi-holder__head">
-                <span class="csi-holder__no">1</span>
-                <span class="csi-holder__name">Investor</span>
+        <section class="identify-holder">
+            <div class="identify-holder__head">
+                <span class="identify-holder__no">1</span>
+                <span class="identify-holder__name">Investor</span>
                 <span class="badge bg-secondary-subtle text-secondary-emphasis">Primary holder</span>
-                <span class="csi-status @(Model.CanProceed ? "csi-status--ok" : null)">@(Model.Identified ? "Identified" : Model.CanProceed ? "New investor" : "Not identified")</span>
+                <span class="identify-status @(Model.CanProceed ? "identify-status--ok" : null)">@(Model.Identified ? "Identified" : Model.CanProceed ? "New investor" : "Not identified")</span>
             </div>
 
             <partial name="_HolderIdentification" model="@(new HolderIdentificationBlock(Model, "csi", step => Url.Action(step)!,
@@ -49,11 +49,11 @@
     </section>
 
     @* Only the partner's own applications, opened here and not yet submitted. *@
-    <section class="csi-card cii-card">
-        <div class="drafts__head"><h2 class="cii-title drafts__title">Continue an application @if (Model.Drafts.Count > 0) { <span class="drafts__count">@Model.Drafts.Count</span> }</h2></div>
+    <section class="page-card section-card">
+        <div class="drafts__head"><h2 class="page-title drafts__title">Continue an application @if (Model.Drafts.Count > 0) { <span class="drafts__count">@Model.Drafts.Count</span> }</h2></div>
         @if (Model.Drafts.Count == 0)
         {
-            <p class="cii-note">No application is waiting to be finished. One opened below and left before it is submitted is listed here, kept for @((await Lookups.ConfigAsync()).DraftDays) days.</p>
+            <p class="page-note">No application is waiting to be finished. One opened below and left before it is submitted is listed here, kept for @((await Lookups.ConfigAsync()).DraftDays) days.</p>
         }
         else
         {
@@ -63,12 +63,12 @@
 
     @if (Model.Demo is { } demo)
     {
-    <section class="csi-demo">
-        <div class="csi-demo__head">
-            <h2 class="csi-demo__title">Test data</h2>
-            <p class="csi-demo__sub">@demo.Cases.Count cases, and what each one does &middot; test records only &middot; every date of birth on record is <strong>@Dates.Show(demo.Dob)</strong></p>
+    <section class="demo-data">
+        <div class="demo-data__head">
+            <h2 class="demo-data__title">Test data</h2>
+            <p class="demo-data__sub">@demo.Cases.Count cases, and what each one does &middot; test records only &middot; every date of birth on record is <strong>@Dates.Show(demo.Dob)</strong></p>
         </div>
-        <table class="csi-demo__table">
+        <table class="demo-data__table">
             <thead>
                 <tr>
                     <th scope="col"><span class="visually-hidden">Case</span></th>
@@ -83,14 +83,14 @@
                 {
                     var c = demo.Cases[i];
                     <tr>
-                        <td data-label="Case"><span class="csi-demo__no">@(i + 1)</span></td>
+                        <td data-label="Case"><span class="demo-data__no">@(i + 1)</span></td>
                         <td data-label="PAN"><code>@c.Pan</code></td>
                         <td data-label="Date of birth">
                             @if (c.Dob.Length > 0) { @Dates.Show(c.Dob) }
-                            else { <span class="csi-demo__none">not on record</span> }
+                            else { <span class="demo-data__none">not on record</span> }
                         </td>
                         <td data-label="Folio">
-                            @if (c.Folios.Count == 0) { <span class="csi-demo__none">no folio</span> }
+                            @if (c.Folios.Count == 0) { <span class="demo-data__none">no folio</span> }
                             @foreach (var f in c.Folios) { <code>@f</code> }
                         </td>
                         <td data-label="What happens">@c.Shows</td>
@@ -98,7 +98,7 @@
                 }
             </tbody>
         </table>
-        <ul class="csi-demo__notes">
+        <ul class="demo-data__notes">
             @foreach (var note in demo.Notes) { <li>@note</li> }
         </ul>
     </section>
@@ -107,14 +107,14 @@
 </div>
 
 @* Proceed re-checks everything on the server and opens the application. *@
-<form id="csiProceedForm" method="post" asp-action="Proceed" data-partial hidden></form>
-<form id="csiClearForm" method="post" asp-action="Clear" data-partial hidden></form>
+<form id="pageProceedForm" method="post" asp-action="Proceed" data-partial hidden></form>
+<form id="pageClearForm" method="post" asp-action="Clear" data-partial hidden></form>
 
-<footer class="csi-bar">
-    <div class="csi-bar__inner">
+<footer class="page-action-bar">
+    <div class="page-action-bar__inner">
         <a class="btn btn-outline-primary" asp-controller="Dashboard" asp-action="Index"
            data-loader="Going back to the dashboard">Back</a>
-        <p class="csi-bar__hint">
+        <p class="page-action-bar__hint">
             @if (Model.Identified)
             {
                 @:Investor identified &mdash; <strong>ready to proceed</strong>
@@ -128,9 +128,9 @@
                 @:Identify the investor to continue &mdash; <strong>check the record once the fields are filled</strong>
             }
         </p>
-        <div class="csi-bar__right">
-            <button type="submit" class="csi-link btn-reset" form="csiClearForm">Clear All</button>
-            <button type="submit" class="btn btn-primary" form="csiProceedForm" disabled="@(!Model.CanProceed)"
+        <div class="page-action-bar__right">
+            <button type="submit" class="link-button btn-reset" form="pageClearForm">Clear All</button>
+            <button type="submit" class="btn btn-primary" form="pageProceedForm" disabled="@(!Model.CanProceed)"
                     data-loader="Opening Upload Documents…">Proceed</button>
         </div>
     </div>

@@ -14,6 +14,7 @@ internal static class IdfyDocTypes
 {
     public const string Pan = "ind_pan";
 
+    /// <summary>The IDfy service that verifies a document of this kind and type, or null when none does.</summary>
     public static string? Of(DocumentKind kind, string type) => kind switch
     {
         DocumentKind.PanCard => Pan,
@@ -187,14 +188,14 @@ public sealed class IdfyVerification(
                 const string sarathi = "Sarathi";
                 number = number.Replace(" ", "").Replace("-", "");
                 if (number.Length == 0) return NotAsked(sarathi, "the licence number could not be read off the copy");
-                if (Dob(holderDob) is not { } licenceDob) return NotAsked(sarathi, "the holder's date of birth is not on record in a form it can be asked with");
+                if (ParseDob(holderDob) is not { } licenceDob) return NotAsked(sarathi, "the holder's date of birth is not on record in a form it can be asked with");
                 return Licence((await idfy.VerifyDrivingLicenceAsync(number, licenceDob, ct)).Result!.SourceOutput, sarathi);
 
             case "Passport":
                 const string seva = "Passport Seva";
                 // The file number is on the passport's last page, which a single copy may not show.
                 if (number.Length == 0) return NotAsked(seva, "the passport file number is not on the copy — it is on the last page");
-                if (Dob(holderDob) is not { } passportDob) return NotAsked(seva, "the holder's date of birth is not on record in a form it can be asked with");
+                if (ParseDob(holderDob) is not { } passportDob) return NotAsked(seva, "the holder's date of birth is not on record in a form it can be asked with");
                 return Answer((await idfy.VerifyPassportAsync(number, passportDob, ct)).Result!, seva);
 
             case "Voter ID":
@@ -231,7 +232,8 @@ public sealed class IdfyVerification(
 
     private static Verification NotAsked(string verifier, string why) => new(false, verifier, why);
 
-    private static DateOnly? Dob(string dob) =>
+    /// <summary>A date of birth as IDfy returns it, or null when it cannot be read.</summary>
+    private static DateOnly? ParseDob(string dob) =>
         DateOnly.TryParseExact(dob, "dd-MM-yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date) ? date : null;
 }
 

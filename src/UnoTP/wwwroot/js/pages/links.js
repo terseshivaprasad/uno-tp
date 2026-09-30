@@ -2,19 +2,19 @@
 // the filter, search and pages over the list. The link itself is never shown -
 // it goes to the investor's contacts on the application and nowhere else.
 (function () {
-  var table = document.getElementById('suRows');
+  var table = document.getElementById('registerRows');
   if (!table) return;
 
   // ---- The links sent: filter, search, pages -------------------------------
   var PER_PAGE = 8;
-  var rows = Array.prototype.slice.call(document.querySelectorAll('#suRows tr'));
-  var pills = Array.prototype.slice.call(document.querySelectorAll('.su-pill'));
-  var search = document.getElementById('suSearch');
-  var empty = document.getElementById('suEmpty');
-  var count = document.getElementById('suCount');
-  var pages = document.getElementById('suPages');
-  var prev = document.getElementById('suPrev');
-  var next = document.getElementById('suNext');
+  var rows = Array.prototype.slice.call(document.querySelectorAll('#registerRows tr'));
+  var pills = Array.prototype.slice.call(document.querySelectorAll('.register-pill'));
+  var search = document.getElementById('registerSearch');
+  var empty = document.getElementById('registerEmpty');
+  var count = document.getElementById('registerCount');
+  var pages = document.getElementById('registerPages');
+  var prev = document.getElementById('registerPrev');
+  var next = document.getElementById('registerNext');
   var state = 'all';
   var page = 1;
 
@@ -22,28 +22,30 @@
   pills.forEach(function (pill) {
     var key = pill.dataset.state;
     var n = key === 'all' ? rows.length : rows.filter(function (r) { return r.dataset.state === key; }).length;
-    pill.querySelector('.su-pill__n').textContent = n;
+    pill.querySelector('.register-pill__number').textContent = n;
     pill.addEventListener('click', function () {
-      pills.forEach(function (p) { p.classList.toggle('su-pill--on', p === pill); });
+      pills.forEach(function (p) { p.classList.toggle('register-pill--on', p === pill); });
       state = key;
       page = 1;
-      render();
+      renderTablePage();
     });
   });
 
-  search.addEventListener('input', function () { page = 1; render(); });
+  search.addEventListener('input', function () { page = 1; renderTablePage(); });
 
   // Sending and regenerating a link are posts: the backend sends it, and the
   // page comes back with the link as it now stands.
 
-  function matches(row) {
+  // True when a row has the chosen status and contains the search text.
+  function matchesStatusAndSearch(row) {
     var q = search.value.trim().toLowerCase();
     return (state === 'all' || row.dataset.state === state)
       && (!q || row.dataset.search.indexOf(q) !== -1);
   }
 
-  function render() {
-    var kept = rows.filter(matches);
+  // Shows the rows of the current page, and the pager under them.
+  function renderTablePage() {
+    var kept = rows.filter(matchesStatusAndSearch);
     var total = Math.max(1, Math.ceil(kept.length / PER_PAGE));
     if (page > total) page = total;
     var from = (page - 1) * PER_PAGE;
@@ -62,20 +64,20 @@
       (function (n) {
         var b = document.createElement('button');
         b.type = 'button';
-        b.className = 'su-page' + (n === page ? ' su-page--on' : '');
+        b.className = 'register-page' + (n === page ? ' register-page--on' : '');
         b.textContent = n;
         if (n === page) b.setAttribute('aria-current', 'page');
-        b.addEventListener('click', function () { page = n; render(); });
+        b.addEventListener('click', function () { page = n; renderTablePage(); });
         pages.appendChild(b);
       })(i);
     }
     prev.disabled = page === 1;
     next.disabled = page === total;
-    document.querySelector('.su-pager').hidden = kept.length === 0;
+    document.querySelector('.register-pager').hidden = kept.length === 0;
   }
 
-  prev.addEventListener('click', function () { if (page > 1) { page--; render(); } });
-  next.addEventListener('click', function () { page++; render(); });
+  prev.addEventListener('click', function () { if (page > 1) { page--; renderTablePage(); } });
+  next.addEventListener('click', function () { page++; renderTablePage(); });
 
-  render();
+  renderTablePage();
 })();

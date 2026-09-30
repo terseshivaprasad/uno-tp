@@ -25,7 +25,7 @@ public class DashboardController(
         var board = console.BoardAsync();
         // The partner's own applications opened and left before submitting, to pick
         // up again from here: only while New FD is open, as that is where they go.
-        var drafts = features.Flags.NewFd ? Try(() => applications.DraftsAsync()) : Skip<DraftSummary>();
+        var drafts = features.Flags.NewFd ? OrEmptyWhenUnavailable(() => applications.DraftsAsync()) : Empty<DraftSummary>();
         var work = WorkAsync();
         return View(new DashboardViewModel(features, await board, off) { Work = await work, Drafts = await drafts });
     }
@@ -39,9 +39,9 @@ public class DashboardController(
         var on = features.Flags;
         var config = await lookups.ConfigAsync();
         var today = DateTime.Today;
-        var pending = on.ShortUrl ? Try(() => links.PendingAsync()) : Skip<PendingRecord>();
-        var slipRows = on.PisGeneration ? Try(() => slips.SlipsAsync()) : Skip<SlipRecord>();
-        var apps = on.ViewApplication ? Try(() => applications.ListAsync()) : Skip<ApplicationRecord>();
+        var pending = on.ShortUrl ? OrEmptyWhenUnavailable(() => links.PendingAsync()) : Empty<PendingRecord>();
+        var slipRows = on.PisGeneration ? OrEmptyWhenUnavailable(() => slips.SlipsAsync()) : Empty<SlipRecord>();
+        var apps = on.ViewApplication ? OrEmptyWhenUnavailable(() => applications.ListAsync()) : Empty<ApplicationRecord>();
         var work = new List<WorkItem>();
 
         if (await pending is { Count: > 0 } p)
@@ -69,9 +69,11 @@ public class DashboardController(
         return work;
     }
 
-    private static Task<IReadOnlyList<T>> Skip<T>() => Task.FromResult<IReadOnlyList<T>>([]);
+    /// <summary>An empty list, for a work list that is switched off.</summary>
+    private static Task<IReadOnlyList<T>> Empty<T>() => Task.FromResult<IReadOnlyList<T>>([]);
 
-    private async Task<IReadOnlyList<T>> Try<T>(Func<Task<IReadOnlyList<T>>> ask)
+    /// <summary>The list, or an empty one when the backend or database cannot be reached (the dashboard still shows).</summary>
+    private async Task<IReadOnlyList<T>> OrEmptyWhenUnavailable<T>(Func<Task<IReadOnlyList<T>>> ask)
     {
         try
         {

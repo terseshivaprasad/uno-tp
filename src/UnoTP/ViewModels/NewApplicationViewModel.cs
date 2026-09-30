@@ -94,7 +94,7 @@ public partial class NewApplicationViewModel(IInvestorApi investors, UnoTP.Infra
     public string Detail { get; private set; } = "";
 
     /// <summary>The date of birth as the register keeps it, dd-MM-yyyy.</summary>
-    public string Dob => $"{Pad(Dd)}-{Pad(Mm)}-{Yyyy}";
+    public string Dob => $"{PadToTwoDigits(Dd)}-{PadToTwoDigits(Mm)}-{Yyyy}";
 
     // ----- Filled from the session -------------------------------------------
 
@@ -289,7 +289,8 @@ public partial class NewApplicationViewModel(IInvestorApi investors, UnoTP.Infra
 
     private static string Digits(string? value) => NotDigit().Replace(value ?? "", "");
 
-    private static string Pad(string? value) => value is { Length: 1 } ? "0" + value : value ?? "";
+    /// <summary>A one-digit day or month with a leading zero: "7" -&gt; "07".</summary>
+    private static string PadToTwoDigits(string? value) => value is { Length: 1 } ? "0" + value : value ?? "";
 
     [GeneratedRegex("^[A-Z]{5}[0-9]{4}[A-Z]$")]
     private static partial Regex PanPattern();

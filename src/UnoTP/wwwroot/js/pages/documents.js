@@ -12,11 +12,14 @@
   var timer = null;
   var asked = 0;
 
-  function listFor(input) { return document.getElementById(input.getAttribute('aria-controls')); }
-  function options(list) { return Array.prototype.slice.call(list.querySelectorAll('[role="option"]')); }
+  // The suggestion list an input controls (its aria-controls).
+  function suggestionListFor(input) { return document.getElementById(input.getAttribute('aria-controls')); }
+  // The options now in a suggestion list.
+  function suggestionOptions(list) { return Array.prototype.slice.call(list.querySelectorAll('[role="option"]')); }
 
-  function close(input) {
-    var list = listFor(input);
+  // Empties and hides an input's suggestion list.
+  function closeSuggestions(input) {
+    var list = suggestionListFor(input);
     if (!list) return;
     list.hidden = true;
     list.innerHTML = '';
@@ -25,27 +28,29 @@
   }
 
   // The name shown under the field, at once; the server says it again on the post.
-  function name(input, text) {
-    var col = input.closest('.cud-col') || input.parentNode;
-    var line = col.querySelector('.cud-resolved');
+  function showPickedName(input, text) {
+    var col = input.closest('.doc-column') || input.parentNode;
+    var line = col.querySelector('.doc-resolved');
     if (!line) {
       line = document.createElement('p');
-      line.className = 'cud-resolved';
+      line.className = 'doc-resolved';
       input.insertAdjacentElement('afterend', line);
     }
-    line.classList.remove('cud-resolved__none');
+    line.classList.remove('doc-resolved__none');
     line.textContent = text;
   }
 
-  function pick(input, option) {
+  // Puts the picked code in the input, shows its name and closes the list.
+  function pickSuggestion(input, option) {
     input.value = option.getAttribute('data-code');
-    name(input, (input.getAttribute('data-name-label') || 'Name') + ' — ' + option.getAttribute('data-name'));
-    close(input);
+    showPickedName(input, (input.getAttribute('data-name-label') || 'Name') + ' — ' + option.getAttribute('data-name'));
+    closeSuggestions(input);
     input.dispatchEvent(new Event('change', { bubbles: true }));
   }
 
-  function show(input, parties) {
-    var list = listFor(input);
+  // Draws the found brokers or staff as options under the input.
+  function showSuggestions(input, parties) {
+    var list = suggestionListFor(input);
     if (!list) return;
     list.innerHTML = '';
     if (parties.length === 0) {
@@ -76,23 +81,25 @@
     input.setAttribute('aria-expanded', 'true');
   }
 
-  function search(input) {
+  // Looks the typed text up in the register (brokers or staff) on the backend.
+  function searchRegister(input) {
     var q = input.value.trim();
-    if (q.length < 2) { close(input); return; }
+    if (q.length < 2) { closeSuggestions(input); return; }
     var mine = ++asked;
     var url = input.getAttribute('data-register-search') + '?register=' + encodeURIComponent(input.getAttribute('data-register')) + '&q=' + encodeURIComponent(q);
     fetch(url, { credentials: 'same-origin', headers: { Accept: 'application/json' } })
       .then(function (r) { return r.ok ? r.json() : []; })
       .then(function (parties) {
         // Only the answer to the latest question, and only while the field still has the caret.
-        if (mine === asked && document.activeElement === input) show(input, parties);
+        if (mine === asked && document.activeElement === input) showSuggestions(input, parties);
       })
-      .catch(function () { close(input); });
+      .catch(function () { closeSuggestions(input); });
   }
 
-  function move(input, by) {
-    var list = listFor(input);
-    var all = options(list);
+  // Moves the highlighted option up or down (arrow keys).
+  function moveSuggestionHighlight(input, by) {
+    var list = suggestionListFor(input);
+    var all = suggestionOptions(list);
     if (list.hidden || all.length === 0) return;
     var at = all.findIndex(function (o) { return o.getAttribute('aria-selected') === 'true'; });
     var next = at < 0 ? (by > 0 ? 0 : all.length - 1) : (at + by + all.length) % all.length;
@@ -105,22 +112,22 @@
     var input = e.target.closest && e.target.closest('[data-register-search]');
     if (!input) return;
     clearTimeout(timer);
-    timer = setTimeout(function () { search(input); }, 180);
+    timer = setTimeout(function () { searchRegister(input); }, 180);
   });
 
   document.addEventListener('keydown', function (e) {
     var input = e.target.closest && e.target.closest('[data-register-search]');
     if (!input) return;
-    var list = listFor(input);
-    if (e.key === 'ArrowDown') { e.preventDefault(); move(input, 1); }
-    else if (e.key === 'ArrowUp') { e.preventDefault(); move(input, -1); }
-    else if (e.key === 'Escape') { close(input); }
+    var list = suggestionListFor(input);
+    if (e.key === 'ArrowDown') { e.preventDefault(); moveSuggestionHighlight(input, 1); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); moveSuggestionHighlight(input, -1); }
+    else if (e.key === 'Escape') { closeSuggestions(input); }
     else if (e.key === 'Enter') {
       // Enter picks the party highlighted, or the only one found; it never posts the form half-typed.
       e.preventDefault();
-      var all = list && !list.hidden ? options(list) : [];
+      var all = list && !list.hidden ? suggestionOptions(list) : [];
       var chosen = all.find(function (o) { return o.getAttribute('aria-selected') === 'true'; }) || (all.length === 1 ? all[0] : null);
-      if (chosen) pick(input, chosen);
+      if (chosen) pickSuggestion(input, chosen);
       else input.blur();
     }
   });
@@ -135,11 +142,11 @@
     var option = e.target.closest && e.target.closest('.bank-suggest__option');
     if (!option) return;
     var input = document.querySelector('[data-register-search][aria-controls="' + option.parentNode.id + '"]');
-    if (input) pick(input, option);
+    if (input) pickSuggestion(input, option);
   });
 
   document.addEventListener('focusout', function (e) {
     var input = e.target.closest && e.target.closest('[data-register-search]');
-    if (input) close(input);
+    if (input) closeSuggestions(input);
   });
 })();

@@ -1,6 +1,6 @@
 @model DepositViewModel
 @* What the backend quotes for the deposit as it stands: drawn with FD Configuration,
-   and alone, in answer to Quote, each time a choice changes (fd-quote.js). It
+   and alone, in answer to Quote, each time a choice changes (deposit-quote.js). It
    carries what the amount field says under it, for the script to put there. *@
 @{
     var f = Model.Form;
@@ -16,27 +16,27 @@
     string Maturity() => q is null ? "—" : Money.Rupees(q.MaturityAmount);
 }
 
-<div class="fd-summary__label">This deposit</div>
+<div class="deposit-summary__label">This deposit</div>
 <div>
-    <div class="fd-kv__k">Amount</div>
-    <div class="fd-summary__amount">@(f.AmountValue > 0 ? Money.Rupees(f.AmountValue) : "—")</div>
+    <div class="deposit-key-value__key">Amount</div>
+    <div class="deposit-summary__amount">@(f.AmountValue > 0 ? Money.Rupees(f.AmountValue) : "—")</div>
 </div>
-<div class="fd-summary__grid">
-    <div><div class="fd-kv__k">Interest rate</div><div class="fd-kv__v fd-kv__v--rate">@Rate()</div></div>
-    <div><div class="fd-kv__k">Tenure</div><div class="fd-kv__v">@f.TenureMonths months</div></div>
-    <div><div class="fd-kv__k">Payout</div><div class="fd-kv__v">@(payout?.Name ?? "—")</div></div>
-    <div><div class="fd-kv__k">Category</div><div class="fd-kv__v">@Model.Category</div></div>
+<div class="deposit-summary__grid">
+    <div><div class="deposit-key-value__key">Interest rate</div><div class="deposit-key-value__value deposit-key-value__value--rate">@Rate()</div></div>
+    <div><div class="deposit-key-value__key">Tenure</div><div class="deposit-key-value__value">@f.TenureMonths months</div></div>
+    <div><div class="deposit-key-value__key">Payout</div><div class="deposit-key-value__value">@(payout?.Name ?? "—")</div></div>
+    <div><div class="deposit-key-value__key">Category</div><div class="deposit-key-value__value">@Model.Category</div></div>
 </div>
-<div class="fd-summary__block">
-    <div><div class="fd-kv__k">Scheme</div><div class="fd-kv__v">@(Model.Cumulative ? "Cumulative" : "Non-cumulative")</div></div>
+<div class="deposit-summary__block">
+    <div><div class="deposit-key-value__key">Scheme</div><div class="deposit-key-value__value">@(Model.Cumulative ? "Cumulative" : "Non-cumulative")</div></div>
     @if (!Model.Cumulative && q is not null && payout is not null)
     {
-        <div><div class="fd-kv__k">Interest each @payout.Each</div><div class="fd-kv__v">@Money.Rupees(q.InterestEach)</div></div>
+        <div><div class="deposit-key-value__key">Interest each @payout.Each</div><div class="deposit-key-value__value">@Money.Rupees(q.InterestEach)</div></div>
     }
-    <div><div class="fd-kv__k">Maturity value</div><div class="fd-kv__v">@Maturity()</div></div>
-    <div><div class="fd-kv__k">Matures on</div><div class="fd-kv__v">@(q is null ? "—" : Money.Day(q.MaturesOn))</div></div>
+    <div><div class="deposit-key-value__key">Maturity value</div><div class="deposit-key-value__value">@Maturity()</div></div>
+    <div><div class="deposit-key-value__key">Matures on</div><div class="deposit-key-value__value">@(q is null ? "—" : Money.Day(q.MaturesOn))</div></div>
 </div>
-<div class="fd-summary__note">
+<div class="deposit-summary__note">
     @if (q is null)
     {
         @:The rate and the returns are quoted once a valid amount is entered.
@@ -46,4 +46,4 @@
         @:Rate is the card rate for a @f.TenureMonths-month deposit as on @Money.Day(q.RateAsOn), and is locked when the application is submitted. @(f.NoTds ? "Returns assume no TDS, on the exemption claimed." : "Returns are shown before TDS at the applicable rate.")
     }
 </div>
-<p hidden data-fd-amount data-problem="@amountProblem" data-hint="@amountHint"></p>
+<p hidden data-deposit-amount data-problem="@amountProblem" data-hint="@amountHint"></p>

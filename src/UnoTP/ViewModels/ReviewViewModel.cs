@@ -63,7 +63,7 @@ public sealed class ReviewViewModel(DocumentsViewModel docs, DepositQuote? quote
                     // No proof of a communication address while its upload is off.
                     if (def.Key == DocumentsViewModel.MailSlot.Key && !Docs.CommProofUpload) continue;
                     var v = Docs.View(def, h);
-                    list.Add(new ReviewDocument($"{Cap(def.Key == "poa" ? "proof of address" : def.Label)} · {who}",
+                    list.Add(new ReviewDocument($"{Capitalize(def.Key == "poa" ? "proof of address" : def.Label)} · {who}",
                         !v.Used ? v.NotApplicable ?? "" : v.Doc is { } d ? (d.Check.Length > 0 ? d.Check : "Filed")
                             : v.Optional ? "Not filed: not needed for a holder on a folio" : "Not filed yet",
                         v.Doc is not null || v.Optional, v.Used));
@@ -72,7 +72,7 @@ public sealed class ReviewViewModel(DocumentsViewModel docs, DepositQuote? quote
             foreach (var def in new[] { DocumentsViewModel.FormSlot, DocumentsViewModel.PaymentSlot, DocumentsViewModel.EmpProofSlot, DocumentsViewModel.TdsFormSlot })
             {
                 var v = Docs.View(def);
-                list.Add(new ReviewDocument(Cap(def.Key == "payment" ? "payment instrument" : def.Label),
+                list.Add(new ReviewDocument(Capitalize(def.Key == "payment" ? "payment instrument" : def.Label),
                     !v.Used ? v.NotApplicable ?? "" : v.Doc is { } d ? (d.Check.Length > 0 ? d.Check : "Filed") : "Not filed yet",
                     v.Doc is not null, v.Used));
             }
@@ -116,5 +116,6 @@ public sealed class ReviewViewModel(DocumentsViewModel docs, DepositQuote? quote
     /// <summary>The investor's e-mail, where the payment link goes as well.</summary>
     public string InvestorEmail => DetailsOf(Docs.Investor).Email;
 
-    private static string Cap(string s) => s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s[1..];
+    /// <summary>The words with the first letter in capitals.</summary>
+    private static string Capitalize(string s) => s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s[1..];
 }

@@ -5,24 +5,25 @@
   var panel = document.getElementById('noticesPanel');
   if (!bell || !panel) return;
 
-  function open(yes) {
+  // Opens (true) or closes (false) the notices panel.
+  function setNoticesOpen(yes) {
     panel.hidden = !yes;
     bell.setAttribute('aria-expanded', yes ? 'true' : 'false');
   }
 
   bell.addEventListener('click', function (e) {
     e.stopPropagation();
-    open(panel.hidden);
+    setNoticesOpen(panel.hidden);
   });
   document.getElementById('noticesClose').addEventListener('click', function () {
-    open(false);
+    setNoticesOpen(false);
     bell.focus();
   });
   panel.addEventListener('click', function (e) { e.stopPropagation(); });
-  document.addEventListener('click', function () { if (!panel.hidden) open(false); });
+  document.addEventListener('click', function () { if (!panel.hidden) setNoticesOpen(false); });
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape' && !panel.hidden) {
-      open(false);
+      setNoticesOpen(false);
       bell.focus();
     }
   });

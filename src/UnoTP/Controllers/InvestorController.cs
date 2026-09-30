@@ -90,12 +90,12 @@ public class InvestorController(
     [HttpPost("")]
     public async Task<IActionResult> Proceed(IFormCollection form)
     {
-        var state = Keep(form);
+        var state = KeepTypedFields(form);
         var page = new InvestorViewModel(state, null);
         if (page.On("Holder1.FatcaTaxResident") || page.On("Holder1.FatcaPermanentResident"))
         {
             TempData["offline"] = true;
-            return Back("ciiFatcaAlert");
+            return Back("investorFatcaAlert");
         }
         var unfinished = state.Joint.FindIndex(j => !j.Added);
         if (unfinished >= 0)
@@ -148,7 +148,7 @@ public class InvestorController(
     [HttpPost("save")]
     public IActionResult Save(IFormCollection form)
     {
-        Keep(form);
+        KeepTypedFields(form);
         return Back(null);
     }
 
@@ -169,7 +169,7 @@ public class InvestorController(
     [HttpPost("joint/add")]
     public async Task<IActionResult> JointAdd(IFormCollection form)
     {
-        var state = Keep(form);
+        var state = KeepTypedFields(form);
         if (await LoadAsync() is not { } docs) return Start();
         if (!new InvestorViewModel(state, docs).CanAddJoint) return Back(null);
         state.Joint.Add(new SearchState("pan", null, null, null, null, null, Checked: false));
@@ -186,7 +186,7 @@ public class InvestorController(
     [HttpPost("joint/{n:int}/check")]
     public async Task<IActionResult> JointCheck(int n, IFormCollection form)
     {
-        var state = Keep(form);
+        var state = KeepTypedFields(form);
         var i = n - 2;
         if (i < 0 || i >= state.Joint.Count || state.Joint[i].Added) return Back(null);
         var p = $"Joint{n}.";
@@ -216,7 +216,7 @@ public class InvestorController(
     [HttpPost("joint/{n:int}/remove")]
     public async Task<IActionResult> JointRemove(int n, IFormCollection form)
     {
-        var state = Keep(form);
+        var state = KeepTypedFields(form);
         var i = n - 2;
         if (i < 0 || i != state.Joint.Count - 1) return Back($"holder-{n}");
         if (await LoadAsync() is not { } docs) return Start();
@@ -224,9 +224,9 @@ public class InvestorController(
         if (!await SaveAsync(docs)) return Back(null);
 
         state.Joint.RemoveAt(i);
-        Drop(state, $"Holder{n}.", $"Joint{n}.");
+        DropFieldsStartingWith(state, $"Holder{n}.", $"Joint{n}.");
         State = state;
-        return Back(state.Joint.Count > 0 ? $"holder-{state.Joint.Count + 1}" : "ciiAddHolder");
+        return Back(state.Joint.Count > 0 ? $"holder-{state.Joint.Count + 1}" : "investorAddHolder");
     }
 
     // ----- A joint holder's documents: holder 2 or 3 -----------------------------
@@ -269,7 +269,7 @@ public class InvestorController(
     [HttpPost("nominee/add")]
     public IActionResult NomineeAdd(IFormCollection form)
     {
-        var state = Keep(form);
+        var state = KeepTypedFields(form);
         state.Nominee = true;
         State = state;
         return Back("nominee");
@@ -278,12 +278,12 @@ public class InvestorController(
     [HttpPost("nominee/remove")]
     public IActionResult NomineeRemove(IFormCollection form)
     {
-        var state = Keep(form);
+        var state = KeepTypedFields(form);
         state.Nominee = false;
         // Taken off again, the question is asked again next time.
-        Drop(state, "Nominee.", "NomineeSkipped");
+        DropFieldsStartingWith(state, "Nominee.", "NomineeSkipped");
         State = state;
-        return Back("ciiAddNominee");
+        return Back("investorAddNominee");
     }
 
     // ----- Keeping what was typed --------------------------------------------
@@ -319,7 +319,7 @@ public class InvestorController(
 
     // Every post carries the whole form, so every post keeps it. A joint holder not
     // yet checked keeps what was typed into their search fields too.
-    private InvestorInfoState Keep(IFormCollection form)
+    private InvestorInfoState KeepTypedFields(IFormCollection form)
     {
         var state = State;
         state.Fields.Clear();
@@ -355,7 +355,7 @@ public class InvestorController(
     // back against the version read.
     private async Task<IActionResult> JointDocsAsync(int n, IFormCollection form, Func<DocumentsViewModel, DocumentsViewModel.DocHolder, Task<string?>> step)
     {
-        Keep(form);
+        KeepTypedFields(form);
         if (await LoadAsync() is not { } docs) return Start();
         if (docs.JointHolder(InvestorViewModel.CodeOf(n)) is not { } h) return Back($"holder-{n}");
         docs.KeepJoint(form);
@@ -384,7 +384,8 @@ public class InvestorController(
         return saved;
     }
 
-    private static void Drop(InvestorInfoState state, params string[] prefixes)
+    /// <summary>Removes every saved field whose name starts with one of the prefixes.</summary>
+    private static void DropFieldsStartingWith(InvestorInfoState state, params string[] prefixes)
     {
         foreach (var name in state.Fields.Keys.Where(k => prefixes.Any(k.StartsWith)).ToList()) state.Fields.Remove(name);
     }

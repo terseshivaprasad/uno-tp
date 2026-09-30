@@ -10,7 +10,7 @@
 //                                   of the check's own
 // It is checked when the partner leaves it, and cleared as soon as it is put right.
 // A button marked data-validate="form" checks every field of its form first - or,
-// with a selector for its value, data-validate=".csi-search", the part of the
+// with a selector for its value, data-validate=".page-search", the part of the
 // form it stands in - and sends nothing while one is wrong: on a slow connection a round trip only to be told a
 // PAN is short is the wait not worth having. The server checks everything again -
 // this only saves the trip. A field that is hidden or disabled is not checked.
@@ -51,14 +51,16 @@
     if (at != null) try { el.setSelectionRange(at - dropped, at - dropped); } catch (_) { /* not a text box */ }
   });
 
-  function valueOf(el) {
-    if (el.matches('[role=group], .csi-date')) {
+  // A field's value, trimmed; a date group reads as dd/mm/yyyy.
+  function readFieldValue(el) {
+    if (el.matches('[role=group], .date-input')) {
       return Array.prototype.map.call(el.querySelectorAll('input'), function (i) { return i.value.trim(); }).join('/');
     }
     return (el.value || '').trim();
   }
 
-  function realDate(d, m, y) {
+  // The date for day, month and year, or null when they are not a real date.
+  function toRealDate(d, m, y) {
     d = +d; m = +m; y = +y;
     if (!(y >= 1900) || !(m >= 1 && m <= 12) || !(d >= 1)) return null;
     var date = new Date(y, m - 1, d);
@@ -66,16 +68,16 @@
   }
 
   // What is wrong with a field, or null.
-  function problem(el) {
-    var value = valueOf(el);
-    var empty = el.matches('[role=group], .csi-date') ? value.replace(/\//g, '') === '' : value === '';
+  function findProblem(el) {
+    var value = readFieldValue(el);
+    var empty = el.matches('[role=group], .date-input') ? value.replace(/\//g, '') === '' : value === '';
     if (empty) return el.getAttribute('data-required') || null;
-    var said = checkProblem(el, value);
+    var said = findShapeProblem(el, value);
     return said && (el.getAttribute('data-message') || said);
   }
 
   // What is wrong with the shape of a field that is filled in, or null.
-  function checkProblem(el, value) {
+  function findShapeProblem(el, value) {
     var check = el.getAttribute('data-check') || '';
     var name = check.split(':')[0];
     var arg = check.slice(name.length + 1);
@@ -91,7 +93,7 @@
     if (name === 'date' || name === 'dmy') {
       var parts = value.replace(/\s/g, '').split('/');
       if (name === 'dmy' && parts.length !== 3) parts = [value.replace(/\D/g, '').slice(0, 2), value.replace(/\D/g, '').slice(2, 4), value.replace(/\D/g, '').slice(4)];
-      var date = realDate(parts[0], parts[1], parts[2]);
+      var date = toRealDate(parts[0], parts[1], parts[2]);
       if (!date) return 'Enter a real date, DD/MM/YYYY';
       if (name === 'date' && date > new Date()) return 'Enter a date that is not in the future';
       return null;
@@ -107,28 +109,30 @@
     return null;
   }
 
-  function errorOf(el, make) {
+  // The element that shows a field's error message (made when asked and missing).
+  function errorMessageFor(el, make) {
     var id = el.getAttribute('data-error-id') || (el.id + 'Error');
     var error = document.getElementById(id);
     if (!error && make) {
       error = document.createElement('p');
-      error.className = 'csi-error';
+      error.className = 'field-error';
       error.id = id;
       error.setAttribute('role', 'alert');
       // Under the whole control: a select's box, a date's three boxes, the amount's rupee box.
-      var after = el.closest('.cud-select, .csi-date, .fd-amount') || el;
+      var after = el.closest('.doc-select, .date-input, .deposit-amount') || el;
       after.insertAdjacentElement('afterend', error);
     }
     return error;
   }
 
-  function mark(el, message) {
+  // Shows or clears a field's error: its red edge and its message.
+  function showFieldError(el, message) {
     var control = el;
-    var bad = el.classList.contains('inv-control') ? 'inv-control--error' : 'is-invalid';
+    var bad = el.classList.contains('investor-control') ? 'investor-control--error' : 'is-invalid';
     // The amount's rupee box takes the red edge, as the server draws it.
-    var box = el.closest('.fd-amount');
-    if (box) box.classList.toggle('fd-amount--error', !!message);
-    var error = errorOf(el, !!message);
+    var box = el.closest('.deposit-amount');
+    if (box) box.classList.toggle('deposit-amount--error', !!message);
+    var error = errorMessageFor(el, !!message);
     if (message) {
       error.textContent = message;
       error.hidden = false;
@@ -142,41 +146,43 @@
     }
   }
 
-  function checked(el) {
+  // True when a field asks to be checked (data-required or data-check).
+  function hasChecks(el) {
     return el.hasAttribute('data-required') || el.hasAttribute('data-check');
   }
 
   // Seen by the partner, and not switched off.
-  function inPlay(el) {
+  function isVisibleAndEnabled(el) {
     if (el.closest('[hidden], fieldset[disabled]')) return false;
     if (!el.getClientRects().length) return false;
     var input = el.matches('input, select, textarea') ? el : el.querySelector('input, select, textarea');
     return !(input && input.disabled);
   }
 
-  function holder(target) {
+  // The checked field an event came from, or null.
+  function checkedFieldOf(target) {
     return target.closest && (target.closest('[data-check], [data-required]'));
   }
 
   // Left: said now.
   document.addEventListener('focusout', function (e) {
-    var el = holder(e.target);
-    if (!el || !checked(el) || !inPlay(el)) return;
+    var el = checkedFieldOf(e.target);
+    if (!el || !hasChecks(el) || !isVisibleAndEnabled(el)) return;
     // A date's three boxes are one field: said once the caret has left all three.
     if (el.contains(e.relatedTarget)) return;
-    mark(el, problem(el));
+    showFieldError(el, findProblem(el));
   });
   document.addEventListener('change', function (e) {
-    var el = holder(e.target);
-    if (el && checked(el) && inPlay(el) && e.target.tagName === 'SELECT') mark(el, problem(el));
+    var el = checkedFieldOf(e.target);
+    if (el && hasChecks(el) && isVisibleAndEnabled(el) && e.target.tagName === 'SELECT') showFieldError(el, findProblem(el));
   });
 
   // Put right: cleared at once, not only when the field is left.
   document.addEventListener('input', function (e) {
-    var el = holder(e.target);
-    if (!el || !checked(el)) return;
-    var error = errorOf(el, false);
-    if (error && !error.hidden && error.textContent && !problem(el)) mark(el, null);
+    var el = checkedFieldOf(e.target);
+    if (!el || !hasChecks(el)) return;
+    var error = errorMessageFor(el, false);
+    if (error && !error.hidden && error.textContent && !findProblem(el)) showFieldError(el, null);
   });
 
   // A button that checks its form first sends nothing while a field is wrong.
@@ -188,16 +194,16 @@
     var scope = within === 'form' ? form : button.closest(within) || form;
     var first = null;
     scope.querySelectorAll('[data-check], [data-required]').forEach(function (el) {
-      if (!inPlay(el)) return;
-      var message = problem(el);
-      mark(el, message);
+      if (!isVisibleAndEnabled(el)) return;
+      var message = findProblem(el);
+      showFieldError(el, message);
       if (message && !first) first = el;
     });
     // Fields that stand outside the form but post with it.
     if (scope === form && form.id) document.querySelectorAll('[form="' + form.id + '"][data-check], [form="' + form.id + '"][data-required]').forEach(function (el) {
-      if (!inPlay(el)) return;
-      var message = problem(el);
-      mark(el, message);
+      if (!isVisibleAndEnabled(el)) return;
+      var message = findProblem(el);
+      showFieldError(el, message);
       if (message && !first) first = el;
     });
     if (!first) return;

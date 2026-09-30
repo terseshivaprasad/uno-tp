@@ -21,6 +21,16 @@ public class DashboardViewModel(FeatureSet features, ConsoleBoard board, string?
     /// <summary>What is waiting on the partner, most pressing kinds included; empty when nothing is.</summary>
     public IReadOnlyList<WorkItem> Work { get; init; } = [];
 
+    /// <summary>The work items, most pressing first: red, then amber, then blue.</summary>
+    public IReadOnlyList<WorkItem> WorkByUrgency => Work.OrderBy(w => UrgencyOrder(w.Tone)).ToList();
+
+    private static int UrgencyOrder(string tone)
+    {
+        if (tone == "red") return 0;
+        if (tone == "amber") return 1;
+        return 2;
+    }
+
     /// <summary>The partner's applications opened and not yet submitted, the one touched last first.</summary>
     public IReadOnlyList<DraftSummary> Drafts { get; init; } = [];
 

@@ -1,61 +1,40 @@
 @model int
-@* The rail down the left of every classic wizard step. The page passes the step
-   it is on; the ones behind it carry a filled tick, the ones ahead an empty one.
-   Submitted passes the count itself: every step behind it. One partial so the
-   steps cannot drift from page to page.
-
-   The dashboard promises four easy steps, and those are the four numbered here:
-   Upload Documents to FD Configuration. Investor Identification before them and
-   Review Summary after them are where the journey starts and is submitted, not
-   steps of their own, so they carry no number and stand apart. *@
+@* The step rail down the left of every journey page. The page passes the number of
+   the step it is on (0 = Investor Identification … 5 = Review Summary; Submitted passes 6).
+   Steps behind it carry a filled tick, steps ahead an empty one. *@
 @{
-    // Investor Identification leads the rail with its own glyph; the four booking
-    // steps follow it with the dashboard's, and Review Summary closes it.
-    const string investorGlyph = "<circle cx=\"12\" cy=\"7.5\" r=\"4\"></circle><path d=\"M4.5 20.5a7.5 7.5 0 0 1 15 0\"></path>";
-    const string reviewGlyph = "<circle cx=\"12\" cy=\"12\" r=\"9.5\"></circle><path d=\"M8 12.5l2.8 2.8L16.5 9.5\"></path>";
-    var glyphs = new[] { investorGlyph }.Concat(DashboardViewModel.StepGlyphs).Append(reviewGlyph).ToArray();
-    var steps = NewApplicationViewModel.Steps;
-    var last = steps.Length - 1;
-    var booking = last - 1;
-    // What stands over a rail entry's name: the booking steps their number, the ends what they are.
-    string Eyebrow(int i) => i == 0 ? "Start" : i == last ? "Submit" : $"Step {i}";
+    var rail = StepRail.For(Model);
 }
-<aside class="csi-rail">
-    @* On a phone the steps will not fit across the width, and a rail that scrolls
-       sideways hides where you are. The count, the step you are on and a bar take
-       their place; the steps themselves come back with the room. The count is of
-       the four booking steps, as the dashboard's is. *@
-    @{
-        var submitted = Model > last;
-        var count = submitted || Model == last ? $"All {booking} steps done"
-            : Model == 0 ? "Before the steps" : $"Step {Model} of {booking}";
-        var through = Math.Min(100, Model * 100 / last);
-    }
-    <p class="csi-rail__where">
-        <span class="csi-rail__count">@count</span>
-        <span class="csi-rail__now">@(submitted ? "Submitted" : steps[Model])</span>
+<aside class="page-rail">
+    @* On a phone there is no room for the steps: a count, the step's name and a bar stand in for them. *@
+    <p class="page-rail__where">
+        <span class="page-rail__count">@rail.Count</span>
+        <span class="page-rail__now">@rail.Now</span>
     </p>
-    <span class="csi-rail__bar" aria-hidden="true"><span style="width:@(through)%"></span></span>
+    <span class="page-rail__bar" aria-hidden="true"><span style="width:@(rail.PercentDone)%"></span></span>
 
-    @for (var i = 0; i < steps.Length; i++)
+    @foreach (var step in rail.Steps)
     {
-        var current = i == Model;
-        var done = i < Model;
-        var end = i == 0 || i == last;
-        @if (i == last) { <hr class="csi-rail__rule" aria-hidden="true"> }
-        <div class="csi-rail__step@(end ? " csi-rail__step--end" : "")@(current ? " csi-rail__step--current" : "")@(done ? " csi-rail__step--done" : "")" aria-current="@(current ? "step" : null)">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">@Html.Raw(glyphs[i])</svg>
-            <span class="csi-rail__label"><span class="csi-rail__num">@Eyebrow(i)</span>@steps[i]</span>
-            @if (current)
+        @if (step.RuleBefore)
+        {
+            <hr class="page-rail__rule" aria-hidden="true">
+        }
+        <div class="@step.CssClass" aria-current="@(step.IsCurrent ? "step" : null)">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">@Html.Raw(step.Glyph)</svg>
+            <span class="page-rail__label"><span class="page-rail__num">@step.Eyebrow</span>@step.Name</span>
+            @if (step.IsCurrent)
             {
-                <span class="csi-rail__dot" aria-hidden="true"></span>
+                <span class="page-rail__dot" aria-hidden="true"></span>
             }
             else
             {
-                <svg class="csi-rail__check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M8 12.5l2.8 2.8L16.5 9.5"></path></svg>
-                <span class="visually-hidden">@(done ? "Done" : "Not started")</span>
+                <svg class="page-rail__check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M8 12.5l2.8 2.8L16.5 9.5"></path></svg>
+                <span class="visually-hidden">@(step.IsDone ? "Done" : "Not started")</span>
             }
         </div>
-        @if (i == 0) { <hr class="csi-rail__rule" aria-hidden="true"> }
+        @if (step.RuleAfter)
+        {
+            <hr class="page-rail__rule" aria-hidden="true">
+        }
     }
 </aside>

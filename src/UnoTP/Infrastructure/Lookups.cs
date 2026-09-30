@@ -16,11 +16,12 @@ public sealed class Lookups(IReferenceApi reference, IMemoryCache cache, IOption
 
     /// <summary>Every list the pages offer.</summary>
     public Task<ReferenceData> ReferenceAsync(CancellationToken ct = default) =>
-        Kept("backend:reference", () => reference.ReferenceAsync(ct));
+        CachedOrAsk("backend:reference", () => reference.ReferenceAsync(ct));
 
     /// <summary>The limits and rules the pages check against.</summary>
     public Task<AppConfig> ConfigAsync(CancellationToken ct = default) =>
-        Kept("backend:config", () => reference.ConfigAsync(ct));
+        CachedOrAsk("backend:config", () => reference.ConfigAsync(ct));
 
-    private Task<T> Kept<T>(string key, Func<Task<T>> ask) => cache.KeptAsync(key, KeptFor, ask);
+    /// <summary>The cached answer for the key, or asks the backend and keeps the answer for a while.</summary>
+    private Task<T> CachedOrAsk<T>(string key, Func<Task<T>> ask) => cache.KeptAsync(key, KeptFor, ask);
 }

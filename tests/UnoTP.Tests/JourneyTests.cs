@@ -30,18 +30,18 @@ public class JourneyTests(App app)
         Assert.Contains("Accepted: Aadhaar, Passport, Driving Licence or Voter ID.", page);
         // The communication address proof box stands while its upload is switched
         // off, not applicable, saying why - it is not left out.
-        var mail = Regex.Match(page, "id=\"slot-mail\".*?cud-slot__notes", RegexOptions.Singleline).Value;
+        var mail = Regex.Match(page, "id=\"slot-mail\".*?doc-slot__notes", RegexOptions.Singleline).Value;
         Assert.Contains("Communication address proof", page);
         Assert.Contains("Not applicable", mail);
         // Nothing has been checked yet, so there is no list of checks.
         Assert.DoesNotContain("What the PAN was checked with", page);
         // The payment box waits on the mode - every mode's box is in the page, and
         // the one shown is for no mode chosen - and the account card stands greyed.
-        var noMode = Regex.Match(page, "<fieldset class=\"cud-choice\" data-show-when=\"payMode=\">.*?</fieldset>", RegexOptions.Singleline).Value;
+        var noMode = Regex.Match(page, "<fieldset class=\"doc-choice\" data-show-when=\"payMode=\">.*?</fieldset>", RegexOptions.Singleline).Value;
         Assert.Contains("Choose the payment mode first", noMode);
         Assert.DoesNotContain("settled electronically", noMode);
-        Assert.Matches("<div class=\"cud-pay__card\"[^>]*aria-disabled=\"true\"", page);
-        Assert.DoesNotMatch("<div class=\"cud-pay__card\"[^>]*\\shidden", page);
+        Assert.Matches("<div class=\"doc-payment__card\"[^>]*aria-disabled=\"true\"", page);
+        Assert.DoesNotMatch("<div class=\"doc-payment__card\"[^>]*\\shidden", page);
     }
 
     [Fact]
@@ -54,11 +54,11 @@ public class JourneyTests(App app)
 
         Assert.Contains("What the PAN was checked with", page);
         // Razor writes the en dash as an entity.
-        Assert.Matches("<li class=\"cud-check is-done\"[^>]*>\\s*<span class=\"cud-check__kind\">PAN (–|&#x2013;) NSDL", page);
+        Assert.Matches("<li class=\"doc-check is-done\"[^>]*>\\s*<span class=\"doc-check__kind\">PAN (–|&#x2013;) NSDL", page);
         Assert.Contains("Verified with NSDL", page);
         // Verified, the copy cannot be replaced.
-        Assert.Contains("cud-tool--final", page);
-        var panBox = Regex.Match(page, "id=\"slot-pan\".*?cud-slot__frame", RegexOptions.Singleline).Value;
+        Assert.Contains("doc-tool--final", page);
+        var panBox = Regex.Match(page, "id=\"slot-pan\".*?doc-slot__frame", RegexOptions.Singleline).Value;
         Assert.DoesNotContain(">Replace<", panBox);
         // The proof of address is open now.
         Assert.DoesNotContain("Upload the PAN copy first", page);
@@ -72,13 +72,13 @@ public class JourneyTests(App app)
 
         // No PAN copy yet: the record can be fetched on the PAN the investor was identified with.
         var before = await client.GetStringAsync(at + "/documents");
-        Assert.DoesNotContain("disabled", Regex.Match(before, "<button[^>]*cud-ckyc-btn[^>]*>").Value);
+        Assert.DoesNotContain("disabled", Regex.Match(before, "<button[^>]*doc-ckyc-btn[^>]*>").Value);
         Assert.DoesNotContain(DocumentsViewModel.CkycWaitsOnPan, before);
 
         // The PAN copy filed and verified with NSDL: still offered.
         var after = await App.UploadAsync(client, at + "/documents", "pan", "pan.jpg", ("appType", "DIGITAL"));
         Assert.Contains("Verified with NSDL", after);
-        Assert.DoesNotContain("disabled", Regex.Match(after, "<button[^>]*cud-ckyc-btn[^>]*>").Value);
+        Assert.DoesNotContain("disabled", Regex.Match(after, "<button[^>]*doc-ckyc-btn[^>]*>").Value);
     }
 
     [Fact]
@@ -89,13 +89,13 @@ public class JourneyTests(App app)
 
         // A copy whose name NSDL does not match: the offer stands, disabled, saying why.
         var page = await App.UploadAsync(client, at + "/documents", "pan", "pan.jpg", ("appType", "DIGITAL"));
-        var button = Regex.Match(page, "<button[^>]*cud-ckyc-btn[^>]*>").Value;
+        var button = Regex.Match(page, "<button[^>]*doc-ckyc-btn[^>]*>").Value;
         Assert.Contains("disabled", button);
         Assert.DoesNotContain("data-enable-when", button);
         Assert.Contains(DocumentsViewModel.CkycWaitsOnPan, page);
         // Asked for anyway, it is refused: the application stays off the CKYC route.
         await App.PostAsync(client, at + "/documents", at + "/documents/ckyc", ("appType", "DIGITAL"));
-        Assert.DoesNotContain("cud-ckyc-on", await client.GetStringAsync(at + "/documents"));
+        Assert.DoesNotContain("doc-ckyc-on", await client.GetStringAsync(at + "/documents"));
     }
 
     [Fact]
@@ -108,8 +108,8 @@ public class JourneyTests(App app)
 
         // Review Summary's sections, each under a heading, with nothing to edit.
         foreach (var section in new[] { "Fixed Deposit", "Holders", "Nominee", "Bank Details &amp; Payment", "Documents", "Other Details" })
-            Assert.Contains($"<h3 class=\"va-sheet__head\">{section}</h3>", details);
-        Assert.DoesNotContain("rv-edit", details);
+            Assert.Contains($"<h3 class=\"view-app-sheet__head\">{section}</h3>", details);
+        Assert.DoesNotContain("review-edit", details);
         Assert.DoesNotContain("<html", details);
         // Only the partner's own applications are found.
         Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync("/unotp/applications/FBBMFL26F99999/details")).StatusCode);
@@ -139,15 +139,15 @@ public class JourneyTests(App app)
 
         // The folio's address stands in the box, not needed again, with the tool to file a newer proof.
         var page = await client.GetStringAsync(at + "/documents");
-        var box = Regex.Match(page, "id=\"slot-poa\".*?cud-slot__notes", RegexOptions.Singleline).Value;
+        var box = Regex.Match(page, "id=\"slot-poa\".*?doc-slot__notes", RegexOptions.Singleline).Value;
         Assert.Contains("Newer proof", box);
         Assert.Contains("Shantiniketan", box);
         Assert.Contains("file a newer proof only if the address has changed", box);
-        Assert.DoesNotContain("the proof of address", Regex.Match(page, "csi-bar__hint.*?</(p|details)>", RegexOptions.Singleline).Value);
+        Assert.DoesNotContain("the proof of address", Regex.Match(page, "page-action-bar__hint.*?</(p|details)>", RegexOptions.Singleline).Value);
 
         // Filed, the newer proof is what the box holds, and Replace stands over it.
         var after = await App.UploadAsync(client, at + "/documents", "poa", "voter_id.jpg", ("appType", "DIGITAL"));
-        var filed = Regex.Match(after, "id=\"slot-poa\".*?cud-slot__notes", RegexOptions.Singleline).Value;
+        var filed = Regex.Match(after, "id=\"slot-poa\".*?doc-slot__notes", RegexOptions.Singleline).Value;
         Assert.DoesNotContain("Newer proof", filed);
         Assert.Contains(">Replace<", filed);
     }
@@ -190,7 +190,7 @@ public class JourneyTests(App app)
 
         var page = await client.GetStringAsync(at + "/investor");
         Assert.Contains("data-ask-nominee=\"yes\"", page);
-        Assert.Contains("id=\"ciiNomineeAsk\"", page);
+        Assert.Contains("id=\"investorNomineeAsk\"", page);
         Assert.Contains("We strongly advise adding a nominee.", page);
 
         // Skipped, the question is kept answered with the form.
@@ -201,7 +201,7 @@ public class JourneyTests(App app)
         // Added, there is nothing to ask.
         await App.PostAsync(client, at + "/investor", at + "/investor/nominee/add");
         var added = await client.GetStringAsync(at + "/investor");
-        Assert.DoesNotContain("id=\"ciiNomineeAsk\"", added);
+        Assert.DoesNotContain("id=\"investorNomineeAsk\"", added);
         Assert.Contains("id=\"nominee\"", added);
     }
 
@@ -234,7 +234,7 @@ public class JourneyTests(App app)
         Assert.Contains("FDR FD2023001234", documents);
         Assert.Contains("The maturing deposit FD2023001234 pays for the new one", documents);
         Assert.Contains(">Not applicable</option>", documents);
-        Assert.DoesNotContain("the payment mode", Regex.Match(documents, "csi-bar__hint.*?</(p|details)>", RegexOptions.Singleline).Value);
+        Assert.DoesNotContain("the payment mode", Regex.Match(documents, "page-action-bar__hint.*?</(p|details)>", RegexOptions.Singleline).Value);
 
         // The deposit's joint holder is on Investor Information already, added.
         var investor = await client.GetStringAsync(appAt + "/investor");
@@ -249,9 +249,9 @@ public class JourneyTests(App app)
 
         // FD Configuration: the maturity amount, read-only, quoted.
         var deposit = await client.GetStringAsync(appAt + "/deposit");
-        Assert.Matches("id=\"fd-amount\"[^>]*readonly", deposit);
+        Assert.Matches("id=\"deposit-amount\"[^>]*readonly", deposit);
         Assert.Contains("the maturity amount of deposit FD2023001234", deposit);
-        Assert.Contains("fd-kv__v--rate", deposit);
+        Assert.Contains("deposit-key-value__value--rate", deposit);
 
         // Review Summary names the deposit renewed; the list, by folio this time, shows it renewed.
         var review = await client.GetStringAsync(appAt + "/review");
@@ -285,7 +285,7 @@ public class JourneyTests(App app)
 
         // Filed from the page, the deposit is saved with the switch on, and Proceed goes on.
         var filed = await App.UploadAsync(client, deposit, "tdsform", "form-121.jpg", chosen);
-        Assert.Contains(">Replace<", Regex.Match(filed, "id=\"slot-tdsform\".*?cud-slot__notes", RegexOptions.Singleline).Value);
+        Assert.Contains(">Replace<", Regex.Match(filed, "id=\"slot-tdsform\".*?doc-slot__notes", RegexOptions.Singleline).Value);
         var proceeded = await App.PostAsync(client, deposit, deposit, chosen);
         Assert.EndsWith("/review", proceeded.RequestMessage!.RequestUri!.AbsolutePath);
         Assert.Contains("Form 121", await proceeded.Content.ReadAsStringAsync());
@@ -368,7 +368,7 @@ public class JourneyTests(App app)
 
         // Just added, with fields to fill: open, with the line saying so.
         var opened = await client.GetStringAsync(at + "/investor");
-        Assert.Matches("<details class=\"cii-fold\" open", opened);
+        Assert.Matches("<details class=\"investor-folded-holder\" open", opened);
         Assert.Contains("fields to fill", opened);
 
         // Every field filled: folded to its line - while the investor's own card,
@@ -378,7 +378,7 @@ public class JourneyTests(App app)
             ("Holder2.Occupation", "Service"), ("Holder2.SubOccupation", "Private"), ("Holder2.MaritalStatus", "Married"),
             ("Holder2.Mobile", "9876543210"), ("Holder2.Email", "rahul@example.com"));
         var page = await client.GetStringAsync(at + "/investor");
-        Assert.Matches("<details class=\"cii-fold\">", page);
+        Assert.Matches("<details class=\"investor-folded-holder\">", page);
         Assert.Contains("SHIVAPRASAD SUBHASH TERSE", page);
         Assert.Contains("details complete", page);
     }

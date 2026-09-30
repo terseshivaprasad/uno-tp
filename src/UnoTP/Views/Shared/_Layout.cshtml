@@ -6,15 +6,15 @@
     <title>@ViewData["Title"] - E-Sarathi | Uno TP</title>
     @* Fonts are served from wwwroot, so nothing on the page reaches outside the app. *@
     @* Shared styles are the layout's: Bootstrap 5.3 (lib/bootstrap) themed to the
-       brand (css/shared/theme.css), then css/shared/. A page adds only its own
+       brand (css/shared/bootstrap-theme.css), then css/shared/. A page adds only its own
        body's, css/pages/{page}.css, in its Styles section - between the shared ones
        and the top bar's, the order the rules were written in. *@
     <link rel="stylesheet" href="~/lib/bootstrap/css/bootstrap.min.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/shared/theme.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/shared/bootstrap-theme.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/shared/fonts.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/shared/base.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/shared/wizard.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/shared/registers.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/shared/layout-and-controls.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/shared/journey-steps.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/shared/register-pages.css" asp-append-version="true" />
     @await RenderSectionAsync("Styles", required: false)
     <link rel="stylesheet" href="~/css/shared/topbar.css" asp-append-version="true" />
     @await RenderSectionAsync("Head", required: false)
@@ -29,25 +29,32 @@
             @* Before a partner has signed in there is no welcome line, no bell and
                nowhere to log out of: the bar carries the old public site's menu
                instead, as the login page draws it. *@
-            <nav class="app-header__right pub-nav" aria-label="Site">
-                <span class="pub-nav__link pub-nav__link--on" aria-current="page">Home</span>
+            <nav class="app-header__right public-nav" aria-label="Site">
+                <span class="public-nav__link public-nav__link--on" aria-current="page">Home</span>
                 @foreach (var item in new[] { "Features", "Documentation", "Interest Rates", "About us", "FAQ's" })
                 {
-                    <button type="button" class="pub-nav__link btn-reset js-stub">@item</button>
+                    <button type="button" class="public-nav__link btn-reset js-stub">@item</button>
                 }
-                <button type="button" class="pub-nav__login" data-focus-login>Login</button>
+                <button type="button" class="public-nav__login" data-focus-login>Login</button>
             </nav>
         }
         else
         {
         <div class="app-header__right">
             @{
-                // Who is signed in, and as what: a 1033 agency, or a broker under their business code.
+                // Who is signed in, and as what. A sourcing agency is named by its agency type;
+                // any other partner with a broker code is named by that code.
                 var partner = await Partner.ProfileAsync();
                 var sourcingAgency = (await Lookups.ConfigAsync()).SourcingAgency;
-                var asWhat = partner.AgencyType == sourcingAgency ? $"Agency {partner.AgencyType}"
-                    : partner.BrokerCode.Length > 0 ? $"Broker {partner.BrokerCode}" : $"Agency {partner.AgencyType}";
-                var initials = string.Concat(partner.Name.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(w => w[0]));
+                var isBroker = partner.BrokerCode.Length > 0 && partner.AgencyType != sourcingAgency;
+                var asWhat = isBroker ? $"Broker {partner.BrokerCode}" : $"Agency {partner.AgencyType}";
+
+                // The first letter of the first two words of the name, for the phone menu's avatar.
+                var initials = "";
+                foreach (var word in partner.Name.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2))
+                {
+                    initials += word[0];
+                }
             }
             <div class="app-header__welcome"><span class="welcome-label">Welcome,</span> @partner.Name <span class="entity-code">@partner.Code</span> <span class="app-header__as">@asWhat</span>@if (Features.IsOverridden)
             {
@@ -152,13 +159,13 @@
     <script src="~/lib/bootstrap/js/bootstrap.bundle.min.js" asp-append-version="true"></script>
     <script src="~/js/shared/loader.js" asp-append-version="true"></script>
     @* Before the pages' own scripts, so a field found wrong stops a post before it goes. *@
-    <script src="~/js/shared/checks.js" asp-append-version="true"></script>
-    <script src="~/js/shared/notices.js" asp-append-version="true"></script>
+    <script src="~/js/shared/field-checks.js" asp-append-version="true"></script>
+    <script src="~/js/shared/notices-bell.js" asp-append-version="true"></script>
     <script src="~/js/shared/topbar.js" asp-append-version="true"></script>
-    <script src="~/js/shared/date-parts.js" asp-append-version="true"></script>
+    <script src="~/js/shared/date-input.js" asp-append-version="true"></script>
     <script src="~/js/shared/partial-forms.js" asp-append-version="true"></script>
     <script src="~/js/shared/image-shrink.js" asp-append-version="true"></script>
-    <script src="~/js/shared/pin.js" asp-append-version="true"></script>
+    <script src="~/js/shared/sticky-app-strip.js" asp-append-version="true"></script>
     <script src="~/js/shared/console.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>

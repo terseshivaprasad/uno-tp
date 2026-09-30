@@ -61,5 +61,6 @@ public static class Money
     /// <summary>A day as the pages write it: "14 Sep 2029".</summary>
     public static string Day(DateOnly day) => day.ToString("d MMM yyyy", CultureInfo.InvariantCulture);
 
+    /// <summary>A moment as the pages write it: "14 Sep 2029, 3:05 PM".</summary>
     public static string Day(DateTime at) => at.ToString("d MMM yyyy, h:mm tt", CultureInfo.InvariantCulture);
 }

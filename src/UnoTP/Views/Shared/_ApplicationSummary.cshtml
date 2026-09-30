@@ -23,12 +23,12 @@
     // A read-only value, with what it rests on under it.
     private async Task Kv(string key, string value, string? note = null, bool wide = false, bool unread = false)
     {
-        <div class="inv-kv @(wide ? "inv-kv--wide" : null)">
-            <div class="inv-kv__k">@key</div>
-            <div class="inv-kv__v @(unread ? "inv-kv__v--unread" : null)">@value</div>
+        <div class="investor-key-value @(wide ? "investor-key-value--wide" : null)">
+            <div class="investor-key-value__key">@key</div>
+            <div class="investor-key-value__value @(unread ? "investor-key-value__value--unread" : null)">@value</div>
             @if (note is { Length: > 0 })
             {
-                <div class="inv-kv__note">@note</div>
+                <div class="investor-key-value__note">@note</div>
             }
         </div>
         await Task.CompletedTask;
@@ -43,38 +43,38 @@
         if (!Model.Editable)
         {
             // Read-only, in View Application's details: a section heading, no Edit.
-            <h3 class="va-sheet__head">@title</h3>
+            <h3 class="view-app-sheet__head">@title</h3>
             return;
         }
-        <div class="cii-head" data-pin-head="@(first ? "" : null)">
-            <h2 class="cii-title @(first ? null : "cii-title--section")">@title</h2>
+        <div class="page-head" data-pin-head="@(first ? "" : null)">
+            <h2 class="page-title @(first ? null : "page-title--section")">@title</h2>
             @if (first)
             {
-                <span class="cii-app">Application No: <strong>@Model.Review.Docs.AppNo</strong>
-                    <button type="button" class="cud-copy" data-copy="@Model.Review.Docs.AppNo" title="Copy the application number" aria-label="Copy the application number">
+                <span class="page-app-number">Application No: <strong>@Model.Review.Docs.AppNo</strong>
+                    <button type="button" class="doc-copy" data-copy="@Model.Review.Docs.AppNo" title="Copy the application number" aria-label="Copy the application number">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">@Html.Raw(CopyGlyph)</svg>
                     </button>
                 </span>
             }
-            <a class="csi-link rv-edit" href="@Url.Action(action, controller)" aria-label="Edit @title">Edit</a>
+            <a class="link-button review-edit" href="@Url.Action(action, controller)" aria-label="Edit @title">Edit</a>
         </div>
         await Task.CompletedTask;
     }
 }
 
         @* ── Fixed deposit ─────────────────────────────────────────────────── *@
-        <section class="@(Model.Editable ? "csi-card cii-card" : "va-part")" id="@(Model.Editable ? "rv-deposit" : null)">
+        <section class="@(Model.Editable ? "page-card section-card" : "view-app-section")" id="@(Model.Editable ? "review-deposit" : null)">
             @{ await Head("Fixed Deposit", "Deposit", "Index", first: true); }
-            <p class="cii-note">@(q is null ? "Quoted once the deposit is configured" : $"Card rate as on {Money.Day(q.RateAsOn)} · locked when the application is submitted")</p>
-            <div class="cii-record">
-                <div class="inv-panel">
+            <p class="page-note">@(q is null ? "Quoted once the deposit is configured" : $"Card rate as on {Money.Day(q.RateAsOn)} · locked when the application is submitted")</p>
+            <div class="investor-record">
+                <div class="investor-panel">
                     @if (d is null || d.Amount == 0)
                     {
-                        <div class="inv-kv__v inv-kv__v--unread">Not configured yet</div>
+                        <div class="investor-key-value__value investor-key-value__value--unread">Not configured yet</div>
                     }
                     else
                     {
-                        <div class="inv-kv-grid">
+                        <div class="investor-key-value-grid">
                             @{
                                 await Kv("Invested amount", Money.Rupees(d.Amount), Money.InWords(d.Amount).ToLowerInvariant());
                                 await Kv("Rate of interest", q is null ? "—" : $"{q.Rate:0.00}% p.a.");
@@ -91,7 +91,7 @@
                                 await Kv("Maturity instruction", "Credit to the repayment account", payment?.Repayment is { AccountNumber.Length: > 0 } r ? Account(r, review.RepaymentBranch) : null);
                             }
                         </div>
-                        <div class="inv-kv-grid inv-kv-grid--divided">
+                        <div class="investor-key-value-grid investor-key-value-grid--divided">
                             @{
                                 await Kv("Auto renewal", d.AutoRenewal ? $"On · {review.Option(review.Ref.RenewInstructions, d.RenewInstruction)}" : "Off");
                                 await Kv("TDS", d.NoTds ? "Not deducted — exemption claimed" : "Deducted at the applicable rate");
@@ -104,20 +104,20 @@
         </section>
 
         @* ── Holders ───────────────────────────────────────────────────────── *@
-        <section class="@(Model.Editable ? "csi-card cii-card" : "va-part")" id="@(Model.Editable ? "rv-holders" : null)">
+        <section class="@(Model.Editable ? "page-card section-card" : "view-app-section")" id="@(Model.Editable ? "review-holders" : null)">
             @{ await Head("Holders", "Investor", "Index"); }
-            <p class="cii-note">@(review.Holders.Count == 1 ? "One holder" : $"{review.Holders.Count} holders") &middot; everything captured for each</p>
-            <div class="cii-record">
+            <p class="page-note">@(review.Holders.Count == 1 ? "One holder" : $"{review.Holders.Count} holders") &middot; everything captured for each</p>
+            <div class="investor-record">
                 @foreach (var h in review.Holders)
                 {
                     var who = h.Holder.Who;
                     var det = h.Details;
                     var gender = det.Gender.Length > 0 ? det.Gender : who.Gender;
-                    <div class="inv-panel inv-panel--stack">
-                        <div class="inv-panel__label">@(h.Holder.Joint ? "Joint holder" : "Primary holder") &middot; @Or(who.Name, "name not verified yet")</div>
-                        <div class="inv-kv-grid">
+                    <div class="investor-panel investor-panel--stack">
+                        <div class="investor-panel__label">@(h.Holder.Joint ? "Joint holder" : "Primary holder") &middot; @Or(who.Name, "name not verified yet")</div>
+                        <div class="investor-key-value-grid">
                             @{
-                                await Kv("PAN", DocumentsViewModel.Mask(who.Pan));
+                                await Kv("PAN", DocumentsViewModel.MaskPan(who.Pan));
                                 await Kv("DOB", DocumentsViewModel.MaskDate(who.Dob));
                                 await Kv("Gender", Or(gender), unread: gender.Length == 0);
                                 await Kv(Or(det.NameType, "Father / Mother / Spouse") + " name", Or(det.ParentName), unread: det.ParentName.Length == 0);
@@ -134,7 +134,7 @@
                                 }
                             }
                         </div>
-                        <div class="inv-kv-grid inv-kv-grid--divided">
+                        <div class="investor-key-value-grid investor-key-value-grid--divided">
                             @{
                                 await Kv("Permanent address", h.Permanent.Lines, wide: true);
                                 await Kv("Verification", h.Permanent.State);
@@ -150,14 +150,14 @@
         </section>
 
         @* ── Nominee ───────────────────────────────────────────────────────── *@
-        <section class="@(Model.Editable ? "csi-card cii-card" : "va-part")" id="@(Model.Editable ? "rv-nominee" : null)">
+        <section class="@(Model.Editable ? "page-card section-card" : "view-app-section")" id="@(Model.Editable ? "review-nominee" : null)">
             @{ await Head("Nominee", "Investor", "Index"); }
-            <p class="cii-note">Asked once for the application, not per holder</p>
-            <div class="cii-record">
-                <div class="inv-panel">
+            <p class="page-note">Asked once for the application, not per holder</p>
+            <div class="investor-record">
+                <div class="investor-panel">
                     @if (review.Nominee is { } n)
                     {
-                        <div class="inv-kv-grid">
+                        <div class="investor-key-value-grid">
                             @{
                                 await Kv("Name", Or(n.Name));
                                 await Kv("Date of birth", Or(n.Dob));
@@ -168,19 +168,19 @@
                     }
                     else
                     {
-                        <div class="inv-kv__v inv-kv__v--unread">No nominee named</div>
+                        <div class="investor-key-value__value investor-key-value__value--unread">No nominee named</div>
                     }
                 </div>
             </div>
         </section>
 
         @* ── Bank & payment ────────────────────────────────────────────────── *@
-        <section class="@(Model.Editable ? "csi-card cii-card" : "va-part")" id="@(Model.Editable ? "rv-bank" : null)">
+        <section class="@(Model.Editable ? "page-card section-card" : "view-app-section")" id="@(Model.Editable ? "review-bank" : null)">
             @{ await Head("Bank Details & Payment", "Payment", "Index"); }
-            <p class="cii-note">Paid by @Or(docs.State.PayMode, "a mode not chosen yet")</p>
-            <div class="cii-record">
-                <div class="inv-panel">
-                    <div class="inv-kv-grid">
+            <p class="page-note">Paid by @Or(docs.State.PayMode, "a mode not chosen yet")</p>
+            <div class="investor-record">
+                <div class="investor-panel">
+                    <div class="investor-key-value-grid">
                         @{
                             // Only a cheque is drawn on an account the deposit is paid from.
                             if (byCheque)
@@ -200,27 +200,27 @@
         </section>
 
         @* ── Documents ─────────────────────────────────────────────────────── *@
-        <section class="@(Model.Editable ? "csi-card cii-card" : "va-part")" id="@(Model.Editable ? "rv-documents" : null)">
+        <section class="@(Model.Editable ? "page-card section-card" : "view-app-section")" id="@(Model.Editable ? "review-documents" : null)">
             @{ await Head("Documents", "Documents", "Index"); }
-            <p class="cii-note">Every document the application carries</p>
-            <ul class="rv-checks">
+            <p class="page-note">Every document the application carries</p>
+            <ul class="review-checks">
                 @foreach (var doc in review.Documents)
                 {
-                    <li class="rv-check">
-                        <span class="rv-check__mark @(doc.Done ? "" : "rv-check__mark--na")" aria-hidden="true">@(doc.Done ? "✓" : "–")</span>
-                        <div class="rv-check__body"><div class="rv-check__title">@doc.Title</div><div class="rv-check__detail">@doc.Detail</div></div>
+                    <li class="review-check">
+                        <span class="review-check__mark @(doc.Done ? "" : "review-check__mark--na")" aria-hidden="true">@(doc.Done ? "✓" : "–")</span>
+                        <div class="review-check__body"><div class="review-check__title">@doc.Title</div><div class="review-check__detail">@doc.Detail</div></div>
                     </li>
                 }
             </ul>
         </section>
 
         @* ── Other details ─────────────────────────────────────────────────── *@
-        <section class="@(Model.Editable ? "csi-card cii-card" : "va-part")" id="@(Model.Editable ? "rv-other" : null)">
+        <section class="@(Model.Editable ? "page-card section-card" : "view-app-section")" id="@(Model.Editable ? "review-other" : null)">
             @{ await Head("Other Details", "Documents", "Index"); }
-            <p class="cii-note">How the application is sourced, from Upload Documents</p>
-            <div class="cii-record">
-                <div class="inv-panel">
-                    <div class="inv-kv-grid">
+            <p class="page-note">How the application is sourced, from Upload Documents</p>
+            <div class="investor-record">
+                <div class="investor-panel">
+                    <div class="investor-key-value-grid">
                         @{
                             await Kv("Sourcing mode", mode?.Name ?? "Not chosen");
                             await Kv(mode?.CodeLabel ?? "Code", Or(docs.State.SourceCode), sourceName?.Text);

@@ -1,14 +1,43 @@
-/* The pay-in-slips page only. Loaded after base.css and components/registers.css. */
+/* The pay-in-slips page only. Loaded after layout-and-controls.css and shared/register-pages.css. */
 
-#pisError { padding-top: 12px; font-size: 12px; }
-#pisScope { padding-top: 12px; }
+#payinSlipError {
+  padding-top: 12px;
+  font-size: 12px;
+}
+#payinSlipScope {
+  padding-top: 12px;
+}
 /* What is held back, in one line. The rule itself is in the rail and on each
    blocked row, so this only carries the count and where to act. */
-.pis-flag { display: flex; align-items: center; gap: 12px; margin-top: 20px; padding: 12px 16px; border: 1px solid var(--pink-border); border-left: 3px solid var(--red); border-radius: 6px; background: var(--pink-bg); font-size: 12px; line-height: 16px; color: var(--red-dark); }
-.pis-flag svg { flex: none; color: var(--red); }
-.pis-flag strong { font-weight: 600; }
-.pis-table__slip [data-slip-detail]:empty { display: none; }
+.payin-slip-flag {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
+  padding: 12px 16px;
+  border: 1px solid var(--pink-border);
+  border-left: 3px solid var(--red);
+  border-radius: 6px;
+  background: var(--pink-bg);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--red-dark);
+}
+.payin-slip-flag svg {
+  flex: none;
+  color: var(--red);
+}
+.payin-slip-flag strong {
+  font-weight: 600;
+}
+.payin-slip-table__slip [data-slip-detail]:empty {
+  display: none;
+}
 /* The action is one short link per row; it never wraps. */
-.pis-table .su-table__act { white-space: nowrap; }
+.payin-slip-table .register-table__actions {
+  white-space: nowrap;
+}
 /* A row whose slip is held back for an acceptance. */
-.pis-table tbody tr[data-blocked="yes"] td { background: var(--pink-tint); }
+.payin-slip-table tbody tr[data-blocked="yes"] td {
+  background: var(--pink-tint);
+}

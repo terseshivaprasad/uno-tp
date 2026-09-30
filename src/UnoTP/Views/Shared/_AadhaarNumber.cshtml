@@ -3,19 +3,19 @@
    clear enough - so it is typed here and the PAN-Aadhaar link asked with it. The
    page places it in its document grid, across the row under the proofs of address.
    Like a number read, it is kept for this session only, and never put back here. *@
-<div class="cud-retry @(Model.Error is null ? null : "is-invalid")" id="row-@Model.Field" role="group" aria-labelledby="@(Model.Field)Label">
-    <div class="cud-retry__say">
-        <span class="cud-retry__title" id="@(Model.Field)Label">Aadhaar number not read for the @Glossary.Term("PAN–Aadhaar link")</span>
-        <span class="cud-retry__text">The Aadhaar is filed. Type its 12-digit number to check the link; it is not saved with the application.</span>
+<div class="doc-retry @(Model.Error is null ? null : "is-invalid")" id="row-@Model.Field" role="group" aria-labelledby="@(Model.Field)Label">
+    <div class="doc-retry__say">
+        <span class="doc-retry__title" id="@(Model.Field)Label">Aadhaar number not read for the @Glossary.Term("PAN–Aadhaar link")</span>
+        <span class="doc-retry__text">The Aadhaar is filed. Type its 12-digit number to check the link; it is not saved with the application.</span>
     </div>
-    <div class="cud-retry__ask">
-        <input class="csi-control @(Model.Error is null ? null : "is-invalid")" id="@Model.Field" name="@Model.Field" data-chars="aadhaar" value=""
+    <div class="doc-retry__ask">
+        <input class="field-input @(Model.Error is null ? null : "is-invalid")" id="@Model.Field" name="@Model.Field" data-chars="aadhaar" value=""
                inputmode="numeric" maxlength="14" pattern="[0-9 ]*" autocomplete="off" spellcheck="false"
                placeholder="XXXX XXXX XXXX" aria-label="12-digit Aadhaar number" aria-describedby="@(Model.Field)Error">
         <button type="submit" class="btn btn-primary" formaction="@Model.PostUrl" formnovalidate data-loader="Checking the PAN–Aadhaar link&hellip;">Check link</button>
     </div>
     @if (Model.Error is not null)
     {
-        <p class="csi-error cud-retry__error" id="@(Model.Field)Error" role="alert">@Model.Error</p>
+        <p class="field-error doc-retry__error" id="@(Model.Field)Error" role="alert">@Model.Error</p>
     }
 </div>

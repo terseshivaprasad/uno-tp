@@ -31,8 +31,8 @@ public sealed class VerificationClient(HttpClient http, IPartner partner)
     public const string Name = "Verification";
 
     public Task<Verification> ConfirmProofAsync(string proofType, OcrReading reading, string holderDob, CancellationToken ct = default) =>
-        Ask(() => Send<Verification>(HttpMethod.Post, "proof", Body(new { proofType, reading, holderDob }), ct), ct);
+        Ask(() => Send<Verification>(HttpMethod.Post, "proof", JsonBody(new { proofType, reading, holderDob }), ct), ct);
 
     public Task<Verification> ConfirmAccountAsync(string account, string bank, CancellationToken ct = default) =>
-        Ask(() => Send<Verification>(HttpMethod.Post, "account", Body(new { account, bank }), ct), ct);
+        Ask(() => Send<Verification>(HttpMethod.Post, "account", JsonBody(new { account, bank }), ct), ct);
 }

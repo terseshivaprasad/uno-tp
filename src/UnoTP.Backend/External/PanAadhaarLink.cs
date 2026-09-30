@@ -34,7 +34,7 @@ public sealed class PanAadhaarLinkClient(HttpClient http, IPartner partner)
     public async Task<PanAadhaarLink> CheckAsync(string pan, string aadhaarNumber, CancellationToken ct = default) =>
         !AadhaarNumbers.IsWhole(aadhaarNumber)
             ? PanAadhaarLink.NeedsAadhaar
-            : (await Ask(() => Send<Answer>(HttpMethod.Post, "check", Body(new { pan, aadhaarNumber }), ct), ct)).Link;
+            : (await Ask(() => Send<Answer>(HttpMethod.Post, "check", JsonBody(new { pan, aadhaarNumber }), ct), ct)).Link;
 
     private sealed record Answer(PanAadhaarLink Link);
 }

@@ -78,10 +78,10 @@ public sealed class IdfyClient(HttpClient http, ILogger<IdfyClient> log)
     // The sync forms: the partner is waiting on the page for the answer.
 
     public Task<IdfyTask<Sourced<LicenceSource>>> VerifyDrivingLicenceAsync(string idNumber, DateOnly dateOfBirth, CancellationToken ct = default) =>
-        Post<Sourced<LicenceSource>>("api/driving-license/verify/sync", new { idNumber, dateOfBirth = Date(dateOfBirth) }, ct);
+        Post<Sourced<LicenceSource>>("api/driving-license/verify/sync", new { idNumber, dateOfBirth = IsoDate(dateOfBirth) }, ct);
 
     public Task<IdfyTask<Sourced<SourceStatus>>> VerifyPassportAsync(string passportFileNumber, DateOnly dateOfBirth, CancellationToken ct = default) =>
-        Post<Sourced<SourceStatus>>("api/passport/verify/sync", new { passportFileNumber, dateOfBirth = Date(dateOfBirth) }, ct);
+        Post<Sourced<SourceStatus>>("api/passport/verify/sync", new { passportFileNumber, dateOfBirth = IsoDate(dateOfBirth) }, ct);
 
     public Task<IdfyTask<Sourced<SourceStatus>>> VerifyVoterIdAsync(string idNumber, CancellationToken ct = default) =>
         Post<Sourced<SourceStatus>>("api/voter-id/verify/sync", new { idNumber }, ct);
@@ -190,7 +190,8 @@ public sealed class IdfyClient(HttpClient http, ILogger<IdfyClient> log)
             throw new ExternalServiceException(Service, "An Aadhaar is only read or checked with the investor's consent, and none has been given.");
     }
 
-    private static string Date(DateOnly date) => date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+    /// <summary>A date as yyyy-MM-dd, the way IDfy takes it.</summary>
+    private static string IsoDate(DateOnly date) => date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
     private sealed record Problem(string? Title, int? Status, string? Detail, string? TraceId);
 }

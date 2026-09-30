@@ -61,6 +61,7 @@ internal sealed class SqlLoggerProvider(Channel<LogRow> queue, IHttpContextAcces
         public bool IsEnabled(LogLevel logLevel) =>
             logLevel >= owner.min && logLevel != LogLevel.None && !category.StartsWith(typeof(SqlLogWriter).FullName!, StringComparison.Ordinal);
 
+        /// <summary>Queues one log entry as a t_Unotp_Logs row, with the request it happened in.</summary>
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
         {
             if (!IsEnabled(logLevel)) return;
@@ -68,15 +69,16 @@ internal sealed class SqlLoggerProvider(Channel<LogRow> queue, IHttpContextAcces
             var request = ctx?.Request;
             var message = formatter(state, exception);
             owner.rows.Writer.TryWrite(new LogRow(
-                SqlErrorLog.AppName, owner.environment, logLevel.ToString(), Cut(category, 200)!, eventId.Id,
-                Cut(message.Length > 0 ? message : exception?.Message ?? "", 4000)!, exception?.ToString(),
-                Cut(ctx?.TraceIdentifier, 64), request?.Method, Cut(request is null ? null : (request.PathBase + request.Path).Value, 400),
-                Cut(ctx?.GetRouteValue("appNo") as string, 20), Cut(ctx?.Connection.RemoteIpAddress?.ToString(), 45),
-                Cut(Environment.MachineName, 100)!, DateTime.Now,
-                Cut(ctx?.Items[SqlErrorLog.UserItem] as string, 50) ?? "system"));
+                SqlErrorLog.AppName, owner.environment, logLevel.ToString(), Truncate(category, 200)!, eventId.Id,
+                Truncate(message.Length > 0 ? message : exception?.Message ?? "", 4000)!, exception?.ToString(),
+                Truncate(ctx?.TraceIdentifier, 64), request?.Method, Truncate(request is null ? null : (request.PathBase + request.Path).Value, 400),
+                Truncate(ctx?.GetRouteValue("appNo") as string, 20), Truncate(ctx?.Connection.RemoteIpAddress?.ToString(), 45),
+                Truncate(Environment.MachineName, 100)!, DateTime.Now,
+                Truncate(ctx?.Items[SqlErrorLog.UserItem] as string, 50) ?? "system"));
         }
 
-        private static string? Cut(string? value, int length) => value is null || value.Length <= length ? value : value[..length];
+        /// <summary>The value cut to the column's length.</summary>
+        private static string? Truncate(string? value, int length) => value is null || value.Length <= length ? value : value[..length];
     }
 }
 

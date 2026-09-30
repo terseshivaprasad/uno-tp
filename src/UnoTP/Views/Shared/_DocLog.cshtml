@@ -3,24 +3,24 @@
 @* Every attempt, newest first, as a timeline: one line each - what, how it
    ended, when - and the checks it went through a click away. "See the history"
    jumps to an attempt and opens it (partial-forms.js). *@
-<ol class="cud-log__list">
+<ol class="doc-history__list">
     @foreach (var entry in Model)
     {
-        <li class="cud-log__row @(entry.Kind.Length > 0 ? "is-" + entry.Kind : null)" id="log-@entry.Id">
-            <details class="cud-log__item">
-                <summary class="cud-log__top">
-                    <span class="cud-log__dot" aria-hidden="true"></span>
-                    <span class="cud-log__doc">@entry.Document</span>
-                    <span class="cud-log__mark">@entry.Mark</span>
-                    <span class="cud-log__at">@entry.At</span>
-                    <span class="cud-log__try">Attempt @entry.Attempt of @maxAttempts</span>
+        <li class="doc-history__row @(entry.Kind.Length > 0 ? "is-" + entry.Kind : null)" id="log-@entry.Id">
+            <details class="doc-history__item">
+                <summary class="doc-history__top">
+                    <span class="doc-history__dot" aria-hidden="true"></span>
+                    <span class="doc-history__doc">@entry.Document</span>
+                    <span class="doc-history__mark">@entry.Mark</span>
+                    <span class="doc-history__at">@entry.At</span>
+                    <span class="doc-history__try">Attempt @entry.Attempt of @maxAttempts</span>
                 </summary>
-                <div class="cud-log__body">
-                    <p class="cud-log__file">@entry.File</p>
-                    <ul class="cud-log__stages">
+                <div class="doc-history__body">
+                    <p class="doc-history__file">@entry.File</p>
+                    <ul class="doc-history__stages">
                         @foreach (var stage in entry.Stages)
                         {
-                            <li class="cud-log__stage @(stage.Kind.Length > 0 ? "is-" + stage.Kind : null)">@stage.Text</li>
+                            <li class="doc-history__stage @(stage.Kind.Length > 0 ? "is-" + stage.Kind : null)">@stage.Text</li>
                         }
                     </ul>
                 </div>

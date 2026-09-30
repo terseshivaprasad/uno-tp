@@ -1,68 +1,221 @@
-/* The applications page only. Loaded after base.css and components/registers.css. */
+/* The applications page only. Loaded after layout-and-controls.css and shared/register-pages.css. */
 
 /* ===== Uno TP classic - View Application =====
    The old ViewApplication screen, which opened on one empty Application Number
    box. It now opens on the last fourteen days and searches by number or folio,
-   so the list furniture is the Short URL page's - su-table, su-pill, su-empty
-   and su-pager are shared - and only the folio column and the read-only sheet
+   so the list furniture is the Short URL page's - register-table, register-pill, register-empty
+   and register-pager are shared - and only the folio column and the read-only sheet
    a row opens are new here. */
-.va-table td[data-label="Folio"] { white-space: nowrap; }
-.va-table .su-table__act { white-space: nowrap; }
+.view-app-table td[data-label="Folio"] {
+  white-space: nowrap;
+}
+.view-app-table .register-table__actions {
+  white-space: nowrap;
+}
 /* An application nobody can act on any more reads a shade quieter. */
-.va-table tbody tr[data-state="cancelled"] td { background: var(--pink-tint); }
+.view-app-table tbody tr[data-state="cancelled"] td {
+  background: var(--pink-tint);
+}
 /* The sheet a row opens: the application's own values, then its history. It is
    the required-documents dialog's frame, so head and foot are shared with it. */
-.va-sheet { max-width: 720px; height: min(660px, calc(100vh - 40px)); max-height: none; padding: 0; overflow: hidden; display: flex; flex-direction: column; color: var(--ink); }
-.va-sheet__body { flex: 1; min-height: 0; overflow-y: auto; padding: 24px; }
-.va-sheet__body:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
+.view-app-sheet {
+  max-width: 720px;
+  height: min(660px, calc(100vh - 40px));
+  max-height: none;
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  color: var(--ink);
+}
+.view-app-sheet__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 24px;
+}
+.view-app-sheet__body:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: -2px;
+}
 /* The facts: a 12px caption over a 14px value over a 12px note, three across. */
-.va-sheet__grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 24px; }
-.va-sheet__head { margin: 24px 0 0; padding-top: 24px; border-top: 1px solid var(--divider); font-size: 16px; font-weight: 600; line-height: 24px; letter-spacing: -.01em; color: var(--ink); }
-.va-kv { min-width: 0; }
-.va-kv__k { font-size: 12px; font-weight: 400; color: var(--muted); line-height: 16px; }
-.va-kv__v { font-size: 14px; font-weight: 500; padding-top: 4px; color: var(--ink); line-height: 20px; overflow-wrap: anywhere; }
-.va-kv__v--lg { font-size: 16px; font-weight: 600; line-height: 24px; padding-top: 0; }
-.va-kv__note { font-size: 12px; color: var(--muted); padding-top: 4px; line-height: 16px; }
+.view-app-sheet__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0,1fr));
+  gap: 24px;
+}
+.view-app-sheet__head {
+  margin: 24px 0 0;
+  padding-top: 24px;
+  border-top: 1px solid var(--divider);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+  letter-spacing: -.01em;
+  color: var(--ink);
+}
+.view-app-key-value {
+  min-width: 0;
+}
+.view-app-key-value__key {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted);
+  line-height: 16px;
+}
+.view-app-key-value__value {
+  font-size: 14px;
+  font-weight: 500;
+  padding-top: 4px;
+  color: var(--ink);
+  line-height: 20px;
+  overflow-wrap: anywhere;
+}
+.view-app-key-value__value--lg {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+  padding-top: 0;
+}
+.view-app-key-value__note {
+  font-size: 12px;
+  color: var(--muted);
+  padding-top: 4px;
+  line-height: 16px;
+}
 /* The history: a step the application has taken carries its date, one it has
    not is greyed and says so. */
 /* The status list: a dot per stage on a line through them - green and dated when
    done, hollow while pending, dashed and greyed where the application does not go
    through it, red where it came back against it. */
-.va-steps { list-style: none; margin: 8px 0 0; padding: 0; }
-.va-step { display: flex; align-items: flex-start; gap: 16px; position: relative; padding: 12px 0 12px 28px; border-bottom: 1px solid var(--divider); font-size: 14px; line-height: 20px; color: var(--text); }
-.va-step:last-child { border-bottom: 0; }
-.va-step::before { content: ""; position: absolute; left: 4px; top: 17px; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--border-2); background: #fff; box-sizing: border-box; }
-.va-step__text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.va-step__note { font-size: 12px; line-height: 16px; color: var(--muted); }
-.va-step__when { flex: none; font-size: 12px; line-height: 20px; color: var(--muted); font-variant-numeric: tabular-nums; }
-.va-step--done::before { border-color: var(--green); background: var(--green); }
-.va-step--done .va-step__label { color: var(--ink); font-weight: 500; }
-.va-step--done .va-step__when { font-weight: 600; color: var(--ink); }
-.va-step--pending .va-step__label { color: var(--text); }
-.va-step--na .va-step__label, .va-step--na .va-step__when { color: var(--muted); }
-.va-step--na::before { border-style: dashed; }
-.va-step--failed::before { border-color: var(--red); background: var(--red); }
-.va-step--failed .va-step__label, .va-step--failed .va-step__note, .va-step--failed .va-step__when { color: var(--red-dark); }
+.view-app-steps {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+.view-app-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  position: relative;
+  padding: 12px 0 12px 28px;
+  border-bottom: 1px solid var(--divider);
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--text);
+}
+.view-app-step:last-child {
+  border-bottom: 0;
+}
+.view-app-step::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 17px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--border-2);
+  background: #fff;
+  box-sizing: border-box;
+}
+.view-app-step__text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.view-app-step__note {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--muted);
+}
+.view-app-step__when {
+  flex: none;
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.view-app-step--done::before {
+  border-color: var(--green);
+  background: var(--green);
+}
+.view-app-step--done .view-app-step__label {
+  color: var(--ink);
+  font-weight: 500;
+}
+.view-app-step--done .view-app-step__when {
+  font-weight: 600;
+  color: var(--ink);
+}
+.view-app-step--pending .view-app-step__label {
+  color: var(--text);
+}
+.view-app-step--na .view-app-step__label, .view-app-step--na .view-app-step__when {
+  color: var(--muted);
+}
+.view-app-step--na::before {
+  border-style: dashed;
+}
+.view-app-step--failed::before {
+  border-color: var(--red);
+  background: var(--red);
+}
+.view-app-step--failed .view-app-step__label, .view-app-step--failed .view-app-step__note, .view-app-step--failed .view-app-step__when {
+  color: var(--red-dark);
+}
 @media (max-width: 720px) {
-  .va-sheet__grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .view-app-sheet__grid {
+    grid-template-columns: repeat(2, minmax(0,1fr));
+  }
 }
 @media (max-width: 640px) {
-  .modal-overlay:has(.va-sheet) { padding: 0; align-items: flex-end; }
-  .va-sheet { max-width: none; height: calc(100vh - 24px); border-radius: 8px 8px 0 0; }
-  .va-sheet__body { padding: 16px 16px 20px; }
+  .modal-overlay:has(.view-app-sheet) {
+    padding: 0;
+    align-items: flex-end;
+  }
+  .view-app-sheet {
+    max-width: none;
+    height: calc(100vh - 24px);
+    border-radius: 8px 8px 0 0;
+  }
+  .view-app-sheet__body {
+    padding: 16px 16px 20px;
+  }
 }
 
 /* The application in full under its status (_ApplicationSummary, read-only): each
    section under its own heading, its facts in the summary's panels. */
-.va-details { min-height: 48px; }
-.va-details__wait { margin: 24px 0 0; font-size: 14px; line-height: 20px; color: var(--muted); }
-.va-details .va-part .cii-note { margin: 0; }
-.va-details .va-part .cii-record { padding-top: 12px; }
-.va-details .va-part .inv-panel { margin-bottom: 0; }
-.va-details .va-part .inv-kv-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.view-app-details {
+  min-height: 48px;
+}
+.view-app-details__wait {
+  margin: 24px 0 0;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--muted);
+}
+.view-app-details .view-app-section .page-note {
+  margin: 0;
+}
+.view-app-details .view-app-section .investor-record {
+  padding-top: 12px;
+}
+.view-app-details .view-app-section .investor-panel {
+  margin-bottom: 0;
+}
+.view-app-details .view-app-section .investor-key-value-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
 @media (max-width: 720px) {
-  .va-details .va-part .inv-kv-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .view-app-details .view-app-section .investor-key-value-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 @media (max-width: 480px) {
-  .va-details .va-part .inv-kv-grid { grid-template-columns: minmax(0, 1fr); }
+  .view-app-details .view-app-section .investor-key-value-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

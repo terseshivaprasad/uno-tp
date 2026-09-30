@@ -18,6 +18,7 @@ namespace UnoTP.Models;
 /// <param name="Tile">False for one switched like a feature with no tile of its own (Console Admin).</param>
 public record ConsoleFeature(string Key, string Name, string Group, string Detail, string OffReason = "Unavailable", bool Tile = true)
 {
+    /// <summary>A console feature from its reference-data entry.</summary>
     public static ConsoleFeature From(FeatureOption f) => new(f.Code, f.Name, f.Group, f.Detail, f.OffReason, f.Tile);
 }
 
@@ -146,6 +147,7 @@ public sealed class ConsoleBoard(IReadOnlyList<ConsoleFeature> features, IReadOn
 
     public IReadOnlyList<AnnouncementRecord> Announcements { get; } = announcements;
 
+    /// <summary>The admin board: every feature with the windows and notices scheduled for it.</summary>
     public static ConsoleBoard From(IReadOnlyList<ConsoleFeature> features, ConsoleSchedule schedule) =>
         new(features, schedule.Windows.Select(w => new FeatureWindow(w.Id, w.Features, w.From, w.To, w.Notice, w.SetBy, w.SetOn)).ToList(),
             schedule.Announcements);

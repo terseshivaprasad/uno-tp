@@ -37,7 +37,8 @@
   function applyShowWhen(form) {
     if (!form) return;
     var data = new FormData(form);
-    function holds(rule) {
+    // True when a data-show-when rule (name=value, name!=value, a|b) holds for the form's values.
+    function ruleHolds(rule) {
       var r = /^([^!=]+)(!?=)(.*)$/.exec(rule || '');
       if (!r || !form.elements[r[1]]) return null;
       var value = data.has(r[1]) ? String(data.get(r[1])) : '';
@@ -45,7 +46,7 @@
       return r[2] === '=' ? match : !match;
     }
     document.querySelectorAll('[data-show-when]').forEach(function (el) {
-      var show = holds(el.getAttribute('data-show-when'));
+      var show = ruleHolds(el.getAttribute('data-show-when'));
       if (show === null) return;
       el.hidden = !show;
       if (el.tagName === 'FIELDSET') el.disabled = !show;
@@ -68,7 +69,7 @@
     // A control that only takes a value while a choice holds - data-enable-when -
     // is disabled otherwise; anything else so marked (a card) stays in place, greyed.
     document.querySelectorAll('[data-enable-when]').forEach(function (el) {
-      var on = holds(el.getAttribute('data-enable-when'));
+      var on = ruleHolds(el.getAttribute('data-enable-when'));
       if (on === null) return;
       if (/^(INPUT|SELECT|TEXTAREA|BUTTON|FIELDSET)$/.test(el.tagName)) el.disabled = !on;
       else el.setAttribute('aria-disabled', on ? 'false' : 'true');
@@ -81,12 +82,13 @@
   // leaving the page by a link, or closing it, asks first. Any post of the form
   // sends everything in it, so a post, and the page it brings back, clears it.
   var unsaved = false;
-  function guarded(el) {
+  // True when an element is in a form that warns before its changes are lost.
+  function isInGuardedForm(el) {
     var form = el && (el.form || (el.closest && el.closest('form')));
     return !!(form && form.hasAttribute('data-guard'));
   }
-  document.addEventListener('input', function (e) { if (guarded(e.target) && e.target.type !== 'file') unsaved = true; });
-  document.addEventListener('change', function (e) { if (guarded(e.target) && e.target.type !== 'file') unsaved = true; }, true);
+  document.addEventListener('input', function (e) { if (isInGuardedForm(e.target) && e.target.type !== 'file') unsaved = true; });
+  document.addEventListener('change', function (e) { if (isInGuardedForm(e.target) && e.target.type !== 'file') unsaved = true; }, true);
   document.addEventListener('submit', function () { unsaved = false; }, true);
   document.addEventListener('click', function (e) {
     var link = e.target.closest && e.target.closest('a[href]');
@@ -120,7 +122,7 @@
     // A change that takes something off is asked about first; cancelled, the
     // control goes back to what the page drew it with.
     var ask = el.getAttribute('data-confirm');
-    if (ask && !window.confirm(ask)) { restore(el); return; }
+    if (ask && !window.confirm(ask)) { restoreDefaultValue(el); return; }
     applyShowWhen(button.form);
     // Which control changed, so the page can come back to it.
     if (button.name === 'refresh') button.value = el.id || el.name;
@@ -129,7 +131,8 @@
     try { button.form.requestSubmit(button); } finally { changing = false; }
   });
 
-  function restore(el) {
+  // Puts a field back to the value the page was drawn with.
+  function restoreDefaultValue(el) {
     if (el.type === 'radio') {
       var group = el.form ? el.form.elements[el.name] : [el];
       Array.prototype.forEach.call(group.length === undefined ? [group] : group, function (r) { r.checked = r.defaultChecked; });
@@ -169,16 +172,16 @@
       init.headers = { 'X-Partial-Page': window.location.pathname };
     }
 
-    var fallback = function () {
+    var postTheOrdinaryWay = function () {
       // Could not reach the server this way: post it the ordinary way instead.
       form.dataset.partialOff = '1';
       form.requestSubmit(button);
     };
     if (busy) {
-      if (changing) waiting = [url, init, method === 'get', button, fallback];
+      if (changing) waiting = [url, init, method === 'get', button, postTheOrdinaryWay];
       return;
     }
-    go(url, init, method === 'get', button, fallback);
+    sendAndSwap(url, init, method === 'get', button, postTheOrdinaryWay);
   });
 
   document.addEventListener('click', function (e) {
@@ -186,31 +189,31 @@
     if (!link || e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0) return;
     e.preventDefault();
     if (busy) return;
-    go(link.href, { credentials: 'same-origin' }, true, link, function () { window.location.href = link.href; });
+    sendAndSwap(link.href, { credentials: 'same-origin' }, true, link, function () { window.location.href = link.href; });
   });
 
   // The history's attempts are folded; a link to one ("See the history") opens it.
-  function openTarget() {
+  function openLinkedHistoryEntry() {
     var id = window.location.hash.slice(1);
     var row = id && document.getElementById(id);
     var item = row && row.querySelector('details');
     if (item) item.open = true;
   }
-  window.addEventListener('hashchange', openTarget);
+  window.addEventListener('hashchange', openLinkedHistoryEntry);
   document.addEventListener('click', function (e) {
     var link = e.target.closest && e.target.closest('a[href^="#log-"]');
-    if (link) setTimeout(openTarget, 0);
+    if (link) setTimeout(openLinkedHistoryEntry, 0);
   });
-  openTarget();
+  openLinkedHistoryEntry();
   // Landed on a box (#slot-...): the browser has brought it into view; the address
   // lets it go, so a reload does not ring it again.
-  if (/^#slot-/.test(window.location.hash)) window.history.replaceState(null, '', withoutSpot(window.location.href));
+  if (/^#slot-/.test(window.location.hash)) window.history.replaceState(null, '', urlWithoutFragment(window.location.href));
 
   // A page opened from history is drawn again from the server.
   window.addEventListener('popstate', function () { window.location.reload(); });
 
   // Every text box's value by id, as it stands.
-  function typedNow() {
+  function currentTextValues() {
     var values = {};
     var main = document.querySelector('main');
     if (main) main.querySelectorAll('input, textarea').forEach(function (f) {
@@ -221,7 +224,7 @@
 
   // A quick action says so on its own button, and once done in a toast - the
   // screen-wide wait is for the waits that are real (an upload, a step).
-  function toast(words) {
+  function showToastMessage(words) {
     var box = document.getElementById('toast');
     if (!box) {
       box = document.createElement('div');
@@ -233,13 +236,14 @@
     }
     box.textContent = words;
     box.classList.add('app-toast--visible');
-    clearTimeout(toast.timer);
-    toast.timer = setTimeout(function () { box.classList.remove('app-toast--visible'); }, 2400);
+    clearTimeout(showToastMessage.timer);
+    showToastMessage.timer = setTimeout(function () { box.classList.remove('app-toast--visible'); }, 2400);
   }
 
-  function go(url, init, push, from, fallback) {
+  // Sends a request, then swaps the answer's <main> into the page (or follows it when it is not a page).
+  function sendAndSwap(url, init, push, from, fallback) {
     busy = true;
-    var sent = typedNow();
+    var sent = currentTextValues();
     var quick = from && from.matches && from.matches('button') && !from.getAttribute('data-loader');
     var said = quick && from.getAttribute('data-toast');
     if (quick) { from.classList.add('is-busy'); from.setAttribute('aria-busy', 'true'); }
@@ -251,14 +255,14 @@
 
     // A file on its way says how far it has got - on a slow connection the send is
     // most of the wait - and then what the server is doing with it.
-    var bytes = filesIn(init.body);
+    var bytes = totalFileSize(init.body);
     var onProgress = bytes > 0 && words && window.setLoaderHint ? function (sent, total) {
       window.setLoaderHint(sent < total
-        ? 'Uploading ' + Math.floor(sent * 100 / total) + '% of ' + size(bytes)
+        ? 'Uploading ' + Math.floor(sent * 100 / total) + '% of ' + formatFileSize(bytes)
         : from.getAttribute('data-loader-hint') || '');
     } : null;
 
-    send(url, init, onProgress)
+    sendWithProgress(url, init, onProgress)
       .then(function (res) {
         // Anything but a page to show - a refused post, a server error - goes the
         // ordinary way, so it is seen as it would be without this script.
@@ -278,7 +282,7 @@
         // A newer post is waiting, so this answer is already out of date: drawing
         // it would put back what the partner has changed since.
         if (waiting) return null;
-        return res.text().then(function (html) { swap(html, answered, push, sent); if (said) toast(said); });
+        return res.text().then(function (html) { swapInMain(html, answered, push, sent); if (said) showToastMessage(said); });
       })
       .catch(fallback)
       .then(function () {
@@ -289,26 +293,27 @@
         if (waiting) {
           var next = waiting;
           waiting = null;
-          go.apply(null, next);
+          sendAndSwap.apply(null, next);
         }
       });
   }
 
   // The size of the files a post carries.
-  function filesIn(body) {
+  function totalFileSize(body) {
     var total = 0;
     if (body && body.forEach) body.forEach(function (value) { if (value instanceof File) total += value.size; });
     return total;
   }
 
-  function size(n) {
+  // A byte count as KB or MB.
+  function formatFileSize(n) {
     return n < 1024 * 1024 ? Math.max(1, Math.round(n / 1024)) + ' KB' : (n / 1024 / 1024).toFixed(1) + ' MB';
   }
 
   // fetch, but for a post carrying a file: XMLHttpRequest, which alone reports
   // how much of the body has gone. It answers with the little of a Response the
   // caller reads.
-  function send(url, init, onProgress) {
+  function sendWithProgress(url, init, onProgress) {
     if (!onProgress) return fetch(url, init);
     return new Promise(function (resolve, reject) {
       var xhr = new XMLHttpRequest();
@@ -331,15 +336,15 @@
   }
 
   // A link into the history (#log-...) is kept; a box or field to come back to
-  // (#slot-..., #cudCategory) is dealt with below, so it is left off the address.
-  function withoutSpot(url) {
+  // (#slot-..., #docsCategory) is dealt with below, so it is left off the address.
+  function urlWithoutFragment(url) {
     var at = new URL(url, window.location.href);
     if (at.hash && !/^#log-/.test(at.hash)) at.hash = '';
     return at.href;
   }
 
   // The first field after the one named, in the page's order, that can take the caret.
-  function fieldAfter(id) {
+  function nextFocusableField(id) {
     var from = document.getElementById(id);
     if (!from) return null;
     var fields = Array.prototype.slice.call(document.querySelectorAll('main input, main select, main textarea'))
@@ -350,7 +355,7 @@
 
   // The element to hold in place across a redraw: the one named, if it is on the
   // page, else the first element with an id whose top is in view below the header.
-  function anchorIn(root, id) {
+  function elementToHoldInPlace(root, id) {
     var named = id && document.getElementById(id);
     if (named && root.contains(named)) return named;
     var all = root.querySelectorAll('[id]');
@@ -361,7 +366,8 @@
     return null;
   }
 
-  function swap(html, url, push, sent) {
+  // Replaces the page's <main> with the one in the answer, keeping focus, scroll and typed values.
+  function swapInMain(html, url, push, sent) {
     var next = new DOMParser().parseFromString(html, 'text/html');
     var incoming = next.querySelector('main');
     var here = document.querySelector('main');
@@ -371,7 +377,7 @@
     // way. Whatever they typed after it was sent is kept over the page that comes
     // back, and the caret stays where they are. What was sent is the server's to
     // answer - a Clear All clears.
-    var now = typedNow();
+    var now = currentTextValues();
     var typed = Object.keys(now).filter(function (id) { return sent && id in sent && now[id] !== sent[id]; })
       .map(function (id) { return [id, now[id]]; });
     var active = document.activeElement;
@@ -384,7 +390,7 @@
     // just changed, else the first thing with an id in view. Safari keeps no scroll
     // anchor of its own, so without this a redraw that changes anything above the
     // view moves the page under them.
-    var anchor = anchorIn(here, advanceFrom || activeId);
+    var anchor = elementToHoldInPlace(here, advanceFrom || activeId);
     var anchorTop = anchor && anchor.getBoundingClientRect().top;
 
     here.innerHTML = incoming.innerHTML;
@@ -398,7 +404,7 @@
     // the post, put back below, is not.
     // The address is what a reload would show: the page, not the post - and not
     // the box the answer was about, or a reload would land on it again, ringed.
-    window.history[push ? 'pushState' : 'replaceState'](null, '', withoutSpot(url));
+    window.history[push ? 'pushState' : 'replaceState'](null, '', urlWithoutFragment(url));
 
     unsaved = typed.length > 0;
     typed.forEach(function (t) {
@@ -410,7 +416,7 @@
     var advance = advanceFrom;
     advanceFrom = null;
     if (advance && (!activeId || activeId === advance)) {
-      var after = fieldAfter(advance) || document.getElementById(advance);
+      var after = nextFocusableField(advance) || document.getElementById(advance);
       if (after) {
         after.focus({ preventScroll: true });
         var r = after.getBoundingClientRect();

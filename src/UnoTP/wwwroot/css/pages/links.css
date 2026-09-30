@@ -1,8 +1,23 @@
-/* The links page only. Loaded after base.css and components/registers.css. */
+/* The links page only. Loaded after layout-and-controls.css and shared/register-pages.css. */
 
 /* The cancellation rule, said once and plainly, above the list it governs. */
-.su-notice { display: flex; gap: 12px; margin-top: 20px; margin-bottom: 0; }
-.su-notice__icon { flex: none; margin-top: 1px; }
-.su-notice__title { font-weight: 600; }
-.su-notice p { padding-top: 2px; max-width: 92ch; }
-.su-notice strong { font-weight: 600; }
+.register-notice {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+  margin-bottom: 0;
+}
+.register-notice__icon {
+  flex: none;
+  margin-top: 1px;
+}
+.register-notice__title {
+  font-weight: 600;
+}
+.register-notice p {
+  padding-top: 2px;
+  max-width: 92ch;
+}
+.register-notice strong {
+  font-weight: 600;
+}

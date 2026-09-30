@@ -10,7 +10,8 @@ namespace UnoTP.Infrastructure;
 /// </summary>
 public sealed class AppUrls(IConfiguration config)
 {
-    public string Url(string route) => Base(OwnerOf(route)) + route;
+    /// <summary>The full URL of a route, on the app that owns it (see <see cref="OwnerOf"/>).</summary>
+    public string Url(string route) => BaseUrlOf(OwnerOf(route)) + route;
 
     public static string OwnerOf(string route)
     {
@@ -28,5 +29,6 @@ public sealed class AppUrls(IConfiguration config)
         return "eSarathiLogin";
     }
 
-    private string Base(string app) => (config[$"Apps:{app}"] ?? "").TrimEnd('/');
+    /// <summary>The base address configured for an app (Apps:{app}).</summary>
+    private string BaseUrlOf(string app) => (config[$"Apps:{app}"] ?? "").TrimEnd('/');
 }

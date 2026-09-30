@@ -10,6 +10,7 @@ namespace UnoTP.Backend.External;
 /// </summary>
 public abstract class ExternalClient(HttpClient http, IPartner partner, string service) : ApiClient(http, partner)
 {
+    /// <summary>Calls an outside service, turning its failures into the errors the app shows.</summary>
     protected async Task<T> Ask<T>(Func<Task<T>> call, CancellationToken ct)
     {
         try

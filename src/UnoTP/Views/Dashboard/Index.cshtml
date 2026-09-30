@@ -3,126 +3,142 @@
     ViewData["Title"] = "Dashboard";
     ViewData["FirstNavActive"] = true;
 
-    // The old WA_FD_UNOTP/Dashboard as it stands today: four steps down the left,
-    // two rows of big icon tiles on the right, and under FD Services the counts of
-    // the partner's work waiting on them. The tiles and whether each is on come
-    // from the view model, which reads the switches in appsettings.
-    var steps = DashboardViewModel.StepLabels.Zip(DashboardViewModel.StepGlyphs, (label, glyph) => (Label: label, Glyph: glyph));
+    var notes = (await Lookups.ReferenceAsync()).DashboardNotes;
+    var draftsShown = Model.Drafts.Take(DashboardViewModel.DraftsShown).ToList();
+    var hasMoreDrafts = Model.Drafts.Count > DashboardViewModel.DraftsShown;
 }
+@* The dashboard: the four steps down the left, the tiles on the right, then the work
+   waiting on the partner and the applications they can continue.
+   Which tiles show, and whether each is on, comes from DashboardViewModel. *@
 
 @functions {
-    // .NET 8 Razor leaves the body of a tag helper inside a helper below async with
-    // nothing to await (fixed in Razor 9); nothing runs differently for it.
-#pragma warning disable CS1998
-    // One big grey tile: a link while its feature is on, a greyed card saying why
-    // while it is off. Pressing an off tile brings the page back with the reason
-    // in a sentence at the top. Nothing on this page needs a script.
-    async Task Tile(DashboardTile t)
+#pragma warning disable CS1998 // Razor makes these helpers async; there is nothing to await in them.
+
+    // One tile. A link while its feature is on; a greyed card with the reason while it is off.
+    // Pressing an off tile reloads the dashboard with the reason in the alert at the top.
+    async Task Tile(DashboardTile tile)
     {
-        var icon = $"<svg width=\"48\" height=\"48\" viewBox=\"0 0 24 24\" fill=\"none\" aria-hidden=\"true\">{t.Glyph}</svg>";
-        if (t.Off is not null || t.Controller is null)
+        var icon = $"<svg width=\"48\" height=\"48\" viewBox=\"0 0 24 24\" fill=\"none\" aria-hidden=\"true\">{tile.Glyph}</svg>";
+        var isOff = tile.Off is not null || tile.Controller is null;
+
+        if (isOff)
         {
-            <a class="classic-tile classic-tile--off" asp-controller="Dashboard" asp-action="Index" asp-route-off="@t.Key" title="@t.Why">
-                <span class="classic-tile__icon">@Html.Raw(icon)</span>
-                <span class="classic-tile__title">@t.Title</span>
-                <span class="badge bg-warning-subtle text-warning-emphasis classic-tile__off">@t.Off</span>
+            <a class="dashboard-tile dashboard-tile--off" asp-controller="Dashboard" asp-action="Index" asp-route-off="@tile.Key" title="@tile.Why">
+                <span class="dashboard-tile__icon">@Html.Raw(icon)</span>
+                <span class="dashboard-tile__title">@tile.Title</span>
+                <span class="badge bg-warning-subtle text-warning-emphasis dashboard-tile__off">@tile.Off</span>
             </a>
         }
         else
         {
-            <a class="classic-tile" asp-controller="@t.Controller" asp-action="Index"><span class="classic-tile__icon">@Html.Raw(icon)</span><span class="classic-tile__title">@t.Title</span></a>
+            <a class="dashboard-tile" asp-controller="@tile.Controller" asp-action="Index">
+                <span class="dashboard-tile__icon">@Html.Raw(icon)</span>
+                <span class="dashboard-tile__title">@tile.Title</span>
+            </a>
         }
-        await Task.CompletedTask;
     }
 }
 
 @if (Model.Closed is not null)
 {
-    @* FeatureGate sent the partner back here from a page that is closed. *@
-    <div class="alert alert-danger classic-closed" role="status">
+    @* Shown when a closed page sent the partner back here, or an off tile was pressed. *@
+    <div class="alert alert-danger dashboard-closed" role="status">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 7v6"></path><circle cx="12" cy="16.8" r=".6" fill="currentColor"></circle></svg>
         <span>@Model.Closed</span>
     </div>
 }
 
-<div class="classic">
-    <section class="classic-steps">
-        <h1 class="classic-steps__title">Book a FD in just <strong>4 easy steps....</strong></h1>
-        <ol class="classic-steps__list">
-            @foreach (var s in steps)
+<div class="dashboard-panel">
+    <section class="dashboard-steps">
+        <h1 class="dashboard-steps__title">Book a FD in just <strong>4 easy steps....</strong></h1>
+        <ol class="dashboard-steps__list">
+            @for (var i = 0; i < DashboardViewModel.StepLabels.Length; i++)
             {
-                <li class="classic-step">
-                    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">@Html.Raw(s.Glyph)</svg>
-                    <span>@s.Label</span>
+                <li class="dashboard-step">
+                    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">@Html.Raw(DashboardViewModel.StepGlyphs[i])</svg>
+                    <span>@DashboardViewModel.StepLabels[i]</span>
                 </li>
             }
         </ol>
-        @* Opens the dialog in _RequiredDocs through the browser's popover, so it needs no script. *@
-        <button type="button" class="classic-docs btn-reset" popovertarget="requiredDocsModal" aria-haspopup="dialog"><em>Click here</em> to see the list of required documents</button>
-        <div class="classic-note">
-            <div class="classic-note__title">Note</div>
+
+        @* Opens the dialog in _RequiredDocs. It is a browser popover, so no script is needed. *@
+        <button type="button" class="dashboard-docs btn-reset" popovertarget="requiredDocsModal" aria-haspopup="dialog"><em>Click here</em> to see the list of required documents</button>
+
+        <div class="dashboard-note">
+            <div class="dashboard-note__title">Note</div>
             <ul>
-                @foreach (var n in (await Lookups.ReferenceAsync()).DashboardNotes)
+                @foreach (var note in notes)
                 {
-                    <li>@n</li>
+                    <li>@note</li>
                 }
             </ul>
         </div>
     </section>
 
-    <section class="classic-actions">
-        <h2 class="classic-actions__title">Apply for a new FD</h2>
-        <div class="classic-tiles">
-            @foreach (var t in Model.NewFd) { await Tile(t); }
+    <section class="dashboard-actions">
+        <h2 class="dashboard-actions__title">Apply for a new FD</h2>
+        <div class="dashboard-tiles">
+            @foreach (var tile in Model.NewFd)
+            {
+                await Tile(tile);
+            }
         </div>
-        <hr class="classic-actions__rule">
-        <h2 class="classic-actions__title">FD Services</h2>
-        <div class="classic-tiles">
-            @foreach (var t in Model.Services) { await Tile(t); }
+
+        <hr class="dashboard-actions__rule">
+        <h2 class="dashboard-actions__title">FD Services</h2>
+        <div class="dashboard-tiles">
+            @foreach (var tile in Model.Services)
+            {
+                await Tile(tile);
+            }
         </div>
-        @* The partner's own work waiting on them, counted from the backend's lists,
-           each a link to the page that picks it up. Nothing waiting, nothing shown. *@
+
+        @* Work waiting on the partner, one count per kind, each a link to the page that handles it. *@
         @if (Model.Work.Count > 0)
         {
-            <hr class="classic-actions__rule">
+            <hr class="dashboard-actions__rule">
             <nav class="work-counts" aria-labelledby="workTitle">
-                <h2 class="classic-actions__title" id="workTitle">Waiting on you</h2>
+                <h2 class="dashboard-actions__title" id="workTitle">Waiting on you</h2>
                 <ul class="work-counts__list">
-                    @foreach (var w in Model.Work.OrderBy(w => w.Tone == "red" ? 0 : w.Tone == "amber" ? 1 : 2))
+                    @foreach (var work in Model.WorkByUrgency)
                     {
                         <li>
-                            <a class="work-count work-count--@w.Tone" asp-controller="@w.Controller" asp-action="Index" title="@w.Detail">
-                                <span class="work-count__n">@w.Count</span>
-                                <span class="work-count__label">@w.Title</span>
+                            <a class="work-count work-count--@work.Tone" asp-controller="@work.Controller" asp-action="Index" title="@work.Detail">
+                                <span class="work-count__n">@work.Count</span>
+                                <span class="work-count__label">@work.Title</span>
                             </a>
                         </li>
                     }
                 </ul>
             </nav>
         }
-        @* The partner's own applications opened and left before submitting: the same
-           table as Investor Identification's, the latest few of them, each one press
-           from Upload Documents. The rest are on Investor Identification. *@
+
+        @* The partner's applications opened and not yet submitted: the latest few here,
+           the full list on Investor Identification. *@
         @if (Model.Drafts.Count > 0)
         {
-            <hr class="classic-actions__rule">
+            <hr class="dashboard-actions__rule">
             <section class="drafts" aria-labelledby="draftsTitle">
                 <div class="drafts__head">
-                    <h2 class="classic-actions__title drafts__title" id="draftsTitle">Continue an application <span class="drafts__count">@Model.Drafts.Count</span></h2>
-                    @if (Model.Drafts.Count > DashboardViewModel.DraftsShown)
+                    <h2 class="dashboard-actions__title drafts__title" id="draftsTitle">Continue an application <span class="drafts__count">@Model.Drafts.Count</span></h2>
+                    @if (hasMoreDrafts)
                     {
                         <a class="drafts__all" asp-controller="NewApplication" asp-action="Index">View all <span aria-hidden="true">&rsaquo;</span></a>
                     }
                 </div>
-                <partial name="_Drafts" model="@(new DraftsBlock(Model.Drafts.Take(DashboardViewModel.DraftsShown).ToList(), Model.Drafts.Count, Partial: false))" />
+                <partial name="_Drafts" model="@(new DraftsBlock(draftsShown, Model.Drafts.Count, Partial: false))" />
             </section>
         }
+
         @if (Model.Admin.Count > 0)
         {
-            <hr class="classic-actions__rule">
-            <h2 class="classic-actions__title">Administration</h2>
-            <div class="classic-tiles">
-                @foreach (var t in Model.Admin) { await Tile(t); }
+            <hr class="dashboard-actions__rule">
+            <h2 class="dashboard-actions__title">Administration</h2>
+            <div class="dashboard-tiles">
+                @foreach (var tile in Model.Admin)
+                {
+                    await Tile(tile);
+                }
             </div>
         }
     </section>

@@ -10,7 +10,7 @@ Counts are from the page's stylesheet: **sizes** = distinct font sizes, **<12px*
 ## Phase 1 — foundation (done)
 
 - [x] Vendor Bootstrap 5.3.8 into `wwwroot/lib/bootstrap`, loaded by `_Layout` and `_StatusLayout`
-- [x] Brand theme in `css/shared/theme.css` (colours, Georama, radii, buttons, inputs, cards, badges, tables, focus ring)
+- [x] Brand theme in `css/shared/bootstrap-theme.css` (colours, Georama, radii, buttons, inputs, cards, badges, tables, focus ring)
 - [x] Rename the classes that clashed with Bootstrap (`modal-dialog` → `app-dialog`, `toast` → `app-toast`)
 - [x] Screenshot all 22 pages before and after; nothing moved beyond ~1px icon alignment
 - [x] Tests 97/97
@@ -72,10 +72,10 @@ in the development data has been submitted.
 
 | Styles | Sizes | <12px | muted-2 | Used by | Status |
 |--------|------:|------:|--------:|---------|--------|
-| `shared/base.css` (incl. drafts list, dialogs, toasts) | 14 | 29 | 9 | every page | [x] |
-| `shared/wizard.css` (steps, fields, cards) | 14 | 44 | 7 | purchase journey | [x] |
+| `shared/layout-and-controls.css` (incl. drafts list, dialogs, toasts) | 14 | 29 | 9 | every page | [x] |
+| `shared/journey-steps.css` (steps, fields, cards) | 14 | 44 | 7 | purchase journey | [x] |
 | `shared/topbar.css` | 10 | 12 | 3 | every page | [x] |
-| `shared/registers.css` | 10 | 10 | 3 | registers | [x] |
+| `shared/register-pages.css` | 10 | 10 | 3 | registers | [x] |
 
 ## Done alongside
 
@@ -101,7 +101,7 @@ in the development data has been submitted.
 
 ## Phase 3 — clean-up
 
-- [ ] Remove the compat block at the end of `theme.css` (legend, hr, heading line height) once no page relies on it
+- [ ] Remove the compat block at the end of `bootstrap-theme.css` (legend, hr, heading line height) once no page relies on it
 - [ ] Set `--bs-body-line-height` to the type scale instead of `normal`
 - [ ] Delete CSS no page uses any more
 - [ ] Final screenshot pass of all pages, desktop and phone width; keyboard and contrast check

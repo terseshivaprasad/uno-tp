@@ -13,11 +13,14 @@
   var timer = null;
   var asked = 0;
 
-  function listFor(input) { return document.getElementById(input.getAttribute('aria-controls')); }
-  function options(list) { return Array.prototype.slice.call(list.querySelectorAll('[role="option"]')); }
+  // The suggestion list an input controls (its aria-controls).
+  function suggestionListFor(input) { return document.getElementById(input.getAttribute('aria-controls')); }
+  // The options now in a suggestion list.
+  function suggestionOptions(list) { return Array.prototype.slice.call(list.querySelectorAll('[role="option"]')); }
 
-  function close(input) {
-    var list = listFor(input);
+  // Empties and hides an input's suggestion list.
+  function closeSuggestions(input) {
+    var list = suggestionListFor(input);
     if (!list) return;
     list.hidden = true;
     list.innerHTML = '';
@@ -26,19 +29,21 @@
   }
 
   // The step's Find for this field: saves what was typed and looks the IFSC up.
-  function find(input) {
+  function findBankByIfsc(input) {
     var button = document.getElementById(input.getAttribute('data-find'));
     if (button && button.form) button.form.requestSubmit(button);
   }
 
-  function pick(input, option) {
+  // Puts the picked branch's IFSC in the input and looks it up.
+  function pickBranch(input, option) {
     input.value = option.getAttribute('data-ifsc');
-    close(input);
-    find(input);
+    closeSuggestions(input);
+    findBankByIfsc(input);
   }
 
-  function show(input, branches) {
-    var list = listFor(input);
+  // Draws the found branches as options under the input.
+  function showBranchSuggestions(input, branches) {
+    var list = suggestionListFor(input);
     if (!list) return;
     list.innerHTML = '';
     if (branches.length === 0) {
@@ -68,9 +73,10 @@
     input.setAttribute('aria-expanded', 'true');
   }
 
-  function search(input) {
+  // Looks the typed text (bank, branch, IFSC or MICR) up on the backend.
+  function searchBanks(input) {
     var q = input.value.trim();
-    if (q.length < 2) { close(input); return; }
+    if (q.length < 2) { closeSuggestions(input); return; }
     var mine = ++asked;
     fetch(input.getAttribute('data-bank-search') + '?q=' + encodeURIComponent(q), {
       credentials: 'same-origin',
@@ -79,14 +85,15 @@
       .then(function (r) { return r.ok ? r.json() : []; })
       .then(function (branches) {
         // Only the answer to the latest question, and only while the field still has the caret.
-        if (mine === asked && document.activeElement === input) show(input, branches);
+        if (mine === asked && document.activeElement === input) showBranchSuggestions(input, branches);
       })
-      .catch(function () { close(input); });
+      .catch(function () { closeSuggestions(input); });
   }
 
-  function move(input, by) {
-    var list = listFor(input);
-    var all = options(list);
+  // Moves the highlighted option up or down (arrow keys).
+  function moveSuggestionHighlight(input, by) {
+    var list = suggestionListFor(input);
+    var all = suggestionOptions(list);
     if (list.hidden || all.length === 0) return;
     var at = all.findIndex(function (o) { return o.getAttribute('aria-selected') === 'true'; });
     var next = at < 0 ? (by > 0 ? 0 : all.length - 1) : (at + by + all.length) % all.length;
@@ -99,24 +106,24 @@
     var input = e.target.closest && e.target.closest('[data-bank-search]');
     if (!input) return;
     clearTimeout(timer);
-    timer = setTimeout(function () { search(input); }, 180);
+    timer = setTimeout(function () { searchBanks(input); }, 180);
   });
 
   document.addEventListener('keydown', function (e) {
     var input = e.target.closest && e.target.closest('[data-bank-search]');
     if (!input) return;
-    var list = listFor(input);
-    if (e.key === 'ArrowDown') { e.preventDefault(); move(input, 1); }
-    else if (e.key === 'ArrowUp') { e.preventDefault(); move(input, -1); }
-    else if (e.key === 'Escape') { close(input); }
+    var list = suggestionListFor(input);
+    if (e.key === 'ArrowDown') { e.preventDefault(); moveSuggestionHighlight(input, 1); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); moveSuggestionHighlight(input, -1); }
+    else if (e.key === 'Escape') { closeSuggestions(input); }
     else if (e.key === 'Enter') {
       // Enter picks the branch highlighted - or the only one found - and otherwise
       // looks up an IFSC typed in full; it never posts the form half-typed.
       e.preventDefault();
-      var all = list && !list.hidden ? options(list) : [];
+      var all = list && !list.hidden ? suggestionOptions(list) : [];
       var chosen = all.find(function (o) { return o.getAttribute('aria-selected') === 'true'; }) || (all.length === 1 ? all[0] : null);
-      if (chosen) pick(input, chosen);
-      else if (IFSC.test(input.value.trim())) { close(input); find(input); }
+      if (chosen) pickBranch(input, chosen);
+      else if (IFSC.test(input.value.trim())) { closeSuggestions(input); findBankByIfsc(input); }
     }
   });
 
@@ -130,7 +137,7 @@
     var option = e.target.closest && e.target.closest('.bank-suggest__option');
     if (!option) return;
     var input = document.querySelector('[aria-controls="' + option.parentNode.id + '"]');
-    if (input) pick(input, option);
+    if (input) pickBranch(input, option);
   });
 
   // Leaving the field shuts the list; an IFSC typed in full is looked up - unless
@@ -138,9 +145,9 @@
   document.addEventListener('focusout', function (e) {
     var input = e.target.closest && e.target.closest('[data-bank-search]');
     if (!input) return;
-    close(input);
+    closeSuggestions(input);
     var to = e.relatedTarget;
     if (to && (to.type === 'submit' || to.tagName === 'A')) return;
-    if (IFSC.test(input.value.trim()) && input.value !== input.defaultValue) find(input);
+    if (IFSC.test(input.value.trim()) && input.value !== input.defaultValue) findBankByIfsc(input);
   });
 })();

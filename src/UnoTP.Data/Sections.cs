@@ -63,7 +63,7 @@ internal static class Sections
                     @Nsdl, @NsdlName, @Ckyc, @MailDifferent, @By)
                 """, new
             {
-                at.AppNo, at.Version, at.Status, HolderType = h.Holder, who.Pan, Dob = Dates.ToDb(who.Dob), who.Name, who.Folio,
+                at.AppNo, at.Version, at.Status, HolderType = h.Holder, who.Pan, Dob = Dates.ParseDdMmYyyy(who.Dob), who.Name, who.Folio,
                 h.Gender, h.NameType, h.ParentName, h.AnnualIncome, h.Occupation, h.SubOccupation, h.MaritalStatus,
                 h.Mobile, h.Email, h.FatcaTaxResident, h.FatcaPermanentResident, h.Pep, h.PepRelated,
                 kyc.Nsdl, kyc.NsdlName, kyc.Ckyc, kyc.MailDifferent, at.By,
@@ -84,7 +84,7 @@ internal static class Sections
                     @GuardianLine1, @GuardianLine2, @GuardianLine3, @GuardianPinCode, @GuardianCity, @By)
                 """, new
             {
-                at.AppNo, at.Version, at.Status, n.Name, Dob = Dates.ToDb(n.Dob), n.Relation, n.GuardianName,
+                at.AppNo, at.Version, at.Status, n.Name, Dob = Dates.ParseDdMmYyyy(n.Dob), n.Relation, n.GuardianName,
                 n.GuardianLine1, n.GuardianLine2, n.GuardianLine3, n.GuardianPinCode, n.GuardianCity, at.By,
             }, tx);
         }
@@ -118,7 +118,7 @@ internal static class Sections
         {
             at.AppNo, at.Version, at.Status, PayMode = upload?.PayMode ?? "",
             payment.Payment?.Ifsc, AccountNo = payment.Payment?.AccountNumber, pay?.Bank, BranchName = pay?.Branch, pay?.Micr,
-            ChequeNo = payment.Cheque?.Number, ChequeDate = Dates.ToDb(payment.Cheque?.Date), payment.Cheque?.CmsLocation, at.By,
+            ChequeNo = payment.Cheque?.Number, ChequeDate = Dates.ParseDdMmYyyy(payment.Cheque?.Date), payment.Cheque?.CmsLocation, at.By,
         }, tx);
 
         var repay = Branch(payment.Repayment, branches);
@@ -167,6 +167,7 @@ internal static class Sections
 
     // ----- Holders -------------------------------------------------------------
 
+    /// <summary>Where a holder's KYC stands: the NSDL result and name, whether CKYC was fetched, and whether the mailing address differs.</summary>
     private sealed record Kyc(string Nsdl, string NsdlName, bool Ckyc, bool MailDifferent);
 
     // Where a holder's KYC stands on Upload Documents. CKYC is fetched for the investor only.

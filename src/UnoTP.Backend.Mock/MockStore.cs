@@ -97,6 +97,7 @@ public sealed class MockStore(IConfiguration config)
             .Select(e => Read(e, owner, touch: false)).OfType<Application>().ToList();
     }
 
+    /// <summary>Files a copy of a document into an application's slot (ignored when the application is not the owner's).</summary>
     public void File(string owner, string appNo, string slot, UploadFile copy)
     {
         if (!entries.TryGetValue(appNo, out var entry) || entry.Owner != owner) return;
@@ -109,6 +110,7 @@ public sealed class MockStore(IConfiguration config)
         lock (entry.Gate) entry.Copies.Remove(slot);
     }
 
+    /// <summary>The copy filed in an application's slot, or null.</summary>
     public UploadFile? Copy(string owner, string appNo, string slot)
     {
         if (!entries.TryGetValue(appNo, out var entry) || entry.Owner != owner) return null;

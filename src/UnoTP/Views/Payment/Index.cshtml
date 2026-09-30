@@ -43,7 +43,7 @@
     {
         if (Model.Problem(key) is { } message)
         {
-            <p class="csi-error" id="@(id)Error" role="alert">@message</p>
+            <p class="field-error" id="@(id)Error" role="alert">@message</p>
         }
         await Task.CompletedTask;
     }
@@ -52,12 +52,12 @@
     // which the strip keeps in view once it scrolls off.
     private async Task Head(string title, bool first)
     {
-        <div class="cii-head" data-pin-head="@(first ? "" : null)">
-            <h2 class="cii-title">@title</h2>
+        <div class="page-head" data-pin-head="@(first ? "" : null)">
+            <h2 class="page-title">@title</h2>
             @if (first)
             {
-                <span class="cii-app">Application No: <strong>@Model.Docs.AppNo</strong>
-                    <button type="button" class="cud-copy" data-copy="@Model.Docs.AppNo" title="Copy the application number" aria-label="Copy the application number">
+                <span class="page-app-number">Application No: <strong>@Model.Docs.AppNo</strong>
+                    <button type="button" class="doc-copy" data-copy="@Model.Docs.AppNo" title="Copy the application number" aria-label="Copy the application number">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">@Html.Raw(CopyGlyph)</svg>
                     </button>
                 </span>
@@ -71,10 +71,10 @@
     // the MICR (bank-search.js); the branch picked leaves its IFSC in the field.
     private async Task Account(string key, string id, AccountForm account)
     {
-        <div class="cud-grid">
-            <div class="cud-col bank-search">
-                <label class="csi-label" for="@(id)-ifsc">Bank &mdash; search by name, branch, @Glossary.Term("IFSC") or @Glossary.Term("MICR")</label>
-                <input class="csi-control @Invalid(key + ".Ifsc")" id="@(id)-ifsc" name="@(key).Ifsc" value="@account.Ifsc" maxlength="60" autocomplete="off" spellcheck="false" placeholder="e.g. HDFC Andheri or HDFC0000521"
+        <div class="doc-grid">
+            <div class="doc-column bank-search">
+                <label class="field-label" for="@(id)-ifsc">Bank &mdash; search by name, branch, @Glossary.Term("IFSC") or @Glossary.Term("MICR")</label>
+                <input class="field-input @Invalid(key + ".Ifsc")" id="@(id)-ifsc" name="@(key).Ifsc" value="@account.Ifsc" maxlength="60" autocomplete="off" spellcheck="false" placeholder="e.g. HDFC Andheri or HDFC0000521"
                        data-required="Search for the bank and pick its branch"
                        role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="@(id)-suggest"
                        data-chars="search" data-bank-search="@Url.Action("Branches")" data-find="bank-find-@(key.ToLowerInvariant())"
@@ -82,15 +82,15 @@
                 <ul class="bank-suggest" id="@(id)-suggest" role="listbox" aria-label="Branches found" hidden></ul>
                 @{ await FieldError(key + ".Ifsc", id + "-ifsc"); }
             </div>
-            <div class="cud-col">
-                <label class="csi-label" for="@(id)-account">Account Number</label>
-                <input class="csi-control @Invalid(key + ".AccountNumber")" id="@(id)-account" name="@(key).AccountNumber" value="@account.AccountNumber" inputmode="numeric" maxlength="18" autocomplete="off" data-required="Enter the account number, 6 to 18 digits" data-check="account" aria-invalid="@InvalidAria(key + ".AccountNumber")" aria-describedby="@DescribedBy(key + ".AccountNumber", id + "-account")">
+            <div class="doc-column">
+                <label class="field-label" for="@(id)-account">Account Number</label>
+                <input class="field-input @Invalid(key + ".AccountNumber")" id="@(id)-account" name="@(key).AccountNumber" value="@account.AccountNumber" inputmode="numeric" maxlength="18" autocomplete="off" data-required="Enter the account number, 6 to 18 digits" data-check="account" aria-invalid="@InvalidAria(key + ".AccountNumber")" aria-describedby="@DescribedBy(key + ".AccountNumber", id + "-account")">
                 @{ await FieldError(key + ".AccountNumber", id + "-account"); }
             </div>
-            <div class="cud-col">
-                <label class="csi-label" for="@(id)-account-confirm">Re-enter Account Number</label>
+            <div class="doc-column">
+                <label class="field-label" for="@(id)-account-confirm">Re-enter Account Number</label>
                 @* Masked as it is typed, so the number is typed again rather than copied from the first box. *@
-                <input class="csi-control csi-control--masked @Invalid(key + ".AccountNumberConfirm")" id="@(id)-account-confirm" name="@(key).AccountNumberConfirm" value="@account.AccountNumberConfirm" inputmode="numeric" maxlength="18" autocomplete="off" spellcheck="false" data-required="Enter the account number again" data-check="match:@(id)-account" aria-invalid="@InvalidAria(key + ".AccountNumberConfirm")" aria-describedby="@DescribedBy(key + ".AccountNumberConfirm", id + "-account-confirm")">
+                <input class="field-input field-input--masked @Invalid(key + ".AccountNumberConfirm")" id="@(id)-account-confirm" name="@(key).AccountNumberConfirm" value="@account.AccountNumberConfirm" inputmode="numeric" maxlength="18" autocomplete="off" spellcheck="false" data-required="Enter the account number again" data-check="match:@(id)-account" aria-invalid="@InvalidAria(key + ".AccountNumberConfirm")" aria-describedby="@DescribedBy(key + ".AccountNumberConfirm", id + "-account-confirm")">
                 @{ await FieldError(key + ".AccountNumberConfirm", id + "-account-confirm"); }
             </div>
         </div>
@@ -100,18 +100,18 @@
     // The bank an IFSC names, read-only, as Investor Information shows what was read.
     private async Task Branch(BankBranch? branch, string ifsc, string id)
     {
-        <div class="inv-panel bank-branch" id="@id">
-            <div class="inv-panel__label" style="padding-bottom:10px">Bank and branch &middot; from the IFSC</div>
-            <div class="inv-kv-grid">
+        <div class="investor-panel bank-branch" id="@id">
+            <div class="investor-panel__label" style="padding-bottom:10px">Bank and branch &middot; from the IFSC</div>
+            <div class="investor-key-value-grid">
                 @if (branch is not null)
                 {
-                    <div class="inv-kv"><div class="inv-kv__k">Bank name</div><div class="inv-kv__v">@branch.Bank</div></div>
-                    <div class="inv-kv"><div class="inv-kv__k">Branch name</div><div class="inv-kv__v">@branch.Branch</div></div>
-                    <div class="inv-kv"><div class="inv-kv__k">@Glossary.Term("IFSC") &middot; @Glossary.Term("MICR")</div><div class="inv-kv__v">@branch.Ifsc &middot; @branch.Micr</div></div>
+                    <div class="investor-key-value"><div class="investor-key-value__key">Bank name</div><div class="investor-key-value__value">@branch.Bank</div></div>
+                    <div class="investor-key-value"><div class="investor-key-value__key">Branch name</div><div class="investor-key-value__value">@branch.Branch</div></div>
+                    <div class="investor-key-value"><div class="investor-key-value__key">@Glossary.Term("IFSC") &middot; @Glossary.Term("MICR")</div><div class="investor-key-value__value">@branch.Ifsc &middot; @branch.Micr</div></div>
                 }
                 else
                 {
-                    <div class="inv-kv inv-kv--wide"><div class="inv-kv__v inv-kv__v--unread">@(ifsc.Length == 0 ? "Found once a branch is picked from the search" : "No branch has this IFSC — pick one from the search, or check it against the cheque")</div></div>
+                    <div class="investor-key-value investor-key-value--wide"><div class="investor-key-value__value investor-key-value__value--unread">@(ifsc.Length == 0 ? "Found once a branch is picked from the search" : "No branch has this IFSC — pick one from the search, or check it against the cheque")</div></div>
                 }
             </div>
         </div>
@@ -121,24 +121,24 @@
 
 @* Once the first card's head has scrolled off, this keeps who the step is for
    and which application it is in view, as the steps before it do. *@
-<div class="cud-pin" id="cudPin" hidden>
-    <div class="cud-pin__inner">
-        <span class="cud-pin__who">@Model.Docs.HolderName</span>
-        <span class="cud-pin__pan">PAN @Model.Docs.HolderPan</span>
-        <span class="cud-pin__app">
-            <span class="cud-pin__label">Application</span>
+<div class="app-sticky-strip" id="docsPin" hidden>
+    <div class="app-sticky-strip__inner">
+        <span class="app-sticky-strip__who">@Model.Docs.HolderName</span>
+        <span class="app-sticky-strip__pan">PAN @Model.Docs.HolderPan</span>
+        <span class="app-sticky-strip__app">
+            <span class="app-sticky-strip__label">Application</span>
             @appNo
-            <button type="button" class="cud-copy" data-copy="@appNo" title="Copy the application number" aria-label="Copy the application number">
+            <button type="button" class="doc-copy" data-copy="@appNo" title="Copy the application number" aria-label="Copy the application number">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">@Html.Raw(CopyGlyph)</svg>
             </button>
         </span>
     </div>
 </div>
 
-<div class="csi">
+<div class="page-layout">
     <partial name="_ClassicSteps" model="3" />
 
-    <form class="csi-main" id="bankDetailsForm" data-guard method="post" data-partial novalidate data-partial-focus="@focus">
+    <form class="page-main" id="bankDetailsForm" data-guard method="post" data-partial novalidate data-partial-focus="@focus">
         @* Enter in an IFSC looks it up: the first submit button in the form. *@
         @if (Model.ByCheque)
         {
@@ -148,7 +148,7 @@
 
         @if (banner is not null)
         {
-            <div class="alert alert-success cud-banner" role="status">
+            <div class="alert alert-success doc-banner" role="status">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 7v6"></path><circle cx="12" cy="16.8" r=".8" fill="currentColor"></circle></svg>
                 <span>@banner</span>
             </div>
@@ -157,40 +157,40 @@
         @* ── The account the cheque is drawn on ──────────────────────────────── *@
         @if (Model.ByCheque)
         {
-            <section class="csi-card cii-card" id="payment">
+            <section class="page-card section-card" id="payment">
                 @{ await Head("Payment Bank Details", first: true); }
-                <p class="cii-note">The account the cheque is drawn on &middot; paid by @Model.PayMode</p>
+                <p class="page-note">The account the cheque is drawn on &middot; paid by @Model.PayMode</p>
                 @{ await Account("Payment", "pay", f.Payment); }
                 <div class="bank-after">@{ await Branch(Model.PaymentBranch, f.Payment.CleanIfsc, "pay-lookup"); }</div>
 
-                <h3 class="cii-section">Cheque Details</h3>
-                <div class="cud-grid">
-                    <div class="cud-col">
-                        <label class="csi-label" for="cheque-number">Cheque Number</label>
-                        <input class="csi-control @Invalid("Cheque.Number")" id="cheque-number" name="Cheque.Number" value="@f.Cheque.Number" inputmode="numeric" maxlength="6" autocomplete="off" data-required="Enter the six-digit cheque number" data-check="digits:6" data-message="Enter the six-digit cheque number" aria-invalid="@InvalidAria("Cheque.Number")" aria-describedby="@DescribedBy("Cheque.Number", "cheque-number")">
+                <h3 class="section-title">Cheque Details</h3>
+                <div class="doc-grid">
+                    <div class="doc-column">
+                        <label class="field-label" for="cheque-number">Cheque Number</label>
+                        <input class="field-input @Invalid("Cheque.Number")" id="cheque-number" name="Cheque.Number" value="@f.Cheque.Number" inputmode="numeric" maxlength="6" autocomplete="off" data-required="Enter the six-digit cheque number" data-check="digits:6" data-message="Enter the six-digit cheque number" aria-invalid="@InvalidAria("Cheque.Number")" aria-describedby="@DescribedBy("Cheque.Number", "cheque-number")">
                         @{ await FieldError("Cheque.Number", "cheque-number"); }
                     </div>
-                    <div class="cud-col">
-                        <label class="csi-label" id="cheque-date-label" for="cheque-date">Cheque Date</label>
+                    <div class="doc-column">
+                        <label class="field-label" id="cheque-date-label" for="cheque-date">Cheque Date</label>
                         @* The app's date control: three boxes, as every other date is typed. *@
-                        <div class="csi-date @Invalid("Cheque.Date")" role="group" data-required="Enter the cheque date" data-check="dmy" data-message="Enter the cheque date as a real date, DD/MM/YYYY" data-error-id="cheque-dateError" aria-labelledby="cheque-date-label" aria-describedby="@DescribedBy("Cheque.Date", "cheque-date")">
-                            <input class="csi-date__part" id="cheque-date" name="Cheque.Dd" value="@f.Cheque.Dd" inputmode="numeric" maxlength="2" placeholder="DD" aria-label="Day" autocomplete="off" aria-invalid="@InvalidAria("Cheque.Date")">
-                            <span class="csi-date__sep">/</span>
-                            <input class="csi-date__part" name="Cheque.Mm" value="@f.Cheque.Mm" inputmode="numeric" maxlength="2" placeholder="MM" aria-label="Month" autocomplete="off">
-                            <span class="csi-date__sep">/</span>
-                            <input class="csi-date__part csi-date__part--year" name="Cheque.Yyyy" value="@f.Cheque.Yyyy" inputmode="numeric" maxlength="4" placeholder="YYYY" aria-label="Year" autocomplete="off">
+                        <div class="date-input @Invalid("Cheque.Date")" role="group" data-required="Enter the cheque date" data-check="dmy" data-message="Enter the cheque date as a real date, DD/MM/YYYY" data-error-id="cheque-dateError" aria-labelledby="cheque-date-label" aria-describedby="@DescribedBy("Cheque.Date", "cheque-date")">
+                            <input class="date-input__part" id="cheque-date" name="Cheque.Dd" value="@f.Cheque.Dd" inputmode="numeric" maxlength="2" placeholder="DD" aria-label="Day" autocomplete="off" aria-invalid="@InvalidAria("Cheque.Date")">
+                            <span class="date-input__sep">/</span>
+                            <input class="date-input__part" name="Cheque.Mm" value="@f.Cheque.Mm" inputmode="numeric" maxlength="2" placeholder="MM" aria-label="Month" autocomplete="off">
+                            <span class="date-input__sep">/</span>
+                            <input class="date-input__part date-input__part--year" name="Cheque.Yyyy" value="@f.Cheque.Yyyy" inputmode="numeric" maxlength="4" placeholder="YYYY" aria-label="Year" autocomplete="off">
                         </div>
                         @{ await FieldError("Cheque.Date", "cheque-date"); }
                     </div>
-                    <div class="cud-col">
-                        <label class="csi-label" for="cms-location">Axis @Glossary.Term("CMS") Branch</label>
+                    <div class="doc-column">
+                        <label class="field-label" for="cms-location">Axis @Glossary.Term("CMS") Branch</label>
                         @* Typed, with the backend's branches offered as the browser's own suggestions. *@
-                        <input class="csi-control @Invalid("Cheque.CmsLocation")" id="cms-location" name="Cheque.CmsLocation" data-chars="text" value="@f.Cheque.CmsLocation" list="cms-locations" placeholder="Start typing a branch" autocomplete="off" spellcheck="false" data-required="Enter the Axis CMS branch" aria-invalid="@InvalidAria("Cheque.CmsLocation")" aria-describedby="@(DescribedBy("Cheque.CmsLocation", "cms-location") ?? "cms-location-hint")">
+                        <input class="field-input @Invalid("Cheque.CmsLocation")" id="cms-location" name="Cheque.CmsLocation" data-chars="text" value="@f.Cheque.CmsLocation" list="cms-locations" placeholder="Start typing a branch" autocomplete="off" spellcheck="false" data-required="Enter the Axis CMS branch" aria-invalid="@InvalidAria("Cheque.CmsLocation")" aria-describedby="@(DescribedBy("Cheque.CmsLocation", "cms-location") ?? "cms-location-hint")">
                         <datalist id="cms-locations">
                             @foreach (var location in Model.CmsLocations) { <option value="@location"></option> }
                         </datalist>
                         @{ await FieldError("Cheque.CmsLocation", "cms-location"); }
-                        <p class="csi-hint" id="cms-location-hint">The Axis branch the cheque is presented at &mdash; the one nearest the investor</p>
+                        <p class="field-hint" id="cms-location-hint">The Axis branch the cheque is presented at &mdash; the one nearest the investor</p>
                     </div>
                 </div>
 
@@ -206,17 +206,17 @@
         }
 
         @* ── The account interest and the maturity amount go to ──────────────── *@
-        <section class="csi-card cii-card" id="repayment">
+        <section class="page-card section-card" id="repayment">
             @{ await Head("Repayment Bank Details", first: !Model.ByCheque); }
-            <p class="cii-note">Interest and the maturity amount are paid into this account@(Model.IsRenewal ? $" · the maturing deposit {Model.Docs.Renewal!.DepositNumber} pays for the new one, and its account is filled in below" : Model.ByCheque ? "" : $" · paid by {(Model.PayMode.Length > 0 ? Model.PayMode : "the mode chosen on Upload Documents")}")</p>
+            <p class="page-note">Interest and the maturity amount are paid into this account@(Model.IsRenewal ? $" · the maturing deposit {Model.Docs.Renewal!.DepositNumber} pays for the new one, and its account is filled in below" : Model.ByCheque ? "" : $" · paid by {(Model.PayMode.Length > 0 ? Model.PayMode : "the mode chosen on Upload Documents")}")</p>
 
             @if (Model.ByCheque)
             {
-                <div class="cii-switches">
-                    <label class="inv-switch-row" for="repay-same">
+                <div class="investor-switches">
+                    <label class="investor-switch-row" for="repay-same">
                         <span>Same as the payment account</span>
                         @* The hidden false goes after the box, so an unticked box still posts, and a ticked one binds first. *@
-                        <input type="checkbox" id="repay-same" name="Repayment.SameAsPayment" value="true" class="inv-switch" checked="@same">
+                        <input type="checkbox" id="repay-same" name="Repayment.SameAsPayment" value="true" class="investor-switch" checked="@same">
                         <input type="hidden" name="Repayment.SameAsPayment" value="false">
                     </label>
                 </div>
@@ -226,7 +226,7 @@
                the toggle shows or hides it at once (data-show-when). Hidden, it is
                disabled and not posted. Paid other than by cheque there is no toggle,
                and the rule has nothing to read. *@
-            <fieldset class="cud-choice" data-show-when="Repayment.SameAsPayment!=true" hidden="@same" disabled="@same">
+            <fieldset class="doc-choice" data-show-when="Repayment.SameAsPayment!=true" hidden="@same" disabled="@same">
                 @{ await Account("Repayment", "repay", f.Repayment); }
                 <div class="bank-after">@{ await Branch(Model.RepaymentBranch, f.Repayment.CleanIfsc, "repay-lookup"); }</div>
             </fieldset>
@@ -243,10 +243,10 @@
         @* The test branches, while test data is on: what the bank search finds. *@
         @if (Model.Demo is { } demo)
         {
-            <section class="csi-demo" aria-labelledby="bank-demo-title">
-                <h2 class="csi-demo__title" id="bank-demo-title">Test banks</h2>
-                <p class="csi-demo__sub">@demo.Branches.Count branches the bank search finds &middot; test records only</p>
-                <table class="csi-demo__table">
+            <section class="demo-data" aria-labelledby="bank-demo-title">
+                <h2 class="demo-data__title" id="bank-demo-title">Test banks</h2>
+                <p class="demo-data__sub">@demo.Branches.Count branches the bank search finds &middot; test records only</p>
+                <table class="demo-data__table">
                     <thead>
                         <tr>
                             <th scope="col">IFSC</th>
@@ -267,7 +267,7 @@
                         }
                     </tbody>
                 </table>
-                <ul class="csi-demo__notes">
+                <ul class="demo-data__notes">
                     @foreach (var note in demo.Notes) { <li>@note</li> }
                 </ul>
             </section>
@@ -275,10 +275,10 @@
     </form>
 </div>
 
-<footer class="csi-bar">
-    <div class="csi-bar__inner">
+<footer class="page-action-bar">
+    <div class="page-action-bar__inner">
         <a class="btn btn-outline-primary" asp-controller="Investor" asp-action="Index" data-loader="Going back to Investor Information">Back</a>
-        <p class="csi-bar__hint">
+        <p class="page-action-bar__hint">
             @if (problems > 0)
             {
                 @($"{problems} thing{(problems == 1 ? "" : "s")} still to fix on this step")
@@ -288,7 +288,7 @@
                 <text>Enter the @(Model.ByCheque ? "accounts and the cheque" : "repayment account"), then proceed to <strong>FD Configuration</strong></text>
             }
         </p>
-        <div class="csi-bar__right">
+        <div class="page-action-bar__right">
             <button type="submit" form="bankDetailsForm" class="btn btn-outline-primary" name="draft" value="1" formnovalidate data-toast="Draft saved">Save draft</button>
             <button type="submit" form="bankDetailsForm" class="btn btn-primary" id="bank-proceed" data-validate="form" data-loader="Saving the accounts&hellip;">Proceed</button>
         </div>

@@ -15,5 +15,5 @@ public sealed class NsdlClient(HttpClient http, IPartner partner) : ExternalClie
     public const string Name = "Nsdl";
 
     public Task<NsdlAnswer> VerifyAsync(string pan, string dob, string name, CancellationToken ct = default) =>
-        Ask(() => Send<NsdlAnswer>(HttpMethod.Post, "verify", Body(new { pan, dob, name }), ct), ct);
+        Ask(() => Send<NsdlAnswer>(HttpMethod.Post, "verify", JsonBody(new { pan, dob, name }), ct), ct);
 }

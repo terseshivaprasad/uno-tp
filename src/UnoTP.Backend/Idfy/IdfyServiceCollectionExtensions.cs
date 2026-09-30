@@ -73,6 +73,7 @@ public static class IdfyServiceCollectionExtensions
         services.AddTransient<TService, TAdapter>();
     }
 
+    /// <summary>Removes and returns the registration IDfy wraps, so the IDfy version can stand in front of it.</summary>
     private static ServiceDescriptor Take<TService>(this IServiceCollection services)
     {
         var before = services.LastOrDefault(d => d.ServiceType == typeof(TService) && !d.IsKeyedService)

@@ -25,7 +25,7 @@
 
     // Held: the change goes on once the smaller copy is in the box.
     e.stopImmediatePropagation();
-    shrink(file, longEdge).then(function (smaller) {
+    shrinkImage(file, longEdge).then(function (smaller) {
       if (smaller && smaller.size < file.size) {
         var box = new DataTransfer();
         box.items.add(smaller);
@@ -37,8 +37,9 @@
     });
   }, true);
 
-  function shrink(file, longEdge) {
-    return decode(file).then(function (image) {
+  // Redraws an image with its long edge at most longEdge pixels; null when it is small enough already.
+  function shrinkImage(file, longEdge) {
+    return decodeUpright(file).then(function (image) {
       var width = image.naturalWidth || image.width, height = image.naturalHeight || image.height;
       var scale = Math.min(1, longEdge / Math.max(width, height));
       // Already within the size: sent as picked, not compressed a second time.
@@ -57,14 +58,15 @@
   }
 
   // Upright as the camera meant it: both ways apply the photo's own orientation.
-  function decode(file) {
+  function decodeUpright(file) {
     if (window.createImageBitmap) {
-      return createImageBitmap(file, { imageOrientation: 'from-image' }).catch(function () { return viaImage(file); });
+      return createImageBitmap(file, { imageOrientation: 'from-image' }).catch(function () { return decodeWithImageElement(file); });
     }
-    return viaImage(file);
+    return decodeWithImageElement(file);
   }
 
-  function viaImage(file) {
+  // Decodes a file through an <img>, for browsers without createImageBitmap.
+  function decodeWithImageElement(file) {
     return new Promise(function (resolve, reject) {
       var url = URL.createObjectURL(file);
       var img = new Image();

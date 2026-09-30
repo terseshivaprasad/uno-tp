@@ -16,63 +16,63 @@
 @functions {
     // A moment, in the boxes the classic wizard writes one in: three for the day
     // and two for the time, on the twenty-four hour clock.
-    async Task When(string id, DateTime value, string label)
+    async Task DateTimeBoxes(string id, DateTime value, string label)
     {
-        <div class="adm-when" role="group" aria-label="@label">
-            <div class="csi-date" data-date id="@(id)Date">
-                <input class="csi-date__part" data-dd inputmode="numeric" maxlength="2" placeholder="DD" aria-label="@label day" autocomplete="off" value="@value.ToString("dd")">
-                <span class="csi-date__sep">/</span>
-                <input class="csi-date__part" data-mm inputmode="numeric" maxlength="2" placeholder="MM" aria-label="@label month" autocomplete="off" value="@value.ToString("MM")">
-                <span class="csi-date__sep">/</span>
-                <input class="csi-date__part csi-date__part--year" data-yyyy inputmode="numeric" maxlength="4" placeholder="YYYY" aria-label="@label year" autocomplete="off" value="@value.ToString("yyyy")">
+        <div class="admin-when" role="group" aria-label="@label">
+            <div class="date-input" data-date id="@(id)Date">
+                <input class="date-input__part" data-dd inputmode="numeric" maxlength="2" placeholder="DD" aria-label="@label day" autocomplete="off" value="@value.ToString("dd")">
+                <span class="date-input__sep">/</span>
+                <input class="date-input__part" data-mm inputmode="numeric" maxlength="2" placeholder="MM" aria-label="@label month" autocomplete="off" value="@value.ToString("MM")">
+                <span class="date-input__sep">/</span>
+                <input class="date-input__part date-input__part--year" data-yyyy inputmode="numeric" maxlength="4" placeholder="YYYY" aria-label="@label year" autocomplete="off" value="@value.ToString("yyyy")">
             </div>
-            <div class="csi-date adm-time" data-time id="@(id)Time">
-                <input class="csi-date__part" data-hh inputmode="numeric" maxlength="2" placeholder="HH" aria-label="@label hour" autocomplete="off" value="@value.ToString("HH")">
-                <span class="csi-date__sep">:</span>
-                <input class="csi-date__part" data-mi inputmode="numeric" maxlength="2" placeholder="MM" aria-label="@label minute" autocomplete="off" value="@value.ToString("mm")">
+            <div class="date-input admin-time" data-time id="@(id)Time">
+                <input class="date-input__part" data-hh inputmode="numeric" maxlength="2" placeholder="HH" aria-label="@label hour" autocomplete="off" value="@value.ToString("HH")">
+                <span class="date-input__sep">:</span>
+                <input class="date-input__part" data-mi inputmode="numeric" maxlength="2" placeholder="MM" aria-label="@label minute" autocomplete="off" value="@value.ToString("mm")">
             </div>
         </div>
         await Task.CompletedTask;
     }
 }
 
-<div class="csi csi--wide">
-    <aside class="csi-rail csi-rail--steps">
-        <h2 class="csi-rail__title">Admin only</h2>
-        <div class="csi-rail__note">
+<div class="page-layout page-layout--wide">
+    <aside class="page-rail page-rail--steps">
+        <h2 class="page-rail__title">Admin only</h2>
+        <div class="page-rail__note">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>
             <div>
-                <div class="csi-rail__note-title">Every partner sees this</div>
+                <div class="page-rail__note-title">Every partner sees this</div>
                 <p>A tile turned off here is off for everyone on the console, at once. Nothing is off for one partner alone.</p>
             </div>
         </div>
-        <div class="csi-rail__note">
+        <div class="page-rail__note">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 6.5V12l3.5 2.5"></path></svg>
             <div>
-                <div class="csi-rail__note-title">A window, not a switch</div>
+                <div class="page-rail__note-title">A window, not a switch</div>
                 <p>A disable runs from one date and time to another. It starts and ends itself, so nothing is left off by accident.</p>
             </div>
         </div>
-        <div class="csi-rail__note">
+        <div class="page-rail__note">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg>
             <div>
-                <div class="csi-rail__note-title">One window per tile</div>
+                <div class="page-rail__note-title">One window per tile</div>
                 <p>A tile already in a window has to have it ended or cancelled before another can be set over it.</p>
             </div>
         </div>
     </aside>
 
-    <div class="adm-stack">
-        <div class="csi-card">
-            <div class="csi-drafts__head">
-                <h1 class="csi-card__title csi-card__title--plain">Tile availability</h1>
-                <p class="csi-drafts__sub">
+    <div class="admin-stack">
+        <div class="page-card">
+            <div class="page-drafts__head">
+                <h1 class="page-card__title page-card__title--plain">Tile availability</h1>
+                <p class="page-drafts__sub">
                     The @Model.Features.Count tiles on the dashboard.
-                    <span id="admSummary">@(off == 0 ? "All on" : $"{off} off now") &middot; @queued scheduled to go off.</span>
+                    <span id="adminSummary">@(off == 0 ? "All on" : $"{off} off now") &middot; @queued scheduled to go off.</span>
                 </p>
             </div>
 
-            <table class="su-table adm-table">
+            <table class="register-table admin-table">
                 <colgroup>
                     <col style="width:28%"><col style="width:20%"><col style="width:38%"><col style="width:14%">
                 </colgroup>
@@ -81,10 +81,10 @@
                         <th scope="col">Tile</th>
                         <th scope="col">Availability</th>
                         <th scope="col">Window</th>
-                        <th scope="col" class="su-table__act"><span class="visually-hidden">Action</span></th>
+                        <th scope="col" class="register-table__actions"><span class="visually-hidden">Action</span></th>
                     </tr>
                 </thead>
-                <tbody id="admRows">
+                <tbody id="adminRows">
                     @foreach (var f in Model.Features)
                     {
                         var w = Model.Board.WindowFor(f.Key);
@@ -93,32 +93,32 @@
                         <tr data-feature="@f.Key" data-state="@state" data-window="@(w?.Id ?? "")" data-name="@f.Name">
                             <td data-label="Tile">
                                 <strong>@f.Name</strong>
-                                <div class="su-table__sub">@f.Group</div>
+                                <div class="register-table__sub">@f.Group</div>
                             </td>
                             <td data-label="Availability">
                                 @switch (state)
                                 {
                                     case "off":
                                         <span class="text-muted" data-status>Switched off</span>
-                                        <div class="su-table__sub" data-status-sub>@f.OffReason</div>
+                                        <div class="register-table__sub" data-status-sub>@f.OffReason</div>
                                         break;
                                     case "disabled":
                                         <span class="text-danger" data-status>Off now</span>
-                                        <div class="su-table__sub su-table__sub--urgent" data-status-sub>back at @ConsoleAdmin.Clock(w!.To)</div>
+                                        <div class="register-table__sub register-table__sub--urgent" data-status-sub>back at @ConsoleAdmin.Clock(w!.To)</div>
                                         break;
                                     case "scheduled":
                                         <span class="text-amber" data-status>Goes off @w!.Away</span>
-                                        <div class="su-table__sub" data-status-sub>on until then</div>
+                                        <div class="register-table__sub" data-status-sub>on until then</div>
                                         break;
                                     default:
                                         <span class="text-success" data-status>Available</span>
-                                        <div class="su-table__sub" data-status-sub>no window set</div>
+                                        <div class="register-table__sub" data-status-sub>no window set</div>
                                         break;
                                 }
                             </td>
                             <td data-label="Window">
                                 <span data-window-when>@(w is null ? "—" : w.When)</span>
-                                <div class="su-table__sub" data-window-sub>
+                                <div class="register-table__sub" data-window-sub>
                                     @if (w is null)
                                     {
                                         @(state == "off" ? "off in appsettings" : "")
@@ -131,22 +131,22 @@
                                     }
                                 </div>
                             </td>
-                            <td class="su-table__act" data-act>
+                            <td class="register-table__actions" data-act>
                                 @switch (state)
                                 {
                                     case "off":
-                                        <span class="su-nolink">&mdash;</span>
+                                        <span class="register-no-link">&mdash;</span>
                                         break;
                                     case "disabled":
                                         <form method="post" asp-action="EndWindow"><input type="hidden" name="id" value="@w!.Id" /><input type="hidden" name="live" value="true" />
-                                            <button type="submit" class="csi-link" data-loader="Ending the window&hellip;">End now</button></form>
+                                            <button type="submit" class="link-button" data-loader="Ending the window&hellip;">End now</button></form>
                                         break;
                                     case "scheduled":
                                         <form method="post" asp-action="EndWindow"><input type="hidden" name="id" value="@w!.Id" /><input type="hidden" name="live" value="false" />
-                                            <button type="submit" class="csi-link" data-loader="Cancelling the window&hellip;">Cancel</button></form>
+                                            <button type="submit" class="link-button" data-loader="Cancelling the window&hellip;">Cancel</button></form>
                                         break;
                                     default:
-                                        <button type="button" class="csi-link" data-schedule>Disable&hellip;</button>
+                                        <button type="button" class="link-button" data-schedule>Disable&hellip;</button>
                                         break;
                                 }
                             </td>
@@ -155,58 +155,58 @@
                 </tbody>
             </table>
 
-            <h2 class="adm-form__title" id="admScheduleTitle">Disable a tile for a window</h2>
-            <form class="adm-form" id="admWindowForm" method="post" asp-action="AddWindow" novalidate aria-labelledby="admScheduleTitle">
+            <h2 class="admin-form__title" id="adminScheduleTitle">Disable a tile for a window</h2>
+            <form class="admin-form" id="adminWindowForm" method="post" asp-action="AddWindow" novalidate aria-labelledby="adminScheduleTitle">
                 @* The two moments, as the script reads them off the boxes below. *@
-                <input type="hidden" name="from" id="admFromValue" />
-                <input type="hidden" name="to" id="admToValue" />
-                <div class="csi-field">
-                    <span class="csi-label">Tiles to disable</span>
-                    <div class="adm-picks" id="admPicks">
+                <input type="hidden" name="from" id="adminFromValue" />
+                <input type="hidden" name="to" id="adminToValue" />
+                <div class="form-field">
+                    <span class="field-label">Tiles to disable</span>
+                    <div class="admin-picks" id="adminPicks">
                         @foreach (var f in Model.Features.Where(f => Model.Flags.IsOn(f.Key)))
                         {
-                            <label class="adm-pick" data-pick="@f.Key">
+                            <label class="admin-pick" data-pick="@f.Key">
                                 <input type="checkbox" name="features" value="@f.Key">
                                 <span>@f.Name</span>
                             </label>
                         }
                     </div>
-                    <p class="csi-hint">A tile already in a window cannot be picked until that window is ended or cancelled.</p>
+                    <p class="field-hint">A tile already in a window cannot be picked until that window is ended or cancelled.</p>
                 </div>
 
-                <div class="adm-form__row">
-                    <div class="csi-field">
-                        <span class="csi-label" id="admFromLabel">From</span>
-                        @{ await When("admFrom", Model.DefaultFrom, "From"); }
+                <div class="admin-form__row">
+                    <div class="form-field">
+                        <span class="field-label" id="adminFromLabel">From</span>
+                        @{ await DateTimeBoxes("adminFrom", Model.DefaultFrom, "From"); }
                     </div>
-                    <div class="csi-field">
-                        <span class="csi-label" id="admToLabel">To</span>
-                        @{ await When("admTo", Model.DefaultTo, "To"); }
+                    <div class="form-field">
+                        <span class="field-label" id="adminToLabel">To</span>
+                        @{ await DateTimeBoxes("adminTo", Model.DefaultTo, "To"); }
                     </div>
                 </div>
 
-                <div class="csi-field">
-                    <label class="csi-label" for="admTitle">Notice to partners</label>
-                    <input class="csi-control adm-control--wide" id="admTitle" name="notice" maxlength="90" autocomplete="off" placeholder="e.g. New FD booking is unavailable on Sunday night">
-                    <p class="csi-hint">Shown in the bell until the window ends, with the tiles it affects. Leave it blank for a short window and only the greyed tile will say anything.</p>
+                <div class="form-field">
+                    <label class="field-label" for="adminTitle">Notice to partners</label>
+                    <input class="field-input admin-control--wide" id="adminTitle" name="notice" maxlength="90" autocomplete="off" placeholder="e.g. New FD booking is unavailable on Sunday night">
+                    <p class="field-hint">Shown in the bell until the window ends, with the tiles it affects. Leave it blank for a short window and only the greyed tile will say anything.</p>
                 </div>
 
-                <p class="csi-error" id="admWindowError" hidden></p>
+                <p class="field-error" id="adminWindowError" hidden></p>
 
-                <div class="adm-form__actions">
+                <div class="admin-form__actions">
                     <button type="submit" class="btn btn-primary">Schedule window</button>
-                    <button type="button" class="btn btn-outline-primary" id="admWindowReset">Clear</button>
+                    <button type="button" class="btn btn-outline-primary" id="adminWindowReset">Clear</button>
                 </div>
             </form>
         </div>
 
-        <div class="csi-card">
-            <div class="csi-drafts__head">
-                <h2 class="csi-card__title csi-card__title--plain">What partners are told</h2>
-                <p class="csi-drafts__sub">Everything in the bell in the top bar, soonest first. A notice against a window goes when that window does; a standalone one is removed by hand.</p>
+        <div class="page-card">
+            <div class="page-drafts__head">
+                <h2 class="page-card__title page-card__title--plain">What partners are told</h2>
+                <p class="page-drafts__sub">Everything in the bell in the top bar, soonest first. A notice against a window goes when that window does; a standalone one is removed by hand.</p>
             </div>
 
-            <table class="su-table adm-table adm-table--notices">
+            <table class="register-table admin-table admin-table--notices">
                 <colgroup>
                     <col style="width:14%"><col style="width:38%"><col style="width:20%">
                     <col style="width:16%"><col style="width:12%">
@@ -217,10 +217,10 @@
                         <th scope="col">Notice</th>
                         <th scope="col">When</th>
                         <th scope="col">Raised by</th>
-                        <th scope="col" class="su-table__act"><span class="visually-hidden">Action</span></th>
+                        <th scope="col" class="register-table__actions"><span class="visually-hidden">Action</span></th>
                     </tr>
                 </thead>
-                <tbody id="admNotices">
+                <tbody id="adminNotices">
                     @* The two sources read as one list, in the order the bell shows
                        them: the windows that announce themselves, and the notices
                        that stand on their own. *@
@@ -233,28 +233,28 @@
                     @foreach (var n in bell)
                     {
                         <tr data-notice="@n.Id" data-source="@n.Source" data-at="@n.From.ToString("s")">
-                            <td data-label="Kind"><span class="adm-kindtag @ConsoleAdmin.Tone(n.Kind)">@n.Kind</span></td>
+                            <td data-label="Kind"><span class="admin-kind-tag @ConsoleAdmin.Tone(n.Kind)">@n.Kind</span></td>
                             <td data-label="Notice">
                                 <strong>@n.Title</strong>
-                                <div class="su-table__sub">@n.Detail</div>
+                                <div class="register-table__sub">@n.Detail</div>
                             </td>
                             <td data-label="When">
                                 <span>@n.When</span>
-                                <div class="su-table__sub">@n.Away</div>
+                                <div class="register-table__sub">@n.Away</div>
                             </td>
                             <td data-label="Raised by">
                                 <span>@n.By</span>
-                                <div class="su-table__sub">@n.Sub</div>
+                                <div class="register-table__sub">@n.Sub</div>
                             </td>
-                            <td class="su-table__act">
+                            <td class="register-table__actions">
                                 @if (n.Source == "window")
                                 {
-                                    <span class="su-nolink">&mdash;</span>
+                                    <span class="register-no-link">&mdash;</span>
                                 }
                                 else
                                 {
                                     <form method="post" asp-action="RemoveNotice"><input type="hidden" name="id" value="@n.Id" />
-                                        <button type="submit" class="csi-link" data-loader="Removing the notice&hellip;">Remove</button></form>
+                                        <button type="submit" class="link-button" data-loader="Removing the notice&hellip;">Remove</button></form>
                                 }
                             </td>
                         </tr>
@@ -262,50 +262,50 @@
                 </tbody>
             </table>
 
-            <p class="su-empty" id="admNoticesEmpty" hidden>Nothing in the bell. Partners see no notices at all.</p>
+            <p class="register-empty" id="adminNoticesEmpty" hidden>Nothing in the bell. Partners see no notices at all.</p>
 
-            <h2 class="adm-form__title" id="admNoticeTitle">Add a notification</h2>
-            <form class="adm-form" id="admNoticeForm" method="post" asp-action="AddNotice" novalidate aria-labelledby="admNoticeTitle">
-                <input type="hidden" name="at" id="admAtValue" />
-                <p class="alert alert-secondary va-flag">
+            <h2 class="admin-form__title" id="adminNoticeTitle">Add a notification</h2>
+            <form class="admin-form" id="adminNoticeForm" method="post" asp-action="AddNotice" novalidate aria-labelledby="adminNoticeTitle">
+                <input type="hidden" name="at" id="adminAtValue" />
+                <p class="alert alert-secondary view-app-scope-note">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 11v6"></path><circle cx="12" cy="7.5" r=".7" fill="currentColor"></circle></svg>
                     <span><strong>This tells, it does not disable.</strong> Use it for a rate change, or for a service behind the wizard such as DMS. To take a dashboard tile off the air, set a window above.</span>
                 </p>
 
-                <div class="adm-form__row">
-                    <div class="csi-field">
-                        <span class="csi-label">Kind</span>
-                        <div class="adm-kind">
+                <div class="admin-form__row">
+                    <div class="form-field">
+                        <span class="field-label">Kind</span>
+                        <div class="admin-kind">
                             @for (var k = 0; k < Model.NoticeKinds.Count; k++)
                             {
-                                <label class="csi-radio">
+                                <label class="radio-option">
                                     <input type="radio" name="kind" value="@Model.NoticeKinds[k]" checked="@(k == 0)">
                                     <span>@Model.NoticeKinds[k]</span>
                                 </label>
                             }
                         </div>
                     </div>
-                    <div class="csi-field">
-                        <span class="csi-label" id="admAtLabel">Happens at</span>
-                        @{ await When("admAt", Model.DefaultNoticeAt, "Happens at"); }
+                    <div class="form-field">
+                        <span class="field-label" id="adminAtLabel">Happens at</span>
+                        @{ await DateTimeBoxes("adminAt", Model.DefaultNoticeAt, "Happens at"); }
                     </div>
                 </div>
 
-                <div class="csi-field">
-                    <label class="csi-label" for="admNoticeHead">Notice</label>
-                    <input class="csi-control adm-control--wide" id="admNoticeHead" name="title" maxlength="90" autocomplete="off" placeholder="e.g. FD rates change from 1 October">
+                <div class="form-field">
+                    <label class="field-label" for="adminNoticeHead">Notice</label>
+                    <input class="field-input admin-control--wide" id="adminNoticeHead" name="title" maxlength="90" autocomplete="off" placeholder="e.g. FD rates change from 1 October">
                 </div>
 
-                <div class="csi-field">
-                    <label class="csi-label" for="admNoticeDetail">What it means for work in flight</label>
-                    <textarea class="csi-control adm-textarea" id="admNoticeDetail" name="detail" rows="2" maxlength="260" placeholder="e.g. An application booked and paid before the change keeps the old rate card."></textarea>
+                <div class="form-field">
+                    <label class="field-label" for="adminNoticeDetail">What it means for work in flight</label>
+                    <textarea class="field-input admin-textarea" id="adminNoticeDetail" name="detail" rows="2" maxlength="260" placeholder="e.g. An application booked and paid before the change keeps the old rate card."></textarea>
                 </div>
 
-                <p class="csi-error" id="admNoticeError" hidden></p>
+                <p class="field-error" id="adminNoticeError" hidden></p>
 
-                <div class="adm-form__actions">
+                <div class="admin-form__actions">
                     <button type="submit" class="btn btn-primary">Publish to the bell</button>
-                    <button type="button" class="btn btn-outline-primary" id="admNoticeReset">Clear</button>
+                    <button type="button" class="btn btn-outline-primary" id="adminNoticeReset">Clear</button>
                 </div>
             </form>
         </div>

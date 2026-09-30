@@ -16,43 +16,43 @@
     };
 }
 
-<div class="csi csi--wide">
-    <aside class="csi-rail csi-rail--steps">
-        <h2 class="csi-rail__title">What can carry a link</h2>
-        <div class="csi-rail__note">
+<div class="page-layout page-layout--wide">
+    <aside class="page-rail page-rail--steps">
+        <h2 class="page-rail__title">What can carry a link</h2>
+        <div class="page-rail__note">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 2.5H14l5 5v13a1 1 0 0 1-1 1H6.5a1.5 1.5 0 0 1-1.5-1.5V4a1.5 1.5 0 0 1 1.5-1.5z"></path><path d="M14 2.5v5h5"></path></svg>
             <div>
-                <div class="csi-rail__note-title">A pending application</div>
+                <div class="page-rail__note-title">A pending application</div>
                 <p>Started in the last @Model.EligibleDays days and waiting on the investor.</p>
             </div>
         </div>
-        <div class="csi-rail__note">
+        <div class="page-rail__note">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M8.5 7.5h7M8.5 10.5h7M12 7.5c3 0 3 5-.5 5h-3l5.5 5"></path></svg>
             <div>
-                <div class="csi-rail__note-title">Payment or acceptance</div>
+                <div class="page-rail__note-title">Payment or acceptance</div>
                 <p>The application decides which of the two the link asks for.</p>
             </div>
         </div>
-        <div class="csi-rail__note">
+        <div class="page-rail__note">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>
             <div>
-                <div class="csi-rail__note-title">Seen only by the investor</div>
+                <div class="page-rail__note-title">Seen only by the investor</div>
                 <p>It goes to the contacts on the application and is never shown here.</p>
             </div>
         </div>
     </aside>
 
-    <div class="csi-card">
-        <div class="cii-head"><h1 class="cii-title">Links to investors</h1></div>
-        <p class="cii-note">A link asks the investor to pay for or accept their FD. The link is never shown here &mdash; it goes to the contacts on the application.</p>
+    <div class="page-card">
+        <div class="page-head"><h1 class="page-title">Links to investors</h1></div>
+        <p class="page-note">A link asks the investor to pay for or accept their FD. The link is never shown here &mdash; it goes to the contacts on the application.</p>
 
         @{
             var urgent = Model.Rows.Count(r => r.Urgent);
         }
-        <div class="alert alert-warning su-notice">
-            <svg class="su-notice__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 7v6"></path><circle cx="12" cy="16.8" r=".8" fill="currentColor"></circle></svg>
+        <div class="alert alert-warning register-notice">
+            <svg class="register-notice__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 7v6"></path><circle cx="12" cy="16.8" r=".8" fill="currentColor"></circle></svg>
             <div>
-                <div class="su-notice__title">An unpaid application is cancelled after @Model.EligibleDays days</div>
+                <div class="register-notice__title">An unpaid application is cancelled after @Model.EligibleDays days</div>
                 <p>
                     The investor has @Model.EligibleDays days from the day the application is created to pay for and accept the FD.
                     If they have not by then, the application cancels itself and a new one has to be started &mdash; so only applications
@@ -65,22 +65,22 @@
             </div>
         </div>
 
-        <div class="su-filters">
-            <div class="su-pills" role="group" aria-label="Filter by state">
-                <button type="button" class="su-pill su-pill--on" data-state="all">All <span class="su-pill__n" data-count="all"></span></button>
+        <div class="register-filters">
+            <div class="register-pills" role="group" aria-label="Filter by state">
+                <button type="button" class="register-pill register-pill--on" data-state="all">All <span class="register-pill__number" data-count="all"></span></button>
                 @foreach (var st in LinksViewModel.States)
                 {
-                    <button type="button" class="su-pill" data-state="@st.Key">@st.Label <span class="su-pill__n" data-count="@st.Key"></span></button>
+                    <button type="button" class="register-pill" data-state="@st.Key">@st.Label <span class="register-pill__number" data-count="@st.Key"></span></button>
                 }
             </div>
-            <label class="su-search">
+            <label class="register-search">
                 <span class="visually-hidden">Search links</span>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>
-                <input type="search" id="suSearch" placeholder="Application, investor or purpose" autocomplete="off">
+                <input type="search" id="registerSearch" placeholder="Application, investor or purpose" autocomplete="off">
             </label>
         </div>
 
-        <table class="su-table">
+        <table class="register-table">
             <colgroup>
                 <col style="width:19%"><col style="width:20%"><col style="width:15%">
                 <col style="width:11%"><col style="width:11%"><col style="width:14%"><col style="width:10%">
@@ -93,40 +93,40 @@
                     <th scope="col">Sent</th>
                     <th scope="col">Expires</th>
                     <th scope="col">State</th>
-                    <th scope="col" class="su-table__act"><span class="visually-hidden">Action</span></th>
+                    <th scope="col" class="register-table__actions"><span class="visually-hidden">Action</span></th>
                 </tr>
             </thead>
-            <tbody id="suRows">
+            <tbody id="registerRows">
                 @foreach (var l in Model.Rows)
                 {
                     <tr data-state="@l.State" data-validity="@Model.Purposes.First(x => x.Key == l.PurposeKey).Validity"
                         data-search="@($"{l.AppNo} {l.Investor} {l.Contact} {l.Purpose} {l.Status}".ToLowerInvariant())">
                         <td data-label="Application">
                             <strong>@l.AppNo</strong>
-                            <div class="su-table__sub@(l.Urgent ? " su-table__sub--urgent" : "")">@l.Countdown</div>
+                            <div class="register-table__sub@(l.Urgent ? " register-table__sub--urgent" : "")">@l.Countdown</div>
                         </td>
-                        <td data-label="Investor">@l.Investor<div class="su-table__sub">@l.Contact</div></td>
+                        <td data-label="Investor">@l.Investor<div class="register-table__sub">@l.Contact</div></td>
                         <td data-label="Asks for">@l.Purpose</td>
                         <td data-label="Sent">@l.Sent</td>
                         <td data-label="Expires">@l.Expires</td>
                         <td data-label="State"><span class="@Tones.Badge(l.Tone)">@l.Status</span></td>
-                        <td class="su-table__act">
+                        <td class="register-table__actions">
                             @if (l.State == "none")
                             {
                                 <form method="post" asp-action="Send">
                                     <input type="hidden" name="appNo" value="@l.AppNo" /><input type="hidden" name="purpose" value="@l.PurposeKey" />
-                                    <button type="submit" class="csi-link" data-loader="Sending the link&hellip;">Send link</button>
+                                    <button type="submit" class="link-button" data-loader="Sending the link&hellip;">Send link</button>
                                 </form>
                             }
                             else if (l.State == "done")
                             {
-                                <span class="su-nolink">&mdash;</span>
+                                <span class="register-no-link">&mdash;</span>
                             }
                             else
                             {
                                 <form method="post" asp-action="Send">
                                     <input type="hidden" name="appNo" value="@l.AppNo" /><input type="hidden" name="purpose" value="@l.PurposeKey" />
-                                    <button type="submit" class="csi-link" data-loader="Sending a new link&hellip;">Regenerate</button>
+                                    <button type="submit" class="link-button" data-loader="Sending a new link&hellip;">Regenerate</button>
                                 </form>
                             }
                         </td>
@@ -135,14 +135,14 @@
             </tbody>
         </table>
 
-        <p class="su-empty" id="suEmpty" hidden>No application matches that filter.</p>
+        <p class="register-empty" id="registerEmpty" hidden>No application matches that filter.</p>
 
-        <div class="su-pager">
-            <p class="su-pager__count" id="suCount"></p>
-            <div class="su-pager__nav">
-                <button type="button" class="su-page su-page--step" id="suPrev" aria-label="Previous page">&lsaquo;</button>
-                <div class="su-pager__pages" id="suPages"></div>
-                <button type="button" class="su-page su-page--step" id="suNext" aria-label="Next page">&rsaquo;</button>
+        <div class="register-pager">
+            <p class="register-pager__count" id="registerCount"></p>
+            <div class="register-pager__nav">
+                <button type="button" class="register-page register-page--step" id="registerPrev" aria-label="Previous page">&lsaquo;</button>
+                <div class="register-pager__pages" id="registerPages"></div>
+                <button type="button" class="register-page register-page--step" id="registerNext" aria-label="Next page">&rsaquo;</button>
             </div>
         </div>
     </div>

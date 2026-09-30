@@ -20,10 +20,10 @@
 
 @functions {
     // A button that posts one step: through the step's own form, or the page's form.
-    // One that checks the search fields first (checks.js) sends nothing while one is wrong.
+    // One that checks the search fields first (field-checks.js) sends nothing while one is wrong.
     private async Task Step(string step, string css, string label, string? loader = null, bool validate = false)
     {
-        var checks = validate ? ".csi-search" : null;
+        var checks = validate ? ".page-search" : null;
         if (Model.Embedded)
         {
             <button type="submit" class="@css" formaction="@Model.Url(step)" formnovalidate data-loader="@loader" data-validate="@checks">@Html.Raw(label)</button>
@@ -55,13 +55,13 @@
     {
         if (Model.FolioSearch)
         {
-            <fieldset class="csi-searchby">
-                <legend class="csi-label">Search By</legend>
-                <label class="csi-radio">
+            <fieldset class="search-by">
+                <legend class="field-label">Search By</legend>
+                <label class="radio-option">
                     <input type="radio" name="@Model.Name("By")" value="pan" checked="@(m.By != "folio")">
                     <span>PAN &amp; Date of Birth</span>
                 </label>
-                <label class="csi-radio">
+                <label class="radio-option">
                     <input type="radio" name="@Model.Name("By")" value="folio" checked="@(m.By == "folio")">
                     <span>Folio Number</span>
                 </label>
@@ -72,63 +72,63 @@
             <input type="hidden" name="@Model.Name("By")" value="pan">
         }
 
-        <div class="csi-fields">
-            <div class="csi-field" data-for="pan">
-                <label class="csi-label" for="@(ids)Pan">Enter PAN</label>
-                <input class="csi-control csi-control--caps @(m.PanError is not null ? "is-invalid" : null)" id="@(ids)Pan" name="@Model.Name("Pan")" value="@m.Pan"
+        <div class="field-grid">
+            <div class="form-field" data-for="pan">
+                <label class="field-label" for="@(ids)Pan">Enter PAN</label>
+                <input class="field-input field-input--caps @(m.PanError is not null ? "is-invalid" : null)" id="@(ids)Pan" name="@Model.Name("Pan")" value="@m.Pan"
                        maxlength="10" autocomplete="off" spellcheck="false" aria-describedby="@(ids)PanError"
                        data-required="Enter the PAN" data-check="pan"
                        aria-invalid="@(m.PanError is not null ? "true" : null)" autofocus="@(focus == ids + "Pan")">
-                <p class="csi-error" id="@(ids)PanError" hidden="@(m.PanError is null)">@m.PanError</p>
+                <p class="field-error" id="@(ids)PanError" hidden="@(m.PanError is null)">@m.PanError</p>
             </div>
 
-            <div class="csi-field" data-for="pan">
-                <span class="csi-label" id="@(ids)DobLabel">Date Of Birth</span>
+            <div class="form-field" data-for="pan">
+                <span class="field-label" id="@(ids)DobLabel">Date Of Birth</span>
                 @* Three boxes with slashes between, like the old jq-dte control. *@
-                <div class="csi-date @(m.DobError is not null ? "is-invalid" : null)" role="group" aria-labelledby="@(ids)DobLabel" aria-describedby="@(ids)DobError"
+                <div class="date-input @(m.DobError is not null ? "is-invalid" : null)" role="group" aria-labelledby="@(ids)DobLabel" aria-describedby="@(ids)DobError"
                      data-required="Enter the date of birth" data-check="date" data-error-id="@(ids)DobError">
-                    <input class="csi-date__part" id="@(ids)Dd" name="@Model.Name("Dd")" value="@m.Dd" inputmode="numeric" maxlength="2" placeholder="DD" aria-label="Day" autocomplete="off" autofocus="@(focus == ids + "Dd")">
-                    <span class="csi-date__sep">/</span>
-                    <input class="csi-date__part" name="@Model.Name("Mm")" value="@m.Mm" inputmode="numeric" maxlength="2" placeholder="MM" aria-label="Month" autocomplete="off">
-                    <span class="csi-date__sep">/</span>
-                    <input class="csi-date__part csi-date__part--year" name="@Model.Name("Yyyy")" value="@m.Yyyy" inputmode="numeric" maxlength="4" placeholder="YYYY" aria-label="Year" autocomplete="off">
+                    <input class="date-input__part" id="@(ids)Dd" name="@Model.Name("Dd")" value="@m.Dd" inputmode="numeric" maxlength="2" placeholder="DD" aria-label="Day" autocomplete="off" autofocus="@(focus == ids + "Dd")">
+                    <span class="date-input__sep">/</span>
+                    <input class="date-input__part" name="@Model.Name("Mm")" value="@m.Mm" inputmode="numeric" maxlength="2" placeholder="MM" aria-label="Month" autocomplete="off">
+                    <span class="date-input__sep">/</span>
+                    <input class="date-input__part date-input__part--year" name="@Model.Name("Yyyy")" value="@m.Yyyy" inputmode="numeric" maxlength="4" placeholder="YYYY" aria-label="Year" autocomplete="off">
                 </div>
-                <p class="csi-error" id="@(ids)DobError" hidden="@(m.DobError is null)">@m.DobError</p>
+                <p class="field-error" id="@(ids)DobError" hidden="@(m.DobError is null)">@m.DobError</p>
             </div>
 
             @if (Model.FolioSearch)
             {
-                <div class="csi-field" data-for="folio">
-                    <label class="csi-label" for="@(ids)Folio">Enter Folio Number</label>
-                    <input class="csi-control csi-control--caps @(m.FolioError is not null ? "is-invalid" : null)" id="@(ids)Folio" name="@Model.Name("Folio")" data-chars="code" value="@m.Folio"
+                <div class="form-field" data-for="folio">
+                    <label class="field-label" for="@(ids)Folio">Enter Folio Number</label>
+                    <input class="field-input field-input--caps @(m.FolioError is not null ? "is-invalid" : null)" id="@(ids)Folio" name="@Model.Name("Folio")" data-chars="code" value="@m.Folio"
                            maxlength="16" autocomplete="off" spellcheck="false" aria-describedby="@(ids)FolioError"
                            data-required="Enter the folio number"
                            aria-invalid="@(m.FolioError is not null ? "true" : null)" autofocus="@(focus == ids + "Folio")">
-                    <p class="csi-error" id="@(ids)FolioError" hidden="@(m.FolioError is null)">@m.FolioError</p>
+                    <p class="field-error" id="@(ids)FolioError" hidden="@(m.FolioError is null)">@m.FolioError</p>
                 </div>
             }
 
-            <div class="csi-field csi-field--check">
-                @{ await Step("Check", "csi-check", "Check record <span aria-hidden=\"true\">&rsaquo;</span>", validate: true); }
+            <div class="form-field form-field--check">
+                @{ await Step("Check", "identify-check-button", "Check record <span aria-hidden=\"true\">&rsaquo;</span>", validate: true); }
             </div>
         </div>
 
         @if (m.OpsError is not null)
         {
             @* Nothing the partner can type fixes this, so it says who can. *@
-            <div class="alert alert-danger csi-gap csi-ops" role="alert">
-                <svg class="csi-gap__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"></circle><path d="M5.5 20a6.5 6.5 0 0 1 13 0"></path><path d="M18.5 4.5l2 2M20.5 4.5l-2 2"></path></svg>
-                <div class="csi-gap__body">
-                    <div class="csi-gap__title">Connect with the Operations team</div>
+            <div class="alert alert-danger page-missing-items identify-actions" role="alert">
+                <svg class="page-missing-items__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"></circle><path d="M5.5 20a6.5 6.5 0 0 1 13 0"></path><path d="M18.5 4.5l2 2M20.5 4.5l-2 2"></path></svg>
+                <div class="page-missing-items__body">
+                    <div class="page-missing-items__title">Connect with the Operations team</div>
                     <p>@m.OpsError</p>
                 </div>
             </div>
         }
 
-        <p class="csi-hint" data-for="pan">Both fields are required &mdash; a PAN-only search is not permitted.</p>
+        <p class="field-hint" data-for="pan">Both fields are required &mdash; a PAN-only search is not permitted.</p>
         @if (Model.FolioSearch)
         {
-            <p class="csi-hint" data-for="folio">The folio number alone is enough &mdash; it returns the same record as the PAN search.</p>
+            <p class="field-hint" data-for="folio">The folio number alone is enough &mdash; it returns the same record as the PAN search.</p>
         }
     }
 }
@@ -137,13 +137,13 @@
 {
     @if (Model.Embedded)
     {
-        <div class="csi-search">
+        <div class="page-search">
             @{ await SearchFields(m, ids, focus); }
         </div>
     }
     else
     {
-        <form class="csi-search" method="post" action="@Model.Url("Check")" asp-antiforgery="true" data-partial novalidate>
+        <form class="page-search" method="post" action="@Model.Url("Check")" asp-antiforgery="true" data-partial novalidate>
             @{ await SearchFields(m, ids, focus); }
         </form>
     }
@@ -157,37 +157,37 @@ else
     // only a new investor, or one not identified, is named as such, with what
     // happens next under the record.
     var said = newPan ? Model.NewPanNote : r.Folio.Length > 0 ? null : m.Detail;
-    <div class="inv-panel csi-result">
-        <div class="csi-result__head">
-            <span class="csi-result__name">@(Model.KnownName is { Length: > 0 } known ? known : r.Heading)</span>
+    <div class="investor-panel identify-result">
+        <div class="identify-result__head">
+            <span class="identify-result__name">@(Model.KnownName is { Length: > 0 } known ? known : r.Heading)</span>
             @if (r.Folio.Length > 0)
             {
-                <span class="csi-result__tag">Folio @r.Folio</span>
+                <span class="identify-result__tag">Folio @r.Folio</span>
             }
             else
             {
-                <span class="csi-result__tag csi-result__tag--new">@(newPan ? "New investor" : m.Kind)</span>
+                <span class="identify-result__tag identify-result__tag--new">@(newPan ? "New investor" : m.Kind)</span>
             }
             @* Back to the fields, still holding what was typed. *@
-            @{ await Again("csi-check csi-result__again", "<svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"10.5\" cy=\"10.5\" r=\"6.5\"></circle><path d=\"M15.5 15.5L20 20\"></path></svg> Search again"); }
+            @{ await Again("identify-check-button identify-result__again", "<svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"10.5\" cy=\"10.5\" r=\"6.5\"></circle><path d=\"M15.5 15.5L20 20\"></path></svg> Search again"); }
         </div>
-        <div class="inv-kv-grid">
-            <div class="inv-kv"><div class="inv-kv__k">PAN</div><div class="inv-kv__v">@r.MaskedPan</div></div>
-            <div class="inv-kv"><div class="inv-kv__k">Date of birth</div><div class="inv-kv__v">@r.MaskedDob</div></div>
+        <div class="investor-key-value-grid">
+            <div class="investor-key-value"><div class="investor-key-value__key">PAN</div><div class="investor-key-value__value">@r.MaskedPan</div></div>
+            <div class="investor-key-value"><div class="investor-key-value__key">Date of birth</div><div class="investor-key-value__value">@r.MaskedDob</div></div>
             @* Gender is held against the folio and is not the partner's to change
                here, so the panel says where a correction comes from. *@
             @if (r.Gender.Length > 0)
             {
-                <div class="inv-kv">
-                    <div class="inv-kv__k">Gender</div>
-                    <div class="inv-kv__v">@r.Gender</div>
-                    <div class="inv-kv__note">Held on the folio &mdash; Operations can correct it</div>
+                <div class="investor-key-value">
+                    <div class="investor-key-value__key">Gender</div>
+                    <div class="investor-key-value__value">@r.Gender</div>
+                    <div class="investor-key-value__note">Held on the folio &mdash; Operations can correct it</div>
                 </div>
             }
         </div>
         @if (said is { Length: > 0 })
         {
-            <p class="csi-result__said">@said</p>
+            <p class="identify-result__said">@said</p>
         }
 
         @if (m.Identified || newPan)
@@ -196,12 +196,12 @@ else
                missing is asked for again during entry, so it is said here rather
                than left for the upload step to spring. A new investor has no record
                yet, so every item is listed as collected during entry. *@
-            <div class="inv-panel__part csi-onrecord @(r.Missing == 0 ? "csi-onrecord--complete" : null)">
-                <div class="csi-onrecord__label">@r.OnRecordTitle</div>
-                <ul class="csi-onrecord__list">
+            <div class="investor-panel__part page-on-record @(r.Missing == 0 ? "page-on-record--complete" : null)">
+                <div class="page-on-record__label">@r.OnRecordTitle</div>
+                <ul class="page-on-record__list">
                     @foreach (var item in r.OnRecord)
                     {
-                        <li class="csi-onrecord__item @(item.Held ? null : "csi-onrecord__item--missing")">
+                        <li class="page-on-record__item @(item.Held ? null : "page-on-record__item--missing")">
                             @if (item.Held)
                             {
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"></path></svg>
@@ -215,7 +215,7 @@ else
                         </li>
                     }
                 </ul>
-                <p class="csi-onrecord__foot">@r.OnRecordFoot</p>
+                <p class="page-on-record__foot">@r.OnRecordFoot</p>
             </div>
         }
     </div>

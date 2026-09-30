@@ -3,34 +3,35 @@
 // here and then posted: the backend keeps the window or the notice, and the page
 // comes back with the schedule as it now stands.
 (function () {
-  var rows = document.getElementById('admRows');
+  var rows = document.getElementById('adminRows');
   if (!rows) return;
 
   var featureRows = Array.prototype.slice.call(rows.querySelectorAll('tr'));
-  var picks = document.getElementById('admPicks');
-  var windowForm = document.getElementById('admWindowForm');
-  var windowError = document.getElementById('admWindowError');
-  var title = document.getElementById('admTitle');
+  var picks = document.getElementById('adminPicks');
+  var windowForm = document.getElementById('adminWindowForm');
+  var windowError = document.getElementById('adminWindowError');
+  var title = document.getElementById('adminTitle');
 
-  var noticeRows = document.getElementById('admNotices');
-  var noticeForm = document.getElementById('admNoticeForm');
-  var noticeError = document.getElementById('admNoticeError');
-  var noticeHead = document.getElementById('admNoticeHead');
-  var noticeDetail = document.getElementById('admNoticeDetail');
-  var noticesEmpty = document.getElementById('admNoticesEmpty');
+  var noticeRows = document.getElementById('adminNotices');
+  var noticeForm = document.getElementById('adminNoticeForm');
+  var noticeError = document.getElementById('adminNoticeError');
+  var noticeHead = document.getElementById('adminNoticeHead');
+  var noticeDetail = document.getElementById('adminNoticeDetail');
+  var noticesEmpty = document.getElementById('adminNoticesEmpty');
 
-  // The date and time boxes roll on from one to the next through date-parts.js.
+  // The date and time boxes roll on from one to the next through date-input.js.
 
-  function two(n) { return ('0' + n).slice(-2); }
+  // Pads a number to two digits: 7 -> "07".
+  function padToTwoDigits(n) { return ('0' + n).slice(-2); }
 
   // A moment as the server reads it: yyyy-MM-ddTHH:mm, local time.
-  function local(d) {
-    return d.getFullYear() + '-' + two(d.getMonth() + 1) + '-' + two(d.getDate()) + 'T' + two(d.getHours()) + ':' + two(d.getMinutes());
+  function toServerDateTime(d) {
+    return d.getFullYear() + '-' + padToTwoDigits(d.getMonth() + 1) + '-' + padToTwoDigits(d.getDate()) + 'T' + padToTwoDigits(d.getHours()) + ':' + padToTwoDigits(d.getMinutes());
   }
 
   // The five boxes under one label read as one moment, or as null while any part
   // is unfilled or the parts together are not a real one.
-  function readWhen(id) {
+  function readDateTimeBoxes(id) {
     var date = document.getElementById(id + 'Date');
     var time = document.getElementById(id + 'Time');
     var dd = date.querySelector('[data-dd]').value.trim();
@@ -46,12 +47,14 @@
     return d;
   }
 
-  function markWhen(id, bad) {
+  // Marks (or clears) a date and time box pair as invalid.
+  function markDateTimeInvalid(id, bad) {
     document.getElementById(id + 'Date').classList.toggle('is-invalid', !!bad);
     document.getElementById(id + 'Time').classList.toggle('is-invalid', !!bad);
   }
 
-  function syncNotices() {
+  // Shows the "no notices" line when the notice list is empty.
+  function showNoNoticesMessage() {
     noticesEmpty.hidden = noticeRows.children.length > 0;
   }
 
@@ -59,7 +62,7 @@
   // does it, and the page comes back with the schedule as it now stands.
 
   // ---- A tile's row --------------------------------------------------------
-  function wireRow(row) {
+  function wireTileRow(row) {
     var schedule = row.querySelector('[data-schedule]');
     if (schedule) {
       schedule.addEventListener('click', function () {
@@ -67,30 +70,30 @@
         // own: a window often covers more than one tile.
         var pick = picks.querySelector('[data-pick="' + row.dataset.feature + '"] input');
         if (pick) pick.checked = true;
-        document.getElementById('admScheduleTitle').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        document.getElementById('adminScheduleTitle').scrollIntoView({ behavior: 'smooth', block: 'center' });
         title.focus({ preventScroll: true });
       });
     }
   }
 
-  featureRows.forEach(wireRow);
+  featureRows.forEach(wireTileRow);
 
   // A tile already in a window cannot be picked for another until that one is
   // ended or cancelled.
-  function syncPicks() {
+  function disableTilesAlreadyInWindow() {
     Array.prototype.slice.call(picks.querySelectorAll('[data-pick]')).forEach(function (label) {
       var row = rows.querySelector('[data-feature="' + label.dataset.pick + '"]');
       var busy = row && row.dataset.state !== 'available';
       var input = label.querySelector('input');
       input.disabled = !!busy;
       if (busy) input.checked = false;
-      label.classList.toggle('adm-pick--off', !!busy);
+      label.classList.toggle('admin-pick--off', !!busy);
       label.title = busy ? 'Already in a window' : '';
     });
   }
 
   // ---- Setting a window ----------------------------------------------------
-  function fail(box, message, field) {
+  function showFormError(box, message, field) {
     box.textContent = message;
     box.hidden = false;
     if (field) field.focus();
@@ -100,28 +103,28 @@
   windowForm.addEventListener('submit', function (e) {
     e.preventDefault();
     windowError.hidden = true;
-    markWhen('admFrom', false);
-    markWhen('admTo', false);
+    markDateTimeInvalid('adminFrom', false);
+    markDateTimeInvalid('adminTo', false);
 
     var chosen = Array.prototype.slice.call(picks.querySelectorAll('input:checked')).map(function (i) { return i.value; });
-    if (!chosen.length) return fail(windowError, 'Pick at least one tile to disable.');
+    if (!chosen.length) return showFormError(windowError, 'Pick at least one tile to disable.');
 
-    var from = readWhen('admFrom');
-    if (!from) { markWhen('admFrom', true); return fail(windowError, 'Enter a complete From as DD / MM / YYYY and HH : MM.'); }
-    var to = readWhen('admTo');
-    if (!to) { markWhen('admTo', true); return fail(windowError, 'Enter a complete To as DD / MM / YYYY and HH : MM.'); }
-    if (to <= from) { markWhen('admTo', true); return fail(windowError, 'The window has to end after it starts.'); }
-    if (from < new Date()) { markWhen('admFrom', true); return fail(windowError, 'A window cannot start in the past. To take a tile off right now, set From to the next minute.'); }
+    var from = readDateTimeBoxes('adminFrom');
+    if (!from) { markDateTimeInvalid('adminFrom', true); return showFormError(windowError, 'Enter a complete From as DD / MM / YYYY and HH : MM.'); }
+    var to = readDateTimeBoxes('adminTo');
+    if (!to) { markDateTimeInvalid('adminTo', true); return showFormError(windowError, 'Enter a complete To as DD / MM / YYYY and HH : MM.'); }
+    if (to <= from) { markDateTimeInvalid('adminTo', true); return showFormError(windowError, 'The window has to end after it starts.'); }
+    if (from < new Date()) { markDateTimeInvalid('adminFrom', true); return showFormError(windowError, 'A window cannot start in the past. To take a tile off right now, set From to the next minute.'); }
 
-    document.getElementById('admFromValue').value = local(from);
-    document.getElementById('admToValue').value = local(to);
+    document.getElementById('adminFromValue').value = toServerDateTime(from);
+    document.getElementById('adminToValue').value = toServerDateTime(to);
     windowForm.submit();
   });
 
-  document.getElementById('admWindowReset').addEventListener('click', function () {
+  document.getElementById('adminWindowReset').addEventListener('click', function () {
     windowError.hidden = true;
-    markWhen('admFrom', false);
-    markWhen('admTo', false);
+    markDateTimeInvalid('adminFrom', false);
+    markDateTimeInvalid('adminTo', false);
     Array.prototype.slice.call(picks.querySelectorAll('input')).forEach(function (i) { i.checked = false; });
     title.value = '';
   });
@@ -130,28 +133,28 @@
   noticeForm.addEventListener('submit', function (e) {
     e.preventDefault();
     noticeError.hidden = true;
-    markWhen('admAt', false);
+    markDateTimeInvalid('adminAt', false);
     noticeHead.classList.remove('is-invalid');
 
-    var at = readWhen('admAt');
-    if (!at) { markWhen('admAt', true); return fail(noticeError, 'Enter a complete date and time as DD / MM / YYYY and HH : MM.'); }
-    if (at < new Date()) { markWhen('admAt', true); return fail(noticeError, 'A notice about something already past tells nobody anything.'); }
+    var at = readDateTimeBoxes('adminAt');
+    if (!at) { markDateTimeInvalid('adminAt', true); return showFormError(noticeError, 'Enter a complete date and time as DD / MM / YYYY and HH : MM.'); }
+    if (at < new Date()) { markDateTimeInvalid('adminAt', true); return showFormError(noticeError, 'A notice about something already past tells nobody anything.'); }
     if (!noticeHead.value.trim()) {
       noticeHead.classList.add('is-invalid');
-      return fail(noticeError, 'Write the notice partners will see.', noticeHead);
+      return showFormError(noticeError, 'Write the notice partners will see.', noticeHead);
     }
 
-    document.getElementById('admAtValue').value = local(at);
+    document.getElementById('adminAtValue').value = toServerDateTime(at);
     noticeForm.submit();
   });
 
-  document.getElementById('admNoticeReset').addEventListener('click', function () {
+  document.getElementById('adminNoticeReset').addEventListener('click', function () {
     noticeError.hidden = true;
-    markWhen('admAt', false);
+    markDateTimeInvalid('adminAt', false);
     noticeHead.value = '';
     noticeDetail.value = '';
   });
 
-  syncPicks();
-  syncNotices();
+  disableTilesAlreadyInWindow();
+  showNoNoticesMessage();
 })();

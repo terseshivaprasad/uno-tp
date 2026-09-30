@@ -373,8 +373,10 @@ public sealed class LogEntry(string id, string document, int attempt, string at,
     public string Kind { get; set; } = "";
     public List<LogStage> Stages { get; init; } = [];
 
+    /// <summary>Adds a stage to this entry of the document's history.</summary>
     public void Add(string text, string kind = "") => Stages.Add(new LogStage(text, kind));
 
+    /// <summary>Closes this history entry with its final mark and kind.</summary>
     public void End(string mark, string kind) => (Mark, Kind) = (mark, kind);
 }
 
