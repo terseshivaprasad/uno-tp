@@ -625,10 +625,9 @@
                 {
                     var nominee = Model.NomineesOnRecord[i];
                     var born = nominee.Dob.Length > 0 ? nominee.Dob.Replace("-", "/") : "date of birth to be entered";
-                    var guardian = nominee.GuardianName.Length > 0 ? $" · guardian {nominee.GuardianName}" : "";
+                    @* One line: the name, the date of birth and the relation. Use fills the guardian too, where there is one. *@
                     <li class="on-record__row">
-                        <span class="on-record__main">@nominee.Name</span>
-                        <span class="on-record__meta">@nominee.Relation · @born@guardian · on @nominee.UsedOn</span>
+                        <span class="on-record__main">@nominee.Name · @born · @nominee.Relation</span>
                         <button type="submit" form="investorInfoForm" class="btn btn-outline-primary btn-sm on-record__use" formaction="@Url.Action("NomineeUse", new { n = i })" formnovalidate data-loader="Filling the nominee&rsquo;s details&hellip;">Use</button>
                     </li>
                 }
