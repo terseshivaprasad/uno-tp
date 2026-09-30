@@ -795,6 +795,10 @@
 .page-missing-items__title {
   font-weight: 700;
 }
+/* The one action that clears the error, as a button on its own line */
+.page-missing-items__action {
+  margin: 8px 0 0;
+}
 .page-missing-items ul {
   margin: 3px 0 0;
   padding-left: 16px;
@@ -1869,6 +1873,14 @@ label.doc-tool {
   flex-direction: column;
   gap: 16px;
   margin-bottom: 72px;
+}
+/* A banner or an error block at the top of the column starts level with the rail
+   and keeps the column's own 16px gap under it: no margin of its own. */
+.page-main > .page-missing-items {
+  margin-top: 0;
+}
+.page-main > .doc-banner {
+  margin-bottom: 0;
 }
 .page-main .page-card {
   margin-bottom: 0;

@@ -678,12 +678,11 @@
                 <div class="page-missing-items__body">
                     <div class="page-missing-items__title">@stopped.Title</div>
                     <p>@stopped.Why</p>
-                    <p><strong>What to do:</strong> @stopped.WhatToDo
-                        @if (stopped.LinkController is not null)
-                        {
-                            <a asp-controller="@stopped.LinkController" asp-action="Index" data-loader="Going to Upload Documents">@stopped.LinkText</a>
-                        }
-                    </p>
+                    <p><strong>What to do:</strong> @stopped.WhatToDo</p>
+                    @if (stopped.LinkController is not null)
+                    {
+                        <p class="page-missing-items__action"><a class="btn btn-primary btn-sm" asp-controller="@stopped.LinkController" asp-action="Index" data-loader="Going to Upload Documents">@stopped.LinkText</a></p>
+                    }
                 </div>
             </div>
         }
