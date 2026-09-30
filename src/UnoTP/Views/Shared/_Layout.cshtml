@@ -68,7 +68,7 @@
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="8" rx="1.2"></rect><rect x="13.5" y="3.5" width="7" height="5" rx="1.2"></rect><rect x="13.5" y="11.5" width="7" height="9" rx="1.2"></rect><rect x="3.5" y="14.5" width="7" height="6" rx="1.2"></rect></svg>
                     @(ViewData["FirstNavLabel"] as string ?? "Dashboard")
                 </a>
-                <a href="@Apps.Url("/Classic")">
+                <a asp-controller="Entry" asp-action="Home">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 10.5L12 3.5l8.5 7"></path><path d="M5.5 9v11h13V9"></path><path d="M10 20v-6h4v6"></path></svg>
                     Portal
                 </a>
@@ -103,7 +103,7 @@
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="8" rx="1.2"></rect><rect x="13.5" y="3.5" width="7" height="5" rx="1.2"></rect><rect x="13.5" y="11.5" width="7" height="9" rx="1.2"></rect><rect x="3.5" y="14.5" width="7" height="6" rx="1.2"></rect></svg>
                             <span class="app-menu__row-label">@(ViewData["FirstNavLabel"] as string ?? "Dashboard")</span>
                         </a>
-                        <a class="app-menu__row" href="@Apps.Url("/Classic")">
+                        <a class="app-menu__row" asp-controller="Entry" asp-action="Home">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 10.5L12 3.5l8.5 7"></path><path d="M5.5 9v11h13V9"></path><path d="M10 20v-6h4v6"></path></svg>
                             <span class="app-menu__row-label">Portal</span>
                         </a>

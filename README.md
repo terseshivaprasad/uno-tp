@@ -73,18 +73,18 @@ browser and every change is audited. The server session holds only the sign-in.
 
 | Address | Page |
 |---|---|
-| `/unotp` | Dashboard |
-| `/unotp/new` | Investor Identification: opens an application |
-| `/unotp/applications/{appNo}/documents` | Step 1, Upload Documents |
-| `/unotp/applications/{appNo}/investor` | Step 2, Investor Information |
-| `/unotp/applications/{appNo}/payment` | Step 3, Bank Details & Payment |
-| `/unotp/applications/{appNo}/deposit` | Step 4, FD Configuration |
-| `/unotp/applications/{appNo}/review`, `…/submitted` | Review Summary, Submitted |
-| `/unotp/renew` | Renew FD: a folio's deposits; Renew opens an application through the same steps |
-| `/unotp/applications`, `/unotp/pay-in-slips`, `/unotp/links`, `/unotp/admin` | The other dashboard tiles |
-| `/unotp/entry`, `/unotp/session-expired`, `/unotp/logout` | The way in and out |
+| `/Dashboard` | Dashboard |
+| `/SearchInvestor` | Investor Identification: opens an application |
+| `/UploadInvestorDocuments/{appNo}` | Step 1, Upload Documents |
+| `/InvestorInformation/{appNo}` | Step 2, Investor Information |
+| `/BankDetails/{appNo}` | Step 3, Bank Details & Payment |
+| `/FDConfiguration/{appNo}` | Step 4, FD Configuration |
+| `/ReviewSummary/{appNo}`, `/ApplicationSubmitted/{appNo}` | Review Summary, Submitted |
+| `/RenewalDashboard` | Renew FD: a folio's deposits; Renew opens an application through the same steps |
+| `/ViewApplication`, `/PayInSlip`, `/ShortUrl`, `/Admin` | The other dashboard tiles |
+| `/Home/Index?UserId=…&SysCode=…`, `/Home/Home`, `/Home/LogOut`, `/Home/SessionExpired` | The way in from the portal, back to it, and out |
 
-The old addresses (`/Home`, `/Dashboard`, `/Apps/UnoTp/...`) redirect to these.
+These are the old app's addresses, so the portal's links and saved links still work. There is no app prefix in any route: the IIS virtual directory (`/WA_FD_UNOTP/`) is the path base and is added to every address automatically; on another host set `PathBase`. Addresses the old app had that name no page here (`/Apps/UnoTp/...`, a step with no application number) redirect to the page that took their place.
 
 ## Data
 
@@ -156,6 +156,7 @@ underscore (`ConnectionStrings__UnoTP`).
 | `PaymentLink:Template` | The page the investor pays on, with `{appNo}` for the application's number. Blank, the app sends no link and the backend makes its own. |
 | `Apps:eSarathiLogin`, `Apps:eSarathiConsole`, … | The other apps' addresses, for the links out and the session-expired redirect. |
 | `Entry:DemoUserId`, `Entry:DemoSysCode` | The user demo mode signs in as. |
+| `Portal:Home`, `Portal:Logout` | The portal's dashboard (where "Portal" goes back to, with the encrypted UserId and SysCode) and its logout page. Blank: the console's `/Classic` and the login portal's root. |
 | `Backend:TimeoutSeconds`, `Idfy:TimeoutSeconds`, `Shortener:TimeoutSeconds` | How long an outside service may take to answer: 55 s each. Nothing is retried - every IDfy call may be charged. |
 | `Logging:Sql:MinLevel` | The least serious entry written to `t_Unotp_Logs` (`Error`): every error and critical error, with the request, the application number and the partner signed in, in the background. Only on the database. |
 | `Security:FrameAncestors` | Other sites allowed to show the pages in a frame (space-separated origins). Blank: none but the app itself. |

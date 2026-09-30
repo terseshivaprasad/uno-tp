@@ -25,9 +25,6 @@ public sealed class MockDecryption : IDecryptionService
         }
     }
 
-    /// <summary>What the portal would put in the address for a plain value.</summary>
-    public static string Encrypt(string plain) =>
-        Convert.ToBase64String(Encoding.UTF8.GetBytes(plain)).TrimEnd('=').Replace('+', '-').Replace('/', '_');
 }
 
 /// <summary>

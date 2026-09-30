@@ -203,12 +203,6 @@
   --bs-table-border-color: var(--divider);
   --bs-table-hover-bg: var(--tint);
 }
-.list-group {
-  --bs-list-group-border-color: var(--border);
-  --bs-list-group-border-radius: 8px;
-  --bs-list-group-action-hover-bg: var(--tint);
-  --bs-list-group-action-active-bg: var(--tint);
-}
 .progress {
   --bs-progress-bg: var(--divider);
   --bs-progress-bar-bg: var(--green);

@@ -36,7 +36,7 @@
   color: var(--ink);
   background: #fff;
 }
-.choice-toggle__option--active, .choice-toggle__option:has(input:checked) {
+.choice-toggle__option:has(input:checked) {
   background: var(--pink-bg);
   border-color: var(--red);
   color: var(--red-dark);
@@ -59,13 +59,6 @@
   color: var(--muted);
   box-shadow: none;
 }
-.choice-toggle--sm {
-  height: 32px;
-}
-.choice-toggle--sm .choice-toggle__option {
-  padding: 0 12px;
-  font-size: 12px;
-}
 /* The document table collapses to stacked rows well before the columns would
    start truncating the OCR read-out. */
 .investor-section-head {
@@ -86,11 +79,6 @@
   font-weight: 600;
   line-height: 16px;
   color: var(--muted);
-}
-.investor-panel__note {
-  font-size: 12px;
-  color: var(--muted);
-  line-height: 16px;
 }
 /* A fact: its label a 12px caption, its value 14px in ink under it. */
 .investor-key-value-grid {
@@ -237,12 +225,6 @@
   display: none;
 }
 /* Investor Identification's Note, across the card under its head. */
-.page-warning-note--banner {
-  margin-top: 20px;
-}
-.page-warning-note--banner .page-warning-note__title {
-  font-weight: 600;
-}
 .bank-suggest {
   position: absolute;
   z-index: 20;
@@ -292,22 +274,6 @@
   font-size: 12px;
   color: var(--muted);
   line-height: 16px;
-}
-.deposit-amount__clear {
-  flex: none;
-  width: 32px;
-  height: 32px;
-  border: 0;
-  background: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  color: var(--muted);
-  font-family: inherit;
-}
-.deposit-amount__clear:hover {
-  color: var(--ink);
-  background: var(--tint);
 }
 /* Every step has the same inset, so the icons of all of them line up and the
    current one's tint has room round what it holds - 12px each side, as a list
@@ -917,9 +883,6 @@
 .doc-column > .field-label {
   padding-bottom: 4px;
 }
-.doc-column__spacer {
-  height: 38px;
-}
 .doc-optional {
   font-weight: 400;
   color: var(--muted);
@@ -1242,13 +1205,13 @@
 .doc-drop:disabled {
   cursor: default;
 }
-.doc-drop__idle, .doc-drop__busy, .doc-drop__locked, .doc-drop__done {
+.doc-drop__idle, .doc-drop__locked, .doc-drop__done {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
 }
-.doc-drop__idle[hidden], .doc-drop__busy[hidden], .doc-drop__locked[hidden], .doc-drop__done[hidden] {
+.doc-drop__idle[hidden], .doc-drop__locked[hidden], .doc-drop__done[hidden] {
   display: none;
 }
 /* Shut until something above it is answered: a proof cannot be checked before
@@ -1279,34 +1242,8 @@
   pointer-events: none;
   background: var(--tint);
 }
-.doc-drop__spinner {
-  width: 20px;
-  height: 20px;
-  margin-bottom: 6px;
-  border: 2px solid var(--pink-bg);
-  border-top-color: var(--red);
-  border-radius: 50%;
-  animation: doc-spin .7s linear infinite;
-}
-.doc-drop__checking {
-  font-size: 14px;
-  color: var(--muted);
-}
 /* Which of the three checks is running, under the one it is running. Three
    seconds of an unlabelled spinner is how the same file gets uploaded twice. */
-.doc-drop__step {
-  font-size: 12px;
-  line-height: 16px;
-  color: var(--muted);
-}
-.doc-drop__step:empty {
-  display: none;
-}
-@media (prefers-reduced-motion: reduce) {
-  .doc-drop__spinner {
-    animation-duration: 2.4s;
-  }
-}
 .doc-drop__icon {
   display: inline-flex;
   align-items: center;
@@ -1586,7 +1523,7 @@ label.doc-tool {
     justify-content: flex-start;
     text-align: left;
   }
-  .doc-drop__idle, .doc-drop__busy, .doc-drop__locked, .doc-drop__done {
+  .doc-drop__idle, .doc-drop__locked, .doc-drop__done {
     display: grid;
     width: 100%;
     grid-template-columns: auto minmax(0, 1fr);
@@ -1595,15 +1532,12 @@ label.doc-tool {
     row-gap: 3px;
     text-align: left;
   }
-  .doc-drop__icon, .doc-drop__check, .doc-drop__lock, .doc-drop__spinner {
+  .doc-drop__icon, .doc-drop__check, .doc-drop__lock {
     grid-column: 1;
     grid-row: 1 / -1;
     margin-bottom: 0;
   }
-  .doc-drop__idle > :not(.doc-drop__icon),
-    .doc-drop__locked > :not(.doc-drop__lock),
-    .doc-drop__busy > :not(.doc-drop__spinner),
-    .doc-drop__done > :not(.doc-drop__check) {
+  .doc-drop__idle > :not(.doc-drop__icon), .doc-drop__locked > :not(.doc-drop__lock), .doc-drop__done > :not(.doc-drop__check) {
     grid-column: 2;
   }
   .doc-drop__icon {
@@ -1644,7 +1578,7 @@ label.doc-tool {
   justify-content: flex-start;
   text-align: left;
 }
-.doc-drop__idle, .doc-drop__busy, .doc-drop__locked, .doc-drop__done {
+.doc-drop__idle, .doc-drop__locked, .doc-drop__done {
   display: grid;
   width: 100%;
   grid-template-columns: auto minmax(0, 1fr);
@@ -1653,16 +1587,13 @@ label.doc-tool {
   row-gap: 3px;
   text-align: left;
 }
-.doc-drop__icon, .doc-drop__check, .doc-drop__lock, .doc-drop__spinner {
+.doc-drop__icon, .doc-drop__check, .doc-drop__lock {
   grid-column: 1;
   grid-row: 1 / -1;
   align-self: start;
   margin-bottom: 0;
 }
-.doc-drop__idle > :not(.doc-drop__icon),
-.doc-drop__locked > :not(.doc-drop__lock),
-.doc-drop__busy > :not(.doc-drop__spinner),
-.doc-drop__done > :not(.doc-drop__check) {
+.doc-drop__idle > :not(.doc-drop__icon), .doc-drop__locked > :not(.doc-drop__lock), .doc-drop__done > :not(.doc-drop__check) {
   grid-column: 2;
 }
 .doc-drop.is-held .doc-drop__check, .doc-drop.is-read .doc-drop__check {
@@ -1752,29 +1683,7 @@ label.doc-tool {
   line-height: 20px;
   color: var(--ink);
 }
-.doc-read-result__sub {
-  padding-top: 3px;
-  font-size: 12px;
-  line-height: 16px;
-  color: var(--muted);
-}
-.doc-read-result__cards {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 24px;
-  padding-top: 16px;
-}
 /* The address the proof replaced, kept in sight rather than quietly overwritten. */
-.doc-read-result__was {
-  padding-top: 6px;
-  font-size: 12px;
-  line-height: 16px;
-  color: var(--muted-2);
-  text-decoration: line-through;
-}
-.doc-read-result__was[hidden] {
-  display: none;
-}
 /* ===== Upload and OCR history =====
    The card at the foot of the step: one entry per attempt, newest first, with
    what each check made of the document under it. A refusal that has since been
@@ -1922,16 +1831,13 @@ label.doc-tool {
   padding-bottom: 8px;
 }
 @media (max-width: 1100px) {
-  .doc-grid, .doc-read-result__cards {
+  .doc-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 @media (max-width: 700px) {
-  .doc-grid, .doc-read-result__cards {
+  .doc-grid {
     grid-template-columns: minmax(0, 1fr);
-  }
-  .doc-column__spacer {
-    display: none;
   }
 }
 /* The preview sheet: the document itself, with what to do about it under. */

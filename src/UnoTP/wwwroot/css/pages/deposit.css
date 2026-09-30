@@ -63,9 +63,6 @@
   line-height: 16px;
   margin-top: -1px;
 }
-.deposit-hint--error {
-  color: var(--red-dark);
-}
 .deposit-options {
   display: grid;
   gap: 8px;
@@ -172,12 +169,6 @@
 .deposit-note__text a {
   color: var(--blue);
   font-weight: 600;
-}
-.deposit-note__action {
-  flex: none;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--red);
 }
 .deposit-summary {
   background: var(--tint);

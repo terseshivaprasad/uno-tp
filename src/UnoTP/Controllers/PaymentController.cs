@@ -6,7 +6,7 @@ using UnoTP.ViewModels;
 namespace UnoTP.Controllers;
 
 /// <summary>Bank Details &amp; Payment: the account the deposit is paid from, and the one it repays to.</summary>
-[Route("unotp/applications/{appNo}/payment")]
+[Route("BankDetails/{appNo}")]
 public class PaymentController(IApplicationApi applications, IDepositApi deposits, IDemoApi demo, FeatureSet features, IServiceProvider services)
     : ApplicationStepController(applications, deposits, services)
 {

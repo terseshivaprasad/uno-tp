@@ -12,20 +12,20 @@ through `@section Styles` and `@section Scripts` at the foot of its view.
 
 | Page | URL | Controller | View | Stylesheet | Script |
 |---|---|---|---|---|---|
-| Dashboard | `/unotp` | `DashboardController` | `Views/Dashboard/Index` | `pages/dashboard.css` | – |
-| Investor Identification | `/unotp/new` | `NewApplicationController` | `Views/NewApplication/Index` | `pages/new.css` | – |
-| Upload Documents | `/unotp/applications/{appNo}/documents` | `DocumentsController` | `Views/Documents/Index` | `pages/documents.css` | `pages/documents.js` |
-| Investor Information | `…/investor` | `InvestorController` | `Views/Investor/Index` | `pages/investor.css` | `pages/investor.js` |
-| Bank Details & Payment | `…/payment` | `PaymentController` | `Views/Payment/Index` | `pages/payment.css` | `pages/payment.js` |
-| FD Configuration | `…/deposit` | `DepositController` | `Views/Deposit/Index` + `_Quote` | `pages/deposit.css` | `pages/deposit.js` |
-| Review Summary | `…/review` | `ReviewController` | `Views/Review/Index` + `Shared/_ApplicationSummary` | `pages/review.css` | `pages/review.js` |
-| Application submitted | `…/submitted` | `SubmittedController` | `Views/Submitted/Index` | `pages/submitted.css` | – |
-| View Application | `/unotp/applications` | `ApplicationsController`, `ApplicationDetailsController` (the pop-up's details) | `Views/Applications/Index` | `pages/applications.css` | `pages/applications.js` |
-| Short URL | `/unotp/links` | `LinksController` | `Views/Links/Index` | `pages/links.css` | `pages/links.js` |
-| Pay-in Slips | `/unotp/pay-in-slips` | `PayInSlipsController` | `Views/PayInSlips/Index` | `pages/pay-in-slips.css` | `pages/pay-in-slips.js` |
-| Renew FD | `/unotp/renew` | `RenewController` | `Views/Renew/Index` | `pages/renew.css` | – |
-| Console Admin | `/unotp/admin` | `AdminController` | `Views/Admin/Index` | `pages/admin.css` | `pages/admin.js` |
-| Error, Session expired, Unauthorized | `/unotp/error` … | `EntryController` | `Views/Entry/*`, `Shared/Error` (on `_StatusLayout`) | `pages/status.css` | – |
+| Dashboard | `/Dashboard` | `DashboardController` | `Views/Dashboard/Index` | `pages/dashboard.css` | – |
+| Investor Identification | `/SearchInvestor` | `NewApplicationController` | `Views/NewApplication/Index` | `pages/new.css` | – |
+| Upload Documents | `/UploadInvestorDocuments/{appNo}` | `DocumentsController` | `Views/Documents/Index` | `pages/documents.css` | `pages/documents.js` |
+| Investor Information | `/InvestorInformation/{appNo}` | `InvestorController` | `Views/Investor/Index` | `pages/investor.css` | `pages/investor.js` |
+| Bank Details & Payment | `/BankDetails/{appNo}` | `PaymentController` | `Views/Payment/Index` | `pages/payment.css` | `pages/payment.js` |
+| FD Configuration | `/FDConfiguration/{appNo}` | `DepositController` | `Views/Deposit/Index` + `_Quote` | `pages/deposit.css` | `pages/deposit.js` |
+| Review Summary | `/ReviewSummary/{appNo}` | `ReviewController` | `Views/Review/Index` + `Shared/_ApplicationSummary` | `pages/review.css` | `pages/review.js` |
+| Application submitted | `/ApplicationSubmitted/{appNo}` | `SubmittedController` | `Views/Submitted/Index` | `pages/submitted.css` | – |
+| View Application | `/ViewApplication` | `ApplicationsController`, `ApplicationDetailsController` (the pop-up's details) | `Views/Applications/Index` | `pages/applications.css` | `pages/applications.js` |
+| Short URL | `/ShortUrl` | `LinksController` | `Views/Links/Index` | `pages/links.css` | `pages/links.js` |
+| Pay-in Slips | `/PayInSlip` | `PayInSlipsController` | `Views/PayInSlips/Index` | `pages/pay-in-slips.css` | `pages/pay-in-slips.js` |
+| Renew FD | `/RenewalDashboard` | `RenewController` | `Views/Renew/Index` | `pages/renew.css` | – |
+| Console Admin | `/Admin` | `AdminController` | `Views/Admin/Index` | `pages/admin.css` | `pages/admin.js` |
+| Error, Session expired, Unauthorized | `/Home/Error` … | `EntryController` | `Views/Entry/*`, `Shared/Error` (on `_StatusLayout`) | `pages/status.css` | – |
 
 Paths are under `src/UnoTP/`; stylesheets and scripts under `src/UnoTP/wwwroot/css/` and `wwwroot/js/`.
 

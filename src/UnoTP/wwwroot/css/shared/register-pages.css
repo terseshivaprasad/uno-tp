@@ -10,72 +10,8 @@
   gap: 8px;
   min-width: 0;
 }
-.app-tile--pinned {
-  border-color: var(--red);
-}
-.app-tile__head {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-}
-.app-tile__icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
-  background: var(--tint);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
-}
-.app-tile--pinned .app-tile__icon {
-  background: var(--pink-bg);
-}
-.app-tile__title {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--ink);
-  line-height: 20px;
-}
-.app-tile__desc {
-  font-size: 12px;
-  color: var(--muted);
-  padding-top: 2px;
-  line-height: 16px;
-}
-.app-tile__badge {
-  font-size: 12px;
-  font-weight: 700;
-  color: #fff;
-  background: var(--red);
-  border-radius: 9px;
-  padding: 2px 6px;
-  flex: none;
-}
-.app-tile--disabled .app-tile__title {
-  color: var(--muted-2);
-}
 /* Board 00 - Mobile: tighter two-up tiles, and the pinned one carries a tint
    rather than the desktop's white fill. */
-.app-tile--sm {
-  padding: 12px 8px;
-  gap: 6px;
-}
-.app-tile--sm .app-tile__icon {
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
-}
-.app-tile--sm .app-tile__title {
-  font-size: 12px;
-}
-.app-tile--sm .app-tile__desc {
-  font-size: 12px;
-  line-height: 16px;
-}
-.app-tile--pinned.app-tile--sm {
-  background: var(--pink-tint);
-}
 a.app-tile:hover {
   text-decoration: none;
 }
@@ -91,10 +27,6 @@ a.app-tile:hover {
 }
 .tile-section[hidden] {
   display: none;
-}
-.tile-section--divided {
-  border-top: 1px solid var(--divider);
-  padding-top: 12px;
 }
 .status-pill {
   display: inline-flex;
@@ -113,17 +45,6 @@ a.app-tile:hover {
   color: #fff;
   font-weight: 700;
 }
-.status-pill__count {
-  font-size: 12px;
-  font-weight: 700;
-  border-radius: 9px;
-  padding: 1px 6px;
-  background: #fff;
-}
-.status-pill--active .status-pill__count {
-  background: rgba(255,255,255,.18);
-  color: #fff;
-}
 .status-pill {
   cursor: pointer;
   border: 1px solid transparent;
@@ -133,9 +54,6 @@ a.app-tile:hover {
 }
 .app-tile {
   cursor: pointer;
-}
-.app-tile--disabled {
-  cursor: default;
 }
 /* ===== Uno TP classic - Short URL =====
    The generate form over the links already sent, with the filter, the search

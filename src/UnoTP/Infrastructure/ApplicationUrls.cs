@@ -6,7 +6,7 @@ namespace UnoTP.Infrastructure;
 
 /// <summary>
 /// The application a wizard step works on travels in the page's address -
-/// unotp/applications/{appNo}/... - never in the server's session: the
+/// UploadInvestorDocuments/{appNo}, InvestorInformation/{appNo} and so on - never in the server's session: the
 /// application and everything on it are the backend's, kept there for audit.
 /// </summary>
 public static class ApplicationUrls

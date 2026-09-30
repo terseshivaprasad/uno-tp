@@ -11,7 +11,7 @@ namespace UnoTP.Controllers;
 /// the documents, how it is sourced - read-only, fetched when a row is opened. The
 /// backend only finds the partner's own application.
 /// </summary>
-[Route("unotp/applications/{appNo}/details")]
+[Route("ViewApplication/{appNo}/Details")]
 public class ApplicationDetailsController(IApplicationApi applications, IDepositApi deposits, IServiceProvider services)
     : ApplicationStepController(applications, deposits, services)
 {

@@ -45,6 +45,7 @@ builder.Services.Configure<BackendOptions>(builder.Configuration.GetSection(Back
 builder.Services.Configure<IdfyOptions>(builder.Configuration.GetSection(IdfyOptions.Section));
 builder.Services.Configure<ShortenerOptions>(builder.Configuration.GetSection(ShortenerOptions.Section));
 builder.Services.Configure<PaymentLinkOptions>(builder.Configuration.GetSection(PaymentLinkOptions.Section));
+builder.Services.Configure<PortalOptions>(builder.Configuration.GetSection(PortalOptions.Section));
 builder.Services.AddScoped<IPartner, SessionPartner>();
 // Investor Identification's steps, for the primary holder and each joint holder alike.
 builder.Services.AddScoped<UnoTP.ViewModels.HolderSearch>();
@@ -262,32 +263,35 @@ app.MapControllers();
 app.MapHealthChecks("/health");
 
 // The portal may open the app at its root: the way in is its entry, with whatever it sent.
-app.MapGet("/", (HttpContext ctx) => Results.LocalRedirect("~/unotp/entry" + ctx.Request.QueryString));
+app.MapGet("/", (HttpContext ctx) => Results.LocalRedirect("~/Home/Index" + ctx.Request.QueryString));
 
-// Every page is under /unotp, in lowercase. The addresses it had before - saved
-// links, the portal's /Home?UserId=..., the other apps' tiles - land on the page
-// that took their place, with whatever query they carried.
+// The pages keep the old app's addresses, so the portal's links and saved links
+// still work. The IIS virtual directory (e.g. /WA_FD_UNOTP) is the path base and is
+// never part of a route. Addresses the old app had that name no page here, and the
+// addresses of the redesign that was never deployed, land on the page that took
+// their place, with whatever query they carried.
 var moved = new (string From, string To)[]
 {
-    ("/Home", "/unotp/entry"),
-    ("/Home/SessionExpired", "/unotp/session-expired"),
-    ("/Home/Logout", "/unotp/logout"),
-    ("/Home/Unauthorized", "/unotp/unauthorized"),
-    ("/Dashboard", "/unotp"),
-    ("/Apps/UnoTp/Classic", "/unotp"),
-    ("/Apps/UnoTp/Dashboard/{**rest}", "/unotp"),
-    ("/Apps/UnoTp/ConsentTracker", "/unotp"),
-    ("/Apps/UnoTp/Desktop/ConsentTracker", "/unotp"),
-    ("/Purchase/InvestorIdentification", "/unotp/new"),
-    ("/Apps/UnoTp/Classic/SearchInvestor", "/unotp/new"),
-    ("/Apps/UnoTp/Application/HolderIdentification", "/unotp/new"),
-    // An address with no application in it has none to open: the way in is a search.
-    ("/Apps/UnoTp/Application/UploadDocuments", "/unotp/new"),
-    ("/Apps/UnoTp/Classic/UploadDocuments", "/unotp/new"),
-    ("/Apps/UnoTp/Classic/ViewApplication", "/unotp/applications"),
-    ("/Apps/UnoTp/Classic/PayInSlip", "/unotp/pay-in-slips"),
-    ("/Apps/UnoTp/Classic/ShortUrl", "/unotp/links"),
-    ("/Apps/UnoTp/Classic/Admin", "/unotp/admin"),
+    ("/Dashboard/Index", "/Dashboard"),
+    ("/Apps/UnoTp/Classic", "/Dashboard"),
+    ("/Apps/UnoTp/Dashboard/{**rest}", "/Dashboard"),
+    ("/Apps/UnoTp/ConsentTracker", "/Dashboard"),
+    ("/Apps/UnoTp/Desktop/ConsentTracker", "/Dashboard"),
+    ("/Purchase/InvestorIdentification", "/SearchInvestor"),
+    ("/Apps/UnoTp/Classic/SearchInvestor", "/SearchInvestor"),
+    ("/Apps/UnoTp/Application/HolderIdentification", "/SearchInvestor"),
+    // A step's address with no application in it has none to open: the way in is a search.
+    ("/UploadInvestorDocuments", "/SearchInvestor"),
+    ("/InvestorInformation", "/SearchInvestor"),
+    ("/BankDetails", "/SearchInvestor"),
+    ("/FDConfiguration", "/SearchInvestor"),
+    ("/ReviewSummary", "/SearchInvestor"),
+    ("/Apps/UnoTp/Application/UploadDocuments", "/SearchInvestor"),
+    ("/Apps/UnoTp/Classic/UploadDocuments", "/SearchInvestor"),
+    ("/Apps/UnoTp/Classic/ViewApplication", "/ViewApplication"),
+    ("/Apps/UnoTp/Classic/PayInSlip", "/PayInSlip"),
+    ("/Apps/UnoTp/Classic/ShortUrl", "/ShortUrl"),
+    ("/Apps/UnoTp/Classic/Admin", "/Admin"),
 };
 foreach (var (from, to) in moved)
     app.MapGet(from, (HttpContext ctx) => Results.LocalRedirect("~" + to + ctx.Request.QueryString));
@@ -295,12 +299,12 @@ foreach (var (from, to) in moved)
 // A step of an application, under its old name.
 var steps = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
 {
-    ["UploadDocuments"] = "documents", ["InvestorInfo"] = "investor", ["BankDetails"] = "payment",
-    ["FdConfiguration"] = "deposit", ["ReviewSummary"] = "review", ["Submitted"] = "submitted",
+    ["UploadDocuments"] = "UploadInvestorDocuments", ["InvestorInfo"] = "InvestorInformation", ["BankDetails"] = "BankDetails",
+    ["FdConfiguration"] = "FDConfiguration", ["ReviewSummary"] = "ReviewSummary", ["Submitted"] = "ApplicationSubmitted",
 };
 app.MapGet("/Apps/UnoTp/Application/{appNo}/{step}", (string appNo, string step, HttpContext ctx) =>
     steps.TryGetValue(step, out var to)
-        ? Results.LocalRedirect($"~/unotp/applications/{Uri.EscapeDataString(appNo)}/{to}{ctx.Request.QueryString}")
+        ? Results.LocalRedirect($"~/{to}/{Uri.EscapeDataString(appNo)}{ctx.Request.QueryString}")
         : Results.NotFound());
 
 app.Run();

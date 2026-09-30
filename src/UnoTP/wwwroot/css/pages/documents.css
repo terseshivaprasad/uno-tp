@@ -399,9 +399,6 @@
 .doc-read-result__card .doc-read-result__lines, .doc-read-result__card .doc-read-result__from {
   padding-top: 8px;
 }
-.doc-read-result__card .doc-read-result__was {
-  display: none;
-}
 @media (max-width: 700px) {
   .doc-grid > .doc-retry-row--pan-second {
     grid-row: 3;

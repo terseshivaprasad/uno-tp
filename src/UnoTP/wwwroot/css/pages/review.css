@@ -82,10 +82,6 @@
   gap: 8px;
   padding: 24px 24px 0;
 }
-.pay-link-head__icon {
-  flex: none;
-  color: var(--blue);
-}
 .pay-link-head__title {
   font-size: 16px;
   font-weight: 500;
@@ -105,9 +101,6 @@
 .pay-link-intro strong {
   font-weight: 700;
   color: var(--ink);
-}
-.pay-link-intro--short, .pay-link-lapse--short {
-  display: none;
 }
 .pay-link-terms {
   margin: 0;
@@ -200,9 +193,6 @@
   }
   .pay-link-intro--long, .pay-link-lapse--long, .pay-link-terms__note, .pay-link-foot {
     display: none;
-  }
-  .pay-link-intro--short, .pay-link-lapse--short {
-    display: block;
   }
   .pay-link-terms {
     grid-template-columns: 1fr;

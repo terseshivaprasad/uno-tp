@@ -3,29 +3,28 @@ using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace UnoTP.Tests;
 
-/// <summary>Every page answers under /unotp, and every old address leads to its new one.</summary>
+/// <summary>Every page answers at the old app's address, and every other old address leads to it.</summary>
 [Collection("app")]
 public class RoutesTests(App app)
 {
     [Theory]
-    [InlineData("/", "/unotp/entry")]
-    [InlineData("/Home?UserId=a&Syscode=b", "/unotp/entry?UserId=a&Syscode=b")]
-    [InlineData("/Dashboard", "/unotp")]
-    [InlineData("/Home/SessionExpired", "/unotp/session-expired")]
-    [InlineData("/Home/Logout", "/unotp/logout")]
-    [InlineData("/Apps/UnoTp/Classic", "/unotp")]
-    [InlineData("/Apps/UnoTp/Dashboard", "/unotp")]
-    [InlineData("/Purchase/InvestorIdentification", "/unotp/new")]
-    [InlineData("/Apps/UnoTp/Classic/SearchInvestor?pan=X", "/unotp/new?pan=X")]
-    [InlineData("/Apps/UnoTp/Classic/PayInSlip", "/unotp/pay-in-slips")]
-    [InlineData("/Apps/UnoTp/Classic/ShortUrl", "/unotp/links")]
-    [InlineData("/Apps/UnoTp/Classic/ViewApplication", "/unotp/applications")]
-    [InlineData("/Apps/UnoTp/Classic/Admin", "/unotp/admin")]
-    [InlineData("/Apps/UnoTp/Application/FBBMFL26FTEST/UploadDocuments", "/unotp/applications/FBBMFL26FTEST/documents")]
-    [InlineData("/Apps/UnoTp/Application/FBBMFL26FTEST/InvestorInfo", "/unotp/applications/FBBMFL26FTEST/investor")]
-    [InlineData("/Apps/UnoTp/Application/FBBMFL26FTEST/BankDetails", "/unotp/applications/FBBMFL26FTEST/payment")]
-    [InlineData("/Apps/UnoTp/Application/FBBMFL26FTEST/FdConfiguration", "/unotp/applications/FBBMFL26FTEST/deposit")]
-    [InlineData("/Apps/UnoTp/Application/FBBMFL26FTEST/ReviewSummary", "/unotp/applications/FBBMFL26FTEST/review")]
+    [InlineData("/", "/Home/Index")]
+    [InlineData("/?UserId=a&SysCode=b", "/Home/Index?UserId=a&SysCode=b")]
+    [InlineData("/Apps/UnoTp/Classic", "/Dashboard")]
+    [InlineData("/Apps/UnoTp/Dashboard", "/Dashboard")]
+    [InlineData("/Purchase/InvestorIdentification", "/SearchInvestor")]
+    [InlineData("/Apps/UnoTp/Classic/SearchInvestor?pan=X", "/SearchInvestor?pan=X")]
+    [InlineData("/UploadInvestorDocuments", "/SearchInvestor")]
+    [InlineData("/InvestorInformation", "/SearchInvestor")]
+    [InlineData("/Apps/UnoTp/Classic/PayInSlip", "/PayInSlip")]
+    [InlineData("/Apps/UnoTp/Classic/ShortUrl", "/ShortUrl")]
+    [InlineData("/Apps/UnoTp/Classic/ViewApplication", "/ViewApplication")]
+    [InlineData("/Apps/UnoTp/Classic/Admin", "/Admin")]
+    [InlineData("/Apps/UnoTp/Application/FBBMFL26FTEST/UploadDocuments", "/UploadInvestorDocuments/FBBMFL26FTEST")]
+    [InlineData("/Apps/UnoTp/Application/FBBMFL26FTEST/InvestorInfo", "/InvestorInformation/FBBMFL26FTEST")]
+    [InlineData("/Apps/UnoTp/Application/FBBMFL26FTEST/BankDetails", "/BankDetails/FBBMFL26FTEST")]
+    [InlineData("/Apps/UnoTp/Application/FBBMFL26FTEST/FdConfiguration", "/FDConfiguration/FBBMFL26FTEST")]
+    [InlineData("/Apps/UnoTp/Application/FBBMFL26FTEST/ReviewSummary", "/ReviewSummary/FBBMFL26FTEST")]
     public async Task An_old_address_leads_to_the_new_one(string old, string now)
     {
         var client = app.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
@@ -47,12 +46,12 @@ public class RoutesTests(App app)
     }
 
     [Theory]
-    [InlineData("/unotp")]
-    [InlineData("/unotp/new")]
-    [InlineData("/unotp/applications")]
-    [InlineData("/unotp/pay-in-slips")]
-    [InlineData("/unotp/links")]
-    [InlineData("/unotp/renew")]
+    [InlineData("/Dashboard")]
+    [InlineData("/SearchInvestor")]
+    [InlineData("/ViewApplication")]
+    [InlineData("/PayInSlip")]
+    [InlineData("/ShortUrl")]
+    [InlineData("/RenewalDashboard")]
     public async Task A_page_opens_once_signed_in(string page)
     {
         var client = await app.SignedInAsync();
@@ -68,9 +67,9 @@ public class RoutesTests(App app)
     {
         var client = await app.SignedInAsync();
 
-        var answer = await client.GetAsync("/unotp/admin");
+        var answer = await client.GetAsync("/Admin");
 
-        Assert.Equal("/unotp", answer.RequestMessage!.RequestUri!.AbsolutePath);
+        Assert.Equal("/Dashboard", answer.RequestMessage!.RequestUri!.AbsolutePath);
         Assert.Equal("?off=admin", answer.RequestMessage.RequestUri.Query);
     }
 
@@ -79,7 +78,7 @@ public class RoutesTests(App app)
     {
         var client = app.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
 
-        var answer = await client.GetAsync("/unotp/new");
+        var answer = await client.GetAsync("/SearchInvestor");
 
         Assert.NotEqual(HttpStatusCode.OK, answer.StatusCode);
     }

@@ -7,7 +7,7 @@ using UnoTP.ViewModels;
 namespace UnoTP.Controllers;
 
 /// <summary>FD Configuration: the deposit - amount, tenure, payout and the rest - with the backend's quote.</summary>
-[Route("unotp/applications/{appNo}/deposit")]
+[Route("FDConfiguration/{appNo}")]
 public class DepositController(IApplicationApi applications, IDepositApi deposits, IServiceProvider services)
     : ApplicationStepController(applications, deposits, services)
 {

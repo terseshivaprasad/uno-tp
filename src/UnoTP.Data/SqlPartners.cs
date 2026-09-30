@@ -67,15 +67,4 @@ public sealed class SqlPartners(Db db, IPartner partner, SqlReference reference)
             """, new { Session = sessionId, UserId = userId }) > 0;
     }
 
-    /// <summary>Whether the partner's menu opens the feature.</summary>
-    public async Task<bool> HasFeatureAsync(string key, CancellationToken ct = default)
-    {
-        await using var connection = await db.OpenAsync(ct);
-        return await connection.ExecuteScalarAsync<int>(
-            """
-            SELECT COUNT(*) FROM dbo.t_Unotp_Partner_Menu m JOIN dbo.t_Unotp_Feature_Mst f ON f.c_Feature_Key = m.c_Feature_Key
-            WHERE m.c_User_Id = @Partner AND m.c_Feature_Key = @Key AND m.f_Active = 1 AND f.f_Active = 1
-            """,
-            new { Partner = partner.Id, Key = key }) > 0;
-    }
 }

@@ -94,18 +94,6 @@
   padding-bottom: 4px;
   color: var(--ink);
 }
-.investor-field__hint {
-  font-size: 12px;
-  color: var(--muted);
-  padding-top: 4px;
-  line-height: 16px;
-}
-.investor-field__hint--error {
-  color: var(--red-dark);
-}
-.investor-field__hint[hidden] {
-  display: none;
-}
 /* Inside a manual-entry box every field has to be typed, so the set is outlined red. */
 .investor-control--strong {
   font-weight: 600;

@@ -11,7 +11,7 @@ namespace UnoTP.Controllers;
 /// do; the post says what came of it once, on the page it redirects to.
 /// </summary>
 [RequiresFeature("short-url")]
-[Route("unotp/links")]
+[Route("ShortUrl")]
 public class LinksController(ILinkApi links, Lookups lookups) : Controller
 {
     [HttpGet("")]

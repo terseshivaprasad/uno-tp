@@ -82,6 +82,4 @@ public abstract class ApiClient(HttpClient http, IPartner partner)
         return form;
     }
 
-    /// <summary>A value made safe to put in a URL path segment.</summary>
-    protected static string EscapePathSegment(string value) => Uri.EscapeDataString(value);
 }

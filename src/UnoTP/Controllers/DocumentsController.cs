@@ -21,7 +21,7 @@ namespace UnoTP.Controllers;
 // One document per post, the largest 4 MB, with the form around it.
 [RequestSizeLimit(12 * 1024 * 1024)]
 [RequestFormLimits(MultipartBodyLengthLimit = 12 * 1024 * 1024)]
-[Route("unotp/applications/{appNo}/documents")]
+[Route("UploadInvestorDocuments/{appNo}")]
 public class DocumentsController(
     IApplicationApi applications,
     IDocumentApi documents,

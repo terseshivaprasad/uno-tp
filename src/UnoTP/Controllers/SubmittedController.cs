@@ -6,7 +6,7 @@ using UnoTP.ViewModels;
 namespace UnoTP.Controllers;
 
 /// <summary>Application Submitted: where the payment link went, and the deposit it carries.</summary>
-[Route("unotp/applications/{appNo}/submitted")]
+[Route("ApplicationSubmitted/{appNo}")]
 public class SubmittedController(IApplicationApi applications, IDepositApi deposits, IServiceProvider services)
     : ApplicationStepController(applications, deposits, services)
 {

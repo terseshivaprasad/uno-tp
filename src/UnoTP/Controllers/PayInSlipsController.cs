@@ -11,7 +11,7 @@ namespace UnoTP.Controllers;
 /// each post says what came of it once, on the page it redirects to.
 /// </summary>
 [RequiresFeature("pis")]
-[Route("unotp/pay-in-slips")]
+[Route("PayInSlip")]
 public class PayInSlipsController(IPayInSlipApi slips, ILinkApi links, Lookups lookups) : Controller
 {
     [HttpGet("")]

@@ -17,7 +17,7 @@ public sealed class App : WebApplicationFactory<Program>
     {
         var client = CreateClient();
         var landed = await client.GetAsync("/");
-        Assert.Equal("/unotp", landed.RequestMessage!.RequestUri!.AbsolutePath);
+        Assert.Equal("/Dashboard", landed.RequestMessage!.RequestUri!.AbsolutePath);
         return client;
     }
 
@@ -47,17 +47,29 @@ public sealed class App : WebApplicationFactory<Program>
         return await answer.Content.ReadAsStringAsync();
     }
 
+    /// <summary>The address of one of an application's steps: /UploadInvestorDocuments/{appNo} and so on.</summary>
+    public static string Step(string appNo, string step)
+    {
+        var pages = new Dictionary<string, string>
+        {
+            ["documents"] = "UploadInvestorDocuments", ["investor"] = "InvestorInformation", ["payment"] = "BankDetails",
+            ["deposit"] = "FDConfiguration", ["review"] = "ReviewSummary", ["submitted"] = "ApplicationSubmitted",
+        };
+        if (step == "details") return $"/ViewApplication/{appNo}/Details";
+        return $"/{pages[step]}/{appNo}";
+    }
+
     /// <summary>
     /// Opens a new application for a PAN the mock register knows, through Investor
-    /// Identification, and answers with the application's address (…/applications/{appNo}).
+    /// Identification, and answers with the application's number.
     /// </summary>
     public static async Task<string> NewApplicationAsync(HttpClient client, string pan)
     {
-        await PostAsync(client, "/unotp/new", "/unotp/new/check", ("By", "pan"), ("Pan", pan), ("Dd", "14"), ("Mm", "08"), ("Yyyy", "1988"));
-        var opened = await PostAsync(client, "/unotp/new", "/unotp/new/proceed");
+        await PostAsync(client, "/SearchInvestor", "/SearchInvestor/check", ("By", "pan"), ("Pan", pan), ("Dd", "14"), ("Mm", "08"), ("Yyyy", "1988"));
+        var opened = await PostAsync(client, "/SearchInvestor", "/SearchInvestor/proceed");
         var at = opened.RequestMessage!.RequestUri!.AbsolutePath;
-        Assert.EndsWith("/documents", at);
-        return at[..^"/documents".Length];
+        Assert.StartsWith("/UploadInvestorDocuments/", at);
+        return at["/UploadInvestorDocuments/".Length..];
     }
 }
 

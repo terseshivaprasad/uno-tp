@@ -104,9 +104,6 @@ public sealed class DepositViewModel(DocumentsViewModel docs, DepositForm form, 
     /// <summary>What is still to do before Proceed opens, in words.</summary>
     public IReadOnlyList<string> Outstanding => [.. Problems.Values];
 
-    public static bool SeniorByDob(string dob, int seniorAge) =>
-        DateTime.TryParseExact(dob, "dd-MM-yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out var born)
-        && born.AddYears(seniorAge) <= DateTime.Today;
 }
 
 // ===== Review Summary and Submitted ==========================================

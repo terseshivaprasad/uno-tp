@@ -23,7 +23,7 @@ public class JourneyTests(App app)
         var client = await app.SignedInAsync();
         var at = await App.NewApplicationAsync(client, NewInvestor);
 
-        var page = await client.GetStringAsync(at + "/documents");
+        var page = await client.GetStringAsync(App.Step(at, "documents"));
 
         // The proof of address waits on the PAN, and names the four proofs it takes.
         Assert.Contains("Upload the PAN copy first", page);
@@ -50,7 +50,7 @@ public class JourneyTests(App app)
         var client = await app.SignedInAsync();
         var at = await App.NewApplicationAsync(client, NewInvestor);
 
-        var page = await App.UploadAsync(client, at + "/documents", "pan", "pan.jpg", ("appType", "DIGITAL"));
+        var page = await App.UploadAsync(client, App.Step(at, "documents"), "pan", "pan.jpg", ("appType", "DIGITAL"));
 
         Assert.Contains("What the PAN was checked with", page);
         // Razor writes the en dash as an entity.
@@ -71,12 +71,12 @@ public class JourneyTests(App app)
         var at = await App.NewApplicationAsync(client, NewInvestor);
 
         // No PAN copy yet: the record can be fetched on the PAN the investor was identified with.
-        var before = await client.GetStringAsync(at + "/documents");
+        var before = await client.GetStringAsync(App.Step(at, "documents"));
         Assert.DoesNotContain("disabled", Regex.Match(before, "<button[^>]*doc-ckyc-btn[^>]*>").Value);
         Assert.DoesNotContain(DocumentsViewModel.CkycWaitsOnPan, before);
 
         // The PAN copy filed and verified with NSDL: still offered.
-        var after = await App.UploadAsync(client, at + "/documents", "pan", "pan.jpg", ("appType", "DIGITAL"));
+        var after = await App.UploadAsync(client, App.Step(at, "documents"), "pan", "pan.jpg", ("appType", "DIGITAL"));
         Assert.Contains("Verified with NSDL", after);
         Assert.DoesNotContain("disabled", Regex.Match(after, "<button[^>]*doc-ckyc-btn[^>]*>").Value);
     }
@@ -88,14 +88,14 @@ public class JourneyTests(App app)
         var at = await App.NewApplicationAsync(client, NameNsdlDisagrees);
 
         // A copy whose name NSDL does not match: the offer stands, disabled, saying why.
-        var page = await App.UploadAsync(client, at + "/documents", "pan", "pan.jpg", ("appType", "DIGITAL"));
+        var page = await App.UploadAsync(client, App.Step(at, "documents"), "pan", "pan.jpg", ("appType", "DIGITAL"));
         var button = Regex.Match(page, "<button[^>]*doc-ckyc-btn[^>]*>").Value;
         Assert.Contains("disabled", button);
         Assert.DoesNotContain("data-enable-when", button);
         Assert.Contains(DocumentsViewModel.CkycWaitsOnPan, page);
         // Asked for anyway, it is refused: the application stays off the CKYC route.
-        await App.PostAsync(client, at + "/documents", at + "/documents/ckyc", ("appType", "DIGITAL"));
-        Assert.DoesNotContain("doc-ckyc-on", await client.GetStringAsync(at + "/documents"));
+        await App.PostAsync(client, App.Step(at, "documents"), App.Step(at, "documents") + "/ckyc", ("appType", "DIGITAL"));
+        Assert.DoesNotContain("doc-ckyc-on", await client.GetStringAsync(App.Step(at, "documents")));
     }
 
     [Fact]
@@ -104,7 +104,7 @@ public class JourneyTests(App app)
         var client = await app.SignedInAsync();
         var at = await App.NewApplicationAsync(client, NewInvestor);
 
-        var details = await client.GetStringAsync(at + "/details");
+        var details = await client.GetStringAsync(App.Step(at, "details"));
 
         // Review Summary's sections, each under a heading, with nothing to edit.
         foreach (var section in new[] { "Fixed Deposit", "Holders", "Nominee", "Bank Details &amp; Payment", "Documents", "Other Details" })
@@ -112,7 +112,7 @@ public class JourneyTests(App app)
         Assert.DoesNotContain("review-edit", details);
         Assert.DoesNotContain("<html", details);
         // Only the partner's own applications are found.
-        Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync("/unotp/applications/FBBMFL26F99999/details")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync("/ViewApplication/FBBMFL26F99999/details")).StatusCode);
     }
 
     [Fact]
@@ -122,11 +122,11 @@ public class JourneyTests(App app)
         var at = await App.NewApplicationAsync(client, OnFolioWithoutPanCopy);
 
         // The PAN copy is asked for, but not needed: the folio has been through KYC.
-        var before = await client.GetStringAsync(at + "/documents");
+        var before = await client.GetStringAsync(App.Step(at, "documents"));
         Assert.Contains("Not mandatory: the holder is on a folio.", before);
         Assert.DoesNotContain("What the PAN was checked with", before);
 
-        var page = await App.UploadAsync(client, at + "/documents", "pan", "pan.jpg", ("appType", "DIGITAL"));
+        var page = await App.UploadAsync(client, App.Step(at, "documents"), "pan", "pan.jpg", ("appType", "DIGITAL"));
 
         Assert.DoesNotContain("What the PAN was checked with", page);
     }
@@ -138,7 +138,7 @@ public class JourneyTests(App app)
         var at = await App.NewApplicationAsync(client, OnFolioComplete);
 
         // The folio's address stands in the box, not needed again, with the tool to file a newer proof.
-        var page = await client.GetStringAsync(at + "/documents");
+        var page = await client.GetStringAsync(App.Step(at, "documents"));
         var box = Regex.Match(page, "id=\"slot-poa\".*?doc-slot__notes", RegexOptions.Singleline).Value;
         Assert.Contains("Newer proof", box);
         Assert.Contains("Shantiniketan", box);
@@ -146,7 +146,7 @@ public class JourneyTests(App app)
         Assert.DoesNotContain("the proof of address", Regex.Match(page, "page-action-bar__hint.*?</(p|details)>", RegexOptions.Singleline).Value);
 
         // Filed, the newer proof is what the box holds, and Replace stands over it.
-        var after = await App.UploadAsync(client, at + "/documents", "poa", "voter_id.jpg", ("appType", "DIGITAL"));
+        var after = await App.UploadAsync(client, App.Step(at, "documents"), "poa", "voter_id.jpg", ("appType", "DIGITAL"));
         var filed = Regex.Match(after, "id=\"slot-poa\".*?doc-slot__notes", RegexOptions.Singleline).Value;
         Assert.DoesNotContain("Newer proof", filed);
         Assert.Contains(">Replace<", filed);
@@ -157,9 +157,9 @@ public class JourneyTests(App app)
     {
         var client = await app.SignedInAsync();
         var at = await App.NewApplicationAsync(client, NewInvestor);
-        await App.PostAsync(client, at + "/documents", at + "/documents/refresh", ("appType", "DIGITAL"), ("mailing", "different"));
+        await App.PostAsync(client, App.Step(at, "documents"), App.Step(at, "documents") + "/refresh", ("appType", "DIGITAL"), ("mailing", "different"));
 
-        var page = await client.GetStringAsync(at + "/investor");
+        var page = await client.GetStringAsync(App.Step(at, "investor"));
         Assert.Contains("Communication address &middot; different from permanent", page);
         foreach (var field in new[] { "Line1", "Line2", "Line3", "City", "PinCode" })
             Assert.Contains($"name=\"Holder1.Comm.{field}\"", page);
@@ -168,7 +168,7 @@ public class JourneyTests(App app)
         Assert.Matches("id=\"h1-commpin\"[^>]*data-pin-url=", page);
 
         // Proceed will not go on without the first line, the city and a 6-digit PIN code.
-        var refused = await App.PostAsync(client, at + "/investor", at + "/investor",
+        var refused = await App.PostAsync(client, App.Step(at, "investor"), App.Step(at, "investor"),
             ("Holder1.Comm.Line1", ""), ("Holder1.Comm.City", ""), ("Holder1.Comm.PinCode", "4000"));
         var errors = await refused.Content.ReadAsStringAsync();
         Assert.Contains("Enter the first line of the address", errors);
@@ -176,9 +176,9 @@ public class JourneyTests(App app)
         Assert.Contains("Enter a 6-digit PIN code", errors);
 
         // Typed, it is saved with the holder's details, placed by its PIN code.
-        await App.PostAsync(client, at + "/investor", at + "/investor",
+        await App.PostAsync(client, App.Step(at, "investor"), App.Step(at, "investor"),
             ("Holder1.Comm.Line1", "Flat 4, Sea View"), ("Holder1.Comm.City", "Mumbai"), ("Holder1.Comm.PinCode", "400050"));
-        var review = await client.GetStringAsync(at + "/review");
+        var review = await client.GetStringAsync(App.Step(at, "review"));
         Assert.Contains("Flat 4, Sea View, Mumbai, Maharashtra - 400050", review);
     }
 
@@ -188,19 +188,19 @@ public class JourneyTests(App app)
         var client = await app.SignedInAsync();
         var at = await App.NewApplicationAsync(client, NewInvestor);
 
-        var page = await client.GetStringAsync(at + "/investor");
+        var page = await client.GetStringAsync(App.Step(at, "investor"));
         Assert.Contains("data-ask-nominee=\"yes\"", page);
         Assert.Contains("id=\"investorNomineeAsk\"", page);
         Assert.Contains("We strongly advise adding a nominee.", page);
 
         // Skipped, the question is kept answered with the form.
-        await App.PostAsync(client, at + "/investor", at + "/investor/save", ("NomineeSkipped", "yes"));
-        var skipped = await client.GetStringAsync(at + "/investor");
+        await App.PostAsync(client, App.Step(at, "investor"), App.Step(at, "investor") + "/save", ("NomineeSkipped", "yes"));
+        var skipped = await client.GetStringAsync(App.Step(at, "investor"));
         Assert.DoesNotContain("data-ask-nominee=\"yes\"", skipped);
 
         // Added, there is nothing to ask.
-        await App.PostAsync(client, at + "/investor", at + "/investor/nominee/add");
-        var added = await client.GetStringAsync(at + "/investor");
+        await App.PostAsync(client, App.Step(at, "investor"), App.Step(at, "investor") + "/nominee/add");
+        var added = await client.GetStringAsync(App.Step(at, "investor"));
         Assert.DoesNotContain("id=\"investorNomineeAsk\"", added);
         Assert.Contains("id=\"nominee\"", added);
     }
@@ -212,13 +212,13 @@ public class JourneyTests(App app)
 
         // Searched by PAN and date of birth: the investor's deposits, each with where it
         // stands and a remark; only the ones due - inside the window - can be renewed.
-        var page = await client.GetStringAsync("/unotp/renew?by=pan&pan=XXXXA1001A&dd=14&mm=08&yyyy=1988");
+        var page = await client.GetStringAsync("/RenewalDashboard?by=pan&pan=XXXXA1001A&dd=14&mm=08&yyyy=1988");
         Assert.Contains("4 deposits against PAN XXXXA1001A", page);
         foreach (var status in new[] { "Due for renewal", "Running", "Entry closed" }) Assert.Contains($">{status}<", page);
         Assert.Equal(2, Regex.Matches(page, ">Renew</button>").Count);
         // The row's form posts to the deposit's own Start, with the token: a form that posts nowhere looks like a dead button.
-        Assert.Matches("<form method=\"post\" action=\"/unotp/renew/FD2023001234/start[?][^\"]*\"[^>]*>\\s*<button", page);
-        Assert.Contains("__RequestVerificationToken", Regex.Match(page, "<form method=\"post\" action=\"/unotp/renew/FD2023001234/start.*?</form>", RegexOptions.Singleline).Value);
+        Assert.Matches("<form method=\"post\" action=\"/RenewalDashboard/FD2023001234/start[?][^\"]*\"[^>]*>\\s*<button", page);
+        Assert.Contains("__RequestVerificationToken", Regex.Match(page, "<form method=\"post\" action=\"/RenewalDashboard/FD2023001234/start.*?</form>", RegexOptions.Singleline).Value);
         Assert.Contains("Renewal entry opens 61 days before maturity", page);
         Assert.Contains("Renewal entry closed 7 days before maturity", page);
         Assert.Contains("tagged for auto renewal", page);
@@ -226,10 +226,10 @@ public class JourneyTests(App app)
         Assert.Contains("Deposits due for renewal only will be displayed in this module.", page);
 
         // Renew opens an application, at Upload Documents: no payment for a renewal.
-        var started = await App.PostAsync(client, "/unotp/renew?by=pan&pan=XXXXA1001A&dd=14&mm=08&yyyy=1988", "/unotp/renew/FD2023001234/start", ("by", "pan"), ("pan", "XXXXA1001A"), ("dd", "14"), ("mm", "08"), ("yyyy", "1988"));
+        var started = await App.PostAsync(client, "/RenewalDashboard?by=pan&pan=XXXXA1001A&dd=14&mm=08&yyyy=1988", "/RenewalDashboard/FD2023001234/start", ("by", "pan"), ("pan", "XXXXA1001A"), ("dd", "14"), ("mm", "08"), ("yyyy", "1988"));
         var at = started.RequestMessage!.RequestUri!.AbsolutePath;
-        Assert.EndsWith("/documents", at);
-        var appAt = at[..^"/documents".Length];
+        Assert.StartsWith("/UploadInvestorDocuments/", at);
+        var appAt = at["/UploadInvestorDocuments/".Length..];
         var documents = await started.Content.ReadAsStringAsync();
         Assert.Contains("FDR FD2023001234", documents);
         Assert.Contains("The maturing deposit FD2023001234 pays for the new one", documents);
@@ -237,36 +237,36 @@ public class JourneyTests(App app)
         Assert.DoesNotContain("the payment mode", Regex.Match(documents, "page-action-bar__hint.*?</(p|details)>", RegexOptions.Singleline).Value);
 
         // The deposit's joint holder is on Investor Information already, added.
-        var investor = await client.GetStringAsync(appAt + "/investor");
+        var investor = await client.GetStringAsync(App.Step(appAt, "investor"));
         Assert.Contains("MEERA ANIL JOSHI", investor);
         Assert.Contains("Second Holder Details", investor);
 
         // Bank Details: only the repayment account, filled from the deposit's.
-        var payment = await client.GetStringAsync(appAt + "/payment");
+        var payment = await client.GetStringAsync(App.Step(appAt, "payment"));
         Assert.Contains("HDFC0000521", payment);
         Assert.Contains("pays for the new one", payment);
         Assert.DoesNotContain("Payment Bank Details", payment);
 
         // FD Configuration: the maturity amount, read-only, quoted.
-        var deposit = await client.GetStringAsync(appAt + "/deposit");
+        var deposit = await client.GetStringAsync(App.Step(appAt, "deposit"));
         Assert.Matches("id=\"deposit-amount\"[^>]*readonly", deposit);
         Assert.Contains("the maturity amount of deposit FD2023001234", deposit);
         Assert.Contains("deposit-key-value__value--rate", deposit);
 
         // Review Summary names the deposit renewed; the list, by folio this time, shows it renewed.
-        var review = await client.GetStringAsync(appAt + "/review");
+        var review = await client.GetStringAsync(App.Step(appAt, "review"));
         Assert.Contains("Deposit FD2023001234", review);
-        Assert.Contains(">Renewed<", await client.GetStringAsync("/unotp/renew?by=folio&folio=TS003027"));
+        Assert.Contains(">Renewed<", await client.GetStringAsync("/RenewalDashboard?by=folio&folio=TS003027"));
 
         // A deposit still running is turned back, with why.
-        var refused = await App.PostAsync(client, "/unotp/renew?by=folio&folio=TS003027", "/unotp/renew/FD2025000912/start", ("by", "folio"), ("folio", "TS003027"));
-        Assert.EndsWith("/unotp/renew", refused.RequestMessage!.RequestUri!.AbsolutePath);
+        var refused = await App.PostAsync(client, "/RenewalDashboard?by=folio&folio=TS003027", "/RenewalDashboard/FD2025000912/start", ("by", "folio"), ("folio", "TS003027"));
+        Assert.EndsWith("/RenewalDashboard", refused.RequestMessage!.RequestUri!.AbsolutePath);
         Assert.Contains("cannot be renewed now", await refused.Content.ReadAsStringAsync());
 
         // Nothing on record says so; a folio with no deposits too; a PAN mistyped is not searched.
-        Assert.Contains("No deposit on record against folio NOPE0001", await client.GetStringAsync("/unotp/renew?by=folio&folio=NOPE0001"));
-        Assert.Contains("Nothing due for renewal, or held, against folio MF0051187", await client.GetStringAsync("/unotp/renew?by=folio&folio=MF0051187"));
-        Assert.Contains("Enter a valid PAN, like ABCDE1234F", await client.GetStringAsync("/unotp/renew?by=pan&pan=XXXX&dd=14&mm=08&yyyy=1988"));
+        Assert.Contains("No deposit on record against folio NOPE0001", await client.GetStringAsync("/RenewalDashboard?by=folio&folio=NOPE0001"));
+        Assert.Contains("Nothing due for renewal, or held, against folio MF0051187", await client.GetStringAsync("/RenewalDashboard?by=folio&folio=MF0051187"));
+        Assert.Contains("Enter a valid PAN, like ABCDE1234F", await client.GetStringAsync("/RenewalDashboard?by=pan&pan=XXXX&dd=14&mm=08&yyyy=1988"));
     }
 
     [Fact]
@@ -274,20 +274,20 @@ public class JourneyTests(App app)
     {
         var client = await app.SignedInAsync();
         var at = await App.NewApplicationAsync(client, NewInvestor);
-        var deposit = at + "/deposit";
+        var deposit = App.Step(at, "deposit");
         (string, string)[] chosen = [("Amount", "1,00,000"), ("TenureMonths", "12"), ("InterestPayout", "maturity"), ("NoTds", "true"), ("DeliveryType", "ereceipt")];
 
         // The box stands under the switch; with the switch on and nothing filed, Proceed stops.
         Assert.Contains("id=\"slot-tdsform\"", await client.GetStringAsync(deposit));
         var refused = await App.PostAsync(client, deposit, deposit, chosen);
-        Assert.EndsWith("/deposit", refused.RequestMessage!.RequestUri!.AbsolutePath);
+        Assert.StartsWith("/FDConfiguration/", refused.RequestMessage!.RequestUri!.AbsolutePath);
         Assert.Contains("Upload the Form 121 before proceeding", await refused.Content.ReadAsStringAsync());
 
         // Filed from the page, the deposit is saved with the switch on, and Proceed goes on.
         var filed = await App.UploadAsync(client, deposit, "tdsform", "form-121.jpg", chosen);
         Assert.Contains(">Replace<", Regex.Match(filed, "id=\"slot-tdsform\".*?doc-slot__notes", RegexOptions.Singleline).Value);
         var proceeded = await App.PostAsync(client, deposit, deposit, chosen);
-        Assert.EndsWith("/review", proceeded.RequestMessage!.RequestUri!.AbsolutePath);
+        Assert.Contains("/ReviewSummary/", proceeded.RequestMessage!.RequestUri!.AbsolutePath);
         Assert.Contains("Form 121", await proceeded.Content.ReadAsStringAsync());
     }
 
@@ -297,10 +297,10 @@ public class JourneyTests(App app)
         var client = await app.SignedInAsync();
         var at = await App.NewApplicationAsync(client, NewInvestor);
 
-        var found = await client.GetStringAsync(at + "/documents/sourcing?register=brokers&q=dec");
-        var byCode = await client.GetStringAsync(at + "/documents/sourcing?register=brokers&q=BR11");
-        var tooShort = await client.GetStringAsync(at + "/documents/sourcing?register=brokers&q=d");
-        var noRegister = await client.GetAsync(at + "/documents/sourcing?register=nope&q=dec");
+        var found = await client.GetStringAsync(App.Step(at, "documents") + "/sourcing?register=brokers&q=dec");
+        var byCode = await client.GetStringAsync(App.Step(at, "documents") + "/sourcing?register=brokers&q=BR11");
+        var tooShort = await client.GetStringAsync(App.Step(at, "documents") + "/sourcing?register=brokers&q=d");
+        var noRegister = await client.GetAsync(App.Step(at, "documents") + "/sourcing?register=nope&q=dec");
 
         Assert.Contains("Deccan Wealth Advisors", found);
         Assert.Contains("\"code\":\"BR10874\"", found);
@@ -310,7 +310,7 @@ public class JourneyTests(App app)
         Assert.Equal(HttpStatusCode.NotFound, noRegister.StatusCode);
 
         // The field on the page is wired to it.
-        var page = await client.GetStringAsync(at + "/documents");
+        var page = await client.GetStringAsync(App.Step(at, "documents"));
         Assert.Contains("data-register-search=", page);
         Assert.DoesNotContain("<datalist", page);
     }
@@ -320,7 +320,7 @@ public class JourneyTests(App app)
     {
         var client = await app.SignedInAsync();
 
-        var page = await client.GetStringAsync("/unotp");
+        var page = await client.GetStringAsync("/Dashboard");
 
         Assert.Contains("Application Status is being rebuilt", page);
         Assert.Contains("class=\"notices__count\">1<", page);
@@ -332,9 +332,9 @@ public class JourneyTests(App app)
         var client = await app.SignedInAsync();
         var at = await App.NewApplicationAsync(client, NewInvestor);
 
-        var found = await client.GetAsync(at + "/investor/pincode/400001");
-        var none = await client.GetAsync(at + "/investor/pincode/999999");
-        var short_ = await client.GetAsync(at + "/investor/pincode/4000");
+        var found = await client.GetAsync(App.Step(at, "investor") + "/pincode/400001");
+        var none = await client.GetAsync(App.Step(at, "investor") + "/pincode/999999");
+        var short_ = await client.GetAsync(App.Step(at, "investor") + "/pincode/4000");
 
         Assert.Equal(HttpStatusCode.OK, found.StatusCode);
         Assert.Contains("\"district\":\"Mumbai\"", await found.Content.ReadAsStringAsync());
@@ -348,13 +348,13 @@ public class JourneyTests(App app)
         var client = await app.SignedInAsync();
         var at = await App.NewApplicationAsync(client, NewInvestor);
 
-        var investor = await App.PostAsync(client, at + "/investor", at + "/investor/save");
-        var payment = await App.PostAsync(client, at + "/payment", at + "/payment", ("draft", "1"));
-        var deposit = await App.PostAsync(client, at + "/deposit", at + "/deposit", ("draft", "1"));
+        var investor = await App.PostAsync(client, App.Step(at, "investor"), App.Step(at, "investor") + "/save");
+        var payment = await App.PostAsync(client, App.Step(at, "payment"), App.Step(at, "payment"), ("draft", "1"));
+        var deposit = await App.PostAsync(client, App.Step(at, "deposit"), App.Step(at, "deposit"), ("draft", "1"));
 
-        Assert.EndsWith("/investor", investor.RequestMessage!.RequestUri!.AbsolutePath);
-        Assert.EndsWith("/payment", payment.RequestMessage!.RequestUri!.AbsolutePath);
-        Assert.EndsWith("/deposit", deposit.RequestMessage!.RequestUri!.AbsolutePath);
+        Assert.Contains("/InvestorInformation/", investor.RequestMessage!.RequestUri!.AbsolutePath);
+        Assert.Contains("/BankDetails/", payment.RequestMessage!.RequestUri!.AbsolutePath);
+        Assert.Contains("/FDConfiguration/", deposit.RequestMessage!.RequestUri!.AbsolutePath);
     }
 
     [Fact]
@@ -362,22 +362,22 @@ public class JourneyTests(App app)
     {
         var client = await app.SignedInAsync();
         var at = await App.NewApplicationAsync(client, NewInvestor);
-        await App.PostAsync(client, at + "/investor", at + "/investor/joint/add");
-        await App.PostAsync(client, at + "/investor", at + "/investor/joint/2/check",
+        await App.PostAsync(client, App.Step(at, "investor"), App.Step(at, "investor") + "/joint/add");
+        await App.PostAsync(client, App.Step(at, "investor"), App.Step(at, "investor") + "/joint/2/check",
             ("Joint2.Pan", OnFolioComplete), ("Joint2.Dd", "14"), ("Joint2.Mm", "08"), ("Joint2.Yyyy", "1988"));
 
         // Just added, with fields to fill: open, with the line saying so.
-        var opened = await client.GetStringAsync(at + "/investor");
+        var opened = await client.GetStringAsync(App.Step(at, "investor"));
         Assert.Matches("<details class=\"investor-folded-holder\" open", opened);
         Assert.Contains("fields to fill", opened);
 
         // Every field filled: folded to its line - while the investor's own card,
         // which Proceed stopped at, stays open.
-        await App.PostAsync(client, at + "/investor", at + "/investor",
+        await App.PostAsync(client, App.Step(at, "investor"), App.Step(at, "investor"),
             ("Holder2.NameType", "Father"), ("Holder2.ParentName", "SUBHASH TERSE"), ("Holder2.AnnualIncome", "5-10 lakh"),
             ("Holder2.Occupation", "Service"), ("Holder2.SubOccupation", "Private"), ("Holder2.MaritalStatus", "Married"),
             ("Holder2.Mobile", "9876543210"), ("Holder2.Email", "rahul@example.com"));
-        var page = await client.GetStringAsync(at + "/investor");
+        var page = await client.GetStringAsync(App.Step(at, "investor"));
         Assert.Matches("<details class=\"investor-folded-holder\">", page);
         Assert.Contains("SHIVAPRASAD SUBHASH TERSE", page);
         Assert.Contains("details complete", page);
@@ -391,11 +391,11 @@ public class JourneyTests(App app)
 
         foreach (var step in new[] { "documents", "investor", "payment", "deposit", "review" })
         {
-            var answer = await client.GetAsync($"{at}/{step}");
+            var answer = await client.GetAsync(App.Step(at, step));
             Assert.Equal(HttpStatusCode.OK, answer.StatusCode);
-            Assert.EndsWith("/" + step, answer.RequestMessage!.RequestUri!.AbsolutePath);
+            Assert.Equal(App.Step(at, step), answer.RequestMessage!.RequestUri!.AbsolutePath);
         }
-        var submitted = await client.GetAsync(at + "/submitted");
-        Assert.EndsWith("/review", submitted.RequestMessage!.RequestUri!.AbsolutePath);
+        var submitted = await client.GetAsync(App.Step(at, "submitted"));
+        Assert.Contains("/ReviewSummary/", submitted.RequestMessage!.RequestUri!.AbsolutePath);
     }
 }

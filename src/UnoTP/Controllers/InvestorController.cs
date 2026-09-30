@@ -23,7 +23,7 @@ namespace UnoTP.Controllers;
 [RequiresFeature("new-fd")]
 [RequestSizeLimit(12 * 1024 * 1024)]
 [RequestFormLimits(MultipartBodyLengthLimit = 12 * 1024 * 1024)]
-[Route("unotp/applications/{appNo}/investor")]
+[Route("InvestorInformation/{appNo}")]
 public class InvestorController(
     HolderSearch search,
     IApplicationApi applications,

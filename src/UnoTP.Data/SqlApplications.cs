@@ -186,17 +186,11 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
     public async Task<(SaveOutcome, int?)> SaveUploadOutcomeAsync(string appNo, int version, UploadState upload, CancellationToken ct) =>
         await SaveAsync(appNo, version, (c, tx, _, at, _) => Sections.WriteUploadAsync(c, tx, at, upload), "n_Upload_Ver", ct);
 
-    public async Task<(SaveOutcome, int?)> SaveDetailsOutcomeAsync(string appNo, int version, ApplicationDetails details, CancellationToken ct) =>
-        await SaveAsync(appNo, version, (c, tx, h, at, u) => Sections.WriteDetailsAsync(c, tx, at, HolderOf(h), u, details), "n_Details_Ver", ct);
-
     public async Task<(SaveOutcome, int?)> SavePaymentOutcomeAsync(string appNo, int version, PaymentDetails payment, CancellationToken ct)
     {
         var branches = await BranchesAsync(payment, ct);
         return await SaveAsync(appNo, version, (c, tx, _, at, u) => Sections.WritePaymentAsync(c, tx, at, u, payment, branches), "n_Payment_Ver", ct);
     }
-
-    public async Task<(SaveOutcome, int?)> SaveDepositOutcomeAsync(string appNo, int version, DepositDetails deposit, CancellationToken ct) =>
-        await SaveAsync(appNo, version, (c, tx, h, at, u) => Sections.WriteDepositAsync(c, tx, at, u, deposit, h.RenewDepNo, null), "n_Deposit_Ver", ct);
 
     private static int? Version((SaveOutcome Outcome, int? Version) saved) => saved.Outcome == SaveOutcome.Saved ? saved.Version : null;
 

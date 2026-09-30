@@ -202,12 +202,6 @@
   line-height: 24px;
   color: var(--ink);
 }
-.submitted-card__action {
-  flex: none;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--red);
-}
 .submitted-key-value-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0,1fr));
@@ -234,11 +228,6 @@
 .submitted-key-value__value--green {
   color: var(--green);
 }
-.submitted-key-value__note {
-  font-size: 12px;
-  color: var(--muted);
-  padding-top: 3px;
-}
 .submitted-holders {
   border-top: 1px solid var(--divider);
   padding: 16px 16px 16px;
@@ -260,11 +249,6 @@
 .submitted-holders__role {
   color: var(--muted-2);
   font-weight: 400;
-}
-.submitted-holders__text {
-  font-size: 12px;
-  color: var(--muted);
-  line-height: 16px;
 }
 .submitted-tiles {
   display: grid;

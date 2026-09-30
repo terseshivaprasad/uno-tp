@@ -395,32 +395,6 @@
 
 /* The entity the partner is signed in against: a label beside its value, not a
    row to press. */
-.app-menu__facts {
-  margin: 0;
-  padding: 2px 16px 6px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.app-menu__facts > div {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-}
-.app-menu__facts dt {
-  flex: none;
-  width: 64px;
-  font-size: 12px;
-  color: var(--muted);
-}
-.app-menu__facts dd {
-  margin: 0;
-  min-width: 0;
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1.45;
-  color: var(--ink);
-}
 
 @media (max-width: 760px) {
   .app-header {

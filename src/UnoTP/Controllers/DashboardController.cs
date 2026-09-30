@@ -19,13 +19,13 @@ public class DashboardController(
     Lookups lookups,
     ILogger<DashboardController> log) : Controller
 {
-    [HttpGet("unotp")]
+    [HttpGet("Dashboard")]
     public async Task<IActionResult> Index(string? off)
     {
         var board = console.BoardAsync();
         // The partner's own applications opened and left before submitting, to pick
         // up again from here: only while New FD is open, as that is where they go.
-        var drafts = features.Flags.NewFd ? OrEmptyWhenUnavailable(() => applications.DraftsAsync()) : Empty<DraftSummary>();
+        var drafts = features.Flags.NewFd ? OrEmptyWhenUnavailable(() => applications.DraftsAsync()) : NoWorkList<DraftSummary>();
         var work = WorkAsync();
         return View(new DashboardViewModel(features, await board, off) { Work = await work, Drafts = await drafts });
     }
@@ -39,9 +39,9 @@ public class DashboardController(
         var on = features.Flags;
         var config = await lookups.ConfigAsync();
         var today = DateTime.Today;
-        var pending = on.ShortUrl ? OrEmptyWhenUnavailable(() => links.PendingAsync()) : Empty<PendingRecord>();
-        var slipRows = on.PisGeneration ? OrEmptyWhenUnavailable(() => slips.SlipsAsync()) : Empty<SlipRecord>();
-        var apps = on.ViewApplication ? OrEmptyWhenUnavailable(() => applications.ListAsync()) : Empty<ApplicationRecord>();
+        var pending = on.ShortUrl ? OrEmptyWhenUnavailable(() => links.PendingAsync()) : NoWorkList<PendingRecord>();
+        var slipRows = on.PisGeneration ? OrEmptyWhenUnavailable(() => slips.SlipsAsync()) : NoWorkList<SlipRecord>();
+        var apps = on.ViewApplication ? OrEmptyWhenUnavailable(() => applications.ListAsync()) : NoWorkList<ApplicationRecord>();
         var work = new List<WorkItem>();
 
         if (await pending is { Count: > 0 } p)
@@ -70,7 +70,7 @@ public class DashboardController(
     }
 
     /// <summary>An empty list, for a work list that is switched off.</summary>
-    private static Task<IReadOnlyList<T>> Empty<T>() => Task.FromResult<IReadOnlyList<T>>([]);
+    private static Task<IReadOnlyList<T>> NoWorkList<T>() => Task.FromResult<IReadOnlyList<T>>([]);
 
     /// <summary>The list, or an empty one when the backend or database cannot be reached (the dashboard still shows).</summary>
     private async Task<IReadOnlyList<T>> OrEmptyWhenUnavailable<T>(Func<Task<IReadOnlyList<T>>> ask)

@@ -8,7 +8,7 @@ namespace UnoTP.Controllers;
 [RequiresFeature("view-app")]
 public class ApplicationsController(IApplicationApi applications, Lookups lookups) : Controller
 {
-    [HttpGet("unotp/applications")]
+    [HttpGet("ViewApplication")]
     public async Task<IActionResult> Index() =>
         View(new ApplicationsViewModel(await applications.ListAsync(), (await lookups.ConfigAsync()).CancellationDays));
 }

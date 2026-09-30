@@ -18,6 +18,8 @@ public static class PartnerSession
     private const string SessionIdKey = "entry.session";
     private const string ExpiresKey = "entry.expires";
     private const string MenuKey = "entry.menu";
+    private const string PortalUserKey = "portal.userId";
+    private const string PortalSysCodeKey = "portal.sysCode";
 
     /// <summary>
     /// Whose applications this browser may open: the user the portal sent in (see
@@ -57,6 +59,25 @@ public static class PartnerSession
 
     /// <summary>The user the portal sent in, while they are signed in; null otherwise.</summary>
     public static string? SignedInUser(this ISession session) => session.SignedIn() ? session.GetString(OwnerKey) : null;
+
+    /// <summary>
+    /// Keeps the encrypted UserId and SysCode the portal sent in, for the way back to it
+    /// (EntryController.Home). Called after SignIn, which clears the session.
+    /// </summary>
+    public static void KeepPortalValues(this ISession session, string userId, string sysCode)
+    {
+        session.SetString(PortalUserKey, userId);
+        session.SetString(PortalSysCodeKey, sysCode);
+    }
+
+    /// <summary>The encrypted values the portal sent in, or null when the user did not come from the portal (demo mode).</summary>
+    public static (string UserId, string SysCode)? PortalValues(this ISession session)
+    {
+        var userId = session.GetString(PortalUserKey);
+        var sysCode = session.GetString(PortalSysCodeKey);
+        if (userId is null || sysCode is null) return null;
+        return (userId, sysCode);
+    }
 
     /// <summary>The backend session the user came in with; null before anyone has.</summary>
     public static string? BackendSession(this ISession session) => session.GetString(SessionIdKey);

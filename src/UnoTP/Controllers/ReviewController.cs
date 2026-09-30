@@ -9,7 +9,7 @@ using UnoTP.ViewModels;
 namespace UnoTP.Controllers;
 
 /// <summary>Review Summary: the application as a whole, the declarations, and Submit.</summary>
-[Route("unotp/applications/{appNo}/review")]
+[Route("ReviewSummary/{appNo}")]
 public class ReviewController(
     IApplicationApi applications, IDepositApi deposits, IServiceProvider services,
     IShortLinkService shortLinks, IOptions<PaymentLinkOptions> paymentLink, ILogger<ReviewController> log)

@@ -43,7 +43,7 @@ public sealed class GlobalExceptionMiddleware(RequestDelegate next, ILogger<Glob
             // The error page, drawn by the app as any page is: the request is sent
             // through again as a GET for /Error, found afresh by routing.
             var (path, method) = (ctx.Request.Path, ctx.Request.Method);
-            ctx.Request.Path = "/unotp/error";
+            ctx.Request.Path = "/Home/Error";
             ctx.Request.Method = HttpMethods.Get;
             ctx.SetEndpoint(null);
             ctx.Request.RouteValues.Clear();

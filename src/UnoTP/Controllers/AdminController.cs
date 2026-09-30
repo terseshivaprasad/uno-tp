@@ -15,7 +15,7 @@ namespace UnoTP.Controllers;
 /// with the schedule as the backend now holds it.
 /// </summary>
 [RequiresFeature("admin")]
-[Route("unotp/admin")]
+[Route("Admin")]
 public class AdminController(FeatureSet features, ConsoleState console, IConsoleApi consoleApi, Lookups lookups) : Controller
 {
     [HttpGet("")]

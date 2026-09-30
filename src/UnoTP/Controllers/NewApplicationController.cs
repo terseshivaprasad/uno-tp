@@ -16,7 +16,7 @@ namespace UnoTP.Controllers;
 /// application in the backend, which keeps it and everything on it from then on.
 /// </summary>
 [RequiresFeature("new-fd")]
-[Route("unotp/new")]
+[Route("SearchInvestor")]
 public class NewApplicationController(
     FeatureSet features,
     IDemoApi demo,

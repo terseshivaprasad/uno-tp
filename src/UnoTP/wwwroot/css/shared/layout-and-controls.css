@@ -63,7 +63,7 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 /* Headings sit a touch tighter than body text, as large type needs. */
-h1, h2, h3, .page-title, .doc-head__name, .investor-title, .dashboard-steps__title, .status-card__title {
+h1, h2, h3, .page-title, .doc-head__name, .dashboard-steps__title, .status-card__title {
   letter-spacing: -.01em;
 }
 a {
@@ -111,15 +111,6 @@ body {
 .card + .card {
   margin-top: 16px;
 }
-.card__header {
-  display: flex;
-  align-items: flex-end;
-  gap: 12px;
-  flex-wrap: wrap;
-  border-bottom: 1px solid var(--divider-2);
-  padding-bottom: 12px;
-  margin-bottom: 16px;
-}
 .card__title {
   font-size: 16px;
   font-weight: 500;
@@ -127,31 +118,7 @@ body {
   flex: 1;
   min-width: 0;
 }
-.card__subtitle {
-  font-size: 12px;
-  color: var(--muted);
-}
 /* Board 00's console cards title smaller and darker than the wizard cards do. */
-.card--console .card__title {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--ink);
-}
-.card--console .card__subtitle {
-  font-size: 12px;
-  line-height: 16px;
-}
-.card__header--plain {
-  border-bottom: none;
-  padding-bottom: 0;
-  margin-bottom: 0;
-}
-.card__header-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex: none;
-}
 /* ===== Buttons: Bootstrap's .btn, themed in bootstrap-theme.css ===== */
 /* Controls that are semantically buttons but must render as plain text in the
    mock — profile rows, "Edit pinned", "Export", the pagination numbers. */
@@ -196,9 +163,6 @@ body {
 /* Board 02 draws a field that already carries a value with an ink border rather than
    the resting grey, so the prefilled PAN reads as answered next to the empty ones.
    Qualified by .field to outweigh the `.field input` border shorthand above. */
-.field .field__input--filled {
-  border-color: var(--ink);
-}
 .js-page--active {
   color: var(--ink);
   font-weight: 700;
@@ -219,69 +183,11 @@ body {
   color: var(--muted);
 }
 /* ===== Wizard ===== */
-.wizard__body {
-  display: grid;
-  grid-template-columns: 240px minmax(0,1fr);
-  gap: 16px;
-  align-items: start;
-}
-.wizard__rail {
-  background: #fff;
-  border-radius: 8px;
-  padding: 12px 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.wizard__content {
-  background: #fff;
-  border-radius: 8px;
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-.wizard__actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding-top: 16px;
-  border-top: 1px solid var(--divider-2);
-}
-.wizard__actions-left {
-  display: flex;
-  gap: 12px;
-}
-.wizard__actions-right {
-  display: flex;
-  gap: 12px;
-}
 .tag {
   font-size: 12px;
   font-weight: 600;
   padding: 2px 8px;
   border-radius: 9px;
-}
-.tag--primary {
-  background: var(--tint);
-  color: var(--text);
-}
-.tag--optional {
-  background: var(--tint);
-  color: var(--muted);
-}
-.tag--success {
-  background: var(--green-bg);
-  color: var(--green);
-}
-.tag--warn {
-  background: var(--amber-bg);
-  color: var(--amber);
-}
-.tag--danger {
-  background: var(--pink-bg);
-  color: var(--red-dark);
 }
 .callout {
   border-left: 3px solid var(--red);
@@ -292,29 +198,8 @@ body {
   flex-direction: column;
   gap: 8px;
 }
-.callout--info {
-  border-left-color: var(--blue);
-  background: var(--blue-bg);
-  color: var(--blue);
-}
-.callout--warn {
-  border-left-color: var(--amber);
-  background: var(--amber-bg);
-}
 /* Flat mint panel the mockups use for a failed check and its "what to do" line —
    no accent rule, the red lead sentence carries the signal. */
-.callout--mint {
-  border-left: none;
-  background: var(--green-bg);
-  border-radius: 6px;
-}
-.callout--sm {
-  padding: 12px 12px;
-  border-radius: 6px;
-  gap: 4px;
-  font-size: 12px;
-  line-height: 16px;
-}
 /* Room at the bottom of the wizard so the fixed footer bar (.page-action-bar) never covers
    the last field or button. */
 .wizard {
@@ -335,17 +220,9 @@ body {
   padding: 2px 8px;
   white-space: nowrap;
 }
-.chip--primary {
-  background: var(--blue-bg);
-  color: var(--blue);
-}
 .chip--muted {
   background: var(--divider);
   color: var(--muted);
-}
-.chip--success {
-  background: var(--green-bg);
-  color: var(--green);
 }
 .chip--warn {
   background: var(--amber-bg);
@@ -359,20 +236,10 @@ body {
   background: var(--tint);
   color: var(--muted);
 }
-.chip--danger {
-  background: var(--pink-bg);
-  color: var(--red-dark);
-}
 .key-value-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0,1fr));
   gap: 12px 20px;
-}
-.key-value-grid--2 {
-  grid-template-columns: repeat(2, minmax(0,1fr));
-}
-.key-value-grid--4 {
-  grid-template-columns: repeat(4, minmax(0,1fr));
 }
 .key-value {
   display: flex;
@@ -501,22 +368,6 @@ tbody tr[hidden] {
   }
 }
 @media (max-width: 560px) {
-  .wizard__body {
-    gap: 12px;
-  }
-  .wizard .wizard__rail {
-    display: none;
-  }
-  .wizard--menu-open .wizard__rail {
-    display: flex;
-    flex-direction: column;
-    overflow: visible;
-  }
-  .wizard .callout--info {
-    font-size: 12px;
-    line-height: 16px;
-    padding: 12px 16px;
-  }
   .wizard {
     padding-bottom: 112px;
   }
@@ -530,41 +381,18 @@ tbody tr[hidden] {
 }
 /* ===== Responsive / mobile ===== */
 @media (max-width: 900px) {
-  .key-value-grid, .key-value-grid--2, .key-value-grid--4 {
+  .key-value-grid {
     grid-template-columns: repeat(2, minmax(0,1fr));
-  }
-  .wizard__body {
-    grid-template-columns: 1fr;
   }
   /* A grid item defaults to min-width:auto, so the scrolling rail would otherwise
      push the whole column - and the page - wider than the viewport. */
-  .wizard__body > * {
-    min-width: 0;
-  }
-  .wizard__rail {
-    flex-direction: row;
-    overflow-x: auto;
-  }
 }
 @media (max-width: 560px) {
-  .key-value-grid, .key-value-grid--2, .key-value-grid--4 {
+  .key-value-grid {
     grid-template-columns: 1fr;
-  }
-  .wizard__content {
-    padding: 16px;
   }
   .card {
     padding: 16px 16px;
-  }
-  .wizard__actions {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .wizard__actions-left, .wizard__actions-right {
-    justify-content: stretch;
-  }
-  .wizard__actions-left .btn, .wizard__actions-right .btn {
-    flex: 1;
   }
 }
 .investor-field .required {
@@ -641,12 +469,6 @@ select.investor-control:has(option[value=""]:checked) {
   margin-top: 12px;
 }
 /* FD Configuration: tenure and payout as the classic radios, in a wrapping row. */
-.deposit-radios {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px 0;
-  padding-top: 20px;
-}
 .deposit-amount {
   height: 48px;
   border: 1px solid var(--ink);
@@ -671,158 +493,22 @@ select.investor-control:has(option[value=""]:checked) {
   display: grid;
   grid-template-columns: 232px minmax(0,1.05fr) minmax(0,1.15fr) minmax(0,1.25fr);
 }
-.review-holder__id {
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-  padding: 16px 16px;
-  background: var(--green-bg);
-  border-left: 4px solid var(--green-2);
-}
-.review-holder__photo {
-  width: 48px;
-  height: 58px;
-  flex: none;
-  border-radius: 6px;
-  background: #fff;
-  border: 1px solid var(--divider);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  color: var(--muted);
-  letter-spacing: .04em;
-}
-.review-holder__id-body {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.review-holder__name-row {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-.review-holder__name {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--ink);
-  letter-spacing: -.1px;
-}
-.review-holder__meta {
-  font-size: 12px;
-  color: var(--muted);
-  line-height: 16px;
-}
-.review-holder__count {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding-top: 4px;
-}
-.review-holder__count-label {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--green);
-  line-height: 16px;
-}
-.review-holder__bar {
-  height: 4px;
-  border-radius: 2px;
-  background: var(--divider);
-  overflow: hidden;
-}
-.review-holder__bar > div {
-  width: 100%;
-  height: 100%;
-  background: var(--green-2);
-}
-.review-holder__consent {
-  font-size: 12px;
-  color: var(--muted);
-  line-height: 16px;
-  padding-top: 1px;
-}
-.review-holder__col {
-  padding: 16px 16px;
-  border-left: 1px solid var(--tint);
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-width: 0;
-}
-.review-holder__col--poa {
-  background: var(--green-bg);
-}
-.review-holder__col--flag {
-  background: var(--pink-bg);
-}
-.review-holder__col-head {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-}
-.review-holder__col-label {
-  flex: 1;
-  min-width: 0;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--muted);
-}
-.review-holder__poa-note {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--green);
-  line-height: 16px;
-  border-top: 1px solid var(--green-border);
-  padding-top: 8px;
-}
 /* Board 11 - Mobile stacks each holder's columns and runs the sections one above another. */
 @media (max-width: 1100px) {
   .review-holder {
     grid-template-columns: repeat(2, minmax(0,1fr));
-  }
-  .review-holder__col:nth-child(3) {
-    border-left: none;
-  }
-  .review-holder__col {
-    border-top: 1px solid var(--tint);
-  }
-  .review-holder__col:nth-child(2) {
-    border-top: none;
   }
 }
 @media (max-width: 560px) {
   .review-holder {
     grid-template-columns: 1fr;
   }
-  .review-holder__col, .review-holder__col:nth-child(2) {
-    border-left: none;
-    border-top: 1px solid var(--tint);
-  }
 }
 /* The dashboard runs its cards a little roomier than the base .card the wizard
    pages use, so the three paddings the board asks for are modifiers rather than
    a change to .card itself. */
-.card--hero {
-  padding: 20px 24px;
-}
-.card--wide {
-  padding: 24px 24px;
-}
-.card--side {
-  padding: 20px;
-}
 /* Below the two-column breakpoint the attention grid cannot hold six columns;
    it stacks into a card-per-row with the action on the first line. */
-@media (max-width: 560px) {
-  .card--hero, .card--wide, .card--side {
-    padding: 16px 16px;
-  }
-}
 /* Below 1100px the seven columns get too narrow for the status lines, so each
    record becomes a two-column card with the column name above each value. */
 #dmsZoomOut, #dmsZoomIn {
@@ -1130,152 +816,10 @@ html.is-saving::before {
   padding-top: 20px;
   border-top: 1px solid var(--divider);
 }
-.page-drafts__title {
-  font-size: 16px;
-  font-weight: 500;
-  color: var(--text);
-}
-.page-drafts__table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 14px;
-  color: var(--text);
-}
-.page-drafts__table th {
-  padding: 12px 12px 8px 0;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--muted);
-  text-align: left;
-  border-bottom: 1px solid var(--divider);
-}
-.page-drafts__table td {
-  padding: 12px 12px 12px 0;
-  border-bottom: 1px solid var(--divider);
-  vertical-align: top;
-}
-.page-drafts__table tr:last-child td {
-  border-bottom: 0;
-}
-.page-drafts__table strong {
-  color: var(--ink);
-  font-weight: 600;
-}
-.page-drafts__detail {
-  padding-top: 3px;
-  font-size: 12px;
-  color: var(--muted);
-}
-.page-drafts__actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 16px;
-  white-space: nowrap;
-}
-@media (max-width: 900px) {
-  /* Each row becomes its own block, every cell labelled by its column. */
-  .page-drafts__table thead {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-  }
-  .page-drafts__table tr {
-    display: block;
-    padding: 12px 0;
-    border-bottom: 1px solid var(--divider);
-  }
-  .page-drafts__table tr:last-child {
-    border-bottom: 0;
-  }
-  .page-drafts__table td {
-    display: flex;
-    gap: 12px;
-    padding: 3px 0;
-    border: 0;
-  }
-  .page-drafts__table td::before {
-    content: attr(data-label);
-    flex: none;
-    width: 108px;
-    font-size: 12px;
-    color: var(--muted);
-  }
-  .page-drafts__actions {
-    justify-content: flex-end;
-  }
-}
 /* On a phone a label beside every cell makes five lines of a draft and a screen
    of scrolling for five drafts. Each one becomes a card instead: what it is and
    what it is worth on the first line, who it is for under it, and the way back
    into it at the foot. */
-@media (max-width: 760px) {
-  .page-drafts__table tr {
-    display: grid;
-    grid-template-columns: minmax(0,1fr) auto;
-    gap: 3px 12px;
-    margin-top: 12px;
-    padding: 12px 16px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-  }
-  .page-drafts__table tr:last-child {
-    border-bottom: 1px solid var(--border);
-  }
-  .page-drafts__table td {
-    display: block;
-    padding: 0;
-  }
-  .page-drafts__table td::before {
-    content: none;
-  }
-  .page-drafts__table td:nth-child(1) {
-    grid-column: 1;
-    grid-row: 1;
-  }
-  .page-drafts__table td:nth-child(1) strong {
-    font-size: 14px;
-  }
-  /* What the application is worth, against its number. */
-  .page-drafts__table td:nth-child(5) {
-    grid-column: 2;
-    grid-row: 1;
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--ink);
-    text-align: right;
-  }
-  .page-drafts__table td:nth-child(2) {
-    grid-column: 1 / -1;
-    grid-row: 2;
-    font-size: 14px;
-    color: var(--text);
-  }
-  /* The masked identifiers, quieter than the name they belong to. */
-  .page-drafts__table td:nth-child(3) {
-    grid-column: 1;
-    grid-row: 3;
-  }
-  .page-drafts__table td:nth-child(4) {
-    grid-column: 2;
-    grid-row: 3;
-    text-align: right;
-  }
-  .page-drafts__table td:nth-child(3), .page-drafts__table td:nth-child(4) {
-    font-size: 12px;
-    color: var(--muted);
-  }
-  /* Qualified by the table, or the display:block above it would outrank the
-     flex row this cell is, and Continue would sit against the left edge. */
-  .page-drafts__table .page-drafts__actions {
-    grid-column: 1 / -1;
-    grid-row: 4;
-    display: flex;
-    justify-content: flex-end;
-    padding-top: 6px;
-  }
-}
 /* A field filled from a record rather than typed, and the name behind a code. */
 .field-input[readonly], .field-input:disabled {
   background: var(--tint);
@@ -1483,12 +1027,6 @@ body.is-waiting {
    uses rather than the portal's blue-grey. Sizes are read off the live page at
    1470px: a 356px field 44px tall, 18px apart, a 152x40 button 22px under them,
    and the forgot links 40px under that. */
-html:has(.clogin), html:has(.clogin) body {
-  background: var(--border);
-}
-.app-shell:has(.clogin) {
-  max-width: 1280px;
-}
 .deposit-label .required {
   color: var(--red);
 }

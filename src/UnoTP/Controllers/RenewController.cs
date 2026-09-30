@@ -14,7 +14,7 @@ namespace UnoTP.Controllers;
 /// through the same steps, and the investor accepts it the same way.
 /// </summary>
 [RequiresFeature("renew")]
-[Route("unotp/renew")]
+[Route("RenewalDashboard")]
 public class RenewController(IRenewalApi renewals, Lookups lookups) : Controller
 {
     /// <summary>The search, and the deposits it found. Opened bare, nothing is searched yet.</summary>
