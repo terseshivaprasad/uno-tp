@@ -14,6 +14,26 @@ public sealed class MockInvestors : IInvestorApi
     public Task<FolioRecord?> FolioAsync(string folio, CancellationToken ct = default) =>
         Task.FromResult(Folios.FirstOrDefault(f => f.Folio == folio)?.Record);
 
+    public Task<IReadOnlyList<NomineeOnRecord>> NomineesByFolioAsync(string folio, CancellationToken ct = default)
+    {
+        folio = folio.Trim().ToUpperInvariant();
+        var found = Nominees.Where(n => n.Folio == folio).Select(n => n.Record).ToList();
+        return Task.FromResult<IReadOnlyList<NomineeOnRecord>>(found);
+    }
+
+    public Task<IReadOnlyList<AccountOnRecord>> AccountsByFolioAsync(string folio, CancellationToken ct = default) =>
+        Task.FromResult(MockRenewals.AccountsOnFolio(folio));
+
+    // The nominees named on the test folios' earlier deposits.
+    private sealed record MockNominee(string Folio, NomineeOnRecord Record);
+
+    private static readonly MockNominee[] Nominees =
+    [
+        new("TS003027", new("MEERA ANIL JOSHI", DemoDob, "Spouse", "", "FD2023001234")),
+        new("TS003027", new("AARAV SHIVAPRASAD TERSE", "05-06-2016", "Son", "MEERA ANIL JOSHI", "FD2024005678")),
+        new("MF0084456", new("SHIVAPRASAD SUBHASH TERSE", DemoDob, "Spouse", "", "FD2021009876")),
+    ];
+
     // Any PAN off the lists gets the same made-up answers every time: this is
     // what they are made up from.
     internal static int Seed(string value)

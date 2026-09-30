@@ -250,6 +250,24 @@
             @* The repayment account is always drawn, so the toggle shows or hides it at once
                (data-show-when). Hidden, it is disabled and not posted. *@
             <fieldset class="doc-choice" data-show-when="Repayment.SameAsPayment!=true" hidden="@sameAsPayment" disabled="@sameAsPayment">
+                @* The accounts used on the folio's earlier deposits, each with Use, which fills the fields from it. *@
+                @if (Model.AccountsOnRecord.Count > 0)
+                {
+                    <div class="on-record">
+                        <div class="on-record__title">Accounts on this folio</div>
+                        <ul class="on-record__list">
+                            @for (var i = 0; i < Model.AccountsOnRecord.Count; i++)
+                            {
+                                var account = Model.AccountsOnRecord[i];
+                                <li class="on-record__row">
+                                    <span class="on-record__main">@account.Bank · @PaymentViewModel.MaskAccount(account.AccountNumber)</span>
+                                    <span class="on-record__meta">@account.Branch · @account.Ifsc · on @account.UsedOn</span>
+                                    <button type="submit" name="UseRepayment" value="@i" class="btn btn-outline-primary btn-sm on-record__use" formnovalidate data-loader="Filling the repayment account&hellip;">Use</button>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                }
                 @{ await AccountFields("Repayment", "repay", form.Repayment); }
                 <div class="bank-after">@{ await BranchPanel(Model.RepaymentBranch, form.Repayment.CleanIfsc, "repay-lookup"); }</div>
             </fieldset>

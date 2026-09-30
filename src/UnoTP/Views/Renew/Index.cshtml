@@ -183,6 +183,13 @@
                                             <button type="submit" class="btn btn-primary" data-loader="Opening the renewal&hellip;">Renew</button>
                                         </form>
                                     }
+                                    else if (d.Status == "renewed")
+                                    {
+                                        @* A renewal request already made can be taken back while its application is not submitted. *@
+                                        <form method="post" action="@Url.Action("Cancel", "Renew", asked.Concat([KeyValuePair.Create("number", d.Number)]).ToDictionary())" asp-antiforgery="true">
+                                            <button type="submit" class="btn btn-outline-primary" data-confirm="Cancel the renewal request for deposit @d.Number? Its application is dropped, and the deposit is due for renewal again." data-loader="Cancelling the renewal request&hellip;">Cancel renewal request</button>
+                                        </form>
+                                    }
                                 </td>
                             </tr>
                         }

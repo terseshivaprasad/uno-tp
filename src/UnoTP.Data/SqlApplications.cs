@@ -36,6 +36,18 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
         OpenAsync(holder, null, null, null, null, ct);
 
     /// <summary>A renewal's application, with what comes over from the deposit saved on it as its first version.</summary>
+    /// <summary>A renewal request cancelled: the application opened from the deposit, while not submitted, is marked cancelled.</summary>
+    public async Task<bool> CancelRenewalAsync(string depositNumber)
+    {
+        await using var connection = await db.OpenAsync(CancellationToken.None);
+        var rows = await connection.ExecuteAsync("""
+            UPDATE dbo.t_Unotp_Application_Mst
+            SET d_Cancelled_On = SYSDATETIME(), c_Sub_Status = 'cancelled', c_Updated_By = @Partner, d_Updated_On = SYSDATETIME()
+            WHERE c_Renew_Dep_No = @Number AND c_Partner_Id = @Partner AND d_Submitted_On IS NULL AND d_Cancelled_On IS NULL AND f_Active = 1
+            """, new { Number = depositNumber, Partner = partner.Id });
+        return rows > 0;
+    }
+
     public Task<Application> OpenRenewalAsync(Holder holder, RenewalOf renewal, UploadState upload, PaymentDetails payment, DepositDetails deposit) =>
         OpenAsync(holder, renewal, upload, payment, deposit, CancellationToken.None);
 

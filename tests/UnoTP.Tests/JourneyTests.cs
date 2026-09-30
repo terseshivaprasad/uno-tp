@@ -297,6 +297,14 @@ public class JourneyTests(App app)
         Assert.Contains("Deposit FD2023001234", review);
         Assert.Contains(">Renewed<", await client.GetStringAsync("/RenewalDashboard?by=folio&folio=TS003027"));
 
+        // The renewal request can be cancelled while its application is not submitted: the deposit is due again.
+        var withCancel = await client.GetStringAsync("/RenewalDashboard?by=folio&folio=TS003027");
+        Assert.Contains("Cancel renewal request", withCancel);
+        var cancelled = await App.PostAsync(client, "/RenewalDashboard?by=folio&folio=TS003027", "/RenewalDashboard/FD2023001234/cancel", ("by", "folio"), ("folio", "TS003027"));
+        var afterCancel = await cancelled.Content.ReadAsStringAsync();
+        Assert.Contains("The renewal request for deposit FD2023001234 is cancelled.", afterCancel);
+        Assert.Matches("<form method=\"post\" action=\"/RenewalDashboard/FD2023001234/start", afterCancel);
+
         // A deposit still running is turned back, with why.
         var refused = await App.PostAsync(client, "/RenewalDashboard?by=folio&folio=TS003027", "/RenewalDashboard/FD2025000912/start", ("by", "folio"), ("folio", "TS003027"));
         Assert.EndsWith("/RenewalDashboard", refused.RequestMessage!.RequestUri!.AbsolutePath);
@@ -438,6 +446,46 @@ public class JourneyTests(App app)
         var page = await stopped.Content.ReadAsStringAsync();
         Assert.Contains("Not allowed to invest online", page);
         Assert.Contains("kindly reach out to the nearest Mahindra Finance branch", page);
+    }
+
+    [Fact]
+    public async Task A_nominee_on_the_folio_fills_the_nominee_fields_with_Use()
+    {
+        var client = await app.SignedInAsync();
+        var at = await App.NewApplicationAsync(client, OnFolioComplete);
+        var investor = App.Step(at, "investor");
+
+        var page = await client.GetStringAsync(investor);
+        Assert.Contains("Nominees on this folio", page);
+        Assert.Contains("MEERA ANIL JOSHI", page);
+        Assert.Contains("AARAV SHIVAPRASAD TERSE", page);
+
+        var used = await App.PostAsync(client, investor, investor + "/nominee/use/1");
+        var filled = await used.Content.ReadAsStringAsync();
+        Assert.Contains("id=\"investorNomineeName\" name=\"Nominee.Name\" maxlength=\"50\" value=\"AARAV SHIVAPRASAD TERSE\"", filled);
+        Assert.Contains("name=\"Nominee.Dd\" value=\"05\"", filled);
+        Assert.Contains("name=\"Nominee.Yyyy\" value=\"2016\"", filled);
+        Assert.Contains("MEERA ANIL JOSHI", Regex.Match(filled, "id=\"investorNomineeGuardian\"[^>]*").Value);
+    }
+
+    [Fact]
+    public async Task An_account_on_the_folio_fills_the_repayment_fields_with_Use()
+    {
+        var client = await app.SignedInAsync();
+        var at = await App.NewApplicationAsync(client, OnFolioComplete);
+        var bank = App.Step(at, "payment");
+
+        var page = await client.GetStringAsync(bank);
+        Assert.Contains("Accounts on this folio", page);
+        Assert.Contains("HDFC Bank", page);
+        Assert.Contains("•••• 6789", System.Net.WebUtility.HtmlDecode(page));
+
+        var used = await App.PostAsync(client, bank, bank, ("UseRepayment", "0"), ("Repayment.SameAsPayment", "false"));
+        Assert.EndsWith("#repay-ifsc", used.RequestMessage!.RequestUri!.ToString());
+        var filled = await used.Content.ReadAsStringAsync();
+        Assert.Contains("value=\"HDFC0000521\"", filled);
+        Assert.Contains("value=\"50100123456789\"", filled);
+        Assert.Contains("Andheri East", filled);
     }
 
     [Fact]

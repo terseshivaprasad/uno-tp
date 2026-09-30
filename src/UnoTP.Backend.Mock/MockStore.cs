@@ -49,6 +49,14 @@ public sealed class MockStore(IConfiguration config)
         return entries.TryGetValue(appNo, out var entry) ? Read(entry, owner) : null;
     }
 
+    /// <summary>Takes the owner's application out of the store; false when it is not theirs, or not there.</summary>
+    public bool Remove(string owner, string appNo)
+    {
+        if (!entries.TryGetValue(appNo, out var entry)) return false;
+        if (!string.Equals(entry.Owner, owner, StringComparison.OrdinalIgnoreCase)) return false;
+        return entries.TryRemove(appNo, out _);
+    }
+
     public int? SaveUpload(string owner, string appNo, int version, UploadState upload) =>
         Save(owner, appNo, version, app => app.Upload = upload)?.Version;
 

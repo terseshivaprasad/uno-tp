@@ -67,6 +67,54 @@
   gap: 12px;
   flex-wrap: wrap;
 }
+/* What the folio holds on record - nominees, repayment accounts - each row with Use */
+.on-record {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--tint);
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}
+.on-record__title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.on-record__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.on-record__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "main use" "meta use";
+  column-gap: 12px;
+  align-items: center;
+  padding: 8px 0;
+  border-top: 1px solid var(--border);
+}
+.on-record__row:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+.on-record__main {
+  grid-area: main;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.on-record__meta {
+  grid-area: meta;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--muted);
+}
+.on-record__use {
+  grid-area: use;
+}
+
 .investor-panel {
   background: var(--tint);
   border: 1px solid var(--tint);

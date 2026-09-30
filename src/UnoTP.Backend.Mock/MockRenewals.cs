@@ -43,6 +43,21 @@ public sealed class MockRenewals(IRenewalOpener applications, IInvestorApi inves
     private static readonly object Gate = new();
     private static readonly HashSet<string> Renewed = [];
 
+    /// <summary>The repayment accounts on the folio's deposits, each once, the latest deposit's first.</summary>
+    internal static IReadOnlyList<AccountOnRecord> AccountsOnFolio(string folio)
+    {
+        folio = folio.Trim().ToUpperInvariant();
+        var accounts = new List<AccountOnRecord>();
+        foreach (var d in Deposits.Where(d => d.Folio == folio).OrderByDescending(d => d.Number))
+        {
+            if (d.Repayment is null) continue;
+            if (accounts.Any(a => a.AccountNumber == d.Repayment.AccountNumber && a.Ifsc == d.Repayment.Ifsc)) continue;
+            var branch = MockDeposits.Branches.FirstOrDefault(b => b.Ifsc == d.Repayment.Ifsc);
+            accounts.Add(new AccountOnRecord(d.Repayment.Ifsc, d.Repayment.AccountNumber, branch?.Bank ?? "", branch?.Branch ?? "", d.Number));
+        }
+        return accounts;
+    }
+
     public Task<IReadOnlyList<HeldDeposit>?> DepositsByFolioAsync(string folio, CancellationToken ct = default)
     {
         folio = folio.Trim().ToUpperInvariant();
@@ -83,6 +98,17 @@ public sealed class MockRenewals(IRenewalOpener applications, IInvestorApi inves
             if (!Renewed.Add(deposit.Number)) return null;
         }
         return await applications.OpenRenewalAsync(HolderOf(record), renewal, upload, payment, opened);
+    }
+
+    public async Task<bool> CancelAsync(string depositNumber, CancellationToken ct = default)
+    {
+        var cancelled = await applications.CancelRenewalAsync(depositNumber.Trim());
+        if (!cancelled) return false;
+        lock (Gate)
+        {
+            Renewed.Remove(depositNumber.Trim());
+        }
+        return true;
     }
 
     private static Holder HolderOf(FolioRecord r) =>

@@ -7,7 +7,7 @@ namespace UnoTP.Controllers;
 
 /// <summary>Bank Details &amp; Payment: the account the deposit is paid from, and the one it repays to.</summary>
 [Route("BankDetails/{appNo}")]
-public class PaymentController(IApplicationApi applications, IDepositApi deposits, IDemoApi demo, FeatureSet features, IServiceProvider services)
+public class PaymentController(IApplicationApi applications, IDepositApi deposits, IDemoApi demo, FeatureSet features, IInvestorApi investors, IServiceProvider services)
     : ApplicationStepController(applications, deposits, services)
 {
     [HttpGet("")]
@@ -23,6 +23,7 @@ public class PaymentController(IApplicationApi applications, IDepositApi deposit
         {
             Demo = features.Flags.DemoData ? await demo.BanksAsync() : null,
             FilledFromCheque = filled,
+            AccountsOnRecord = await AccountsOnRecordAsync(docs),
         });
     }
 
@@ -52,6 +53,22 @@ public class PaymentController(IApplicationApi applications, IDepositApi deposit
     {
         if (await LoadAsync() is not { } docs) return Start();
         var byCheque = ByCheque(docs);
+
+        // An account on record picked: its IFSC and number fill the repayment fields,
+        // and the page comes back with its branch looked up, as for a typed one.
+        if (form.UseRepayment is { } n)
+        {
+            var onRecord = await AccountsOnRecordAsync(docs);
+            if (n >= 0 && n < onRecord.Count)
+            {
+                form.Repayment.Ifsc = onRecord[n].Ifsc;
+                form.Repayment.AccountNumber = onRecord[n].AccountNumber;
+                form.Repayment.AccountNumberConfirm = onRecord[n].AccountNumber;
+                form.Repayment.SameAsPayment = false;
+            }
+            form.Find = "repayment";
+        }
+
         // The CMS branch is typed: kept as the backend spells it, whatever the case typed.
         var cms = form.Cheque.CmsLocation.Trim();
         form.Cheque.CmsLocation = docs.Ref.CmsLocations.FirstOrDefault(l => string.Equals(l, cms, StringComparison.OrdinalIgnoreCase)) ?? cms;
@@ -69,4 +86,12 @@ public class PaymentController(IApplicationApi applications, IDepositApi deposit
     // Paid by an instrument - a cheque - rather than electronically: only then is
     // there an account the deposit is paid from to ask for.
     private static bool ByCheque(DocumentsViewModel docs) => docs.State.PayMode.Length > 0 && docs.DocumentOf(docs.State.PayMode) is not null;
+
+    // The repayment accounts on the folio's earlier deposits; none for an investor without a folio.
+    private async Task<IReadOnlyList<AccountOnRecord>> AccountsOnRecordAsync(DocumentsViewModel docs)
+    {
+        var folio = docs.App.Holder.Folio;
+        if (folio.Length == 0) return [];
+        return await investors.AccountsByFolioAsync(folio);
+    }
 }

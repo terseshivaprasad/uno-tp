@@ -57,6 +57,9 @@ public sealed class BankForm
     public ChequeForm Cheque { get; set; } = new();
     public string? Find { get; set; }
 
+    /// <summary>An account on record against the folio, picked by its place in the list: fills the repayment fields.</summary>
+    public int? UseRepayment { get; set; }
+
     /// <summary>The form as the backend last saved it; empty before it ever was.</summary>
     public static BankForm From(PaymentDetails? saved)
     {
@@ -145,6 +148,13 @@ public sealed class PaymentViewModel(DocumentsViewModel docs, BankForm form, Ban
     public BankBranch? PaymentBranch { get; } = paymentBranch;
     public BankBranch? RepaymentBranch { get; } = repaymentBranch;
     public IReadOnlyDictionary<string, string> Problems { get; } = problems;
+
+    /// <summary>The repayment accounts on record against the investor's folio, to fill the fields from; empty without a folio.</summary>
+    public IReadOnlyList<AccountOnRecord> AccountsOnRecord { get; init; } = [];
+
+    /// <summary>An account number as shown on a list: its last four digits.</summary>
+    public static string MaskAccount(string number) =>
+        number.Length <= 4 ? number : new string('•', 4) + " " + number[^4..];
 
     public string? Problem(string key) => Problems.GetValueOrDefault(key);
 

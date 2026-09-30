@@ -25,6 +25,13 @@ public interface IRenewalApi
     /// when the deposit cannot be renewed now.
     /// </summary>
     Task<Application?> StartAsync(string depositNumber, CancellationToken ct = default);
+
+    /// <summary>
+    /// DELETE renewals/{depositNumber}: cancels the renewal request opened for the
+    /// deposit - its application, while not yet submitted - and the deposit is due
+    /// for renewal again. False when there is none to cancel.
+    /// </summary>
+    Task<bool> CancelAsync(string depositNumber, CancellationToken ct = default);
 }
 
 /// <summary>A deposit on a folio, as the register holds it.</summary>

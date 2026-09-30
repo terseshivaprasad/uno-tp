@@ -86,6 +86,13 @@ public sealed class MockApplications(MockStore store, IPartner partner) : IAppli
         return Task.FromResult(app);
     }
 
+    public Task<bool> CancelRenewalAsync(string depositNumber)
+    {
+        var renewal = store.List(partner.Id).FirstOrDefault(a => a.Renewal?.DepositNumber == depositNumber && a.Submitted is null);
+        if (renewal is null) return Task.FromResult(false);
+        return Task.FromResult(store.Remove(partner.Id, renewal.AppNo));
+    }
+
     /// <summary>A new draft application for the holder, under the given application number.</summary>
     private static Application NewApplication(string appNo, Holder holder) =>
         new() { AppNo = appNo, Holder = holder, Prior = PriorAttempts(holder).ToList() };

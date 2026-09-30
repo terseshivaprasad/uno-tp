@@ -29,6 +29,7 @@ public class InvestorController(
     HolderSearch search,
     IApplicationApi applications,
     IPlaceApi places,
+    IInvestorApi investors,
     IServiceProvider services) : Controller
 {
     private const string AlreadyOn = "This PAN is already on the application";
@@ -67,6 +68,7 @@ public class InvestorController(
             ScreeningNotAllowed = TempData["screeningNotAllowed"] as string,
             Focus = docs.Shown?.Focus ?? TempData["focus"] as string,
             Places = await PlacesAsync(state),
+            NomineesOnRecord = await NomineesOnRecordAsync(docs),
         };
 
         // Each joint holder checked from what the session holds. A PAN already on the
@@ -322,6 +324,40 @@ public class InvestorController(
         state.Nominee = true;
         State = state;
         return Back("nominee");
+    }
+
+    /// <summary>
+    /// A nominee on record against the folio, picked: the nominee's fields are filled
+    /// from the record - name, date of birth, relation, the guardian - and the card
+    /// opens for the partner to check and change.
+    /// </summary>
+    [HttpPost("nominee/use/{n:int}")]
+    public async Task<IActionResult> NomineeUse(int n, IFormCollection form)
+    {
+        var state = KeepTypedFields(form);
+        if (await LoadAsync() is not { } docs) return Start();
+        var onRecord = await NomineesOnRecordAsync(docs);
+        if (n < 0 || n >= onRecord.Count) return Back("nominee");
+
+        var nominee = onRecord[n];
+        var dob = nominee.Dob.Split('-');
+        state.Fields["Nominee.Name"] = nominee.Name;
+        state.Fields["Nominee.Dd"] = dob.Length == 3 ? dob[0] : "";
+        state.Fields["Nominee.Mm"] = dob.Length == 3 ? dob[1] : "";
+        state.Fields["Nominee.Yyyy"] = dob.Length == 3 ? dob[2] : "";
+        state.Fields["Nominee.Relation"] = nominee.Relation;
+        state.Fields["Nominee.GuardianName"] = nominee.GuardianName;
+        state.Nominee = true;
+        State = state;
+        return Back("nominee");
+    }
+
+    // The nominees named on the folio's earlier deposits; none for an investor without a folio.
+    private async Task<IReadOnlyList<NomineeOnRecord>> NomineesOnRecordAsync(DocumentsViewModel docs)
+    {
+        var folio = docs.App.Holder.Folio;
+        if (folio.Length == 0) return [];
+        return await investors.NomineesByFolioAsync(folio);
     }
 
     [HttpPost("nominee/remove")]

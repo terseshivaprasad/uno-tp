@@ -40,5 +40,16 @@ public class RenewController(IRenewalApi renewals, Lookups lookups) : Controller
         return RedirectToAction(nameof(Index), new { by, pan, dd, mm, yyyy, folio });
     }
 
+    /// <summary>Cancels the renewal request for a deposit: its application goes, and the deposit is due for renewal again.</summary>
+    [HttpPost("{number}/cancel")]
+    public async Task<IActionResult> Cancel(string number, string? by, string? pan, string? dd, string? mm, string? yyyy, string? folio)
+    {
+        if (await renewals.CancelAsync(number))
+            TempData["said"] = $"The renewal request for deposit {number} is cancelled. It is due for renewal again.";
+        else
+            TempData["said"] = $"There is no renewal request for deposit {number} to cancel.";
+        return RedirectToAction(nameof(Index), new { by, pan, dd, mm, yyyy, folio });
+    }
+
     private static string Clean(string? value) => (value ?? "").Trim().ToUpperInvariant();
 }

@@ -54,6 +54,47 @@ public sealed class SqlMasters(Db db, SqlReference reference) : IInvestorApi, IS
             new { Folio = folio.Trim().ToUpperInvariant() }))?.Record();
     }
 
+    // What the app itself has on record against a folio: the nominees and repayment
+    // accounts on its submitted applications, latest first. The FD system's own
+    // records join these once its register answers.
+    public async Task<IReadOnlyList<NomineeOnRecord>> NomineesByFolioAsync(string folio, CancellationToken ct = default)
+    {
+        await using var connection = await db.OpenAsync(ct);
+        var rows = await connection.QueryAsync<(string Name, DateTime? Dob, string Relation, string GuardianName, string AppNo)>("""
+            SELECT n.c_Name, n.d_Dob, n.c_Relation, n.c_Guardian_Name, m.c_App_No
+            FROM dbo.t_Unotp_Nominee_Dtls n
+            JOIN dbo.t_Unotp_Application_Mst m ON m.c_App_No = n.c_App_No AND m.f_Active = 1
+            WHERE m.c_Folio = @Folio AND n.c_Status = 'APR' AND n.f_Active = 1
+            ORDER BY m.d_Submitted_On DESC
+            """, new { Folio = folio.Trim() });
+        var found = new List<NomineeOnRecord>();
+        foreach (var r in rows)
+        {
+            if (found.Any(f => f.Name == r.Name && f.Dob == Dates.FromDb(r.Dob))) continue;
+            found.Add(new NomineeOnRecord(r.Name, Dates.FromDb(r.Dob), r.Relation, r.GuardianName, r.AppNo));
+        }
+        return found;
+    }
+
+    public async Task<IReadOnlyList<AccountOnRecord>> AccountsByFolioAsync(string folio, CancellationToken ct = default)
+    {
+        await using var connection = await db.OpenAsync(ct);
+        var rows = await connection.QueryAsync<(string Ifsc, string AccountNo, string Bank, string Branch, string AppNo)>("""
+            SELECT b.c_Ifsc, b.c_Account_No, b.c_Bank_Name, b.c_Branch_Name, m.c_App_No
+            FROM dbo.t_Unotp_Bank_Dtls b
+            JOIN dbo.t_Unotp_Application_Mst m ON m.c_App_No = b.c_App_No AND m.f_Active = 1
+            WHERE m.c_Folio = @Folio AND b.c_Status = 'APR' AND b.f_Active = 1 AND b.c_Ifsc <> '' AND b.c_Account_No <> ''
+            ORDER BY m.d_Submitted_On DESC
+            """, new { Folio = folio.Trim() });
+        var found = new List<AccountOnRecord>();
+        foreach (var r in rows)
+        {
+            if (found.Any(f => f.Ifsc == r.Ifsc && f.AccountNumber == r.AccountNo)) continue;
+            found.Add(new AccountOnRecord(r.Ifsc, r.AccountNo, r.Bank, r.Branch, r.AppNo));
+        }
+        return found;
+    }
+
     // ----- Sourcing registers ------------------------------------------------------
 
     public Task<IReadOnlyList<Party>> BrokersAsync(CancellationToken ct = default) => PartiesAsync("t_Unotp_Broker_Mst", ct);
