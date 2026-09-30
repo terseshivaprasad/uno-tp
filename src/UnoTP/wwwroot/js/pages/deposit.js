@@ -55,13 +55,16 @@
   }
 
   // What the answer says of the amount: the line under it, and its error once due.
-  function showAmountMessage(sayProblem) {
+  // Given a problem of its own (the amount over the maximum, seen as it is typed),
+  // that is shown at once instead.
+  function showAmountMessage(sayProblem, problemNow) {
     var said = document.querySelector('#deposit-quote [data-deposit-amount]');
     var input = document.getElementById('deposit-amount');
-    if (!said || !input) return;
+    if (!input) return;
+    if (!problemNow && !said) return;
     var hint = document.getElementById('deposit-amount-hint');
-    if (hint) hint.textContent = said.getAttribute('data-hint') || '';
-    var problem = said.getAttribute('data-problem');
+    if (hint && said) hint.textContent = said.getAttribute('data-hint') || '';
+    var problem = problemNow || said.getAttribute('data-problem');
     var error = document.getElementById('deposit-amountError');
     // The amount sits in a box with the rupee sign: that box takes the red edge,
     // and the error goes under it.
@@ -170,6 +173,10 @@
 
   form.addEventListener('input', function (e) {
     if (e.target.id !== 'deposit-amount') return;
+    // Over the maximum is said on the keystroke itself, from the limit on the field.
+    var digits = Number(e.target.value.replace(/\D/g, '') || 0);
+    var max = Number(e.target.getAttribute('data-max') || 0);
+    if (max > 0 && digits > max) showAmountMessage(true, e.target.getAttribute('data-over-max') || 'Above the maximum');
     clearTimeout(timer);
     timer = setTimeout(function () { refreshQuote(false); }, 600);
   });
