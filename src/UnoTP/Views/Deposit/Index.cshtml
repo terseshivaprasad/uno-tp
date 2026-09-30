@@ -41,7 +41,7 @@
     }
     var amountBoxClass = amountProblem is null ? null : "deposit-amount--error";
     var amountDescribedBy = amountProblem is null ? "deposit-amount-hint" : "deposit-amountError";
-    var amountHint = $"in multiples of {Money.Rupees(Model.Config.AmountStep)}";
+    var amountHint = Model.Config.AmountStep > 1 ? $"in multiples of {Money.Rupees(Model.Config.AmountStep)}" : "";
     if (form.AmountValue > 0 && amountProblem is null) amountHint = Model.AmountHint;
 
     var receiptHint = "The receipt is e-mailed to the investor's e-mail on Investor Information";
@@ -125,7 +125,7 @@
                         <div class="deposit-amount @amountBoxClass">
                             <span class="deposit-amount__currency" aria-hidden="true">&#8377;</span>
                             <input id="deposit-amount" name="Amount" class="deposit-amount__input @Invalid("Amount")" value="@form.Amount" inputmode="numeric" maxlength="12" autocomplete="off" data-quote readonly="@Model.AmountFixed"
-                                   data-required="@amountRequired" data-check="@amountCheck" data-min="@Model.Config.MinAmount" data-max="@Model.Config.MaxAmount" data-step="@Model.Config.AmountStep" aria-invalid="@AriaInvalid("Amount")" aria-describedby="@amountDescribedBy">
+                                   data-required="@amountRequired" data-check="@amountCheck" data-min="@Model.Config.MinAmount" data-max="@Model.Config.MaxAmount" data-step="@(Model.Config.AmountStep > 1 ? Model.Config.AmountStep : 0)" data-over-max="@Model.Config.OverMaxAmountMessage" aria-invalid="@AriaInvalid("Amount")" aria-describedby="@amountDescribedBy">
                         </div>
                         @{ await FieldError("Amount", "deposit-amount"); }
                         <div class="deposit-hint" id="deposit-amount-hint">@amountHint</div>

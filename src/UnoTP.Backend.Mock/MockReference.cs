@@ -214,6 +214,15 @@ public sealed class MockReference : IReferenceApi
             new("investments", "Maturity of investments"),
             new("loan", "Loan"),
             new("other", "Other"),
+        ],
+        // Which sub occupations go with which occupation; none listed means any.
+        SubOccupationRules:
+        [
+            new("MMFSL Employee", ["Salaried"]),
+            new("Private sector", ["Salaried"]),
+            new("Public sector", ["Salaried"]),
+            new("Government service", ["Salaried"]),
+            new("Professional", ["Self-employed", "Business"]),
         ]);
 
     private static readonly AppConfig Config = new(
@@ -223,8 +232,8 @@ public sealed class MockReference : IReferenceApi
         MaxJointHolders: 2,
         MaxAttempts: 3,
         MinAmount: 5_000,
-        MaxAmount: 2_00_00_000,
-        AmountStep: 1_000,
+        MaxAmount: 5_00_00_000,
+        AmountStep: 1,
         CancellationDays: MockWindow.Days,
         DraftDays: 14,
         LinkValidityHours: new Dictionary<string, int> { ["payment"] = PaymentLinkHours, ["acceptance"] = 72 },
@@ -233,7 +242,8 @@ public sealed class MockReference : IReferenceApi
         CloseToCancelDays: 3,
         SourceOfFundsFrom: 1_00_00_000,
         SourceOfFundsOccupations: ["Homemaker", "Student", "Retired"],
-        SourceOfFundsIncomeBands: ["Upto Rs.5,00,000"]);
+        SourceOfFundsIncomeBands: ["Upto Rs.5,00,000"],
+        OverMaxAmountMessage: "For investment above Rs.5 Cr, please write to fixeddeposit@mahindrafinance.com");
 
     public Task<ReferenceData> ReferenceAsync(CancellationToken ct = default) => Task.FromResult(Data);
 

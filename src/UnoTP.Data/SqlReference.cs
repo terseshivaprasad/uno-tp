@@ -53,7 +53,8 @@ public sealed class SqlReference(Db db, IMemoryCache cache) : IReferenceApi
             QuoteAmount: Long("quoteAmount"),
             SourceOfFundsFrom: Long("sourceOfFundsFrom"),
             SourceOfFundsOccupations: await Names("sourceOfFundsOccupations"),
-            SourceOfFundsIncomeBands: await Names("sourceOfFundsIncomeBands"));
+            SourceOfFundsIncomeBands: await Names("sourceOfFundsIncomeBands"),
+            OverMaxAmountMessage: s.GetValueOrDefault("overMaxAmountMessage", ""));
     }
 
     // A setting that lists names, one after another with a semicolon between:
@@ -124,7 +125,8 @@ public sealed class SqlReference(Db db, IMemoryCache cache) : IReferenceApi
             NoticeKinds: Names("noticeKinds"),
             RenewalNotes: Names("renewalNotes"),
             Features: features,
-            SourcesOfFunds: Of("sourcesOfFunds").Select(e => new Option(e.Code, e.Name)).ToList());
+            SourcesOfFunds: Of("sourcesOfFunds").Select(e => new Option(e.Code, e.Name)).ToList(),
+            SubOccupationRules: Of("subOccupations").Select(e => Attrs(e, a => new SubOccupationOption(Fill(e.Name), ReadNames(a, "occupations")))).ToList());
     }
 
     // ----- An entry's attributes, j_Attrs -------------------------------------------
@@ -137,6 +139,20 @@ public sealed class SqlReference(Db db, IMemoryCache cache) : IReferenceApi
 
     /// <summary>A true/false attribute of a JSON entry (false when missing).</summary>
     private static bool ReadBool(JsonElement a, string name) => a.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.True;
+
+    // A list of names in the attributes, or none when it is not there.
+    private static IReadOnlyList<string> ReadNames(JsonElement a, string name)
+    {
+        if (!a.TryGetProperty(name, out var v)) return [];
+        if (v.ValueKind != JsonValueKind.Array) return [];
+        var names = new List<string>();
+        foreach (var item in v.EnumerateArray())
+        {
+            var text = item.GetString() ?? "";
+            if (text.Length > 0) names.Add(text);
+        }
+        return names;
+    }
 
     // A number in the attributes, or 0 when it is not there.
     private static decimal ReadDecimal(JsonElement a, string name)

@@ -105,7 +105,7 @@
       var n = +value.replace(/[^\d]/g, '');
       var min = +el.getAttribute('data-min'), max = +el.getAttribute('data-max'), step = +el.getAttribute('data-step');
       if (min && n < min) return 'Below the ₹ ' + min.toLocaleString('en-IN') + ' minimum';
-      if (max && n > max) return 'Above the ₹ ' + max.toLocaleString('en-IN') + ' maximum';
+      if (max && n > max) return el.getAttribute('data-over-max') || ('Above the ₹ ' + max.toLocaleString('en-IN') + ' maximum');
       if (step && n % step !== 0) return 'Not a multiple of ₹ ' + step.toLocaleString('en-IN');
       return null;
     }

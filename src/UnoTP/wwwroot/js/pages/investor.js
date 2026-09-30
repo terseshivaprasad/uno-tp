@@ -10,6 +10,9 @@
 // 3. Proceed with no nominee named asks first. Skip is kept in a hidden field, so the
 //    question is asked once per application.
 // 4. The FATCA "invests offline" alert closes on its cross.
+// 5. The sub occupation goes with the occupation: as an occupation is chosen, only
+//    the sub occupations listed for it (data-occupations) are offered, and a choice
+//    that no longer applies is cleared.
 
 (function () {
   // Writes the district and state beside a PIN code.
@@ -127,4 +130,37 @@
     var close = e.target.closest && e.target.closest('[data-investor-close]');
     if (close) document.getElementById(close.dataset.investorClose).hidden = true;
   });
+})();
+
+(function () {
+  // Offers only the sub occupations that go with the occupation chosen.
+  function offerSubOccupationsFor(occupationSelect) {
+    var sub = document.querySelector('select[data-sub-occupation-of="' + occupationSelect.id + '"]');
+    if (!sub) return;
+    var occupation = occupationSelect.value;
+    var offered = 0;
+    var options = sub.querySelectorAll('option[data-occupations]');
+    for (var i = 0; i < options.length; i++) {
+      var fors = options[i].getAttribute('data-occupations') || '';
+      var applies = occupation === '' || fors === '' || fors.split('|').indexOf(occupation) >= 0;
+      options[i].hidden = !applies;
+      options[i].disabled = !applies;
+      if (applies) offered++;
+      if (!applies && options[i].selected) sub.value = '';
+    }
+    var first = sub.querySelector('option[value=""]');
+    if (first) first.textContent = occupation !== '' && offered === 0 ? 'Not applicable' : 'Select';
+    // An occupation with no sub occupations asks for none.
+    if (occupation !== '' && offered === 0) sub.removeAttribute('data-required');
+    else sub.setAttribute('data-required', 'Select the sub occupation');
+  }
+
+  document.addEventListener('change', function (e) {
+    var select = e.target;
+    if (!select.matches || !select.matches('select') || !/\.Occupation$/.test(select.name || '')) return;
+    offerSubOccupationsFor(select);
+  });
+
+  var occupations = document.querySelectorAll('select[name$=".Occupation"]');
+  for (var i = 0; i < occupations.length; i++) offerSubOccupationsFor(occupations[i]);
 })();

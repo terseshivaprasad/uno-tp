@@ -110,6 +110,8 @@ sqlcmd -d UnoTP -i db/007_unotp_rate_chart.sql   # the rate card by chart line, 
 sqlcmd -d UnoTP -i db/008_unotp_source_of_funds.sql # the source of funds on FD Configuration: columns, settings, list
 sqlcmd -d UnoTP -i db/009_unotp_category_extra_rate.sql # what each category earns over the public rate, for the page's wording
 sqlcmd -d UnoTP -i db/010_unotp_name_screening.sql # name screening's answer on the KYC row
+sqlcmd -d UnoTP -i db/011_unotp_any_amount.sql     # any whole-rupee amount, not only multiples of 1,000
+sqlcmd -d UnoTP -i db/012_unotp_amount_limit_and_sub_occupations.sql # the 5 crore maximum and its message; sub occupations by occupation
 sqlcmd -d UnoTP -i db/900_dev_seed.sql           # development only: demo partners and master records
 export ConnectionStrings__UnoTP='Server=...;Database=UnoTP;...'   # never in a committed file
 dotnet run --project src/UnoTP --launch-profile http

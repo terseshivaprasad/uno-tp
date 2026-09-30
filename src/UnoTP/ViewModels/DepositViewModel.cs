@@ -65,8 +65,9 @@ public sealed class DepositForm
         var n = AmountValue;
         if (n == 0) return "Required — enter the deposit amount";
         if (n < config.MinAmount) return $"Below the {Money.Rupees(config.MinAmount)} minimum";
-        if (n > config.MaxAmount) return $"Above the {Money.Rupees(config.MaxAmount)} maximum";
-        if (config.AmountStep > 0 && n % config.AmountStep != 0) return $"Not a multiple of {Money.Rupees(config.AmountStep)} — {Money.InWords(n).ToLowerInvariant()}";
+        if (n > config.MaxAmount) return config.OverMaxAmountMessage.Length > 0 ? config.OverMaxAmountMessage : $"Above the {Money.Rupees(config.MaxAmount)} maximum";
+        // A step of 1 (or none) means any amount; a larger one, multiples of it.
+        if (config.AmountStep > 1 && n % config.AmountStep != 0) return $"Not a multiple of {Money.Rupees(config.AmountStep)} — {Money.InWords(n).ToLowerInvariant()}";
         return null;
     }
 
@@ -226,7 +227,8 @@ public sealed class DepositViewModel(DocumentsViewModel docs, DepositForm form, 
 
     public string AmountHint => AmountFixed ? $"{Money.InWords(Form.AmountValue)} · the maturity amount of deposit {Docs.Renewal!.DepositNumber}, renewed on {Money.Day(Docs.Renewal.MaturesOn)} at the rate prevailing then"
         : Form.AmountProblem(Config) is { } problem ? problem
-        : $"{Money.InWords(Form.AmountValue)} · in multiples of {Money.Rupees(Config.AmountStep)}";
+        : Config.AmountStep > 1 ? $"{Money.InWords(Form.AmountValue)} · in multiples of {Money.Rupees(Config.AmountStep)}"
+        : Money.InWords(Form.AmountValue);
 
     /// <summary>What is still to do before Proceed opens, in words.</summary>
     public IReadOnlyList<string> Outstanding => [.. Problems.Values];

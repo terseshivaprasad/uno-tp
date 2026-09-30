@@ -115,7 +115,7 @@ public class InvestorController(
         // saying whether they are, or are related to, a politically exposed person.
         // Everything missing is marked at once, and the first takes the caret.
         var holders = docs.JointHolders.Select(h => (int.Parse(h.Code), h)).Prepend((1, docs.Investor));
-        if (InvestorViewModel.Unfilled(state, holders, docs.Config.MinAge, docs.MailTyped, await PlacesAsync(state)) is [var first, ..] unfilled)
+        if (InvestorViewModel.Unfilled(state, holders, docs.Config.MinAge, docs.MailTyped, await PlacesAsync(state), docs.Ref.SubOccupationsFor) is [var first, ..] unfilled)
         {
             TempData["errors"] = JsonSerializer.Serialize(unfilled.ToDictionary(u => u.Field, u => u.Error));
             return Back(first.Id);

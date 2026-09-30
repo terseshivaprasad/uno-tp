@@ -81,7 +81,24 @@ public sealed record ReferenceData(
     IReadOnlyList<string> NoticeKinds,
     IReadOnlyList<string> RenewalNotes,
     IReadOnlyList<FeatureOption>? Features = null,
-    IReadOnlyList<Option>? SourcesOfFunds = null);
+    IReadOnlyList<Option>? SourcesOfFunds = null,
+    IReadOnlyList<SubOccupationOption>? SubOccupationRules = null)
+{
+    /// <summary>The sub occupations offered for an occupation: those listed for it, and those listed for none in particular.</summary>
+    public IReadOnlyList<string> SubOccupationsFor(string occupation)
+    {
+        if (SubOccupationRules is null) return SubOccupations;
+        var offered = new List<string>();
+        foreach (var rule in SubOccupationRules)
+        {
+            if (rule.Occupations.Count == 0 || rule.Occupations.Contains(occupation)) offered.Add(rule.Name);
+        }
+        return offered;
+    }
+}
+
+/// <summary>A sub occupation and the occupations it goes with; none listed means every occupation.</summary>
+public sealed record SubOccupationOption(string Name, IReadOnlyList<string> Occupations);
 
 /// <summary>
 /// A console feature: a dashboard tile, the menu key that opens it, and what it is
@@ -101,13 +118,14 @@ public sealed record FeatureOption(string Code, string Name, string Group, strin
 /// <param name="MaxAttempts">Copies of one document refused one after another before it goes to Operations.</param>
 /// <param name="MinAmount">The smallest deposit, in rupees.</param>
 /// <param name="MaxAmount">The largest deposit booked online, in rupees.</param>
-/// <param name="AmountStep">A deposit is a multiple of this, in rupees.</param>
+/// <param name="AmountStep">A deposit is a multiple of this, in rupees; 1 for any amount.</param>
 /// <param name="CancellationDays">Days an unpaid application stands before it cancels itself.</param>
 /// <param name="DraftDays">Days since its last save an unsubmitted application stays on the lists to continue.</param>
 /// <param name="LinkValidityHours">How long a link to the investor stays open, by what it asks of them ("payment", "acceptance").</param>
 /// <param name="RenewFromDays">A renewal can be entered from this many days before the deposit matures...</param>
 /// <param name="RenewUntilDays">...until this many days before maturity; nearer, it is Operations'.</param>
 /// <param name="RenewUntilDaysAutoRenewal">The same, for a deposit tagged for auto renewal.</param>
+/// <param name="OverMaxAmountMessage">What the amount field says over the maximum ("For investment above Rs.5 Cr, please write to..."); blank for the plain "Above the maximum".</param>
 /// <param name="QuoteAmount">The amount FD Configuration quotes the rate at before one is entered.</param>
 /// <param name="SourceOfFundsFrom">The source of funds is asked once the investor's active deposits, with the new one, pass this many rupees...</param>
 /// <param name="SourceOfFundsOccupations">...and their occupation is one of these (homemaker, student, retired)...</param>
@@ -131,7 +149,8 @@ public sealed record AppConfig(
     long QuoteAmount = 50_000,
     long SourceOfFundsFrom = 1_00_00_000,
     IReadOnlyList<string>? SourceOfFundsOccupations = null,
-    IReadOnlyList<string>? SourceOfFundsIncomeBands = null);
+    IReadOnlyList<string>? SourceOfFundsIncomeBands = null,
+    string OverMaxAmountMessage = "");
 
 /// <summary>Who the app is being used by: GET me, from the signed-in partner.</summary>
 public interface IPartnerApi

@@ -13,7 +13,7 @@
     string? amountProblem = null;
     if (!Model.AmountFixed && form.Amount.Length > 0) amountProblem = form.AmountProblem(Model.Config);
 
-    var amountHint = $"in multiples of {Money.Rupees(Model.Config.AmountStep)}";
+    var amountHint = Model.Config.AmountStep > 1 ? $"in multiples of {Money.Rupees(Model.Config.AmountStep)}" : "";
     if (form.AmountValue > 0 && amountProblem is null) amountHint = Model.AmountHint;
 
     var amountText = form.AmountValue > 0 ? Money.Rupees(form.AmountValue) : "—";

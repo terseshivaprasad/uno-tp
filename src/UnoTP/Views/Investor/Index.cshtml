@@ -77,6 +77,32 @@
         </div>
     }
 
+    // The sub occupation, which goes with the occupation: every sub occupation is drawn
+    // with the occupations it is for (data-occupations, a | between), and investor.js
+    // offers only those for the occupation chosen. Where the occupation offers none,
+    // the field says so and asks for nothing.
+    private async Task SubOccupationSelect(string id, string name, string occupationId, string occupation)
+    {
+        var reference = Model.Docs.Ref;
+        var selected = Model.Value(name);
+        var offered = reference.SubOccupationsFor(occupation);
+        var asksNothing = occupation.Length > 0 && offered.Count == 0;
+        <div class="doc-column">
+            <label class="field-label" for="@id">Sub Occupation</label>
+            <div class="doc-select">
+                <select class="field-input @Invalid(name)" id="@id" name="@name" data-sub-occupation-of="@occupationId" aria-invalid="@AriaInvalid(name)" aria-describedby="@DescribedBy(name, id)" data-required="Select the sub occupation">
+                    <option value="" selected="@(selected.Length == 0)">@(asksNothing ? "Not applicable" : "Select")</option>
+                    @foreach (var rule in reference.SubOccupationRules ?? [])
+                    {
+                        var applies = occupation.Length == 0 || offered.Contains(rule.Name);
+                        <option value="@rule.Name" selected="@(rule.Name == selected)" data-occupations="@string.Join("|", rule.Occupations)" hidden="@(!applies)" disabled="@(!applies)">@rule.Name</option>
+                    }
+                </select>
+            </div>
+            @{ await FieldError(name, id); }
+        </div>
+    }
+
     // "More Information", which every holder gives; on the investor's card the FATCA
     // questions too, which are asked once for every holder.
     private async Task MoreInformation(int holder, DropdownLists lists)
@@ -87,7 +113,7 @@
         <div class="doc-grid">
             @{ await Select($"{id}Income", $"{prefix}.AnnualIncome", "Annual Income", lists.Incomes, required: "Select the annual income"); }
             @{ await Select($"{id}Occupation", $"{prefix}.Occupation", "Occupation", lists.Occupations, required: "Select the occupation"); }
-            @{ await Select($"{id}SubOccupation", $"{prefix}.SubOccupation", "Sub Occupation", lists.SubOccupations, required: "Select the sub occupation"); }
+            @{ await SubOccupationSelect($"{id}SubOccupation", $"{prefix}.SubOccupation", $"{id}Occupation", Model.Value($"{prefix}.Occupation")); }
             @{ await Select($"{id}Marital", $"{prefix}.MaritalStatus", "Marital Status", lists.MaritalStatuses, required: "Select the marital status"); }
             <div class="doc-column">
                 <label class="field-label" for="@(id)Mobile">Mobile Number</label>

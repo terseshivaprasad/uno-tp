@@ -242,10 +242,11 @@ public sealed class InvestorViewModel(InvestorInfoState state, DocumentsViewMode
     /// guardian's. Each comes with the id of the control to bring the partner to.
     /// </summary>
     public static List<(string Field, string Id, string Error)> Unfilled(InvestorInfoState state, IEnumerable<(int Holder, DocumentsViewModel.DocHolder Who)> holders, int minorUnder,
-        Func<DocumentsViewModel.DocHolder, bool>? typesMail = null, IReadOnlyDictionary<string, PinPlace>? places = null)
+        Func<DocumentsViewModel.DocHolder, bool>? typesMail = null, IReadOnlyDictionary<string, PinPlace>? places = null,
+        Func<string, IReadOnlyList<string>>? subOccupationsFor = null)
     {
         var found = new List<(string Field, string Id, string Error)>();
-        foreach (var (holder, who) in holders) found.AddRange(UnfilledFor(state, holder, who, typesMail, places));
+        foreach (var (holder, who) in holders) found.AddRange(UnfilledFor(state, holder, who, typesMail, places, subOccupationsFor));
         if (!state.Nominee) return found;
 
         var need = new Needs(state.Fields, found);
@@ -277,8 +278,10 @@ public sealed class InvestorViewModel(InvestorInfoState state, DocumentsViewMode
     /// address typed, what nothing read, More Information, and for a holder with no
     /// folio the PEP answers. Empty once the card is complete.
     /// </summary>
+    /// <param name="subOccupationsFor">The sub occupations an occupation offers; an occupation with none asks for no sub occupation.</param>
     public static List<(string Field, string Id, string Error)> UnfilledFor(InvestorInfoState state, int holder, DocumentsViewModel.DocHolder who,
-        Func<DocumentsViewModel.DocHolder, bool>? typesMail = null, IReadOnlyDictionary<string, PinPlace>? places = null)
+        Func<DocumentsViewModel.DocHolder, bool>? typesMail = null, IReadOnlyDictionary<string, PinPlace>? places = null,
+        Func<string, IReadOnlyList<string>>? subOccupationsFor = null)
     {
         var found = new List<(string Field, string Id, string Error)>();
         var need = new Needs(state.Fields, found);
@@ -302,6 +305,14 @@ public sealed class InvestorViewModel(InvestorInfoState state, DocumentsViewMode
             var name = $"Holder{holder}.{field}";
             if (field == "Gender" && !state.Fields.ContainsKey(name)) continue;
             var at = string.Format(id, holder);
+            // The sub occupation goes with the occupation: one of those offered for it, or none where it offers none.
+            if (field == "SubOccupation" && subOccupationsFor is not null)
+            {
+                var offered = subOccupationsFor(need.Of($"Holder{holder}.Occupation"));
+                if (offered.Count == 0) continue;
+                need.Need(name, at, empty, "Select a sub occupation that goes with the occupation", v => offered.Contains(v));
+                continue;
+            }
             if (field == "Mobile") need.Need(name, at, empty, "Enter a 10-digit mobile number", v => Regex.IsMatch(v, @"^[6-9]\d{9}$"));
             else if (field == "Email") need.Need(name, at, empty, "Enter a valid e-mail", v => Regex.IsMatch(v, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"));
             else if (field == "ParentName") need.Need(name, at, empty, LettersOnly, IsName);
@@ -364,7 +375,7 @@ public sealed class InvestorViewModel(InvestorInfoState state, DocumentsViewMode
             if (view.Used) slots.Add(view);
         }
         var filed = slots.Count(v => v.Doc is not null);
-        var fieldsToFill = UnfilledFor(State, holder, h, Docs.MailTyped, Places).Count;
+        var fieldsToFill = UnfilledFor(State, holder, h, Docs.MailTyped, Places, Docs.Ref.SubOccupationsFor).Count;
         var complete = slots.All(v => !v.Missing) && fieldsToFill == 0;
 
         var line = $"{h.Who.Name} · PAN {DocumentsViewModel.MaskPan(h.Who.Pan)}";
