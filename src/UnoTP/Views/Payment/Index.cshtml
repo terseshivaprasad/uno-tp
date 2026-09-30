@@ -50,6 +50,16 @@
    the step asks for. *@
 
 @functions {
+    // One account on the folio: the bank and the number's last digits, the branch and IFSC, the deposit it was used on, and Use.
+    private async Task AccountRow(int i)
+    {
+        var account = Model.AccountsOnRecord[i];
+        <li class="on-record__row">
+            <span class="on-record__main">@account.Bank · @PaymentViewModel.MaskAccount(account.AccountNumber)</span>
+            <span class="on-record__meta">@account.Branch · @account.Ifsc · on @account.UsedOn</span>
+            <button type="submit" name="UseRepayment" value="@i" class="btn btn-outline-primary btn-sm on-record__use" formnovalidate data-loader="Filling the repayment account&hellip;">Use</button>
+        </li>
+    }
 #pragma warning disable CS1998 // Razor makes these helpers async; there is nothing to await in them.
 
     private const string CopyIcon = "<rect x=\"9\" y=\"9\" width=\"11\" height=\"11\" rx=\"1.6\"></rect><path d=\"M15 6.5V5.4A1.4 1.4 0 0 0 13.6 4H5.4A1.4 1.4 0 0 0 4 5.4v8.2A1.4 1.4 0 0 0 5.4 15h1.1\"></path>";
@@ -240,19 +250,28 @@
                Above the switch, so it shows whatever the switch says. *@
             @if (Model.AccountsOnRecord.Count > 0)
             {
+                @* The five most recent are shown; the rest open on Show all. *@
+                var shownAccounts = Math.Min(Model.AccountsOnRecord.Count, 5);
                 <div class="on-record">
                     <div class="on-record__title">Accounts on this folio</div>
                     <ul class="on-record__list">
-                        @for (var i = 0; i < Model.AccountsOnRecord.Count; i++)
+                        @for (var i = 0; i < shownAccounts; i++)
                         {
-                            var account = Model.AccountsOnRecord[i];
-                            <li class="on-record__row">
-                                <span class="on-record__main">@account.Bank · @PaymentViewModel.MaskAccount(account.AccountNumber)</span>
-                                <span class="on-record__meta">@account.Branch · @account.Ifsc · on @account.UsedOn</span>
-                                <button type="submit" name="UseRepayment" value="@i" class="btn btn-outline-primary btn-sm on-record__use" formnovalidate data-loader="Filling the repayment account&hellip;">Use</button>
-                            </li>
+                            await AccountRow(i);
                         }
                     </ul>
+                    @if (Model.AccountsOnRecord.Count > shownAccounts)
+                    {
+                        <details class="on-record__more">
+                            <summary class="on-record__more-summary">Show all @Model.AccountsOnRecord.Count</summary>
+                            <ul class="on-record__list">
+                                @for (var i = shownAccounts; i < Model.AccountsOnRecord.Count; i++)
+                                {
+                                    await AccountRow(i);
+                                }
+                            </ul>
+                        </details>
+                    }
                 </div>
             }
 

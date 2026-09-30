@@ -114,6 +114,19 @@
 .on-record__use {
   grid-area: use;
 }
+/* Beyond the five most recent: the rest behind Show all, which needs no script */
+.on-record__more {
+  margin-top: 8px;
+}
+.on-record__more-summary {
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--red-dark);
+}
+.on-record__more[open] .on-record__more-summary {
+  margin-bottom: 4px;
+}
 
 .investor-panel {
   background: var(--tint);
