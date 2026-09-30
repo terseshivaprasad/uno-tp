@@ -2,53 +2,75 @@
 @{
     ViewData["Title"] = "FD Configuration";
 
-    // The fifth classic step, in the frame the steps before it draw. The deposit
-    // as the backend holds it, and what the backend quotes for it: every change
-    // posts, is saved, and the page comes back with the new quote above the choices.
-    var f = Model.Form;
-    var q = Model.Quote;
-    var payout = Model.Payout;
+    var form = Model.Form;
     var appNo = Model.Docs.AppNo;
     var banner = Model.Problem("banner");
+    var amountProblem = Model.Problem("Amount");
 
-    // What Proceed found, in page order; the first takes the caret.
-    var ids = new Dictionary<string, string>
+    // The fields Proceed can find wanting, in page order; the first with a problem takes the caret.
+    (string Key, string Id)[] fieldIds =
+    [
+        ("Amount", "deposit-amount"),
+        ("TenureMonths", "deposit-tenure-" + Model.Ref.Tenures.FirstOrDefault()),
+        ("InterestPayout", "deposit-payout-" + (Model.Ref.Payouts.FirstOrDefault()?.Code ?? "")),
+        ("RenewInstruction", "deposit-renew"),
+        ("DeliveryType", "deposit-delivery"),
+    ];
+    string? focus = null;
+    foreach (var field in fieldIds)
     {
-        ["Amount"] = "deposit-amount",
-        ["TenureMonths"] = "deposit-tenure-" + (Model.Ref.Tenures.FirstOrDefault()),
-        ["InterestPayout"] = "deposit-payout-" + (Model.Ref.Payouts.FirstOrDefault()?.Code ?? ""),
-        ["RenewInstruction"] = "deposit-renew",
-        ["DeliveryType"] = "deposit-delivery",
-    };
-    var focus = ids.FirstOrDefault(i => Model.Problem(i.Key) is not null).Value;
-    var problems = Model.Problems.Count(p => p.Key != "banner");
+        if (Model.Problem(field.Key) is not null)
+        {
+            focus = field.Id;
+            break;
+        }
+    }
+    var problemCount = Model.Problems.Count(p => p.Key != "banner");
+
+    // The amount: what stands beside its label, what its field requires, and the line under it.
+    var amountAside = $"{Money.Rupees(Model.Config.MinAmount)} minimum · {Money.Rupees(Model.Config.MaxAmount)} maximum";
+    string? amountRequired = "Required — enter the deposit amount";
+    string? amountCheck = "amount";
+    if (Model.AmountFixed)
+    {
+        amountAside = $"the maturity amount of deposit {Model.Docs.Renewal!.DepositNumber}";
+        amountRequired = null;
+        amountCheck = null;
+    }
+    var amountBoxClass = amountProblem is null ? null : "deposit-amount--error";
+    var amountDescribedBy = amountProblem is null ? "deposit-amount-hint" : "deposit-amountError";
+    var amountHint = $"in multiples of {Money.Rupees(Model.Config.AmountStep)}";
+    if (form.AmountValue > 0 && amountProblem is null) amountHint = Model.AmountHint;
+
+    var receiptHint = "The receipt is e-mailed to the investor's e-mail on Investor Information";
+    if (Model.Email.Length > 0) receiptHint = $"The receipt is e-mailed to {Model.Email}";
 }
+@* FD Configuration: the deposit's choices on the left and, beside them, what the backend
+   quotes for them. The quote is redrawn on its own as a choice changes (deposit.js);
+   Proceed saves the deposit. *@
 
 @functions {
-    private const string CopyGlyph = "<rect x=\"9\" y=\"9\" width=\"11\" height=\"11\" rx=\"1.6\"></rect><path d=\"M15 6.5V5.4A1.4 1.4 0 0 0 13.6 4H5.4A1.4 1.4 0 0 0 4 5.4v8.2A1.4 1.4 0 0 0 5.4 15h1.1\"></path>";
+#pragma warning disable CS1998 // Razor makes these helpers async; there is nothing to await in them.
 
+    private const string CopyIcon = "<rect x=\"9\" y=\"9\" width=\"11\" height=\"11\" rx=\"1.6\"></rect><path d=\"M15 6.5V5.4A1.4 1.4 0 0 0 13.6 4H5.4A1.4 1.4 0 0 0 4 5.4v8.2A1.4 1.4 0 0 0 5.4 15h1.1\"></path>";
+
+    // The attributes a field with an error carries.
     private string? Invalid(string key) => Model.Problem(key) is null ? null : "is-invalid";
-    private string? InvalidAria(string key) => Model.Problem(key) is null ? null : "true";
+    private string? AriaInvalid(string key) => Model.Problem(key) is null ? null : "true";
 
-    // What Proceed said about a field, under it.
+    // The error Proceed left on a field, under it.
     private async Task FieldError(string key, string id)
     {
-        if (Model.Problem(key) is { } message)
+        var message = Model.Problem(key);
+        if (message is not null)
         {
             <p class="field-error" id="@(id)Error" role="alert">@message</p>
         }
-        await Task.CompletedTask;
-    }
-
-    private async Task Kv(string key, string value, bool unread = false)
-    {
-        <div class="investor-key-value"><div class="investor-key-value__key">@key</div><div class="investor-key-value__value @(unread ? "investor-key-value__value--unread" : null)">@value</div></div>
-        await Task.CompletedTask;
     }
 }
 
-@* Once the card's head has scrolled off, this keeps who the step is for and
-   which application it is in view, as the steps before it do. *@
+@* Once the card's head has scrolled away, this strip keeps who the step is for and the
+   application number in view (sticky-app-strip.js). *@
 <div class="app-sticky-strip" id="docsPin" hidden>
     <div class="app-sticky-strip__inner">
         <span class="app-sticky-strip__who">@Model.Docs.HolderName</span>
@@ -57,7 +79,7 @@
             <span class="app-sticky-strip__label">Application</span>
             @appNo
             <button type="button" class="doc-copy" data-copy="@appNo" title="Copy the application number" aria-label="Copy the application number">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">@Html.Raw(CopyGlyph)</svg>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">@Html.Raw(CopyIcon)</svg>
             </button>
         </span>
     </div>
@@ -83,88 +105,86 @@
                 <h2 class="page-title">Fixed Deposit Configuration</h2>
                 <span class="page-app-number">Application No: <strong>@appNo</strong>
                     <button type="button" class="doc-copy" data-copy="@appNo" title="Copy the application number" aria-label="Copy the application number">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">@Html.Raw(CopyGlyph)</svg>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">@Html.Raw(CopyIcon)</svg>
                     </button>
                 </span>
             </div>
 
-            @* The deposit's choices on the left and, beside them, what the backend
-               quotes for them - redrawn on its own as a choice changes (deposit-quote.js),
-               never with the whole page. On a phone the quote comes first. *@
+            @* The choices on the left, the quote beside them. On a phone the quote comes first. *@
             <div class="deposit-layout">
                 <div class="deposit-main">
 
-                    @* ── Amount ─────────────────────────────────────────────────── *@
+                    @* ===== Amount ===== *@
                     <div class="deposit-group">
                         <div class="investor-section-head">
                             <label class="deposit-label" for="deposit-amount">Amount</label>
-                            <div class="deposit-aside">@(Model.AmountFixed ? $"the maturity amount of deposit {Model.Docs.Renewal!.DepositNumber}" : $"{Money.Rupees(Model.Config.MinAmount)} minimum · {Money.Rupees(Model.Config.MaxAmount)} maximum")</div>
+                            <div class="deposit-aside">@amountAside</div>
                         </div>
-                        <div class="deposit-amount @(Model.Problem("Amount") is null ? null : "deposit-amount--error")">
+                        <div class="deposit-amount @amountBoxClass">
                             <span class="deposit-amount__currency" aria-hidden="true">&#8377;</span>
-                            <input id="deposit-amount" name="Amount" class="deposit-amount__input @Invalid("Amount")" value="@f.Amount" inputmode="numeric" autocomplete="off" data-quote readonly="@Model.AmountFixed"
-                                   data-required="@(Model.AmountFixed ? null : "Required — enter the deposit amount")" data-check="@(Model.AmountFixed ? null : "amount")" data-min="@Model.Config.MinAmount" data-max="@Model.Config.MaxAmount" data-step="@Model.Config.AmountStep" aria-invalid="@InvalidAria("Amount")" aria-describedby="@(Model.Problem("Amount") is null ? "deposit-amount-hint" : "deposit-amountError")">
+                            <input id="deposit-amount" name="Amount" class="deposit-amount__input @Invalid("Amount")" value="@form.Amount" inputmode="numeric" autocomplete="off" data-quote readonly="@Model.AmountFixed"
+                                   data-required="@amountRequired" data-check="@amountCheck" data-min="@Model.Config.MinAmount" data-max="@Model.Config.MaxAmount" data-step="@Model.Config.AmountStep" aria-invalid="@AriaInvalid("Amount")" aria-describedby="@amountDescribedBy">
                         </div>
                         @{ await FieldError("Amount", "deposit-amount"); }
-                        <div class="deposit-hint" id="deposit-amount-hint">@(f.AmountValue > 0 && Model.Problem("Amount") is null ? Model.AmountHint : $"in multiples of {Money.Rupees(Model.Config.AmountStep)}")</div>
+                        <div class="deposit-hint" id="deposit-amount-hint">@amountHint</div>
                     </div>
 
-                    @* ── Tenure ─────────────────────────────────────────────────── *@
+                    @* ===== Tenure ===== *@
                     <div class="deposit-group" role="radiogroup" aria-labelledby="deposit-tenure-label">
                         <div class="investor-section-head">
                             <div class="deposit-label" id="deposit-tenure-label">Tenure &middot; months</div>
                         </div>
                         <div class="deposit-options deposit-options--tenure">
-                            @foreach (var t in Model.Ref.Tenures)
+                            @foreach (var tenure in Model.Ref.Tenures)
                             {
                                 <label class="deposit-option">
-                                    <input type="radio" id="deposit-tenure-@t" name="TenureMonths" value="@t" checked="@(t == f.TenureMonths)" data-quote>
-                                    <span class="deposit-option__face">@t</span>
+                                    <input type="radio" id="deposit-tenure-@tenure" name="TenureMonths" value="@tenure" checked="@(tenure == form.TenureMonths)" data-quote>
+                                    <span class="deposit-option__face">@tenure</span>
                                 </label>
                             }
                         </div>
                         @{ await FieldError("TenureMonths", "deposit-tenure"); }
                     </div>
 
-                    @* ── Interest payout ────────────────────────────────────────── *@
+                    @* ===== Interest payout ===== *@
                     <div class="deposit-group" role="radiogroup" aria-labelledby="deposit-payout-label">
                         <div class="investor-section-head">
                             <div class="deposit-label" id="deposit-payout-label">Interest payout</div>
                             <div class="deposit-aside">a payout on maturity makes the deposit cumulative</div>
                         </div>
                         <div class="deposit-options deposit-options--payout">
-                            @foreach (var p in Model.Ref.Payouts)
+                            @foreach (var payout in Model.Ref.Payouts)
                             {
                                 <label class="deposit-option">
-                                    <input type="radio" id="deposit-payout-@p.Code" name="InterestPayout" value="@p.Code" checked="@(p.Code == f.InterestPayout)" data-quote>
-                                    <span class="deposit-option__face">@p.Name</span>
+                                    <input type="radio" id="deposit-payout-@payout.Code" name="InterestPayout" value="@payout.Code" checked="@(payout.Code == form.InterestPayout)" data-quote>
+                                    <span class="deposit-option__face">@payout.Name</span>
                                 </label>
                             }
                         </div>
                         @{ await FieldError("InterestPayout", "deposit-payout"); }
                     </div>
 
-                    @* ── Auto renewal ───────────────────────────────────────────── *@
+                    @* ===== Auto renewal ===== *@
                     <section class="deposit-section">
                         <label class="deposit-toggle" for="deposit-renew-on">
                             <span class="deposit-toggle__text">
                                 <span class="deposit-toggle__title">Auto renewal</span>
                                 <span class="deposit-toggle__desc">Renews automatically on maturity unless the investor instructs otherwise</span>
                             </span>
-                            <input type="checkbox" id="deposit-renew-on" name="AutoRenewal" value="true" class="investor-switch" checked="@f.AutoRenewal" data-quote>
+                            <input type="checkbox" id="deposit-renew-on" name="AutoRenewal" value="true" class="investor-switch" checked="@form.AutoRenewal" data-quote>
                             <input type="hidden" name="AutoRenewal" value="false">
                         </label>
-                        @* Shown the moment auto renewal is turned on (data-show-when); hidden,
-                           it is disabled, so its choice is not posted. *@
-                        <fieldset class="deposit-grid-2 doc-choice" data-show-when="AutoRenewal=true" hidden="@(!f.AutoRenewal)" disabled="@(!f.AutoRenewal)">
+                        @* Shown the moment auto renewal is turned on (data-show-when); hidden, it is
+                           disabled, so its choice is not posted. *@
+                        <fieldset class="deposit-grid-2 doc-choice" data-show-when="AutoRenewal=true" hidden="@(!form.AutoRenewal)" disabled="@(!form.AutoRenewal)">
                             <div class="doc-column">
                                 <label class="field-label" for="deposit-renew">Renew</label>
                                 <div class="doc-select">
-                                    <select class="field-input @Invalid("RenewInstruction")" id="deposit-renew" name="RenewInstruction" data-quote data-required="Required — choose what auto renewal renews" aria-invalid="@InvalidAria("RenewInstruction")">
-                                        <option value="" selected="@(f.RenewInstruction.Length == 0)">Select</option>
-                                        @foreach (var r in Model.Ref.RenewInstructions)
+                                    <select class="field-input @Invalid("RenewInstruction")" id="deposit-renew" name="RenewInstruction" data-quote data-required="Required — choose what auto renewal renews" aria-invalid="@AriaInvalid("RenewInstruction")">
+                                        <option value="" selected="@(form.RenewInstruction.Length == 0)">Select</option>
+                                        @foreach (var instruction in Model.Ref.RenewInstructions)
                                         {
-                                            <option value="@r.Code" selected="@(r.Code == f.RenewInstruction)">@r.Name</option>
+                                            <option value="@instruction.Code" selected="@(instruction.Code == form.RenewInstruction)">@instruction.Name</option>
                                         }
                                     </select>
                                 </div>
@@ -172,27 +192,27 @@
                             </div>
                             <div class="doc-column">
                                 <label class="field-label" for="deposit-renew-for">Renew for</label>
-                                <input class="field-input" id="deposit-renew-for" value="Same tenure — @f.TenureMonths months" readonly tabindex="-1">
+                                <input class="field-input" id="deposit-renew-for" value="Same tenure — @form.TenureMonths months" readonly tabindex="-1">
                                 <p class="field-hint">At the card rate on the renewal date, not today&rsquo;s</p>
                             </div>
                         </fieldset>
                     </section>
 
-                    @* ── TDS exemption ──────────────────────────────────────────── *@
+                    @* ===== TDS exemption ===== *@
                     <section class="deposit-section deposit-section--tight">
                         <label class="deposit-toggle" for="deposit-no-tds">
                             <span class="deposit-toggle__text">
                                 <span class="deposit-toggle__title">Do not deduct tax at source (@Glossary.Term("TDS"))</span>
                                 <span class="deposit-toggle__desc">Only where the investor is eligible &mdash; their signed Form @Glossary.Term("121") is filed below</span>
                             </span>
-                            <input type="checkbox" id="deposit-no-tds" name="NoTds" value="true" class="investor-switch" checked="@f.NoTds" data-quote>
+                            <input type="checkbox" id="deposit-no-tds" name="NoTds" value="true" class="investor-switch" checked="@form.NoTds" data-quote>
                             <input type="hidden" name="NoTds" value="false">
                         </label>
-                        <div class="alert alert-warning deposit-note" data-show-when="NoTds=true" hidden="@(!f.NoTds)">
+                        <div class="alert alert-warning deposit-note" data-show-when="NoTds=true" hidden="@(!form.NoTds)">
                             <div class="deposit-note__text"><strong>@Model.TdsForm is needed for the primary holder</strong>, by the investor&rsquo;s date of birth: file the signed form below before proceeding. Turning this off removes the requirement; TDS is then deducted at the applicable rate.</div>
                         </div>
                         @* The form itself, filed here as a document is on Upload Documents; shut with the switch. *@
-                        <fieldset class="doc-choice deposit-tds-form" data-show-when="NoTds=true" hidden="@(!f.NoTds)" disabled="@(!f.NoTds)">
+                        <fieldset class="doc-choice deposit-tds-form" data-show-when="NoTds=true" hidden="@(!form.NoTds)" disabled="@(!form.NoTds)">
                             <div class="doc-grid doc-grid--docs">
                                 <div class="doc-column">
                                     <partial name="_DocSlot" model="@(new DocSlotBlock(Model.Docs.View(DocumentsViewModel.TdsFormSlot), Url.Action("Upload")!, "depositConfigForm", Label: Model.TdsForm))" />
@@ -202,25 +222,25 @@
                         </fieldset>
                     </section>
 
-                    @* ── Delivery ───────────────────────────────────────────────── *@
+                    @* ===== Delivery ===== *@
                     <section class="deposit-section deposit-grid-2">
                         <div class="doc-column">
                             <label class="field-label" for="deposit-delivery">Delivery type</label>
                             <div class="doc-select">
-                                <select class="field-input @Invalid("DeliveryType")" id="deposit-delivery" name="DeliveryType" data-quote aria-invalid="@InvalidAria("DeliveryType")">
-                                    @foreach (var d in Model.Ref.DeliveryTypes)
+                                <select class="field-input @Invalid("DeliveryType")" id="deposit-delivery" name="DeliveryType" data-quote aria-invalid="@AriaInvalid("DeliveryType")">
+                                    @foreach (var delivery in Model.Ref.DeliveryTypes)
                                     {
-                                        <option value="@d.Code" selected="@(d.Code == f.DeliveryType)">@d.Name</option>
+                                        <option value="@delivery.Code" selected="@(delivery.Code == form.DeliveryType)">@delivery.Name</option>
                                     }
                                 </select>
                             </div>
                             @{ await FieldError("DeliveryType", "deposit-delivery"); }
-                            <p class="field-hint">@(Model.Email.Length > 0 ? $"The receipt is e-mailed to {Model.Email}" : "The receipt is e-mailed to the investor's e-mail on Investor Information")</p>
+                            <p class="field-hint">@receiptHint</p>
                         </div>
                     </section>
                 </div>
 
-                @* ── This deposit, as the backend quotes it ─────────────────────── *@
+                @* ===== The quote ===== *@
                 <aside class="deposit-summary" id="deposit-quote" aria-live="polite">
                     <partial name="_Quote" model="Model" />
                 </aside>
@@ -233,9 +253,10 @@
     <div class="page-action-bar__inner">
         <a class="btn btn-outline-primary" asp-controller="Payment" asp-action="Index" data-loader="Going back to Bank Details &amp; Payment">Back</a>
         <p class="page-action-bar__hint">
-            @if (problems > 0)
+            @if (problemCount > 0)
             {
-                @($"{problems} thing{(problems == 1 ? "" : "s")} still to fix on this step")
+                var thingOrThings = problemCount == 1 ? "thing" : "things";
+                @problemCount @thingOrThings <text>still to fix on this step</text>
             }
             else
             {

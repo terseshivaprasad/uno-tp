@@ -96,7 +96,13 @@
     var all = suggestionOptions(list);
     if (list.hidden || all.length === 0) return;
     var at = all.findIndex(function (o) { return o.getAttribute('aria-selected') === 'true'; });
-    var next = at < 0 ? (by > 0 ? 0 : all.length - 1) : (at + by + all.length) % all.length;
+    var next;
+    if (at < 0) {
+      // Nothing highlighted yet: down starts at the top, up at the bottom.
+      next = by > 0 ? 0 : all.length - 1;
+    } else {
+      next = (at + by + all.length) % all.length;
+    }
     all.forEach(function (o, i) { o.setAttribute('aria-selected', i === next ? 'true' : 'false'); });
     input.setAttribute('aria-activedescendant', all[next].id);
     all[next].scrollIntoView({ block: 'nearest' });
@@ -121,7 +127,8 @@
       // looks up an IFSC typed in full; it never posts the form half-typed.
       e.preventDefault();
       var all = list && !list.hidden ? suggestionOptions(list) : [];
-      var chosen = all.find(function (o) { return o.getAttribute('aria-selected') === 'true'; }) || (all.length === 1 ? all[0] : null);
+      var chosen = all.find(function (o) { return o.getAttribute('aria-selected') === 'true'; });
+      if (!chosen && all.length === 1) chosen = all[0];
       if (chosen) pickBranch(input, chosen);
       else if (IFSC.test(input.value.trim())) { closeSuggestions(input); findBankByIfsc(input); }
     }

@@ -2,55 +2,76 @@
 @{
     ViewData["Title"] = "Bank Details & Payment";
 
-    // The fourth classic step, in the frame Upload Documents and Investor
-    // Information draw: the account the deposit is paid from, then the account
-    // interest and the maturity amount are paid into. Only a cheque is drawn on an
-    // account, so the first card - and "same as the payment account" - is there
-    // only when the deposit is paid by cheque; paid online or by RTGS, the
-    // repayment account is all the step asks for.
-    var f = Model.Form;
-    var same = Model.SameAsPayment;
+    var form = Model.Form;
+    var sameAsPayment = Model.SameAsPayment;
     var appNo = Model.Docs.AppNo;
     var banner = Model.Problem("banner");
 
-    // What Proceed found, in page order; the first takes the caret.
-    var ids = new Dictionary<string, string>
+    // The fields Proceed can find wanting, in page order; the first with a problem takes the caret.
+    (string Key, string Id)[] fieldIds =
+    [
+        ("Payment.Ifsc", "pay-ifsc"),
+        ("Payment.AccountNumber", "pay-account"),
+        ("Payment.AccountNumberConfirm", "pay-account-confirm"),
+        ("Cheque.Number", "cheque-number"),
+        ("Cheque.Date", "cheque-date"),
+        ("Cheque.CmsLocation", "cms-location"),
+        ("Repayment.Ifsc", "repay-ifsc"),
+        ("Repayment.AccountNumber", "repay-account"),
+        ("Repayment.AccountNumberConfirm", "repay-account-confirm"),
+    ];
+    string? focus = null;
+    foreach (var field in fieldIds)
     {
-        ["Payment.Ifsc"] = "pay-ifsc",
-        ["Payment.AccountNumber"] = "pay-account",
-        ["Payment.AccountNumberConfirm"] = "pay-account-confirm",
-        ["Cheque.Number"] = "cheque-number",
-        ["Cheque.Date"] = "cheque-date",
-        ["Cheque.CmsLocation"] = "cms-location",
-        ["Repayment.Ifsc"] = "repay-ifsc",
-        ["Repayment.AccountNumber"] = "repay-account",
-        ["Repayment.AccountNumberConfirm"] = "repay-account-confirm",
-    };
-    var focus = ids.FirstOrDefault(i => Model.Problem(i.Key) is not null).Value;
-    var problems = Model.Problems.Count(p => p.Key != "banner");
+        if (Model.Problem(field.Key) is not null)
+        {
+            focus = field.Id;
+            break;
+        }
+    }
+    var problemCount = Model.Problems.Count(p => p.Key != "banner");
+
+    // The line under "Repayment Bank Details".
+    var repaymentNote = "Interest and the maturity amount are paid into this account";
+    if (Model.IsRenewal)
+    {
+        repaymentNote += $" · the maturing deposit {Model.Docs.Renewal!.DepositNumber} pays for the new one, and its account is filled in below";
+    }
+    else if (!Model.ByCheque)
+    {
+        var payMode = Model.PayMode.Length > 0 ? Model.PayMode : "the mode chosen on Upload Documents";
+        repaymentNote += $" · paid by {payMode}";
+    }
 }
+@* Bank Details & Payment: the account the deposit is paid from, then the account
+   interest and the maturity amount are paid into. Only a cheque is drawn on an
+   account, so the first card (and "same as the payment account") is there only when
+   the deposit is paid by cheque; paid online or by RTGS, the repayment account is all
+   the step asks for. *@
 
 @functions {
-    private const string CopyGlyph = "<rect x=\"9\" y=\"9\" width=\"11\" height=\"11\" rx=\"1.6\"></rect><path d=\"M15 6.5V5.4A1.4 1.4 0 0 0 13.6 4H5.4A1.4 1.4 0 0 0 4 5.4v8.2A1.4 1.4 0 0 0 5.4 15h1.1\"></path>";
+#pragma warning disable CS1998 // Razor makes these helpers async; there is nothing to await in them.
 
-    // The attributes a control Proceed found wanting carries.
+    private const string CopyIcon = "<rect x=\"9\" y=\"9\" width=\"11\" height=\"11\" rx=\"1.6\"></rect><path d=\"M15 6.5V5.4A1.4 1.4 0 0 0 13.6 4H5.4A1.4 1.4 0 0 0 4 5.4v8.2A1.4 1.4 0 0 0 5.4 15h1.1\"></path>";
+
+    // The attributes a field with an error carries.
     private string? Invalid(string key) => Model.Problem(key) is null ? null : "is-invalid";
-    private string? InvalidAria(string key) => Model.Problem(key) is null ? null : "true";
+    private string? AriaInvalid(string key) => Model.Problem(key) is null ? null : "true";
     private string? DescribedBy(string key, string id) => Model.Problem(key) is null ? null : id + "Error";
 
-    // What Proceed said about a field, under it.
+    // The error Proceed left on a field, under it.
     private async Task FieldError(string key, string id)
     {
-        if (Model.Problem(key) is { } message)
+        var message = Model.Problem(key);
+        if (message is not null)
         {
             <p class="field-error" id="@(id)Error" role="alert">@message</p>
         }
-        await Task.CompletedTask;
     }
 
-    // The card's head: its title, and on the first card the application number,
-    // which the strip keeps in view once it scrolls off.
-    private async Task Head(string title, bool first)
+    // A card's head: its title and, on the first card, the application number (which the
+    // sticky strip keeps in view once it scrolls off).
+    private async Task CardHead(string title, bool first)
     {
         <div class="page-head" data-pin-head="@(first ? "" : null)">
             <h2 class="page-title">@title</h2>
@@ -58,48 +79,50 @@
             {
                 <span class="page-app-number">Application No: <strong>@Model.Docs.AppNo</strong>
                     <button type="button" class="doc-copy" data-copy="@Model.Docs.AppNo" title="Copy the application number" aria-label="Copy the application number">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">@Html.Raw(CopyGlyph)</svg>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">@Html.Raw(CopyIcon)</svg>
                     </button>
                 </span>
             }
         </div>
-        await Task.CompletedTask;
     }
 
-    // An account's IFSC and number, typed twice, as the backend keeps it.
-    // The bank is searched for by any part of its name, the branch, the IFSC or
-    // the MICR (bank-search.js); the branch picked leaves its IFSC in the field.
-    private async Task Account(string key, string id, AccountForm account)
+    // An account: the bank (searched by name, branch, IFSC or MICR - payment.js) and the
+    // account number typed twice. key is "Payment" or "Repayment"; id its element-id prefix.
+    private async Task AccountFields(string key, string id, AccountForm account)
     {
+        var ifscKey = key + ".Ifsc";
+        var numberKey = key + ".AccountNumber";
+        var confirmKey = key + ".AccountNumberConfirm";
         <div class="doc-grid">
             <div class="doc-column bank-search">
                 <label class="field-label" for="@(id)-ifsc">Bank &mdash; search by name, branch, @Glossary.Term("IFSC") or @Glossary.Term("MICR")</label>
-                <input class="field-input @Invalid(key + ".Ifsc")" id="@(id)-ifsc" name="@(key).Ifsc" value="@account.Ifsc" maxlength="60" autocomplete="off" spellcheck="false" placeholder="e.g. HDFC Andheri or HDFC0000521"
+                <input class="field-input @Invalid(ifscKey)" id="@(id)-ifsc" name="@(key).Ifsc" value="@account.Ifsc" maxlength="60" autocomplete="off" spellcheck="false" placeholder="e.g. HDFC Andheri or HDFC0000521"
                        data-required="Search for the bank and pick its branch"
                        role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="@(id)-suggest"
                        data-chars="search" data-bank-search="@Url.Action("Branches")" data-find="bank-find-@(key.ToLowerInvariant())"
-                       aria-invalid="@InvalidAria(key + ".Ifsc")" aria-describedby="@DescribedBy(key + ".Ifsc", id + "-ifsc")">
+                       aria-invalid="@AriaInvalid(ifscKey)" aria-describedby="@DescribedBy(ifscKey, id + "-ifsc")">
                 <ul class="bank-suggest" id="@(id)-suggest" role="listbox" aria-label="Branches found" hidden></ul>
-                @{ await FieldError(key + ".Ifsc", id + "-ifsc"); }
+                @{ await FieldError(ifscKey, id + "-ifsc"); }
             </div>
             <div class="doc-column">
                 <label class="field-label" for="@(id)-account">Account Number</label>
-                <input class="field-input @Invalid(key + ".AccountNumber")" id="@(id)-account" name="@(key).AccountNumber" value="@account.AccountNumber" inputmode="numeric" maxlength="18" autocomplete="off" data-required="Enter the account number, 6 to 18 digits" data-check="account" aria-invalid="@InvalidAria(key + ".AccountNumber")" aria-describedby="@DescribedBy(key + ".AccountNumber", id + "-account")">
-                @{ await FieldError(key + ".AccountNumber", id + "-account"); }
+                <input class="field-input @Invalid(numberKey)" id="@(id)-account" name="@(key).AccountNumber" value="@account.AccountNumber" inputmode="numeric" maxlength="18" autocomplete="off" data-required="Enter the account number, 6 to 18 digits" data-check="account" aria-invalid="@AriaInvalid(numberKey)" aria-describedby="@DescribedBy(numberKey, id + "-account")">
+                @{ await FieldError(numberKey, id + "-account"); }
             </div>
             <div class="doc-column">
                 <label class="field-label" for="@(id)-account-confirm">Re-enter Account Number</label>
                 @* Masked as it is typed, so the number is typed again rather than copied from the first box. *@
-                <input class="field-input field-input--masked @Invalid(key + ".AccountNumberConfirm")" id="@(id)-account-confirm" name="@(key).AccountNumberConfirm" value="@account.AccountNumberConfirm" inputmode="numeric" maxlength="18" autocomplete="off" spellcheck="false" data-required="Enter the account number again" data-check="match:@(id)-account" aria-invalid="@InvalidAria(key + ".AccountNumberConfirm")" aria-describedby="@DescribedBy(key + ".AccountNumberConfirm", id + "-account-confirm")">
-                @{ await FieldError(key + ".AccountNumberConfirm", id + "-account-confirm"); }
+                <input class="field-input field-input--masked @Invalid(confirmKey)" id="@(id)-account-confirm" name="@(key).AccountNumberConfirm" value="@account.AccountNumberConfirm" inputmode="numeric" maxlength="18" autocomplete="off" spellcheck="false" data-required="Enter the account number again" data-check="match:@(id)-account" aria-invalid="@AriaInvalid(confirmKey)" aria-describedby="@DescribedBy(confirmKey, id + "-account-confirm")">
+                @{ await FieldError(confirmKey, id + "-account-confirm"); }
             </div>
         </div>
-        await Task.CompletedTask;
     }
 
-    // The bank an IFSC names, read-only, as Investor Information shows what was read.
-    private async Task Branch(BankBranch? branch, string ifsc, string id)
+    // The bank and branch an IFSC names, read-only.
+    private async Task BranchPanel(BankBranch? branch, string ifsc, string id)
     {
+        var notFoundText = "No branch has this IFSC — pick one from the search, or check it against the cheque";
+        if (ifsc.Length == 0) notFoundText = "Found once a branch is picked from the search";
         <div class="investor-panel bank-branch" id="@id">
             <div class="investor-panel__label" style="padding-bottom:10px">Bank and branch &middot; from the IFSC</div>
             <div class="investor-key-value-grid">
@@ -111,16 +134,15 @@
                 }
                 else
                 {
-                    <div class="investor-key-value investor-key-value--wide"><div class="investor-key-value__value investor-key-value__value--unread">@(ifsc.Length == 0 ? "Found once a branch is picked from the search" : "No branch has this IFSC — pick one from the search, or check it against the cheque")</div></div>
+                    <div class="investor-key-value investor-key-value--wide"><div class="investor-key-value__value investor-key-value__value--unread">@notFoundText</div></div>
                 }
             </div>
         </div>
-        await Task.CompletedTask;
     }
 }
 
-@* Once the first card's head has scrolled off, this keeps who the step is for
-   and which application it is in view, as the steps before it do. *@
+@* Once the first card's head has scrolled away, this strip keeps who the step is for
+   and the application number in view (sticky-app-strip.js). *@
 <div class="app-sticky-strip" id="docsPin" hidden>
     <div class="app-sticky-strip__inner">
         <span class="app-sticky-strip__who">@Model.Docs.HolderName</span>
@@ -129,7 +151,7 @@
             <span class="app-sticky-strip__label">Application</span>
             @appNo
             <button type="button" class="doc-copy" data-copy="@appNo" title="Copy the application number" aria-label="Copy the application number">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">@Html.Raw(CopyGlyph)</svg>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">@Html.Raw(CopyIcon)</svg>
             </button>
         </span>
     </div>
@@ -139,7 +161,7 @@
     <partial name="_ClassicSteps" model="3" />
 
     <form class="page-main" id="bankDetailsForm" data-guard method="post" data-partial novalidate data-partial-focus="@focus">
-        @* Enter in an IFSC looks it up: the first submit button in the form. *@
+        @* Enter in an IFSC field looks the branch up: these are the form's first submit buttons. *@
         @if (Model.ByCheque)
         {
             <button type="submit" class="visually-hidden" id="bank-find-payment" name="Find" value="payment" formnovalidate tabindex="-1">Find the payment branch</button>
@@ -154,49 +176,52 @@
             </div>
         }
 
-        @* ── The account the cheque is drawn on ──────────────────────────────── *@
+        @* ===== The account the cheque is drawn on ===== *@
         @if (Model.ByCheque)
         {
             <section class="page-card section-card" id="payment">
-                @{ await Head("Payment Bank Details", first: true); }
+                @{ await CardHead("Payment Bank Details", first: true); }
                 <p class="page-note">The account the cheque is drawn on &middot; paid by @Model.PayMode</p>
-                @{ await Account("Payment", "pay", f.Payment); }
-                <div class="bank-after">@{ await Branch(Model.PaymentBranch, f.Payment.CleanIfsc, "pay-lookup"); }</div>
+                @{ await AccountFields("Payment", "pay", form.Payment); }
+                <div class="bank-after">@{ await BranchPanel(Model.PaymentBranch, form.Payment.CleanIfsc, "pay-lookup"); }</div>
 
                 <h3 class="section-title">Cheque Details</h3>
                 <div class="doc-grid">
                     <div class="doc-column">
                         <label class="field-label" for="cheque-number">Cheque Number</label>
-                        <input class="field-input @Invalid("Cheque.Number")" id="cheque-number" name="Cheque.Number" value="@f.Cheque.Number" inputmode="numeric" maxlength="6" autocomplete="off" data-required="Enter the six-digit cheque number" data-check="digits:6" data-message="Enter the six-digit cheque number" aria-invalid="@InvalidAria("Cheque.Number")" aria-describedby="@DescribedBy("Cheque.Number", "cheque-number")">
+                        <input class="field-input @Invalid("Cheque.Number")" id="cheque-number" name="Cheque.Number" value="@form.Cheque.Number" inputmode="numeric" maxlength="6" autocomplete="off" data-required="Enter the six-digit cheque number" data-check="digits:6" data-message="Enter the six-digit cheque number" aria-invalid="@AriaInvalid("Cheque.Number")" aria-describedby="@DescribedBy("Cheque.Number", "cheque-number")">
                         @{ await FieldError("Cheque.Number", "cheque-number"); }
                     </div>
                     <div class="doc-column">
                         <label class="field-label" id="cheque-date-label" for="cheque-date">Cheque Date</label>
-                        @* The app's date control: three boxes, as every other date is typed. *@
                         <div class="date-input @Invalid("Cheque.Date")" role="group" data-required="Enter the cheque date" data-check="dmy" data-message="Enter the cheque date as a real date, DD/MM/YYYY" data-error-id="cheque-dateError" aria-labelledby="cheque-date-label" aria-describedby="@DescribedBy("Cheque.Date", "cheque-date")">
-                            <input class="date-input__part" id="cheque-date" name="Cheque.Dd" value="@f.Cheque.Dd" inputmode="numeric" maxlength="2" placeholder="DD" aria-label="Day" autocomplete="off" aria-invalid="@InvalidAria("Cheque.Date")">
+                            <input class="date-input__part" id="cheque-date" name="Cheque.Dd" value="@form.Cheque.Dd" inputmode="numeric" maxlength="2" placeholder="DD" aria-label="Day" autocomplete="off" aria-invalid="@AriaInvalid("Cheque.Date")">
                             <span class="date-input__sep">/</span>
-                            <input class="date-input__part" name="Cheque.Mm" value="@f.Cheque.Mm" inputmode="numeric" maxlength="2" placeholder="MM" aria-label="Month" autocomplete="off">
+                            <input class="date-input__part" name="Cheque.Mm" value="@form.Cheque.Mm" inputmode="numeric" maxlength="2" placeholder="MM" aria-label="Month" autocomplete="off">
                             <span class="date-input__sep">/</span>
-                            <input class="date-input__part date-input__part--year" name="Cheque.Yyyy" value="@f.Cheque.Yyyy" inputmode="numeric" maxlength="4" placeholder="YYYY" aria-label="Year" autocomplete="off">
+                            <input class="date-input__part date-input__part--year" name="Cheque.Yyyy" value="@form.Cheque.Yyyy" inputmode="numeric" maxlength="4" placeholder="YYYY" aria-label="Year" autocomplete="off">
                         </div>
                         @{ await FieldError("Cheque.Date", "cheque-date"); }
                     </div>
                     <div class="doc-column">
                         <label class="field-label" for="cms-location">Axis @Glossary.Term("CMS") Branch</label>
                         @* Typed, with the backend's branches offered as the browser's own suggestions. *@
-                        <input class="field-input @Invalid("Cheque.CmsLocation")" id="cms-location" name="Cheque.CmsLocation" data-chars="text" value="@f.Cheque.CmsLocation" list="cms-locations" placeholder="Start typing a branch" autocomplete="off" spellcheck="false" data-required="Enter the Axis CMS branch" aria-invalid="@InvalidAria("Cheque.CmsLocation")" aria-describedby="@(DescribedBy("Cheque.CmsLocation", "cms-location") ?? "cms-location-hint")">
+                        <input class="field-input @Invalid("Cheque.CmsLocation")" id="cms-location" name="Cheque.CmsLocation" data-chars="text" value="@form.Cheque.CmsLocation" list="cms-locations" placeholder="Start typing a branch" autocomplete="off" spellcheck="false" data-required="Enter the Axis CMS branch" aria-invalid="@AriaInvalid("Cheque.CmsLocation")" aria-describedby="@(DescribedBy("Cheque.CmsLocation", "cms-location") ?? "cms-location-hint")">
                         <datalist id="cms-locations">
-                            @foreach (var location in Model.CmsLocations) { <option value="@location"></option> }
+                            @foreach (var location in Model.CmsLocations)
+                            {
+                                <option value="@location"></option>
+                            }
                         </datalist>
                         @{ await FieldError("Cheque.CmsLocation", "cms-location"); }
                         <p class="field-hint" id="cms-location-hint">The Axis branch the cheque is presented at &mdash; the one nearest the investor</p>
                     </div>
                 </div>
 
-                @if (Model.ChequeRead is { } cheque)
+                @if (Model.ChequeRead is not null)
                 {
-                    @* What Upload Documents read off the cheque, to type the account against. *@
+                    @* What Upload Documents read off the cheque, to check the account against. *@
+                    var cheque = Model.ChequeRead;
                     <div class="bank-verified bank-after">
                         <svg class="bank-verified__tick" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7"></path></svg>
                         <div class="bank-verified__text"><strong>@cheque.State.</strong> Read off the cheque filed on <a asp-controller="Documents" asp-action="Index">Upload Documents</a>: @cheque.Lines@if (Model.FilledFromCheque) {<text>. The account and the cheque above are filled in from it &mdash; check them against the cheque before you proceed.</text>}</div>
@@ -205,44 +230,43 @@
             </section>
         }
 
-        @* ── The account interest and the maturity amount go to ──────────────── *@
+        @* ===== The account interest and the maturity amount go to ===== *@
         <section class="page-card section-card" id="repayment">
-            @{ await Head("Repayment Bank Details", first: !Model.ByCheque); }
-            <p class="page-note">Interest and the maturity amount are paid into this account@(Model.IsRenewal ? $" · the maturing deposit {Model.Docs.Renewal!.DepositNumber} pays for the new one, and its account is filled in below" : Model.ByCheque ? "" : $" · paid by {(Model.PayMode.Length > 0 ? Model.PayMode : "the mode chosen on Upload Documents")}")</p>
+            @{ await CardHead("Repayment Bank Details", first: !Model.ByCheque); }
+            <p class="page-note">@repaymentNote</p>
 
             @if (Model.ByCheque)
             {
                 <div class="investor-switches">
                     <label class="investor-switch-row" for="repay-same">
                         <span>Same as the payment account</span>
-                        @* The hidden false goes after the box, so an unticked box still posts, and a ticked one binds first. *@
-                        <input type="checkbox" id="repay-same" name="Repayment.SameAsPayment" value="true" class="investor-switch" checked="@same">
+                        @* The hidden false comes after the box, so an unticked box still posts a value. *@
+                        <input type="checkbox" id="repay-same" name="Repayment.SameAsPayment" value="true" class="investor-switch" checked="@sameAsPayment">
                         <input type="hidden" name="Repayment.SameAsPayment" value="false">
                     </label>
                 </div>
             }
 
-            @* The repayment account, drawn whether or not it is the payment account, so
-               the toggle shows or hides it at once (data-show-when). Hidden, it is
-               disabled and not posted. Paid other than by cheque there is no toggle,
-               and the rule has nothing to read. *@
-            <fieldset class="doc-choice" data-show-when="Repayment.SameAsPayment!=true" hidden="@same" disabled="@same">
-                @{ await Account("Repayment", "repay", f.Repayment); }
-                <div class="bank-after">@{ await Branch(Model.RepaymentBranch, f.Repayment.CleanIfsc, "repay-lookup"); }</div>
+            @* The repayment account is always drawn, so the toggle shows or hides it at once
+               (data-show-when). Hidden, it is disabled and not posted. *@
+            <fieldset class="doc-choice" data-show-when="Repayment.SameAsPayment!=true" hidden="@sameAsPayment" disabled="@sameAsPayment">
+                @{ await AccountFields("Repayment", "repay", form.Repayment); }
+                <div class="bank-after">@{ await BranchPanel(Model.RepaymentBranch, form.Repayment.CleanIfsc, "repay-lookup"); }</div>
             </fieldset>
 
             <div class="bank-note bank-after">
                 <strong>The account must belong to a holder on this application.</strong> A third-party account is rejected by Operations.
                 @if (Model.ByCheque)
                 {
-                    <span data-show-when="Repayment.SameAsPayment=true" hidden="@(!same)">Interest and the maturity amount go back to the account the cheque is drawn on.</span>
+                    <span data-show-when="Repayment.SameAsPayment=true" hidden="@(!sameAsPayment)">Interest and the maturity amount go back to the account the cheque is drawn on.</span>
                 }
             </div>
         </section>
 
-        @* The test branches, while test data is on: what the bank search finds. *@
-        @if (Model.Demo is { } demo)
+        @* The test branches, while test data is on. *@
+        @if (Model.Demo is not null)
         {
+            var demo = Model.Demo;
             <section class="demo-data" aria-labelledby="bank-demo-title">
                 <h2 class="demo-data__title" id="bank-demo-title">Test banks</h2>
                 <p class="demo-data__sub">@demo.Branches.Count branches the bank search finds &middot; test records only</p>
@@ -256,19 +280,22 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var b in demo.Branches)
+                        @foreach (var branch in demo.Branches)
                         {
                             <tr>
-                                <td data-label="IFSC"><code>@b.Ifsc</code></td>
-                                <td data-label="Bank">@b.Bank</td>
-                                <td data-label="Branch">@b.Branch</td>
-                                <td data-label="MICR"><code>@b.Micr</code></td>
+                                <td data-label="IFSC"><code>@branch.Ifsc</code></td>
+                                <td data-label="Bank">@branch.Bank</td>
+                                <td data-label="Branch">@branch.Branch</td>
+                                <td data-label="MICR"><code>@branch.Micr</code></td>
                             </tr>
                         }
                     </tbody>
                 </table>
                 <ul class="demo-data__notes">
-                    @foreach (var note in demo.Notes) { <li>@note</li> }
+                    @foreach (var note in demo.Notes)
+                    {
+                        <li>@note</li>
+                    }
                 </ul>
             </section>
         }
@@ -279,13 +306,15 @@
     <div class="page-action-bar__inner">
         <a class="btn btn-outline-primary" asp-controller="Investor" asp-action="Index" data-loader="Going back to Investor Information">Back</a>
         <p class="page-action-bar__hint">
-            @if (problems > 0)
+            @if (problemCount > 0)
             {
-                @($"{problems} thing{(problems == 1 ? "" : "s")} still to fix on this step")
+                var thingOrThings = problemCount == 1 ? "thing" : "things";
+                @problemCount @thingOrThings <text>still to fix on this step</text>
             }
             else
             {
-                <text>Enter the @(Model.ByCheque ? "accounts and the cheque" : "repayment account"), then proceed to <strong>FD Configuration</strong></text>
+                var whatToEnter = Model.ByCheque ? "accounts and the cheque" : "repayment account";
+                <text>Enter the @whatToEnter, then proceed to <strong>FD Configuration</strong></text>
             }
         </p>
         <div class="page-action-bar__right">
