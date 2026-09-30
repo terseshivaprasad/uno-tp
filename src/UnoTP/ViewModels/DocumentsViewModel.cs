@@ -41,6 +41,7 @@ public class DocumentsViewModel(
     IVerificationService verification,
     IPanAadhaarLinkService panLink,
     IFaceMatchService faces,
+    IMaskingService masking,
     INameScreeningService screening,
     UnoTP.Infrastructure.Lookups lookups,
     UnoTP.Infrastructure.CurrentPartner currentPartner,
@@ -1639,8 +1640,9 @@ public class DocumentsViewModel(
         s.Log.Insert(0, entry);
         var copy = new UploadFile(Path.GetFileName(file.FileName), file.ContentType, bytes);
 
-        StoredDoc Filed(string check, string kind) =>
-            new(copy.FileName, file.Length, file.ContentType, check, kind);
+        // What is filed is described as stored: an Aadhaar is filed masked, a different file from the one handed over.
+        StoredDoc Filed(UploadFile stored, string check, string kind) =>
+            new(stored.FileName, stored.Bytes.Length, stored.ContentType, check, kind);
 
         if (!Checked.TryGetValue(def.Key, out var rule))
         {
@@ -1648,7 +1650,7 @@ public class DocumentsViewModel(
             s.Attempts[key] = 0;
             entry.Add("Filed as handed over — nothing outside answers for this document.");
             entry.End("Filed", "ok");
-            s.Docs[key] = Filed(NoCheck.GetValueOrDefault(def.Key, "Filed as handed over."), "");
+            s.Docs[key] = Filed(copy, NoCheck.GetValueOrDefault(def.Key, "Filed as handed over."), "");
             return;
         }
 
@@ -1667,7 +1669,7 @@ public class DocumentsViewModel(
         }
     }
 
-    private async Task CheckAsync(SlotDef def, DocHolder h, (DocumentKind Kind, string What) rule, UploadFile copy, LogEntry entry, Func<string, string, StoredDoc> filed)
+    private async Task CheckAsync(SlotDef def, DocHolder h, (DocumentKind Kind, string What) rule, UploadFile copy, LogEntry entry, Func<UploadFile, string, string, StoredDoc> filed)
     {
         var s = State;
         var key = h.Key(def.Key);
@@ -1713,6 +1715,15 @@ public class DocumentsViewModel(
             return;
         }
         entry.Add($"Identified as {(proof ? "a proof of address: " + type : rule.What)}.", "ok");
+
+        // 1a. An Aadhaar is masked the moment it is known to be one, before anything is
+        // kept of it: OCR reads the masked copy, and it is the masked copy that is
+        // filed, or kept aside if it is refused. No copy with the whole number is stored.
+        if (proof && type == "Aadhaar")
+        {
+            copy = await masking.MaskAsync(copy, AadhaarConsent);
+            entry.Add("Aadhaar number masked before the copy is kept.", "ok");
+        }
 
         // 2. OCR. An Aadhaar is taken only when the name and date of birth it reads
         // are the PAN's; masked or not, its number need not be read (see ReadAddressAsync).
@@ -1761,7 +1772,7 @@ public class DocumentsViewModel(
             _ => await ReadInstrumentAsync(reading, entry),
         };
         await FileAsync(def, h, copy);
-        s.Docs[key] = filed(check, kind);
+        s.Docs[key] = filed(copy, check, kind);
         // Taken, so whatever was refused before it is behind the partner.
         s.Attempts[key] = 0;
 

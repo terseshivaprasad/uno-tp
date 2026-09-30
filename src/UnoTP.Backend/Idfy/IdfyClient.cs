@@ -230,7 +230,8 @@ public sealed record FaceCompare(
 public sealed record FaceImage(bool? FaceDetected, string? FaceQuality);
 
 /// <param name="IdNumberFound">False when there was no Aadhaar number on the copy to mask.</param>
-public sealed record AadhaarMask(bool? IdNumberFound);
+/// <param name="MaskedDocument">The masked image, Base64, when a number was found and masked.</param>
+public sealed record AadhaarMask(bool? IdNumberFound, string? MaskedDocument);
 
 /// <param name="DateOfValidity">When the licence runs out, as OCR read it. On some cards it reads an issue date instead.</param>
 /// <param name="IssueDates">When each vehicle class was issued, keyed by class (LMV, MCWG...).</param>

@@ -153,6 +153,20 @@ public class JourneyTests(App app)
     }
 
     [Fact]
+    public async Task An_Aadhaar_proof_of_address_is_masked_before_it_is_filed()
+    {
+        var client = await app.SignedInAsync();
+        var at = await App.NewApplicationAsync(client, NewInvestor);
+        await App.UploadAsync(client, App.Step(at, "documents"), "pan", "pan.jpg", ("appType", "DIGITAL"));
+
+        var page = await App.UploadAsync(client, App.Step(at, "documents"), "poa", "aadhaar.jpg", ("appType", "DIGITAL"));
+        // The history is drawn below the boxes; the box itself holds the filed copy.
+        Assert.Contains("Identified as a proof of address: Aadhaar.", page);
+        Assert.Contains("Aadhaar number masked before the copy is kept.", page);
+        Assert.Contains(">Replace<", Regex.Match(page, "id=\"slot-poa\".*?doc-slot__notes", RegexOptions.Singleline).Value);
+    }
+
+    [Fact]
     public async Task A_different_communication_address_is_typed_on_Investor_Information()
     {
         var client = await app.SignedInAsync();

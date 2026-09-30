@@ -90,13 +90,22 @@ public sealed class IdfyDocumentIdentifier(
 }
 
 /// <summary>
-/// Masking by IDfy: it is asked to mask the Aadhaar number, and a copy on which it
-/// finds no number to mask is one that is masked already.
+/// Masking by IDfy: it is asked to mask the Aadhaar number and hands the masked
+/// image back; a copy on which it finds no number to mask is one that is masked
+/// already, and is kept as it is.
 /// </summary>
 public sealed class IdfyMasking(IdfyClient idfy) : IMaskingService
 {
-    public async Task<bool> IsMaskedAsync(UploadFile file, bool consent, CancellationToken ct = default) =>
-        (await idfy.MaskAadhaarAsync(file, consent, ct)).Result!.IdNumberFound != true;
+    public async Task<UploadFile> MaskAsync(UploadFile file, bool consent, CancellationToken ct = default)
+    {
+        var result = (await idfy.MaskAadhaarAsync(file, consent, ct)).Result!;
+        if (result.IdNumberFound != true) return file;
+        if (string.IsNullOrEmpty(result.MaskedDocument))
+        {
+            throw new ExternalServiceException("Aadhaar masking", "IDfy found the Aadhaar number but sent no masked copy back. Try again in a while.");
+        }
+        return new UploadFile(file.FileName, file.ContentType, Convert.FromBase64String(result.MaskedDocument));
+    }
 }
 
 /// <summary>OCR by IDfy for a PAN card, an Aadhaar, a driving licence, a passport and a voter ID.</summary>
