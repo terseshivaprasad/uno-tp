@@ -133,25 +133,37 @@
 })();
 
 (function () {
-  // Offers only the sub occupations that go with the occupation chosen.
+  // The sub occupations an occupation offers, from the select's data-lists
+  // ("occupation=sub|sub;occupation=sub"): its own list, every sub occupation for an
+  // occupation with no list, and none for an occupation whose list is empty.
+  function subOccupationsFor(sub, occupation) {
+    var every = (sub.getAttribute('data-every') || '').split('|').filter(Boolean);
+    if (occupation === '') return every;
+    var lists = (sub.getAttribute('data-lists') || '').split(';');
+    for (var i = 0; i < lists.length; i++) {
+      var parts = lists[i].split('=');
+      if (parts[0] === occupation) return parts[1] ? parts[1].split('|') : [];
+    }
+    return every;
+  }
+
+  // Rebuilds the sub occupation dropdown for the occupation chosen, keeping the
+  // choice where it still applies.
   function offerSubOccupationsFor(occupationSelect) {
     var sub = document.querySelector('select[data-sub-occupation-of="' + occupationSelect.id + '"]');
     if (!sub) return;
     var occupation = occupationSelect.value;
-    var offered = 0;
-    var options = sub.querySelectorAll('option[data-occupations]');
-    for (var i = 0; i < options.length; i++) {
-      var fors = options[i].getAttribute('data-occupations') || '';
-      var applies = occupation === '' || fors === '' || fors.split('|').indexOf(occupation) >= 0;
-      options[i].hidden = !applies;
-      options[i].disabled = !applies;
-      if (applies) offered++;
-      if (!applies && options[i].selected) sub.value = '';
+    var offered = subOccupationsFor(sub, occupation);
+    var chosen = sub.value;
+    var asksNothing = occupation !== '' && offered.length === 0;
+    while (sub.options.length > 0) sub.remove(0);
+    sub.add(new Option(asksNothing ? 'Not applicable' : 'Select', ''));
+    for (var i = 0; i < offered.length; i++) {
+      var option = new Option(offered[i], offered[i]);
+      if (offered[i] === chosen) option.selected = true;
+      sub.add(option);
     }
-    var first = sub.querySelector('option[value=""]');
-    if (first) first.textContent = occupation !== '' && offered === 0 ? 'Not applicable' : 'Select';
-    // An occupation with no sub occupations asks for none.
-    if (occupation !== '' && offered === 0) sub.removeAttribute('data-required');
+    if (asksNothing) sub.removeAttribute('data-required');
     else sub.setAttribute('data-required', 'Select the sub occupation');
   }
 
@@ -160,7 +172,4 @@
     if (!select.matches || !select.matches('select') || !/\.Occupation$/.test(select.name || '')) return;
     offerSubOccupationsFor(select);
   });
-
-  var occupations = document.querySelectorAll('select[name$=".Occupation"]');
-  for (var i = 0; i < occupations.length; i++) offerSubOccupationsFor(occupations[i]);
 })();

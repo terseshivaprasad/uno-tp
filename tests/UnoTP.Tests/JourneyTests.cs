@@ -449,23 +449,23 @@ public class JourneyTests(App app)
     }
 
     [Fact]
-    public async Task A_nominee_on_the_folio_fills_the_nominee_fields_with_Use()
+    public async Task A_nominee_on_the_folio_opens_the_nominee_card_filled_in()
     {
         var client = await app.SignedInAsync();
         var at = await App.NewApplicationAsync(client, OnFolioComplete);
         var investor = App.Step(at, "investor");
 
+        // The latest nominee on record fills the card the first time the page opens.
         var page = await client.GetStringAsync(investor);
-        Assert.Contains("Nominees on this folio", page);
-        Assert.Contains("MEERA ANIL JOSHI", page);
-        Assert.Contains("AARAV SHIVAPRASAD TERSE", page);
+        Assert.Contains("id=\"investorNomineeName\" name=\"Nominee.Name\" maxlength=\"50\" value=\"MEERA ANIL JOSHI\"", page);
+        Assert.Contains("name=\"Nominee.Dd\" value=\"14\"", page);
+        Assert.Contains("name=\"Nominee.Yyyy\" value=\"1988\"", page);
+        Assert.DoesNotContain("Nominees on this folio", page);
 
-        var used = await App.PostAsync(client, investor, investor + "/nominee/use/1");
-        var filled = await used.Content.ReadAsStringAsync();
-        Assert.Contains("id=\"investorNomineeName\" name=\"Nominee.Name\" maxlength=\"50\" value=\"AARAV SHIVAPRASAD TERSE\"", filled);
-        Assert.Contains("name=\"Nominee.Dd\" value=\"05\"", filled);
-        Assert.Contains("name=\"Nominee.Yyyy\" value=\"2016\"", filled);
-        Assert.Contains("MEERA ANIL JOSHI", Regex.Match(filled, "id=\"investorNomineeGuardian\"[^>]*").Value);
+        // Removed, it stays removed on the next visit: the partner's choice stands.
+        await App.PostAsync(client, investor, investor + "/nominee/remove");
+        var again = await client.GetStringAsync(investor);
+        Assert.DoesNotContain("value=\"MEERA ANIL JOSHI\"", again);
     }
 
     [Fact]

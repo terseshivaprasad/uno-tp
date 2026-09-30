@@ -77,26 +77,28 @@
         </div>
     }
 
-    // The sub occupation, which goes with the occupation: every sub occupation is drawn
-    // with the occupations that list it (data-occupations, a | between; none means all),
-    // and investor.js offers only those for the occupation chosen. Where the occupation
-    // offers none, the field says so and asks for nothing.
+    // The sub occupation, which goes with the occupation. The dropdown holds only the
+    // sub occupations the chosen occupation offers; every occupation's list travels on
+    // the select (data-lists, "occupation=sub|sub;occupation=sub"), and investor.js
+    // rebuilds the options as the occupation changes - rebuilt, not hidden, since a
+    // hidden option still shows in Safari. Where the occupation offers none, the field
+    // says so and asks for nothing.
     private async Task SubOccupationSelect(string id, string name, string occupationId, string occupation)
     {
         var reference = Model.Docs.Ref;
         var selected = Model.Value(name);
         var offered = reference.SubOccupationsFor(occupation);
         var asksNothing = occupation.Length > 0 && offered.Count == 0;
+        var lists = string.Join(";", (reference.OccupationsWithSubs ?? []).Select(o => o.Name + "=" + string.Join("|", o.SubOccupations)));
+        var every = string.Join("|", reference.SubOccupations);
         <div class="doc-column">
             <label class="field-label" for="@id">Sub Occupation</label>
             <div class="doc-select">
-                <select class="field-input @Invalid(name)" id="@id" name="@name" data-sub-occupation-of="@occupationId" aria-invalid="@AriaInvalid(name)" aria-describedby="@DescribedBy(name, id)" data-required="Select the sub occupation">
+                <select class="field-input @Invalid(name)" id="@id" name="@name" data-sub-occupation-of="@occupationId" data-lists="@lists" data-every="@every" aria-invalid="@AriaInvalid(name)" aria-describedby="@DescribedBy(name, id)" data-required="@(asksNothing ? null : "Select the sub occupation")">
                     <option value="" selected="@(selected.Length == 0)">@(asksNothing ? "Not applicable" : "Select")</option>
-                    @foreach (var sub in reference.SubOccupations)
+                    @foreach (var sub in offered)
                     {
-                        var listedBy = (reference.OccupationsWithSubs ?? []).Where(o => o.SubOccupations.Contains(sub)).Select(o => o.Name).ToList();
-                        var applies = occupation.Length == 0 || offered.Contains(sub);
-                        <option value="@sub" selected="@(sub == selected)" data-occupations="@string.Join("|", listedBy)" hidden="@(!applies)" disabled="@(!applies)">@sub</option>
+                        <option value="@sub" selected="@(sub == selected)">@sub</option>
                     }
                 </select>
             </div>
@@ -605,36 +607,10 @@
     {
         <section class="page-card investor-question" id="@id">
             <p class="investor-question__question">@question</p>
-            @if (id == "investorAddNominee")
-            {
-                await NomineesOnRecordList();
-            }
             @{ await PostButton(action, null, "investor-add", PlusIcon + label); }
         </section>
     }
 
-    // The nominees named on the folio's earlier deposits, each with Use, which fills
-    // the nominee's fields from it: under the question and in the open card, not in
-    // the Proceed dialog, which stays a short prompt. Nothing for an investor without a folio.
-    private async Task NomineesOnRecordList()
-    {
-        if (Model.NomineesOnRecord.Count == 0) return;
-        <div class="on-record">
-            <div class="on-record__title">Nominees on this folio</div>
-            <ul class="on-record__list">
-                @for (var i = 0; i < Model.NomineesOnRecord.Count; i++)
-                {
-                    var nominee = Model.NomineesOnRecord[i];
-                    var born = nominee.Dob.Length > 0 ? nominee.Dob.Replace("-", "/") : "date of birth to be entered";
-                    @* One line: the name, the date of birth and the relation. Use fills the guardian too, where there is one. *@
-                    <li class="on-record__row">
-                        <span class="on-record__main">@nominee.Name · @born · @nominee.Relation</span>
-                        <button type="submit" form="investorInfoForm" class="btn btn-outline-primary btn-sm on-record__use" formaction="@Url.Action("NomineeUse", new { n = i })" formnovalidate data-loader="Filling the nominee&rsquo;s details&hellip;">Use</button>
-                    </li>
-                }
-            </ul>
-        </div>
-    }
 }
 
 @* Once the investor's card head has scrolled away, this strip keeps who the step is for
@@ -772,7 +748,6 @@
                     <h2 class="page-title">Nominee Details</h2>
                     @{ await PostButton("NomineeRemove", null, "investor-remove", RemoveLabel); }
                 </div>
-                @{ await NomineesOnRecordList(); }
                 <div class="doc-grid">
                     <div class="doc-column">
                         <label class="field-label" for="investorNomineeName">Name</label>
