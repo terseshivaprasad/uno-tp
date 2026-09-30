@@ -536,6 +536,32 @@ public class JourneyTests(App app)
     }
 
     [Fact]
+    public async Task Paid_online_the_repayment_bank_has_to_be_on_the_payment_gateway()
+    {
+        var client = await app.SignedInAsync();
+        var at = await App.NewApplicationAsync(client, OnFolioComplete);
+        var documents = App.Step(at, "documents");
+        var bank = App.Step(at, "payment");
+        await App.PostAsync(client, documents, documents + "/save", ("appType", "DIGITAL"), ("payMode", "Online"), ("Sourcing", "1"), ("Category", "PUBLIC/GENERAL"));
+
+        // Axis is not on the mock's gateway: refused, with what to do, as soon as it is picked and on Proceed.
+        var picked = await App.PostAsync(client, bank, bank, ("Find", "repayment"), ("Repayment.SameAsPayment", "false"), ("Repayment.Ifsc", "UTIB0000014"), ("Repayment.AccountNumber", "1234567890"), ("Repayment.AccountNumberConfirm", "1234567890"));
+        var page = await picked.Content.ReadAsStringAsync();
+        Assert.Contains("Cannot proceed: this bank is not on the payment gateway", page);
+        Assert.Contains("Axis Bank is not available on our payment gateway for online payment", page);
+        Assert.Contains("change the payment mode to RTGS or Cheque on Upload Documents", page);
+
+        var refused = await App.PostAsync(client, bank, bank, ("Repayment.SameAsPayment", "false"), ("Repayment.Ifsc", "UTIB0000014"), ("Repayment.AccountNumber", "1234567890"), ("Repayment.AccountNumberConfirm", "1234567890"));
+        Assert.Contains("/BankDetails/", refused.RequestMessage!.RequestUri!.AbsolutePath);
+        Assert.Contains("not available on our payment gateway", await refused.Content.ReadAsStringAsync());
+
+        // Paid by RTGS the same account goes through.
+        await App.PostAsync(client, documents, documents + "/save", ("appType", "DIGITAL"), ("payMode", "RTGS"), ("Sourcing", "1"), ("Category", "PUBLIC/GENERAL"));
+        var proceeded = await App.PostAsync(client, bank, bank, ("Repayment.SameAsPayment", "false"), ("Repayment.Ifsc", "UTIB0000014"), ("Repayment.AccountNumber", "1234567890"), ("Repayment.AccountNumberConfirm", "1234567890"));
+        Assert.Contains("/FDConfiguration/", proceeded.RequestMessage!.RequestUri!.AbsolutePath);
+    }
+
+    [Fact]
     public async Task No_TDS_needs_Form_121_filed_on_FD_Configuration_before_Proceed()
     {
         var client = await app.SignedInAsync();

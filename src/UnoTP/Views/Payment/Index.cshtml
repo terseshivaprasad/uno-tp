@@ -54,7 +54,7 @@
         var account = Model.AccountsOnRecord[i];
         <li class="on-record__row">
             <span class="on-record__main">@account.Bank · @PaymentViewModel.MaskAccount(account.AccountNumber)</span>
-            <span class="on-record__meta">@account.Branch · @account.Ifsc · on @account.UsedOn</span>
+            <span class="on-record__meta">@account.Branch · @account.Ifsc · on @account.UsedOn@if (!Model.OnGateway(account)) { <text> · <strong>not on the payment gateway</strong></text> }</span>
             <button type="submit" name="UseRepayment" value="@i" class="btn btn-outline-primary btn-sm on-record__use" formnovalidate data-loader="Filling the repayment account&hellip;">Use</button>
         </li>
     }
@@ -294,6 +294,18 @@
                 <p class="page-note">@repaymentNote</p>
                 @{ await AccountFields("Repayment", "repay", form.Repayment); }
                 <div class="bank-after">@{ await BranchPanel(Model.RepaymentBranch, form.Repayment.CleanIfsc, "repay-lookup"); }</div>
+                @* Paid online, a bank the gateway does not take is an error as soon as it is picked, with what to do. *@
+                @if (Model.GatewayProblem is { } gatewayProblem && Model.Problem("Repayment.Ifsc") is null)
+                {
+                    <div class="alert alert-danger page-missing-items bank-after" role="alert">
+                        <svg class="page-missing-items__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 7v6"></path><circle cx="12" cy="16.8" r=".8" fill="currentColor"></circle></svg>
+                        <div class="page-missing-items__body">
+                            <div class="page-missing-items__title">Cannot proceed: this bank is not on the payment gateway</div>
+                            <p>@gatewayProblem</p>
+                            <p class="page-missing-items__action"><a class="btn btn-primary btn-sm" asp-controller="Documents" asp-action="Index" data-loader="Going to Upload Documents">Change the payment mode</a></p>
+                        </div>
+                    </div>
+                }
             </fieldset>
 
             <div class="bank-note bank-after">

@@ -152,6 +152,33 @@ public sealed class PaymentViewModel(DocumentsViewModel docs, BankForm form, Ban
     /// <summary>The repayment accounts on record against the investor's folio, to fill the fields from; empty without a folio.</summary>
     public IReadOnlyList<AccountOnRecord> AccountsOnRecord { get; init; } = [];
 
+    /// <summary>
+    /// The repayment bank chosen is not on the payment gateway while the deposit is
+    /// paid online: what is wrong and what to do. Null while nothing is wrong, or the
+    /// deposit is not paid online.
+    /// </summary>
+    public string? GatewayProblem
+    {
+        get
+        {
+            if (PayMode != "Online") return null;
+            var ifsc = Form.Repayment.CleanIfsc;
+            if (ifsc.Length < 4) return null;
+            if (Ref.OnPaymentGateway(ifsc)) return null;
+            var bank = RepaymentBranch?.Bank ?? "This bank";
+            return GatewayProblemFor(bank);
+        }
+    }
+
+    /// <summary>The error for a bank the gateway does not take, and what to do about it.</summary>
+    public static string GatewayProblemFor(string bank) =>
+        $"{bank} is not available on our payment gateway for online payment. What to do: choose a repayment account with a bank that is, or change the payment mode to RTGS or Cheque on Upload Documents.";
+
+    /// <summary>Whether an account on the folio can be used for online payment.</summary>
+    public bool OnGateway(AccountOnRecord account) => PayMode != "Online" || Ref.OnPaymentGateway(account.Ifsc);
+
+    private ReferenceData Ref => Docs.Ref;
+
     /// <summary>An account number as shown on a list: its last four digits.</summary>
     public static string MaskAccount(string number) =>
         number.Length <= 4 ? number : new string('•', 4) + " " + number[^4..];

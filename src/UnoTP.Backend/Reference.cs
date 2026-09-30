@@ -82,8 +82,22 @@ public sealed record ReferenceData(
     IReadOnlyList<string> RenewalNotes,
     IReadOnlyList<FeatureOption>? Features = null,
     IReadOnlyList<Option>? SourcesOfFunds = null,
-    IReadOnlyList<OccupationOption>? OccupationsWithSubs = null)
+    IReadOnlyList<OccupationOption>? OccupationsWithSubs = null,
+    IReadOnlyList<Option>? GatewayBanks = null)
 {
+    /// <summary>
+    /// Whether the payment gateway takes an account at this IFSC for online payment:
+    /// the bank code, the IFSC's first four letters, is on the gatewayBanks list. With
+    /// no list at all every bank is taken.
+    /// </summary>
+    public bool OnPaymentGateway(string ifsc)
+    {
+        if (GatewayBanks is null || GatewayBanks.Count == 0) return true;
+        if (ifsc.Length < 4) return true;
+        var bankCode = ifsc[..4].ToUpperInvariant();
+        return GatewayBanks.Any(b => b.Code.Equals(bankCode, StringComparison.OrdinalIgnoreCase));
+    }
+
     /// <summary>
     /// The sub occupations an occupation offers: its own list. An occupation with no
     /// list of its own offers every sub occupation; one with an empty list offers none

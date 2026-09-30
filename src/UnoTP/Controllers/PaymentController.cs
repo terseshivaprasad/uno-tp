@@ -80,6 +80,11 @@ public class PaymentController(IApplicationApi applications, IDepositApi deposit
 
         var (pay, repay) = await BranchesAsync(byCheque ? form.Payment.CleanIfsc : "", form.Repayment.CleanIfsc);
         var problems = form.Problems(byCheque, pay, form.RepaysToPayment(byCheque) ? pay : repay, docs.Ref.CmsLocations);
+        // Paid online, the repayment bank has to be one the payment gateway takes.
+        if (docs.State.PayMode == "Online" && form.Repayment.CleanIfsc.Length >= 4 && !docs.Ref.OnPaymentGateway(form.Repayment.CleanIfsc))
+        {
+            problems["Repayment.Ifsc"] = PaymentViewModel.GatewayProblemFor(repay?.Bank ?? "This bank");
+        }
         return problems.Count > 0 ? Back(nameof(Index), problems) : RedirectToAction(nameof(DepositController.Index), "Deposit");
     }
 

@@ -224,6 +224,14 @@ public sealed class MockReference : IReferenceApi
             new("Retired", []),
             new("Homemaker", []),
             new("Student", []),
+        ],
+        // The banks the payment gateway takes for online payment, by IFSC bank code.
+        // Axis (UTIB) is left off, so a demo can reach the error.
+        GatewayBanks:
+        [
+            new("HDFC", "HDFC Bank"),
+            new("ICIC", "ICICI Bank"),
+            new("SBIN", "State Bank of India"),
         ]);
 
     private static readonly AppConfig Config = new(

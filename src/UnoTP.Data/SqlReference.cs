@@ -126,7 +126,8 @@ public sealed class SqlReference(Db db, IMemoryCache cache) : IReferenceApi
             RenewalNotes: Names("renewalNotes"),
             Features: features,
             SourcesOfFunds: Of("sourcesOfFunds").Select(e => new Option(e.Code, e.Name)).ToList(),
-            OccupationsWithSubs: Of("occupations").Select(e => Attrs(e, a => new OccupationOption(Fill(e.Name), ReadNames(a, "subOccupations")))).ToList());
+            OccupationsWithSubs: Of("occupations").Select(e => Attrs(e, a => new OccupationOption(Fill(e.Name), ReadNames(a, "subOccupations")))).ToList(),
+            GatewayBanks: Of("gatewayBanks").Select(e => new Option(e.Code, e.Name)).ToList());
     }
 
     // ----- An entry's attributes, j_Attrs -------------------------------------------
