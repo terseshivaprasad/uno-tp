@@ -607,17 +607,14 @@
     {
         <section class="page-card investor-question" id="@id">
             <p class="investor-question__question">@question</p>
-            @if (id == "investorAddNominee")
-            {
-                await NomineesOnRecordList();
-            }
             @{ await PostButton(action, null, "investor-add", PlusIcon + label); }
         </section>
     }
 
     // The nominees named on the folio's earlier deposits, each with Use, which fills
-    // the nominee's fields from it: under the question and in the open card, not in
-    // the Proceed dialog, which stays a short prompt. Nothing for an investor without a folio.
+    // the nominee's fields from it. In the open nominee card only, over the blank
+    // form, so Add Nominee is the one way in; not on the closed question, nor in the
+    // Proceed dialog. Nothing for an investor without a folio.
     private async Task NomineesOnRecordList()
     {
         var all = Model.NomineesOnRecord;

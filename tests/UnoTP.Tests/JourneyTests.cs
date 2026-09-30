@@ -456,7 +456,11 @@ public class JourneyTests(App app)
         var at = await App.NewApplicationAsync(client, OnFolioComplete);
         var investor = App.Step(at, "investor");
 
-        var page = await client.GetStringAsync(investor);
+        // Closed, the nominee question offers Add Nominee alone; the folio's nominees show once the card is open.
+        var closed = await client.GetStringAsync(investor);
+        Assert.DoesNotContain("Nominees on this folio", closed);
+        var opened = await App.PostAsync(client, investor, investor + "/nominee/add");
+        var page = await opened.Content.ReadAsStringAsync();
         Assert.Contains("Nominees on this folio", page);
         Assert.Contains("MEERA ANIL JOSHI", page);
         Assert.Contains("AARAV SHIVAPRASAD TERSE", page);
