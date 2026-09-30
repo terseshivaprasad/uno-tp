@@ -13,7 +13,7 @@
   width: 36px; height: 36px; flex: none; border-radius: 50%; background: var(--green-bg); color: var(--green-2);
   display: flex; align-items: center; justify-content: center;
 }
-.sub-title { margin: 0; font-size: 20px; font-weight: 600; line-height: 28px; color: var(--ink); letter-spacing: -.01em; }
+.sub-title { margin: 0; font-size: 16px; font-weight: 600; line-height: 24px; color: var(--ink); }
 .sub-meta { font-size: 12px; color: var(--muted); padding-top: 2px; }
 .sub-pending { border-left: 3px solid var(--amber-accent); background: var(--amber-tint); border-radius: 0 6px 6px 0; padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; }
 .sub-pending__head { display: flex; align-items: center; gap: 12px; }

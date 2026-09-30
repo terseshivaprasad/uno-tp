@@ -7,7 +7,7 @@
 .status-card { width: min(460px, 100%); padding: 32px 28px; border: 1px solid var(--border-2); border-radius: 8px; background: #fff; text-align: center; }
 .status-card__mark { display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; margin-bottom: 16px; border-radius: 50%; background: var(--pink-bg); color: var(--red); }
 .status-card__mark--amber { background: var(--amber-tint); color: var(--amber); }
-.status-card__title { margin: 0 0 12px; font-size: 20px; font-weight: 600; color: var(--ink); }
+.status-card__title { margin: 0 0 12px; font-size: 16px; font-weight: 600; line-height: 24px; color: var(--ink); }
 .status-card__text { margin: 0 0 12px; font-size: 14px; line-height: 20px; color: var(--muted); }
 .status-card__ref { margin: 4px 0 0; font-size: 12px; color: var(--muted); }
 .status-card__ref code { font-size: 12px; }

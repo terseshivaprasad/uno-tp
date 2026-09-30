@@ -23,7 +23,7 @@
   .inv-grid { grid-template-columns: 1fr; }
 }
 .inv-field { display: flex; flex-direction: column; min-width: 0; }
-.inv-field label { font-size: 14px; font-weight: 600; line-height: 20px; padding-bottom: 8px; color: var(--ink); }
+.inv-field label { font-size: 12px; font-weight: 600; line-height: 16px; padding-bottom: 4px; color: var(--ink); }
 .inv-field__hint { font-size: 12px; color: var(--muted); padding-top: 4px; line-height: 16px; }
 .inv-field__hint--error { color: var(--red-dark); }
 .inv-field__hint[hidden] { display: none; }
