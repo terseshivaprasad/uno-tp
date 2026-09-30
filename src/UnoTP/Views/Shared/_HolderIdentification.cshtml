@@ -1,68 +1,74 @@
 @model HolderIdentificationBlock
-@using Stage = UnoTP.ViewModels.NewApplicationViewModel.Stage
-@* Investor Identification's search and result for one holder: the primary on
-   Investor Identification, and each joint holder on Investor Information. Every
-   step posts to the server, which checks the holder against the register (see
-   HolderSearch). A PAN with no folio goes on as it stands: its PAN copy is read and
-   put to NSDL once it is filed with the holder's documents. *@
+@* The search and result for one holder: the primary holder on Investor Identification,
+   and each joint holder on Investor Information. Every step posts to the server, which
+   checks the holder against the register (see HolderSearch). A PAN with no folio goes
+   on as it stands: its PAN copy is read and put to NSDL once it is filed. *@
 @{
-    var m = Model.Search;
-    var ids = Model.Ids;
-    var r = m.Record;
-    var newPan = r is not null && r.Folio.Length == 0;
+    var search = Model.Search;
+    var idPrefix = Model.Ids;
+    var record = search.Record;
+    var isNewPan = record is not null && record.Folio.Length == 0;
 
     // The field that needs looking at first takes the caret when the page comes back.
-    var focus = m.PanError is not null ? ids + "Pan"
-        : m.DobError is not null ? ids + "Dd"
-        : m.FolioError is not null ? ids + "Folio"
-        : null;
+    string? focus = null;
+    if (search.PanError is not null) focus = idPrefix + "Pan";
+    else if (search.DobError is not null) focus = idPrefix + "Dd";
+    else if (search.FolioError is not null) focus = idPrefix + "Folio";
 }
 
 @functions {
-    // A button that posts one step: through the step's own form, or the page's form.
-    // One that checks the search fields first (field-checks.js) sends nothing while one is wrong.
-    private async Task Step(string step, string css, string label, string? loader = null, bool validate = false)
+#pragma warning disable CS1998 // Razor makes these helpers async; there is nothing to await in them.
+
+    // A button that posts one step of the search. Inside a bigger form (Embedded) it names
+    // the step's URL; on its own it posts its own form. A button that checks the search
+    // fields first (field-checks.js) sends nothing while one is wrong.
+    private async Task StepButton(string step, string css, string labelHtml, string? loader = null, bool checksFieldsFirst = false)
     {
-        var checks = validate ? ".page-search" : null;
+        string? checks = checksFieldsFirst ? ".page-search" : null;
         if (Model.Embedded)
         {
-            <button type="submit" class="@css" formaction="@Model.Url(step)" formnovalidate data-loader="@loader" data-validate="@checks">@Html.Raw(label)</button>
+            <button type="submit" class="@css" formaction="@Model.Url(step)" formnovalidate data-loader="@loader" data-validate="@checks">@Html.Raw(labelHtml)</button>
         }
         else
         {
-            <button type="submit" class="@css" data-loader="@loader" data-validate="@checks">@Html.Raw(label)</button>
+            <button type="submit" class="@css" data-loader="@loader" data-validate="@checks">@Html.Raw(labelHtml)</button>
         }
-        await Task.CompletedTask;
     }
 
-    // Search again: a form of its own, or a button in the page's form.
-    private async Task Again(string css, string label)
+    // "Search again": a form of its own, or a button inside the page's form. Not offered
+    // for a holder that is locked to its record.
+    private async Task SearchAgainButton(string css, string labelHtml)
     {
         if (Model.Locked) return;
         if (Model.Embedded)
         {
-            await Step("Again", css, label);
+            await StepButton("Again", css, labelHtml);
         }
         else
         {
             <form method="post" action="@Model.Url("Again")" asp-antiforgery="true" data-partial>
-                @{ await Step("Again", css, label); }
+                @{ await StepButton("Again", css, labelHtml); }
             </form>
         }
     }
 
-    private async Task SearchFields(NewApplicationViewModel m, string ids, string? focus)
+    // The search fields: PAN and date of birth, or a folio number, and the Check record button.
+    private async Task SearchFields(NewApplicationViewModel search, string idPrefix, string? focus)
     {
+        var panInvalid = search.PanError is not null ? "is-invalid" : null;
+        var dobInvalid = search.DobError is not null ? "is-invalid" : null;
+        var folioInvalid = search.FolioError is not null ? "is-invalid" : null;
+
         if (Model.FolioSearch)
         {
             <fieldset class="search-by">
                 <legend class="field-label">Search By</legend>
                 <label class="radio-option">
-                    <input type="radio" name="@Model.Name("By")" value="pan" checked="@(m.By != "folio")">
+                    <input type="radio" name="@Model.Name("By")" value="pan" checked="@(search.By != "folio")">
                     <span>PAN &amp; Date of Birth</span>
                 </label>
                 <label class="radio-option">
-                    <input type="radio" name="@Model.Name("By")" value="folio" checked="@(m.By == "folio")">
+                    <input type="radio" name="@Model.Name("By")" value="folio" checked="@(search.By == "folio")">
                     <span>Folio Number</span>
                 </label>
             </fieldset>
@@ -74,53 +80,52 @@
 
         <div class="field-grid">
             <div class="form-field" data-for="pan">
-                <label class="field-label" for="@(ids)Pan">Enter PAN</label>
-                <input class="field-input field-input--caps @(m.PanError is not null ? "is-invalid" : null)" id="@(ids)Pan" name="@Model.Name("Pan")" value="@m.Pan"
-                       maxlength="10" autocomplete="off" spellcheck="false" aria-describedby="@(ids)PanError"
+                <label class="field-label" for="@(idPrefix)Pan">Enter PAN</label>
+                <input class="field-input field-input--caps @panInvalid" id="@(idPrefix)Pan" name="@Model.Name("Pan")" value="@search.Pan"
+                       maxlength="10" autocomplete="off" spellcheck="false" aria-describedby="@(idPrefix)PanError"
                        data-required="Enter the PAN" data-check="pan"
-                       aria-invalid="@(m.PanError is not null ? "true" : null)" autofocus="@(focus == ids + "Pan")">
-                <p class="field-error" id="@(ids)PanError" hidden="@(m.PanError is null)">@m.PanError</p>
+                       aria-invalid="@(search.PanError is not null ? "true" : null)" autofocus="@(focus == idPrefix + "Pan")">
+                <p class="field-error" id="@(idPrefix)PanError" hidden="@(search.PanError is null)">@search.PanError</p>
             </div>
 
             <div class="form-field" data-for="pan">
-                <span class="field-label" id="@(ids)DobLabel">Date Of Birth</span>
-                @* Three boxes with slashes between, like the old jq-dte control. *@
-                <div class="date-input @(m.DobError is not null ? "is-invalid" : null)" role="group" aria-labelledby="@(ids)DobLabel" aria-describedby="@(ids)DobError"
-                     data-required="Enter the date of birth" data-check="date" data-error-id="@(ids)DobError">
-                    <input class="date-input__part" id="@(ids)Dd" name="@Model.Name("Dd")" value="@m.Dd" inputmode="numeric" maxlength="2" placeholder="DD" aria-label="Day" autocomplete="off" autofocus="@(focus == ids + "Dd")">
+                <span class="field-label" id="@(idPrefix)DobLabel">Date Of Birth</span>
+                <div class="date-input @dobInvalid" role="group" aria-labelledby="@(idPrefix)DobLabel" aria-describedby="@(idPrefix)DobError"
+                     data-required="Enter the date of birth" data-check="date" data-error-id="@(idPrefix)DobError">
+                    <input class="date-input__part" id="@(idPrefix)Dd" name="@Model.Name("Dd")" value="@search.Dd" inputmode="numeric" maxlength="2" placeholder="DD" aria-label="Day" autocomplete="off" autofocus="@(focus == idPrefix + "Dd")">
                     <span class="date-input__sep">/</span>
-                    <input class="date-input__part" name="@Model.Name("Mm")" value="@m.Mm" inputmode="numeric" maxlength="2" placeholder="MM" aria-label="Month" autocomplete="off">
+                    <input class="date-input__part" name="@Model.Name("Mm")" value="@search.Mm" inputmode="numeric" maxlength="2" placeholder="MM" aria-label="Month" autocomplete="off">
                     <span class="date-input__sep">/</span>
-                    <input class="date-input__part date-input__part--year" name="@Model.Name("Yyyy")" value="@m.Yyyy" inputmode="numeric" maxlength="4" placeholder="YYYY" aria-label="Year" autocomplete="off">
+                    <input class="date-input__part date-input__part--year" name="@Model.Name("Yyyy")" value="@search.Yyyy" inputmode="numeric" maxlength="4" placeholder="YYYY" aria-label="Year" autocomplete="off">
                 </div>
-                <p class="field-error" id="@(ids)DobError" hidden="@(m.DobError is null)">@m.DobError</p>
+                <p class="field-error" id="@(idPrefix)DobError" hidden="@(search.DobError is null)">@search.DobError</p>
             </div>
 
             @if (Model.FolioSearch)
             {
                 <div class="form-field" data-for="folio">
-                    <label class="field-label" for="@(ids)Folio">Enter Folio Number</label>
-                    <input class="field-input field-input--caps @(m.FolioError is not null ? "is-invalid" : null)" id="@(ids)Folio" name="@Model.Name("Folio")" data-chars="code" value="@m.Folio"
-                           maxlength="16" autocomplete="off" spellcheck="false" aria-describedby="@(ids)FolioError"
+                    <label class="field-label" for="@(idPrefix)Folio">Enter Folio Number</label>
+                    <input class="field-input field-input--caps @folioInvalid" id="@(idPrefix)Folio" name="@Model.Name("Folio")" data-chars="code" value="@search.Folio"
+                           maxlength="16" autocomplete="off" spellcheck="false" aria-describedby="@(idPrefix)FolioError"
                            data-required="Enter the folio number"
-                           aria-invalid="@(m.FolioError is not null ? "true" : null)" autofocus="@(focus == ids + "Folio")">
-                    <p class="field-error" id="@(ids)FolioError" hidden="@(m.FolioError is null)">@m.FolioError</p>
+                           aria-invalid="@(search.FolioError is not null ? "true" : null)" autofocus="@(focus == idPrefix + "Folio")">
+                    <p class="field-error" id="@(idPrefix)FolioError" hidden="@(search.FolioError is null)">@search.FolioError</p>
                 </div>
             }
 
             <div class="form-field form-field--check">
-                @{ await Step("Check", "identify-check-button", "Check record <span aria-hidden=\"true\">&rsaquo;</span>", validate: true); }
+                @{ await StepButton("Check", "identify-check-button", "Check record <span aria-hidden=\"true\">&rsaquo;</span>", checksFieldsFirst: true); }
             </div>
         </div>
 
-        @if (m.OpsError is not null)
+        @if (search.OpsError is not null)
         {
             @* Nothing the partner can type fixes this, so it says who can. *@
             <div class="alert alert-danger page-missing-items identify-actions" role="alert">
                 <svg class="page-missing-items__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"></circle><path d="M5.5 20a6.5 6.5 0 0 1 13 0"></path><path d="M18.5 4.5l2 2M20.5 4.5l-2 2"></path></svg>
                 <div class="page-missing-items__body">
                     <div class="page-missing-items__title">Connect with the Operations team</div>
-                    <p>@m.OpsError</p>
+                    <p>@search.OpsError</p>
                 </div>
             </div>
         }
@@ -133,75 +138,82 @@
     }
 }
 
-@if (r is null)
+@if (record is null)
 {
     @if (Model.Embedded)
     {
         <div class="page-search">
-            @{ await SearchFields(m, ids, focus); }
+            @{ await SearchFields(search, idPrefix, focus); }
         </div>
     }
     else
     {
         <form class="page-search" method="post" action="@Model.Url("Check")" asp-antiforgery="true" data-partial novalidate>
-            @{ await SearchFields(m, ids, focus); }
+            @{ await SearchFields(search, idPrefix, focus); }
         </form>
     }
 }
 else
 {
-    @* The record, laid out on the page as the later steps lay out what was read:
-       one read-only panel. The old site put the match behind a "Please make a
-       selection" dialog. *@
-    // A folio found is an existing customer, so the folio beside the name says it;
-    // only a new investor, or one not identified, is named as such, with what
-    // happens next under the record.
-    var said = newPan ? Model.NewPanNote : r.Folio.Length > 0 ? null : m.Detail;
+    @* The record found, as one read-only panel. *@
+    var heading = record.Heading;
+    if (Model.KnownName is { Length: > 0 }) heading = Model.KnownName;
+
+    // A folio found is an existing customer; a new investor, or one not identified, gets
+    // a note under the record saying what happens next.
+    string? note = null;
+    if (isNewPan) note = Model.NewPanNote;
+    else if (record.Folio.Length == 0) note = search.Detail;
+
+    var newTagText = isNewPan ? "New investor" : search.Kind;
+
     <div class="investor-panel identify-result">
         <div class="identify-result__head">
-            <span class="identify-result__name">@(Model.KnownName is { Length: > 0 } known ? known : r.Heading)</span>
-            @if (r.Folio.Length > 0)
+            <span class="identify-result__name">@heading</span>
+            @if (record.Folio.Length > 0)
             {
-                <span class="identify-result__tag">Folio @r.Folio</span>
+                <span class="identify-result__tag">Folio @record.Folio</span>
             }
             else
             {
-                <span class="identify-result__tag identify-result__tag--new">@(newPan ? "New investor" : m.Kind)</span>
+                <span class="identify-result__tag identify-result__tag--new">@newTagText</span>
             }
-            @* Back to the fields, still holding what was typed. *@
-            @{ await Again("identify-check-button identify-result__again", "<svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"10.5\" cy=\"10.5\" r=\"6.5\"></circle><path d=\"M15.5 15.5L20 20\"></path></svg> Search again"); }
+            @{ await SearchAgainButton("identify-check-button identify-result__again", "<svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"10.5\" cy=\"10.5\" r=\"6.5\"></circle><path d=\"M15.5 15.5L20 20\"></path></svg> Search again"); }
         </div>
         <div class="investor-key-value-grid">
-            <div class="investor-key-value"><div class="investor-key-value__key">PAN</div><div class="investor-key-value__value">@r.MaskedPan</div></div>
-            <div class="investor-key-value"><div class="investor-key-value__key">Date of birth</div><div class="investor-key-value__value">@r.MaskedDob</div></div>
-            @* Gender is held against the folio and is not the partner's to change
-               here, so the panel says where a correction comes from. *@
-            @if (r.Gender.Length > 0)
+            <div class="investor-key-value"><div class="investor-key-value__key">PAN</div><div class="investor-key-value__value">@record.MaskedPan</div></div>
+            <div class="investor-key-value"><div class="investor-key-value__key">Date of birth</div><div class="investor-key-value__value">@record.MaskedDob</div></div>
+            @if (record.Gender.Length > 0)
             {
+                @* Gender is held against the folio and is not the partner's to change here. *@
                 <div class="investor-key-value">
                     <div class="investor-key-value__key">Gender</div>
-                    <div class="investor-key-value__value">@r.Gender</div>
+                    <div class="investor-key-value__value">@record.Gender</div>
                     <div class="investor-key-value__note">Held on the folio &mdash; Operations can correct it</div>
                 </div>
             }
         </div>
-        @if (said is { Length: > 0 })
+        @if (note is { Length: > 0 })
         {
-            <p class="identify-result__said">@said</p>
+            <p class="identify-result__said">@note</p>
         }
 
-        @if (m.Identified || newPan)
+        @if (search.Identified || isNewPan)
         {
-            @* What the register holds against this record, item by item. Anything
-               missing is asked for again during entry, so it is said here rather
-               than left for the upload step to spring. A new investor has no record
-               yet, so every item is listed as collected during entry. *@
-            <div class="investor-panel__part page-on-record @(r.Missing == 0 ? "page-on-record--complete" : null)">
-                <div class="page-on-record__label">@r.OnRecordTitle</div>
+            @* What the register holds against this record, item by item. Anything missing is
+               asked for during entry. A new investor has no record yet, so every item is
+               listed as collected during entry. *@
+            var onRecordClass = record.Missing == 0 ? "page-on-record--complete" : null;
+            <div class="investor-panel__part page-on-record @onRecordClass">
+                <div class="page-on-record__label">@record.OnRecordTitle</div>
                 <ul class="page-on-record__list">
-                    @foreach (var item in r.OnRecord)
+                    @foreach (var item in record.OnRecord)
                     {
-                        <li class="page-on-record__item @(item.Held ? null : "page-on-record__item--missing")">
+                        var itemClass = item.Held ? null : "page-on-record__item--missing";
+                        var spoken = "not available with us";
+                        if (item.Held) spoken = "available with us";
+                        else if (isNewPan) spoken = "collected during entry";
+                        <li class="page-on-record__item @itemClass">
                             @if (item.Held)
                             {
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"></path></svg>
@@ -211,11 +223,11 @@ else
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M12 6v7"></path><circle cx="12" cy="18" r=".6" fill="currentColor"></circle></svg>
                             }
                             <span>@item.Label</span>
-                            <span class="visually-hidden">, @(item.Held ? "available with us" : newPan ? "collected during entry" : "not available with us")</span>
+                            <span class="visually-hidden">, @spoken</span>
                         </li>
                     }
                 </ul>
-                <p class="page-on-record__foot">@r.OnRecordFoot</p>
+                <p class="page-on-record__foot">@record.OnRecordFoot</p>
             </div>
         }
     </div>

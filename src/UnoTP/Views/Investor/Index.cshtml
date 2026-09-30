@@ -2,91 +2,102 @@
 @{
     ViewData["Title"] = "Investor Information";
 
-    // The old WA_FD_UNOTP/InvestorInformation: a card for the investor, one for each
-    // joint holder added, and one for the nominee, down one column. The page is one
-    // form, and every button posts all of it, so nothing typed is lost to a post
-    // about something else (see InvestorController).
-    // Every list the page offers, from the backend.
     var reference = Model.Docs.Ref;
-    var lists = new Lists(reference.IncomeBands, reference.Occupations, reference.SubOccupations, reference.MaritalStatuses);
+    var lists = new DropdownLists(reference.IncomeBands, reference.Occupations, reference.SubOccupations, reference.MaritalStatuses);
     var relations = reference.NomineeRelations;
     var appNo = Model.Docs.AppNo;
     var banner = Model.Docs.Shown?.Banner;
+
+    var investor = Model.Docs.Investor;
+    var investorGender = Model.Docs.HolderGender;
+    var investorPhoto = Model.Docs.State.Docs.GetValueOrDefault(investor.Key("photo"));
+
+    // Every joint holder's upload attempts; the investor's own are on Upload Documents.
+    var jointLog = Model.Docs.State.Log.Where(e => e.Holder is UnoTP.Backend.HolderType.Second or UnoTP.Backend.HolderType.Third).ToList();
+
+    // Proceed asks about a nominee until one is added or the question is skipped.
+    var nomineeAnswered = Model.State.Nominee || Model.Value("NomineeSkipped") == "yes";
 }
+@* Investor Information: a card for the investor, one for each joint holder added, and
+   one for the nominee, down one column. The page is one form, and every button posts all
+   of it, so nothing typed is lost to a post about something else (see InvestorController). *@
 
 @functions {
-    // .NET 8 Razor leaves the body of a tag helper inside a helper below async with
-    // nothing to await (fixed in Razor 9); nothing runs differently for it.
-#pragma warning disable CS1998
-    // What the drop-downs offer, passed to the helpers below in one piece.
-    private sealed record Lists(IReadOnlyList<string> Incomes, IReadOnlyList<string> Occupations, IReadOnlyList<string> SubOccupations, IReadOnlyList<string> Maritals);
+#pragma warning disable CS1998 // Razor makes these helpers async; there is nothing to await in them.
 
-    private const string BinGlyph = "<path d=\"M6 7h12M9 7V5h6v2M8 7l1 13h6l1-13\"></path>";
+    // What the drop-downs offer.
+    private sealed record DropdownLists(IReadOnlyList<string> Incomes, IReadOnlyList<string> Occupations, IReadOnlyList<string> SubOccupations, IReadOnlyList<string> MaritalStatuses);
 
-    private const string CopyGlyph = "<rect x=\"9\" y=\"9\" width=\"11\" height=\"11\" rx=\"1.6\"></rect><path d=\"M15 6.5V5.4A1.4 1.4 0 0 0 13.6 4H5.4A1.4 1.4 0 0 0 4 5.4v8.2A1.4 1.4 0 0 0 5.4 15h1.1\"></path>";
+    private const string BinIcon = "<path d=\"M6 7h12M9 7V5h6v2M8 7l1 13h6l1-13\"></path>";
+    private const string CopyIcon = "<rect x=\"9\" y=\"9\" width=\"11\" height=\"11\" rx=\"1.6\"></rect><path d=\"M15 6.5V5.4A1.4 1.4 0 0 0 13.6 4H5.4A1.4 1.4 0 0 0 4 5.4v8.2A1.4 1.4 0 0 0 5.4 15h1.1\"></path>";
+    private const string RemoveLabel = "<svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" aria-hidden=\"true\">" + BinIcon + "</svg> Remove";
+    private const string PlusIcon = "<svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" aria-hidden=\"true\"><path d=\"M12 5v14M5 12h14\"></path></svg> ";
 
-    // A button that posts the page's form to one of the page's steps.
-    private async Task Post(string action, object? route, string css, string label, string? loader = null)
+    // A button that posts the page's form to one of the page's actions.
+    private async Task PostButton(string action, object? route, string css, string labelHtml, string? loader = null)
     {
-        <button type="submit" class="@css" formaction="@Url.Action(action, route)" formnovalidate data-loader="@loader">@Html.Raw(label)</button>
-        await Task.CompletedTask;
+        <button type="submit" class="@css" formaction="@Url.Action(action, route)" formnovalidate data-loader="@loader">@Html.Raw(labelHtml)</button>
     }
 
-    // What Proceed said about a field, under it; its control points here.
+    // The error Proceed left on a field, under it.
     private async Task FieldError(string name, string id)
     {
-        if (Model.ErrorOf(name) is { } error)
+        var error = Model.ErrorOf(name);
+        if (error is not null)
         {
             <p class="field-error" id="@(id)Error" role="alert">@error</p>
         }
-        await Task.CompletedTask;
     }
 
-    // The attributes a control Proceed found wanting carries.
+    // The attributes a field with an error carries.
     private string? Invalid(string name) => Model.ErrorOf(name) is null ? null : "is-invalid";
+    private string? InvalidControl(string name) => Model.ErrorOf(name) is null ? null : "investor-control--error";
+    private string? AriaInvalid(string name) => Model.ErrorOf(name) is null ? null : "true";
     private string? DescribedBy(string name, string id) => Model.ErrorOf(name) is null ? null : id + "Error";
 
-    // A labelled drop-down, as the classic steps draw one, holding what was posted.
+    // A value, or a dash when there is none.
+    private static string OrDash(string value) => value.Length > 0 ? value : "—";
+
+    // A labelled drop-down holding what was posted.
     private async Task Select(string id, string name, string label, IEnumerable<string> options, string opening = "", string? required = null)
     {
         var selected = Model.Value(name, opening);
         <div class="doc-column">
             <label class="field-label" for="@id">@label</label>
             <div class="doc-select">
-                <select class="field-input @Invalid(name)" id="@id" name="@name" aria-invalid="@(Invalid(name) is not null ? "true" : null)" aria-describedby="@DescribedBy(name, id)" data-required="@required">
+                <select class="field-input @Invalid(name)" id="@id" name="@name" aria-invalid="@AriaInvalid(name)" aria-describedby="@DescribedBy(name, id)" data-required="@required">
                     <option value="" selected="@(selected.Length == 0)">Select</option>
-                    @foreach (var o in options)
+                    @foreach (var option in options)
                     {
-                        <option selected="@(o == selected)">@o</option>
+                        <option selected="@(option == selected)">@option</option>
                     }
                 </select>
             </div>
             @{ await FieldError(name, id); }
         </div>
-        await Task.CompletedTask;
     }
 
-    // More Information, which every holder gives, and on the investor's card the
-    // FATCA answers - asked of the investor and the joint holders together.
-    private async Task MoreInformation(int holder, Lists lists, string income = "", string occupation = "", string sub = "", string marital = "", string mobile = "", string email = "")
+    // "More Information", which every holder gives; on the investor's card the FATCA
+    // questions too, which are asked once for every holder.
+    private async Task MoreInformation(int holder, DropdownLists lists)
     {
-        var p = $"Holder{holder}";
+        var prefix = $"Holder{holder}";
         var id = $"investor{holder}";
         <h3 class="section-title">More Information</h3>
         <div class="doc-grid">
-            @{ await Select($"{id}Income", $"{p}.AnnualIncome", "Annual Income", lists.Incomes, income, "Select the annual income"); }
-            @{ await Select($"{id}Occupation", $"{p}.Occupation", "Occupation", lists.Occupations, occupation, "Select the occupation"); }
-            @{ await Select($"{id}SubOccupation", $"{p}.SubOccupation", "Sub Occupation", lists.SubOccupations, sub, "Select the sub occupation"); }
-            @{ await Select($"{id}Marital", $"{p}.MaritalStatus", "Marital Status", lists.Maritals, marital, "Select the marital status"); }
+            @{ await Select($"{id}Income", $"{prefix}.AnnualIncome", "Annual Income", lists.Incomes, required: "Select the annual income"); }
+            @{ await Select($"{id}Occupation", $"{prefix}.Occupation", "Occupation", lists.Occupations, required: "Select the occupation"); }
+            @{ await Select($"{id}SubOccupation", $"{prefix}.SubOccupation", "Sub Occupation", lists.SubOccupations, required: "Select the sub occupation"); }
+            @{ await Select($"{id}Marital", $"{prefix}.MaritalStatus", "Marital Status", lists.MaritalStatuses, required: "Select the marital status"); }
             <div class="doc-column">
                 <label class="field-label" for="@(id)Mobile">Mobile Number</label>
-                <input class="field-input @Invalid($"{p}.Mobile")" id="@(id)Mobile" name="@(p).Mobile" value="@Model.Value($"{p}.Mobile", mobile)" inputmode="numeric" maxlength="10" autocomplete="off" data-required="Enter the mobile number" data-check="mobile" aria-invalid="@(Invalid($"{p}.Mobile") is not null ? "true" : null)" aria-describedby="@DescribedBy($"{p}.Mobile", id + "Mobile")">
-                @{ await FieldError($"{p}.Mobile", id + "Mobile"); }
+                <input class="field-input @Invalid($"{prefix}.Mobile")" id="@(id)Mobile" name="@(prefix).Mobile" value="@Model.Value($"{prefix}.Mobile")" inputmode="numeric" maxlength="10" autocomplete="off" data-required="Enter the mobile number" data-check="mobile" aria-invalid="@AriaInvalid($"{prefix}.Mobile")" aria-describedby="@DescribedBy($"{prefix}.Mobile", id + "Mobile")">
+                @{ await FieldError($"{prefix}.Mobile", id + "Mobile"); }
             </div>
             <div class="doc-column">
                 <label class="field-label" for="@(id)Email">E-Mail</label>
-                <input class="field-input field-input--caps @Invalid($"{p}.Email")" id="@(id)Email" name="@(p).Email" value="@Model.Value($"{p}.Email", email)" type="email" autocomplete="off" data-required="Enter the e-mail" data-check="email" aria-invalid="@(Invalid($"{p}.Email") is not null ? "true" : null)" aria-describedby="@DescribedBy($"{p}.Email", id + "Email")">
-                @{ await FieldError($"{p}.Email", id + "Email"); }
+                <input class="field-input field-input--caps @Invalid($"{prefix}.Email")" id="@(id)Email" name="@(prefix).Email" value="@Model.Value($"{prefix}.Email")" type="email" autocomplete="off" data-required="Enter the e-mail" data-check="email" aria-invalid="@AriaInvalid($"{prefix}.Email")" aria-describedby="@DescribedBy($"{prefix}.Email", id + "Email")">
+                @{ await FieldError($"{prefix}.Email", id + "Email"); }
             </div>
         </div>
 
@@ -94,108 +105,108 @@
         {
             <h3 class="section-title">Investor's @Glossary.Term("FATCA") Details</h3>
             <div class="investor-switches">
-                <label class="investor-switch-row"><span>Are you/joint holder a tax resident of a country other than India?</span><input type="checkbox" class="investor-switch" name="@(p).FatcaTaxResident" checked="@Model.On($"{p}.FatcaTaxResident")"></label>
-                <label class="investor-switch-row"><span>Are you/joint holder a permanent resident of a foreign country?</span><input type="checkbox" class="investor-switch" name="@(p).FatcaPermanentResident" checked="@Model.On($"{p}.FatcaPermanentResident")"></label>
+                <label class="investor-switch-row"><span>Are you/joint holder a tax resident of a country other than India?</span><input type="checkbox" class="investor-switch" name="@(prefix).FatcaTaxResident" checked="@Model.On($"{prefix}.FatcaTaxResident")"></label>
+                <label class="investor-switch-row"><span>Are you/joint holder a permanent resident of a foreign country?</span><input type="checkbox" class="investor-switch" name="@(prefix).FatcaPermanentResident" checked="@Model.On($"{prefix}.FatcaPermanentResident")"></label>
             </div>
         }
     }
 
-    // A proof's label: with document identification, the type the copy was
-    // identified as beside it; without, the drop-down the type is chosen from first.
-    private async Task ProofLabel(DocumentsViewModel.DocHolder h, string field, string label, bool used, string type)
+    // The drop-down a proof's type is chosen from, above its card (used when document
+    // identification is off). field is "poaType" or "mailType".
+    private async Task ProofTypePicker(DocumentsViewModel.DocHolder h, string field, string label, bool used, string type)
     {
-        if (Model.Docs.AutoProofType)
+        var key = h.Key(field);
+        var error = Model.Docs.Shown?.Errors.GetValueOrDefault(key);
+        var invalid = error is null ? null : "is-invalid";
+        var slotKey = field == "poaType" ? DocumentsViewModel.PoaSlot.Key : DocumentsViewModel.MailSlot.Key;
+        var opening = used ? "Select" : "Not Applicable";
+
+        <label class="field-label" for="@key">@label</label>
+        <div class="doc-select">
+            <select class="field-input @invalid" id="@key" name="@key" disabled="@(!used)" data-submit="refresh-@h.Code">
+                <option value="">@opening</option>
+                @foreach (var proof in Model.Docs.ProofsFor(slotKey))
+                {
+                    <option value="@proof" selected="@(type == proof)">@proof</option>
+                }
+            </select>
+        </div>
+        if (error is not null)
         {
-            <span class="field-label">@label <partial name="_ProofType" model="@(used ? type : null)" /></span>
-        }
-        else
-        {
-            var key = h.Key(field);
-            var error = Model.Docs.Shown?.Errors.GetValueOrDefault(key);
-            <label class="field-label" for="@key">@label</label>
-            <div class="doc-select">
-                <select class="field-input @(error is null ? null : "is-invalid")" id="@key" name="@key" disabled="@(!used)" data-submit="refresh-@h.Code">
-                    <option value="">@(used ? "Select" : "Not Applicable")</option>
-                    @foreach (var p in Model.Docs.ProofsFor(field == "poaType" ? DocumentsViewModel.PoaSlot.Key : DocumentsViewModel.MailSlot.Key))
-                    {
-                        <option value="@p" selected="@(type == p)">@p</option>
-                    }
-                </select>
-            </div>
-            if (error is not null)
-            {
-                <p class="field-error" id="@(key)Error" role="alert">@error</p>
-            }
+            <p class="field-error" id="@(key)Error" role="alert">@error</p>
         }
     }
 
-    // A joint holder's documents, as Upload Documents asks the investor for theirs
-    // and through the same model: the PAN copy, the photograph, the proof of address
-    // and - where post goes elsewhere - the communication address proof, each
-    // identified, read and checked before it is filed under the holder's type; and
-    // what was read. Every holder's attempts are at the foot of the page. Where post
-    // goes stands beside the heading, as it stands beside the application type for
-    // the investor; the refresh button it posts through is shown only without a script.
-    private async Task Documents(int holder, DocumentsViewModel.DocHolder h)
+    // A joint holder's documents, asked for and checked the same way as the investor's on
+    // Upload Documents: the PAN copy, the photograph, the proof of address and, where post
+    // goes elsewhere, the communication address proof. The Update button is what a choice
+    // posts through; it is shown only without a script.
+    private async Task JointHolderDocuments(int holder, DocumentsViewModel.DocHolder h)
     {
         var docs = Model.Docs;
         var upload = Url.Action("JointUpload", new { n = holder })!;
         var pan = docs.View(DocumentsViewModel.PanSlot, h);
+        var photo = docs.View(DocumentsViewModel.PhotoSlot, h);
         var poa = docs.View(DocumentsViewModel.PoaSlot, h);
         var mail = docs.View(DocumentsViewModel.MailSlot, h);
         var panReads = new ReadCardsBlock(docs.PanReadsOf(h), Url.Action("JointNsdl", new { n = holder }));
-        var different = docs.MailDifferentOf(h);
-        var canDiffer = docs.MailCanDiffer(h);
-        var mailingLabel = $"investor{holder}MailingLabel";
+        var mailDifferent = docs.MailDifferentOf(h);
+        var mailCanDiffer = docs.MailCanDiffer(h);
+        var mailingLabelId = $"investor{holder}MailingLabel";
+        (string Value, string Label)[] mailingOptions = [("same", "Same as Permanent"), ("different", "Different from Permanent")];
+
+        // The card's label heads it; where the proof's type is chosen first, the label and its
+        // picker stand above the card instead (no Label).
+        string? poaLabel = null;
+        string? mailLabel = null;
+        string? poaType = null;
+        string? mailType = null;
+        if (docs.AutoProofType)
+        {
+            poaLabel = "Proof of address";
+            mailLabel = "Communication address proof";
+            if (poa.Used) poaType = docs.PoaTypeOf(h);
+            if (mail.Used) mailType = docs.MailTypeOf(h);
+        }
+
         <button type="submit" class="identify-check-button doc-refresh" id="refresh-@h.Code" name="refresh" value="" formaction="@Url.Action("JointRefresh", new { n = holder })" formnovalidate>Update</button>
         <div class="investor-docs-head">
             <h3 class="investor-docs-head__title">Documents</h3>
             <div class="doc-app-type__group">
-                <span class="field-label" id="@mailingLabel">Communication Address</span>
-                <div class="choice-toggle" role="radiogroup" aria-labelledby="@mailingLabel">
-                    @foreach (var (value, label) in new[] { ("same", "Same as Permanent"), ("different", "Different from Permanent") })
+                <span class="field-label" id="@mailingLabelId">Communication Address</span>
+                <div class="choice-toggle" role="radiogroup" aria-labelledby="@mailingLabelId">
+                    @foreach (var option in mailingOptions)
                     {
-                        var on = different == (value == "different");
-                        var shut = value == "different" && !canDiffer;
-                        <label class="choice-toggle__option" title="@(shut ? mail.NotApplicable : null)">
-                            <input class="visually-hidden" type="radio" name="@h.Key("mailing")" id="@h.Key("mailing")-@value" value="@value" checked="@on" disabled="@shut" data-submit="refresh-@h.Code" data-confirm="@(value == "same" && !on && mail.Doc is not null ? DocumentsViewModel.MailDropAsk : null)">@label
+                        var isDifferent = option.Value == "different";
+                        var isOn = mailDifferent == isDifferent;
+                        var disabled = isDifferent && !mailCanDiffer;
+                        string? title = disabled ? mail.NotApplicable : null;
+                        // Going back to "same" with a proof filed asks first, because the proof is taken off.
+                        var asksBeforeDroppingProof = option.Value == "same" && !isOn && mail.Doc is not null;
+                        string? confirm = asksBeforeDroppingProof ? DocumentsViewModel.MailDropAsk : null;
+                        <label class="choice-toggle__option" title="@title">
+                            <input class="visually-hidden" type="radio" name="@h.Key("mailing")" id="@h.Key("mailing")-@option.Value" value="@option.Value" checked="@isOn" disabled="@disabled" data-submit="refresh-@h.Code" data-confirm="@confirm">@option.Label
                         </label>
                     }
                 </div>
             </div>
         </div>
         <div class="doc-grid doc-grid--docs">
-            @* Each card's label heads it on one line with its toolbar. Where the proof's type is
-               chosen first, the label and its picker stand above the card instead (no Label). *@
-            @{
-                string? poaLabel = null;
-                string? mailLabel = null;
-                string? poaType = null;
-                string? mailType = null;
-                if (docs.AutoProofType)
-                {
-                    poaLabel = "Proof of address";
-                    mailLabel = "Communication address proof";
-                    if (poa.Used) poaType = docs.PoaTypeOf(h);
-                    if (mail.Used) mailType = docs.MailTypeOf(h);
-                }
-            }
             <div class="doc-column">
                 <partial name="_DocSlot" model="@(new DocSlotBlock(pan, upload, Label: "PAN", LabelOptional: pan.Optional))" />
             </div>
-            @* NSDL asking for the name printed on the PAN: across the row straight
-               under the PAN's box. *@
+            @* NSDL asking for the name printed on the PAN: a row straight under the PAN's card. *@
             @if (panReads.AsksName)
             {
                 <div class="doc-retry-row"><partial name="_NsdlRetry" model="@panReads" /></div>
             }
             <div class="doc-column">
-                <partial name="_DocSlot" model="@(new DocSlotBlock(docs.View(DocumentsViewModel.PhotoSlot, h), upload, Label: "Photo"))" />
+                <partial name="_DocSlot" model="@(new DocSlotBlock(photo, upload, Label: "Photo"))" />
             </div>
             <div class="doc-column">
                 @if (!docs.AutoProofType)
                 {
-                    <div class="doc-column__head">@{ await ProofLabel(h, "poaType", "Proof of address", poa.Used, docs.PoaTypeOf(h)); }</div>
+                    <div class="doc-column__head">@{ await ProofTypePicker(h, "poaType", "Proof of address", poa.Used, docs.PoaTypeOf(h)); }</div>
                 }
                 <partial name="_DocSlot" model="@(new DocSlotBlock(poa, upload, Label: poaLabel, ShowsProofType: docs.AutoProofType, ProofType: poaType))" />
             </div>
@@ -204,13 +215,12 @@
                 <div class="doc-column">
                     @if (!docs.AutoProofType)
                     {
-                        <div class="doc-column__head">@{ await ProofLabel(h, "mailType", "Communication address proof", mail.Used, docs.MailTypeOf(h)); }</div>
+                        <div class="doc-column__head">@{ await ProofTypePicker(h, "mailType", "Communication address proof", mail.Used, docs.MailTypeOf(h)); }</div>
                     }
                     <partial name="_DocSlot" model="@(new DocSlotBlock(mail, upload, Label: mailLabel, ShowsProofType: docs.AutoProofType, ProofType: mailType))" />
                 </div>
             }
-            @* An Aadhaar filed whose number OCR could not read: the number typed for
-               the PAN-Aadhaar link, across the row under the proofs of address. *@
+            @* An Aadhaar is filed but OCR could not read its number: it is typed here for the PAN-Aadhaar link. *@
             @if (docs.AsksAadhaarNumber(h))
             {
                 var (aadhaarField, aadhaarError) = docs.AadhaarNumberField(h);
@@ -218,8 +228,8 @@
             }
         </div>
 
-        @* The addresses are in the panel below, so only the PAN's checks stand here -
-           and only for a holder with no folio: one on a folio is not checked again. *@
+        @* Only the PAN's checks stand here (the addresses are in the panel above), and only
+           for a holder with no folio: one on a folio is not checked again. *@
         if (docs.PanChecksShown(h))
         {
             <section class="doc-read-result">
@@ -229,27 +239,25 @@
         }
     }
 
-    // A joint holder's card, laid out as the investor's: until they are added,
-    // Investor Identification's search, by PAN and date of birth - found on the
-    // register, or a PAN with no folio, and they are added there and then; a holder
-    // it cannot add is removed and added again, never searched again. Once added,
-    // the record read-only, the address as their documents give it, what has to be
-    // typed because nothing read it, their documents, More Information and the PEP
-    // questions. FATCA is asked once, on the investor's card, for every holder.
-    private async Task JointHolder(int index, Lists lists)
+    // A joint holder's card. Until they are added: the search by PAN and date of birth.
+    // Once added: their record read-only, their documents, what has to be typed, More
+    // Information and the PEP questions. FATCA is asked once, on the investor's card.
+    private async Task JointHolder(int index, DropdownLists lists)
     {
         var holder = index + 2;
         var state = Model.State.Joint[index];
         var search = Model.Joint[index];
         var who = InvestorViewModel.Ordinal(holder) + " Holder";
-        var h = state.Added ? Model.Docs.JointHolder(InvestorViewModel.CodeOf(holder)) : null;
+        DocumentsViewModel.DocHolder? h = null;
+        if (state.Added) h = Model.Docs.JointHolder(InvestorViewModel.CodeOf(holder));
+
         <section class="page-card section-card" id="holder-@holder">
             @if (h is null)
             {
                 <div class="page-head">
                     <h2 class="page-title">@who Details</h2>
                     <span class="identify-status">Not added</span>
-                    @{ await Remove(holder); }
+                    @{ await RemoveButton(holder); }
                 </div>
                 if (Model.Unfinished == holder)
                 {
@@ -267,69 +275,61 @@
             }
             else
             {
-                @* Once the card is complete it folds to a line - who, and where it stands
-                   - and opens again on a click, on an error in it, or when a post was
-                   about it. Its fields post folded or not. *@
-                var (complete, standing) = Standing(holder, h);
+                @* A complete card folds to one line and opens on a click, on an error in it,
+                   or when the last post was about it. Its fields post folded or not. *@
+                var (complete, standingLine) = Model.HolderStanding(holder, h);
                 var folded = complete && !Model.About(holder, h);
                 <details class="investor-folded-holder" open="@(!folded)">
                     <summary class="page-head">
                         <h2 class="page-title">@who Details</h2>
                         <span class="identify-status identify-status--ok">Added</span>
                         <svg class="investor-folded-holder__chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
-                        <span class="investor-folded-holder__line">@standing</span>
+                        <span class="investor-folded-holder__line">@standingLine</span>
                     </summary>
-                    <div class="investor-folded-holder__tools">@{ await Remove(holder); }</div>
-                    @{ await JointRecord(holder, h, search.Record); }
-                    @{ await Documents(holder, h); }
-                    @{ await CommAddress(holder, h); }
+                    <div class="investor-folded-holder__tools">@{ await RemoveButton(holder); }</div>
+                    @{ await JointHolderRecord(h, search.Record); }
+                    @{ await JointHolderDocuments(holder, h); }
+                    @{ await CommunicationAddressEntry(holder, h); }
                     @{ await ManualEntry(holder, search.Record?.Gender ?? ""); }
                     @{ await MoreInformation(holder, lists); }
-                    @{ await Pep(holder, h); }
+                    @{ await PepQuestions(holder, h); }
                 </details>
             }
         </section>
     }
 
-    // Remove, for the last holder opened only: the second waits for the third.
-    private async Task Remove(int holder)
+    // Remove, for the last holder only: the second cannot go while there is a third.
+    private async Task RemoveButton(int holder)
     {
-        var glyph = $"<svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" aria-hidden=\"true\">{BinGlyph}</svg> Remove";
-        if (holder < Model.State.Joint.Count + 1)
+        var isLastHolder = holder == Model.State.Joint.Count + 1;
+        if (isLastHolder)
         {
-            <button type="button" class="investor-remove" disabled title="Remove the third holder first">@Html.Raw(glyph)</button>
+            await PostButton("JointRemove", new { n = holder }, "investor-remove", RemoveLabel);
         }
         else
         {
-            await Post("JointRemove", new { n = holder }, "investor-remove", glyph);
+            <button type="button" class="investor-remove" disabled title="Remove the third holder first">@Html.Raw(RemoveLabel)</button>
         }
     }
 
-    // Where an added holder's card stands, for its folded line: who they are, the
-    // documents filed of those asked for, and the fields still to fill.
-    private (bool Complete, string Line) Standing(int holder, DocumentsViewModel.DocHolder h)
-    {
-        var docs = Model.Docs;
-        var slots = DocumentsViewModel.HolderSlots.Select(d => docs.View(d, h)).Where(v => v.Used).ToList();
-        var filed = slots.Count(v => v.Doc is not null);
-        var fields = InvestorViewModel.UnfilledFor(Model.State, holder, h, docs.MailTyped, Model.Places).Count;
-        var complete = slots.All(v => !v.Missing) && fields == 0;
-        var line = $"{h.Who.Name} · PAN {DocumentsViewModel.MaskPan(h.Who.Pan)} · {(h.Who.Folio.Length > 0 ? "Folio " + h.Who.Folio : "New folio")}"
-            + (slots.Count > 0 ? $" · {filed} of {slots.Count} document{(slots.Count == 1 ? "" : "s")} filed" : "")
-            + (fields == 0 ? " · details complete" : $" · {fields} field{(fields == 1 ? "" : "s")} to fill");
-        return (complete, line);
-    }
-
-    // An added joint holder's record, as the investor's card shows theirs: who they
-    // are and where they live, read-only, in one panel. Their documents follow, then
-    // what nothing read, typed - the gender where the record holds none, and the
-    // father's, mother's or spouse's name, which OCR does not read.
-    private async Task JointRecord(int holder, DocumentsViewModel.DocHolder h, NewApplicationViewModel.Holder? record)
+    // An added joint holder's record, read-only: who they are and where they live.
+    private async Task JointHolderRecord(DocumentsViewModel.DocHolder h, NewApplicationViewModel.Holder? record)
     {
         var docs = Model.Docs;
         var gender = record?.Gender ?? "";
         var photo = docs.State.Docs.GetValueOrDefault(h.Key("photo"));
         var onFolio = h.Who.Folio.Length > 0;
+        var photoUsed = docs.View(DocumentsViewModel.PhotoSlot, h).Used;
+        var photoNote = photoUsed ? "upload below" : "on the folio";
+        var source = onFolio ? $"From folio {h.Who.Folio}" : "From the search and the PAN copy";
+
+        var nameClass = h.Who.Name.Length == 0 ? "investor-key-value__value--unread" : null;
+        var nameText = h.Who.Name.Length > 0 ? h.Who.Name : "Read off the PAN copy once filed";
+        var genderClass = gender.Length == 0 ? "investor-key-value__value--unread" : null;
+        var genderText = gender.Length > 0 ? gender : "Not read — enter below";
+        var folioClass = onFolio ? null : "investor-key-value__value--unread";
+        var folioText = onFolio ? h.Who.Folio : "Opens with this application";
+
         <div class="investor-record">
             <div class="investor-panel investor-ckyc">
                 @if (photo is { Before: false })
@@ -338,36 +338,38 @@
                 }
                 else
                 {
-                    <div class="investor-ckyc__photo">Photo<br />@(docs.View(DocumentsViewModel.PhotoSlot, h).Used ? "upload below" : "on the folio")</div>
+                    <div class="investor-ckyc__photo">Photo<br />@photoNote</div>
                 }
                 <div style="flex:1;min-width:0">
-                    <div class="investor-panel__label" style="padding-bottom:10px">@(onFolio ? $"From folio {h.Who.Folio}" : "From the search and the PAN copy") &middot; read-only</div>
+                    <div class="investor-panel__label" style="padding-bottom:10px">@source &middot; read-only</div>
                     <div class="investor-key-value-grid">
-                        <div class="investor-key-value"><div class="investor-key-value__key">Applicant Name</div><div class="investor-key-value__value @(h.Who.Name.Length == 0 ? "investor-key-value__value--unread" : null)">@(h.Who.Name.Length > 0 ? h.Who.Name : "Read off the PAN copy once filed")</div></div>
+                        <div class="investor-key-value"><div class="investor-key-value__key">Applicant Name</div><div class="investor-key-value__value @nameClass">@nameText</div></div>
                         <div class="investor-key-value"><div class="investor-key-value__key">DOB</div><div class="investor-key-value__value">@Dates.Show(h.Who.Dob)</div></div>
-                        <div class="investor-key-value"><div class="investor-key-value__key">Gender</div><div class="investor-key-value__value @(gender.Length == 0 ? "investor-key-value__value--unread" : null)">@(gender.Length > 0 ? gender : "Not read — enter below")</div></div>
+                        <div class="investor-key-value"><div class="investor-key-value__key">Gender</div><div class="investor-key-value__value @genderClass">@genderText</div></div>
                         <div class="investor-key-value"><div class="investor-key-value__key">Father Name</div><div class="investor-key-value__value investor-key-value__value--unread">Not read &mdash; enter below</div></div>
                         <div class="investor-key-value"><div class="investor-key-value__key">PAN</div><div class="investor-key-value__value">@DocumentsViewModel.MaskPan(h.Who.Pan)</div></div>
-                        <div class="investor-key-value"><div class="investor-key-value__key">Folio</div><div class="investor-key-value__value @(onFolio ? null : "investor-key-value__value--unread")">@(onFolio ? h.Who.Folio : "Opens with this application")</div></div>
+                        <div class="investor-key-value"><div class="investor-key-value__key">Folio</div><div class="investor-key-value__value @folioClass">@folioText</div></div>
                     </div>
-                    @{ await Address(h); }
+                    @{ await AddressPanel(h); }
                 </div>
             </div>
         </div>
-        await Task.CompletedTask;
     }
 
-    // A holder's addresses, as their folio and their documents give them: the lower
-    // part of the holder's read-only panel, under the record. The permanent address
-    // and its proof, then - apart - where post goes: the same, or what its proof was
-    // read to say. One typed by hand has its own box under the panel (CommAddress).
-    private async Task Address(DocumentsViewModel.DocHolder h)
+    // A holder's addresses, under their record: the permanent address and its proof, then
+    // where post goes - the same, or what its proof was read to say. An address typed by
+    // hand has its own box under the panel (CommunicationAddressEntry).
+    private async Task AddressPanel(DocumentsViewModel.DocHolder h)
     {
         var docs = Model.Docs;
         var poa = docs.ReadsOf(h)[0].Card;
+        var proofSource = h.Joint ? "documents below" : "documents on Upload Documents";
+        var expiryText = "—";
+        if (poa.Expiry.Length > 0) expiryText = Dates.Show(poa.Expiry);
+
         <div class="investor-panel__part">
             <div class="investor-section-head" style="padding-bottom:10px">
-                <div class="investor-panel__label" style="flex:1;min-width:0">Permanent address &amp; proof &middot; from the folio and the @(h.Joint ? "documents below" : "documents on Upload Documents")</div>
+                <div class="investor-panel__label" style="flex:1;min-width:0">Permanent address &amp; proof &middot; from the folio and the @proofSource</div>
                 @if (!h.Joint)
                 {
                     <a class="investor-panel__action" asp-controller="Documents" asp-action="Index">Open documents</a>
@@ -375,9 +377,9 @@
             </div>
             <div class="investor-key-value-grid">
                 <div class="investor-key-value investor-key-value--wide"><div class="investor-key-value__key">Permanent address</div><div class="investor-key-value__value">@poa.Lines</div></div>
-                <div class="investor-key-value"><div class="investor-key-value__key">@Glossary.Term("POA") type</div><div class="investor-key-value__value">@(docs.PoaTypeOf(h) is { Length: > 0 } poaType ? poaType : "—")</div></div>
-                <div class="investor-key-value"><div class="investor-key-value__key">@Glossary.Term("POA") reference number</div><div class="investor-key-value__value">@(poa.Number.Length > 0 ? poa.Number : "—")</div></div>
-                <div class="investor-key-value"><div class="investor-key-value__key">@Glossary.Term("POA") expiry date</div><div class="investor-key-value__value">@(poa.Expiry.Length > 0 ? Dates.Show(poa.Expiry) : "—")</div></div>
+                <div class="investor-key-value"><div class="investor-key-value__key">@Glossary.Term("POA") type</div><div class="investor-key-value__value">@OrDash(docs.PoaTypeOf(h))</div></div>
+                <div class="investor-key-value"><div class="investor-key-value__key">@Glossary.Term("POA") reference number</div><div class="investor-key-value__value">@OrDash(poa.Number)</div></div>
+                <div class="investor-key-value"><div class="investor-key-value__key">@Glossary.Term("POA") expiry date</div><div class="investor-key-value__value">@expiryText</div></div>
                 <div class="investor-key-value"><div class="investor-key-value__key">Verification</div><div class="investor-key-value__value">@poa.State</div></div>
             </div>
         </div>
@@ -390,7 +392,7 @@
                     {
                         var mail = docs.MailReadOf(h);
                         <div class="investor-key-value investor-key-value--wide"><div class="investor-key-value__key">Where post goes</div><div class="investor-key-value__value">@mail.Lines</div></div>
-                        <div class="investor-key-value"><div class="investor-key-value__key">Proof</div><div class="investor-key-value__value">@(docs.MailTypeOf(h) is { Length: > 0 } mailType ? mailType : "—") &middot; @mail.State</div></div>
+                        <div class="investor-key-value"><div class="investor-key-value__key">Proof</div><div class="investor-key-value__value">@OrDash(docs.MailTypeOf(h)) &middot; @mail.State</div></div>
                     }
                     else
                     {
@@ -399,66 +401,111 @@
                 </div>
             </div>
         }
-        await Task.CompletedTask;
     }
 
-    // What nothing read for a holder, typed: the gender where the record holds
-    // none, and the father's, mother's or spouse's name, which OCR does not read.
+    // What nothing read for a holder, typed by hand: the gender when the record holds none,
+    // and the father's, mother's or spouse's name, which OCR does not read.
     private async Task ManualEntry(int holder, string gender)
     {
-        var p = $"Holder{holder}";
+        var prefix = $"Holder{holder}";
+        var genderUnread = gender.Length == 0;
+        var howMany = genderUnread ? "Two fields" : "One field";
+        var whatIsMissing = genderUnread ? "Neither the record nor OCR gives a gender or a parent or spouse name" : "OCR does not read a parent or spouse name";
+        var themOrIt = genderUnread ? "them" : "it";
+        var nameTypes = Model.Docs.Ref.NameTypes;
+        var nameTypeSelected = Model.Value($"{prefix}.NameType", nameTypes.FirstOrDefault() ?? "");
+        var genderSelected = Model.Value($"{prefix}.Gender");
+
         <div class="investor-record">
             <div class="investor-manual" id="h@(holder)-manual">
                 <div class="investor-section-head">
-                    <div class="investor-manual__title">@(gender.Length == 0 ? "Two fields" : "One field") could not be read for this holder</div>
+                    <div class="investor-manual__title">@howMany could not be read for this holder</div>
                     <span class="investor-manual__badge">Manual entry</span>
                 </div>
-                <div class="investor-manual__text">@(gender.Length == 0 ? "Neither the record nor OCR gives a gender or a parent or spouse name" : "OCR does not read a parent or spouse name") for this holder. Type @(gender.Length == 0 ? "them" : "it") exactly as printed &mdash; everything that was read stays read-only above.</div>
+                <div class="investor-manual__text">@whatIsMissing for this holder. Type @themOrIt exactly as printed &mdash; everything that was read stays read-only above.</div>
                 <div class="investor-grid">
-                    @if (gender.Length == 0)
+                    @if (genderUnread)
                     {
                         <div class="investor-field investor-field--sm">
                             <label for="h@(holder)-gender">Gender</label>
-                            <select id="h@(holder)-gender" name="@(p).Gender" class="investor-control @(Invalid($"{p}.Gender") is not null ? "investor-control--error" : null)" required data-required="Select the gender" aria-invalid="@(Invalid($"{p}.Gender") is not null ? "true" : null)" aria-describedby="@DescribedBy($"{p}.Gender", $"h{holder}-gender")">
+                            <select id="h@(holder)-gender" name="@(prefix).Gender" class="investor-control @InvalidControl($"{prefix}.Gender")" required data-required="Select the gender" aria-invalid="@AriaInvalid($"{prefix}.Gender")" aria-describedby="@DescribedBy($"{prefix}.Gender", $"h{holder}-gender")">
                                 <option value="">Select</option>
-                                @foreach (var g in Model.Docs.Ref.Genders) { if (g == Model.Value($"{p}.Gender")) { <option selected>@g</option> } else { <option>@g</option> } }
+                                @foreach (var option in Model.Docs.Ref.Genders)
+                                {
+                                    if (option == genderSelected)
+                                    {
+                                        <option selected>@option</option>
+                                    }
+                                    else
+                                    {
+                                        <option>@option</option>
+                                    }
+                                }
                             </select>
-                            @{ await FieldError($"{p}.Gender", $"h{holder}-gender"); }
+                            @{ await FieldError($"{prefix}.Gender", $"h{holder}-gender"); }
                         </div>
                     }
                     <div class="investor-field investor-field--sm">
                         <label for="h@(holder)-nametype">Name type</label>
-                        <select id="h@(holder)-nametype" name="@(p).NameType" class="investor-control investor-control--strong @(Invalid($"{p}.NameType") is not null ? "investor-control--error" : null)" required aria-describedby="@DescribedBy($"{p}.NameType", $"h{holder}-nametype")">
-                            @foreach (var t in Model.Docs.Ref.NameTypes) { if (t == Model.Value($"{p}.NameType", Model.Docs.Ref.NameTypes.FirstOrDefault() ?? "")) { <option selected>@t</option> } else { <option>@t</option> } }
+                        <select id="h@(holder)-nametype" name="@(prefix).NameType" class="investor-control investor-control--strong @InvalidControl($"{prefix}.NameType")" required aria-describedby="@DescribedBy($"{prefix}.NameType", $"h{holder}-nametype")">
+                            @foreach (var option in nameTypes)
+                            {
+                                if (option == nameTypeSelected)
+                                {
+                                    <option selected>@option</option>
+                                }
+                                else
+                                {
+                                    <option>@option</option>
+                                }
+                            }
                         </select>
-                        @{ await FieldError($"{p}.NameType", $"h{holder}-nametype"); }
+                        @{ await FieldError($"{prefix}.NameType", $"h{holder}-nametype"); }
                     </div>
                     <div class="investor-field investor-field--sm">
                         <label for="h@(holder)-parent">Father / Mother / Spouse name</label>
-                        <input id="h@(holder)-parent" name="@(p).ParentName" class="investor-control @(Invalid($"{p}.ParentName") is not null ? "investor-control--error" : null)" value="@Model.Value($"{p}.ParentName")" required data-required="Enter the father's, mother's or spouse's name" data-check="name" aria-invalid="@(Invalid($"{p}.ParentName") is not null ? "true" : null)" aria-describedby="@DescribedBy($"{p}.ParentName", $"h{holder}-parent")" />
-                        @{ await FieldError($"{p}.ParentName", $"h{holder}-parent"); }
+                        <input id="h@(holder)-parent" name="@(prefix).ParentName" class="investor-control @InvalidControl($"{prefix}.ParentName")" value="@Model.Value($"{prefix}.ParentName")" required data-required="Enter the father's, mother's or spouse's name" data-check="name" aria-invalid="@AriaInvalid($"{prefix}.ParentName")" aria-describedby="@DescribedBy($"{prefix}.ParentName", $"h{holder}-parent")" />
+                        @{ await FieldError($"{prefix}.ParentName", $"h{holder}-parent"); }
                     </div>
                 </div>
             </div>
         </div>
-        await Task.CompletedTask;
     }
 
-    // Where post goes, typed, for a holder whose post goes elsewhere while no proof
-    // of it is uploaded (CommProofUpload off): a manual-entry box of its own straight
-    // under the read-only panel, apart from the permanent address in it. Three lines,
-    // the city and the PIN code; the district and state are the PIN code's, shown,
-    // never typed - fetched once all six digits are in (pin-code.js), and drawn here
-    // from what the backend says.
-    private async Task CommAddress(int holder, DocumentsViewModel.DocHolder h)
+    // The communication address typed by hand, for a holder whose post goes elsewhere while
+    // no proof of it is uploaded (CommProofUpload off). Three lines, the city and the PIN
+    // code; the district and state come from the PIN code (investor.js, and the backend on post).
+    private async Task CommunicationAddressEntry(int holder, DocumentsViewModel.DocHolder h)
     {
         if (!Model.Docs.MailTyped(h)) return;
-        var c = $"Holder{holder}.{InvestorDetailsForm.Comm}";
+
+        var prefix = $"Holder{holder}.{InvestorDetailsForm.Comm}";
         var id = $"h{holder}-comm";
-        var pin = Model.Value(c + "PinCode").Trim();
+        var pinField = prefix + "PinCode";
+        var pin = Model.Value(pinField).Trim();
         var place = Model.Places.GetValueOrDefault(pin);
-        var (district, state) = place is not null ? (place.District, place.State)
-            : InvestorViewModel.IsPin(pin) ? ("Not found for this PIN code", "—") : ("—", "—");
+
+        var district = "—";
+        var stateName = "—";
+        if (place is not null)
+        {
+            district = place.District;
+            stateName = place.State;
+        }
+        else if (InvestorViewModel.IsPin(pin))
+        {
+            district = "Not found for this PIN code";
+        }
+        string? placedPin = place is not null ? pin : null;
+
+        (string Field, string Suffix, string Label, string? Required)[] lines =
+        [
+            ("Line1", "1", "Address Line 1", "Enter the first line of the address"),
+            ("Line2", "2", "Address Line 2", null),
+            ("Line3", "3", "Address Line 3", null),
+            ("City", "city", "City", "Enter the city"),
+        ];
+
         <div class="investor-record">
             <div class="investor-manual" id="@id">
                 <div class="investor-section-head">
@@ -467,35 +514,35 @@
                 </div>
                 <div class="investor-manual__text">Post goes here, not to the permanent address above. Type it as the holder gives it; the district and state come from the PIN code.</div>
                 <div class="investor-grid">
-                    @foreach (var (field, suffix, label, required) in new[] { ("Line1", "1", "Address Line 1", "Enter the first line of the address"), ("Line2", "2", "Address Line 2", null), ("Line3", "3", "Address Line 3", null), ("City", "city", "City", "Enter the city") })
+                    @foreach (var line in lines)
                     {
-                        var name = c + field;
-                        <div class="investor-field investor-field--sm @(required is null ? "investor-field--optional" : null)">
-                            <label for="@(id)@suffix">@label @if (required is null) { <span class="doc-optional">(Non-mandatory)</span> }</label>
-                            <input class="investor-control @(Invalid(name) is not null ? "investor-control--error" : null)" id="@(id)@suffix" name="@name" value="@Model.Value(name)" maxlength="60" autocomplete="off" data-required="@required" data-check="@(field == "City" ? "name" : "text")" aria-invalid="@(Invalid(name) is not null ? "true" : null)" aria-describedby="@DescribedBy(name, id + suffix)">
-                            @{ await FieldError(name, id + suffix); }
+                        var name = prefix + line.Field;
+                        var optionalClass = line.Required is null ? "investor-field--optional" : null;
+                        var check = line.Field == "City" ? "name" : "text";
+                        <div class="investor-field investor-field--sm @optionalClass">
+                            <label for="@(id)@line.Suffix">@line.Label @if (line.Required is null) { <span class="doc-optional">(Non-mandatory)</span> }</label>
+                            <input class="investor-control @InvalidControl(name)" id="@(id)@line.Suffix" name="@name" value="@Model.Value(name)" maxlength="60" autocomplete="off" data-required="@line.Required" data-check="@check" aria-invalid="@AriaInvalid(name)" aria-describedby="@DescribedBy(name, id + line.Suffix)">
+                            @{ await FieldError(name, id + line.Suffix); }
                         </div>
                     }
                     <div class="investor-field investor-field--sm">
                         <label for="@(id)pin">PIN Code</label>
-                        <input class="investor-control @(Invalid(c + "PinCode") is not null ? "investor-control--error" : null)" id="@(id)pin" name="@(c)PinCode" value="@pin" inputmode="numeric" maxlength="6" autocomplete="off" data-required="Enter the PIN code" data-check="pin"
-                               data-pin-url="@Url.Action("PinCode", new { pin = "PIN" })" data-placed="@(place is not null ? pin : null)" aria-invalid="@(Invalid(c + "PinCode") is not null ? "true" : null)" aria-describedby="@DescribedBy(c + "PinCode", id + "pin")">
-                        @{ await FieldError(c + "PinCode", id + "pin"); }
+                        <input class="investor-control @InvalidControl(pinField)" id="@(id)pin" name="@pinField" value="@pin" inputmode="numeric" maxlength="6" autocomplete="off" data-required="Enter the PIN code" data-check="pin"
+                               data-pin-url="@Url.Action("PinCode", new { pin = "PIN" })" data-placed="@placedPin" aria-invalid="@AriaInvalid(pinField)" aria-describedby="@DescribedBy(pinField, id + "pin")">
+                        @{ await FieldError(pinField, id + "pin"); }
                     </div>
                     <div class="investor-district-state" data-place-for="@(id)pin" aria-live="polite">
                         <div class="investor-key-value"><div class="investor-key-value__key">District</div><div class="investor-key-value__value" data-place="district">@district</div></div>
-                        <div class="investor-key-value"><div class="investor-key-value__key">State</div><div class="investor-key-value__value" data-place="state">@state</div></div>
+                        <div class="investor-key-value"><div class="investor-key-value__key">State</div><div class="investor-key-value__value" data-place="state">@stateName</div></div>
                     </div>
                 </div>
             </div>
         </div>
-        await Task.CompletedTask;
     }
 
-    // Whether the holder is, or is related to, a politically exposed person: asked
-    // of every holder with no folio, and both answers needed to proceed. A holder
-    // on a folio has answered already, so is not asked.
-    private async Task Pep(int holder, DocumentsViewModel.DocHolder h)
+    // Whether the holder is, or is related to, a politically exposed person. Asked of every
+    // holder with no folio; a holder on a folio has answered already.
+    private async Task PepQuestions(int holder, DocumentsViewModel.DocHolder h)
     {
         if (!InvestorViewModel.PepAsked(h)) return;
         <div class="investor-pep">
@@ -504,7 +551,8 @@
                 var name = $"Holder{holder}.{field}";
                 var answer = Model.Value(name);
                 var missing = Model.ErrorOf(name) is not null;
-                <div class="investor-pep__row @(missing ? "is-invalid" : null)" id="pep-@name" tabindex="-1" role="radiogroup" aria-labelledby="pep-@(name)-q">
+                var rowClass = missing ? "is-invalid" : null;
+                <div class="investor-pep__row @rowClass" id="pep-@name" tabindex="-1" role="radiogroup" aria-labelledby="pep-@(name)-q">
                     <span class="investor-pep__question" id="pep-@(name)-q">@question</span>
                     <div class="investor-pep__answers">
                         <label class="investor-pep__answer">Yes <input type="radio" name="@name" value="yes" checked="@(answer == "yes")"></label>
@@ -517,21 +565,20 @@
                 </div>
             }
         </div>
-        await Task.CompletedTask;
     }
 
-    // "Would you like to add …?" with the link that adds it.
-    private async Task Ask(string id, string question, string action, string label)
+    // "Would you like to add …?" with the button that adds it.
+    private async Task AddSection(string id, string question, string action, string label)
     {
         <section class="page-card investor-question" id="@id">
             <p class="investor-question__question">@question</p>
-            @{ await Post(action, null, "investor-add", $"<svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" aria-hidden=\"true\"><path d=\"M12 5v14M5 12h14\"></path></svg> {label}"); }
+            @{ await PostButton(action, null, "investor-add", PlusIcon + label); }
         </section>
     }
 }
 
-@* Once the investor's card head has scrolled off, this keeps who the step is for
-   and which application it is in view, as Upload Documents does. *@
+@* Once the investor's card head has scrolled away, this strip keeps who the step is for
+   and the application number in view (sticky-app-strip.js). *@
 <div class="app-sticky-strip" id="docsPin" hidden>
     <div class="app-sticky-strip__inner">
         <span class="app-sticky-strip__who">@Model.Docs.HolderName</span>
@@ -540,7 +587,7 @@
             <span class="app-sticky-strip__label">Application</span>
             @appNo
             <button type="button" class="doc-copy" data-copy="@appNo" title="Copy the application number" aria-label="Copy the application number">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">@Html.Raw(CopyGlyph)</svg>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">@Html.Raw(CopyIcon)</svg>
             </button>
         </span>
     </div>
@@ -559,10 +606,10 @@
             </div>
         }
 
-        @* ── The investor ─────────────────────────────────────────────────── *@
+        @* ===== The investor ===== *@
         <section class="page-card section-card" id="holder-1">
-            @* A holder who is a tax or permanent resident of another country invests
-               offline: Proceed stops, and says so over the top of this card. *@
+            @* A holder who is a tax or permanent resident of another country invests offline:
+               Proceed stops and says so here, over the top of the card. *@
             <div class="page-alert" id="investorFatcaAlert" role="alert" tabindex="-1" hidden="@(!Model.Offline)">
                 <svg class="page-alert__icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5L2.5 20h19z"></path><path d="M12 10v4.5"></path><circle cx="12" cy="17.3" r=".6" fill="currentColor"></circle></svg>
                 <p class="page-alert__text">@InvestorViewModel.FatcaOffline</p>
@@ -572,76 +619,79 @@
             </div>
             <div class="page-head" data-pin-head>
                 <h2 class="page-title">Investor Details</h2>
-                @* Clear All stands away from Proceed, and asks first: it takes the joint holders off too. *@
+                @* Clear All asks first: it takes the joint holders and the nominee off too. *@
                 <button type="submit" form="investorInfoForm" class="link-button link-button--muted investor-clear" formaction="@Url.Action("Clear")" formnovalidate
                         data-confirm="Clear everything typed on this step, and remove the joint holders and the nominee?">Clear All</button>
                 <span class="page-app-number">Application No: <strong>@appNo</strong>
                     <button type="button" class="doc-copy" data-copy="@appNo" title="Copy the application number" aria-label="Copy the application number">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">@Html.Raw(CopyGlyph)</svg>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">@Html.Raw(CopyIcon)</svg>
                     </button>
                 </span>
             </div>
             @{
-                var investor = Model.Docs.Investor;
-                var investorGender = Model.Docs.HolderGender;
-                var investorPhoto = Model.Docs.State.Docs.GetValueOrDefault(investor.Key("photo"));
+                var investorNameClass = investor.Who.Name.Length == 0 ? "investor-key-value__value--unread" : null;
+                var investorNameText = investor.Who.Name.Length > 0 ? investor.Who.Name : "Read off the PAN copy once filed";
+                var investorGenderClass = investorGender.Length == 0 ? "investor-key-value__value--unread" : null;
+                var investorGenderText = investorGender.Length > 0 ? investorGender : "Not read — enter below";
+                var investorPhotoUsed = Model.Docs.View(DocumentsViewModel.PhotoSlot, investor).Used;
+                var investorPhotoNote = investorPhotoUsed ? "not uploaded" : "on the folio";
             }
             <div class="investor-record">
                 <div class="investor-panel investor-ckyc">
-                    @* The photograph filed on Upload Documents, as a joint holder's card shows theirs. *@
+                    @* The photograph filed on Upload Documents. *@
                     @if (investorPhoto is { Before: false })
                     {
                         <img class="investor-ckyc__photo investor-ckyc__photo--img" src="@Url.Action("Copy", "Documents", new { slot = investor.Key("photo"), v = investorPhoto.GetHashCode() })" alt="@(investor.Who.Name)'s photograph">
                     }
                     else
                     {
-                        <div class="investor-ckyc__photo">Photo<br />@(Model.Docs.View(DocumentsViewModel.PhotoSlot, investor).Used ? "not uploaded" : "on the folio")</div>
+                        <div class="investor-ckyc__photo">Photo<br />@investorPhotoNote</div>
                     }
                     <div style="flex:1;min-width:0">
                         <div class="investor-panel__label" style="padding-bottom:10px">From the application &middot; read-only</div>
                         <div class="investor-key-value-grid">
-                            <div class="investor-key-value"><div class="investor-key-value__key">Applicant Name</div><div class="investor-key-value__value @(investor.Who.Name.Length == 0 ? "investor-key-value__value--unread" : null)">@(investor.Who.Name.Length > 0 ? investor.Who.Name : "Read off the PAN copy once filed")</div></div>
+                            <div class="investor-key-value"><div class="investor-key-value__key">Applicant Name</div><div class="investor-key-value__value @investorNameClass">@investorNameText</div></div>
                             <div class="investor-key-value"><div class="investor-key-value__key">DOB</div><div class="investor-key-value__value">@Model.Docs.HolderDob</div></div>
-                            <div class="investor-key-value"><div class="investor-key-value__key">Gender</div><div class="investor-key-value__value @(investorGender.Length == 0 ? "investor-key-value__value--unread" : null)">@(investorGender.Length > 0 ? investorGender : "Not read — enter below")</div></div>
+                            <div class="investor-key-value"><div class="investor-key-value__key">Gender</div><div class="investor-key-value__value @investorGenderClass">@investorGenderText</div></div>
                             <div class="investor-key-value"><div class="investor-key-value__key">PAN</div><div class="investor-key-value__value">@Model.Docs.HolderPan</div></div>
                             <div class="investor-key-value"><div class="investor-key-value__key">Folio</div><div class="investor-key-value__value">@Model.Docs.HolderFolio</div></div>
                         </div>
-                        @{ await Address(investor); }
+                        @{ await AddressPanel(investor); }
                     </div>
                 </div>
             </div>
-            @{ await CommAddress(1, investor); }
+            @{ await CommunicationAddressEntry(1, investor); }
             @{ await ManualEntry(1, investorGender); }
             @{ await MoreInformation(1, lists); }
-            @{ await Pep(1, Model.Docs.Investor); }
+            @{ await PepQuestions(1, investor); }
         </section>
 
-        @* ── Joint holders, one at a time: the third only once the second is added ── *@
+        @* ===== Joint holders, one at a time: the third only once the second is added ===== *@
         @for (var i = 0; i < Model.State.Joint.Count; i++)
         {
             await JointHolder(i, lists);
         }
         @if (Model.CanAddJoint)
         {
-            await Ask("investorAddHolder", "Would you like to add Joint Account Holder?", "JointAdd", "Add Joint Holder");
+            await AddSection("investorAddHolder", "Would you like to add Joint Account Holder?", "JointAdd", "Add Joint Holder");
         }
 
-        @* ── The nominee, once for the application ────────────────────────── *@
+        @* ===== The nominee, once for the application ===== *@
         @if (!Model.State.Nominee)
         {
-            await Ask("investorAddNominee", "Would you like to add Nominee Details?", "NomineeAdd", "Add Nominee");
+            await AddSection("investorAddNominee", "Would you like to add Nominee Details?", "NomineeAdd", "Add Nominee");
         }
         else
         {
             <section class="page-card section-card" id="nominee">
                 <div class="page-head">
                     <h2 class="page-title">Nominee Details</h2>
-                    @{ await Post("NomineeRemove", null, "investor-remove", $"<svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" aria-hidden=\"true\">{BinGlyph}</svg> Remove"); }
+                    @{ await PostButton("NomineeRemove", null, "investor-remove", RemoveLabel); }
                 </div>
                 <div class="doc-grid">
                     <div class="doc-column">
                         <label class="field-label" for="investorNomineeName">Name</label>
-                        <input class="field-input @Invalid("Nominee.Name")" id="investorNomineeName" name="Nominee.Name" value="@Model.Value("Nominee.Name")" autocomplete="off" data-required="Enter the nominee's name" data-check="name" aria-invalid="@(Invalid("Nominee.Name") is not null ? "true" : null)" aria-describedby="@DescribedBy("Nominee.Name", "investorNomineeName")">
+                        <input class="field-input @Invalid("Nominee.Name")" id="investorNomineeName" name="Nominee.Name" value="@Model.Value("Nominee.Name")" autocomplete="off" data-required="Enter the nominee's name" data-check="name" aria-invalid="@AriaInvalid("Nominee.Name")" aria-describedby="@DescribedBy("Nominee.Name", "investorNomineeName")">
                         @{ await FieldError("Nominee.Name", "investorNomineeName"); }
                     </div>
                     <div class="doc-column">
@@ -659,10 +709,9 @@
                     @{ await Select("investorNomineeRelation", "Nominee.Relation", "Relation with primary holder", relations, required: "Select the relation with the primary holder"); }
                 </div>
 
-                @* Only a minor nominee has a guardian. The section always stands, and is
-                   disabled until the date of birth typed makes the nominee one: disabled,
-                   its fields are not posted, so nothing typed for a guardian is kept
-                   against an adult nominee. *@
+                @* Only a minor nominee has a guardian. The section always stands, disabled until
+                   the date of birth typed makes the nominee a minor; disabled, its fields are not
+                   posted, so nothing typed for a guardian is kept against an adult nominee. *@
                 <fieldset class="investor-guardian" id="investorGuardian" data-investor-guardian data-minor-under="@Model.MinorUnder" disabled="@(!Model.NomineeMinor)">
                 <h3 class="section-title">Guardian Details</h3>
                 <p class="page-note investor-guardian__minor">The nominee is under @Model.MinorUnder, so a guardian acts for them.</p>
@@ -670,16 +719,34 @@
                 <div class="doc-grid">
                     <div class="doc-column">
                         <label class="field-label" for="investorNomineeGuardian">Guardian Name</label>
-                        <input class="field-input @Invalid("Nominee.GuardianName")" id="investorNomineeGuardian" name="Nominee.GuardianName" value="@Model.Value("Nominee.GuardianName")" autocomplete="off" data-required="Enter the guardian's name" data-check="name" aria-invalid="@(Invalid("Nominee.GuardianName") is not null ? "true" : null)" aria-describedby="@DescribedBy("Nominee.GuardianName", "investorNomineeGuardian")">
+                        <input class="field-input @Invalid("Nominee.GuardianName")" id="investorNomineeGuardian" name="Nominee.GuardianName" value="@Model.Value("Nominee.GuardianName")" autocomplete="off" data-required="Enter the guardian's name" data-check="name" aria-invalid="@AriaInvalid("Nominee.GuardianName")" aria-describedby="@DescribedBy("Nominee.GuardianName", "investorNomineeGuardian")">
                         @{ await FieldError("Nominee.GuardianName", "investorNomineeGuardian"); }
                     </div>
                 </div>
                 <div class="doc-grid">
-                    <div class="doc-column"><label class="field-label" for="investorGuardian1">Address Line 1</label><input class="field-input @Invalid("Nominee.GuardianAddress.Line1")" id="investorGuardian1" name="Nominee.GuardianAddress.Line1" value="@Model.Value("Nominee.GuardianAddress.Line1")" data-required="Enter the first line of the address" data-check="text" aria-invalid="@(Invalid("Nominee.GuardianAddress.Line1") is not null ? "true" : null)" aria-describedby="@DescribedBy("Nominee.GuardianAddress.Line1", "investorGuardian1")">@{ await FieldError("Nominee.GuardianAddress.Line1", "investorGuardian1"); }</div>
-                    <div class="doc-column"><label class="field-label" for="investorGuardian2">Address Line 2 (Non-mandatory)</label><input class="field-input" id="investorGuardian2" name="Nominee.GuardianAddress.Line2" value="@Model.Value("Nominee.GuardianAddress.Line2")" data-check="text"></div>
-                    <div class="doc-column"><label class="field-label" for="investorGuardian3">Address Line 3 (Non-mandatory)</label><input class="field-input" id="investorGuardian3" name="Nominee.GuardianAddress.Line3" value="@Model.Value("Nominee.GuardianAddress.Line3")" data-check="text"></div>
-                    <div class="doc-column"><label class="field-label" for="investorGuardianPin">Pin Code</label><input class="field-input @Invalid("Nominee.GuardianAddress.PinCode")" id="investorGuardianPin" name="Nominee.GuardianAddress.PinCode" value="@Model.Value("Nominee.GuardianAddress.PinCode")" inputmode="numeric" maxlength="6" data-required="Enter the PIN code" data-check="pin" aria-invalid="@(Invalid("Nominee.GuardianAddress.PinCode") is not null ? "true" : null)" aria-describedby="@DescribedBy("Nominee.GuardianAddress.PinCode", "investorGuardianPin")">@{ await FieldError("Nominee.GuardianAddress.PinCode", "investorGuardianPin"); }</div>
-                    <div class="doc-column"><label class="field-label" for="investorGuardianCity">City</label><input class="field-input @Invalid("Nominee.GuardianAddress.City")" id="investorGuardianCity" name="Nominee.GuardianAddress.City" value="@Model.Value("Nominee.GuardianAddress.City")" data-required="Enter the city" data-check="name" aria-invalid="@(Invalid("Nominee.GuardianAddress.City") is not null ? "true" : null)" aria-describedby="@DescribedBy("Nominee.GuardianAddress.City", "investorGuardianCity")">@{ await FieldError("Nominee.GuardianAddress.City", "investorGuardianCity"); }</div>
+                    <div class="doc-column">
+                        <label class="field-label" for="investorGuardian1">Address Line 1</label>
+                        <input class="field-input @Invalid("Nominee.GuardianAddress.Line1")" id="investorGuardian1" name="Nominee.GuardianAddress.Line1" value="@Model.Value("Nominee.GuardianAddress.Line1")" data-required="Enter the first line of the address" data-check="text" aria-invalid="@AriaInvalid("Nominee.GuardianAddress.Line1")" aria-describedby="@DescribedBy("Nominee.GuardianAddress.Line1", "investorGuardian1")">
+                        @{ await FieldError("Nominee.GuardianAddress.Line1", "investorGuardian1"); }
+                    </div>
+                    <div class="doc-column">
+                        <label class="field-label" for="investorGuardian2">Address Line 2 (Non-mandatory)</label>
+                        <input class="field-input" id="investorGuardian2" name="Nominee.GuardianAddress.Line2" value="@Model.Value("Nominee.GuardianAddress.Line2")" data-check="text">
+                    </div>
+                    <div class="doc-column">
+                        <label class="field-label" for="investorGuardian3">Address Line 3 (Non-mandatory)</label>
+                        <input class="field-input" id="investorGuardian3" name="Nominee.GuardianAddress.Line3" value="@Model.Value("Nominee.GuardianAddress.Line3")" data-check="text">
+                    </div>
+                    <div class="doc-column">
+                        <label class="field-label" for="investorGuardianPin">Pin Code</label>
+                        <input class="field-input @Invalid("Nominee.GuardianAddress.PinCode")" id="investorGuardianPin" name="Nominee.GuardianAddress.PinCode" value="@Model.Value("Nominee.GuardianAddress.PinCode")" inputmode="numeric" maxlength="6" data-required="Enter the PIN code" data-check="pin" aria-invalid="@AriaInvalid("Nominee.GuardianAddress.PinCode")" aria-describedby="@DescribedBy("Nominee.GuardianAddress.PinCode", "investorGuardianPin")">
+                        @{ await FieldError("Nominee.GuardianAddress.PinCode", "investorGuardianPin"); }
+                    </div>
+                    <div class="doc-column">
+                        <label class="field-label" for="investorGuardianCity">City</label>
+                        <input class="field-input @Invalid("Nominee.GuardianAddress.City")" id="investorGuardianCity" name="Nominee.GuardianAddress.City" value="@Model.Value("Nominee.GuardianAddress.City")" data-required="Enter the city" data-check="name" aria-invalid="@AriaInvalid("Nominee.GuardianAddress.City")" aria-describedby="@DescribedBy("Nominee.GuardianAddress.City", "investorGuardianCity")">
+                        @{ await FieldError("Nominee.GuardianAddress.City", "investorGuardianCity"); }
+                    </div>
                 </div>
                 <p class="page-note">District- , State-</p>
                 </fieldset>
@@ -688,14 +755,10 @@
 
         @if (!Model.State.Nominee)
         {
-            @* Skipping is kept with the form, so the question is not asked again on
-               this application once answered. *@
+            @* Skipping the nominee is kept with the form, so the question is asked once. *@
             <input type="hidden" name="NomineeSkipped" id="investorNomineeSkipped" value="@Model.Value("NomineeSkipped")">
         }
 
-        @* Every joint holder's attempts, newest first, in one place at the foot of
-           the page: the investor's are on Upload Documents. *@
-        @{ var jointLog = Model.Docs.State.Log.Where(e => e.Holder is UnoTP.Backend.HolderType.Second or UnoTP.Backend.HolderType.Third).ToList(); }
         @if (jointLog.Count > 0)
         {
             <section class="page-card doc-history" id="investorLog">
@@ -740,7 +803,7 @@
         <div class="page-action-bar__right">
             <button type="submit" form="investorInfoForm" class="btn btn-outline-primary" formaction="@Url.Action("Save")" formnovalidate data-toast="Draft saved">Save draft</button>
             <button type="submit" form="investorInfoForm" class="btn btn-primary" data-validate="form"
-                    data-ask-nominee="@(Model.State.Nominee || Model.Value("NomineeSkipped") == "yes" ? null : "yes")">Proceed</button>
+                    data-ask-nominee="@(nomineeAnswered ? null : "yes")">Proceed</button>
         </div>
     </div>
 </footer>

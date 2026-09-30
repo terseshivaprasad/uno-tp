@@ -319,6 +319,37 @@ public sealed class InvestorViewModel(InvestorInfoState state, DocumentsViewMode
     /// Whether the last post was about a joint holder's card - an error on it, or the
     /// part of the page to come back to is in it - so the card is shown open.
     /// </summary>
+    /// <summary>
+    /// Where an added joint holder's card stands, for its folded one-line summary: who they
+    /// are, how many of the documents asked for are filed, and how many fields are still to
+    /// fill. Complete when nothing on the card is left to do.
+    /// </summary>
+    public (bool Complete, string Line) HolderStanding(int holder, DocumentsViewModel.DocHolder h)
+    {
+        var slots = new List<DocumentsViewModel.SlotView>();
+        foreach (var slot in DocumentsViewModel.HolderSlots)
+        {
+            var view = Docs.View(slot, h);
+            if (view.Used) slots.Add(view);
+        }
+        var filed = slots.Count(v => v.Doc is not null);
+        var fieldsToFill = UnfilledFor(State, holder, h, Docs.MailTyped, Places).Count;
+        var complete = slots.All(v => !v.Missing) && fieldsToFill == 0;
+
+        var line = $"{h.Who.Name} · PAN {DocumentsViewModel.MaskPan(h.Who.Pan)}";
+        if (h.Who.Folio.Length > 0) line += $" · Folio {h.Who.Folio}";
+        else line += " · New folio";
+        if (slots.Count > 0)
+        {
+            var word = slots.Count == 1 ? "document" : "documents";
+            line += $" · {filed} of {slots.Count} {word} filed";
+        }
+        if (fieldsToFill == 0) line += " · details complete";
+        else if (fieldsToFill == 1) line += " · 1 field to fill";
+        else line += $" · {fieldsToFill} fields to fill";
+        return (complete, line);
+    }
+
     public bool About(int holder, DocumentsViewModel.DocHolder h) =>
         Errors.Keys.Any(k => k.StartsWith($"Holder{holder}."))
         || (Docs.Shown?.Errors.Keys.Any(k => k.StartsWith($"h{h.Code}-")) ?? false)

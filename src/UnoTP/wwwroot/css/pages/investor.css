@@ -1,4 +1,5 @@
-/* The investor page only. Loaded after layout-and-controls.css and shared/journey-steps.css. */
+/* Styles for the Investor Information page only. Loaded after layout-and-controls.css
+   and journey-steps.css, which hold the document cards and the read-only panels. */
 
 .investor-panel__action {
   font-size: 12px;
@@ -105,13 +106,12 @@
 .investor-field__hint[hidden] {
   display: none;
 }
-/* Inside the manual-entry callout every field is one that has to be typed, so the
-   whole set is outlined red (layout-and-controls.css). */
+/* Inside a manual-entry box every field has to be typed, so the set is outlined red. */
 .investor-control--strong {
   font-weight: 600;
 }
-/* The old screen's alert, laid over the top of the investor's card. */
-/* A minor nominee's guardian: a plain block, no fieldset border. */
+/* The FATCA "invests offline" alert, laid over the top of the investor's card. */
+/* The guardian section of a minor nominee: a plain block, no fieldset border. */
 .investor-guardian {
   border: 0;
   margin: 0;
@@ -178,8 +178,8 @@
 .investor-clear {
   margin-right: 8px;
 }
-/* An added joint holder folds to a line once nothing on the card is left to do:
-   who they are and where the card stands. Open, the card as it always was. */
+/* An added joint holder folds to one line (who they are and where the card stands)
+   once nothing on the card is left to do. Opened, the card is as it always was. */
 .investor-folded-holder > summary {
   list-style: none;
   cursor: pointer;
@@ -221,7 +221,7 @@
     transition: none;
   }
 }
-/* The Documents heading of a joint holder, with where post goes beside it. */
+/* The Documents heading of a joint holder, with the communication address toggle beside it. */
 .investor-docs-head {
   display: flex;
   align-items: center;
@@ -239,7 +239,7 @@
   letter-spacing: -.01em;
   color: var(--ink);
 }
-/* The PEP questions: the question on the left, Yes and No on the right. */
+/* The PEP questions: question on the left, Yes and No on the right. */
 .investor-pep {
   display: flex;
   flex-direction: column;
@@ -306,7 +306,7 @@
   line-height: 24px;
   color: var(--text);
 }
-/* Add Joint Holder and Add Nominee read as the Remove that takes them away again. */
+/* The Add Joint Holder and Add Nominee buttons, styled like Remove. */
 .investor-add, .investor-remove {
   display: inline-flex;
   align-items: center;
@@ -323,7 +323,7 @@
   cursor: pointer;
   font-family: inherit;
 }
-/* The second holder while there is a third: not removable yet. */
+/* Remove on the second holder while a third exists: disabled. */
 .investor-remove:disabled {
   color: var(--muted-2);
   cursor: not-allowed;
@@ -344,8 +344,7 @@
   font-weight: 500;
   color: var(--text);
 }
-/* A typed address's district and state, the PIN code's: shown beside it, never typed,
-   level with the PIN code's box. */
+/* The district and state of a typed address, from its PIN code: shown beside it, never typed. */
 .investor-district-state {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -353,9 +352,7 @@
   align-content: start;
   padding-top: 4px;
 }
-/* Short of room, the choice drops under the heading it belongs to and takes the
-   full width, each option an equal share, rather than crowding the heading. The
-   same for the application type and communication address on Upload Documents. */
+/* On a narrow screen the toggle drops under its heading and takes the full width. */
 @media (max-width: 900px) {
   .investor-docs-head {
     flex-direction: column;
