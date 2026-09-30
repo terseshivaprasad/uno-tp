@@ -31,19 +31,13 @@
     }
     var problemCount = Model.Problems.Count(p => p.Key != "banner");
 
-    // Two separate things the card says: how the deposit is paid, at its head (only
-    // where that is not a cheque, which has its own card), and what the repayment
-    // account is for, right over its fields.
+    // The card says what the repayment account is for, right over its fields. How the
+    // deposit is paid was chosen on Upload Documents and is not repeated here; a
+    // renewal alone says why its fields come filled.
     string? howPaid = null;
     if (Model.IsRenewal)
     {
         howPaid = $"The maturing deposit {Model.Docs.Renewal!.DepositNumber} pays for the new one; its repayment account is filled in below.";
-    }
-    else if (!Model.ByCheque)
-    {
-        var payMode = Model.PayMode.Length > 0 ? Model.PayMode : "the mode chosen on Upload Documents";
-        var paidHow = payMode == "Online" ? "online" : $"by {payMode}";
-        howPaid = $"The deposit is paid {paidHow}, through the payment link sent on submit, so there is no payment account to enter here.";
     }
     var repaymentNote = "Interest and the maturity amount are paid into this account.";
 }
