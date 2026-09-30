@@ -25,38 +25,7 @@
 
     // An alternate card (another choice's) carries no id, so the real card keeps its anchor.
     string? cardId = Model.Alternate ? null : "slot-" + key;
-
-    // A document the application has no use for - already on the folio, or not asked
-    // for this kind of application - asks nothing of the partner: one slim row, with
-    // why behind the info mark, rather than a full card.
-    var slim = !slot.Used && slot.Error is null;
 }
-@if (slim)
-{
-    <div class="doc-slot doc-slot--slim" id="@cardId" tabindex="-1">
-        <div class="doc-slot__bar">
-            @if (Model.Label is not null)
-            {
-                <div class="doc-slot__head">
-                    <span class="field-label">@Model.Label @if (Model.LabelOptional) { <span class="doc-optional">(Non-mandatory)</span> }@if (Model.ShowsProofType) { <partial name="_ProofType" model="@Model.ProofType" /> }</span>
-                </div>
-            }
-            <div class="doc-slot__tools">
-                <span class="doc-slot__na-title">Not applicable</span>
-                <span class="hover-hint hover-hint--info hover-hint--mark" tabindex="0" data-tip="@slot.NotApplicable"><span class="visually-hidden">Why: @slot.NotApplicable</span></span>
-                @if (tools.CanView)
-                {
-                    <button type="button" class="doc-tool" popovertarget="preview-@key" title="View @slot.Def.Label">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.8 12S5.5 5.5 12 5.5 22.2 12 22.2 12 18.5 18.5 12 18.5 1.8 12 1.8 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                        <span>View</span>
-                    </button>
-                }
-            </div>
-        </div>
-    </div>
-}
-else
-{
 <div class="@cardClass" id="@cardId" tabindex="-1">
     @* The header: the label at the left and, at the right, always in this order, the
        (i) mark, View, and the action (Upload, Replace, Newer proof, or a lock). What cannot
@@ -295,7 +264,6 @@ else
         }
     </div>
 </div>
-}
 
 @if (filed)
 {
