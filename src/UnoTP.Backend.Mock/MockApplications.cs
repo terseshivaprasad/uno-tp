@@ -63,7 +63,12 @@ public sealed class MockApplications(MockStore store, IPartner partner) : IAppli
     public Task<IReadOnlyList<DraftSummary>> DraftsAsync(CancellationToken ct = default) =>
         Task.FromResult<IReadOnlyList<DraftSummary>>(store.List(partner.Id)
             .Where(a => a.Submitted is null)
-            .Select(a => new DraftSummary(a.AppNo, Masks.Name(KnownName(a)), Masks.Pan(a.Holder.Pan), Masks.Dob(a.Holder.Dob), a.Deposit?.Amount ?? 0))
+            .Select(a =>
+            {
+                var (done, next) = DraftSummary.Progress(a.Upload is not null, a.Details is not null, a.Payment is not null, a.Deposit is not null);
+                return new DraftSummary(a.AppNo, Masks.Name(KnownName(a)), Masks.Pan(a.Holder.Pan), Masks.Dob(a.Holder.Dob), a.Deposit?.Amount ?? 0,
+                    done, next, a.Upload?.SavedAt);
+            })
             .ToList());
 
     // As NSDL verified it, else as read off the PAN copy, else as the folio has it.

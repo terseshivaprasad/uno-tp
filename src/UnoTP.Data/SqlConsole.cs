@@ -4,8 +4,8 @@ using UnoTP.Backend;
 namespace UnoTP.Data;
 
 /// <summary>
-/// What the console's administrator has on the books: t_Console_Window and
-/// t_Console_Notice. Nothing is deleted: a window ended early, or a notice taken
+/// What the console's administrator has on the books: t_Unotp_Console_Window and
+/// t_Unotp_Console_Notice. Nothing is deleted: a window ended early, or a notice taken
 /// down, is marked so and stays on record. Every partner sees the same schedule.
 /// </summary>
 public sealed class SqlConsole(Db db, SqlPartners partners) : IConsoleApi
@@ -42,11 +42,11 @@ public sealed class SqlConsole(Db db, SqlPartners partners) : IConsoleApi
     {
         await using var connection = await db.OpenAsync(ct);
         using var read = await connection.QueryMultipleAsync($"""
-            SELECT {WindowColumns} FROM dbo.t_Console_Window
+            SELECT {WindowColumns} FROM dbo.t_Unotp_Console_Window
             WHERE f_Active = 1 AND (d_Ended_On IS NULL OR d_Ended_On > d_From)
               AND d_To > DATEADD(DAY, -{KeptDays}, SYSDATETIME())
             ORDER BY d_From;
-            SELECT {NoticeColumns} FROM dbo.t_Console_Notice
+            SELECT {NoticeColumns} FROM dbo.t_Unotp_Console_Notice
             WHERE f_Active = 1 AND d_Removed_On IS NULL AND d_At > DATEADD(DAY, -{KeptDays}, SYSDATETIME())
             ORDER BY d_At;
             """);
@@ -61,7 +61,7 @@ public sealed class SqlConsole(Db db, SqlPartners partners) : IConsoleApi
         await using var connection = await db.OpenAsync(ct);
         return (await connection.QuerySingleAsync<WindowRow>($"""
             DECLARE @Seq INT = NEXT VALUE FOR dbo.s_Console_Id;
-            INSERT dbo.t_Console_Window (c_Window_Id, c_Features, d_From, d_To, c_Notice, c_Set_By)
+            INSERT dbo.t_Unotp_Console_Window (c_Window_Id, c_Features, d_From, d_To, c_Notice, c_Set_By)
             OUTPUT inserted.c_Window_Id AS Id, inserted.c_Features AS Features, inserted.d_From AS [From], inserted.d_To AS [To],
                 inserted.c_Notice AS Notice, inserted.c_Set_By AS SetBy, inserted.d_Set_On AS SetOn
             VALUES ('W-' + FORMAT(@From, 'ddMM') + '-' + RIGHT('00' + CAST(@Seq AS VARCHAR(10)), 3), @Features, @From, @To, @Notice, @By)
@@ -74,7 +74,7 @@ public sealed class SqlConsole(Db db, SqlPartners partners) : IConsoleApi
         await using var connection = await db.OpenAsync(ct);
         return await connection.QuerySingleAsync<AnnouncementRecord>("""
             DECLARE @Seq INT = NEXT VALUE FOR dbo.s_Console_Id;
-            INSERT dbo.t_Console_Notice (c_Notice_Id, c_Kind, c_Title, d_At, c_Detail, c_Set_By)
+            INSERT dbo.t_Unotp_Console_Notice (c_Notice_Id, c_Kind, c_Title, d_At, c_Detail, c_Set_By)
             OUTPUT inserted.c_Notice_Id AS Id, inserted.c_Kind AS Kind, inserted.c_Title AS Title, inserted.d_At AS At,
                 inserted.c_Detail AS Detail, inserted.c_Set_By AS SetBy, inserted.d_Set_On AS SetOn
             VALUES ('N-' + FORMAT(@At, 'ddMM') + '-' + RIGHT('00' + CAST(@Seq AS VARCHAR(10)), 3), @Kind, @Title, @At, @Detail, @By)
@@ -87,7 +87,7 @@ public sealed class SqlConsole(Db db, SqlPartners partners) : IConsoleApi
         var by = (await partners.MeAsync(ct)).Name;
         await using var connection = await db.OpenAsync(ct);
         return await connection.ExecuteAsync("""
-            UPDATE dbo.t_Console_Window SET d_Ended_On = SYSDATETIME(), c_Ended_By = @By
+            UPDATE dbo.t_Unotp_Console_Window SET d_Ended_On = SYSDATETIME(), c_Ended_By = @By
             WHERE c_Window_Id = @Id AND f_Active = 1 AND d_Ended_On IS NULL AND d_To > SYSDATETIME()
             """, new { Id = id, By = by }) > 0;
     }
@@ -97,7 +97,7 @@ public sealed class SqlConsole(Db db, SqlPartners partners) : IConsoleApi
         var by = (await partners.MeAsync(ct)).Name;
         await using var connection = await db.OpenAsync(ct);
         return await connection.ExecuteAsync("""
-            UPDATE dbo.t_Console_Notice SET d_Removed_On = SYSDATETIME(), c_Removed_By = @By
+            UPDATE dbo.t_Unotp_Console_Notice SET d_Removed_On = SYSDATETIME(), c_Removed_By = @By
             WHERE c_Notice_Id = @Id AND f_Active = 1 AND d_Removed_On IS NULL
             """, new { Id = id, By = by }) > 0;
     }

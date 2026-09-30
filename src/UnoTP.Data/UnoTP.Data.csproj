@@ -20,6 +20,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="UnoTP.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\UnoTP.Backend\UnoTP.Backend.csproj" />
     <ProjectReference Include="..\UnoTP.Backend.Mock\UnoTP.Backend.Mock.csproj" />
   </ItemGroup>

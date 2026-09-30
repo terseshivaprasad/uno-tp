@@ -31,7 +31,9 @@ public class ApplicationsViewModel(IReadOnlyList<ApplicationRecord> applications
         new("cancelled", "Cancelled", "Cancelled", "text-danger"),
     };
 
-    public record Milestone(string Label, string When, bool Done);
+    // A stage as the History list draws it: done and dated, pending, not one this
+    // application goes through (and why), or come back against it.
+    public record Milestone(string Label, string When, bool Done, bool Applies, bool Failed, string? Note);
 
     // One application as this screen reads it: who it is for, what it is for, and
     // how far it has gone. Nothing here can be edited - the screen only looks.
@@ -104,10 +106,12 @@ public class ApplicationsViewModel(IReadOnlyList<ApplicationRecord> applications
 
         public string Tag => Digital ? "Digital" : "Physical";
 
-        // The application's own history, as the backend dates it. A step not yet
-        // reached carries no date.
+        // The application's stages from entry to the FDR, as the backend dates them.
+        // A stage not reached yet is pending; one it does not go through says so.
         public List<Milestone> Timeline =>
-            [.. Milestones.Select(m => new Milestone(m.Step, m.At?.ToString("dd/MM/yyyy") ?? "pending", m.At is not null))];
+            [.. Milestones.Select(m => new Milestone(m.Step,
+                !m.Applies ? "Not applicable" : m.At?.ToString("dd/MM/yyyy") ?? "Pending",
+                m.Applies && m.At is not null, m.Applies, m.Failed, m.Note))];
     }
 
     /// <summary>The partner's applications, from the backend.</summary>

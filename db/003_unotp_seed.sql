@@ -11,14 +11,14 @@
    holder, and the first of 'employeeRelations' is Self - an employee who is the
    primary holder is Self, and no other holder can be.
 
-   Not seeded: t_Ref_List 'cmsLocations' (the Axis CMS locations cheques are
+   Not seeded: t_Unotp_Ref_List 'cmsLocations' (the Axis CMS locations cheques are
    presented at) must be loaded from Axis's own list before go-live, and the
    partners and their menus come from the portal's user master.
    ============================================================================= */
 SET NOCOUNT ON;
 GO
 
-INSERT dbo.t_App_Config (c_Key, c_Value, c_Description, c_Created_By)
+INSERT dbo.t_Unotp_App_Config (c_Key, c_Value, c_Description, c_Created_By)
 SELECT v.k, v.v, v.d, 'SEED' FROM (VALUES
     (N'sourcingAgency', N'1033', N'The agency type that sources as the house; any other sources as a broker'),
     (N'minAge', N'18', N'Youngest a holder may be'),
@@ -44,10 +44,10 @@ SELECT v.k, v.v, v.d, 'SEED' FROM (VALUES
     (N'defaultRateCategory', N'PUBLIC/GENERAL', N'The rate card category a deposit takes when its own has no rate'),
     (N'compoundingPerYear', N'2', N'Times a year a cumulative deposit compounds')
 ) v (k, v, d)
-WHERE NOT EXISTS (SELECT 1 FROM dbo.t_App_Config c WHERE c.c_Key = v.k);
+WHERE NOT EXISTS (SELECT 1 FROM dbo.t_Unotp_App_Config c WHERE c.c_Key = v.k);
 GO
 
-INSERT dbo.t_Feature_Mst (c_Feature_Key, c_Name, c_Group, c_Detail, c_Off_Reason, n_Seq, f_Tile, c_Created_By)
+INSERT dbo.t_Unotp_Feature_Mst (c_Feature_Key, c_Name, c_Group, c_Detail, c_Off_Reason, n_Seq, f_Tile, c_Created_By)
 SELECT v.k, v.n, v.g, v.d, v.o, v.s, v.t, 'SEED' FROM (VALUES
     (N'new-fd', N'Create New FD', N'Apply for a new FD', N'The booking wizard end to end, from investor search to submission.', N'Unavailable', 1, 1),
     (N'pis', N'PIS Generation - Axis', N'Apply for a new FD', N'Making and reprinting Axis pay-in slips. A slip already printed stays valid.', N'Unavailable', 2, 1),
@@ -57,10 +57,10 @@ SELECT v.k, v.n, v.g, v.d, v.o, v.s, v.t, 'SEED' FROM (VALUES
     (N'renew', N'Renew FD', N'FD Services', N'Rolling a maturing deposit over into a new one.', N'Coming soon', 6, 1),
     (N'admin', N'Console Admin', N'Administration', N'Scheduling downtime windows and notices for the console.', N'Unavailable', 7, 0)
 ) v (k, n, g, d, o, s, t)
-WHERE NOT EXISTS (SELECT 1 FROM dbo.t_Feature_Mst f WHERE f.c_Feature_Key = v.k);
+WHERE NOT EXISTS (SELECT 1 FROM dbo.t_Unotp_Feature_Mst f WHERE f.c_Feature_Key = v.k);
 GO
 
-INSERT dbo.t_Ref_List (c_List, n_Seq, c_Code, c_Name, j_Attrs, c_Created_By)
+INSERT dbo.t_Unotp_Ref_List (c_List, n_Seq, c_Code, c_Name, j_Attrs, c_Created_By)
 SELECT v.l, v.s, v.c, v.n, v.a, 'SEED' FROM (VALUES
     (N'applicationTypes', 1, N'DIGITAL', N'Digital', NULL),
     (N'applicationTypes', 2, N'PHYSICAL', N'Physical', NULL),
@@ -171,5 +171,5 @@ SELECT v.l, v.s, v.c, v.n, v.a, 'SEED' FROM (VALUES
     (N'renewalNotes', 7, N'7', N'Any renewal of Deposit in advance of its maturity date, will be subject to the rate of interest and other terms & conditions prevailing on the date of said maturity.', NULL),
     (N'renewalNotes', 8, N'8', N'The Auto renewal tag cases will be able to make renewal entry in this module only from {renewFromDays} days up to {renewUntilDaysAutoRenewal} days prior to maturity.', NULL)
 ) v (l, s, c, n, a)
-WHERE NOT EXISTS (SELECT 1 FROM dbo.t_Ref_List r WHERE r.c_List = v.l AND r.c_Code = v.c);
+WHERE NOT EXISTS (SELECT 1 FROM dbo.t_Unotp_Ref_List r WHERE r.c_List = v.l AND r.c_Code = v.c);
 GO

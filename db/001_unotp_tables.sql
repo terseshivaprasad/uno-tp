@@ -1,7 +1,7 @@
 /* =============================================================================
    Uno TP - the application tables (SQL Server 2016 or later).
 
-   An application is one row in t_Application_Mst, and everything entered on it
+   An application is one row in t_Unotp_Application_Mst, and everything entered on it
    is rows in the detail tables below. A detail row is never updated or deleted:
    every save inserts the section afresh, so each earlier save stays on record.
 
@@ -10,16 +10,16 @@
                         submitted, in a fresh set of rows.
 
      n_App_Version  The application's version the rows were saved at. A section's
-                    current rows are those at the version t_Application_Mst holds
+                    current rows are those at the version t_Unotp_Application_Mst holds
                     for it (n_Details_Ver and the like); older versions are its
                     history.
 
    Section            Saved from                       Tables
    ---------------    ------------------------------   ---------------------------------------
-   Upload             Upload Documents                 t_Upload_State, t_Kyc_Documents
-   Details            Investor Information             t_Kyc_Dtls, t_Address_Dtls, t_Nominee_Dtls
-   Payment            Bank Details & Payment           t_Payment_Bank_Dtls, t_Bank_Dtls
-   Deposit            FD Configuration                 t_Investment_Dtls
+   Upload             Upload Documents                 t_Unotp_Upload_State, t_Unotp_Kyc_Documents
+   Details            Investor Information             t_Unotp_Kyc_Dtls, t_Unotp_Address_Dtls, t_Unotp_Nominee_Dtls
+   Payment            Bank Details & Payment           t_Unotp_Payment_Bank_Dtls, t_Unotp_Bank_Dtls
+   Deposit            FD Configuration                 t_Unotp_Investment_Dtls
    (every section)    Review Summary - submit          all of the above, as 'APR'
 
    f_Active   Every table has one. 0 takes a row out of use without deleting it:
@@ -40,14 +40,14 @@ IF OBJECT_ID(N'dbo.s_App_No', N'SO') IS NULL
     CREATE SEQUENCE dbo.s_App_No AS BIGINT START WITH 10001 INCREMENT BY 1 NO CACHE;
 GO
 
-/* ----- t_Application_Mst ------------------------------------------------------
+/* ----- t_Unotp_Application_Mst ------------------------------------------------------
    One row per application: its number, whose it is, who it was opened for, and
    where it stands. This is the one row that changes - it carries the version every
    save is checked against, so two saves of one application cannot cross. What
    was entered on the application is in the detail tables, never here.
    ----------------------------------------------------------------------------- */
-IF OBJECT_ID(N'dbo.t_Application_Mst', N'U') IS NULL
-CREATE TABLE dbo.t_Application_Mst
+IF OBJECT_ID(N'dbo.t_Unotp_Application_Mst', N'U') IS NULL
+CREATE TABLE dbo.t_Unotp_Application_Mst
 (
     n_App_Id             BIGINT IDENTITY(1,1) NOT NULL,
     c_App_No             VARCHAR(20)    NOT NULL,
@@ -102,16 +102,16 @@ CREATE TABLE dbo.t_Application_Mst
 );
 GO
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_Application_Mst_Partner')
-    CREATE INDEX IX_Application_Mst_Partner ON dbo.t_Application_Mst (c_Partner_Id, c_Status) INCLUDE (d_Created_On, d_Updated_On);
+    CREATE INDEX IX_Application_Mst_Partner ON dbo.t_Unotp_Application_Mst (c_Partner_Id, c_Status) INCLUDE (d_Created_On, d_Updated_On);
 GO
 
-/* ----- t_Upload_State ---------------------------------------------------------
+/* ----- t_Unotp_Upload_State ---------------------------------------------------------
    Upload Documents as a whole, as the web app saved it: the choices, every
    check's reading and the attempt log, as JSON. It holds no file and no Aadhaar
-   number. t_Kyc_Documents carries its documents a row each.
+   number. t_Unotp_Kyc_Documents carries its documents a row each.
    ----------------------------------------------------------------------------- */
-IF OBJECT_ID(N'dbo.t_Upload_State', N'U') IS NULL
-CREATE TABLE dbo.t_Upload_State
+IF OBJECT_ID(N'dbo.t_Unotp_Upload_State', N'U') IS NULL
+CREATE TABLE dbo.t_Unotp_Upload_State
 (
     n_Id                 BIGINT IDENTITY(1,1) NOT NULL,
     c_App_No             VARCHAR(20)    NOT NULL,
@@ -127,10 +127,10 @@ CREATE TABLE dbo.t_Upload_State
 );
 GO
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_Upload_State_App')
-    CREATE INDEX IX_Upload_State_App ON dbo.t_Upload_State (c_App_No, n_App_Version);
+    CREATE INDEX IX_Upload_State_App ON dbo.t_Unotp_Upload_State (c_App_No, n_App_Version);
 GO
 
-/* ----- t_Kyc_Documents: one row per application, holder and document ----------
+/* ----- t_Unotp_Kyc_Documents: one row per application, holder and document ----------
    Every document on the application as it stands after the save: the copy filed
    with DMS, and what its checks said. A document not uploaded has no row.
      c_Holder_Type   00 the application's own, 01 the investor, 02 and 03 the joint holders
@@ -145,8 +145,8 @@ GO
      c_Result        ok, warn or bad
      f_On_Record     1 when it came over from the folio, with no copy here
    ----------------------------------------------------------------------------- */
-IF OBJECT_ID(N'dbo.t_Kyc_Documents', N'U') IS NULL
-CREATE TABLE dbo.t_Kyc_Documents
+IF OBJECT_ID(N'dbo.t_Unotp_Kyc_Documents', N'U') IS NULL
+CREATE TABLE dbo.t_Unotp_Kyc_Documents
 (
     n_Id                 BIGINT IDENTITY(1,1) NOT NULL,
     c_App_No             VARCHAR(20)    NOT NULL,
@@ -171,20 +171,20 @@ CREATE TABLE dbo.t_Kyc_Documents
 );
 GO
 -- A table created before c_File_Path was added takes it here.
-IF COL_LENGTH(N'dbo.t_Kyc_Documents', N'c_File_Path') IS NULL
-    ALTER TABLE dbo.t_Kyc_Documents ADD c_File_Path NVARCHAR(400) NULL;
+IF COL_LENGTH(N'dbo.t_Unotp_Kyc_Documents', N'c_File_Path') IS NULL
+    ALTER TABLE dbo.t_Unotp_Kyc_Documents ADD c_File_Path NVARCHAR(400) NULL;
 GO
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_Kyc_Documents_App')
-    CREATE INDEX IX_Kyc_Documents_App ON dbo.t_Kyc_Documents (c_App_No, n_App_Version, c_Holder_Type, c_Doc_Type);
+    CREATE INDEX IX_Kyc_Documents_App ON dbo.t_Unotp_Kyc_Documents (c_App_No, n_App_Version, c_Holder_Type, c_Doc_Type);
 GO
 
-/* ----- t_Kyc_Dtls: one row per holder -----------------------------------------
+/* ----- t_Unotp_Kyc_Dtls: one row per holder -----------------------------------------
    Who each holder is - from Investor Identification, or the joint holder's own
    search - what Investor Information took down about them, and where their KYC
    stands on Upload Documents (NSDL, CKYC).
    ----------------------------------------------------------------------------- */
-IF OBJECT_ID(N'dbo.t_Kyc_Dtls', N'U') IS NULL
-CREATE TABLE dbo.t_Kyc_Dtls
+IF OBJECT_ID(N'dbo.t_Unotp_Kyc_Dtls', N'U') IS NULL
+CREATE TABLE dbo.t_Unotp_Kyc_Dtls
 (
     n_Id                 BIGINT IDENTITY(1,1) NOT NULL,
     c_App_No             VARCHAR(20)    NOT NULL,
@@ -226,19 +226,19 @@ CREATE TABLE dbo.t_Kyc_Dtls
 );
 GO
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_Kyc_Dtls_App')
-    CREATE INDEX IX_Kyc_Dtls_App ON dbo.t_Kyc_Dtls (c_App_No, n_App_Version, c_Holder_Type);
+    CREATE INDEX IX_Kyc_Dtls_App ON dbo.t_Unotp_Kyc_Dtls (c_App_No, n_App_Version, c_Holder_Type);
 GO
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_Kyc_Dtls_Pan')
-    CREATE INDEX IX_Kyc_Dtls_Pan ON dbo.t_Kyc_Dtls (c_Pan) INCLUDE (c_App_No, c_Status);
+    CREATE INDEX IX_Kyc_Dtls_Pan ON dbo.t_Unotp_Kyc_Dtls (c_Pan) INCLUDE (c_App_No, c_Status);
 GO
 
-/* ----- t_Address_Dtls: one row per holder and address type --------------------
+/* ----- t_Unotp_Address_Dtls: one row per holder and address type --------------------
      c_Addr_Type   PER - permanent, as on record for the holder
                    COR - communication, typed on Investor Information when post
                          goes elsewhere; no row when it goes to the permanent one
    ----------------------------------------------------------------------------- */
-IF OBJECT_ID(N'dbo.t_Address_Dtls', N'U') IS NULL
-CREATE TABLE dbo.t_Address_Dtls
+IF OBJECT_ID(N'dbo.t_Unotp_Address_Dtls', N'U') IS NULL
+CREATE TABLE dbo.t_Unotp_Address_Dtls
 (
     n_Id                 BIGINT IDENTITY(1,1) NOT NULL,
     c_App_No             VARCHAR(20)    NOT NULL,
@@ -265,15 +265,15 @@ CREATE TABLE dbo.t_Address_Dtls
 );
 GO
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_Address_Dtls_App')
-    CREATE INDEX IX_Address_Dtls_App ON dbo.t_Address_Dtls (c_App_No, n_App_Version, c_Holder_Type, c_Addr_Type);
+    CREATE INDEX IX_Address_Dtls_App ON dbo.t_Unotp_Address_Dtls (c_App_No, n_App_Version, c_Holder_Type, c_Addr_Type);
 GO
 
-/* ----- t_Nominee_Dtls ---------------------------------------------------------
+/* ----- t_Unotp_Nominee_Dtls ---------------------------------------------------------
    The nominee, with a guardian for one under the minimum age. No row when no
    nominee is named.
    ----------------------------------------------------------------------------- */
-IF OBJECT_ID(N'dbo.t_Nominee_Dtls', N'U') IS NULL
-CREATE TABLE dbo.t_Nominee_Dtls
+IF OBJECT_ID(N'dbo.t_Unotp_Nominee_Dtls', N'U') IS NULL
+CREATE TABLE dbo.t_Unotp_Nominee_Dtls
 (
     n_Id                 BIGINT IDENTITY(1,1) NOT NULL,
     c_App_No             VARCHAR(20)    NOT NULL,
@@ -298,15 +298,15 @@ CREATE TABLE dbo.t_Nominee_Dtls
 );
 GO
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_Nominee_Dtls_App')
-    CREATE INDEX IX_Nominee_Dtls_App ON dbo.t_Nominee_Dtls (c_App_No, n_App_Version);
+    CREATE INDEX IX_Nominee_Dtls_App ON dbo.t_Unotp_Nominee_Dtls (c_App_No, n_App_Version);
 GO
 
-/* ----- t_Payment_Bank_Dtls ----------------------------------------------------
+/* ----- t_Unotp_Payment_Bank_Dtls ----------------------------------------------------
    The account the deposit is paid from, how it is paid, and the cheque or DD.
    One row per save of Bank Details & Payment.
    ----------------------------------------------------------------------------- */
-IF OBJECT_ID(N'dbo.t_Payment_Bank_Dtls', N'U') IS NULL
-CREATE TABLE dbo.t_Payment_Bank_Dtls
+IF OBJECT_ID(N'dbo.t_Unotp_Payment_Bank_Dtls', N'U') IS NULL
+CREATE TABLE dbo.t_Unotp_Payment_Bank_Dtls
 (
     n_Id                 BIGINT IDENTITY(1,1) NOT NULL,
     c_App_No             VARCHAR(20)    NOT NULL,
@@ -332,15 +332,15 @@ CREATE TABLE dbo.t_Payment_Bank_Dtls
 );
 GO
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_Payment_Bank_Dtls_App')
-    CREATE INDEX IX_Payment_Bank_Dtls_App ON dbo.t_Payment_Bank_Dtls (c_App_No, n_App_Version);
+    CREATE INDEX IX_Payment_Bank_Dtls_App ON dbo.t_Unotp_Payment_Bank_Dtls (c_App_No, n_App_Version);
 GO
 
-/* ----- t_Bank_Dtls: the repayment account -------------------------------------
+/* ----- t_Unotp_Bank_Dtls: the repayment account -------------------------------------
    Where interest and the maturity amount are paid. f_Same_As_Payment set, it is
    the payment account.
    ----------------------------------------------------------------------------- */
-IF OBJECT_ID(N'dbo.t_Bank_Dtls', N'U') IS NULL
-CREATE TABLE dbo.t_Bank_Dtls
+IF OBJECT_ID(N'dbo.t_Unotp_Bank_Dtls', N'U') IS NULL
+CREATE TABLE dbo.t_Unotp_Bank_Dtls
 (
     n_Id                 BIGINT IDENTITY(1,1) NOT NULL,
     c_App_No             VARCHAR(20)    NOT NULL,
@@ -362,18 +362,18 @@ CREATE TABLE dbo.t_Bank_Dtls
 );
 GO
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_Bank_Dtls_App')
-    CREATE INDEX IX_Bank_Dtls_App ON dbo.t_Bank_Dtls (c_App_No, n_App_Version);
+    CREATE INDEX IX_Bank_Dtls_App ON dbo.t_Unotp_Bank_Dtls (c_App_No, n_App_Version);
 GO
 
-/* ----- t_Investment_Dtls: the deposit as configured ---------------------------
+/* ----- t_Unotp_Investment_Dtls: the deposit as configured ---------------------------
    FD Configuration, and with it the application's other details chosen on Upload
    Documents: the application type and form, the deposit category, how it is
    sourced (broker, staff, sub-broker), the employee details for an employee
    deposit, and the deposit a renewal renews. The quote - rate, interest, maturity
    amount and date - is locked on submit, so it is set on the 'APR' row only.
    ----------------------------------------------------------------------------- */
-IF OBJECT_ID(N'dbo.t_Investment_Dtls', N'U') IS NULL
-CREATE TABLE dbo.t_Investment_Dtls
+IF OBJECT_ID(N'dbo.t_Unotp_Investment_Dtls', N'U') IS NULL
+CREATE TABLE dbo.t_Unotp_Investment_Dtls
 (
     n_Id                 BIGINT IDENTITY(1,1) NOT NULL,
     c_App_No             VARCHAR(20)    NOT NULL,
@@ -416,16 +416,16 @@ CREATE TABLE dbo.t_Investment_Dtls
 );
 GO
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_Investment_Dtls_App')
-    CREATE INDEX IX_Investment_Dtls_App ON dbo.t_Investment_Dtls (c_App_No, n_App_Version);
+    CREATE INDEX IX_Investment_Dtls_App ON dbo.t_Unotp_Investment_Dtls (c_App_No, n_App_Version);
 GO
 
-/* ----- t_Page_State -----------------------------------------------------------
+/* ----- t_Unotp_Page_State -----------------------------------------------------------
    A wizard page's working state - typed but not yet saved, a joint holder still
    being searched for - kept so a page opens where it was left. Scratch, not a
    record: it is overwritten in place and moves no version.
    ----------------------------------------------------------------------------- */
-IF OBJECT_ID(N'dbo.t_Page_State', N'U') IS NULL
-CREATE TABLE dbo.t_Page_State
+IF OBJECT_ID(N'dbo.t_Unotp_Page_State', N'U') IS NULL
+CREATE TABLE dbo.t_Unotp_Page_State
 (
     c_App_No             VARCHAR(20)    NOT NULL,
     c_Page               VARCHAR(30)    NOT NULL,

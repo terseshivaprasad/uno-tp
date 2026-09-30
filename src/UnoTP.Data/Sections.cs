@@ -17,12 +17,12 @@ internal static class Sections
 {
     public static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
-    // ----- Upload Documents: t_Upload_State, t_Kyc_Documents ----------------
+    // ----- Upload Documents: t_Unotp_Upload_State, t_Unotp_Kyc_Documents ----------------
 
     public static async Task WriteUploadAsync(IDbConnection db, IDbTransaction tx, Stamp at, UploadState upload)
     {
         await db.ExecuteAsync("""
-            INSERT dbo.t_Upload_State (c_App_No, n_App_Version, c_Status, j_Upload, c_Created_By)
+            INSERT dbo.t_Unotp_Upload_State (c_App_No, n_App_Version, c_Status, j_Upload, c_Created_By)
             VALUES (@AppNo, @Version, @Status, @Json, @By)
             """, new { at.AppNo, at.Version, at.Status, Json = JsonSerializer.Serialize(upload, Json), at.By }, tx);
 
@@ -30,7 +30,7 @@ internal static class Sections
         foreach (var d in Documents(upload))
         {
             await db.ExecuteAsync("""
-                INSERT dbo.t_Kyc_Documents (c_App_No, n_App_Version, c_Status, c_Holder_Type, c_Doc_Type, c_Doc_Sub_Type,
+                INSERT dbo.t_Unotp_Kyc_Documents (c_App_No, n_App_Version, c_Status, c_Holder_Type, c_Doc_Type, c_Doc_Sub_Type,
                     c_File_Name, c_File_Path, n_File_Size, c_Content_Type, c_Check, c_Result, f_On_Record, c_Created_By)
                 VALUES (@AppNo, @Version, @Status, @HolderType, @DocType, @SubType,
                     @FileName, @FilePath, @Size, @ContentType, @Check, @Result, @OnRecord, @By)
@@ -43,7 +43,7 @@ internal static class Sections
         }
     }
 
-    // ----- Investor Information: t_Kyc_Dtls, t_Address_Dtls, t_Nominee_Dtls ---
+    // ----- Investor Information: t_Unotp_Kyc_Dtls, t_Unotp_Address_Dtls, t_Unotp_Nominee_Dtls ---
 
     public static async Task WriteDetailsAsync(IDbConnection db, IDbTransaction tx, Stamp at, Holder investor, UploadState? upload, ApplicationDetails details)
     {
@@ -53,7 +53,7 @@ internal static class Sections
             var who = WhoIs(h.Holder, investor, upload);
             var kyc = KycOf(h.Holder, upload);
             await db.ExecuteAsync("""
-                INSERT dbo.t_Kyc_Dtls (c_App_No, n_App_Version, c_Status, c_Holder_Type, c_Pan, d_Dob, c_Name, c_Folio,
+                INSERT dbo.t_Unotp_Kyc_Dtls (c_App_No, n_App_Version, c_Status, c_Holder_Type, c_Pan, d_Dob, c_Name, c_Folio,
                     c_Gender, c_Name_Type, c_Parent_Name, c_Annual_Income, c_Occupation, c_Sub_Occupation, c_Marital_Status,
                     c_Mobile, c_Email, f_Fatca_Tax_Res, f_Fatca_Perm_Res, c_Pep, c_Pep_Related,
                     c_Nsdl_Status, c_Nsdl_Name, f_Ckyc, f_Mail_Different, c_Created_By)
@@ -78,7 +78,7 @@ internal static class Sections
         if (details.Nominee is { } n)
         {
             await db.ExecuteAsync("""
-                INSERT dbo.t_Nominee_Dtls (c_App_No, n_App_Version, c_Status, c_Name, d_Dob, c_Relation, c_Guardian_Name,
+                INSERT dbo.t_Unotp_Nominee_Dtls (c_App_No, n_App_Version, c_Status, c_Name, d_Dob, c_Relation, c_Guardian_Name,
                     c_Guardian_Line1, c_Guardian_Line2, c_Guardian_Line3, c_Guardian_Pin_Code, c_Guardian_City, c_Created_By)
                 VALUES (@AppNo, @Version, @Status, @Name, @Dob, @Relation, @GuardianName,
                     @GuardianLine1, @GuardianLine2, @GuardianLine3, @GuardianPinCode, @GuardianCity, @By)
@@ -92,7 +92,7 @@ internal static class Sections
 
     private static Task InsertAddressAsync(IDbConnection db, IDbTransaction tx, Stamp at, string holder, string type, TypedAddress a) =>
         db.ExecuteAsync("""
-            INSERT dbo.t_Address_Dtls (c_App_No, n_App_Version, c_Status, c_Holder_Type, c_Addr_Type,
+            INSERT dbo.t_Unotp_Address_Dtls (c_App_No, n_App_Version, c_Status, c_Holder_Type, c_Addr_Type,
                 c_Line1, c_Line2, c_Line3, c_City, c_Pin_Code, c_District, c_State, c_Created_By)
             VALUES (@AppNo, @Version, @Status, @HolderType, @AddrType,
                 @Line1, @Line2, @Line3, @City, @PinCode, @District, @State, @By)
@@ -102,7 +102,7 @@ internal static class Sections
             a.Line1, a.Line2, a.Line3, a.City, a.PinCode, a.District, a.State, at.By,
         }, tx);
 
-    // ----- Bank Details & Payment: t_Payment_Bank_Dtls, t_Bank_Dtls ----------
+    // ----- Bank Details & Payment: t_Unotp_Payment_Bank_Dtls, t_Unotp_Bank_Dtls ----------
 
     /// <param name="branches">The branch each IFSC names, as looked up before the save.</param>
     public static async Task WritePaymentAsync(IDbConnection db, IDbTransaction tx, Stamp at, UploadState? upload,
@@ -110,7 +110,7 @@ internal static class Sections
     {
         var pay = Branch(payment.Payment, branches);
         await db.ExecuteAsync("""
-            INSERT dbo.t_Payment_Bank_Dtls (c_App_No, n_App_Version, c_Status, c_Pay_Mode, c_Ifsc, c_Account_No,
+            INSERT dbo.t_Unotp_Payment_Bank_Dtls (c_App_No, n_App_Version, c_Status, c_Pay_Mode, c_Ifsc, c_Account_No,
                 c_Bank_Name, c_Branch_Name, c_Micr, c_Cheque_No, d_Cheque_Date, c_Cms_Location, c_Created_By)
             VALUES (@AppNo, @Version, @Status, @PayMode, @Ifsc, @AccountNo,
                 @Bank, @BranchName, @Micr, @ChequeNo, @ChequeDate, @CmsLocation, @By)
@@ -123,7 +123,7 @@ internal static class Sections
 
         var repay = Branch(payment.Repayment, branches);
         await db.ExecuteAsync("""
-            INSERT dbo.t_Bank_Dtls (c_App_No, n_App_Version, c_Status, f_Same_As_Payment, c_Ifsc, c_Account_No,
+            INSERT dbo.t_Unotp_Bank_Dtls (c_App_No, n_App_Version, c_Status, f_Same_As_Payment, c_Ifsc, c_Account_No,
                 c_Bank_Name, c_Branch_Name, c_Micr, c_Created_By)
             VALUES (@AppNo, @Version, @Status, @SameAsPayment, @Ifsc, @AccountNo, @Bank, @BranchName, @Micr, @By)
             """, new
@@ -136,7 +136,7 @@ internal static class Sections
     private static BankBranch? Branch(BankAccount? account, IReadOnlyDictionary<string, BankBranch> branches) =>
         account is null ? null : branches.GetValueOrDefault(account.Ifsc.Trim().ToUpperInvariant());
 
-    // ----- FD Configuration: t_Investment_Dtls --------------------------------
+    // ----- FD Configuration: t_Unotp_Investment_Dtls --------------------------------
 
     /// <param name="quote">The quote locked on submit; null on a step's save.</param>
     public static Task WriteDepositAsync(IDbConnection db, IDbTransaction tx, Stamp at, UploadState? upload,
@@ -144,7 +144,7 @@ internal static class Sections
     {
         var u = upload ?? new UploadState();
         return db.ExecuteAsync("""
-            INSERT dbo.t_Investment_Dtls (c_App_No, n_App_Version, c_Status, n_Amount, n_Tenure_Months, c_Payout,
+            INSERT dbo.t_Unotp_Investment_Dtls (c_App_No, n_App_Version, c_Status, n_Amount, n_Tenure_Months, c_Payout,
                 f_Auto_Renewal, c_Renew_Instruction, f_No_Tds, c_Delivery_Type,
                 c_App_Type, c_Form_No, c_Category, c_Sourcing, c_Source_Code, c_Sub_Broker,
                 c_Emp_Code, c_Emp_Company, c_Emp_Holder, c_Emp_Relation, c_Emp_Proof_Type, c_Renew_Dep_No,

@@ -45,8 +45,8 @@ adds only what its own body needs, in its `Styles` and `Scripts` sections.
 
 | | Shared - loaded by the layout | A page's own |
 |---|---|---|
-| CSS | `css/shared/`: `fonts.css`, `base.css` (tokens, header, controls, cards), `wizard.css` (what the purchase journey's steps share: rail, form controls, document and read cards), `registers.css` (what the list pages share), `topbar.css` | `css/pages/{page}.css` |
-| JS | `js/shared/`: `loader.js`, `checks.js`, `notices.js`, `topbar.js`, `date-parts.js`, `partial-forms.js`, `image-shrink.js`, `pin.js`, `console.js` | `js/pages/{page}.js` |
+| CSS | Bootstrap 5.3 (`lib/bootstrap`) and its brand theme `css/shared/theme.css`, then `css/shared/`: `fonts.css`, `base.css` (tokens, header, controls, cards), `wizard.css` (what the purchase journey's steps share: rail, form controls, document and read cards), `registers.css` (what the list pages share), `topbar.css` | `css/pages/{page}.css` |
+| JS | Bootstrap's bundle (`lib/bootstrap/js`, vanilla - no jQuery), then `js/shared/`: `loader.js`, `checks.js`, `notices.js`, `topbar.js`, `date-parts.js`, `partial-forms.js`, `image-shrink.js`, `pin.js`, `console.js` | `js/pages/{page}.js` |
 
 | Page | CSS | JS |
 |---|---|---|
@@ -99,10 +99,13 @@ checks it has. Documents are kept under `Dms:Root` until DMS is wired in, and no
 or e-mail gateway is: sends are logged.
 
 ```sh
+sqlcmd -d UnoTP -i db/000_unotp_rename.sql       # a database made before the t_Unotp_ prefix: renames its tables (first)
 sqlcmd -d UnoTP -i db/001_unotp_tables.sql       # the application tables
 sqlcmd -d UnoTP -i db/002_unotp_platform.sql     # config, features, lists, partners, sessions, links, slips, console
 sqlcmd -d UnoTP -i db/003_unotp_seed.sql         # config, features and lists: review with the business
 sqlcmd -d UnoTP -i db/004_unotp_masters.sql      # folios, brokers, staff, IFSC, PIN codes, rate card
+sqlcmd -d UnoTP -i db/005_unotp_status.sql       # penny drop and KYC verification, written by the Operations feed
+sqlcmd -d UnoTP -i db/006_unotp_logs.sql         # the error log, t_Unotp_Logs
 sqlcmd -d UnoTP -i db/900_dev_seed.sql           # development only: demo partners and master records
 export ConnectionStrings__UnoTP='Server=...;Database=UnoTP;...'   # never in a committed file
 dotnet run --project src/UnoTP --launch-profile http
@@ -112,31 +115,31 @@ Every script is safe to run again. No table has a foreign key: each row is writt
 inside the transaction that locks its application. Every table has `f_Active`; only
 active rows are read. The masters in `004` are loaded from their sources of record
 before go-live (the FD system, the broker and staff masters, the RBI's IFSC list,
-India Post, the rate card), as is `cmsLocations` in `t_Ref_List`. Every page checks
-the partner's session in `t_User_Session` (at most 30 seconds old), so ending it, or
+India Post, the rate card), as is `cmsLocations` in `t_Unotp_Ref_List`. Every page checks
+the partner's session in `t_Unotp_User_Session` (at most 30 seconds old), so ending it, or
 taking the partner out of use, signs them out. The tests run on the database with
 `ConnectionStrings__UnoTP` set.
 
 Outside Development (or a demo, `Features:DemoData`) the app will not start without
 `ConnectionStrings:UnoTP`, or with an outside service left without an address.
 
-**How an application is kept.** `t_Application_Mst` holds one row per application:
+**How an application is kept.** `t_Unotp_Application_Mst` holds one row per application:
 its number, its partner, who it was opened for, and its version. Everything entered
 on it is rows in the detail tables, which are only ever inserted into:
 
 | Step | Tables |
 |---|---|
-| Upload Documents | `t_Upload_State` (the step as JSON), `t_Kyc_Documents` (one row per holder and document; `00` for the application's own) |
-| Investor Information | `t_Kyc_Dtls` (per holder, with NSDL and CKYC), `t_Address_Dtls` (per holder and address type: `PER`, `COR`), `t_Nominee_Dtls` |
-| Bank Details & Payment | `t_Payment_Bank_Dtls` (the payment account and instrument), `t_Bank_Dtls` (the repayment account) |
-| FD Configuration | `t_Investment_Dtls` (the deposit, with category, sourcing and employee details) |
+| Upload Documents | `t_Unotp_Upload_State` (the step as JSON), `t_Unotp_Kyc_Documents` (one row per holder and document; `00` for the application's own) |
+| Investor Information | `t_Unotp_Kyc_Dtls` (per holder, with NSDL and CKYC), `t_Unotp_Address_Dtls` (per holder and address type: `PER`, `COR`), `t_Unotp_Nominee_Dtls` |
+| Bank Details & Payment | `t_Unotp_Payment_Bank_Dtls` (the payment account and instrument), `t_Unotp_Bank_Dtls` (the repayment account) |
+| FD Configuration | `t_Unotp_Investment_Dtls` (the deposit, with category, sourcing and employee details) |
 
 Each save is checked against the version the page read (`If-Match`), moves the
 version on, and inserts that step's rows afresh with status `PEN`; the header points
 each step at the version that is current. Submitting inserts every step once more
-with status `APR`, with the rate, interest and maturity locked on `t_Investment_Dtls`,
+with status `APR`, with the rate, interest and maturity locked on `t_Unotp_Investment_Dtls`,
 and the application takes no saves after it. Earlier versions stay as the audit
-trail. A page's working state (`t_Page_State`) is scratch and is overwritten.
+trail. A page's working state (`t_Unotp_Page_State`) is scratch and is overwritten.
 
 ## Configuration
 
@@ -153,6 +156,15 @@ underscore (`ConnectionStrings__UnoTP`).
 | `PaymentLink:Template` | The page the investor pays on, with `{appNo}` for the application's number. Blank, the app sends no link and the backend makes its own. |
 | `Apps:eSarathiLogin`, `Apps:eSarathiConsole`, … | The other apps' addresses, for the links out and the session-expired redirect. |
 | `Entry:DemoUserId`, `Entry:DemoSysCode` | The user demo mode signs in as. |
+| `Backend:TimeoutSeconds`, `Idfy:TimeoutSeconds`, `Shortener:TimeoutSeconds` | How long an outside service may take to answer: 55 s each. Nothing is retried - every IDfy call may be charged. |
+| `Logging:Sql:MinLevel` | The least serious entry written to `t_Unotp_Logs` (`Error`): every error and critical error, with the request, the application number and the partner signed in, in the background. Only on the database. |
+| `Security:FrameAncestors` | Other sites allowed to show the pages in a frame (space-separated origins). Blank: none but the app itself. |
+
+Every response carries a Content-Security-Policy (scripts, styles, fonts and images
+only from the app; no inline script), `X-Content-Type-Options: nosniff`,
+`X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy` and no `Server` header
+(`Infrastructure/SecurityHeaders.cs`). A page that needs something from another
+site, or an inline script, is refused by the browser until the policy allows it.
 
 Feature switches, under `Features`:
 

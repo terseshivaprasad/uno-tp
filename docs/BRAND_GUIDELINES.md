@@ -7,6 +7,49 @@ When building a new page or fixing an existing one, match these values rather th
 introducing new ones. If a prototype board shows a value that conflicts with this
 doc, the prototype wins — update this doc to match and note which board you checked.
 
+## Foundation: Bootstrap 5.3, themed to the brand
+
+Pages are built on **Bootstrap 5.3** (`wwwroot/lib/bootstrap`, MIT, served locally,
+never from a CDN) with **vanilla JavaScript** - Bootstrap 5 needs no jQuery, and the
+app uses none. `css/shared/theme.css` points Bootstrap's variables at the brand
+tokens below, so a Bootstrap button, form control, card, badge, table or list group
+comes out in the brand: Mahindra red for the main action and for what is wrong,
+Georama, ink text, 8px cards, 6px buttons and controls, 3px chips, a blue focus ring.
+
+Page by page, a page's hand-made styles give way to Bootstrap's components and
+utilities, keeping its layout: use `.btn .btn-primary`, `.form-control`,
+`.form-select`, `.card`, `.badge`, `.table`, `.list-group`, the spacing utilities
+(`p-3`, `gap-2`, `mb-4` - Bootstrap's 4/8px steps) rather than a new rule. Name a
+class of our own with a prefix of its own (`cud-`, `cii-`, `app-`): never a
+Bootstrap name (`modal-dialog`, `toast`, `card` ...) for something that is not that
+Bootstrap component - `app-dialog` and `app-toast` are ours for exactly that reason.
+
+The rules the research behind this settled on (NN/g, GOV.UK, IBM Carbon, Material,
+Apple HIG, WCAG 2.2):
+
+- **Type:** a few sizes with clear roles - 12px captions, helper text, chips and
+  the small labels over a fact; 14px body, field labels, controls and buttons;
+  16px section titles; 20px page titles (the investor's name on a step) - never
+  below 12px; line heights on a 4px grid (16/20/24/28); headings semibold, body
+  regular. No uppercase eyebrows: a caption is sentence case in `--muted`.
+- **Hierarchy:** one thing leads each block. A step's head is caption (the step),
+  title (the name), then the facts; a document card's head is its label at the
+  left and its toolbar at the right, on one line.
+- **Spacing:** Bootstrap's 4/8px scale for padding, margins and gaps; related
+  things close together, groups apart (proximity).
+- **Contrast:** text at least 4.5:1 - `--muted` (#6B7280) is the lightest text
+  colour; `--muted-2` is for placeholders and disabled controls only (2.6:1).
+- **Targets and focus:** anything pressed at least 24px square; focus always shows
+  the 2px blue ring.
+- **Text is never cut off** with an ellipsis: it wraps, so enlarged or re-spaced
+  text stays readable.
+- **Edges:** anything drawn as a box - a card, a panel, a highlighted row, a table
+  row's hover, a button - keeps its content at least 8px from its sides (6px in a
+  chip or small tool) and 4px from top and bottom. A highlight is never added to a
+  row that has no inset of its own.
+- **Supporting content steps back:** help beside a page sits on the page, not on a
+  card, in muted text; navigation marks out only where you are.
+
 ## Colors
 
 All colors are CSS custom properties on `:root` in `site.css`. Always reference the
@@ -56,26 +99,19 @@ on `--page-bg`.
 Font: **Georama** (Google Fonts, weights 300–700), loaded in `_Layout.cshtml` with
 `system-ui, sans-serif` fallback. Base body: `letter-spacing: 0`, color `--ink`; headings `-.01em`.
 
-| Role | Size | Weight | Color | Class |
+| Role | Size / line | Weight | Color | Example |
 |---|---|---|---|---|
-| Card / section title | 16px | 500 | `--text` | `.card__title` |
-| Card subtitle | 11.5px | 400 | `--muted` | `.card__subtitle` |
-| Holder / block title | 14–14.5px | 700 | `--ink` | inline / `.holder-block__title` |
-| Body / field text | 12.5–14px | 400–500 | `--ink` / `--text` | — |
-| Field label | 12px | 500 | `--text` | `.field label` |
-| Hint / helper text | 11px | 400 | `--muted` | `.field-hint` |
-| Uppercase eyebrow label | 11.5px* | 600–700 | `--muted` / `--muted-2` | `.section-label` (see note) |
-| Button text | 14px | 600 | — | `.btn` |
-| Small button text | 12.5px | 600 | — | `.btn-sm` |
-| Small status chip | 10.5px | 700 | varies | `.chip` |
-| Action link | 11.5px | 700 | `--red` | `.action-link` |
-| Table body | 11–11.5px | 400 | `--ink` | `.data-table` |
-| Table header | 9.5px | 700, uppercase | `--muted-2` | `.data-table thead th` |
+| Page title | 20 / 28px | 600 | `--ink` | `.cud-head__name`, `.classic-steps__title` |
+| Section title | 16 / 24px | 600 | `--ink` | `.cud-extra__title`, `.classic-actions__title` |
+| Body, field text, controls | 14 / 20px | 400–500 | `--ink` / `--text` | `.csi-control`, `.seg-toggle__opt` |
+| Field label | 14 / 20px | 600 | `--ink` | `.csi-label`, `.form-label` |
+| Button | 14px | 500–600 | — | `.btn`, `.csi-btn` (40px high) |
+| Caption, helper, meta | 12 / 16px | 400–500 | `--muted` | `.csi-hint`, `.cud-head__step` |
+| Chip / status tag | 12 / 16px | 600 | varies | `.badge`, `.cud-held__tag` |
+| Small tool | 12 / 16px | 600 | `--red` | `.cud-tool` (26px high) |
 
-*\*`.section-label` itself defaults to 10px — that's correct for the small uppercase
-labels it was designed for (e.g. "Pinned" on the dashboard). But some prototype
-section headers ("Holders on this application", "DPDP consent") render at **11.5px**
-instead — check the specific board before assuming 10px is always right.*
+Nothing is set below 12px and nothing is uppercase. Icon glyphs (the "i" of an info
+mark) are drawings, not text, and are exempt.
 
 ### Chips vs. tags — don't mix these up
 

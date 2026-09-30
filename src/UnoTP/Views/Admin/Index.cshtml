@@ -1,6 +1,7 @@
 @model AdminViewModel
 @{
     ViewData["Title"] = "Console Admin";
+    ViewData["BackToDashboard"] = true;
 
     // The screen behind the classic console: which features are on, and what the
     // bell in the top bar tells partners is coming. The two are one thing here -
@@ -193,15 +194,15 @@
                 <p class="csi-error" id="admWindowError" hidden></p>
 
                 <div class="adm-form__actions">
-                    <button type="submit" class="csi-btn csi-btn--primary">Schedule window</button>
-                    <button type="button" class="csi-btn csi-btn--back" id="admWindowReset">Clear</button>
+                    <button type="submit" class="btn btn-primary">Schedule window</button>
+                    <button type="button" class="btn btn-outline-primary" id="admWindowReset">Clear</button>
                 </div>
             </form>
         </div>
 
         <div class="csi-card">
             <div class="csi-drafts__head">
-                <h1 class="csi-card__title csi-card__title--plain">What partners are told</h1>
+                <h2 class="csi-card__title csi-card__title--plain">What partners are told</h2>
                 <p class="csi-drafts__sub">Everything in the bell in the top bar, soonest first. A notice against a window goes when that window does; a standalone one is removed by hand.</p>
             </div>
 
@@ -266,7 +267,7 @@
             <h2 class="adm-form__title" id="admNoticeTitle">Add a notification</h2>
             <form class="adm-form" id="admNoticeForm" method="post" asp-action="AddNotice" novalidate aria-labelledby="admNoticeTitle">
                 <input type="hidden" name="at" id="admAtValue" />
-                <p class="va-flag">
+                <p class="alert alert-secondary va-flag">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 11v6"></path><circle cx="12" cy="7.5" r=".7" fill="currentColor"></circle></svg>
                     <span><strong>This tells, it does not disable.</strong> Use it for a rate change, or for a service behind the wizard such as DMS. To take a dashboard tile off the air, set a window above.</span>
                 </p>
@@ -303,15 +304,15 @@
                 <p class="csi-error" id="admNoticeError" hidden></p>
 
                 <div class="adm-form__actions">
-                    <button type="submit" class="csi-btn csi-btn--primary">Publish to the bell</button>
-                    <button type="button" class="csi-btn csi-btn--back" id="admNoticeReset">Clear</button>
+                    <button type="submit" class="btn btn-primary">Publish to the bell</button>
+                    <button type="button" class="btn btn-outline-primary" id="admNoticeReset">Clear</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="app-toast" id="toast" role="status" aria-live="polite"></div>
 
 @section Scripts {
     <script src="~/js/pages/admin.js" asp-append-version="true"></script>

@@ -16,6 +16,8 @@ var builder = WebApplication.CreateBuilder(args);
 // locally it takes 5102, clear of the other eSarathi apps' ports.
 var port = Environment.GetEnvironmentVariable("PORT") ?? "5102";
 builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+// No Server header: what the app runs on is nobody's business (see SecurityHeaders).
+builder.WebHost.ConfigureKestrel(kestrel => kestrel.AddServerHeader = false);
 
 // Add services to the container.
 // MVC: controllers and their views. FeatureGate closes the pages of a console
@@ -171,6 +173,8 @@ var app = builder.Build();
 
 // First, so everything after it sees the scheme and address the proxy forwarded.
 app.UseForwardedHeaders();
+// On every response, the error page and static files included (see SecurityHeaders).
+app.UseSecurityHeaders(app.Configuration);
 // Before anything that writes a response, so all of it is compressed.
 app.UseResponseCompression();
 
@@ -231,6 +235,14 @@ app.UseStaticFiles(new StaticFileOptions
 });
 
 app.UseSession();
+
+// Who is signed in, for the error log (t_Unotp_Logs, SqlErrorLog): set once the
+// session is read, so an error logged later in the request is put down to them.
+app.Use((context, next) =>
+{
+    context.Items[UnoTP.Data.SqlErrorLog.UserItem] = context.Session.SignedInUser();
+    return next();
+});
 
 // Must run before the pages so a ?ff= override applies to this render.
 app.UseFeatureOverrides();

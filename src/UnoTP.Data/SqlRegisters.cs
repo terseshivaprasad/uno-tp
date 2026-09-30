@@ -15,11 +15,11 @@ internal sealed class SubmittedRow
             i.c_App_Type AS AppType, i.n_Amount AS Amount,
             p.c_Pay_Mode AS PayMode, p.c_Cheque_No AS ChequeNo, p.c_Bank_Name AS BankName,
             k.c_Mobile AS Mobile, k.c_Email AS Email, ISNULL(pm.c_Branch, N'') AS Branch
-        FROM dbo.t_Application_Mst m
-        LEFT JOIN dbo.t_Investment_Dtls i ON i.c_App_No = m.c_App_No AND i.n_App_Version = m.n_Deposit_Ver AND i.f_Active = 1
-        LEFT JOIN dbo.t_Payment_Bank_Dtls p ON p.c_App_No = m.c_App_No AND p.n_App_Version = m.n_Payment_Ver AND p.f_Active = 1
-        LEFT JOIN dbo.t_Kyc_Dtls k ON k.c_App_No = m.c_App_No AND k.n_App_Version = m.n_Details_Ver AND k.c_Holder_Type = '01' AND k.f_Active = 1
-        LEFT JOIN dbo.t_Partner_Mst pm ON pm.c_User_Id = m.c_Partner_Id
+        FROM dbo.t_Unotp_Application_Mst m
+        LEFT JOIN dbo.t_Unotp_Investment_Dtls i ON i.c_App_No = m.c_App_No AND i.n_App_Version = m.n_Deposit_Ver AND i.f_Active = 1
+        LEFT JOIN dbo.t_Unotp_Payment_Bank_Dtls p ON p.c_App_No = m.c_App_No AND p.n_App_Version = m.n_Payment_Ver AND p.f_Active = 1
+        LEFT JOIN dbo.t_Unotp_Kyc_Dtls k ON k.c_App_No = m.c_App_No AND k.n_App_Version = m.n_Details_Ver AND k.c_Holder_Type = '01' AND k.f_Active = 1
+        LEFT JOIN dbo.t_Unotp_Partner_Mst pm ON pm.c_User_Id = m.c_Partner_Id
         WHERE m.c_Partner_Id = @Partner AND m.c_Status = 'APR' AND m.f_Active = 1
         """;
 
@@ -48,7 +48,7 @@ internal sealed class SubmittedRow
 }
 
 /// <summary>
-/// Axis pay-in slips (t_Pay_In_Slip) for the partner's applications paying by an
+/// Axis pay-in slips (t_Unotp_Pay_In_Slip) for the partner's applications paying by an
 /// instrument: a payment mode whose reference entry names a document (cheque, DD).
 /// </summary>
 public sealed class SqlPayInSlips(Db db, IPartner partner, SqlReference reference) : IPayInSlipApi
@@ -64,7 +64,7 @@ public sealed class SqlPayInSlips(Db db, IPartner partner, SqlReference referenc
         var prefix = await reference.SettingAsync("slipNoPrefix", ct);
         await using var connection = await db.OpenAsync(ct);
         await connection.ExecuteAsync("""
-            INSERT dbo.t_Pay_In_Slip (c_App_No, c_Slip_No, c_Generated_By)
+            INSERT dbo.t_Unotp_Pay_In_Slip (c_App_No, c_Slip_No, c_Generated_By)
             VALUES (@AppNo, @Prefix + RIGHT('0000' + CAST(NEXT VALUE FOR dbo.s_Slip_No AS VARCHAR(20)), 4), @Partner)
             """, new { AppNo = appNo, Prefix = prefix, Partner = partner.Id });
         return (await SlipsAsync(appNo, ct)).FirstOrDefault();
@@ -79,8 +79,8 @@ public sealed class SqlPayInSlips(Db db, IPartner partner, SqlReference referenc
             SubmittedRow.Select + " AND p.c_Pay_Mode IN @Paper" + (appNo is null ? "" : " AND m.c_App_No = @AppNo") + " ORDER BY m.d_Submitted_On DESC",
             new { Partner = partner.Id, Paper = paper, AppNo = appNo });
         var slips = (await connection.QueryAsync<(string AppNo, string SlipNo, DateTime? DepositedOn)>("""
-            SELECT s.c_App_No, s.c_Slip_No, s.d_Deposited_On FROM dbo.t_Pay_In_Slip s
-            WHERE s.n_Id IN (SELECT MAX(n_Id) FROM dbo.t_Pay_In_Slip WHERE f_Active = 1 GROUP BY c_App_No)
+            SELECT s.c_App_No, s.c_Slip_No, s.d_Deposited_On FROM dbo.t_Unotp_Pay_In_Slip s
+            WHERE s.n_Id IN (SELECT MAX(n_Id) FROM dbo.t_Unotp_Pay_In_Slip WHERE f_Active = 1 GROUP BY c_App_No)
             """)).ToDictionary(s => s.AppNo);
         var today = DateTime.Today;
 
@@ -99,7 +99,7 @@ public sealed class SqlPayInSlips(Db db, IPartner partner, SqlReference referenc
 }
 
 /// <summary>
-/// The links sent to investors (t_Payment_Link), and the submitted applications
+/// The links sent to investors (t_Unotp_Payment_Link), and the submitted applications
 /// waiting on one: to pay online, or to accept a digital application paid on paper.
 /// </summary>
 public sealed class SqlLinks(Db db, IPartner partner, SqlReference reference, ILogger<SqlLinks> log) : ILinkApi
@@ -126,11 +126,11 @@ public sealed class SqlLinks(Db db, IPartner partner, SqlReference reference, IL
             SELECT l.c_App_No AS AppNo, COALESCE(NULLIF(k.c_Name, N''), m.c_Name) AS Name, l.c_Purpose AS Purpose, l.c_Mobile AS Mobile, l.c_Email AS Email,
                 l.d_Sent_On AS SentOn, l.d_Expires_On AS ExpiresOn, m.d_Submitted_On AS SubmittedOn,
                 m.d_Accepted_On AS AcceptedOn, m.d_Paid_On AS PaidOn
-            FROM dbo.t_Payment_Link l
-            JOIN dbo.t_Application_Mst m ON m.c_App_No = l.c_App_No AND m.f_Active = 1
-            LEFT JOIN dbo.t_Kyc_Dtls k ON k.c_App_No = m.c_App_No AND k.n_App_Version = m.n_Details_Ver AND k.c_Holder_Type = '01' AND k.f_Active = 1
+            FROM dbo.t_Unotp_Payment_Link l
+            JOIN dbo.t_Unotp_Application_Mst m ON m.c_App_No = l.c_App_No AND m.f_Active = 1
+            LEFT JOIN dbo.t_Unotp_Kyc_Dtls k ON k.c_App_No = m.c_App_No AND k.n_App_Version = m.n_Details_Ver AND k.c_Holder_Type = '01' AND k.f_Active = 1
             WHERE m.c_Partner_Id = @Partner
-              AND l.n_Id IN (SELECT MAX(n_Id) FROM dbo.t_Payment_Link WHERE f_Active = 1 GROUP BY c_App_No, c_Purpose)
+              AND l.n_Id IN (SELECT MAX(n_Id) FROM dbo.t_Unotp_Payment_Link WHERE f_Active = 1 GROUP BY c_App_No, c_Purpose)
             ORDER BY l.d_Sent_On DESC
             """, new { Partner = partner.Id });
         var now = DateTime.Now;
@@ -169,10 +169,10 @@ public sealed class SqlLinks(Db db, IPartner partner, SqlReference reference, IL
         if (hours <= 0) return null;
         await using var connection = await db.OpenAsync(ct);
         await connection.ExecuteAsync("""
-            INSERT dbo.t_Payment_Link (c_App_No, c_Purpose, c_Url, c_Short_Url, c_Mobile, c_Email, d_Expires_On, c_Sent_By)
+            INSERT dbo.t_Unotp_Payment_Link (c_App_No, c_Purpose, c_Url, c_Short_Url, c_Mobile, c_Email, d_Expires_On, c_Sent_By)
             SELECT @AppNo, @Purpose, ISNULL(last.c_Url, ''), ISNULL(last.c_Short_Url, ''), @Mobile, @Email, DATEADD(HOUR, @Hours, SYSDATETIME()), @Partner
             FROM (SELECT 1 AS x) one
-            OUTER APPLY (SELECT TOP 1 c_Url, c_Short_Url FROM dbo.t_Payment_Link WHERE c_App_No = @AppNo AND c_Purpose = @Purpose AND f_Active = 1 ORDER BY n_Id DESC) last
+            OUTER APPLY (SELECT TOP 1 c_Url, c_Short_Url FROM dbo.t_Unotp_Payment_Link WHERE c_App_No = @AppNo AND c_Purpose = @Purpose AND f_Active = 1 ORDER BY n_Id DESC) last
             """, new { AppNo = appNo, Purpose = purpose, waiting.Record.Mobile, waiting.Record.Email, Hours = hours, Partner = partner.Id });
         // No SMS or e-mail gateway is wired in yet: the send is logged for now.
         log.LogInformation("{Purpose} link for {AppNo} sent to {Mobile} and {Email}", purpose, appNo, waiting.Record.Mobile, waiting.Record.Email);

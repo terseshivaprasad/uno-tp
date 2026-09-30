@@ -2,6 +2,7 @@
 @using Stage = UnoTP.ViewModels.NewApplicationViewModel.Stage
 @{
     ViewData["Title"] = "Investor Identification";
+    ViewData["BackToDashboard"] = true;
 
     // The old WA_FD_UNOTP/searchinvestor, carrying the new Investor Identification
     // screen's working parts. No script: every step is a form the controller
@@ -21,7 +22,7 @@
 
         @* What the partner is told before anything is searched, across the card as
            the later steps give their notes. *@
-        <div class="csi-note csi-note--banner">
+        <div class="alert alert-warning csi-note">
             <svg class="csi-note__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 11v6"></path><circle cx="12" cy="7.5" r=".7" fill="currentColor"></circle></svg>
             <div class="csi-note__body">
                 <div class="csi-note__title">Note</div>
@@ -38,7 +39,7 @@
             <div class="csi-holder__head">
                 <span class="csi-holder__no">1</span>
                 <span class="csi-holder__name">Investor</span>
-                <span class="csi-chip">Primary holder</span>
+                <span class="badge bg-secondary-subtle text-secondary-emphasis">Primary holder</span>
                 <span class="csi-status @(Model.CanProceed ? "csi-status--ok" : null)">@(Model.Identified ? "Identified" : Model.CanProceed ? "New investor" : "Not identified")</span>
             </div>
 
@@ -49,7 +50,7 @@
 
     @* Only the partner's own applications, opened here and not yet submitted. *@
     <section class="csi-card cii-card">
-        <div class="cii-head"><h2 class="cii-title">Continue an Incomplete Application</h2></div>
+        <div class="drafts__head"><h2 class="cii-title drafts__title">Continue an application @if (Model.Drafts.Count > 0) { <span class="drafts__count">@Model.Drafts.Count</span> }</h2></div>
         @if (Model.Drafts.Count == 0)
         {
             <p class="cii-note">No application is waiting to be finished. One opened below and left before it is submitted is listed here, kept for @((await Lookups.ConfigAsync()).DraftDays) days.</p>
@@ -111,7 +112,7 @@
 
 <footer class="csi-bar">
     <div class="csi-bar__inner">
-        <a class="csi-btn csi-btn--back" asp-controller="Dashboard" asp-action="Index"
+        <a class="btn btn-outline-primary" asp-controller="Dashboard" asp-action="Index"
            data-loader="Going back to the dashboard">Back</a>
         <p class="csi-bar__hint">
             @if (Model.Identified)
@@ -129,7 +130,7 @@
         </p>
         <div class="csi-bar__right">
             <button type="submit" class="csi-link btn-reset" form="csiClearForm">Clear All</button>
-            <button type="submit" class="csi-btn csi-btn--primary" form="csiProceedForm" disabled="@(!Model.CanProceed)"
+            <button type="submit" class="btn btn-primary" form="csiProceedForm" disabled="@(!Model.CanProceed)"
                     data-loader="Opening Upload Documents…">Proceed</button>
         </div>
     </div>

@@ -17,13 +17,13 @@
 /* The logo SVG (wwwroot/images) keeps its 205:15 artwork ratio at every width. */
 .app-header__brand { display: flex; align-items: center; flex: none; }
 .app-header__brand img { display: block; width: 164px; height: auto; }
-.app-header__right { display: flex; align-items: center; gap: 16px; font-size: 13.6px; color: var(--text); }
+.app-header__right { display: flex; align-items: center; gap: 16px; font-size: 14px; color: var(--text); }
 .welcome-label { font-weight: 500; }
 .entity-code { color: var(--red); }
 /* What the partner signs in as: a 1033 agency, or a broker under their code. */
-.app-header__as { display: inline-block; margin-left: 6px; padding: 2px 7px; border-radius: 3px; background: var(--tint); font-size: 11px; font-weight: 600; color: var(--text); vertical-align: 1px; }
+.app-header__as { display: inline-block; margin-left: 6px; padding: 2px 8px; border-radius: 3px; background: var(--tint); font-size: 12px; font-weight: 600; color: var(--text); vertical-align: 1px; }
 /* Feature overrides in force for this browser (Development only). */
-.app-header__ff { display: inline-block; margin-left: 6px; padding: 2px 7px; border: 1px solid var(--amber-border); border-radius: 3px; background: var(--amber-bg); font-size: 11px; font-weight: 600; color: var(--amber); vertical-align: 1px; cursor: help; }
+.app-header__ff { display: inline-block; margin-left: 6px; padding: 2px 8px; border: 1px solid var(--amber-border); border-radius: 3px; background: var(--amber-bg); font-size: 12px; font-weight: 600; color: var(--amber); vertical-align: 1px; cursor: help; }
 .app-header__nav { display: flex; border-left: 1px solid var(--border-2); padding-left: 16px; }
 .app-header__nav a { display: inline-flex; align-items: center; gap: 6px; padding: 0 12px; color: var(--ink); border-left: 1px solid var(--border-2); }
 .app-header__nav a svg { flex: none; }
@@ -33,9 +33,9 @@
 /* ===== Notices =====
    The bell and the panel it drops, listing what is scheduled to happen. */
 .notices { position: relative; display: flex; align-items: center; }
-.notices__bell { display: flex; align-items: center; gap: 5px; padding: 4px 6px; border: 0; border-radius: 6px; background: none; color: var(--text); cursor: pointer; font-family: inherit; }
+.notices__bell { display: flex; align-items: center; gap: 4px; padding: 4px 6px; border: 0; border-radius: 6px; background: none; color: var(--text); cursor: pointer; font-family: inherit; }
 .notices__bell:hover { background: var(--tint); color: var(--ink); }
-.notices__count { min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--red); color: #fff; font-size: 10px; font-weight: 700; line-height: 16px; text-align: center; }
+.notices__count { min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--red); color: #fff; font-size: 12px; font-weight: 700; line-height: 16px; text-align: center; }
 
 .notices__panel {
   position: absolute; top: calc(100% + 8px); right: -8px; z-index: 60;
@@ -44,21 +44,21 @@
   box-shadow: 0 16px 40px rgba(24,39,75,.16); text-align: left;
 }
 .notices__panel[hidden] { display: none; }
-.notices__head { position: sticky; top: 0; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 14px 16px 12px; border-bottom: 1px solid var(--divider); background: #fff; }
+.notices__head { position: sticky; top: 0; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 16px 16px 12px; border-bottom: 1px solid var(--divider); background: #fff; }
 .notices__title { font-size: 14px; font-weight: 600; color: var(--ink); }
-.notices__sub { padding-top: 2px; font-size: 11.5px; color: var(--muted); }
+.notices__sub { padding-top: 2px; font-size: 12px; color: var(--muted); }
 .notices__close { display: flex; padding: 4px; margin: -2px -4px 0 0; border-radius: 6px; color: var(--text); cursor: pointer; }
 .notices__close:hover { background: var(--tint); color: var(--ink); }
 
 .notices__list { list-style: none; margin: 0; padding: 0; }
-.notice { padding: 13px 16px; border-bottom: 1px solid var(--divider); }
+.notice { padding: 12px 16px; border-bottom: 1px solid var(--divider); }
 .notice:last-child { border-bottom: 0; }
-.notice__top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.notice__kind { font-size: 10.5px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; }
-.notice__away { font-size: 11px; color: var(--muted-2); }
-.notice__title { padding-top: 5px; font-size: 13px; font-weight: 600; line-height: 1.4; color: var(--ink); }
-.notice__when { padding-top: 3px; font-size: 11.5px; font-weight: 500; color: var(--text); }
-.notice__detail { padding-top: 5px; font-size: 11.5px; line-height: 1.5; color: var(--muted); }
+.notice__top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.notice__kind { font-size: 12px; font-weight: 600; }
+.notice__away { font-size: 12px; color: var(--muted); }
+.notice__title { padding-top: 4px; font-size: 14px; font-weight: 600; line-height: 20px; color: var(--ink); }
+.notice__when { padding-top: 3px; font-size: 12px; font-weight: 500; color: var(--text); }
+.notice__detail { padding-top: 4px; font-size: 12px; line-height: 16px; color: var(--muted); }
 
 @media (max-width: 560px) {
   /* On a phone the panel is a sheet across the width of the screen. */
@@ -66,7 +66,7 @@
 }
 
 @media (max-width: 900px) {
-  .app-header__right { gap: 8px; font-size: 11.5px; }
+  .app-header__right { gap: 8px; font-size: 12px; }
   .app-header__nav a { padding: 0 8px; }
 }
 
@@ -92,19 +92,19 @@
 
 /* Who is signed in: the welcome line the bar carries at a wider width, given the
    room to read as a name rather than a run-on. */
-.app-menu__who { display: flex; align-items: center; gap: 11px; padding: 14px 16px; background: var(--tint); border-bottom: 1px solid var(--divider); border-radius: 8px 8px 0 0; }
+.app-menu__who { display: flex; align-items: center; gap: 12px; padding: 16px 16px; background: var(--tint); border-bottom: 1px solid var(--divider); border-radius: 8px 8px 0 0; }
 .app-menu__avatar { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; flex: none; border-radius: 50%; background: #fff; border: 1.5px solid var(--red); font-size: 12px; font-weight: 700; letter-spacing: .04em; color: var(--red); }
 .app-menu__whotext { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.app-menu__name { font-size: 13.5px; font-weight: 700; color: var(--ink); }
-.app-menu__code { font-size: 11px; color: var(--muted); }
+.app-menu__name { font-size: 14px; font-weight: 700; color: var(--ink); }
+.app-menu__code { font-size: 12px; color: var(--muted); }
 
 /* One group per thing the panel is for, each under its own small label: where to
    go, what the entity is, what can be changed, and the way out. */
 .app-menu__group { padding: 8px 0; border-top: 1px solid var(--divider); }
 .app-menu__group:first-of-type { border-top: 0; }
-.app-menu__label { padding: 4px 16px 6px; font-size: 9.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted-2); }
+.app-menu__label { padding: 4px 16px 8px; font-size: 12px; font-weight: 600; line-height: 16px; color: var(--muted); }
 
-.app-menu__row { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 16px; font-size: 13px; color: var(--ink); }
+.app-menu__row { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 16px; font-size: 14px; color: var(--ink); }
 .app-menu__row svg { flex: none; color: var(--muted); }
 .app-menu__row:hover { background: var(--tint); text-decoration: none; }
 .app-menu__row-label { flex: 1; min-width: 0; text-align: left; }
@@ -117,11 +117,11 @@
    row to press. */
 .app-menu__facts { margin: 0; padding: 2px 16px 6px; display: flex; flex-direction: column; gap: 8px; }
 .app-menu__facts > div { display: flex; align-items: baseline; gap: 12px; }
-.app-menu__facts dt { flex: none; width: 64px; font-size: 11px; color: var(--muted-2); }
+.app-menu__facts dt { flex: none; width: 64px; font-size: 12px; color: var(--muted); }
 .app-menu__facts dd { margin: 0; min-width: 0; font-size: 12px; font-weight: 600; line-height: 1.45; color: var(--ink); }
 
 @media (max-width: 760px) {
-  .app-header { padding: 0 14px; }
+  .app-header { padding: 0 16px; }
   .app-header__brand img { width: 136px; }
   /* Both go behind the button: the welcome line and every link on the bar. */
   .app-header__welcome, .app-header__nav { display: none; }
@@ -160,15 +160,15 @@
 .app-header--public .app-header__brand, .app-header--public .pub-nav { position: relative; z-index: 1; }
 
 .pub-nav { display: flex; align-items: center; gap: 2px; }
-.pub-nav__link { display: inline-flex; align-items: center; padding: 0 11px; font-family: inherit; font-size: 13.6px; color: rgba(255,255,255,.88); cursor: pointer; }
+.pub-nav__link { display: inline-flex; align-items: center; padding: 0 12px; font-family: inherit; font-size: 14px; color: rgba(255,255,255,.88); cursor: pointer; }
 .pub-nav__link:hover { color: #fff; }
 .pub-nav__link--on { font-weight: 600; color: #fff; cursor: default; }
-.pub-nav__login { margin-left: 10px; padding: 6px 18px; border: 0; border-radius: 999px; background: var(--red); color: #fff; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.pub-nav__login { margin-left: 12px; padding: 6px 20px; border: 0; border-radius: 999px; background: var(--red); color: #fff; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
 .pub-nav__login:hover { background: var(--red-dark); }
 
 @media (max-width: 900px) {
-  .pub-nav__link { padding: 0 7px; font-size: 12px; }
-  .pub-nav__login { padding: 5px 14px; font-size: 12px; }
+  .pub-nav__link { padding: 0 8px; font-size: 12px; }
+  .pub-nav__login { padding: 4px 16px; font-size: 12px; }
 }
 @media (max-width: 680px) {
   /* Only where you are and the way in survive the width. */

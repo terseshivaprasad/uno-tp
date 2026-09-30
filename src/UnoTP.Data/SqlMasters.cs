@@ -41,7 +41,7 @@ public sealed class SqlMasters(Db db, SqlReference reference) : IInvestorApi, IS
     {
         await using var connection = await db.OpenAsync(ct);
         return (await connection.QueryAsync<FolioRow>(
-            $"SELECT {FolioColumns} FROM dbo.t_Investor_Folio WHERE c_Pan = @Pan AND f_Active = 1 ORDER BY c_Folio",
+            $"SELECT {FolioColumns} FROM dbo.t_Unotp_Investor_Folio WHERE c_Pan = @Pan AND f_Active = 1 ORDER BY c_Folio",
             new { Pan = pan.Trim().ToUpperInvariant() })).Select(f => f.Record()).ToList();
     }
 
@@ -49,19 +49,19 @@ public sealed class SqlMasters(Db db, SqlReference reference) : IInvestorApi, IS
     {
         await using var connection = await db.OpenAsync(ct);
         return (await connection.QuerySingleOrDefaultAsync<FolioRow>(
-            $"SELECT {FolioColumns} FROM dbo.t_Investor_Folio WHERE c_Folio = @Folio AND f_Active = 1",
+            $"SELECT {FolioColumns} FROM dbo.t_Unotp_Investor_Folio WHERE c_Folio = @Folio AND f_Active = 1",
             new { Folio = folio.Trim().ToUpperInvariant() }))?.Record();
     }
 
     // ----- Sourcing registers ------------------------------------------------------
 
-    public Task<IReadOnlyList<Party>> BrokersAsync(CancellationToken ct = default) => PartiesAsync("t_Broker_Mst", ct);
+    public Task<IReadOnlyList<Party>> BrokersAsync(CancellationToken ct = default) => PartiesAsync("t_Unotp_Broker_Mst", ct);
 
-    public Task<IReadOnlyList<Party>> StaffAsync(CancellationToken ct = default) => PartiesAsync("t_Staff_Mst", ct);
+    public Task<IReadOnlyList<Party>> StaffAsync(CancellationToken ct = default) => PartiesAsync("t_Unotp_Staff_Mst", ct);
 
-    public Task<IReadOnlyList<Party>> SearchBrokersAsync(string query, CancellationToken ct = default) => SearchPartiesAsync("t_Broker_Mst", query, ct);
+    public Task<IReadOnlyList<Party>> SearchBrokersAsync(string query, CancellationToken ct = default) => SearchPartiesAsync("t_Unotp_Broker_Mst", query, ct);
 
-    public Task<IReadOnlyList<Party>> SearchStaffAsync(string query, CancellationToken ct = default) => SearchPartiesAsync("t_Staff_Mst", query, ct);
+    public Task<IReadOnlyList<Party>> SearchStaffAsync(string query, CancellationToken ct = default) => SearchPartiesAsync("t_Unotp_Staff_Mst", query, ct);
 
     private async Task<IReadOnlyList<Party>> PartiesAsync(string table, CancellationToken ct)
     {
@@ -90,7 +90,7 @@ public sealed class SqlMasters(Db db, SqlReference reference) : IInvestorApi, IS
     {
         await using var connection = await db.OpenAsync(ct);
         return await connection.QuerySingleOrDefaultAsync<BankBranch>(
-            "SELECT c_Ifsc AS Ifsc, c_Bank AS Bank, c_Branch AS Branch, c_Micr AS Micr FROM dbo.t_Ifsc_Mst WHERE c_Ifsc = @Ifsc AND f_Active = 1",
+            "SELECT c_Ifsc AS Ifsc, c_Bank AS Bank, c_Branch AS Branch, c_Micr AS Micr FROM dbo.t_Unotp_Ifsc_Mst WHERE c_Ifsc = @Ifsc AND f_Active = 1",
             new { Ifsc = ifsc.Trim().ToUpperInvariant() });
     }
 
@@ -104,7 +104,7 @@ public sealed class SqlMasters(Db db, SqlReference reference) : IInvestorApi, IS
         args.Add("Start", Like(query.Trim()) + "%");
         await using var connection = await db.OpenAsync(ct);
         return (await connection.QueryAsync<BankBranch>($"""
-            SELECT TOP ({Found}) c_Ifsc AS Ifsc, c_Bank AS Bank, c_Branch AS Branch, c_Micr AS Micr FROM dbo.t_Ifsc_Mst
+            SELECT TOP ({Found}) c_Ifsc AS Ifsc, c_Bank AS Bank, c_Branch AS Branch, c_Micr AS Micr FROM dbo.t_Unotp_Ifsc_Mst
             WHERE f_Active = 1 AND {where}
             ORDER BY CASE WHEN c_Ifsc LIKE @Start ESCAPE '\' OR c_Micr LIKE @Start ESCAPE '\' THEN 0 ELSE 1 END, c_Bank, c_Branch
             """, args)).ToList();
@@ -118,7 +118,7 @@ public sealed class SqlMasters(Db db, SqlReference reference) : IInvestorApi, IS
         if (pin.Length != 6 || !pin.All(char.IsAsciiDigit)) return null;
         await using var connection = await db.OpenAsync(ct);
         return await connection.QuerySingleOrDefaultAsync<PinPlace>(
-            "SELECT c_Pin_Code AS PinCode, c_District AS District, c_State AS State FROM dbo.t_Pincode_Mst WHERE c_Pin_Code = @Pin AND f_Active = 1",
+            "SELECT c_Pin_Code AS PinCode, c_District AS District, c_State AS State FROM dbo.t_Unotp_Pincode_Mst WHERE c_Pin_Code = @Pin AND f_Active = 1",
             new { Pin = pin });
     }
 
@@ -140,7 +140,7 @@ public sealed class SqlMasters(Db db, SqlReference reference) : IInvestorApi, IS
 
         await using var connection = await db.OpenAsync(ct);
         var card = await connection.QueryFirstOrDefaultAsync<(decimal Rate, DateTime From)>("""
-            SELECT TOP 1 n_Rate, d_Effective_From FROM dbo.t_Rate_Card
+            SELECT TOP 1 n_Rate, d_Effective_From FROM dbo.t_Unotp_Rate_Card
             WHERE c_Category IN (@Category, @Fallback) AND n_Tenure_Months = @Tenure AND f_Active = 1 AND d_Effective_From <= @Starts
             ORDER BY CASE WHEN c_Category = @Category THEN 0 ELSE 1 END, d_Effective_From DESC
             """, new { Category = request.Category ?? "", Fallback = fallback, Tenure = request.TenureMonths, Starts = starts.ToDateTime(TimeOnly.MinValue) });

@@ -1,6 +1,7 @@
 @model PayInSlipsViewModel
 @{
     ViewData["Title"] = "Pay In Slip Generation";
+    ViewData["BackToDashboard"] = true;
 
     // The old PayinSlipGenerationAxis screen. That page opened on an empty form
     // and made you search before it would show anything; this one opens on the
@@ -93,8 +94,8 @@
                 </div>
 
                 <div class="csi-field csi-field--check pis-field--actions">
-                    <button type="submit" class="csi-btn csi-btn--primary pis-btn--search">Search</button>
-                    <button type="button" class="csi-btn csi-btn--back" id="pisClear">Clear</button>
+                    <button type="submit" class="btn btn-primary pis-btn--search">Search</button>
+                    <button type="button" class="btn btn-outline-primary" id="pisClear">Clear</button>
                 </div>
             </div>
 
@@ -148,13 +149,13 @@
                             <div class="su-table__sub">@r.DrawnOn</div>
                         </td>
                         <td data-label="Type">
-                            <span class="pis-tag @(r.Digital ? "pis-tag--digital" : "pis-tag--physical")">@r.Tag</span>
+                            <span class="badge @(r.Digital ? "bg-info-subtle text-info-emphasis" : "bg-secondary-subtle text-secondary-emphasis")">@r.Tag</span>
                             <div class="su-table__sub@(r.Blocked ? " su-table__sub--urgent" : "")">@r.TagNote</div>
                         </td>
                         <td data-label="CMS branch">@r.Branch</td>
                         <td data-label="Applied">@r.Applied.ToString("dd/MM/yyyy")</td>
                         <td data-label="Slip" class="pis-table__slip">
-                            <span class="su-chip @r.SlipTone" data-status>@r.SlipLabel</span>
+                            <span class="@Tones.Badge(r.SlipTone)" data-status>@r.SlipLabel</span>
                             <div class="su-table__sub" data-slip-detail>@r.SlipNote</div>
                         </td>
                         <td class="su-table__act">
@@ -202,7 +203,7 @@
     </div>
 </div>
 
-<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="app-toast" id="toast" role="status" aria-live="polite"></div>
 
 @section Scripts {
     <script src="~/js/pages/pay-in-slips.js" asp-append-version="true"></script>

@@ -1,6 +1,7 @@
 @model RenewViewModel
 @{
     ViewData["Title"] = "Renew FD";
+    ViewData["BackToDashboard"] = true;
 
     // The old WA_FD_UNOTP/RenewalDashboard, on Investor Identification's frame:
     // the same rail, card and holder block, the search where the purchase has its
@@ -27,7 +28,7 @@
 
         @if (Model.Said is not null)
         {
-            <div class="csi-gap csi-gap--alert" role="alert">
+            <div class="alert alert-danger csi-gap" role="alert">
                 <svg class="csi-gap__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 7v6"></path><circle cx="12" cy="16.8" r=".8" fill="currentColor"></circle></svg>
                 <div class="csi-gap__body"><p>@Model.Said</p></div>
             </div>
@@ -37,7 +38,7 @@
             <div class="csi-holder__head">
                 <span class="csi-holder__no">1</span>
                 <span class="csi-holder__name">Investor</span>
-                <span class="csi-chip">Primary holder</span>
+                <span class="badge bg-secondary-subtle text-secondary-emphasis">Primary holder</span>
                 <span class="csi-status @(found ? "csi-status--ok" : null)">@(found ? "Identified" : "Not identified")</span>
             </div>
 
@@ -101,7 +102,7 @@
 
                     @if (Model.NotFound)
                     {
-                        <div class="csi-gap csi-gap--alert csi-ops" role="alert">
+                        <div class="alert alert-danger csi-gap csi-ops" role="alert">
                             <svg class="csi-gap__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"></circle><path d="M5.5 20a6.5 6.5 0 0 1 13 0"></path><path d="M18.5 4.5l2 2M20.5 4.5l-2 2"></path></svg>
                             <div class="csi-gap__body">
                                 <div class="csi-gap__title">No deposit on record against @Model.Asked</div>
@@ -147,7 +148,7 @@
                 <div class="csi-holder__head">
                     <span class="csi-holder__no">2</span>
                     <span class="csi-holder__name">Deposits</span>
-                    <span class="csi-chip @(due > 0 ? "csi-chip--success" : null)">@due due for renewal</span>
+                    <span class="badge @(due > 0 ? "bg-success-subtle text-success-emphasis" : "bg-secondary-subtle text-secondary-emphasis")">@due due for renewal</span>
                 </div>
                 <table class="su-table">
                     <colgroup>
@@ -179,7 +180,7 @@
                                     @if (d.Renewable)
                                     {
                                         <form method="post" action="@Url.Action("Start", "Renew", asked.Concat([KeyValuePair.Create("number", d.Number)]).ToDictionary())" asp-antiforgery="true">
-                                            <button type="submit" class="csi-btn csi-btn--primary" data-loader="Opening the renewal&hellip;">Renew</button>
+                                            <button type="submit" class="btn btn-primary" data-loader="Opening the renewal&hellip;">Renew</button>
                                         </form>
                                     }
                                 </td>
@@ -191,7 +192,7 @@
         }
 
         @* The old screen's notes, as the backend gives them, under the list. *@
-        <div class="csi-note csi-note--banner">
+        <div class="alert alert-warning csi-note">
             <svg class="csi-note__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 11v6"></path><circle cx="12" cy="7.5" r=".7" fill="currentColor"></circle></svg>
             <div class="csi-note__body">
                 <div class="csi-note__title">Note</div>
@@ -209,7 +210,7 @@
 
 <footer class="csi-bar">
     <div class="csi-bar__inner">
-        <a class="csi-btn csi-btn--back" asp-controller="Dashboard" asp-action="Index" data-loader="Going back to the dashboard">Back</a>
+        <a class="btn btn-outline-primary" asp-controller="Dashboard" asp-action="Index" data-loader="Going back to the dashboard">Back</a>
         <p class="csi-bar__hint">
             @if (!found)
             {

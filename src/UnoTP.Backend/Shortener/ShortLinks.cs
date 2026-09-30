@@ -33,8 +33,8 @@ public sealed class ShortenerOptions
     /// <summary>The name this app calls itself by on UrlShortener.Api's X-Client-Id header (its rate limit is per client).</summary>
     public string ClientId { get; set; } = "unotp";
 
-    /// <summary>UrlShortener.Api waits up to 30 s for the provider, so the app waits a little longer.</summary>
-    public int TimeoutSeconds { get; set; } = 35;
+    /// <summary>How long a call to UrlShortener.Api may take: 55 s, as for every outside service (it waits up to 30 s for its provider).</summary>
+    public int TimeoutSeconds { get; set; } = 55;
 
     public static bool Configured(IConfiguration config) =>
         !string.IsNullOrWhiteSpace(config[$"{Section}:{nameof(BaseUrl)}"]);

@@ -6,7 +6,7 @@ namespace UnoTP.Data;
 
 /// <summary>
 /// Where a filed copy is kept, relative to the store's root: {appNo}/{holder}/{slot}{extension}.
-/// The store files it there, and t_Kyc_Documents records it (c_File_Path).
+/// The store files it there, and t_Unotp_Kyc_Documents records it (c_File_Path).
 /// </summary>
 public static class DmsPaths
 {
@@ -91,7 +91,7 @@ public sealed class FileDocuments(Db db, IPartner partner, IConfiguration config
     {
         await using var connection = await db.OpenAsync(ct);
         return await connection.ExecuteScalarAsync<int>(
-            "SELECT COUNT(*) FROM dbo.t_Application_Mst WHERE c_App_No = @AppNo AND c_Partner_Id = @Partner AND f_Active = 1",
+            "SELECT COUNT(*) FROM dbo.t_Unotp_Application_Mst WHERE c_App_No = @AppNo AND c_Partner_Id = @Partner AND f_Active = 1",
             new { AppNo = appNo, Partner = partner.Id }) > 0;
     }
 }

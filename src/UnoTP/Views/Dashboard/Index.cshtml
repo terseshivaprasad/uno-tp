@@ -25,7 +25,7 @@
             <a class="classic-tile classic-tile--off" asp-controller="Dashboard" asp-action="Index" asp-route-off="@t.Key" title="@t.Why">
                 <span class="classic-tile__icon">@Html.Raw(icon)</span>
                 <span class="classic-tile__title">@t.Title</span>
-                <span class="classic-tile__off">@t.Off</span>
+                <span class="badge bg-warning-subtle text-warning-emphasis classic-tile__off">@t.Off</span>
             </a>
         }
         else
@@ -39,7 +39,7 @@
 @if (Model.Closed is not null)
 {
     @* FeatureGate sent the partner back here from a page that is closed. *@
-    <div class="classic-closed" role="status">
+    <div class="alert alert-danger classic-closed" role="status">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 7v6"></path><circle cx="12" cy="16.8" r=".6" fill="currentColor"></circle></svg>
         <span>@Model.Closed</span>
     </div>
@@ -108,10 +108,10 @@
             <hr class="classic-actions__rule">
             <section class="drafts" aria-labelledby="draftsTitle">
                 <div class="drafts__head">
-                    <h2 class="classic-actions__title" id="draftsTitle">Continue an Incomplete Application</h2>
+                    <h2 class="classic-actions__title drafts__title" id="draftsTitle">Continue an application <span class="drafts__count">@Model.Drafts.Count</span></h2>
                     @if (Model.Drafts.Count > DashboardViewModel.DraftsShown)
                     {
-                        <a class="drafts__all" asp-controller="NewApplication" asp-action="Index">All @Model.Drafts.Count <span aria-hidden="true">&rsaquo;</span></a>
+                        <a class="drafts__all" asp-controller="NewApplication" asp-action="Index">View all <span aria-hidden="true">&rsaquo;</span></a>
                     }
                 </div>
                 <partial name="_Drafts" model="@(new DraftsBlock(Model.Drafts.Take(DashboardViewModel.DraftsShown).ToList(), Model.Drafts.Count, Partial: false))" />

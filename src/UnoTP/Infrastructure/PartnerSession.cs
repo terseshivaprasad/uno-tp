@@ -55,6 +55,9 @@ public static class PartnerSession
         && DateTime.TryParse(session.GetString(ExpiresKey), null, System.Globalization.DateTimeStyles.RoundtripKind, out var until)
         && until > DateTime.Now;
 
+    /// <summary>The user the portal sent in, while they are signed in; null otherwise.</summary>
+    public static string? SignedInUser(this ISession session) => session.SignedIn() ? session.GetString(OwnerKey) : null;
+
     /// <summary>The backend session the user came in with; null before anyone has.</summary>
     public static string? BackendSession(this ISession session) => session.GetString(SessionIdKey);
 

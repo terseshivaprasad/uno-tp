@@ -1,36 +1,57 @@
 @model DraftsBlock
 @* The partner's own applications, opened and not yet submitted, the one touched
-   last first: the same table on Investor Identification and on the dashboard.
-   Continue picks one up on Upload Documents under the number it was opened with;
-   only the number is posted, and the server checks it is one of this partner's. *@
-<p class="cii-note">@Model.Total opened and not submitted, the one touched last first &middot; identifiers are masked &middot; kept for @((await Lookups.ConfigAsync()).DraftDays) days</p>
-<table class="su-table">
-    <thead>
-        <tr>
-            <th scope="col">Application</th>
-            <th scope="col">Name</th>
-            <th scope="col">PAN</th>
-            <th scope="col">Date of birth</th>
-            <th scope="col">Amount</th>
-            <th scope="col"><span class="visually-hidden">Action</span></th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var d in Model.Shown)
-        {
-            <tr>
-                <td data-label="Application"><strong>@d.AppNo</strong></td>
-                <td data-label="Name">@if (d.Name.Length > 0) { @d.Name } else { <span class="text-muted">PAN not read yet</span> }</td>
-                <td data-label="PAN">@d.Pan</td>
-                <td data-label="Date of birth">@d.Dob</td>
-                <td data-label="Amount">@PayInSlipsViewModel.Rupees(d.Amount)</td>
-                <td class="su-table__act">
-                    <form method="post" asp-controller="NewApplication" asp-action="Continue" data-partial="@(Model.Partial ? "" : null)">
-                        <input type="hidden" name="draft" value="@d.AppNo">
-                        <button type="submit" class="csi-link btn-reset" data-loader="Opening Upload Documents…" data-loader-hint="Application @d.AppNo">Continue <span aria-hidden="true">&rsaquo;</span></button>
-                    </form>
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
+   last first: the same list on the dashboard and on Investor Identification. A row
+   is its own Continue button - who it is for, how far it has got, the amount - and
+   picks the application up on Upload Documents under its number; only the number is
+   posted, and the server checks it is one of this partner's. A long list shows its
+   first rows and keeps the rest behind Show more. *@
+@{
+    var days = (await Lookups.ConfigAsync()).DraftDays;
+    var open = Model.Shown.Take(DraftsBlock.Open).ToList();
+    var more = Model.Shown.Skip(DraftsBlock.Open).ToList();
+}
+@functions {
+#pragma warning disable CS1998
+    async Task Row(UnoTP.Backend.DraftSummary d)
+    {
+        var named = d.Name.Length > 0;
+        var steps = UnoTP.Backend.DraftSummary.Steps.Length;
+        <li>
+            <form method="post" asp-controller="NewApplication" asp-action="Continue" data-partial="@(Model.Partial ? "" : null)">
+                <input type="hidden" name="draft" value="@d.AppNo">
+                <button type="submit" class="draft" data-loader="Opening Upload Documents…" data-loader-hint="Application @d.AppNo"
+                        aria-label="Continue application @d.AppNo@(named ? ", " + d.Name : "")">
+                    <span class="draft__avatar @(named ? null : "is-unknown")" aria-hidden="true">@(named ? DraftsBlock.Initials(d.Name) : "?")</span>
+                    <span class="draft__main">
+                        <span class="draft__name @(named ? null : "is-unknown")">@(named ? d.Name : "PAN not read yet")</span>
+                        <span class="draft__meta"><span class="draft__no">@d.AppNo</span> <span aria-hidden="true">&middot;</span> <span class="text-nowrap">PAN @d.Pan</span></span>
+                    </span>
+                    <span class="draft__progress">
+                        <span class="draft__bar" aria-hidden="true">@for (var i = 0; i < steps; i++) { <i class="@(i < d.StepsDone ? "is-done" : null)"></i> }</span>
+                        <span class="draft__step"><span class="visually-hidden">@d.StepsDone of @steps steps done. </span>Next: @d.NextStep</span>
+                    </span>
+                    <span class="draft__end">
+                        @if (d.Amount > 0) { <span class="draft__amount">@PayInSlipsViewModel.Rupees(d.Amount)</span> }
+                        else { <span class="draft__amount is-unset">Amount not set</span> }
+                        @if (d.TouchedAt is { } at) { <span class="draft__when">Edited @Dates.Ago(at)</span> }
+                    </span>
+                    <svg class="draft__go" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg>
+                </button>
+            </form>
+        </li>
+        await Task.CompletedTask;
+    }
+}
+<p class="drafts__sub">Opened and not submitted, the latest first &middot; identifiers masked &middot; kept @days days</p>
+<ul class="draft-list">
+    @foreach (var d in open) { await Row(d); }
+</ul>
+@if (more.Count > 0)
+{
+    <details class="drafts__more">
+        <summary>Show @more.Count more</summary>
+        <ul class="draft-list">
+            @foreach (var d in more) { await Row(d); }
+        </ul>
+    </details>
+}

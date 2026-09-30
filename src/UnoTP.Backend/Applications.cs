@@ -380,7 +380,19 @@ public sealed class LogEntry(string id, string document, int attempt, string at,
 
 /// <summary>A saved application the partner can pick up again, its holder masked.</summary>
 /// <param name="Name">As NSDL verified it, else as read off the PAN copy, else as the folio has it; empty until one of them is known.</param>
-public sealed record DraftSummary(string AppNo, string Name, string Pan, string Dob, long Amount);
+/// <param name="StepsDone">How many of the four steps - Upload Documents, Investor Information, Bank Details &amp; Payment, FD Configuration - are saved.</param>
+/// <param name="NextStep">The first of them not saved yet, or Review Summary once all four are.</param>
+/// <param name="TouchedAt">When it was last saved, on the app's clock.</param>
+public sealed record DraftSummary(string AppNo, string Name, string Pan, string Dob, long Amount,
+    int StepsDone = 0, string NextStep = "", DateTime? TouchedAt = null)
+{
+    /// <summary>The steps an application goes through before its review, in order.</summary>
+    public static readonly string[] Steps = ["Upload Documents", "Investor Information", "Bank Details & Payment", "FD Configuration"];
+
+    /// <summary>How far an application has got, from which of the steps are saved.</summary>
+    public static (int Done, string Next) Progress(params bool[] saved) =>
+        (saved.Count(s => s), Steps.Where((_, i) => !saved[i]).FirstOrDefault() ?? "Review Summary");
+}
 
 /// <summary>One application as the console lists it.</summary>
 /// <param name="Folio">Null for a new customer until the deposit books.</param>
@@ -406,5 +418,58 @@ public sealed record ApplicationRecord(
     string Scheme = "",
     IReadOnlyList<MilestoneRecord>? Milestones = null);
 
-/// <summary>A step in an application's history, and when it was reached; <c>At</c> is null for one not reached yet.</summary>
-public sealed record MilestoneRecord(string Step, DateTime? At);
+/// <summary>
+/// A stage of an application's life, and when it was reached: <c>At</c> is null for one not reached
+/// yet. A stage this application does not go through (a pay-in slip for one paid online) stays in the
+/// list, <c>Applies</c> false with the reason in <c>Note</c>, so every application reads the same
+/// stages in the same order. <c>Failed</c> marks one that came back against it (a penny drop that did
+/// not verify, KYC rejected, the application cancelled).
+/// </summary>
+public sealed record MilestoneRecord(string Step, DateTime? At, string? Note = null, bool Applies = true, bool Failed = false);
+
+/// <summary>
+/// An application's stages from entry to the FDR, in the order they happen, for View Application.
+/// One place for both the data layer and the demo data, so the two never tell it differently.
+/// </summary>
+public static class ApplicationStages
+{
+    /// <summary>What an application has been through, as its dates say.</summary>
+    /// <param name="payMode">Online, RTGS or Cheque (Net banking and DD, as older rows have them, read as Online and Cheque).</param>
+    /// <param name="pennyDrop">The repayment account's penny drop as Operations' feed wrote it: "", OK or FAILED.</param>
+    /// <param name="kyc">Operations' KYC verification: "", OK or REJECTED.</param>
+    public static List<MilestoneRecord> Of(
+        bool digital, string payMode, DateTime createdOn, DateTime? submittedOn, DateTime? linkSentOn, DateTime? acceptedOn,
+        DateTime? slipOn, DateTime? pennyDropOn, string pennyDrop, DateTime? paidOn, DateTime? kycOn, string kyc,
+        DateTime? bookedOn, string? fdr, DateTime? cancelledOn)
+    {
+        var online = payMode is "Online" or "Net banking";
+        var cheque = payMode is "Cheque" or "DD";
+        // Until the payment mode is chosen, whether a stage applies is not known yet: it waits.
+        const string Undecided = "decided by the payment mode, not chosen yet";
+        var chosen = payMode.Length > 0;
+        List<MilestoneRecord> stages =
+        [
+            new("Application entry", submittedOn, submittedOn is null ? $"started {createdOn:dd/MM/yyyy} · not submitted yet" : null),
+            // The link that takes the investor to accept, pay, or both.
+            digital || online
+                ? new("Short link sent", linkSentOn, linkSentOn is null ? null : "to the investor's mobile and e-mail")
+                : !chosen ? new("Short link sent", null, Undecided)
+                : new("Short link sent", null, $"physical, paid by {payMode}: nothing to send", Applies: false),
+            // A digital application paid by RTGS or cheque is accepted on its own link;
+            // one paid online is accepted as it is paid, and a physical one is signed on paper.
+            !digital ? new("Investor acceptance", null, "signed on the physical form", Applies: false)
+                : !chosen ? new("Investor acceptance", null, Undecided)
+                : online ? new("Investor acceptance", null, "accepted with the online payment", Applies: false)
+                : new("Investor acceptance", acceptedOn),
+            cheque ? new("Pay-in slip generated", slipOn)
+                : !chosen ? new("Pay-in slip generated", null, Undecided)
+                : new("Pay-in slip generated", null, $"paid by {payMode}: no instrument to pay in", Applies: false),
+            new("Penny drop · repayment account", pennyDropOn, pennyDrop == "FAILED" ? "the account did not verify" : null, Failed: pennyDrop == "FAILED"),
+            new("Payment received", paidOn),
+            new("KYC verification", kycOn, kyc == "REJECTED" ? "rejected by Operations" : null, Failed: kyc == "REJECTED"),
+            new("FDR created", bookedOn, fdr is null ? null : $"FDR {fdr}"),
+        ];
+        if (cancelledOn is { } cancelled) stages.Add(new("Cancelled", cancelled, "unpaid within the window", Failed: true));
+        return stages;
+    }
+}

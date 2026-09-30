@@ -48,7 +48,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
         var appNo = await NextAppNoAsync(connection, tx, await reference.SettingAsync("appNoPrefix", ct));
         const int version = 1;
         await connection.ExecuteAsync("""
-            INSERT dbo.t_Application_Mst (c_App_No, c_Partner_Id, c_Status, n_Version,
+            INSERT dbo.t_Unotp_Application_Mst (c_App_No, c_Partner_Id, c_Status, n_Version,
                 n_Upload_Ver, n_Payment_Ver, n_Deposit_Ver,
                 c_Pan, d_Dob, c_Name, c_Folio, c_Gender, c_Address, f_Pan_Filed, f_Rec_Pan, f_Rec_Photo, f_Rec_Poa,
                 c_Renew_Dep_No, n_Renew_Amount, d_Renew_Matures_On, n_Renew_Rate, n_Renew_Tenure, c_Renew_Payout, c_Created_By)
@@ -95,7 +95,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
 
     private async Task<HeaderRow?> HeaderAsync(IDbConnection connection, IDbTransaction? tx, string appNo, bool locked) =>
         await connection.QuerySingleOrDefaultAsync<HeaderRow>(
-            $"SELECT {HeaderRow.Columns} FROM dbo.t_Application_Mst {(locked ? "WITH (UPDLOCK, ROWLOCK)" : "")} " +
+            $"SELECT {HeaderRow.Columns} FROM dbo.t_Unotp_Application_Mst {(locked ? "WITH (UPDLOCK, ROWLOCK)" : "")} " +
             "WHERE c_App_No = @AppNo AND c_Partner_Id = @Partner AND f_Active = 1",
             new { AppNo = appNo, Partner = partner.Id }, tx);
 
@@ -104,14 +104,14 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
     private static async Task<Application> AssembleAsync(IDbConnection connection, IDbTransaction? tx, HeaderRow h)
     {
         using var read = await connection.QueryMultipleAsync($"""
-            SELECT j_Upload FROM dbo.t_Upload_State WHERE c_App_No = @AppNo AND n_App_Version = @UploadVer AND f_Active = 1;
-            SELECT {KycRow.Columns} FROM dbo.t_Kyc_Dtls WHERE c_App_No = @AppNo AND n_App_Version = @DetailsVer AND f_Active = 1 ORDER BY c_Holder_Type;
-            SELECT {AddressRow.Columns} FROM dbo.t_Address_Dtls WHERE c_App_No = @AppNo AND n_App_Version = @DetailsVer AND f_Active = 1;
-            SELECT {NomineeRow.Columns} FROM dbo.t_Nominee_Dtls WHERE c_App_No = @AppNo AND n_App_Version = @DetailsVer AND f_Active = 1;
-            SELECT {PaymentBankRow.Columns} FROM dbo.t_Payment_Bank_Dtls WHERE c_App_No = @AppNo AND n_App_Version = @PaymentVer AND f_Active = 1;
-            SELECT {RepaymentBankRow.Columns} FROM dbo.t_Bank_Dtls WHERE c_App_No = @AppNo AND n_App_Version = @PaymentVer AND f_Active = 1;
-            SELECT {InvestmentRow.Columns} FROM dbo.t_Investment_Dtls WHERE c_App_No = @AppNo AND n_App_Version = @DepositVer AND f_Active = 1;
-            SELECT c_Page AS Page, j_State AS State FROM dbo.t_Page_State WHERE c_App_No = @AppNo AND f_Active = 1;
+            SELECT j_Upload FROM dbo.t_Unotp_Upload_State WHERE c_App_No = @AppNo AND n_App_Version = @UploadVer AND f_Active = 1;
+            SELECT {KycRow.Columns} FROM dbo.t_Unotp_Kyc_Dtls WHERE c_App_No = @AppNo AND n_App_Version = @DetailsVer AND f_Active = 1 ORDER BY c_Holder_Type;
+            SELECT {AddressRow.Columns} FROM dbo.t_Unotp_Address_Dtls WHERE c_App_No = @AppNo AND n_App_Version = @DetailsVer AND f_Active = 1;
+            SELECT {NomineeRow.Columns} FROM dbo.t_Unotp_Nominee_Dtls WHERE c_App_No = @AppNo AND n_App_Version = @DetailsVer AND f_Active = 1;
+            SELECT {PaymentBankRow.Columns} FROM dbo.t_Unotp_Payment_Bank_Dtls WHERE c_App_No = @AppNo AND n_App_Version = @PaymentVer AND f_Active = 1;
+            SELECT {RepaymentBankRow.Columns} FROM dbo.t_Unotp_Bank_Dtls WHERE c_App_No = @AppNo AND n_App_Version = @PaymentVer AND f_Active = 1;
+            SELECT {InvestmentRow.Columns} FROM dbo.t_Unotp_Investment_Dtls WHERE c_App_No = @AppNo AND n_App_Version = @DepositVer AND f_Active = 1;
+            SELECT c_Page AS Page, j_State AS State FROM dbo.t_Unotp_Page_State WHERE c_App_No = @AppNo AND f_Active = 1;
             """, new { h.AppNo, h.UploadVer, h.DetailsVer, h.PaymentVer, h.DepositVer }, tx);
 
         var uploadJson = await read.ReadSingleOrDefaultAsync<string>();
@@ -216,7 +216,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
         var upload = await UploadAsync(connection, tx, header);
         await write(connection, tx, header, new Stamp(appNo, next, RowStatus.Pending, partner.Id), upload);
         await connection.ExecuteAsync(
-            $"UPDATE dbo.t_Application_Mst SET n_Version = @Next, {sectionColumn} = @Next, c_Updated_By = @Partner, d_Updated_On = SYSDATETIME() WHERE c_App_No = @AppNo",
+            $"UPDATE dbo.t_Unotp_Application_Mst SET n_Version = @Next, {sectionColumn} = @Next, c_Updated_By = @Partner, d_Updated_On = SYSDATETIME() WHERE c_App_No = @AppNo",
             new { Next = next, Partner = partner.Id, AppNo = appNo }, tx);
         await tx.CommitAsync(ct);
         return (SaveOutcome.Saved, next);
@@ -225,7 +225,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
     private static async Task<UploadState?> UploadAsync(IDbConnection connection, IDbTransaction tx, HeaderRow header) =>
         header.UploadVer is null ? null
             : await connection.QuerySingleOrDefaultAsync<string>(
-                "SELECT j_Upload FROM dbo.t_Upload_State WHERE c_App_No = @AppNo AND n_App_Version = @UploadVer AND f_Active = 1",
+                "SELECT j_Upload FROM dbo.t_Unotp_Upload_State WHERE c_App_No = @AppNo AND n_App_Version = @UploadVer AND f_Active = 1",
                 new { header.AppNo, header.UploadVer }, tx) is { } json
                 ? JsonSerializer.Deserialize<UploadState>(json, Sections.Json)
                 : null;
@@ -245,8 +245,8 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
     {
         await using var connection = await db.OpenAsync(ct);
         return await connection.ExecuteAsync("""
-            MERGE dbo.t_Page_State WITH (HOLDLOCK) AS t
-            USING (SELECT c_App_No FROM dbo.t_Application_Mst WHERE c_App_No = @AppNo AND c_Partner_Id = @Partner AND f_Active = 1) AS a
+            MERGE dbo.t_Unotp_Page_State WITH (HOLDLOCK) AS t
+            USING (SELECT c_App_No FROM dbo.t_Unotp_Application_Mst WHERE c_App_No = @AppNo AND c_Partner_Id = @Partner AND f_Active = 1) AS a
                 ON t.c_App_No = a.c_App_No AND t.c_Page = @Page
             WHEN MATCHED THEN UPDATE SET j_State = @State, d_Updated_On = SYSDATETIME()
             WHEN NOT MATCHED THEN INSERT (c_App_No, c_Page, j_State) VALUES (a.c_App_No, @Page, @State);
@@ -294,7 +294,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
         // Submitted on the database's clock, as every row on the application is dated.
         var investor = app.Details?.Holders.FirstOrDefault(h => h.Holder == HolderType.Investor);
         var submitted = await connection.QuerySingleAsync<HeaderRow>($"""
-            UPDATE dbo.t_Application_Mst SET c_Status = 'APR', n_Version = @Next,
+            UPDATE dbo.t_Unotp_Application_Mst SET c_Status = 'APR', n_Version = @Next,
                 n_Upload_Ver = CASE WHEN n_Upload_Ver IS NULL THEN NULL ELSE @Next END,
                 n_Details_Ver = CASE WHEN n_Details_Ver IS NULL THEN NULL ELSE @Next END,
                 n_Payment_Ver = CASE WHEN n_Payment_Ver IS NULL THEN NULL ELSE @Next END,
@@ -326,10 +326,10 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
     // The header's columns as an UPDATE leaves them.
     private static readonly string Inserted = string.Join(", ", HeaderRow.Columns.Split(',').Select(c => "inserted." + c.Trim()));
 
-    // The payment link as sent, on record in t_Payment_Link: every send is a row.
+    // The payment link as sent, on record in t_Unotp_Payment_Link: every send is a row.
     private Task RecordLinkAsync(IDbConnection connection, IDbTransaction tx, string appNo, string url, string shortUrl, Submission sent) =>
         connection.ExecuteAsync("""
-            INSERT dbo.t_Payment_Link (c_App_No, c_Purpose, c_Url, c_Short_Url, c_Mobile, c_Email, d_Expires_On, c_Sent_By)
+            INSERT dbo.t_Unotp_Payment_Link (c_App_No, c_Purpose, c_Url, c_Short_Url, c_Mobile, c_Email, d_Expires_On, c_Sent_By)
             VALUES (@AppNo, 'payment', @Url, @ShortUrl, @Mobile, @Email, @ExpiresOn, @Partner)
             """, new { AppNo = appNo, Url = url, ShortUrl = shortUrl, Mobile = sent.LinkSentTo, Email = sent.LinkEmailedTo,
                 ExpiresOn = sent.LinkValidUntil, Partner = partner.Id }, tx);
@@ -340,14 +340,14 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
         await using var connection = await db.OpenAsync(ct);
         await using var tx = await connection.BeginTransactionAsync(ct);
         var header = await connection.QuerySingleOrDefaultAsync<HeaderRow>($"""
-            UPDATE dbo.t_Application_Mst SET n_Resends_Left = n_Resends_Left - 1, c_Updated_By = @Partner, d_Updated_On = SYSDATETIME()
+            UPDATE dbo.t_Unotp_Application_Mst SET n_Resends_Left = n_Resends_Left - 1, c_Updated_By = @Partner, d_Updated_On = SYSDATETIME()
             OUTPUT {Inserted}
             WHERE c_App_No = @AppNo AND c_Partner_Id = @Partner AND c_Status = 'APR' AND n_Resends_Left > 0 AND f_Active = 1
             """, new { AppNo = appNo, Partner = partner.Id }, tx);
         if (header is null) return null;
         var submission = SubmissionOf(header)!;
         var last = await connection.QuerySingleOrDefaultAsync<(string Url, string ShortUrl)>("""
-            SELECT TOP 1 c_Url, c_Short_Url FROM dbo.t_Payment_Link WHERE c_App_No = @AppNo AND c_Purpose = 'payment' AND f_Active = 1 ORDER BY n_Id DESC
+            SELECT TOP 1 c_Url, c_Short_Url FROM dbo.t_Unotp_Payment_Link WHERE c_App_No = @AppNo AND c_Purpose = 'payment' AND f_Active = 1 ORDER BY n_Id DESC
             """, new { AppNo = appNo }, tx);
         await RecordLinkAsync(connection, tx, appNo, last.Url ?? "", last.ShortUrl ?? "", submission);
         await tx.CommitAsync(ct);
@@ -369,16 +369,25 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
     {
         var days = (await reference.ConfigAsync(ct)).DraftDays;
         await using var connection = await db.OpenAsync(ct);
-        var rows = await connection.QueryAsync<(string AppNo, string Name, string Pan, DateTime? Dob, long Amount)>($"""
-            SELECT m.c_App_No, {KnownName}, m.c_Pan, m.d_Dob, ISNULL(i.n_Amount, 0)
-            FROM dbo.t_Application_Mst m
-            LEFT JOIN dbo.t_Investment_Dtls i ON i.c_App_No = m.c_App_No AND i.n_App_Version = m.n_Deposit_Ver AND i.f_Active = 1
-            LEFT JOIN dbo.t_Upload_State u ON u.c_App_No = m.c_App_No AND u.n_App_Version = m.n_Upload_Ver AND u.f_Active = 1
+        var rows = await connection.QueryAsync<DraftRow>($"""
+            SELECT m.c_App_No AS AppNo, {KnownName} AS Name, m.c_Pan AS Pan, m.d_Dob AS Dob, ISNULL(i.n_Amount, 0) AS Amount,
+                m.n_Upload_Ver AS UploadVer, m.n_Details_Ver AS DetailsVer, m.n_Payment_Ver AS PaymentVer, m.n_Deposit_Ver AS DepositVer,
+                -- On the database's clock, where the time was written; turned into the app's below.
+                DATEDIFF(MINUTE, COALESCE(m.d_Updated_On, m.d_Created_On), SYSDATETIME()) AS MinutesAgo
+            FROM dbo.t_Unotp_Application_Mst m
+            LEFT JOIN dbo.t_Unotp_Investment_Dtls i ON i.c_App_No = m.c_App_No AND i.n_App_Version = m.n_Deposit_Ver AND i.f_Active = 1
+            LEFT JOIN dbo.t_Unotp_Upload_State u ON u.c_App_No = m.c_App_No AND u.n_App_Version = m.n_Upload_Ver AND u.f_Active = 1
             WHERE m.c_Partner_Id = @Partner AND m.c_Status = 'PEN' AND m.f_Active = 1
               AND COALESCE(m.d_Updated_On, m.d_Created_On) > DATEADD(DAY, -@Days, SYSDATETIME())
             ORDER BY COALESCE(m.d_Updated_On, m.d_Created_On) DESC
             """, new { Partner = partner.Id, Days = days });
-        return rows.Select(r => new DraftSummary(r.AppNo, Masks.Name(r.Name), Masks.Pan(r.Pan), Masks.Dob(Dates.FromDb(r.Dob)), r.Amount)).ToList();
+        var now = DateTime.Now;
+        return rows.Select(r =>
+        {
+            var (done, next) = DraftSummary.Progress(r.UploadVer is not null, r.DetailsVer is not null, r.PaymentVer is not null, r.DepositVer is not null);
+            return new DraftSummary(r.AppNo, Masks.Name(r.Name), Masks.Pan(r.Pan), Masks.Dob(Dates.FromDb(r.Dob)), r.Amount,
+                done, next, now.AddMinutes(-Math.Max(0, r.MinutesAgo)));
+        }).ToList();
     }
 
     public async Task<IReadOnlyList<ApplicationRecord>> ListAsync(CancellationToken ct = default)
@@ -394,11 +403,15 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
                 m.d_Created_On AS CreatedOn, m.d_Submitted_On AS SubmittedOn,
                 m.d_Accepted_On AS AcceptedOn, m.d_Paid_On AS PaidOn, m.d_Booked_On AS BookedOn, m.c_Fdr_No AS FdrNo,
                 m.d_Cancelled_On AS CancelledOn, ISNULL(pm.c_Branch, N'') AS Branch,
-                (SELECT MIN(f.d_Created_On) FROM dbo.t_Upload_State f WHERE f.c_App_No = m.c_App_No AND f.f_Active = 1) AS UploadedOn
-            FROM dbo.t_Application_Mst m
-            LEFT JOIN dbo.t_Investment_Dtls i ON i.c_App_No = m.c_App_No AND i.n_App_Version = m.n_Deposit_Ver AND i.f_Active = 1
-            LEFT JOIN dbo.t_Upload_State u ON u.c_App_No = m.c_App_No AND u.n_App_Version = m.n_Upload_Ver AND u.f_Active = 1
-            LEFT JOIN dbo.t_Partner_Mst pm ON pm.c_User_Id = m.c_Partner_Id
+                (SELECT MIN(f.d_Created_On) FROM dbo.t_Unotp_Upload_State f WHERE f.c_App_No = m.c_App_No AND f.f_Active = 1) AS UploadedOn,
+                (SELECT MIN(l.d_Sent_On) FROM dbo.t_Unotp_Payment_Link l WHERE l.c_App_No = m.c_App_No AND l.f_Active = 1) AS LinkSentOn,
+                (SELECT MIN(p.d_Generated_On) FROM dbo.t_Unotp_Pay_In_Slip p WHERE p.c_App_No = m.c_App_No AND p.f_Active = 1) AS SlipOn,
+                m.d_Penny_Drop_On AS PennyDropOn, m.c_Penny_Drop_Status AS PennyDropStatus,
+                m.d_Kyc_Verified_On AS KycVerifiedOn, m.c_Kyc_Status AS KycStatus
+            FROM dbo.t_Unotp_Application_Mst m
+            LEFT JOIN dbo.t_Unotp_Investment_Dtls i ON i.c_App_No = m.c_App_No AND i.n_App_Version = m.n_Deposit_Ver AND i.f_Active = 1
+            LEFT JOIN dbo.t_Unotp_Upload_State u ON u.c_App_No = m.c_App_No AND u.n_App_Version = m.n_Upload_Ver AND u.f_Active = 1
+            LEFT JOIN dbo.t_Unotp_Partner_Mst pm ON pm.c_User_Id = m.c_Partner_Id
             WHERE m.c_Partner_Id = @Partner AND m.f_Active = 1
             ORDER BY m.d_Created_On DESC
             """, new { Partner = partner.Id });
@@ -412,15 +425,9 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
                 r.Amount ?? 0, payout?.PerYear == 0, r.TenureMonths ?? 0, payout?.Name ?? r.Payout ?? "",
                 1 + r.JointHolders, r.SubmittedOn ?? r.CreatedOn, digital, r.PayMode ?? "", r.Branch,
                 StateOf(r), r.FdrNo, StepOf(r), "",
-                [
-                    new MilestoneRecord("Application raised", r.CreatedOn),
-                    new MilestoneRecord("Documents uploaded", r.UploadedOn),
-                    new MilestoneRecord("Submitted for verification", r.SubmittedOn),
-                    new MilestoneRecord(digital ? "Investor accepted the deposit" : "Signed application received", digital ? r.AcceptedOn : r.SubmittedOn),
-                    new MilestoneRecord("Payment received", r.PaidOn),
-                    new MilestoneRecord("Booked · FDR issued", r.BookedOn),
-                    .. r.CancelledOn is { } cancelled ? [new MilestoneRecord("Cancelled", cancelled)] : Array.Empty<MilestoneRecord>(),
-                ]);
+                ApplicationStages.Of(digital, r.PayMode ?? "", r.CreatedOn, r.SubmittedOn, r.LinkSentOn, r.AcceptedOn,
+                    r.SlipOn, r.PennyDropOn, r.PennyDropStatus, r.PaidOn, r.KycVerifiedOn, r.KycStatus,
+                    r.BookedOn, r.FdrNo, r.CancelledOn));
         }).ToList();
     }
 

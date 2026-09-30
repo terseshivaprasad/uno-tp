@@ -1,0 +1,248 @@
+/* Bootstrap 5.3 (lib/bootstrap), themed to the Mahindra Finance brand -
+   docs/BRAND_GUIDELINES.md. Bootstrap's own variables are pointed at the brand's
+   tokens (base.css), so a Bootstrap component - a button, a form control, a card,
+   a badge, a table - comes out in the brand without a rule of its own.
+
+   Loaded right after bootstrap.min.css and before base.css: the pages' own styles
+   still win where they say something, and give way to Bootstrap page by page as
+   each page moves onto its components and utilities. */
+
+:root,
+[data-bs-theme="light"] {
+  /* Type: Georama, the brand's, in the brand's ink. Line height stays what the
+     pages were drawn with until each moves onto the type scale. */
+  --bs-body-font-family: "Georama", system-ui, sans-serif;
+  --bs-body-font-size: 1rem;
+  --bs-body-line-height: normal;
+  --bs-body-color: var(--ink);
+  --bs-body-color-rgb: 35, 31, 32;
+  --bs-body-bg: var(--page-bg);
+  --bs-body-bg-rgb: 233, 237, 242;
+  --bs-emphasis-color: var(--ink);
+  --bs-heading-color: var(--ink);
+  --bs-secondary-color: var(--muted);
+  --bs-tertiary-color: var(--muted);
+  --bs-secondary-bg: var(--tint);
+  --bs-tertiary-bg: var(--tint);
+  /* The neutral chip: the brand's tint, its hairline and muted text. */
+  --bs-secondary-bg-subtle: var(--tint);
+  --bs-secondary-border-subtle: var(--border);
+  --bs-secondary-text-emphasis: var(--text);
+
+  /* The one main action and what is wrong: Mahindra red. */
+  --bs-primary: #E31837;
+  --bs-primary-rgb: 227, 24, 55;
+  --bs-primary-text-emphasis: var(--red-dark);
+  --bs-primary-bg-subtle: var(--pink-bg);
+  --bs-primary-border-subtle: var(--pink-border);
+  --bs-danger: #E31837;
+  --bs-danger-rgb: 227, 24, 55;
+  --bs-danger-text-emphasis: var(--red-dark);
+  --bs-danger-bg-subtle: var(--pink-bg);
+  --bs-danger-border-subtle: var(--pink-border);
+
+  /* Status, as the brand tints it: green done, amber waiting, blue information. */
+  --bs-success: #146C34;
+  --bs-success-rgb: 20, 108, 52;
+  --bs-success-text-emphasis: var(--green);
+  --bs-success-bg-subtle: var(--green-bg);
+  --bs-success-border-subtle: var(--green-border);
+  --bs-warning: #E8A700;
+  --bs-warning-rgb: 232, 167, 0;
+  --bs-warning-text-emphasis: var(--amber);
+  --bs-warning-bg-subtle: var(--amber-bg);
+  --bs-warning-border-subtle: var(--amber-border);
+  --bs-info: #1063A8;
+  --bs-info-rgb: 16, 99, 168;
+  --bs-info-text-emphasis: var(--blue);
+  --bs-info-bg-subtle: var(--blue-bg);
+  --bs-info-border-subtle: var(--blue-border);
+
+  /* Links are red, and underline on hover. */
+  --bs-link-color: var(--red);
+  --bs-link-color-rgb: 227, 24, 55;
+  --bs-link-hover-color: var(--red-dark);
+  --bs-link-hover-color-rgb: 179, 19, 43;
+  --bs-link-decoration: none;
+
+  /* Hairlines and corners: 8px cards and panels, 6px buttons and controls, 3px
+     chips, a full capsule for pills. Nothing else. */
+  --bs-border-color: var(--border);
+  --bs-border-color-translucent: var(--border);
+  --bs-border-radius: 6px;
+  --bs-border-radius-sm: 3px;
+  --bs-border-radius-lg: 8px;
+  --bs-border-radius-xl: 8px;
+  --bs-border-radius-xxl: 8px;
+  --bs-border-radius-pill: 999px;
+
+  /* Focus is blue, and always seen (WCAG 2.4.7, 2.4.11). */
+  --bs-focus-ring-width: 2px;
+  --bs-focus-ring-opacity: 1;
+  --bs-focus-ring-color: var(--blue);
+}
+
+/* Buttons: 14px semibold, 40px high - as tall as a field, so a button beside one
+   lines up with it - with an icon and its words centred together; red fills the
+   main action. A disabled button says so in its colours, at full opacity. */
+.btn {
+  --bs-btn-font-family: "Georama", system-ui, sans-serif;
+  --bs-btn-font-size: 14px;
+  --bs-btn-font-weight: 600;
+  --bs-btn-line-height: 20px;
+  --bs-btn-padding-x: 24px;
+  --bs-btn-padding-y: 9px;
+  --bs-btn-border-radius: 6px;
+  --bs-btn-disabled-opacity: 1;
+  --bs-btn-focus-box-shadow: 0 0 0 2px var(--card-bg), 0 0 0 4px var(--blue);
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap;
+}
+.btn:hover { text-decoration: none; }
+.btn-sm {
+  --bs-btn-font-size: 14px;
+  --bs-btn-padding-x: 12px;
+  --bs-btn-padding-y: 6px;
+}
+/* The quiet action beside a main one: white, the input border, ink text. */
+.btn-secondary {
+  --bs-btn-color: var(--text);
+  --bs-btn-bg: #fff;
+  --bs-btn-border-color: var(--border-3);
+  --bs-btn-hover-color: var(--ink);
+  --bs-btn-hover-bg: var(--tint);
+  --bs-btn-hover-border-color: var(--border-3);
+  --bs-btn-active-color: var(--ink);
+  --bs-btn-active-bg: var(--tint);
+  --bs-btn-active-border-color: var(--muted);
+  --bs-btn-disabled-color: var(--muted);
+  --bs-btn-disabled-bg: #fff;
+  --bs-btn-disabled-border-color: var(--border);
+}
+.btn-primary {
+  --bs-btn-color: #fff;
+  --bs-btn-bg: var(--red);
+  --bs-btn-border-color: var(--red);
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: var(--red-dark);
+  --bs-btn-hover-border-color: var(--red-dark);
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: var(--red-dark);
+  --bs-btn-active-border-color: var(--red-dark);
+  --bs-btn-disabled-color: var(--muted);
+  --bs-btn-disabled-bg: var(--border);
+  --bs-btn-disabled-border-color: var(--border);
+}
+.btn-outline-primary {
+  --bs-btn-color: var(--red);
+  --bs-btn-border-color: var(--red);
+  --bs-btn-hover-color: var(--red-dark);
+  --bs-btn-hover-bg: var(--pink-bg);
+  --bs-btn-hover-border-color: var(--red-dark);
+  --bs-btn-active-color: var(--red-dark);
+  --bs-btn-active-bg: var(--pink-bg);
+  --bs-btn-active-border-color: var(--red-dark);
+  --bs-btn-disabled-color: var(--muted);
+  --bs-btn-disabled-border-color: var(--border);
+}
+.btn-link {
+  --bs-btn-color: var(--red);
+  --bs-btn-hover-color: var(--red-dark);
+  --bs-btn-font-weight: 600;
+}
+
+/* Form controls: 44px high, the brand's input border, blue focus. */
+.form-control,
+.form-select {
+  min-height: 44px;
+  font-size: 14px;
+  color: var(--ink);
+  border-color: var(--border-3);
+  border-radius: 6px;
+}
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 2px var(--blue-bg);
+}
+.form-label { font-size: 14px; font-weight: 600; line-height: 20px; color: var(--ink); }
+.form-text { font-size: 12px; line-height: 16px; color: var(--muted); }
+
+/* Cards: white, 8px, a hairline, the brand's padding. */
+.card {
+  --bs-card-border-color: var(--border);
+  --bs-card-border-radius: 8px;
+  --bs-card-inner-border-radius: 7px;
+  --bs-card-spacer-y: 18px;
+  --bs-card-spacer-x: 20px;
+  --bs-card-bg: var(--card-bg);
+}
+
+/* Chips: a badge is a 3px chip, normal case (BRAND_GUIDELINES: chips vs tags). */
+.badge {
+  --bs-badge-font-size: 12px;
+  --bs-badge-font-weight: 600;
+  --bs-badge-border-radius: 3px;
+  --bs-badge-padding-x: 6px;
+  --bs-badge-padding-y: 3px;
+}
+
+/* Tables and list groups: the brand's hairlines and ink. */
+.table {
+  --bs-table-color: var(--ink);
+  --bs-table-border-color: var(--divider);
+  --bs-table-hover-bg: var(--tint);
+}
+.list-group {
+  --bs-list-group-border-color: var(--border);
+  --bs-list-group-border-radius: 8px;
+  --bs-list-group-action-hover-bg: var(--tint);
+  --bs-list-group-action-active-bg: var(--tint);
+}
+.progress {
+  --bs-progress-bg: var(--divider);
+  --bs-progress-bar-bg: var(--green);
+  --bs-progress-border-radius: 2px;
+}
+
+/* Alerts: a sentence the page says to the partner, at body size, marked on its
+   leading edge in its colour - the brand's callout. */
+.alert {
+  --bs-alert-padding-x: 16px;
+  --bs-alert-padding-y: 12px;
+  --bs-alert-margin-bottom: 16px;
+  --bs-alert-border-radius: 6px;
+  font-size: 14px;
+  line-height: 20px;
+  border-left-width: 3px;
+}
+.alert-danger { border-left-color: var(--red); }
+.alert-warning { border-left-color: var(--amber); }
+.alert-success { border-left-color: var(--green); }
+.alert-info { border-left-color: var(--blue); }
+.alert-secondary { border-left-color: var(--border-3); }
+.alert strong { font-weight: 600; }
+
+/* The close button: darker than Bootstrap's (3:1 as a control, WCAG 1.4.11), blue focus. */
+.btn-close {
+  --bs-btn-close-opacity: .7;
+  --bs-btn-close-hover-opacity: 1;
+  --bs-btn-close-focus-shadow: 0 0 0 2px var(--blue);
+}
+
+/* Bootstrap's colour utilities are !important: danger text stays the brand's
+   darker red, as the pages have always written it. */
+.text-danger { color: var(--red-dark) !important; }
+
+/* ----- Until each page moves onto Bootstrap ----------------------------------
+   Bootstrap's reboot changes a few defaults the pages were drawn on. These hold
+   them as they were, so adding Bootstrap moves nothing; each goes as the pages
+   that rely on it move onto Bootstrap's components (docs/BRAND_GUIDELINES.md). */
+legend { float: none; width: auto; margin-bottom: 0; padding: 0; font-size: inherit; line-height: inherit; }
+legend + * { clear: none; }
+hr { opacity: 1; }
+/* Bootstrap scrolls the page smoothly; the pages move it themselves - keeping a
+   field in place when a choice redraws the page, bringing an error into view -
+   and an animated move there reads as the page jumping. */
+:root { scroll-behavior: auto; }
+h1, h2, h3, h4, h5, h6 { line-height: normal; }
+

@@ -14,11 +14,11 @@
     var filed = v.Doc is not null;
 }
 <div class="cud-slot @(v.Error is not null ? "is-invalid" : null) @(v.Unconfirmed ? "is-unconfirmed" : null) @(Model.IsNext ? "is-next" : null)" id="@(Model.Alternate ? null : "slot-" + key)" tabindex="-1">
-    @* At the top, on the label line over the box, at its right, on every card and
-       always in this order: what the checks are (or said), View, and the action -
-       Upload, Replace, Newer proof, or a lock. What cannot be done now is shown
-       disabled with the reason on it, never left out, so the toolbar stands still
-       as the card changes. Out of the box, so every box keeps one height. *@
+    @* The card's header: its label at the left and, at the right, on every card
+       and always in this order, what the checks are (or said), View, and the
+       action - Upload, Replace, Newer proof, or a lock. What cannot be done now is
+       shown disabled with the reason on it, never left out, so the toolbar stands
+       still as the card changes. Out of the box, so every box keeps one height. *@
     @{
         var held = !filed ? v.Read : null;
         var info = !v.Used ? v.NotApplicable ?? "Not asked for on this application."
@@ -39,6 +39,11 @@
             : v.Locked is not null ? ("Upload", v.Locked)
             : held is not null ? ("Newer proof", null)
             : ("Upload", null);
+    }
+    <div class="cud-slot__bar">
+    @if (Model.Head is not null)
+    {
+        <div class="cud-slot__head">@Model.Head(null)</div>
     }
     <div class="cud-slot__tools">
         <span class="tip tip--info tip--mark @infoTone" tabindex="0" data-tip="@info"><span class="visually-hidden">About this document: @info</span></span>
@@ -96,6 +101,7 @@
                 <span>Upload</span>
             </label>
         }
+    </div>
     </div>
     <div class="cud-slot__frame">
         @if (held is not null)

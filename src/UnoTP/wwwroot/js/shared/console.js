@@ -4,9 +4,9 @@
   function showToast(message) {
     if (!toastEl) return;
     toastEl.textContent = message;
-    toastEl.classList.add('toast--visible');
+    toastEl.classList.add('app-toast--visible');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { toastEl.classList.remove('toast--visible'); }, 2200);
+    toastTimer = setTimeout(function () { toastEl.classList.remove('app-toast--visible'); }, 2200);
   }
   // Other page scripts raise the same toast.
   window.showToast = showToast;

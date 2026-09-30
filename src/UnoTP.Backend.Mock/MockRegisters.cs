@@ -286,33 +286,19 @@ internal static class MockApplicationList
                 state == "booked" ? $"FD25{i * 4931 % 900000 + 100000:D6}" : null,
                 steps[i % steps.Length],
                 "Samruddhi",
-                Milestones(state, i % 3 != 0, DateTime.Today.AddDays(-daysOld))));
+                Milestones(state, i % 3 != 0, i % 5 == 0 ? "DD" : i % 4 == 1 ? "Net banking" : "Cheque", state == "booked" ? $"FD25{i * 4931 % 900000 + 100000:D6}" : null, DateTime.Today.AddDays(-daysOld))));
         }
 
         return rows;
     }
 
-    // How far an application has come, step by step, each dated as it was
-    // reached. A cancelled application ends on its cancellation.
-    private static List<MilestoneRecord> Milestones(string state, bool digital, DateTime applied)
+    // How far an application has come, stage by stage, each dated as it was
+    // reached: entered, then linked and accepted, paid in, paid, verified, booked.
+    private static List<MilestoneRecord> Milestones(string state, bool digital, string payMode, string? fdr, DateTime applied)
     {
-        var reached = state switch
-        {
-            "progress" => 2,
-            "awaiting" => digital ? 3 : 4,
-            "review" => 5,
-            "booked" => 6,
-            _ => 3,
-        };
-        List<MilestoneRecord> steps = [];
-        void Step(int n, string label, int day) => steps.Add(new MilestoneRecord(label, reached >= n ? applied.AddDays(day) : null));
-        Step(1, "Application raised", 0);
-        Step(2, "Documents uploaded", 0);
-        Step(3, "Submitted for verification", 1);
-        Step(4, digital ? "Investor accepted the deposit" : "Signed application received", 2);
-        Step(5, "Payment received", 3);
-        Step(6, "Booked · FDR issued", 4);
-        if (state == "cancelled") steps.Add(new MilestoneRecord($"Cancelled · unpaid for {MockWindow.Days} days", applied.AddDays(MockWindow.Days)));
-        return steps;
+        var reached = state switch { "progress" => 0, "awaiting" => 1, "review" => 3, "booked" => 5, _ => 1 };
+        DateTime? At(int n, int day) => reached >= n ? applied.AddDays(day) : null;
+        return ApplicationStages.Of(digital, payMode, applied, At(1, 0), At(1, 0), At(2, 1), At(2, 1), At(3, 1), reached >= 3 ? "OK" : "",
+            At(3, 2), At(4, 3), reached >= 4 ? "OK" : "", At(5, 4), fdr, state == "cancelled" ? applied.AddDays(MockWindow.Days) : null);
     }
 }

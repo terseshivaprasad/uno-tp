@@ -245,13 +245,41 @@
     modalSub.textContent = sheet.dataset.sub;
     modalBody.textContent = '';
     modalBody.appendChild(sheet.cloneNode(true));
+    details(appNumber);
     modal.hidden = false;
     document.body.style.overflow = 'hidden';
     modalBody.scrollTop = 0;
     closeBtn.focus();
   }
 
+  // The application in full, under its status: Review Summary's sections,
+  // read-only, fetched for the one row opened. A slow answer for a sheet since
+  // closed or changed is dropped.
+  var asked = 0;
+  function details(appNumber) {
+    var box = document.createElement('div');
+    box.className = 'va-details';
+    box.setAttribute('aria-busy', 'true');
+    box.innerHTML = '<p class="va-details__wait">Loading the application&hellip;</p>';
+    modalBody.appendChild(box);
+    var mine = ++asked;
+    var url = window.location.pathname.replace(/\/$/, '') + '/' + encodeURIComponent(appNumber) + '/details';
+    fetch(url, { credentials: 'same-origin', headers: { 'X-Requested-With': 'fetch' } })
+      .then(function (res) { return res.ok ? res.text() : Promise.reject(res.status); })
+      .then(function (html) {
+        if (mine !== asked) return;
+        box.innerHTML = html;
+        box.removeAttribute('aria-busy');
+      })
+      .catch(function () {
+        if (mine !== asked) return;
+        box.removeAttribute('aria-busy');
+        box.innerHTML = '<p class="va-details__wait">The full details of this application could not be loaded. Close this and open it again.</p>';
+      });
+  }
+
   function close() {
+    asked++;
     modal.hidden = true;
     document.body.style.overflow = '';
     if (opener) opener.focus();

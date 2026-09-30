@@ -1,3 +1,4 @@
+using UnoTP.ViewModels;
 using System.Net;
 using System.Text.RegularExpressions;
 
@@ -14,6 +15,7 @@ public class JourneyTests(App app)
     private const string NewInvestor = "XXXXC1003C";
     private const string OnFolioWithoutPanCopy = "XXXXH1008H";
     private const string OnFolioComplete = "XXXXA1001A";
+    private const string NameNsdlDisagrees = "XXXXD1004D";
 
     [Fact]
     public async Task Upload_Documents_opens_waiting_on_the_PAN_copy()
@@ -60,6 +62,57 @@ public class JourneyTests(App app)
         Assert.DoesNotContain(">Replace<", panBox);
         // The proof of address is open now.
         Assert.DoesNotContain("Upload the PAN copy first", page);
+    }
+
+    [Fact]
+    public async Task Fetch_from_CKYC_is_offered_before_the_PAN_copy_and_on_a_verified_one()
+    {
+        var client = await app.SignedInAsync();
+        var at = await App.NewApplicationAsync(client, NewInvestor);
+
+        // No PAN copy yet: the record can be fetched on the PAN the investor was identified with.
+        var before = await client.GetStringAsync(at + "/documents");
+        Assert.DoesNotContain("disabled", Regex.Match(before, "<button[^>]*cud-ckyc-btn[^>]*>").Value);
+        Assert.DoesNotContain(DocumentsViewModel.CkycWaitsOnPan, before);
+
+        // The PAN copy filed and verified with NSDL: still offered.
+        var after = await App.UploadAsync(client, at + "/documents", "pan", "pan.jpg", ("appType", "DIGITAL"));
+        Assert.Contains("Verified with NSDL", after);
+        Assert.DoesNotContain("disabled", Regex.Match(after, "<button[^>]*cud-ckyc-btn[^>]*>").Value);
+    }
+
+    [Fact]
+    public async Task Fetch_from_CKYC_waits_on_a_PAN_copy_NSDL_has_not_verified()
+    {
+        var client = await app.SignedInAsync();
+        var at = await App.NewApplicationAsync(client, NameNsdlDisagrees);
+
+        // A copy whose name NSDL does not match: the offer stands, disabled, saying why.
+        var page = await App.UploadAsync(client, at + "/documents", "pan", "pan.jpg", ("appType", "DIGITAL"));
+        var button = Regex.Match(page, "<button[^>]*cud-ckyc-btn[^>]*>").Value;
+        Assert.Contains("disabled", button);
+        Assert.DoesNotContain("data-enable-when", button);
+        Assert.Contains(DocumentsViewModel.CkycWaitsOnPan, page);
+        // Asked for anyway, it is refused: the application stays off the CKYC route.
+        await App.PostAsync(client, at + "/documents", at + "/documents/ckyc", ("appType", "DIGITAL"));
+        Assert.DoesNotContain("cud-ckyc-on", await client.GetStringAsync(at + "/documents"));
+    }
+
+    [Fact]
+    public async Task View_Application_details_show_the_whole_application_read_only()
+    {
+        var client = await app.SignedInAsync();
+        var at = await App.NewApplicationAsync(client, NewInvestor);
+
+        var details = await client.GetStringAsync(at + "/details");
+
+        // Review Summary's sections, each under a heading, with nothing to edit.
+        foreach (var section in new[] { "Fixed Deposit", "Holders", "Nominee", "Bank Details &amp; Payment", "Documents", "Other Details" })
+            Assert.Contains($"<h3 class=\"va-sheet__head\">{section}</h3>", details);
+        Assert.DoesNotContain("rv-edit", details);
+        Assert.DoesNotContain("<html", details);
+        // Only the partner's own applications are found.
+        Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync("/unotp/applications/FBBMFL26F99999/details")).StatusCode);
     }
 
     [Fact]

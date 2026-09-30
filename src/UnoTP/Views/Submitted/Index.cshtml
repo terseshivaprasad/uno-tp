@@ -37,7 +37,7 @@
 
         @if (Model.Refused is { } refused)
         {
-            <div class="csi-gap csi-gap--alert" role="alert">
+            <div class="alert alert-danger csi-gap" role="alert">
                 <svg class="csi-gap__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 7v6"></path><circle cx="12" cy="16.8" r=".8" fill="currentColor"></circle></svg>
                 <div class="csi-gap__body"><p>@refused</p></div>
             </div>
@@ -66,7 +66,7 @@
 
         <form method="post" asp-action="Resend" class="sub-actions">
             <button type="submit" class="btn btn-primary sub-actions__primary" disabled="@(sub.ResendsLeft == 0)" data-loader="Sending the link again&hellip;">@(sub.ResendsLeft == 0 ? "Payment link resent" : "Resend payment link")</button>
-            <a class="sub-actions__link sub-actions__link--plain" asp-controller="Dashboard" asp-action="Index">Back to home</a>
+            <a class="sub-actions__link sub-actions__link--plain" asp-controller="Dashboard" asp-action="Index">Back to dashboard</a>
         </form>
         <div class="sub-note">@(sub.ResendsLeft == 0 ? $"No resends left. The link still expires {Money.Day(sub.LinkValidUntil)}." : $"{sub.ResendsLeft} resend{(sub.ResendsLeft == 1 ? " is" : "s are")} available.")</div>
     </div>

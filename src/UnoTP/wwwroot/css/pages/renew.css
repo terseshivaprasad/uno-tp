@@ -1,3 +1,2 @@
-/* The renew page only. Loaded after base.css and components/wizard.css. */
-
-.csi-chip--success { background: var(--green-bg); border-color: var(--green-border); color: var(--green); }
+/* The renew page only. Loaded after the shared styles. It draws nothing of its own:
+   the search is Investor Identification's, and its chips are Bootstrap badges. */

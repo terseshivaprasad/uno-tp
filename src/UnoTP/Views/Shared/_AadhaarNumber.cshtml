@@ -12,7 +12,7 @@
         <input class="csi-control @(Model.Error is null ? null : "is-invalid")" id="@Model.Field" name="@Model.Field" data-chars="aadhaar" value=""
                inputmode="numeric" maxlength="14" pattern="[0-9 ]*" autocomplete="off" spellcheck="false"
                placeholder="XXXX XXXX XXXX" aria-label="12-digit Aadhaar number" aria-describedby="@(Model.Field)Error">
-        <button type="submit" class="csi-btn csi-btn--primary" formaction="@Model.PostUrl" formnovalidate data-loader="Checking the PAN–Aadhaar link&hellip;">Check link</button>
+        <button type="submit" class="btn btn-primary" formaction="@Model.PostUrl" formnovalidate data-loader="Checking the PAN–Aadhaar link&hellip;">Check link</button>
     </div>
     @if (Model.Error is not null)
     {

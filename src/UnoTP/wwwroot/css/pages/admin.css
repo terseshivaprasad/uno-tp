@@ -1,40 +1,42 @@
 /* The admin page only. Loaded after base.css and components/registers.css. */
 
-.csi-card__title { font-size: 16px; font-weight: 500; color: var(--text); padding-bottom: 8px; }
+/* A card's title leads it: 20px semibold in ink, as every page's title does. */
+.csi-card__title { margin: 0; font-size: 20px; font-weight: 600; line-height: 28px; letter-spacing: -.01em; color: var(--ink); padding-bottom: 8px; }
 .csi-drafts__head { padding-bottom: 4px; }
-.csi-drafts__sub { padding: 4px 0 10px; font-size: 11.5px; color: var(--muted); }
+.csi-drafts__sub { padding: 4px 0 12px; font-size: 12px; color: var(--muted); }
 .csi-card__title--plain { padding-bottom: 0; border-bottom: 0; }
 /* ===== Uno TP classic - Console Admin =====
    The screen behind the console: which features are on, and what the bell tells
    partners. Two cards of the same list furniture the other classic screens use
    (su-table, su-empty), with a form under each one. */
-.adm-stack { display: flex; flex-direction: column; gap: 15px; min-width: 0; }
+.adm-stack { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .adm-stack .csi-card { margin-bottom: 0; }
-.adm-stack .csi-card:last-child { margin-bottom: 70px; }
-.adm-table { margin-top: 10px; }
+.adm-stack .csi-card:last-child { margin-bottom: 72px; }
+.adm-table { margin-top: 12px; }
 .adm-table td { vertical-align: top; }
 .adm-table .su-table__act { white-space: nowrap; }
 /* A feature that is off right now, and the window that will take one off. */
 .adm-table tbody tr[data-state="disabled"] td { background: var(--pink-tint); }
-.adm-table tbody tr[data-state="off"] td { color: var(--muted-2); }
+.adm-table tbody tr[data-state="off"] td { color: var(--muted); }
 /* The kind of notice, as a chip rather than a word, so the list can be read down. */
-.adm-kindtag { display: inline-block; padding: 2px 7px; border-radius: 3px; border: 1px solid currentColor; font-size: 10px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; }
+.adm-kindtag { display: inline-block; padding: 2px 8px; border-radius: 3px; border: 1px solid currentColor; font-size: 12px; font-weight: 600; }
 .adm-table--notices strong { font-weight: 600; }
 /* The form under each table. It is the wizard's own field furniture - csi-label,
    csi-control, csi-date - set out in rows. */
-.adm-form__title { margin: 26px 0 0; padding-top: 18px; border-top: 1px solid var(--divider); font-size: 13.5px; font-weight: 600; color: var(--ink); }
+/* A form within the card is a section of it: 16px semibold, over a rule. */
+.adm-form__title { margin: 32px 0 0; padding-top: 24px; border-top: 1px solid var(--divider); font-size: 16px; font-weight: 600; line-height: 24px; color: var(--ink); }
 .adm-form { display: flex; flex-direction: column; gap: 16px; padding-top: 16px; }
-.adm-form__row { display: flex; gap: 22px; flex-wrap: wrap; align-items: flex-start; }
+.adm-form__row { display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start; }
 .adm-form__actions { display: flex; gap: 12px; padding-top: 2px; }
 .adm-control--wide { max-width: 560px; }
-.adm-textarea { height: auto; max-width: 560px; padding: 9px 10px; line-height: 1.5; resize: vertical; }
+.adm-textarea { height: auto; max-width: 560px; padding: 8px 12px; line-height: 1.5; resize: vertical; }
 /* One moment: the day in three boxes and the time in two, side by side. */
 .adm-when { display: flex; align-items: center; gap: 8px; }
 .adm-time { padding: 0 8px; }
 .adm-kind { display: flex; align-items: center; height: 36px; }
 /* The features a window covers. A feature already in one cannot be picked. */
 .adm-picks { display: flex; flex-wrap: wrap; gap: 8px; }
-.adm-pick { display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; border: 1px solid var(--border-2); border-radius: 999px; font-size: 12.5px; color: var(--text); cursor: pointer; }
+.adm-pick { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border: 1px solid var(--border-2); border-radius: 999px; font-size: 14px; color: var(--text); cursor: pointer; }
 .adm-pick:hover { border-color: var(--muted); color: var(--ink); }
 .adm-pick input { appearance: none; -webkit-appearance: none; margin: 0; width: 14px; height: 14px; flex: none; border: 1.5px solid var(--muted-2); border-radius: 3px; background: #fff; cursor: pointer; }
 .adm-pick input:checked { border-color: var(--red); background: var(--red) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7'/%3E%3C/svg%3E") center / 10px no-repeat; }
@@ -44,5 +46,5 @@
 .adm-pick--off input { cursor: not-allowed; }
 @media (max-width: 720px) {
   .adm-when { flex-wrap: wrap; }
-  .adm-form__row { gap: 14px; }
+  .adm-form__row { gap: 16px; }
 }

@@ -57,9 +57,10 @@
     }
 
     // One document slot, drawn by the partial Investor Information shares.
-    async Task Slot(M.SlotView v, string? form = null)
+    // Its label, where one is given, heads the card on one line with its toolbar.
+    async Task Slot(M.SlotView v, string? form = null, Func<object?, IHtmlContent>? head = null)
     {
-        <partial name="_DocSlot" model="@(new DocSlotBlock(v, Url.Action("Upload")!, form, IsNext: v.Key == Model.NextSlot()))" />
+        <partial name="_DocSlot" model="@(new DocSlotBlock(v, Url.Action("Upload")!, form, IsNext: v.Key == Model.NextSlot(), Head: head))" />
     }
 
     // A slot as each value of a choice leaves it, every one drawn and all but the
@@ -67,12 +68,12 @@
     // changes (data-show-when, partial-forms.js) while the change is saved. A hidden
     // one is a disabled fieldset, so nothing in it is posted. Each is worked out by
     // setting the choice on the state for a moment and putting it back.
-    async Task Choices(string field, IEnumerable<(string Value, bool Now)> values, Func<string, M.SlotView> slotAs)
+    async Task Choices(string field, IEnumerable<(string Value, bool Now)> values, Func<string, M.SlotView> slotAs, Func<object?, IHtmlContent>? head = null)
     {
         foreach (var (value, now) in values)
         {
             <fieldset class="cud-choice" data-show-when="@field=@value" hidden="@(!now)" disabled="@(!now)">
-                <partial name="_DocSlot" model="@(new DocSlotBlock(slotAs(value), Url.Action("Upload")!, Alternate: !now))" />
+                <partial name="_DocSlot" model="@(new DocSlotBlock(slotAs(value), Url.Action("Upload")!, Alternate: !now, Head: head))" />
             </fieldset>
         }
     }
@@ -137,7 +138,7 @@
 
         @if (flash?.Banner is not null)
         {
-            <div class="cud-banner" role="status">
+            <div class="alert alert-success cud-banner" role="status">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M8 12.5l2.8 2.8L16.5 9.5"></path></svg>
                 <span>@flash.Banner</span>
             </div>
@@ -222,7 +223,10 @@
         </div>
 
         @* Only where the register holds nothing: an investor who already has a
-           folio has been through KYC, so there is no CERSAI record to fetch. It
+           folio has been through KYC, so there is no CERSAI record to fetch. It is
+           offered before any PAN copy is uploaded, on the PAN the investor was
+           identified with; once a copy is uploaded, only while NSDL verifies it
+           (CkycPanVerified). It
            applies to a digital application only: consent is given online, so a
            physical one, signed and filed by hand, never fetches it. Choosing
            Physical disables the button and greys the section at once
@@ -260,12 +264,34 @@
                     }
                     else
                     {
-                        <button type="button" class="btn btn-secondary btn-sm cud-ckyc-btn" popovertarget="cudCkycAsk" disabled="@physical" data-enable-when="appType=@M.Digital">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5v11"></path><path d="M7.5 10L12 14.5 16.5 10"></path><path d="M4.5 15.5v3a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5v-3"></path></svg>
-                            Fetch from CKYC
-                        </button>
-                        <p class="cud-ckyc-ask__note" data-show-when="appType=@M.Digital" hidden="@physical">Once fetched, this cannot be undone on this application.</p>
-                        <p class="cud-ckyc-ask__note" data-show-when="appType=@M.Physical" hidden="@(!physical)">Not applicable: a physical application is signed and filed by hand, so the CERSAI record is not fetched for it.</p>
+                        @* Not offered on an uploaded PAN copy NSDL has not verified: the button
+                           then stands disabled, saying what it waits on, whatever the type. *@
+                        var panReady = Model.CkycPanVerified;
+                        @* Razor writes a data- attribute even when it is null, so the button
+                           that may follow the application type is drawn only once it can. *@
+                        if (panReady)
+                        {
+                            <button type="button" class="btn btn-secondary btn-sm cud-ckyc-btn" popovertarget="cudCkycAsk" disabled="@physical" data-enable-when="appType=@M.Digital">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5v11"></path><path d="M7.5 10L12 14.5 16.5 10"></path><path d="M4.5 15.5v3a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5v-3"></path></svg>
+                                Fetch from CKYC
+                            </button>
+                        }
+                        else
+                        {
+                            <button type="button" class="btn btn-secondary btn-sm cud-ckyc-btn" disabled>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5v11"></path><path d="M7.5 10L12 14.5 16.5 10"></path><path d="M4.5 15.5v3a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5v-3"></path></svg>
+                                Fetch from CKYC
+                            </button>
+                        }
+                        @if (!panReady)
+                        {
+                            <p class="cud-ckyc-ask__note">@M.CkycWaitsOnPan</p>
+                        }
+                        else
+                        {
+                            <p class="cud-ckyc-ask__note" data-show-when="appType=@M.Digital" hidden="@physical">Once fetched, this cannot be undone on this application.</p>
+                            <p class="cud-ckyc-ask__note" data-show-when="appType=@M.Physical" hidden="@(!physical)">Not applicable: a physical application is signed and filed by hand, so the CERSAI record is not fetched for it.</p>
+                        }
                     }
                 </div>
             </section>
@@ -288,7 +314,7 @@
                     </div>
                     <footer class="cud-ckyc__foot">
                         <button type="button" class="csi-link" popovertarget="cudCkycAsk" popovertargetaction="hide">Cancel</button>
-                        <button type="submit" class="csi-btn csi-btn--primary" asp-action="Ckyc">Proceed <span aria-hidden="true">&rarr;</span></button>
+                        <button type="submit" class="btn btn-primary" asp-action="Ckyc">Proceed <span aria-hidden="true">&rarr;</span></button>
                     </footer>
                 </div>
             </div>
@@ -296,15 +322,13 @@
 
         <div class="cud-grid cud-grid--docs">
             <div class="cud-col">
-                <div class="cud-col__head"><span class="csi-label">Application form</span></div>
-                @{ await Choices("appType", Model.ApplicationTypes.Select(t => (t.Code, t.Code == s.AppType)), FormAs); }
+                @{ await Choices("appType", Model.ApplicationTypes.Select(t => (t.Code, t.Code == s.AppType)), FormAs, @<span class="csi-label">Application form</span>); }
             </div>
 
             @* The PAN copy the application is filed with. It comes over already
                filed when the step before uploaded or matched one. *@
             <div class="cud-col">
-                <div class="cud-col__head"><span class="csi-label">PAN @if (views["pan"].Optional) { <span class="cud-optional">(Non-mandatory)</span> }</span></div>
-                @{ await Slot(views["pan"]); }
+                @{ await Slot(views["pan"], head: @<span class="csi-label">PAN @if (views["pan"].Optional) { <span class="cud-optional">(Non-mandatory)</span> }</span>); }
             </div>
 
             @* NSDL asking for the name printed on the PAN: across the row straight
@@ -315,21 +339,20 @@
             }
 
             <div class="cud-col">
-                <div class="cud-col__head"><span class="csi-label">Photo</span></div>
-                @{ await Slot(views["photo"]); }
+                @{ await Slot(views["photo"], head: @<span class="csi-label">Photo</span>); }
             </div>
 
             <div class="cud-col">
                 @* With document identification, the type is what the copy is identified
                    as once it is uploaded, shown beside the label. Without it, the type is
                    chosen first, and the box waits for it. *@
-                <div class="cud-col__head">
                 @if (Model.AutoProofType)
                 {
-                    <span class="csi-label">Proof of address <partial name="_ProofType" model="@(poaUsed ? s.PoaType : null)" /></span>
+                    await Slot(views["poa"], head: @<span class="csi-label">Proof of address <partial name="_ProofType" model="@(poaUsed ? s.PoaType : null)" /></span>);
                 }
                 else
                 {
+                <div class="cud-col__head">
                     <label class="csi-label" for="cudPoaType">Proof of address</label>
                     <div class="cud-select">
                         <select class="csi-control @Invalid("cudPoaType")" id="cudPoaType" name="poaType" disabled="@(!poaUsed)" data-submit="cudRefresh" autofocus="@Focus("cudPoaType")">
@@ -340,10 +363,10 @@
                             }
                         </select>
                     </div>
-                    await FieldError("cudPoaType");
-                }
+                    @{ await FieldError("cudPoaType"); }
                 </div>
-                @{ await Slot(views["poa"]); }
+                    await Slot(views["poa"]);
+                }
             </div>
 
             @* The communication address proof. While its upload is switched off it
@@ -352,20 +375,24 @@
             @if (!Model.CommProofUpload)
             {
             <div class="cud-col">
-                <div class="cud-col__head"><span class="csi-label">Communication address proof</span></div>
-                @{ await Slot(views["mail"] with { Used = false, NotApplicable = views["mail"].NotApplicable ?? M.MailTypedWhy }); }
+                @{ await Slot(views["mail"] with { Used = false, NotApplicable = views["mail"].NotApplicable ?? M.MailTypedWhy }, head: @<span class="csi-label">Communication address proof</span>); }
             </div>
             }
             else
             {
             <div class="cud-col">
-                <div class="cud-col__head">
-                @if (Model.AutoProofType)
-                {
-                    <span class="csi-label">Communication address proof <partial name="_ProofType" model="@(mailUsed ? s.MailPoaType : null)" /></span>
+                @* Identified from the upload, the type is beside the label, which heads
+                   the card; chosen first, the label and its picker stand over it. *@
+                @{
+                    Func<object?, IHtmlContent>? mailHead = null;
+                    if (Model.AutoProofType)
+                    {
+                        mailHead = @<span class="csi-label">Communication address proof <partial name="_ProofType" model="@(mailUsed ? s.MailPoaType : null)" /></span>;
+                    }
                 }
-                else
+                @if (!Model.AutoProofType)
                 {
+                <div class="cud-col__head">
                     <label class="csi-label" for="cudMailType">Communication address proof</label>
                     <div class="cud-select">
                         <select class="csi-control @Invalid("cudMailType")" id="cudMailType" name="mailType" disabled="@(!mailUsed)" data-submit="cudRefresh" autofocus="@Focus("cudMailType")"
@@ -377,18 +404,18 @@
                             }
                         </select>
                     </div>
-                    await FieldError("cudMailType");
-                }
+                    @{ await FieldError("cudMailType"); }
                 </div>
+                }
                 @* Switched in place only while nothing is filed there: taking a filed
                    proof off is asked about, and the page redrawn after it. *@
                 @if (mailInstant)
                 {
-                    await Choices("mailing", new[] { ("same", !Model.MailDifferentOf(Model.Investor)), ("different", Model.MailDifferentOf(Model.Investor)) }, MailAs);
+                    await Choices("mailing", new[] { ("same", !Model.MailDifferentOf(Model.Investor)), ("different", Model.MailDifferentOf(Model.Investor)) }, MailAs, mailHead);
                 }
                 else
                 {
-                    await Slot(views["mail"]);
+                    await Slot(views["mail"], head: mailHead);
                 }
             </div>
             }
@@ -465,7 +492,7 @@
                 </div>
                 @if (!chooses)
                 {
-                    <p class="cud-note">
+                    <p class="alert alert-info cud-note">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 11v6"></path><circle cx="12" cy="7.5" r=".7" fill="currentColor"></circle></svg>
                         <span>Sourced as a broker under your business broker code.</span>
                     </p>
@@ -539,14 +566,14 @@
                 </div>
                 @if (!chooses)
                 {
-                    <p class="cud-note">
+                    <p class="alert alert-info cud-note">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 11v6"></path><circle cx="12" cy="7.5" r=".7" fill="currentColor"></circle></svg>
                         <span>@Model.SetCategoryWhy</span>
                     </p>
                 }
                 else if (categories.Count == 1)
                 {
-                    <p class="cud-note">
+                    <p class="alert alert-info cud-note">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 11v6"></path><circle cx="12" cy="7.5" r=".7" fill="currentColor"></circle></svg>
                         <span>An application sourced as @mode!.Name can only be booked as @Model.CategoryName(categories[0]), so it is chosen here.</span>
                     </p>
@@ -566,7 +593,7 @@
                     <p class="cud-resolved">Employee Name &mdash; <strong class="@(empName is null ? "cud-resolved__none" : null)">@(empName ?? (s.EmpCode.Length > 0 ? "not found" : "—"))</strong></p>
                     @if (s.EmpCode.Length > 0 && empName is null)
                     {
-                        <p class="cud-note">
+                        <p class="alert alert-info cud-note">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 11v6"></path><circle cx="12" cy="7.5" r=".7" fill="currentColor"></circle></svg>
                             <span>No name against this code here. You can still proceed &mdash; Operations check it against the staff register before the deposit is booked.</span>
                         </p>
@@ -656,7 +683,7 @@
 
 <footer class="csi-bar">
     <div class="csi-bar__inner">
-        <a class="csi-btn csi-btn--back" asp-controller="NewApplication" asp-action="Index"
+        <a class="btn btn-outline-primary" asp-controller="NewApplication" asp-action="Index"
            data-loader="Going back to Investor Identification"
            data-loader-hint="Nothing filed here is lost — it is kept against this application.">Back</a>
         @* What Proceed would ask for next, so the partner is never sent looking for
@@ -686,8 +713,8 @@
             {
                 <span class="csi-bar__saved">Draft saved @saved.ToString("HH:mm")</span>
             }
-            <button type="submit" class="csi-btn csi-btn--back" form="cudForm" asp-action="Save" data-toast="Draft saved">Save draft</button>
-            <button type="submit" class="csi-btn csi-btn--primary" form="cudForm" asp-action="Proceed"
+            <button type="submit" class="btn btn-outline-primary" form="cudForm" asp-action="Save" data-toast="Draft saved">Save draft</button>
+            <button type="submit" class="btn btn-primary" form="cudForm" asp-action="Proceed"
                     data-loader="Checking everything on this step&hellip;">Proceed</button>
         </div>
     </div>

@@ -2,16 +2,16 @@
    Uno TP - the tables behind the dashboard and the rest of the platform
    (SQL Server 2016 or later). Run after 001_unotp_tables.sql.
 
-   t_App_Config         the rules the pages keep (GET config), key by key
-   t_Feature_Mst        the console's features: the dashboard tiles and menu keys
-   t_Ref_List           every list the pages offer (GET reference)
-   t_Partner_Mst        the partners who sign in, as the portal sends them
-   t_Partner_Menu       the features each partner's menu opens
-   t_User_Session       a session started for a partner on entry
-   t_Payment_Link       every payment or acceptance link sent to an investor
-   t_Pay_In_Slip        every Axis pay-in slip generated, reprints included
-   t_Console_Window     windows that take features off, with their notice
-   t_Console_Notice     notices in the bell that stand on their own
+   t_Unotp_App_Config         the rules the pages keep (GET config), key by key
+   t_Unotp_Feature_Mst        the console's features: the dashboard tiles and menu keys
+   t_Unotp_Ref_List           every list the pages offer (GET reference)
+   t_Unotp_Partner_Mst        the partners who sign in, as the portal sends them
+   t_Unotp_Partner_Menu       the features each partner's menu opens
+   t_Unotp_User_Session       a session started for a partner on entry
+   t_Unotp_Payment_Link       every payment or acceptance link sent to an investor
+   t_Unotp_Pay_In_Slip        every Axis pay-in slip generated, reprints included
+   t_Unotp_Console_Window     windows that take features off, with their notice
+   t_Unotp_Console_Notice     notices in the bell that stand on their own
 
    The platform's own values - features, config, reference lists - are seeded by
    003_unotp_seed.sql. Partners and their menus come from the portal's user
@@ -29,8 +29,8 @@ GO
    happens. Until they are wired in, these stay NULL and the application reads as
    waiting on the investor.
    ----------------------------------------------------------------------------- */
-IF COL_LENGTH(N'dbo.t_Application_Mst', N'd_Accepted_On') IS NULL
-    ALTER TABLE dbo.t_Application_Mst ADD
+IF COL_LENGTH(N'dbo.t_Unotp_Application_Mst', N'd_Accepted_On') IS NULL
+    ALTER TABLE dbo.t_Unotp_Application_Mst ADD
         d_Accepted_On   DATETIME2(3) NULL,   -- the investor accepted the deposit (a digital application)
         d_Paid_On       DATETIME2(3) NULL,   -- the payment was received
         d_Booked_On     DATETIME2(3) NULL,   -- the deposit was booked
@@ -38,9 +38,9 @@ IF COL_LENGTH(N'dbo.t_Application_Mst', N'd_Accepted_On') IS NULL
         d_Cancelled_On  DATETIME2(3) NULL;   -- cancelled, unpaid past cancellationDays or by Operations
 GO
 
-/* ----- t_App_Config ----------------------------------------------------------- */
-IF OBJECT_ID(N'dbo.t_App_Config', N'U') IS NULL
-CREATE TABLE dbo.t_App_Config
+/* ----- t_Unotp_App_Config ----------------------------------------------------------- */
+IF OBJECT_ID(N'dbo.t_Unotp_App_Config', N'U') IS NULL
+CREATE TABLE dbo.t_Unotp_App_Config
 (
     c_Key                VARCHAR(50)    NOT NULL,
     c_Value              NVARCHAR(200)  NOT NULL,
@@ -54,13 +54,13 @@ CREATE TABLE dbo.t_App_Config
 );
 GO
 
-/* ----- t_Feature_Mst ---------------------------------------------------------
+/* ----- t_Unotp_Feature_Mst ---------------------------------------------------------
    The console's features, in the order the dashboard lays them out.
      c_Group        the dashboard section its tile sits in
      c_Off_Reason   what its tile says while the web app has it switched off
    ----------------------------------------------------------------------------- */
-IF OBJECT_ID(N'dbo.t_Feature_Mst', N'U') IS NULL
-CREATE TABLE dbo.t_Feature_Mst
+IF OBJECT_ID(N'dbo.t_Unotp_Feature_Mst', N'U') IS NULL
+CREATE TABLE dbo.t_Unotp_Feature_Mst
 (
     c_Feature_Key        VARCHAR(20)    NOT NULL,
     c_Name               NVARCHAR(60)   NOT NULL,
@@ -78,15 +78,15 @@ CREATE TABLE dbo.t_Feature_Mst
 );
 GO
 
-/* ----- t_Ref_List ------------------------------------------------------------
+/* ----- t_Unotp_Ref_List ------------------------------------------------------------
    One row per entry of a list, in n_Seq order. c_Code is what the pages post and
    save; c_Name what they show. A list's other attributes (a category's flags, a
    payout's periods a year, a document group's items) are in j_Attrs as JSON.
-   A text may say {renewFromDays} and the like: it is filled in from t_App_Config.
+   A text may say {renewFromDays} and the like: it is filled in from t_Unotp_App_Config.
    f_Active 0 takes an entry off the pages without losing what was saved with it.
    ----------------------------------------------------------------------------- */
-IF OBJECT_ID(N'dbo.t_Ref_List', N'U') IS NULL
-CREATE TABLE dbo.t_Ref_List
+IF OBJECT_ID(N'dbo.t_Unotp_Ref_List', N'U') IS NULL
+CREATE TABLE dbo.t_Unotp_Ref_List
 (
     n_Id                 INT IDENTITY(1,1) NOT NULL,
     c_List               VARCHAR(40)    NOT NULL,
@@ -105,13 +105,13 @@ CREATE TABLE dbo.t_Ref_List
 );
 GO
 
-/* ----- t_Partner_Mst ---------------------------------------------------------
+/* ----- t_Unotp_Partner_Mst ---------------------------------------------------------
    A partner who may sign in: the user id the portal sends, and how they source.
-     c_Agency_Type   the sourcingAgency in t_App_Config sources as the house;
+     c_Agency_Type   the sourcingAgency in t_Unotp_App_Config sources as the house;
                      any other type sources as a broker under c_Broker_Code
    ----------------------------------------------------------------------------- */
-IF OBJECT_ID(N'dbo.t_Partner_Mst', N'U') IS NULL
-CREATE TABLE dbo.t_Partner_Mst
+IF OBJECT_ID(N'dbo.t_Unotp_Partner_Mst', N'U') IS NULL
+CREATE TABLE dbo.t_Unotp_Partner_Mst
 (
     c_User_Id            VARCHAR(20)    NOT NULL,
     c_Name               NVARCHAR(150)  NOT NULL,
@@ -128,8 +128,8 @@ CREATE TABLE dbo.t_Partner_Mst
 );
 GO
 
-IF OBJECT_ID(N'dbo.t_Partner_Menu', N'U') IS NULL
-CREATE TABLE dbo.t_Partner_Menu
+IF OBJECT_ID(N'dbo.t_Unotp_Partner_Menu', N'U') IS NULL
+CREATE TABLE dbo.t_Unotp_Partner_Menu
 (
     c_User_Id            VARCHAR(20)    NOT NULL,
     c_Feature_Key        VARCHAR(20)    NOT NULL,
@@ -140,12 +140,12 @@ CREATE TABLE dbo.t_Partner_Menu
 );
 GO
 
-/* ----- t_User_Session --------------------------------------------------------
+/* ----- t_Unotp_User_Session --------------------------------------------------------
    Started on entry from the portal; every call after carries it (X-Session-Id)
    and is refused with 401 once it has expired or ended.
    ----------------------------------------------------------------------------- */
-IF OBJECT_ID(N'dbo.t_User_Session', N'U') IS NULL
-CREATE TABLE dbo.t_User_Session
+IF OBJECT_ID(N'dbo.t_Unotp_User_Session', N'U') IS NULL
+CREATE TABLE dbo.t_Unotp_User_Session
 (
     c_Session_Id         CHAR(32)       NOT NULL,
     c_User_Id            VARCHAR(20)    NOT NULL,
@@ -158,18 +158,18 @@ CREATE TABLE dbo.t_User_Session
 );
 GO
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_User_Session_User')
-    CREATE INDEX IX_User_Session_User ON dbo.t_User_Session (c_User_Id, d_Expires_On);
+    CREATE INDEX IX_User_Session_User ON dbo.t_Unotp_User_Session (c_User_Id, d_Expires_On);
 GO
 
-/* ----- t_Payment_Link --------------------------------------------------------
+/* ----- t_Unotp_Payment_Link --------------------------------------------------------
    Every link sent to an investor, by SMS and e-mail both: on submit, on a resend,
    and from Short URL. Never updated: the latest for an application and purpose
    is the live one, and every one before it has stopped working.
      c_Purpose   payment, acceptance
      c_Mobile, c_Email   where it went, masked as the lists show them
    ----------------------------------------------------------------------------- */
-IF OBJECT_ID(N'dbo.t_Payment_Link', N'U') IS NULL
-CREATE TABLE dbo.t_Payment_Link
+IF OBJECT_ID(N'dbo.t_Unotp_Payment_Link', N'U') IS NULL
+CREATE TABLE dbo.t_Unotp_Payment_Link
 (
     n_Id                 BIGINT IDENTITY(1,1) NOT NULL,
     c_App_No             VARCHAR(20)    NOT NULL,
@@ -187,18 +187,18 @@ CREATE TABLE dbo.t_Payment_Link
 );
 GO
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_Payment_Link_App')
-    CREATE INDEX IX_Payment_Link_App ON dbo.t_Payment_Link (c_App_No, c_Purpose, n_Id);
+    CREATE INDEX IX_Payment_Link_App ON dbo.t_Unotp_Payment_Link (c_App_No, c_Purpose, n_Id);
 GO
 
-/* ----- t_Pay_In_Slip ---------------------------------------------------------
+/* ----- t_Unotp_Pay_In_Slip ---------------------------------------------------------
    Every slip generated for an application paying by an instrument (cheque, DD);
    a reprint is a new row with a fresh number, and the latest is the one in force.
    ----------------------------------------------------------------------------- */
 IF OBJECT_ID(N'dbo.s_Slip_No', N'SO') IS NULL
     CREATE SEQUENCE dbo.s_Slip_No AS BIGINT START WITH 1 INCREMENT BY 1 NO CACHE;
 GO
-IF OBJECT_ID(N'dbo.t_Pay_In_Slip', N'U') IS NULL
-CREATE TABLE dbo.t_Pay_In_Slip
+IF OBJECT_ID(N'dbo.t_Unotp_Pay_In_Slip', N'U') IS NULL
+CREATE TABLE dbo.t_Unotp_Pay_In_Slip
 (
     n_Id                 BIGINT IDENTITY(1,1) NOT NULL,
     c_App_No             VARCHAR(20)    NOT NULL,
@@ -212,17 +212,17 @@ CREATE TABLE dbo.t_Pay_In_Slip
 );
 GO
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_Pay_In_Slip_App')
-    CREATE INDEX IX_Pay_In_Slip_App ON dbo.t_Pay_In_Slip (c_App_No, n_Id);
+    CREATE INDEX IX_Pay_In_Slip_App ON dbo.t_Unotp_Pay_In_Slip (c_App_No, n_Id);
 GO
 
-/* ----- t_Console_Window ------------------------------------------------------
+/* ----- t_Unotp_Console_Window ------------------------------------------------------
    A stretch of time in which the features it names are off. Ending one early
    sets d_Ended_On; one ended before it began is cancelled, and is left out.
      c_Features   the feature keys, comma-separated
      c_Notice     the line partners are shown in the bell; '' leaves them untold
    ----------------------------------------------------------------------------- */
-IF OBJECT_ID(N'dbo.t_Console_Window', N'U') IS NULL
-CREATE TABLE dbo.t_Console_Window
+IF OBJECT_ID(N'dbo.t_Unotp_Console_Window', N'U') IS NULL
+CREATE TABLE dbo.t_Unotp_Console_Window
 (
     n_Id                 INT IDENTITY(1,1) NOT NULL,
     c_Window_Id          VARCHAR(20)    NOT NULL,
@@ -241,13 +241,13 @@ CREATE TABLE dbo.t_Console_Window
 );
 GO
 
-/* ----- t_Console_Notice ------------------------------------------------------
+/* ----- t_Unotp_Console_Notice ------------------------------------------------------
    A notice in the bell that stands on its own. Taking it down sets
    d_Removed_On; it stays on record.
-     c_Kind   one of the noticeKinds in t_Ref_List
+     c_Kind   one of the noticeKinds in t_Unotp_Ref_List
    ----------------------------------------------------------------------------- */
-IF OBJECT_ID(N'dbo.t_Console_Notice', N'U') IS NULL
-CREATE TABLE dbo.t_Console_Notice
+IF OBJECT_ID(N'dbo.t_Unotp_Console_Notice', N'U') IS NULL
+CREATE TABLE dbo.t_Unotp_Console_Notice
 (
     n_Id                 INT IDENTITY(1,1) NOT NULL,
     c_Notice_Id          VARCHAR(20)    NOT NULL,

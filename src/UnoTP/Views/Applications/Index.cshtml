@@ -1,6 +1,7 @@
 @model ApplicationsViewModel
 @{
     ViewData["Title"] = "View Application";
+    ViewData["BackToDashboard"] = true;
 
     // The old WA_FD_UNOTP/ViewApplication screen: one Application Number box and
     // a Proceed button, which showed nothing until you already knew the number.
@@ -103,8 +104,8 @@
                 </div>
 
                 <div class="csi-field csi-field--check pis-field--actions">
-                    <button type="submit" class="csi-btn csi-btn--primary pis-btn--search">Search</button>
-                    <button type="button" class="csi-btn csi-btn--back" id="vaClear">Clear</button>
+                    <button type="submit" class="btn btn-primary pis-btn--search">Search</button>
+                    <button type="button" class="btn btn-outline-primary" id="vaClear">Clear</button>
                 </div>
             </div>
 
@@ -112,7 +113,7 @@
             <p class="csi-hint" id="vaScope">Showing the last @Model.WindowDays days &mdash; @earliest.ToString("dd/MM/yyyy") to @today.ToString("dd/MM/yyyy").</p>
         </form>
 
-        <p class="va-flag">
+        <p class="alert alert-secondary va-flag">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 11v6"></path><circle cx="12" cy="7.5" r=".7" fill="currentColor"></circle></svg>
             <span><strong>A date search reaches back @Model.WindowDays days</strong> &mdash; an older application has booked or cancelled itself. Search by number to reach one, or by folio for everything an investor has. A new customer has no folio until their first deposit books.</span>
         </p>
@@ -177,7 +178,7 @@
                         </td>
                         <td data-label="Applied">@r.Applied.ToString("dd/MM/yyyy")</td>
                         <td data-label="Status">
-                            <span class="su-chip @r.Status.Tone">@r.Status.Text</span>
+                            <span class="@Tones.Badge(r.Status.Tone)">@r.Status.Text</span>
                             <div class="su-table__sub">@r.Waiting</div>
                         </td>
                         <td class="su-table__act">
@@ -209,7 +210,7 @@
         <section data-sheet="@r.AppNo" data-title="@r.AppNo" data-sub="@r.Investor &middot; @r.Status.Text &middot; raised @r.Applied.ToString("dd/MM/yyyy")">
             <div class="va-sheet__grid">
                 <div class="va-kv"><div class="va-kv__k">Status</div><div class="va-kv__v @r.Status.Tone">@r.Status.Text</div><div class="va-kv__note">@r.Waiting</div></div>
-                <div class="va-kv"><div class="va-kv__k">Came in as</div><div class="va-kv__v"><span class="pis-tag @(r.Digital ? "pis-tag--digital" : "pis-tag--physical")">@r.Tag</span></div><div class="va-kv__note">@(r.Digital ? "accepted online by the investor" : "signed form on file")</div></div>
+                <div class="va-kv"><div class="va-kv__k">Came in as</div><div class="va-kv__v"><span class="badge @(r.Digital ? "bg-info-subtle text-info-emphasis" : "bg-secondary-subtle text-secondary-emphasis")">@r.Tag</span></div><div class="va-kv__note">@(r.Digital ? "accepted online by the investor" : "signed form on file")</div></div>
                 <div class="va-kv"><div class="va-kv__k">Folio</div><div class="va-kv__v">@r.FolioLabel</div><div class="va-kv__note">@r.FolioNote</div></div>
                 <div class="va-kv"><div class="va-kv__k">Investor</div><div class="va-kv__v">@r.Investor</div><div class="va-kv__note">@(r.Holders == 1 ? "single holder" : $"{r.Holders} holders")</div></div>
                 <div class="va-kv"><div class="va-kv__k">PAN</div><div class="va-kv__v">@r.Pan</div><div class="va-kv__note">first holder &middot; masked</div></div>
@@ -221,12 +222,21 @@
                 <div class="va-kv"><div class="va-kv__k">FDR</div><div class="va-kv__v">@(r.Fdr ?? "—")</div><div class="va-kv__note">@(r.Fdr is null ? "issued once the deposit books" : "issued")</div></div>
             </div>
 
-            <h3 class="va-sheet__head">History</h3>
+            <h3 class="va-sheet__head">Status</h3>
+            @* Every stage from entry to the FDR, in order, the same list for every
+               application: one it does not go through stands greyed with the reason. *@
             <ol class="va-steps">
                 @foreach (var m in r.Timeline)
                 {
-                    <li class="va-step@(m.Done ? " va-step--done" : "")">
-                        <span class="va-step__label">@m.Label</span>
+                    var tone = m.Failed ? "va-step--failed" : m.Done ? "va-step--done" : !m.Applies ? "va-step--na" : "va-step--pending";
+                    <li class="va-step @tone">
+                        <span class="va-step__text">
+                            <span class="va-step__label">@m.Label</span>
+                            @if (m.Note is not null)
+                            {
+                                <span class="va-step__note">@m.Note</span>
+                            }
+                        </span>
                         <span class="va-step__when">@m.When</span>
                     </li>
                 }
@@ -236,27 +246,25 @@
 </div>
 
 <div class="modal-overlay" id="vaModal" hidden>
-    <div class="modal-dialog va-sheet" role="dialog" aria-modal="true" aria-labelledby="vaModalTitle">
-        <header class="rdocs__head">
+    <div class="app-dialog va-sheet" role="dialog" aria-modal="true" aria-labelledby="vaModalTitle">
+        <header class="app-dialog__head">
             <div>
-                <h2 class="rdocs__title" id="vaModalTitle"></h2>
-                <p class="rdocs__sub" id="vaModalSub"></p>
+                <h2 class="app-dialog__title" id="vaModalTitle"></h2>
+                <p class="app-dialog__sub" id="vaModalSub"></p>
             </div>
-            <button type="button" class="rdocs__close btn-reset" id="vaModalClose" aria-label="Close">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19"></path></svg>
-            </button>
+            <button type="button" class="btn-close app-dialog__close" id="vaModalClose" aria-label="Close"></button>
         </header>
 
         <div class="va-sheet__body" id="vaModalBody" tabindex="0"></div>
 
-        <footer class="rdocs__foot">
+        <footer class="app-dialog__foot">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 11v6"></path><circle cx="12" cy="7.5" r=".6" fill="currentColor"></circle></svg>
             <span>This view is read-only. An application that still needs work is picked up from the dashboard, where it opens on the step it stopped at.</span>
         </footer>
     </div>
 </div>
 
-<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="app-toast" id="toast" role="status" aria-live="polite"></div>
 
 @section Scripts {
     <script src="~/js/pages/applications.js" asp-append-version="true"></script>

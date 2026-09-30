@@ -7,7 +7,7 @@ using UnoTP.Backend;
 namespace UnoTP.Data;
 
 /// <summary>
-/// The lists and rules, from t_Ref_List, t_Feature_Mst and t_App_Config
+/// The lists and rules, from t_Unotp_Ref_List, t_Unotp_Feature_Mst and t_Unotp_App_Config
 /// (db/002, seeded by db/003). Kept for a minute, so an edit in the tables is
 /// seen within one; the web app keeps them longer on its side
 /// (Backend:ReferenceCacheMinutes).
@@ -18,13 +18,13 @@ public sealed class SqlReference(Db db, IMemoryCache cache) : IReferenceApi
 
     // ----- Config ------------------------------------------------------------------
 
-    /// <summary>Every setting in t_App_Config, by key.</summary>
+    /// <summary>Every setting in t_Unotp_App_Config, by key.</summary>
     public Task<IReadOnlyDictionary<string, string>> SettingsAsync(CancellationToken ct = default) =>
-        cache.GetOrCreateAsync<IReadOnlyDictionary<string, string>>("t_App_Config", async entry =>
+        cache.GetOrCreateAsync<IReadOnlyDictionary<string, string>>("t_Unotp_App_Config", async entry =>
         {
             (entry.AbsoluteExpirationRelativeToNow, entry.Size) = (KeptFor, 1);
             await using var connection = await db.OpenAsync(ct);
-            var rows = await connection.QueryAsync<(string Key, string Value)>("SELECT c_Key, c_Value FROM dbo.t_App_Config WHERE f_Active = 1");
+            var rows = await connection.QueryAsync<(string Key, string Value)>("SELECT c_Key, c_Value FROM dbo.t_Unotp_App_Config WHERE f_Active = 1");
             return rows.ToDictionary(r => r.Key, r => r.Value, StringComparer.OrdinalIgnoreCase);
         })!;
 
@@ -32,7 +32,7 @@ public sealed class SqlReference(Db db, IMemoryCache cache) : IReferenceApi
     public async Task<string> SettingAsync(string key, CancellationToken ct = default) =>
         (await SettingsAsync(ct)).TryGetValue(key, out var value)
             ? value
-            : throw new InvalidOperationException($"t_App_Config has no '{key}'. Run db/003_unotp_seed.sql.");
+            : throw new InvalidOperationException($"t_Unotp_App_Config has no '{key}'. Run db/003_unotp_seed.sql.");
 
     public async Task<int> NumberAsync(string key, CancellationToken ct = default) =>
         int.Parse(await SettingAsync(key, ct), CultureInfo.InvariantCulture);
@@ -40,7 +40,7 @@ public sealed class SqlReference(Db db, IMemoryCache cache) : IReferenceApi
     public async Task<AppConfig> ConfigAsync(CancellationToken ct = default)
     {
         var s = await SettingsAsync(ct);
-        string Text(string key) => s.TryGetValue(key, out var v) ? v : throw new InvalidOperationException($"t_App_Config has no '{key}'. Run db/003_unotp_seed.sql.");
+        string Text(string key) => s.TryGetValue(key, out var v) ? v : throw new InvalidOperationException($"t_Unotp_App_Config has no '{key}'. Run db/003_unotp_seed.sql.");
         int Int(string key) => int.Parse(Text(key), CultureInfo.InvariantCulture);
         long Long(string key) => long.Parse(Text(key), CultureInfo.InvariantCulture);
         const string hours = "linkValidityHours.";
@@ -57,17 +57,17 @@ public sealed class SqlReference(Db db, IMemoryCache cache) : IReferenceApi
     private sealed record Entry(string List, string Code, string Name, string? Attrs);
 
     public Task<ReferenceData> ReferenceAsync(CancellationToken ct = default) =>
-        cache.GetOrCreateAsync("t_Ref_List", async cacheEntry =>
+        cache.GetOrCreateAsync("t_Unotp_Ref_List", async cacheEntry =>
         {
             (cacheEntry.AbsoluteExpirationRelativeToNow, cacheEntry.Size) = (KeptFor, 1);
             await using var connection = await db.OpenAsync(ct);
             var entries = (await connection.QueryAsync<Entry>("""
                 SELECT c_List AS List, c_Code AS Code, c_Name AS Name, j_Attrs AS Attrs
-                FROM dbo.t_Ref_List WHERE f_Active = 1 ORDER BY c_List, n_Seq
+                FROM dbo.t_Unotp_Ref_List WHERE f_Active = 1 ORDER BY c_List, n_Seq
                 """)).ToLookup(e => e.List);
             var features = (await connection.QueryAsync<FeatureOption>("""
                 SELECT c_Feature_Key AS Code, c_Name AS Name, c_Group AS [Group], c_Detail AS Detail, c_Off_Reason AS OffReason, f_Tile AS Tile
-                FROM dbo.t_Feature_Mst WHERE f_Active = 1 ORDER BY n_Seq
+                FROM dbo.t_Unotp_Feature_Mst WHERE f_Active = 1 ORDER BY n_Seq
                 """)).ToList();
             var settings = await SettingsAsync(ct);
             return Build(entries, features, settings);

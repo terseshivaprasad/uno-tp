@@ -187,4 +187,24 @@ internal sealed class ListRow
     public string? FdrNo { get; set; }
     public DateTime? CancelledOn { get; set; }
     public string Branch { get; set; } = "";
+    public DateTime? LinkSentOn { get; set; }
+    public DateTime? SlipOn { get; set; }
+    public DateTime? PennyDropOn { get; set; }
+    public string PennyDropStatus { get; set; } = "";
+    public DateTime? KycVerifiedOn { get; set; }
+    public string KycStatus { get; set; } = "";
+}
+
+internal sealed class DraftRow
+{
+    public string AppNo { get; set; } = "";
+    public string Name { get; set; } = "";
+    public string Pan { get; set; } = "";
+    public DateTime? Dob { get; set; }
+    public long Amount { get; set; }
+    public int? UploadVer { get; set; }
+    public int? DetailsVer { get; set; }
+    public int? PaymentVer { get; set; }
+    public int? DepositVer { get; set; }
+    public int MinutesAgo { get; set; }
 }

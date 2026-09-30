@@ -226,15 +226,15 @@
     if (!box) {
       box = document.createElement('div');
       box.id = 'toast';
-      box.className = 'toast';
+      box.className = 'app-toast';
       box.setAttribute('role', 'status');
       box.setAttribute('aria-live', 'polite');
       document.body.appendChild(box);
     }
     box.textContent = words;
-    box.classList.add('toast--visible');
+    box.classList.add('app-toast--visible');
     clearTimeout(toast.timer);
-    toast.timer = setTimeout(function () { box.classList.remove('toast--visible'); }, 2400);
+    toast.timer = setTimeout(function () { box.classList.remove('app-toast--visible'); }, 2400);
   }
 
   function go(url, init, push, from, fallback) {
@@ -348,6 +348,19 @@
     return at >= 0 ? fields[at + 1] || null : null;
   }
 
+  // The element to hold in place across a redraw: the one named, if it is on the
+  // page, else the first element with an id whose top is in view below the header.
+  function anchorIn(root, id) {
+    var named = id && document.getElementById(id);
+    if (named && root.contains(named)) return named;
+    var all = root.querySelectorAll('[id]');
+    for (var i = 0; i < all.length; i++) {
+      var r = all[i].getBoundingClientRect();
+      if (r.height && r.top >= 60 && r.top < window.innerHeight - 70) return all[i];
+    }
+    return null;
+  }
+
   function swap(html, url, push, sent) {
     var next = new DOMParser().parseFromString(html, 'text/html');
     var incoming = next.querySelector('main');
@@ -367,7 +380,19 @@
     var caret = typing && active.selectionStart != null ? [active.selectionStart, active.selectionEnd] : null;
     var activeId = typing ? active.id : null;
 
+    // What the partner is looking at stays where it is on the screen: the control
+    // just changed, else the first thing with an id in view. Safari keeps no scroll
+    // anchor of its own, so without this a redraw that changes anything above the
+    // view moves the page under them.
+    var anchor = anchorIn(here, advanceFrom || activeId);
+    var anchorTop = anchor && anchor.getBoundingClientRect().top;
+
     here.innerHTML = incoming.innerHTML;
+    if (anchor) {
+      var again = document.getElementById(anchor.id);
+      var moved = again && again.getBoundingClientRect().top - anchorTop;
+      if (moved && Math.abs(moved) > 1) window.scrollTo({ top: window.scrollY + moved, behavior: 'instant' });
+    }
     document.title = next.title;
     // What the page now holds is what the server has; only what was typed since
     // the post, put back below, is not.

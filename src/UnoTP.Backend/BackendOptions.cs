@@ -10,8 +10,8 @@ public sealed class BackendOptions
 {
     public const string Section = "Backend";
 
-    /// <summary>Seconds an outside service is given to answer.</summary>
-    public int TimeoutSeconds { get; set; } = 30;
+    /// <summary>Seconds an outside service is given to answer: 55, as for every outside service. Nothing is retried.</summary>
+    public int TimeoutSeconds { get; set; } = 55;
 
     /// <summary>Minutes the lists and rules (reference, config) are kept for. 0 asks every time.</summary>
     public int ReferenceCacheMinutes { get; set; } = 10;

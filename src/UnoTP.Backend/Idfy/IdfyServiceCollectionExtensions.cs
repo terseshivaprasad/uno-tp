@@ -15,8 +15,12 @@ public sealed class IdfyOptions
     /// <summary>The name this app calls itself by on Idfy.Api's X-Client-Id header (its rate limit is per client).</summary>
     public string ClientId { get; set; } = "unotp";
 
-    /// <summary>Idfy.Api waits up to about 60 s for IDfy, so the app waits a little longer.</summary>
-    public int TimeoutSeconds { get; set; } = 75;
+    /// <summary>
+    /// How long a call to Idfy.Api may take: 55 s, as for every outside service. Idfy.Api
+    /// itself waits up to about 60 s for IDfy, so a call it is still waiting on is given
+    /// up here first, and said as the service not answering.
+    /// </summary>
+    public int TimeoutSeconds { get; set; } = 55;
 
     public static bool Configured(IConfiguration config) =>
         !string.IsNullOrWhiteSpace(config[$"{Section}:{nameof(BaseUrl)}"]);

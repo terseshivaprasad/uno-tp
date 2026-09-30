@@ -5,9 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - E-Sarathi | Uno TP</title>
     @* Fonts are served from wwwroot, so nothing on the page reaches outside the app. *@
-    @* Shared styles are the layout's: css/shared/. A page adds only its own body's,
-       css/pages/{page}.css, in its Styles section - between the shared ones and the
-       top bar's, the order the rules were written in. *@
+    @* Shared styles are the layout's: Bootstrap 5.3 (lib/bootstrap) themed to the
+       brand (css/shared/theme.css), then css/shared/. A page adds only its own
+       body's, css/pages/{page}.css, in its Styles section - between the shared ones
+       and the top bar's, the order the rules were written in. *@
+    <link rel="stylesheet" href="~/lib/bootstrap/css/bootstrap.min.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/shared/theme.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/shared/fonts.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/shared/base.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/shared/wizard.css" asp-append-version="true" />
@@ -116,6 +119,18 @@
         }
     </header>
     <main class="app-shell">
+        @* A page off the dashboard that is not a step of the journey - Investor
+           Identification, the registers, Renew FD, Admin - leads back to it from
+           above its content. A journey step goes back and forth by its own bar. *@
+        @if (ViewData["BackToDashboard"] is true)
+        {
+            <nav class="app-back" aria-label="Back">
+                <a class="app-back__link" asp-controller="Dashboard" asp-action="Index" data-loader="Going back to the dashboard">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg>
+                    Back to dashboard
+                </a>
+            </nav>
+        }
         @RenderBody()
     </main>
     @if (ViewData["ShowAppFooter"] is true)
@@ -133,6 +148,8 @@
     </div>
     @* Shared scripts are the layout's: js/shared/. A page adds only its own body's,
        js/pages/{page}.js, in its Scripts section, after these. *@
+    @* Bootstrap's components (modal, tooltip, collapse, dropdown), with Popper. Vanilla JS: no jQuery. *@
+    <script src="~/lib/bootstrap/js/bootstrap.bundle.min.js" asp-append-version="true"></script>
     <script src="~/js/shared/loader.js" asp-append-version="true"></script>
     @* Before the pages' own scripts, so a field found wrong stops a post before it goes. *@
     <script src="~/js/shared/checks.js" asp-append-version="true"></script>

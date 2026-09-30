@@ -1,15 +1,15 @@
 /* The purchase journey: what two or more of its steps share - the step rail, the form controls, the document cards (Upload Documents, Investor Information, FD Configuration), the read cards. Loaded by each step page after base.css. */
 
 /* A segmented toggle: a capsule track holding a capsule per option, as tall as a
-   field (36px). The chosen option is drawn as every selection is - pink, a red
+   field (40px). The chosen option is drawn as every selection is - pink, a red
    outline, red-dark text - and lifted off the track; the rest are plain text on
    it. A toggle made of radios is lit by the checked radio alone, so a click moves
    the selection at once, never two lit while the server answers. */
-.seg-toggle { display: inline-flex; align-items: stretch; gap: 2px; height: 36px; padding: 3px; border: 1px solid var(--border-2); border-radius: 999px; background: var(--tint); flex: none; }
+.seg-toggle { display: inline-flex; align-items: stretch; gap: 2px; height: 40px; padding: 3px; border: 1px solid var(--border-2); border-radius: 999px; background: var(--tint); flex: none; }
 .seg-toggle__opt {
   display: inline-flex; align-items: center; justify-content: center; padding: 0 16px;
   border: 1px solid transparent; border-radius: 999px; background: transparent;
-  font-family: inherit; font-size: 12.5px; font-weight: 500; color: var(--text); white-space: nowrap; cursor: pointer;
+  font-family: inherit; font-size: 14px; font-weight: 500; color: var(--text); white-space: nowrap; cursor: pointer;
   transition: background-color .12s ease, border-color .12s ease, color .12s ease;
 }
 .seg-toggle__opt:hover { color: var(--ink); background: #fff; }
@@ -21,20 +21,21 @@
 /* An option that cannot be chosen here stays on the track, faded; its title says why. */
 .seg-toggle__opt:disabled, .seg-toggle__opt:has(input:disabled) { background: transparent; color: var(--muted-2); cursor: not-allowed; }
 .seg-toggle__opt:has(input:checked:disabled) { background: var(--pink-bg); border-color: var(--pink-border); color: var(--muted); box-shadow: none; }
-.seg-toggle--sm { height: 30px; }
-.seg-toggle--sm .seg-toggle__opt { padding: 0 13px; font-size: 11.5px; }
+.seg-toggle--sm { height: 32px; }
+.seg-toggle--sm .seg-toggle__opt { padding: 0 12px; font-size: 12px; }
 /* The document table collapses to stacked rows well before the columns would
    start truncating the OCR read-out. */
-.inv-section-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-.inv-panel { background: var(--tint); border: 1px solid var(--tint); border-radius: 6px; padding: 14px 16px; margin-bottom: 16px; }
-.inv-panel__label { font-size: 10.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
-.inv-panel__note { font-size: 11px; color: var(--muted); line-height: 1.5; }
-.inv-kv-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 14px 24px; }
+.inv-section-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.inv-panel { background: var(--tint); border: 1px solid var(--tint); border-radius: 6px; padding: 16px; margin-bottom: 16px; }
+.inv-panel__label { font-size: 12px; font-weight: 600; line-height: 16px; color: var(--muted); }
+.inv-panel__note { font-size: 12px; color: var(--muted); line-height: 16px; }
+/* A fact: its label a 12px caption, its value 14px in ink under it. */
+.inv-kv-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 16px 24px; }
 .inv-kv--wide { grid-column: span 2; }
-.inv-kv__k { font-size: 11.5px; font-weight: 500; color: var(--muted); }
-.inv-kv__v { font-size: 14px; font-weight: 500; color: var(--ink); padding-top: 3px; line-height: 1.4; }
+.inv-kv__k { font-size: 12px; font-weight: 400; line-height: 16px; color: var(--muted); }
+.inv-kv__v { font-size: 14px; font-weight: 500; color: var(--ink); padding-top: 4px; line-height: 20px; overflow-wrap: anywhere; }
 .inv-kv__v--unread { color: var(--muted); }
-.inv-switch-row { display: flex; align-items: center; gap: 20px; font-size: 13px; color: var(--text); cursor: pointer; }
+.inv-switch-row { display: flex; align-items: center; gap: 24px; font-size: 14px; line-height: 20px; color: var(--text); cursor: pointer; }
 .inv-switch-row span { flex: 1; min-width: 0; }
 .inv-switch {
   appearance: none; -webkit-appearance: none; margin: 0; flex: none; cursor: pointer;
@@ -52,12 +53,13 @@
    one column, each titled over a rule, with its sections titled the same way. */
 .cii-card { display: flex; flex-direction: column; position: relative; }
 .cii-card[hidden], .cii-ask[hidden] { display: none; }
-.cii-app { font-size: 12.5px; color: var(--muted); }
-.cii-app strong { color: var(--ink); font-weight: 600; }
+.cii-app { font-size: 12px; line-height: 16px; color: var(--muted); }
+.cii-app strong { font-size: 14px; color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
 /* The investor's record under the card title: CKYC, the verified addresses, what is typed. */
-.cii-record { display: flex; flex-direction: column; gap: 16px; padding-top: 18px; }
-.cii-section { margin: 28px 0 0; padding-bottom: 10px; font-size: 15px; font-weight: 500; color: var(--text); }
-.cii-switches { display: flex; flex-direction: column; gap: 18px; padding-top: 18px; }
+.cii-record { display: flex; flex-direction: column; gap: 16px; padding-top: 16px; }
+/* A section of a card: 16px semibold in ink, a step under the card's title. */
+.cii-section { margin: 32px 0 0; padding-bottom: 12px; font-size: 16px; font-weight: 600; line-height: 24px; letter-spacing: -.01em; color: var(--ink); }
+.cii-switches { display: flex; flex-direction: column; gap: 16px; padding-top: 16px; }
 @media (max-width: 900px) {
   .inv-kv-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
 }
@@ -70,7 +72,7 @@
 .cud-choice { min-width: 0; margin: 0; padding: 0; border: 0; }
 .cud-choice[hidden] { display: none; }
 /* Investor Identification's Note, across the card under its head. */
-.csi-note--banner { margin-top: 18px; padding: 11px 14px; }
+.csi-note--banner { margin-top: 20px; }
 .csi-note--banner .csi-note__title { font-weight: 600; }
 .bank-suggest {
   position: absolute; z-index: 20; left: 0; right: 0; top: 64px; max-height: 264px; overflow-y: auto;
@@ -80,24 +82,31 @@
 .bank-suggest[hidden] { display: none; }
 .bank-suggest__option { display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; cursor: pointer; }
 .bank-suggest__option:hover, .bank-suggest__option[aria-selected="true"] { background: var(--tint); }
-.bank-suggest__name { font-size: 13px; font-weight: 500; color: var(--ink); }
-.bank-suggest__codes { font-size: 11.5px; color: var(--muted); }
-.bank-suggest__none { padding: 9px 12px; font-size: 12.5px; color: var(--muted); }
+.bank-suggest__name { font-size: 14px; font-weight: 500; color: var(--ink); }
+.bank-suggest__codes { font-size: 12px; color: var(--muted); }
+.bank-suggest__none { padding: 8px 12px; font-size: 14px; color: var(--muted); }
 /* Review Summary: what a read-only value rests on, and each card's Edit. */
-.inv-kv__note { padding-top: 2px; font-size: 11.5px; color: var(--muted); line-height: 1.4; }
+.inv-kv__note { padding-top: 2px; font-size: 12px; color: var(--muted); line-height: 16px; }
 .fd-amount__clear {
   flex: none; width: 32px; height: 32px; border: 0; background: none; border-radius: 6px; cursor: pointer;
-  font-size: 13px; color: var(--muted); font-family: inherit;
+  font-size: 14px; color: var(--muted); font-family: inherit;
 }
 .fd-amount__clear:hover { color: var(--ink); background: var(--tint); }
-.csi-rail__step { display: flex; align-items: center; gap: 12px; color: var(--text); padding: 6px 2px; }
-.csi-rail__step > svg:first-child { flex: none; width: 20px; height: 20px; }
-.csi-rail__label { flex: 1; min-width: 0; font-size: 12px; font-weight: 600; color: var(--ink); }
+/* Every step has the same inset, so the icons of all of them line up and the
+   current one's tint has room round what it holds - 12px each side, as a list
+   item's highlight should. */
+.csi-rail__step { display: flex; align-items: center; gap: 12px; color: var(--text); padding: 8px 12px; border-radius: 6px; }
+/* Only the step the partner is on is marked out: the rest are a quiet list - regular
+   weight, the icon in the muted grey - so the rail guides without pulling the eye
+   from the card. */
+.csi-rail__step > svg:first-child { flex: none; width: 20px; height: 20px; color: var(--muted); }
+.csi-rail__label { flex: 1; min-width: 0; font-size: 14px; font-weight: 500; line-height: 20px; color: var(--text); }
 /* An empty tick: the step is not complete until the wizard says so. */
 .csi-rail__check { flex: none; width: 12px; height: 12px; color: var(--border-2); }
 /* The step the page is on: tinted row, red label and a red marker. */
 .csi-rail__step--current { background: var(--tint); border-radius: 6px; color: var(--red); }
-.csi-rail__step--current .csi-rail__label { color: var(--red); }
+.csi-rail__step--current .csi-rail__label { color: var(--red); font-weight: 600; }
+.csi-rail__step--current > svg:first-child { color: var(--red); }
 .csi-rail__dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--red); }
 /* A step already behind the wizard: its tick is filled in. */
 .csi-rail__step--done .csi-rail__check { color: var(--green); }
@@ -105,63 +114,62 @@
 /* Over each name, what it is: "Step 1" to "Step 4" for the booking steps the
    dashboard promises, "Start" and "Submit" for the ends, which carry no number,
    stand apart behind a rule, and read a little quieter. */
-.csi-rail__num { display: block; padding-bottom: 1px; font-size: 9.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
-.csi-rail__step--current .csi-rail__num { color: var(--red); opacity: .75; }
-.csi-rail__rule { margin: 0 2px; border: 0; border-top: 1px dashed var(--border-2); }
+.csi-rail__num { display: block; font-size: 12px; font-weight: 500; line-height: 16px; color: var(--muted); }
+.csi-rail__step--current .csi-rail__num { color: var(--red-dark); }
+.csi-rail__rule { margin: 0 12px; border: 0; border-top: 1px dashed var(--border-2); }
 .csi-rail__step--end:not(.csi-rail__step--current) .csi-rail__label { color: var(--text); font-weight: 500; }
-.csi-fields { display: grid; grid-template-columns: minmax(0,300px) minmax(0,230px) auto; gap: 20px; padding-top: 18px; align-items: end; justify-content: start; }
-.csi-note { display: flex; gap: 10px; margin-top: 20px; padding: 13px 15px; border: 1px solid var(--amber-border); border-left: 3px solid var(--amber); border-radius: 6px; background: var(--amber-bg); font-size: 12.5px; line-height: 1.55; color: var(--amber); }
-.csi-note__icon { flex: none; margin-top: 1px; color: var(--amber); }
+.csi-fields { display: grid; grid-template-columns: minmax(0,300px) minmax(0,230px) auto; gap: 24px; padding-top: 16px; align-items: end; justify-content: start; }
+.csi-note { display: flex; gap: 8px; margin-top: 20px; margin-bottom: 0; }
+.csi-note__icon { flex: none; margin-top: 2px; }
 .csi-note__body { min-width: 0; }
-.csi-note__title { font-weight: 700; color: var(--amber); }
-.csi-note ul { margin: 3px 0 0; padding-left: 17px; }
-.csi-note li + li { margin-top: 3px; }
+.csi-note__title { font-weight: 700; }
+.csi-note ul { margin: 4px 0 0; padding-left: 16px; }
+.csi-note li + li { margin-top: 4px; }
 /* The actions sit on a bar across the foot of the window, as they do on every
    old wizard step. */
 .csi-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; background: #fff; border-top: 1px solid var(--divider); }
-.csi-bar__inner { max-width: 1440px; margin: 0 auto; padding: 10px 16px; display: flex; align-items: center; gap: 14px; }
-.csi-bar__hint { flex: 1; min-width: 0; font-size: 12.5px; color: var(--muted); text-align: center; }
+.csi-bar__inner { max-width: 1440px; margin: 0 auto; padding: 12px 16px; display: flex; align-items: center; gap: 16px; }
+.csi-bar__hint { flex: 1; min-width: 0; font-size: 14px; line-height: 20px; color: var(--muted); text-align: center; }
 .csi-bar__hint strong { color: var(--ink); font-weight: 600; }
-.csi-bar__right { display: flex; align-items: center; gap: 22px; }
+.csi-bar__right { display: flex; align-items: center; gap: 24px; }
 @media (max-width: 900px) {
   .csi-rail__step { flex: none; gap: 8px; }
   .csi-rail__label { font-size: 12px; white-space: nowrap; }
   .csi-rail__check { display: none; }
-  .csi-rail__rule { border-top: 0; border-left: 1px dashed var(--border-2); margin: 4px 2px; }
+  .csi-rail__rule { border-top: 0; border-left: 1px dashed var(--border-2); margin: 4px; }
 }
 @media (max-width: 760px) {
   .csi-rail__step { display: none; }
   .csi-rail__rule { display: none; }
-  .csi-rail__where { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; }
-  .csi-rail__count { font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
-  .csi-rail__now { font-size: 14px; font-weight: 700; color: var(--ink); }
+  .csi-rail__where { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .csi-rail__count { font-size: 12px; font-weight: 500; line-height: 16px; color: var(--muted); }
+  .csi-rail__now { font-size: 14px; font-weight: 700; line-height: 20px; color: var(--ink); }
   .csi-rail__bar { display: block; height: 4px; border-radius: 2px; background: var(--divider-2); overflow: hidden; }
   .csi-rail__bar > span { display: block; height: 100%; border-radius: 2px; background: var(--red); }
   /* The bar at the foot puts its hint on a line of its own rather than squeezing
        it between the buttons, and Proceed takes the width it is left. */
   .csi-bar__inner { flex-wrap: wrap; gap: 8px 12px; }
-  .csi-bar__hint { order: -1; flex: 0 0 100%; text-align: left; font-size: 11.5px; line-height: 1.45; }
+  .csi-bar__hint { order: -1; flex: 0 0 100%; text-align: left; font-size: 12px; line-height: 16px; }
   .csi-bar__right { flex: 1; justify-content: flex-end; gap: 16px; }
-  .csi-bar__right .csi-btn--primary { flex: 1; max-width: 200px; }
+  .csi-bar__right .btn-primary { flex: 1; max-width: 200px; }
 }
 @media (max-width: 560px) {
   .csi-fields { grid-template-columns: minmax(0,1fr); }
-  .csi-bar__inner { padding: 10px 12px; gap: 8px 10px; }
+  .csi-bar__inner { padding: 12px 12px; gap: 8px 12px; }
   .csi-bar__right { gap: 12px; }
 }
-.csi-holder { padding-top: 18px; }
-.csi-holder + .csi-holder { margin-top: 18px; border-top: 1px solid var(--divider); }
+.csi-holder { padding-top: 20px; }
+.csi-holder + .csi-holder { margin-top: 20px; border-top: 1px solid var(--divider); }
 .csi-holder[hidden] { display: none; }
-.csi-holder__head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.csi-holder__no { flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--red); color: #fff; font-size: 11.5px; font-weight: 700; line-height: 22px; text-align: center; }
+.csi-holder__head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.csi-holder__no { flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--red); color: #fff; font-size: 12px; font-weight: 700; line-height: 16px; text-align: center; }
 .csi-holder__name { font-size: 14px; font-weight: 600; color: var(--ink); }
-.csi-chip { padding: 2px 8px; border-radius: 3px; background: var(--tint); border: 1px solid var(--border); font-size: 10.5px; font-weight: 600; color: var(--muted); }
 .csi-status { margin-left: auto; font-size: 12px; font-weight: 600; color: var(--red-dark); }
 .csi-status--ok { color: var(--green); }
-.csi-check { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 16px; border: 1px solid var(--red); border-radius: 6px; background: #fff; font-family: inherit; font-size: 13px; font-weight: 600; color: var(--red); cursor: pointer; }
+.csi-check { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 16px; border: 1px solid var(--red); border-radius: 6px; background: #fff; font-family: inherit; font-size: 14px; font-weight: 600; color: var(--red); cursor: pointer; }
 .csi-check:hover { background: var(--pink-bg); }
 /* PANs, folios and names are held in capitals; the server upper-cases them too. */
-.csi-control--caps { text-transform: uppercase; }
+.csi-control--caps { }
 .csi-result__head > form { flex: none; }
 .csi-ops { margin-top: 16px; }
 .csi-demo__table td code + code { margin-left: 6px; }
@@ -169,28 +177,27 @@
    is, the record the register holds, and what it is still short of - three bands
    of one card. */
 /* The record found: the later steps' read-only panel (inv-panel). */
-.csi-result { margin: 18px 0 0; }
+.csi-result { margin: 20px 0 0; }
 /* The name, the folio it was found on beside it, and Search again at the far end. */
 .csi-result__head { display: flex; align-items: center; gap: 8px 12px; flex-wrap: wrap; padding-bottom: 12px; }
 .csi-result__head > form, .csi-result__head > .csi-result__again { margin-left: auto; }
-.csi-result__name { font-size: 15px; font-weight: 600; line-height: 1.3; color: var(--ink); overflow-wrap: anywhere; }
-.csi-result__tag { padding: 2px 8px; border: 1px solid var(--border-2); border-radius: 4px; background: #fff; font-size: 11.5px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--ink); }
+.csi-result__name { font-size: 16px; font-weight: 600; line-height: 24px; color: var(--ink); overflow-wrap: anywhere; }
+.csi-result__tag { padding: 2px 8px; border: 1px solid var(--border-2); border-radius: 4px; background: #fff; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--ink); }
 .csi-result__tag--new { border-color: var(--blue-border); background: var(--blue-bg); color: var(--blue); }
 .csi-result__head > form { flex: none; }
 /* What happens next, for a new investor or one not identified: under the record. */
-.csi-result__said { margin: 12px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--muted); }
+.csi-result__said { margin: 12px 0 0; font-size: 14px; line-height: 20px; color: var(--muted); }
 /* What the register holds, under the record's divider. */
-.csi-onrecord.inv-panel__part { padding: 14px 0 0; }
+.csi-onrecord.inv-panel__part { padding: 16px 0 0; }
 .csi-result[hidden] { display: none; }
-.csi-chip--new { background: var(--blue-bg); border-color: var(--blue-border); color: var(--blue); }
 /* What the register holds, item by item: green for held, blue for what is
    collected later on (see the colours under .csi-gap). */
-.csi-onrecord { display: flex; align-items: center; gap: 8px 12px; flex-wrap: wrap; padding: 12px 18px 14px; border-top: 1px solid var(--border); }
+.csi-onrecord { display: flex; align-items: center; gap: 8px 12px; flex-wrap: wrap; padding: 12px 20px 16px; border-top: 1px solid var(--border); }
 .csi-onrecord[hidden] { display: none; }
 .csi-onrecord__label { font-size: 12px; font-weight: 700; color: var(--blue); }
 .csi-onrecord--complete .csi-onrecord__label { color: var(--green); }
 .csi-onrecord__list { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
-.csi-onrecord__item { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px 3px 8px; border: 1px solid var(--green-border); border-radius: 4px; background: var(--green-bg); font-size: 11.5px; font-weight: 600; color: var(--green); }
+.csi-onrecord__item { display: inline-flex; align-items: center; gap: 4px; padding: 3px 12px 3px 8px; border: 1px solid var(--green-border); border-radius: 4px; background: var(--green-bg); font-size: 12px; font-weight: 600; color: var(--green); }
 .csi-onrecord__item--missing { border-color: var(--blue-border); background: var(--blue-bg); color: var(--blue); }
 .csi-onrecord__foot { flex-basis: 100%; font-size: 12px; line-height: 1.5; color: var(--muted); }
 /* Investor Identification's investor card: its head row, then the record found,
@@ -199,7 +206,6 @@
    Information keeps its own. */
 .csi-holder { padding-top: 20px; }
 .csi-holder .csi-holder__head { gap: 12px; }
-.csi-holder .csi-chip { padding: 3px 8px; font-size: 11px; }
 .csi-holder .csi-result { margin-top: 16px; padding: 16px 20px 20px; }
 .csi-holder .csi-result__head { padding-bottom: 12px; }
 .csi-holder .csi-result .inv-kv-grid { gap: 16px 24px; }
@@ -208,16 +214,15 @@
    application can go on), red for a check that failed and stops it, green for a
    record that is complete. Amber stays with the standing Note below the card, so
    nothing here is mistaken for it. */
-.csi-gap { display: flex; gap: 10px; margin-top: 14px; padding: 12px 14px; border: 1px solid var(--blue-border); border-left: 3px solid var(--blue); border-radius: 6px; background: var(--blue-bg); font-size: 12.5px; line-height: 1.55; color: var(--blue); }
+.csi-gap { display: flex; gap: 12px; margin-top: 16px; margin-bottom: 0; }
 .csi-gap[hidden] { display: none; }
 .csi-gap__icon { flex: none; margin-top: 2px; }
 .csi-gap__body { min-width: 0; }
 .csi-gap__title { font-weight: 700; }
-.csi-gap ul { margin: 3px 0 0; padding-left: 17px; }
+.csi-gap ul { margin: 3px 0 0; padding-left: 16px; }
 .csi-gap li + li { margin-top: 2px; }
 .csi-gap p { padding-top: 6px; }
-.csi-gap--ok { border-color: var(--green-border); border-left-color: var(--green); background: var(--green-bg); color: var(--green); }
-.csi-gap--alert { border-color: var(--pink-border); border-left-color: var(--red); background: var(--pink-bg); color: var(--red-dark); }
+
 @media (max-width: 1100px) {
   .csi-fields { grid-template-columns: repeat(2, minmax(0,260px)); }
 }
@@ -229,28 +234,31 @@
 /* The test data at the foot of the page: what to type to reach each outcome.
    Quieter than the drafts above it, since it belongs to the mock and not to the
    partner's own work. */
-.csi-demo { margin-top: 22px; padding: 16px 18px; border: 1px dashed var(--border-2); border-radius: 8px; background: var(--tint); }
-.csi-demo__title { font-size: 13.5px; font-weight: 600; color: var(--ink); }
-.csi-demo__sub { padding: 3px 0 10px; font-size: 11.5px; color: var(--muted); }
+.csi-demo { margin-top: 24px; padding: 16px 20px; border: 1px dashed var(--border-2); border-radius: 8px; background: var(--tint); }
+.csi-demo__title { font-size: 14px; font-weight: 600; color: var(--ink); }
+.csi-demo__sub { padding: 3px 0 12px; font-size: 12px; color: var(--muted); }
 .csi-demo__sub strong { color: var(--ink); font-weight: 600; }
 .csi-demo__table { width: 100%; border-collapse: collapse; font-size: 12px; color: var(--text); }
-.csi-demo__table th { padding: 8px 12px 7px 0; font-size: 10.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); text-align: left; border-bottom: 1px solid var(--border-2); }
-.csi-demo__table td { padding: 9px 12px 9px 0; border-bottom: 1px solid var(--divider); vertical-align: top; }
+.csi-demo__table th { padding: 8px 12px 8px 0; font-size: 12px; font-weight: 600; color: var(--muted); text-align: left; border-bottom: 1px solid var(--border-2); }
+.csi-demo__table td { padding: 8px 12px 8px 0; border-bottom: 1px solid var(--divider); vertical-align: top; }
 .csi-demo__table tr:last-child td { border-bottom: 0; }
 .csi-demo__table code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; font-weight: 600; letter-spacing: .02em; color: var(--ink); }
-.csi-demo__notes { margin: 10px 0 0; padding: 10px 0 0 17px; border-top: 1px solid var(--border-2); font-size: 11.5px; line-height: 1.6; color: var(--muted); }
+.csi-demo__notes { margin: 12px 0 0; padding: 12px 0 0 16px; border-top: 1px solid var(--border-2); font-size: 12px; line-height: 16px; color: var(--muted); }
 .csi-demo__notes strong { color: var(--ink); font-weight: 600; }
 @media (max-width: 900px) {
   /* Each row becomes its own block, every cell labelled by its column. */
   .csi-demo__table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-  .csi-demo__table tr { display: block; padding: 10px 0; border-bottom: 1px solid var(--divider); }
+  .csi-demo__table tr { display: block; padding: 12px 0; border-bottom: 1px solid var(--divider); }
   .csi-demo__table tr:last-child { border-bottom: 0; }
-  .csi-demo__table td { display: flex; gap: 10px; padding: 3px 0; border: 0; }
-  .csi-demo__table td::before { content: attr(data-label); flex: none; width: 108px; font-size: 11px; color: var(--muted); }
+  .csi-demo__table td { display: flex; gap: 12px; padding: 3px 0; border: 0; }
+  .csi-demo__table td::before { content: attr(data-label); flex: none; width: 108px; font-size: 12px; color: var(--muted); }
 }
 /* Every row on the step shares one grid: three columns across the card, which
    runs the width of the page. */
-.cud-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px 24px; padding-top: 18px; }
+/* A row of fields stands 24px from the next; a row of document cards 32px, each
+   card being a block of its own, so the space tells one row's cards from the next. */
+.cud-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; padding-top: 20px; }
+.cud-grid--docs { row-gap: 32px; }
 .cud-col { min-width: 0; }
 /* The label names the box under it, so it stays with it rather than floating
    halfway between its own box and the row above. */
@@ -258,9 +266,9 @@
 .cud-col__spacer { height: 38px; }
 .cud-optional { font-weight: 400; color: var(--muted); }
 /* What a proof was identified as, beside its label. */
-.cud-type { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: var(--tint); font-size: 11px; font-weight: 600; color: var(--ink); vertical-align: 1px; }
+.cud-type { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: var(--tint); font-size: 12px; font-weight: 600; line-height: 16px; color: var(--ink); vertical-align: 1px; }
 .cud-col[hidden] { display: none; }
-.cud-apptype__group { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.cud-apptype__group { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 /* ----- What the PAN was checked with --------------------------------------
    A slim row per check in one bordered list: the check, a dot and where it stands,
    what it matched (one line; in full on hover), and the info mark. A failure's
@@ -268,15 +276,15 @@
 .cud-checks { list-style: none; margin: 12px 0 0; padding: 0; border: 1px solid var(--border-2); border-radius: 8px; background: #fff; }
 .cud-check {
   display: grid; grid-template-columns: 200px 200px minmax(0, 1fr); align-items: center; column-gap: 16px;
-  padding: 10px 16px; border-top: 1px solid var(--divider); font-size: 13px; line-height: 1.4;
+  padding: 12px 16px; border-top: 1px solid var(--divider); font-size: 14px; line-height: 20px;
 }
 .cud-check:first-child { border-top: 0; border-top-left-radius: 7px; border-top-right-radius: 7px; }
 .cud-check:last-child { border-bottom-left-radius: 7px; border-bottom-right-radius: 7px; }
 .cud-check:focus { outline: 2px solid var(--blue); outline-offset: -2px; }
-.cud-check__kind { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 700; color: var(--ink); }
-.cud-check__state { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 600; color: var(--muted); }
+.cud-check__kind { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; line-height: 16px; color: var(--ink); }
+.cud-check__state { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: var(--muted); }
 .cud-check__dot { flex: none; width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid currentColor; }
-.cud-check__lines { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--text); }
+.cud-check__lines { min-width: 0; font-size: 14px; line-height: 20px; overflow-wrap: anywhere; color: var(--text); }
 .cud-check .tip::after { left: 0; transform: none; }
 .cud-check__from { grid-column: 1 / -1; margin: 6px 0 0; font-size: 12px; line-height: 1.5; color: var(--red-dark); }
 .cud-check.is-done .cud-check__state { color: var(--green); }
@@ -289,7 +297,7 @@
 .cud-check.is-failed .cud-check__dot { background: currentColor; }
 .cud-check.is-na .cud-check__lines { color: var(--muted); }
 @media (max-width: 700px) {
-  .cud-check { grid-template-columns: minmax(0, 1fr) auto; row-gap: 3px; padding: 10px 12px; }
+  .cud-check { grid-template-columns: minmax(0, 1fr) auto; row-gap: 3px; padding: 12px 12px; }
   .cud-check__lines { grid-column: 1 / -1; grid-row: 2; }
 }
 .cud-slot { padding-top: 8px; }
@@ -303,13 +311,21 @@
    zoom and refresh - except where the column is too narrow for both the label and
    the names (below). */
 .cud-slot { position: relative; }
-/* Every card has the same toolbar - what the checks are, View, the action - on a
-   line of its own right over its box, whatever stands above it (a label, a proof
-   type, a payment mode), so every box starts the same way under its toolbar. */
-.cud-slot__tools { display: flex; justify-content: flex-end; align-items: center; gap: 6px; }
-.cud-slot > .cud-slot__tools { min-height: 27px; padding-bottom: 6px; }
+/* Every card has the same header: its label at the left and the same toolbar -
+   what the checks are, View, the action - at the right, on one line over its box.
+   Where something is chosen over the card (a proof type, a payment mode), the
+   toolbar has the line under that to itself. Either way the bar is one height, so
+   every box in a row starts at the same place. */
+/* A long label wraps beside the tools rather than pushing them onto a line of
+   their own; its first line sits on the tools' baseline. */
+.cud-slot__bar { display: flex; align-items: baseline; justify-content: flex-end; gap: 12px; min-height: 28px; padding-bottom: 8px; }
+.cud-slot__head { flex: 1 1 0; min-width: 0; }
+.cud-slot__head > .csi-label { padding: 0; }
+.cud-slot__tools { flex: none; display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-left: auto; }
+/* A card headed by its own label starts at the top of its column. */
+.cud-slot:has(> .cud-slot__bar > .cud-slot__head) { padding-top: 0; }
 .cud-slot__tools[hidden] { display: none; }
-.cud-tool { display: inline-flex; align-items: center; gap: 5px; padding: 5px 9px; border: 1px solid var(--border-2); border-radius: 6px; background: #fff; font-family: inherit; font-size: 11.5px; font-weight: 600; color: var(--red); cursor: pointer; }
+.cud-tool { display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border: 1px solid var(--border-2); border-radius: 6px; background: #fff; font-family: inherit; font-size: 12px; line-height: 16px; font-weight: 600; color: var(--red); cursor: pointer; }
 .cud-tool svg { flex: none; }
 .cud-tool:disabled { border-color: var(--divider); color: var(--muted-2); cursor: not-allowed; }
 .cud-tool:not(:disabled):hover { background: var(--pink-bg); border-color: var(--red); color: var(--red-dark); }
@@ -322,12 +338,12 @@
    White is a card there is something to do with - a file to pick, a document to
    look at. The tint is a card there is nothing to do with yet: not applicable,
    shut until a type is chosen, being checked, or out of attempts. */
-.cud-drop { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 124px; padding: 16px 14px; border: 1px solid var(--border-2); border-radius: 8px; background: #fff; font-family: inherit; text-align: center; cursor: pointer; }
+.cud-drop { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 124px; padding: 16px 16px; border: 1px solid var(--border-2); border-radius: 8px; background: #fff; font-family: inherit; text-align: center; cursor: pointer; }
 .cud-drop[hidden] { display: none; }
 /* A slot this application has no use for draws the same card as the rest, with
    the same mark on the left - struck through, because there is nothing to file
    here - so a row of six stays a row of six. */
-.cud-slot__na { display: flex; align-items: center; justify-content: center; gap: 16px; min-height: 124px; padding: 16px 14px; border: 1px solid var(--border-2); border-radius: 8px; background: var(--tint); text-align: center; color: var(--muted-2); }
+.cud-slot__na { display: flex; align-items: center; justify-content: center; gap: 16px; min-height: 124px; padding: 16px 16px; border: 1px solid var(--border-2); border-radius: 8px; background: var(--tint); text-align: center; color: var(--muted-2); }
 .cud-slot__na-mark {
   flex: none; width: 36px; height: 36px; border-radius: 50%; background: #EDEFF3;
   /* The bar of a "no entry" sign, drawn in the panel's own grey. */
@@ -335,10 +351,10 @@
   background-size: 15px 1.5px; background-repeat: no-repeat; background-position: center;
 }
 .cud-slot__na-text { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-.cud-slot__na-title { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.cud-slot__na-title { font-size: 12px; font-weight: 700; line-height: 16px; color: var(--muted); }
 /* Why it is not applicable, which is what a partner looking at a grey card wants
    to know before they wonder what they have done wrong. */
-.cud-slot__na-why { font-size: 11.5px; font-weight: 400; line-height: 1.5; letter-spacing: 0; color: var(--muted); }
+.cud-slot__na-why { font-size: 12px; font-weight: 400; line-height: 16px; letter-spacing: 0; color: var(--muted); }
 .cud-slot__na[hidden] { display: none; }
 /* Dashed and red only while a file is over it or a cursor is on it: the box says
    "drop here" when dropping is what you are doing, not for the whole page. */
@@ -346,7 +362,7 @@
 /* Room at the foot for View and Replace, which sit in that one place at every
    width: the card's bottom right corner, on the card they act on. The document's
    name keeps the card's whole width to be read in. */
-.cud-drop.is-filled { cursor: zoom-in; padding-bottom: 42px; }
+.cud-drop.is-filled { cursor: zoom-in; padding-bottom: 44px; }
 .cud-drop.is-filled:hover { border-color: var(--border-3); background: var(--tint); }
 .cud-drop:disabled { cursor: default; }
 .cud-drop__idle, .cud-drop__busy, .cud-drop__locked, .cud-drop__done { display: flex; flex-direction: column; align-items: center; gap: 4px; }
@@ -361,27 +377,27 @@
    picker nor a filed document until the check comes back. */
 .cud-drop.is-busy { pointer-events: none; background: var(--tint); }
 .cud-drop__spinner { width: 20px; height: 20px; margin-bottom: 6px; border: 2px solid var(--pink-bg); border-top-color: var(--red); border-radius: 50%; animation: cud-spin .7s linear infinite; }
-.cud-drop__checking { font-size: 12.5px; color: var(--muted); }
+.cud-drop__checking { font-size: 14px; color: var(--muted); }
 /* Which of the three checks is running, under the one it is running. Three
    seconds of an unlabelled spinner is how the same file gets uploaded twice. */
-.cud-drop__step { font-size: 11px; line-height: 1.5; color: var(--muted); }
+.cud-drop__step { font-size: 12px; line-height: 16px; color: var(--muted); }
 .cud-drop__step:empty { display: none; }
 @media (prefers-reduced-motion: reduce) {
   .cud-drop__spinner { animation-duration: 2.4s; }
 }
-.cud-drop__icon { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; margin-bottom: 5px; border-radius: 50%; background: var(--pink-bg); color: var(--red); }
-.cud-drop__title { font-size: 13px; font-weight: 500; color: var(--text); }
-.cud-drop__hint { font-size: 11px; line-height: 1.5; color: var(--muted); }
+.cud-drop__icon { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; margin-bottom: 4px; border-radius: 50%; background: var(--pink-bg); color: var(--red); }
+.cud-drop__title { font-size: 14px; font-weight: 500; line-height: 20px; color: var(--text); }
+.cud-drop__hint { font-size: 12px; line-height: 16px; color: var(--muted); }
 /* What the document itself has to be, beyond its format. Amber: it is a rule the
    copy must meet, not an error the partner has already made. */
-.cud-drop__must { font-size: 11px; font-weight: 600; line-height: 1.5; color: var(--amber); }
+.cud-drop__must { font-size: 12px; font-weight: 600; line-height: 16px; color: var(--amber); }
 .cud-drop__must[hidden] { display: none; }
 /* What happens to the copy once it is picked, and who is asked about it. */
-.cud-drop__with { font-size: 11px; line-height: 1.5; color: var(--muted); }
+.cud-drop__with { font-size: 12px; line-height: 16px; color: var(--muted); }
 .cud-drop__with[hidden] { display: none; }
-.cud-drop__check { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; margin-bottom: 5px; border-radius: 50%; background: var(--green-bg); color: var(--green); }
-.cud-drop__file { max-width: 100%; font-size: 12.5px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.cud-drop__size { font-size: 11px; color: var(--muted); }
+.cud-drop__check { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; margin-bottom: 4px; border-radius: 50%; background: var(--green-bg); color: var(--green); }
+.cud-drop__file { max-width: 100%; font-size: 14px; font-weight: 600; line-height: 20px; color: var(--ink); overflow-wrap: anywhere; }
+.cud-drop__size { font-size: 12px; line-height: 16px; color: var(--muted); }
 /* An address the folio holds, standing in the box of the proof it needs no copy of. */
 .cud-drop.is-held { cursor: default; padding-bottom: 16px; }
 .cud-drop.is-held:hover { border-color: var(--border-2); background: #fff; }
@@ -389,9 +405,9 @@
 @media (min-width: 761px) {
   .cud-drop.is-held .cud-drop__check, .cud-drop.is-read .cud-drop__check { grid-row: 1 / span 4; align-self: center; width: 40px; height: 40px; }
 }
-.cud-held__tag { display: inline-block; justify-self: start; padding: 2px 7px; border-radius: 3px; background: var(--amber-tint); font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--amber); }
-.cud-held__lines { max-width: 100%; font-size: 13px; font-weight: 600; line-height: 1.45; color: var(--ink); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
-.cud-held__from { font-size: 11.5px; line-height: 1.5; color: var(--muted); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.cud-held__tag { display: inline-block; justify-self: start; padding: 2px 8px; border-radius: 3px; background: var(--amber-tint); font-size: 12px; font-weight: 600; line-height: 16px; color: var(--amber); }
+.cud-held__lines { max-width: 100%; font-size: 14px; font-weight: 600; line-height: 20px; color: var(--ink); overflow-wrap: anywhere; }
+.cud-held__from { font-size: 12px; line-height: 16px; color: var(--muted); }
 /* Long addresses end in an ellipsis inside the box, with the whole of it on hover,
    and a long unbroken string breaks rather than running out of the box. */
 .cud-held__lines, .cud-held__from, .cud-slot__na-why, .cud-drop__file, .cud-read__lines { overflow-wrap: anywhere; }
@@ -404,13 +420,13 @@
 /* The state first, a breath under it, then what was read: one text size for what
    was read, one for the detail under it, the same in the boxes and the cards. */
 .cud-drop.is-read .cud-held__tag, .cud-drop.is-held .cud-held__tag { margin-bottom: 3px; }
-.cud-held__lines--one { -webkit-line-clamp: 1; }
+/* .cud-held__lines--one: one line of name, which now wraps like the rest. */
 .cud-slot .cud-drop.is-read .cud-drop__check { background: var(--green-bg); color: var(--green); }
 .cud-slot .cud-drop.is-read .cud-drop__check.is-failed, .cud-slot .cud-drop.is-read .cud-drop__check.is-na { background: var(--amber-bg); color: var(--amber); }
-.cud-held__id { max-width: 100%; margin-top: 2px; font-size: 11.5px; line-height: 1.5; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cud-held__id { max-width: 100%; margin-top: 4px; font-size: 12px; line-height: 16px; color: var(--muted); }
 .cud-held__expired { color: var(--red-dark); font-weight: 600; }
 /* The PIN code stands on a line of its own, so cutting the address to fit never loses it. */
-.cud-held__pin { font-size: 13px; font-weight: 600; line-height: 1.45; color: var(--ink); }
+.cud-held__pin { font-size: 14px; font-weight: 600; line-height: 20px; color: var(--ink); }
 .cud-held__pin.is-missing { font-weight: 500; color: var(--amber); }
 /* Nothing left to try: the box stops taking files and the line under it says
    where the document goes instead. */
@@ -425,15 +441,10 @@
 .cud-drop__input:disabled { cursor: not-allowed; }
 .cud-drop:has(.cud-drop__input:focus-visible) { outline: 2px solid var(--blue); outline-offset: 2px; }
 .cud-drop.is-locked:hover, .cud-drop.is-spent:hover { border-style: solid; border-color: var(--border-2); background: var(--tint); }
-/* Every document box is the same size whatever it holds - empty, filed, locked,
-   refused or not applicable - so a row of them lines up. What a box says is held
-   to a few lines inside it; the rest is in the note under the box and the history. */
-.cud-drop, .cud-slot__na { height: var(--doc-card-h); min-height: 0; overflow: hidden; }
-.cud-drop__title, .cud-drop__hint, .cud-drop__with, .cud-drop__must, .cud-slot__na-why {  display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden;}
-.cud-drop__title, .cud-drop__hint, .cud-drop__must { -webkit-line-clamp: 2; }
-/* A box waiting on another names what it will take: room for that. */
-.cud-drop.is-locked .cud-drop__hint { -webkit-line-clamp: 3; }
-.cud-drop__with, .cud-slot__na-why { -webkit-line-clamp: 3; }
+/* Every document box starts at the same size whatever it holds - empty, filed,
+   locked, refused or not applicable - so a row of them lines up. A box that has
+   more to say grows rather than cutting it off (WCAG 1.4.12). */
+.cud-drop, .cud-slot__na { min-height: var(--doc-card-h); }
 label.cud-tool { cursor: pointer; }
 .cud-upload { margin-top: 8px; }
 .has-js .cud-upload, .has-js .cud-refresh { display: none; }
@@ -447,7 +458,7 @@ label.cud-tool { cursor: pointer; }
 .cud-ckyc-pop { width: min(560px, calc(100% - 32px)); }
 .cud-sheet .cud-preview__sheet, .cud-sheet .cud-ckyc__sheet { width: 100%; }
 /* What the last post has to say for the whole step. */
-.cud-banner { display: flex; align-items: flex-start; gap: 9px; margin-bottom: 16px; padding: 11px 14px; border: 1px solid var(--green-border); border-left: 3px solid var(--green); border-radius: 6px; background: var(--green-bg); font-size: 12.5px; line-height: 1.5; color: var(--green); }
+.cud-banner { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 16px; }
 .cud-banner svg { flex: none; margin-top: 1px; }
 /* "See the history" jumps to the attempt, and the attempt says it is the one. */
 .cud-log__row { scroll-margin-top: 110px; }
@@ -460,7 +471,7 @@ label.cud-tool { cursor: pointer; }
 @media (min-width: 761px) {
   /* One size for every box, no taller than its fullest state needs: a proof of
        address read to its tag, two lines of address, the PIN and a note. */
-  .cud-drop, .cud-slot__na { padding: 16px 18px; }
+  .cud-drop, .cud-slot__na { padding: 16px 20px; }
   .cud-drop { justify-content: flex-start; text-align: left; }
   .cud-drop__idle, .cud-drop__busy, .cud-drop__locked, .cud-drop__done {
       display: grid; width: 100%; grid-template-columns: auto minmax(0, 1fr);
@@ -477,7 +488,7 @@ label.cud-tool { cursor: pointer; }
     .cud-drop__done > :not(.cud-drop__check) { grid-column: 2; }
   .cud-drop__icon { width: 40px; height: 40px; }
   .cud-drop__check { width: 38px; height: 38px; }
-  .cud-drop__title { font-size: 13.5px; }
+  .cud-drop__title { font-size: 14px; }
   /* The panel that stands where a picker would keeps the picker's height, and
        says so from the same side the boxes speak from. */
   /* It speaks from the same side as every card that has something in it. */
@@ -492,7 +503,7 @@ label.cud-tool { cursor: pointer; }
 .cud-drop, .cud-slot__na { align-items: flex-start; justify-content: flex-start; text-align: left; }
 .cud-drop__idle, .cud-drop__busy, .cud-drop__locked, .cud-drop__done {
   display: grid; width: 100%; grid-template-columns: auto minmax(0, 1fr);
-  align-items: start; column-gap: 14px; row-gap: 3px; text-align: left;
+  align-items: start; column-gap: 16px; row-gap: 3px; text-align: left;
 }
 .cud-drop__icon, .cud-drop__check, .cud-drop__lock, .cud-drop__spinner {  grid-column: 1; grid-row: 1 / -1; align-self: start; margin-bottom: 0;}
 .cud-drop__idle > :not(.cud-drop__icon),
@@ -506,9 +517,9 @@ label.cud-tool { cursor: pointer; }
    so this line carries the colour rather than the card: green where somebody
    stood behind it, amber where there was nobody to ask, red where the answer
    came back against it. */
-.cud-slot__check { display: flex; gap: 7px; padding-top: 8px; font-size: 11.5px; line-height: 1.5; text-align: left; color: var(--muted); }
+.cud-slot__check { display: flex; gap: 8px; padding-top: 8px; font-size: 12px; line-height: 16px; text-align: left; color: var(--muted); }
 .cud-slot__check[hidden] { display: none; }
-.cud-slot__check::before { content: ''; flex: none; width: 6px; height: 6px; margin-top: 5px; border-radius: 50%; background: currentColor; }
+.cud-slot__check::before { content: ''; flex: none; width: 6px; height: 6px; margin-top: 4px; border-radius: 50%; background: currentColor; }
 .cud-slot__check.is-ok { color: var(--green); }
 .cud-slot__check.is-warn { color: var(--amber); }
 .cud-slot__check.is-bad { color: var(--red-dark); }
@@ -516,7 +527,7 @@ label.cud-tool { cursor: pointer; }
    The document is filed, so the mark stays - it just stops being green. */
 .cud-slot.is-unconfirmed .cud-drop__check { background: var(--amber-bg); color: var(--amber); }
 /* What the application has left for this document, of the three it allows. */
-.cud-slot__tries { padding-top: 6px; font-size: 11px; text-align: left; color: var(--muted); }
+.cud-slot__tries { padding-top: 6px; font-size: 12px; text-align: left; color: var(--muted); }
 .cud-slot__tries[hidden] { display: none; }
 .cud-slot__tries.is-spent { font-weight: 600; color: var(--red-dark); }
 /* The way from a refusal to the entry that records it. */
@@ -526,20 +537,20 @@ label.cud-tool { cursor: pointer; }
    address off a proof, or the account off a cheque, and whoever stands behind
    that document is asked to confirm it. The cards keep the same three-column
    rhythm as the documents above them. */
-.cud-read { padding-top: 26px; }
-.cud-read__title { font-size: 13px; font-weight: 700; color: var(--ink); }
-.cud-read__sub { padding-top: 3px; font-size: 11.5px; line-height: 1.5; color: var(--muted); }
-.cud-read__cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; padding-top: 14px; }
+.cud-read { padding-top: 28px; }
+.cud-read__title { font-size: 14px; font-weight: 700; line-height: 20px; color: var(--ink); }
+.cud-read__sub { padding-top: 3px; font-size: 12px; line-height: 16px; color: var(--muted); }
+.cud-read__cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; padding-top: 16px; }
 /* The address the proof replaced, kept in sight rather than quietly overwritten. */
-.cud-read__was { padding-top: 6px; font-size: 11px; line-height: 1.5; color: var(--muted-2); text-decoration: line-through; }
+.cud-read__was { padding-top: 6px; font-size: 12px; line-height: 16px; color: var(--muted-2); text-decoration: line-through; }
 .cud-read__was[hidden] { display: none; }
 /* ===== Upload and OCR history =====
    The card at the foot of the step: one entry per attempt, newest first, with
    what each check made of the document under it. A refusal that has since been
    cleared off the box is still readable here, which is the point of it. */
-.cud-log__sub { padding-top: 6px; font-size: 11.5px; line-height: 1.5; color: var(--muted); }
-.cud-log__list { list-style: none; margin: 0; padding: 14px 0 0; }
-.cud-log__row { padding: 14px 18px; border: 1px solid var(--border-2); border-left-width: 3px; border-radius: 8px; }
+.cud-log__sub { padding-top: 4px; font-size: 12px; line-height: 16px; color: var(--muted); }
+.cud-log__list { list-style: none; margin: 0; padding: 16px 0 0; }
+.cud-log__row { padding: 16px 20px; border: 1px solid var(--border-2); border-left-width: 3px; border-radius: 8px; }
 .cud-log__row + .cud-log__row { margin-top: 12px; }
 .cud-log__row.is-ok { border-left-color: var(--green-2); }
 .cud-log__row.is-warn { border-left-color: var(--amber); }
@@ -547,19 +558,19 @@ label.cud-tool { cursor: pointer; }
 /* Called for from a refusal above: it says which entry was meant, briefly. */
 .cud-log__row.is-called { background: var(--pink-tint); border-color: var(--red); }
 .cud-log__top { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
-.cud-log__doc { font-size: 12.5px; font-weight: 700; color: var(--ink); }
-.cud-log__try { font-size: 11px; color: var(--muted); }
-.cud-log__at { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.cud-log__doc { font-size: 14px; font-weight: 700; line-height: 20px; color: var(--ink); }
+.cud-log__try { font-size: 12px; line-height: 16px; color: var(--muted); }
+.cud-log__at { font-size: 12px; line-height: 16px; color: var(--muted); font-variant-numeric: tabular-nums; }
 /* How the attempt ended, in the colour of the outcome. */
-.cud-log__mark { margin-left: auto; font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.cud-log__mark { margin-left: auto; font-size: 12px; font-weight: 600; line-height: 16px; color: var(--muted); }
 .cud-log__row.is-ok .cud-log__mark { color: var(--green); }
 .cud-log__row.is-warn .cud-log__mark { color: var(--amber); }
 .cud-log__row.is-bad .cud-log__mark { color: var(--red-dark); }
-.cud-log__file { padding-top: 4px; font-size: 11.5px; color: var(--text); word-break: break-all; }
+.cud-log__file { padding-top: 4px; font-size: 12px; line-height: 16px; color: var(--text); overflow-wrap: anywhere; }
 /* What each check said, in the order it said it. */
 .cud-log__stages { list-style: none; margin: 0; padding: 8px 0 0; }
-.cud-log__stage { position: relative; padding: 2px 0 2px 16px; font-size: 11.5px; line-height: 1.5; color: var(--muted); }
-.cud-log__stage::before { content: ""; position: absolute; left: 4px; top: 9px; width: 5px; height: 5px; border-radius: 50%; background: var(--border-2); }
+.cud-log__stage { position: relative; padding: 2px 0 2px 16px; font-size: 12px; line-height: 16px; color: var(--muted); }
+.cud-log__stage::before { content: ""; position: absolute; left: 4px; top: 8px; width: 5px; height: 5px; border-radius: 50%; background: var(--border-2); }
 .cud-log__stage.is-ok { color: var(--text); }
 .cud-log__stage.is-ok::before { background: var(--green-2); }
 .cud-log__stage.is-warn::before { background: var(--amber); }
@@ -567,9 +578,11 @@ label.cud-tool { cursor: pointer; }
 .cud-log__stage.is-bad::before { background: var(--red); }
 /* The cards stacked beside the rail: the bar at the foot of the page clears the
    last of them, not each one. */
-.csi-main { min-width: 0; display: flex; flex-direction: column; gap: 15px; margin-bottom: 70px; }
+.csi-main { min-width: 0; display: flex; flex-direction: column; gap: 16px; margin-bottom: 72px; }
 .csi-main .csi-card { margin-bottom: 0; }
-.cud-extra__title { font-size: 16px; font-weight: 500; color: var(--text); padding-bottom: 8px; }
+/* A section of the step: a heading, 16px semibold in ink, a step below the
+   page's title and a step above the labels under it. */
+.cud-extra__title { margin: 0; font-size: 16px; font-weight: 600; line-height: 24px; letter-spacing: -.01em; color: var(--ink); padding-bottom: 8px; }
 @media (max-width: 1100px) {
   .cud-grid, .cud-read__cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
@@ -586,13 +599,13 @@ label.cud-tool { cursor: pointer; }
 .cud-pin[hidden] { display: none; }
 /* While the strip is pinned, the rail sits under it rather than behind it. */
 body:has(.cud-pin:not([hidden])) .csi-rail { top: 100px; max-height: calc(100vh - 168px); }
-.cud-pin__inner { max-width: 1440px; margin: 0 auto; padding: 8px 16px; display: flex; align-items: center; gap: 18px; flex-wrap: wrap; font-size: 12px; }
+.cud-pin__inner { max-width: 1440px; margin: 0 auto; padding: 8px 16px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap; font-size: 12px; }
 .cud-pin__who { font-weight: 700; color: var(--ink); }
 .cud-pin__pan { color: var(--muted); }
 .cud-pin__app { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; font-weight: 700; color: var(--ink); }
-.cud-pin__label { font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.cud-pin__label { font-size: 12px; font-weight: 500; line-height: 16px; color: var(--muted); }
 /* One press to put the number in a message to support. */
-.cud-copy { font-family: inherit; display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 0; margin-left: 2px; border: 1px solid var(--border-2); border-radius: 6px; background: #fff; color: var(--muted); cursor: pointer; vertical-align: middle; }
+.cud-copy { font-family: inherit; display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; padding: 0; margin-left: 4px; border: 1px solid var(--border-2); border-radius: 6px; background: #fff; color: var(--muted); cursor: pointer; vertical-align: middle; }
 .cud-copy:hover { border-color: var(--red); color: var(--red); }
 .cud-copy.is-copied { border-color: var(--green-2); color: var(--green); }
 @media (max-width: 700px) {
@@ -606,21 +619,21 @@ body:has(.cud-pin:not([hidden])) .csi-rail { top: 100px; max-height: calc(100vh 
 .cud-ckyc { position: fixed; inset: 0; z-index: 61; display: flex; align-items: center; justify-content: center; padding: 24px; background: rgba(35, 31, 32, .55); }
 .cud-ckyc[hidden] { display: none; }
 .cud-ckyc__sheet { width: min(560px, 100%); max-height: min(86vh, 800px); overflow-y: auto; border-radius: 8px; background: #fff; }
-.cud-ckyc__head { display: flex; align-items: center; gap: 11px; padding: 18px 20px 0; }
+.cud-ckyc__head { display: flex; align-items: center; gap: 12px; padding: 20px 20px 0; }
 .cud-ckyc__mark { display: inline-flex; flex: none; color: var(--blue); }
-.cud-ckyc__title { flex: 1; min-width: 0; font-size: 15.5px; font-weight: 700; color: var(--ink); }
+.cud-ckyc__title { flex: 1; min-width: 0; font-size: 16px; font-weight: 700; line-height: 24px; color: var(--ink); }
 .cud-ckyc__head .cud-preview__close { margin: 0; }
 .cud-ckyc__body { padding: 12px 20px 4px; }
-.cud-ckyc__body p { font-size: 12.5px; line-height: 1.65; color: var(--text); }
+.cud-ckyc__body p { font-size: 14px; line-height: 20px; color: var(--text); }
 .cud-ckyc__body p + p { padding-top: 12px; }
 .cud-ckyc__body strong { color: var(--ink); }
-.cud-ckyc__foot { display: flex; align-items: center; justify-content: flex-end; gap: 20px; padding: 18px 20px 20px; }
+.cud-ckyc__foot { display: flex; align-items: center; justify-content: flex-end; gap: 20px; padding: 20px 20px 20px; }
 .cud-preview { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 24px; background: rgba(35, 31, 32, .55); }
 .cud-preview[hidden] { display: none; }
 .cud-preview__sheet { display: flex; flex-direction: column; width: min(760px, 100%); max-height: min(86vh, 900px); border-radius: 8px; background: #fff; overflow: hidden; }
-.cud-preview__head { display: flex; align-items: flex-start; gap: 16px; padding: 14px 18px; border-bottom: 1px solid var(--divider); }
-.cud-preview__kind { font-size: 10.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
-.cud-preview__title { padding-top: 2px; font-size: 14.5px; font-weight: 600; color: var(--ink); word-break: break-all; }
+.cud-preview__head { display: flex; align-items: flex-start; gap: 16px; padding: 16px 20px; border-bottom: 1px solid var(--divider); }
+.cud-preview__kind { font-size: 12px; font-weight: 500; line-height: 16px; color: var(--muted); }
+.cud-preview__title { padding-top: 4px; font-size: 16px; font-weight: 600; line-height: 24px; color: var(--ink); overflow-wrap: anywhere; }
 .cud-preview__close { margin-left: auto; display: inline-flex; padding: 4px; border: 0; background: none; color: var(--muted); cursor: pointer; }
 .cud-preview__close:hover { color: var(--ink); }
 .cud-preview__body { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; padding: 16px; background: var(--tint); }
@@ -629,13 +642,15 @@ body:has(.cud-pin:not([hidden])) .csi-rail { top: 100px; max-height: calc(100vh 
 /* A document filed before this step has nothing to show. The sheet keeps its
    size - a dialog that changes shape with its contents reads as a mistake - and
    the message sits in the middle of it. */
-.cud-preview__none { padding: 56px 24px; font-size: 12.5px; line-height: 1.6; text-align: center; color: var(--muted); }
-.cud-preview__foot { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding: 12px 18px; border-top: 1px solid var(--divider); }
-.cud-preview__meta { font-size: 11.5px; color: var(--muted); }
+.cud-preview__none { padding: 56px 24px; font-size: 14px; line-height: 20px; text-align: center; color: var(--muted); }
+.cud-preview__foot { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding: 12px 20px; border-top: 1px solid var(--divider); }
+.cud-preview__meta { font-size: 12px; line-height: 16px; color: var(--muted); }
 @media (max-width: 900px) {
   .cii-docs-head .cud-apptype__group, .cud-apptype .cud-apptype__group { width: 100%; gap: 8px; }
-  .cii-docs-head .seg-toggle, .cud-apptype .seg-toggle { width: 100%; }
-  .cii-docs-head .seg-toggle__opt, .cud-apptype .seg-toggle__opt { flex: 1; justify-content: center; padding: 0 10px; }
+  /* Full width, halves each; an option too long for its half wraps onto a second
+     line (the track grows with it) rather than running past the edge. */
+  .cii-docs-head .seg-toggle, .cud-apptype .seg-toggle { width: 100%; height: auto; min-height: 40px; border-radius: 20px; }
+  .cii-docs-head .seg-toggle__opt, .cud-apptype .seg-toggle__opt { flex: 1 1 0; min-width: 0; justify-content: center; padding: 6px 8px; border-radius: 16px; white-space: normal; text-align: center; line-height: 16px; }
   .cii-docs-head .csi-label, .cud-apptype .csi-label { width: 100%; }
 }
 /* NSDL holding a PAN against another name: the printed name asked for in a row of
@@ -656,26 +671,26 @@ body:has(.cud-pin:not([hidden])) .csi-rail { top: 100px; max-height: calc(100vh 
 /* A document column's head: its label, and the type where it is chosen. */
 .cud-col__head { padding-bottom: 4px; }
 .cud-col__head > .csi-label { padding-bottom: 0; }
-/* A narrow column shows the toolbar as its icons alone, the names kept for hover
-   and screen readers. */
+/* A narrow column - a phone's - shows the toolbar as its icons alone, the names
+   kept for hover and screen readers, so the label beside it has room. */
 .cud-grid--docs > .cud-col, .cud-grid--details > .cud-col, .cud-pay__slot { container-type: inline-size; }
-@container (max-width: 300px) {
-  .cud-slot__tools .cud-tool { padding: 5px 6px; }
+@container (max-width: 340px) {
+  .cud-slot__tools .cud-tool { padding: 4px 8px; }
   .cud-slot__tools .cud-tool > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 }
-.cud-retry { display: flex; align-items: center; flex-wrap: wrap; gap: 12px 24px; margin-top: 16px; padding: 14px 18px; border: 1px solid var(--pink-border); border-left: 3px solid var(--red); border-radius: 8px; background: var(--pink-tint); }
+.cud-retry { display: flex; align-items: center; flex-wrap: wrap; gap: 12px 24px; margin-top: 16px; padding: 16px 20px; border: 1px solid var(--pink-border); border-left: 3px solid var(--red); border-radius: 8px; background: var(--pink-tint); }
 .cud-retry__say { display: flex; flex-direction: column; gap: 2px; flex: 1 1 280px; min-width: 0; }
-.cud-retry__title { font-size: 13px; font-weight: 600; color: var(--red-dark); }
+.cud-retry__title { font-size: 14px; font-weight: 600; color: var(--red-dark); }
 .cud-retry__text { font-size: 12px; color: var(--muted); }
-.cud-retry__ask { display: flex; gap: 10px; flex: 1 1 420px; }
+.cud-retry__ask { display: flex; gap: 12px; flex: 1 1 420px; }
 .cud-retry__ask .csi-control { flex: 1; min-width: 0; }
-.cud-retry__ask .csi-btn { flex: none; }
+.cud-retry__ask .btn { flex: none; }
 .cud-retry__error { flex-basis: 100%; margin: 0; }
 /* A joint holder's address panel and manual entry, under their documents. */
 /* A holder's read-only panel: the record, then the address under a divider. The
    panel's own margin is dropped inside a card, where the record's padding spaces it. */
 .cii-record > .inv-panel { margin-bottom: 0; }
-.inv-panel__part { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); }
+.inv-panel__part { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
 .cud-slot__tools .tip::after { left: auto; right: 0; transform: none; }
 /* A copy that is final - a PAN NSDL verified - shows a lock where Replace would be. */
 .cud-tool.cud-tool--final { color: var(--green); border-color: transparent; background: transparent; cursor: help; }
@@ -701,22 +716,33 @@ body:has(.cud-pin:not([hidden])) .csi-rail { top: 100px; max-height: calc(100vh 
 .cud-log__row:target .cud-log__top { background: var(--pink-tint); }
 .cud-log__item > summary { list-style: none; cursor: pointer; }
 .cud-log__item > summary::-webkit-details-marker { display: none; }
-.cud-log__top { position: relative; display: flex; align-items: center; gap: 6px 12px; flex-wrap: wrap; padding: 9px 8px 9px 24px; border-radius: 6px; }
+.cud-log__top { position: relative; display: flex; align-items: center; gap: 6px 12px; flex-wrap: wrap; padding: 8px 8px 8px 24px; border-radius: 6px; }
 .cud-log__top:hover { background: var(--tint); }
 .cud-log__top:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
 .cud-log__dot { position: absolute; left: 1px; top: 50%; width: 11px; height: 11px; margin-top: -5.5px; border-radius: 50%; background: #fff; border: 2px solid var(--border-2); }
 .cud-log__row.is-ok .cud-log__dot { border-color: var(--green-2); background: var(--green-2); }
 .cud-log__row.is-warn .cud-log__dot { border-color: var(--amber-accent); background: var(--amber-accent); }
 .cud-log__row.is-bad .cud-log__dot { border-color: var(--red); background: var(--red); }
-.cud-log__mark { margin-left: 0; padding: 1px 7px; border-radius: 3px; background: var(--tint); font-size: 10px; }
+.cud-log__mark { margin-left: 0; padding: 2px 6px; border-radius: 3px; background: var(--tint); font-size: 12px; }
 .cud-log__row.is-ok .cud-log__mark { background: var(--green-bg); }
 .cud-log__row.is-warn .cud-log__mark { background: var(--amber-bg); }
 .cud-log__row.is-bad .cud-log__mark { background: var(--pink-bg); }
 .cud-log__try { margin-left: auto; }
 .cud-log__top::after { content: ""; flex: none; width: 6px; height: 6px; margin: -3px 2px 0 0; border-right: 1.6px solid var(--muted); border-bottom: 1.6px solid var(--muted); transform: rotate(45deg); transition: transform .15s ease; }
 .cud-log__item[open] > .cud-log__top::after { transform: rotate(-135deg); margin-top: 3px; }
-.cud-log__body { padding: 0 8px 10px 24px; }
+.cud-log__body { padding: 0 8px 12px 24px; }
 .cud-log__body .cud-log__file { padding-top: 0; }
 @media (max-width: 760px) {
   .cud-log__try { margin-left: 0; }
 }
+
+/* The documents an application carries, as its summary lists them (_ApplicationSummary:
+   Review Summary and View Application's details sheet). */
+.rv-checks { list-style: none; margin: 0; padding: 12px 0 0; }
+.rv-check { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-top: 1px solid var(--divider); }
+.rv-check:first-child { border-top: 0; }
+.rv-check__mark { width: 14px; flex: none; text-align: center; font-size: 14px; font-weight: 700; color: var(--green); line-height: 20px; }
+.rv-check__mark--na { color: var(--muted); }
+.rv-check__body { flex: 1; min-width: 0; }
+.rv-check__title { font-size: 14px; font-weight: 500; color: var(--ink); line-height: 20px; }
+.rv-check__detail { font-size: 12px; color: var(--muted); padding-top: 2px; line-height: 16px; }

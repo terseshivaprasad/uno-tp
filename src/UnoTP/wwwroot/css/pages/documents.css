@@ -1,65 +1,66 @@
 /* The documents page only. Loaded after base.css and components/wizard.css. */
 
-.btn-secondary { background: #fff; color: var(--text); border-color: var(--border-3); }
-.btn-secondary:hover { text-decoration: none; background: var(--tint); }
-.btn-sm { padding: 8px 14px; font-size: 12.5px; }
 /* The count of what is still to go opens the whole list, above the bar, so nothing
    has to be scrolled for. */
 .csi-left { position: relative; }
 .csi-left > summary { list-style: none; cursor: pointer; }
 .csi-left > summary::-webkit-details-marker { display: none; }
 .csi-left > summary:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; border-radius: 3px; }
-.csi-left__more { margin-left: 8px; font-size: 11.5px; font-weight: 600; color: var(--red); }
+.csi-left__more { margin-left: 8px; font-size: 14px; font-weight: 600; color: var(--red); }
 .csi-left[open] .csi-left__more { color: var(--muted); }
 .csi-left__list {
   position: absolute; left: 50%; bottom: calc(100% + 14px); transform: translateX(-50%); z-index: 41;
-  margin: 0; padding: 12px 18px 12px 34px; min-width: 260px; max-width: min(420px, calc(100vw - 32px));
+  margin: 0; padding: 12px 16px 12px 32px; min-width: 264px; max-width: min(420px, calc(100vw - 32px));
   text-align: left; background: #fff; border: 1px solid var(--border-2); border-radius: 8px; box-shadow: 0 8px 24px rgba(35, 31, 32, .12);
-  font-size: 12.5px; line-height: 1.7; color: var(--ink);
+  font-size: 14px; line-height: 24px; color: var(--ink);
 }
 .csi-left__list li::marker { color: var(--muted); }
 /* What the draft holds and when it was put there, beside the button that saved
    it. Quiet: it is a receipt, not an instruction. */
-.csi-bar__saved { font-size: 11.5px; color: var(--muted); white-space: nowrap; }
+.csi-bar__saved { font-size: 12px; line-height: 16px; color: var(--muted); white-space: nowrap; }
 .csi-bar__saved[hidden] { display: none; }
 /* ===== Uno TP classic - Upload Documents =====
    Three document slots across the top, the one the payment carries under them,
    and the details the application is sourced under in a card of its own. */
-/* Who the step is for on the left, what it is filed under on the right. */
-.cud-head { display: flex; align-items: flex-start; gap: 20px; flex-wrap: wrap; padding-bottom: 8px; }
+/* Who the step is for on the left, what it is filed under on the right, set off
+   from the step's choices by a rule. One thing leads: the investor's name, the
+   page's title at 20px. The step over it and the labels of the facts under and
+   beside it are 12px captions, so the eye goes name, then facts, then the page. */
+.cud-head { display: flex; align-items: flex-start; gap: 24px; flex-wrap: wrap; padding-bottom: 20px; border-bottom: 1px solid var(--divider); }
 .cud-head__who { min-width: 0; }
-.cud-head__step { font-size: 10.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
-.cud-head__name { padding-top: 3px; font-size: 16px; font-weight: 600; line-height: 1.25; color: var(--ink); }
-/* The two identifiers read as a pair of facts, each under its own label and set
+.cud-head__step { margin: 0; font-size: 12px; font-weight: 500; line-height: 16px; color: var(--muted); }
+.cud-head__name { margin: 0; padding-top: 4px; font-size: 20px; font-weight: 600; line-height: 28px; letter-spacing: -.01em; color: var(--ink); }
+/* The two identifiers read as a pair of facts, each after its own label and set
    apart by the space between them rather than by a middot inside one line. */
-.cud-head__ids { display: flex; flex-wrap: wrap; gap: 3px 24px; padding-top: 7px; font-size: 12.5px; font-weight: 600; color: var(--ink); }
-.cud-head__ids em { font-style: normal; padding-right: 7px; font-size: 10.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
-.cud-head__right { margin-left: auto; display: flex; align-items: flex-start; gap: 22px; flex-wrap: wrap; }
-.cud-head__refs { display: flex; gap: 22px; margin: 0; }
-.cud-head__refs dt { font-size: 10.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
-.cud-head__refs dd { margin: 0; padding-top: 3px; font-size: 12.5px; font-weight: 600; color: var(--ink); }
+.cud-head__ids { display: flex; flex-wrap: wrap; gap: 4px 24px; margin: 0; padding-top: 8px; font-size: 14px; font-weight: 500; line-height: 20px; color: var(--text); font-variant-numeric: tabular-nums; }
+.cud-head__ids em { font-style: normal; padding-right: 8px; font-size: 12px; font-weight: 400; color: var(--muted); }
+.cud-head__right { margin-left: auto; display: flex; align-items: flex-start; gap: 24px; flex-wrap: wrap; }
+.cud-head__refs { display: flex; gap: 32px; margin: 0; }
+.cud-head__refs dt { font-size: 12px; font-weight: 400; line-height: 16px; color: var(--muted); }
+.cud-head__refs dd { margin: 0; padding-top: 4px; font-size: 14px; font-weight: 600; line-height: 20px; color: var(--ink); font-variant-numeric: tabular-nums; }
 .cud-head__pending { font-weight: 400; font-style: italic; color: var(--muted); }
-.cud-head .csi-link { padding-top: 14px; }
-.cud-resolved { padding-top: 6px; font-size: 11.5px; color: var(--muted); }
+.cud-head .csi-link { padding-top: 16px; }
+.cud-resolved { padding-top: 4px; font-size: 12px; line-height: 16px; color: var(--muted); }
 .cud-resolved strong { font-weight: 600; color: var(--ink); }
 .cud-resolved__none { font-weight: 400; font-style: italic; color: var(--muted); }
 /* Something worth knowing about a field, in the informational blue the rest of
    the wizard uses - never the red of something that stops the application. */
-.cud-note { display: flex; gap: 7px; margin-top: 7px; padding: 8px 10px; border-left: 3px solid var(--blue); border-radius: 6px; background: var(--blue-bg); font-size: 11.5px; line-height: 1.5; color: var(--blue); }
+/* A note under a field is a hint beside it, so it is the compact alert: 12px. */
+.cud-note { display: flex; gap: 8px; margin-top: 8px; margin-bottom: 0; padding: 8px 12px; font-size: 12px; line-height: 16px; }
 .cud-note[hidden] { display: none; }
 .cud-note svg { flex: none; margin-top: 2px; }
 /* How the application arrived, on a row of its own above the documents: the
    label and the design's segmented toggle side by side, on the same rhythm as
    the mailing question below it. */
-.cud-apptype { display: flex; align-items: center; gap: 14px 36px; flex-wrap: wrap; padding: 18px 0 2px; }
-.cud-apptype__note { font-size: 12px; color: var(--muted); }
+.cud-apptype { display: flex; align-items: center; gap: 16px 40px; flex-wrap: wrap; padding: 20px 0 0; }
+.cud-apptype__note { font-size: 12px; line-height: 16px; color: var(--muted); }
 .cud-apptype .csi-label { padding: 0; }
-.cud-read__card { border: 1px solid var(--border-2); border-radius: 8px; padding: 18px 20px; background: #fff; }
+.cud-read__card { border: 1px solid var(--border-2); border-radius: 8px; padding: 16px 20px; background: #fff; }
 .cud-read__card[hidden] { display: none; }
 .cud-read__head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
-.cud-read__kind { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: var(--ink); }
+.cud-read__kind { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; line-height: 16px; color: var(--ink); }
 /* What the check is doing, in the colour of where it got to. */
-.cud-read__state { flex: none; font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.cud-read__state { flex: none; font-size: 12px; font-weight: 600; line-height: 16px; color: var(--muted); }
 .cud-read__card.is-working { border-color: var(--blue-border); }
 .cud-read__card.is-working .cud-read__state { color: var(--blue); }
 .cud-read__card.is-done { border-color: var(--green-border); }
@@ -72,11 +73,13 @@
 /* An address the folio holds: shown in full, but nothing here confirmed it. */
 .cud-read__card.is-unverified { border-color: var(--amber-border); }
 .cud-read__card.is-unverified .cud-read__state { color: var(--amber); }
-.cud-read__lines { padding-top: 10px; font-size: 13px; font-weight: 600; line-height: 1.45; color: var(--ink); }
-.cud-read__from { padding-top: 8px; font-size: 11.5px; line-height: 1.5; color: var(--muted); }
-.cud-log__none { padding-top: 14px; font-size: 12px; color: var(--muted); }
+.cud-read__lines { padding-top: 8px; font-size: 14px; font-weight: 600; line-height: 20px; color: var(--ink); overflow-wrap: anywhere; }
+.cud-read__from { padding-top: 8px; font-size: 12px; line-height: 16px; color: var(--muted); }
+.cud-log__none { padding-top: 16px; font-size: 12px; line-height: 16px; color: var(--muted); }
 .cud-log__none[hidden] { display: none; }
-.cud-grid--details { gap: 18px 24px; }
+/* A row of fields - label, box, hint - stands 24px from the next: three times the
+   8px between a label and its box, so each field reads as one group. */
+.cud-grid--details { gap: 24px; }
 @media (max-width: 700px) {
   .cud-head__right { margin-left: 0; width: 100%; }
 }
@@ -85,12 +88,12 @@
    On the page rather than behind the button, because what it says decides
    whether the pickers below are worth filling at all. Informational blue while
    it is an offer; green once the application is on that route. */
-.cud-route { display: flex; align-items: flex-start; gap: 24px; flex-wrap: wrap; margin-top: 18px; padding: 16px 18px; border: 1px solid var(--blue-border); border-left: 3px solid var(--blue); border-radius: 8px; background: var(--blue-bg); }
-.cud-route__text { flex: 1; min-width: 260px; }
-.cud-route__title { font-size: 13px; font-weight: 700; color: var(--blue); }
-.cud-route__p { padding-top: 6px; font-size: 12px; line-height: 1.6; color: var(--text); }
+.cud-route { display: flex; align-items: flex-start; gap: 24px; flex-wrap: wrap; margin-top: 16px; padding: 16px; border: 1px solid var(--blue-border); border-left: 3px solid var(--blue); border-radius: 8px; background: var(--blue-bg); }
+.cud-route__text { flex: 1; min-width: 264px; }
+.cud-route__title { margin: 0; font-size: 14px; font-weight: 700; line-height: 20px; color: var(--blue); }
+.cud-route__p { margin: 0; padding-top: 4px; font-size: 14px; line-height: 20px; color: var(--text); }
 .cud-route__p strong { color: var(--ink); }
-.cud-route__act { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; text-align: right; }
+.cud-route__act { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; text-align: right; }
 .cud-route.is-on { border-color: var(--green-border); border-left-color: var(--green); background: var(--green-bg); }
 .cud-route.is-on .cud-route__title { color: var(--green); }
 /* Not a route this application can take: a physical one is signed and filed by
@@ -98,34 +101,34 @@
    which follows the application type as it is chosen. */
 .cud-route:has(.cud-ckyc-btn:disabled) { border-color: var(--border-2); border-left-color: var(--border-2); background: var(--tint); }
 .cud-route:has(.cud-ckyc-btn:disabled) .cud-route__title { color: var(--muted); }
-.cud-route:has(.cud-ckyc-btn:disabled) .cud-route__p { color: var(--muted-2); }
-.cud-route:has(.cud-ckyc-btn:disabled) .cud-route__p strong { color: var(--muted); }
+.cud-route:has(.cud-ckyc-btn:disabled) .cud-route__p { color: var(--muted); }
+.cud-route:has(.cud-ckyc-btn:disabled) .cud-route__p strong { color: var(--text); }
 .cud-ckyc-btn { font-family: inherit; white-space: nowrap; }
-.cud-ckyc-ask__note { max-width: 220px; font-size: 10.5px; line-height: 1.45; color: var(--muted); }
+.cud-ckyc-ask__note { max-width: 224px; font-size: 12px; line-height: 16px; color: var(--muted); }
 .cud-ckyc-ask__note[hidden] { display: none; }
 /* Once it has been asked for, the head says so in place of the link. */
-.cud-ckyc-on { font-size: 12.5px; font-weight: 600; color: var(--green); white-space: nowrap; }
+.cud-ckyc-on { font-size: 14px; font-weight: 600; line-height: 20px; color: var(--green); white-space: nowrap; }
 .cud-ckyc-on[hidden] { display: none; }
-/* Every read card is the size of a document box, whatever it says: what it read
-   and where that came from are held to two lines each. NSDL asking for the name
-   printed on the PAN does so in a row under the cards (.cud-retry), not in its card.
-   The card itself does not clip, so an info mark's words can spill over its edge. */
-.cud-read__card { height: var(--doc-card-h); display: flex; flex-direction: column; }
+/* Every read card starts at the size of a document box, and grows rather than
+   cutting off what it read. NSDL asking for the name printed on the PAN does so
+   in a row under the cards (.cud-retry), not in its card. The card itself does not
+   clip, so an info mark's words can spill over its edge. */
+.cud-read__card { min-height: var(--doc-card-h); display: flex; flex-direction: column; }
 .cud-read__card .cud-read__head { flex: none; }
-/* Every box on the step is one height: the cards keep the document boxes' own. */
-.cud-read__card .cud-read__lines, .cud-read__card .cud-read__from {  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; padding-top: 7px;}
+.cud-read__card .cud-read__lines, .cud-read__card .cud-read__from { padding-top: 8px; }
 .cud-read__card .cud-read__was { display: none; }
 @media (max-width: 700px) {
   .cud-grid > .cud-retry-row--pan-second { grid-row: 3; }
 }
 /* The payment row: the mode above its box, and what the cheque read beside the
    box, level with it and the same size. */
-.cud-pay__grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 24px; }
+.cud-pay__grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 24px; }
 .cud-pay__mode { grid-column: 1; grid-row: 1; }
 .cud-pay__slot { grid-column: 1; grid-row: 2; }
 .cud-pay__slot .cud-slot { padding-top: 0; }
-/* The read card beside the box drops by the toolbar's line, level with the box. */
-.cud-pay__card { grid-column: 2; grid-row: 2; padding-top: 33px; }
+/* The read card beside the box drops by the toolbar's line (.cud-slot__bar: 28px
+   and 8px under it), level with the box. */
+.cud-pay__card { grid-column: 2; grid-row: 2; padding-top: 36px; }
 .cud-pay__card[aria-disabled="true"] { opacity: .55; filter: grayscale(1); }
 @media (max-width: 760px) {
   .cud-pay__grid { grid-template-columns: minmax(0, 1fr); }
@@ -133,8 +136,8 @@
 }
 .cud-read__card .tip::after { top: calc(100% + 6px); bottom: auto; left: 50%; transform: translateX(-50%); max-width: 240px; }
 /* Detail kept a click away: "How it works" under a short line. */
-.cud-more { margin-top: 6px; font-size: 12px; color: var(--text); }
-.cud-more > summary { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; font-weight: 600; color: var(--blue); list-style: none; }
+.cud-more { margin-top: 8px; font-size: 14px; line-height: 20px; color: var(--text); }
+.cud-more > summary { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; font-weight: 600; color: var(--blue); list-style: none; }
 .cud-more > summary::-webkit-details-marker { display: none; }
 .cud-more > summary::after { content: ""; width: 6px; height: 6px; margin-top: -3px; border-right: 1.6px solid currentColor; border-bottom: 1.6px solid currentColor; transform: rotate(45deg); transition: transform .15s ease; }
 .cud-more[open] > summary::after { transform: rotate(-135deg); margin-top: 3px; }

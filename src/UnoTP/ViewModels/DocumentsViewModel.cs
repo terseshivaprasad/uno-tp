@@ -59,6 +59,18 @@ public class DocumentsViewModel(
     // application, and the head of the page says so rather than leaving a blank.
     public bool HasFolio => Who.Folio.Length > 0;
 
+    /// <summary>
+    /// Whether the investor's KYC can be fetched from CKYC now: only for an investor
+    /// with no folio, on the PAN and date of birth they were identified with - so
+    /// before any PAN copy is uploaded too. Once a copy is uploaded it has to hold:
+    /// while NSDL has not verified it (not asked yet, the name not agreeing, no such
+    /// PAN), the record is not fetched on it. A PAN established before the
+    /// application was opened needs no copy.
+    /// </summary>
+    public bool CkycPanVerified => !HasFolio && (PanFiled || View(PanSlot).Doc is null || NsdlOf(Investor) == "verified");
+
+    public const string CkycWaitsOnPan = "Available once NSDL verifies the uploaded PAN copy.";
+
     /// <summary>The deposit this application renews, when it was opened from Renew FD; null for a new deposit.</summary>
     public RenewalOf? Renewal => App.Renewal;
 
@@ -1099,7 +1111,7 @@ public class DocumentsViewModel(
     {
         Keep();
         var s = State;
-        if (!HasFolio && !s.Ckyc && s.AppType != Physical)
+        if (CkycPanVerified && !s.Ckyc && s.AppType != Physical)
         {
             s.Ckyc = true;
             s.PoaType = "";

@@ -10,15 +10,13 @@
     var reference = await Lookups.ReferenceAsync();
     var groups = reference.RequiredDocuments;
 }
-<div class="modal-dialog rdocs" id="requiredDocsModal" popover role="dialog" aria-modal="true" aria-labelledby="requiredDocsTitle">
-    <header class="rdocs__head">
+<div class="app-dialog rdocs" id="requiredDocsModal" popover role="dialog" aria-modal="true" aria-labelledby="requiredDocsTitle">
+    <header class="app-dialog__head">
         <div>
-            <h2 class="rdocs__title" id="requiredDocsTitle">Required documents to book an FD</h2>
-            <p class="rdocs__sub">Choose the investor type to see what to collect.</p>
+            <h2 class="app-dialog__title" id="requiredDocsTitle">Required documents to book an FD</h2>
+            <p class="app-dialog__sub">Choose the investor type to see what to collect.</p>
         </div>
-        <button type="button" class="rdocs__close btn-reset" popovertarget="requiredDocsModal" popovertargetaction="hide" aria-label="Close">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19"></path></svg>
-        </button>
+        <button type="button" class="btn-close app-dialog__close" popovertarget="requiredDocsModal" popovertargetaction="hide" aria-label="Close"></button>
     </header>
 
     <div class="rdocs__body">
@@ -58,7 +56,7 @@
 
     @if (reference.DashboardNotes.Count > 0)
     {
-        <footer class="rdocs__foot">
+        <footer class="app-dialog__foot">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 11v6"></path><circle cx="12" cy="7.5" r=".6" fill="currentColor"></circle></svg>
             <span>@reference.DashboardNotes[0]</span>
         </footer>

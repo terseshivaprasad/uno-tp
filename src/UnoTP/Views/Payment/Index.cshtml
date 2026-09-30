@@ -148,7 +148,7 @@
 
         @if (banner is not null)
         {
-            <div class="cud-banner" role="status">
+            <div class="alert alert-success cud-banner" role="status">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 7v6"></path><circle cx="12" cy="16.8" r=".8" fill="currentColor"></circle></svg>
                 <span>@banner</span>
             </div>
@@ -277,7 +277,7 @@
 
 <footer class="csi-bar">
     <div class="csi-bar__inner">
-        <a class="csi-btn csi-btn--back" asp-controller="Investor" asp-action="Index" data-loader="Going back to Investor Information">Back</a>
+        <a class="btn btn-outline-primary" asp-controller="Investor" asp-action="Index" data-loader="Going back to Investor Information">Back</a>
         <p class="csi-bar__hint">
             @if (problems > 0)
             {
@@ -289,8 +289,8 @@
             }
         </p>
         <div class="csi-bar__right">
-            <button type="submit" form="bankDetailsForm" class="csi-btn csi-btn--back" name="draft" value="1" formnovalidate data-toast="Draft saved">Save draft</button>
-            <button type="submit" form="bankDetailsForm" class="csi-btn csi-btn--primary" id="bank-proceed" data-validate="form" data-loader="Saving the accounts&hellip;">Proceed</button>
+            <button type="submit" form="bankDetailsForm" class="btn btn-outline-primary" name="draft" value="1" formnovalidate data-toast="Draft saved">Save draft</button>
+            <button type="submit" form="bankDetailsForm" class="btn btn-primary" id="bank-proceed" data-validate="form" data-loader="Saving the accounts&hellip;">Proceed</button>
         </div>
     </div>
 </footer>
