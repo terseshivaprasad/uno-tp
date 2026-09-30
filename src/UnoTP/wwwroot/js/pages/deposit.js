@@ -34,6 +34,12 @@
         showAmountMessage(sayProblem);
         showWhatTheCardOffers();
         showWhetherSourceOfFundsIsAsked();
+        // The choice made is no longer offered at this amount: it moves to the first
+        // that is, and the quote is asked again for it - once, since that one is open.
+        if (moveOffAShutChoice()) {
+          showRenewSameTenure();
+          refreshQuote(sayProblem);
+        }
       })
       .catch(function () {
         // No quote this time - the connection dropped: the panel says so, and the
@@ -99,6 +105,21 @@
     }
   }
 
+  // A tenure or payout chosen that the card has shut at this amount moves to the
+  // first one still open, so the card and the choice never disagree. True when one moved.
+  function moveOffAShutChoice() {
+    var moved = false;
+    ['TenureMonths', 'InterestPayout'].forEach(function (name) {
+      var chosen = form.querySelector('input[name="' + name + '"]:checked');
+      if (!chosen || !chosen.disabled) return;
+      var open = form.querySelector('input[name="' + name + '"]:not(:disabled)');
+      if (!open) return;
+      open.checked = true;
+      moved = true;
+    });
+    return moved;
+  }
+
   // The answer says whether the source of funds is asked at this amount (the
   // investor's deposits with us pass ₹1 crore, and who they are): the section is
   // shown or hidden to match, with the reason under the field.
@@ -147,4 +168,10 @@
     timer = setTimeout(function () { refreshQuote(false); }, 600);
   });
 
+
+  // The page opens on what was saved: a saved choice the card shuts at that amount moves too.
+  if (moveOffAShutChoice()) {
+    showRenewSameTenure();
+    refreshQuote(false);
+  }
 })();
