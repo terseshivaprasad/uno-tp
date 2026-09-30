@@ -594,7 +594,7 @@ public class JourneyTests(App app)
         // which Proceed stopped at, stays open.
         await App.PostAsync(client, App.Step(at, "investor"), App.Step(at, "investor"),
             ("Holder2.NameType", "Father"), ("Holder2.ParentName", "SUBHASH TERSE"), ("Holder2.AnnualIncome", "5-10 lakh"),
-            ("Holder2.Occupation", "Service"), ("Holder2.SubOccupation", "Private"), ("Holder2.MaritalStatus", "Married"),
+            ("Holder2.Occupation", "Salaried"), ("Holder2.SubOccupation", "Private sector"), ("Holder2.MaritalStatus", "Married"),
             ("Holder2.Mobile", "9876543210"), ("Holder2.Email", "rahul@example.com"));
         var page = await client.GetStringAsync(App.Step(at, "investor"));
         Assert.Matches("<details class=\"investor-folded-holder\">", page);

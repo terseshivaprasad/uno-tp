@@ -78,9 +78,9 @@
     }
 
     // The sub occupation, which goes with the occupation: every sub occupation is drawn
-    // with the occupations it is for (data-occupations, a | between), and investor.js
-    // offers only those for the occupation chosen. Where the occupation offers none,
-    // the field says so and asks for nothing.
+    // with the occupations that list it (data-occupations, a | between; none means all),
+    // and investor.js offers only those for the occupation chosen. Where the occupation
+    // offers none, the field says so and asks for nothing.
     private async Task SubOccupationSelect(string id, string name, string occupationId, string occupation)
     {
         var reference = Model.Docs.Ref;
@@ -92,10 +92,11 @@
             <div class="doc-select">
                 <select class="field-input @Invalid(name)" id="@id" name="@name" data-sub-occupation-of="@occupationId" aria-invalid="@AriaInvalid(name)" aria-describedby="@DescribedBy(name, id)" data-required="Select the sub occupation">
                     <option value="" selected="@(selected.Length == 0)">@(asksNothing ? "Not applicable" : "Select")</option>
-                    @foreach (var rule in reference.SubOccupationRules ?? [])
+                    @foreach (var sub in reference.SubOccupations)
                     {
-                        var applies = occupation.Length == 0 || offered.Contains(rule.Name);
-                        <option value="@rule.Name" selected="@(rule.Name == selected)" data-occupations="@string.Join("|", rule.Occupations)" hidden="@(!applies)" disabled="@(!applies)">@rule.Name</option>
+                        var listedBy = (reference.OccupationsWithSubs ?? []).Where(o => o.SubOccupations.Contains(sub)).Select(o => o.Name).ToList();
+                        var applies = occupation.Length == 0 || offered.Contains(sub);
+                        <option value="@sub" selected="@(sub == selected)" data-occupations="@string.Join("|", listedBy)" hidden="@(!applies)" disabled="@(!applies)">@sub</option>
                     }
                 </select>
             </div>

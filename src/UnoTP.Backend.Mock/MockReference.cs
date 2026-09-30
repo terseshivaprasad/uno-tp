@@ -215,14 +215,15 @@ public sealed class MockReference : IReferenceApi
             new("loan", "Loan"),
             new("other", "Other"),
         ],
-        // Which sub occupations go with which occupation; none listed means any.
-        SubOccupationRules:
+        // Each occupation's own sub occupations (a first cut, to be set from the business's list).
+        OccupationsWithSubs:
         [
-            new("MMFSL Employee", ["Salaried"]),
-            new("Private sector", ["Salaried"]),
-            new("Public sector", ["Salaried"]),
-            new("Government service", ["Salaried"]),
-            new("Professional", ["Self-employed", "Business"]),
+            new("Salaried", ["MMFSL Employee", "Private sector", "Public sector", "Government service"]),
+            new("Self-employed", ["Professional"]),
+            new("Business", ["Professional"]),
+            new("Retired", []),
+            new("Homemaker", []),
+            new("Student", []),
         ]);
 
     private static readonly AppConfig Config = new(

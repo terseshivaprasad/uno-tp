@@ -82,23 +82,24 @@ public sealed record ReferenceData(
     IReadOnlyList<string> RenewalNotes,
     IReadOnlyList<FeatureOption>? Features = null,
     IReadOnlyList<Option>? SourcesOfFunds = null,
-    IReadOnlyList<SubOccupationOption>? SubOccupationRules = null)
+    IReadOnlyList<OccupationOption>? OccupationsWithSubs = null)
 {
-    /// <summary>The sub occupations offered for an occupation: those listed for it, and those listed for none in particular.</summary>
+    /// <summary>
+    /// The sub occupations an occupation offers: its own list. An occupation with no
+    /// list of its own offers every sub occupation; one with an empty list offers none
+    /// and asks for no sub occupation.
+    /// </summary>
     public IReadOnlyList<string> SubOccupationsFor(string occupation)
     {
-        if (SubOccupationRules is null) return SubOccupations;
-        var offered = new List<string>();
-        foreach (var rule in SubOccupationRules)
-        {
-            if (rule.Occupations.Count == 0 || rule.Occupations.Contains(occupation)) offered.Add(rule.Name);
-        }
-        return offered;
+        if (OccupationsWithSubs is null) return SubOccupations;
+        var found = OccupationsWithSubs.FirstOrDefault(o => o.Name == occupation);
+        if (found is null) return SubOccupations;
+        return found.SubOccupations;
     }
 }
 
-/// <summary>A sub occupation and the occupations it goes with; none listed means every occupation.</summary>
-public sealed record SubOccupationOption(string Name, IReadOnlyList<string> Occupations);
+/// <summary>An occupation and the sub occupations that go with it.</summary>
+public sealed record OccupationOption(string Name, IReadOnlyList<string> SubOccupations);
 
 /// <summary>
 /// A console feature: a dashboard tile, the menu key that opens it, and what it is
