@@ -162,8 +162,33 @@ public class JourneyTests(App app)
         var page = await App.UploadAsync(client, App.Step(at, "documents"), "poa", "aadhaar.jpg", ("appType", "DIGITAL"));
         // The history is drawn below the boxes; the box itself holds the filed copy.
         Assert.Contains("Identified as a proof of address: Aadhaar.", page);
-        Assert.Contains("Aadhaar number masked before the copy is kept.", page);
+        Assert.Contains("Aadhaar number masked before the copy is filed.", page);
         Assert.Contains(">Replace<", Regex.Match(page, "id=\"slot-poa\".*?doc-slot__notes", RegexOptions.Singleline).Value);
+    }
+
+    [Fact]
+    public async Task Proceed_waits_on_the_PAN_Aadhaar_link_and_the_PAN_POA_name_match()
+    {
+        var client = await app.SignedInAsync();
+        var at = await App.NewApplicationAsync(client, NewInvestor);
+        var documents = App.Step(at, "documents");
+        await App.UploadAsync(client, documents, "pan", "pan.jpg", ("appType", "DIGITAL"));
+
+        // An Aadhaar whose number OCR could not read whole: the link waits on the number, and so does Proceed.
+        await App.UploadAsync(client, documents, "poa", "aadhaar_masked.jpg", ("appType", "DIGITAL"));
+        var stopped = await App.PostAsync(client, documents, documents + "/proceed", ("appType", "DIGITAL"));
+        Assert.StartsWith("/UploadInvestorDocuments/", stopped.RequestMessage!.RequestUri!.AbsolutePath);
+        var page = await stopped.Content.ReadAsStringAsync();
+        Assert.Contains("Type the Aadhaar number in the row under the proofs of address, so the PAN-Aadhaar link can be asked.", page);
+
+        // An Aadhaar read whole: linked, name and date of birth matched, so neither check stops Proceed.
+        await App.UploadAsync(client, documents, "poa", "aadhaar.jpg", ("appType", "DIGITAL"));
+        var again = await App.PostAsync(client, documents, documents + "/proceed", ("appType", "DIGITAL"));
+        var after = await again.Content.ReadAsStringAsync();
+        Assert.DoesNotContain("PAN-Aadhaar link can be asked", after);
+        Assert.DoesNotContain("PAN-Aadhaar link must be confirmed", after);
+        Assert.DoesNotContain("must match the PAN's before proceeding", after);
+        Assert.Contains("Linked with Aadhaar", after);
     }
 
     [Fact]

@@ -22,6 +22,10 @@
             {
                 <p class="doc-check__from">@card.From</p>
             }
+            @if (item.Error is not null)
+            {
+                <p class="field-error" role="alert">@item.Error</p>
+            }
         </li>
     }
 </ul>

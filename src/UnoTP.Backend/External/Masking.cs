@@ -1,9 +1,11 @@
 namespace UnoTP.Backend.External;
 
 /// <summary>
-/// Aadhaar masking: the copy with its Aadhaar number masked. An Aadhaar is masked
-/// the moment Upload Documents identifies it, before OCR reads it and before any
-/// copy of it is kept or filed, so no copy with the whole number is ever stored.
+/// Aadhaar masking: the copy with its Aadhaar number masked. Upload Documents
+/// masks an Aadhaar after OCR has read it and the name has been matched, and
+/// before any copy of it is filed or kept aside, so no copy with the whole number
+/// is ever stored. The PAN-Aadhaar link is asked afterwards, with the number OCR
+/// read off the copy before it was masked.
 /// </summary>
 public interface IMaskingService
 {

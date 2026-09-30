@@ -816,10 +816,11 @@ public class DocumentsViewModel(
         if (AadhaarFiled(h) || LinkApplies(h) && PanOnApplication(h))
             cards.Add(new ReadItem("PAN–Aadhaar link", LinkApplies(h) ? State.Reads[h.Key("pan")]
                 : NotRead("Not applicable", $"{MaskPan(h.Who.Pan)} · on the folio",
-                    "The PAN–Aadhaar link is asked only for a holder with no folio yet."), h.Key("link")));
+                    "The PAN–Aadhaar link is asked only for a holder with no folio yet."), h.Key("link"),
+                Error: Shown?.Errors.GetValueOrDefault(h.Key("link"))));
         if (View(PoaSlot, h).Used)
         {
-            cards.Add(new ReadItem("PAN–POA name & DOB", DetailsOf(h), h.Key("details")));
+            cards.Add(new ReadItem("PAN–POA name & DOB", DetailsOf(h), h.Key("details"), Error: Shown?.Errors.GetValueOrDefault(h.Key("details"))));
             cards.Add(new ReadItem("PAN–POA face match", FaceOf(h), h.Key("face")));
         }
         return cards;
@@ -1314,6 +1315,18 @@ public class DocumentsViewModel(
             flash.Errors["nsdl"] = NsdlNeed(Investor);
             flash.Focus ??= "read-nsdl";
         }
+        // ...and, with an Aadhaar filed, once the PAN-Aadhaar link is confirmed...
+        if (LinkApplies(Investor) && AadhaarFiled(Investor) && LinkNeed(Investor) is { } linkNeed)
+        {
+            flash.Errors[Investor.Key("link")] = linkNeed;
+            flash.Focus ??= "read-" + Investor.Key("link");
+        }
+        // ...and once the name and date of birth on the proof of address match the PAN's.
+        if (State.Docs.ContainsKey(Investor.Key("poa")) && DetailsNeed(Investor) is { } detailsNeed)
+        {
+            flash.Errors[Investor.Key("details")] = detailsNeed;
+            flash.Focus ??= "read-" + Investor.Key("details");
+        }
 
         if (flash.Errors.Count == 0)
         {
@@ -1325,6 +1338,30 @@ public class DocumentsViewModel(
 
     /// <summary>The messages this post will show on the page it returns to (made on first use).</summary>
     private Flash FlashMessages() => Said ??= new Flash();
+
+    // What stops Proceed on the PAN-Aadhaar link, by where the link card stands; null once it is linked.
+    private string? LinkNeed(DocHolder h)
+    {
+        var card = State.Reads.GetValueOrDefault(h.Key("pan"));
+        if (card is null) return "The PAN-Aadhaar link must be confirmed before proceeding.";
+        return card.State switch
+        {
+            "Linked with Aadhaar" => null,
+            "Not linked" => "The PAN is not linked with Aadhaar. The investor links it with the Income Tax department; the application cannot proceed until it is.",
+            "Aadhaar number needed" => "Type the Aadhaar number in the row under the proofs of address, so the PAN-Aadhaar link can be asked.",
+            "Link not checked" => "The PAN-Aadhaar link could not be checked. Upload the Aadhaar again, or type its number, to ask again.",
+            _ => "The PAN-Aadhaar link must be confirmed before proceeding.",
+        };
+    }
+
+    // What stops Proceed on the PAN-POA name and date of birth; null once they match.
+    private string? DetailsNeed(DocHolder h)
+    {
+        var card = State.Reads.GetValueOrDefault(h.Key("details"));
+        if (card is null) return "The name on the proof of address must be matched with the PAN's before proceeding.";
+        if (card.Kind == "is-done") return null;
+        return "The name and date of birth on the proof of address must match the PAN's before proceeding. Upload a clearer copy of the holder's own proof.";
+    }
 
     /// <summary>
     /// What Proceed on Investor Information asks of each joint holder, the same way
@@ -1688,6 +1725,8 @@ public class DocumentsViewModel(
         async Task RefuseAsync(string why, string whatNext, params (string Text, string Kind)[] stages)
         {
             var attempts = s.Attempts[key] = s.AttemptsOf(key) + 1;
+            // An Aadhaar is kept aside masked, as it is filed masked.
+            if (proof && type == "Aadhaar") copy = await masking.MaskAsync(copy, AadhaarConsent);
             var kept = await documents.KeepRefusedAsync(AppNo, FiledUnder(def, h), def.Key, copy);
             // Telling a partner to upload it again when there is nothing left to
             // upload with is worse than saying nothing.
@@ -1715,15 +1754,6 @@ public class DocumentsViewModel(
             return;
         }
         entry.Add($"Identified as {(proof ? "a proof of address: " + type : rule.What)}.", "ok");
-
-        // 1a. An Aadhaar is masked the moment it is known to be one, before anything is
-        // kept of it: OCR reads the masked copy, and it is the masked copy that is
-        // filed, or kept aside if it is refused. No copy with the whole number is stored.
-        if (proof && type == "Aadhaar")
-        {
-            copy = await masking.MaskAsync(copy, AadhaarConsent);
-            entry.Add("Aadhaar number masked before the copy is kept.", "ok");
-        }
 
         // 2. OCR. An Aadhaar is taken only when the name and date of birth it reads
         // are the PAN's; masked or not, its number need not be read (see ReadAddressAsync).
@@ -1771,15 +1801,45 @@ public class DocumentsViewModel(
             "poa" or "mail" => await ReadAddressAsync(def, h, reading, entry),
             _ => await ReadInstrumentAsync(reading, entry),
         };
+
+        // 4. An Aadhaar is masked before it is filed - after OCR has read the whole
+        // number off it and the name and date of birth have been matched - so no copy
+        // with the whole number is ever stored.
+        if (proof && type == "Aadhaar")
+        {
+            copy = await masking.MaskAsync(copy, AadhaarConsent);
+            entry.Add("Aadhaar number masked before the copy is filed.", "ok");
+        }
         await FileAsync(def, h, copy);
         s.Docs[key] = filed(copy, check, kind);
         // Taken, so whatever was refused before it is behind the partner.
         s.Attempts[key] = 0;
 
+        // 5. The PAN-Aadhaar link, with the number read before masking.
+        if (proof && type == "Aadhaar") await LinkAfterFilingAsync(h, reading, entry);
+
         if (def.Key == "poa") Details(h, reading, type, entry);
 
         // Both copies filed: the faces on them are compared - again, when either is replaced.
         if (def.Key is "poa" or "pan") await FaceAsync(h, entry);
+    }
+
+    // 5. After an Aadhaar is filed: it carries the number the PAN-Aadhaar link is
+    // asked with, so a PAN already on the application can be asked about now. The
+    // number is the one OCR read off the copy before it was masked, and is kept in
+    // the session alone. Where OCR could not read the whole number - masked already,
+    // or not clear enough - it is typed instead.
+    private async Task LinkAfterFilingAsync(DocHolder h, OcrReading reading, LogEntry entry)
+    {
+        if (!LinkApplies(h)) return;
+        if (AadhaarNumbers.IsWhole(reading.IdNumber))
+        {
+            await AskLinkWithAsync(h, reading.IdNumber, entry);
+            return;
+        }
+        session.Remove(AadhaarKey(h));
+        LinkWaitsOnNumber(h);
+        entry.Add("OCR read no whole 12-digit Aadhaar number off it; the number is typed for the PAN-Aadhaar link.", "warn");
     }
 
     // A slot holds one copy in DMS: a copy filed before is deleted, then the new
@@ -1829,20 +1889,6 @@ public class DocumentsViewModel(
         }
         if (answer.Confirmed && answer.Standing.Length > 0 && !answer.Standing.Equals("Active", StringComparison.OrdinalIgnoreCase))
             entry.Add($"{Capitalize(issuer)} holds it as {answer.Standing}.", "warn");
-
-        // An Aadhaar carries the number the PAN-Aadhaar link is asked with, so a PAN
-        // already on the application can be asked about now. Where OCR could not
-        // read the whole number - masked, or not clear enough - it is typed instead.
-        if (type == "Aadhaar" && LinkApplies(h))
-        {
-            if (AadhaarNumbers.IsWhole(reading.IdNumber)) await AskLinkWithAsync(h, reading.IdNumber, entry);
-            else
-            {
-                session.Remove(AadhaarKey(h));
-                LinkWaitsOnNumber(h);
-                entry.Add("OCR read no whole 12-digit Aadhaar number off it; the number is typed for the PAN-Aadhaar link.", "warn");
-            }
-        }
 
         if (answer.NotAsked is { } why)
         {
@@ -2149,7 +2195,7 @@ public class DocumentsViewModel(
             case PanAadhaarLink.NotLinked:
                 card.Lines = pan + " · not linked with Aadhaar";
                 (card.State, card.Kind) = ("Not linked", "is-failed");
-                card.From = $"{Capitalize(PanAuthority)} holds no Aadhaar against this PAN. The deposit can still be booked, but TDS runs at the higher rate until the investor links it.";
+                card.From = $"{Capitalize(PanAuthority)} holds no Aadhaar against this PAN. The application cannot proceed until the investor links it.";
                 entry.Add("No Aadhaar against this PAN.", "warn");
                 break;
             case PanAadhaarLink.NeedsAadhaar when AadhaarFiled(h):

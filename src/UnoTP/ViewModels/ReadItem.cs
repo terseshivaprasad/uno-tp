@@ -8,7 +8,8 @@ namespace UnoTP.ViewModels;
 /// holding a PAN against another name, where the printed name is typed to ask again.
 /// </summary>
 /// <param name="Id">What the card's element id ends with, where the page may be sent back to it.</param>
-public sealed record ReadItem(string Kind, ReadCard Card, string? Id = null, NameRetry? Retry = null)
+/// <param name="Error">What Proceed said this check still lacks, shown under the card; null when nothing.</param>
+public sealed record ReadItem(string Kind, ReadCard Card, string? Id = null, NameRetry? Retry = null, string? Error = null)
 {
     public static implicit operator ReadItem((string Kind, ReadCard Card) card) => new(card.Kind, card.Card);
 }
