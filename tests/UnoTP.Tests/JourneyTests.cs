@@ -333,6 +333,60 @@ public class JourneyTests(App app)
         Assert.Contains("Sale of a car", review);
     }
 
+    // Everything Investor Information asks of an investor with no folio, apart from the gender.
+    private static readonly (string, string)[] InvestorCard =
+    [
+        ("Holder1.NameType", "Father"), ("Holder1.ParentName", "SUBHASH TERSE"), ("Holder1.AnnualIncome", "Upto Rs.5,00,000"),
+        ("Holder1.Occupation", "Salaried"), ("Holder1.SubOccupation", "Private sector"), ("Holder1.MaritalStatus", "Married"),
+        ("Holder1.Mobile", "9876543210"), ("Holder1.Email", "neha@example.com"), ("Holder1.Pep", "no"), ("Holder1.PepRelated", "no"),
+        ("NomineeSkipped", "yes"),
+    ];
+
+    [Fact]
+    public async Task A_female_applicant_under_a_non_women_category_moves_to_the_womens_one_and_the_page_says_so()
+    {
+        var client = await app.SignedInAsync();
+        var at = await App.NewApplicationAsync(client, NewInvestor);
+        var documents = App.Step(at, "documents");
+        var investor = App.Step(at, "investor");
+
+        // A new investor: nothing read a gender, and the sourcing agency chose Public / General.
+        await App.PostAsync(client, documents, documents + "/save", ("Sourcing", "1"), ("Category", "PUBLIC/GENERAL"));
+        Assert.Contains("name=\"Holder1.Gender\"", await client.GetStringAsync(investor));
+
+        var answered = await App.PostAsync(client, investor, investor, [.. InvestorCard, ("Holder1.Gender", "Female")]);
+        Assert.StartsWith("/InvestorInformation/", answered.RequestMessage!.RequestUri!.AbsolutePath);
+        var page = System.Net.WebUtility.HtmlDecode(await answered.Content.ReadAsStringAsync());
+        Assert.Contains("We notice a female applicant is selected under Public / General, a non-women category. The category has been updated to Women to ensure they receive the applicable women's category benefits.", page);
+        Assert.Contains(">Women<", await client.GetStringAsync(App.Step(at, "deposit")));
+
+        // Proceed again goes on, and the category stays a women's one.
+        var proceeded = await App.PostAsync(client, investor, investor, [.. InvestorCard, ("Holder1.Gender", "Female")]);
+        Assert.Contains("/BankDetails/", proceeded.RequestMessage!.RequestUri!.AbsolutePath);
+        Assert.Contains(">Women<", await client.GetStringAsync(App.Step(at, "deposit")));
+    }
+
+    [Fact]
+    public async Task A_male_applicant_under_a_womens_category_is_stopped_until_Upload_Documents_is_corrected()
+    {
+        var client = await app.SignedInAsync();
+        var at = await App.NewApplicationAsync(client, NewInvestor);
+        var documents = App.Step(at, "documents");
+        var investor = App.Step(at, "investor");
+        await App.PostAsync(client, documents, documents + "/save", ("Sourcing", "1"), ("Category", "WOMEN"));
+
+        var stopped = await App.PostAsync(client, investor, investor, [.. InvestorCard, ("Holder1.Gender", "Male")]);
+        Assert.StartsWith("/InvestorInformation/", stopped.RequestMessage!.RequestUri!.AbsolutePath);
+        var page = System.Net.WebUtility.HtmlDecode(await stopped.Content.ReadAsStringAsync());
+        Assert.Contains("The category on Upload Documents is Women, a women's category, but the applicant's gender is male. Correct the category on Upload Documents before proceeding.", page);
+        Assert.Contains($"href=\"/UploadInvestorDocuments/{at}\"", page);
+
+        // Corrected there, Proceed goes on.
+        await App.PostAsync(client, documents, documents + "/save", ("Sourcing", "1"), ("Category", "PUBLIC/GENERAL"));
+        var proceeded = await App.PostAsync(client, investor, investor, [.. InvestorCard, ("Holder1.Gender", "Male")]);
+        Assert.Contains("/BankDetails/", proceeded.RequestMessage!.RequestUri!.AbsolutePath);
+    }
+
     [Fact]
     public async Task No_TDS_needs_Form_121_filed_on_FD_Configuration_before_Proceed()
     {

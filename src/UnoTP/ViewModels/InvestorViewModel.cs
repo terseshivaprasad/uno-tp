@@ -183,6 +183,9 @@ public sealed class InvestorViewModel(InvestorInfoState state, DocumentsViewMode
     /// <summary>Set when a FATCA question was answered Yes and Proceed was pressed.</summary>
     public bool Offline { get; init; }
 
+    /// <summary>Proceed stopped: the category on Upload Documents is a women's one and the applicant is male. Corrected there.</summary>
+    public string? CategoryConflict { get; init; }
+
     /// <summary>The joint holder Proceed stopped at, not yet added.</summary>
     public int? Unfinished { get; init; }
 

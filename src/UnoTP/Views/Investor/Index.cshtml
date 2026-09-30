@@ -606,6 +606,19 @@
             </div>
         }
 
+        @* The category on Upload Documents does not fit the applicant's gender: Proceed
+           stops here until it is corrected there. *@
+        @if (Model.CategoryConflict is not null)
+        {
+            <div class="alert alert-danger page-missing-items investor-unfinished" role="alert">
+                <svg class="page-missing-items__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 7v6"></path><circle cx="12" cy="16.8" r=".8" fill="currentColor"></circle></svg>
+                <div class="page-missing-items__body">
+                    <div class="page-missing-items__title">The deposit category does not fit the applicant</div>
+                    <p>@Model.CategoryConflict <a asp-controller="Documents" asp-action="Index" data-loader="Going to Upload Documents">Go to Upload Documents</a></p>
+                </div>
+            </div>
+        }
+
         @* ===== The investor ===== *@
         <section class="page-card section-card" id="holder-1">
             @* A holder who is a tax or permanent resident of another country invests offline:

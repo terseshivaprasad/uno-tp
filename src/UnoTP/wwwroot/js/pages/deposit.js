@@ -100,13 +100,16 @@
   }
 
   // The answer says whether the source of funds is asked at this amount (the
-  // investor's deposits with us pass ₹1 crore, and who they are): the field opens
-  // or shuts to match, with the rule under it.
+  // investor's deposits with us pass ₹1 crore, and who they are): the section is
+  // shown or hidden to match, with the reason under the field.
   function showWhetherSourceOfFundsIsAsked() {
     var said = document.querySelector('#deposit-quote [data-source-of-funds]');
     var select = document.getElementById('deposit-source-of-funds');
+    var section = document.getElementById('deposit-source-of-funds-section');
     if (!said || !select) return;
-    select.disabled = said.getAttribute('data-asked') !== 'yes';
+    var asked = said.getAttribute('data-asked') === 'yes';
+    select.disabled = !asked;
+    if (section) section.hidden = !asked;
     var why = document.getElementById('deposit-source-of-funds-why');
     if (why) why.textContent = said.getAttribute('data-why') || '';
     openRemarkForOther();

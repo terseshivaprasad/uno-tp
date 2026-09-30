@@ -401,8 +401,59 @@ public class DocumentsViewModel(
     /// <summary>The gender the category is set from: the folio's, else an Aadhaar's read here.</summary>
     public string HolderGender => GenderIn(State);
 
-    // Read off the state handed in, not State, which settles through here.
-    private string GenderIn(UploadState s) => Who.Gender.Length > 0 ? Who.Gender : s.Gender;
+    // Read off the state handed in, not State, which settles through here. The
+    // folio's gender, else an Aadhaar's read on this step, else what Investor
+    // Information asked and saved.
+    private string GenderIn(UploadState s)
+    {
+        if (Who.Gender.Length > 0) return Who.Gender;
+        if (s.Gender.Length > 0) return s.Gender;
+        return InvestorInformationGender;
+    }
+
+    /// <summary>The investor's gender as Investor Information saved it, for a holder nothing read one for; empty until then.</summary>
+    public string InvestorInformationGender =>
+        App.Details?.Holders.FirstOrDefault(h => h.Holder == HolderType.Investor)?.Gender ?? "";
+
+    /// <summary>A category by code, or null.</summary>
+    public CategoryOption? CategoryOf(string code) => Ref.Categories.FirstOrDefault(c => c.Code == code);
+
+    /// <summary>
+    /// The women's counterpart of a category: the one with the same employee and
+    /// senior standing and Women set (Public / General to Women, Senior citizen to
+    /// Senior citizen women, Employee to Employee women). Null for a women's category,
+    /// or one with no counterpart.
+    /// </summary>
+    public CategoryOption? WomensCategoryFor(string code)
+    {
+        var category = CategoryOf(code);
+        if (category is null) return null;
+        if (category.Women) return null;
+        return Ref.Categories.FirstOrDefault(c => c.Women && c.Employee == category.Employee && c.Senior == category.Senior);
+    }
+
+    /// <summary>
+    /// Whether the deposit category and the investor's gender agree, once Investor
+    /// Information has the gender. A female applicant under a non-women category:
+    /// the category moves to its women's counterpart (<see cref="CategoryGenderOutcome.MovedTo"/>),
+    /// so she gets the women's rate. A male applicant under a women's category: the
+    /// category is wrong and is corrected on Upload Documents (<see cref="CategoryGenderOutcome.Conflict"/>).
+    /// </summary>
+    public CategoryGenderOutcome CategoryAgainstGender(string gender)
+    {
+        var category = CategoryOf(State.Category);
+        if (category is null) return new CategoryGenderOutcome();
+
+        if (gender == Genders.Female && WomensCategoryFor(category.Code) is { } womens)
+        {
+            return new CategoryGenderOutcome(MovedFrom: category, MovedTo: womens);
+        }
+        if (gender == Genders.Male && category.Women)
+        {
+            return new CategoryGenderOutcome(Conflict: $"The category on Upload Documents is {category.Name}, a women's category, but the applicant's gender is male. Correct the category on Upload Documents before proceeding.");
+        }
+        return new CategoryGenderOutcome();
+    }
 
     /// <summary>Why the category stands as it does, for a partner who does not choose it.</summary>
     public string SetCategoryWhy =>
@@ -2216,4 +2267,12 @@ public sealed class UploadForm
 
     /// <summary>The control whose change redrew the page, so the page comes back to it.</summary>
     public string? Refresh { get; set; }
+}
+
+/// <summary>What <see cref="DocumentsViewModel.CategoryAgainstGender"/> found: nothing, a move to a women's category, or a conflict to correct.</summary>
+public sealed record CategoryGenderOutcome(CategoryOption? MovedFrom = null, CategoryOption? MovedTo = null, string? Conflict = null)
+{
+    /// <summary>What the page says when the category has moved to its women's counterpart.</summary>
+    public string MovedMessage =>
+        $"We notice a female applicant is selected under {MovedFrom?.Name}, a non-women category. The category has been updated to {MovedTo?.Name} to ensure they receive the applicable women's category benefits.";
 }

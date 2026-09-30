@@ -252,9 +252,9 @@
                     @* ===== Source of funds ===== *@
                     @* Asked once the investor's deposits with us, with this one, pass ₹1 crore and
                        they are a homemaker, student or retired, or earn up to ₹5 lakh a year
-                       (SourceOfFundsCheck). Shut otherwise, with the rule under it; deposit.js
-                       opens and shuts it as the amount changes. "Other" opens the remark. *@
-                    <section class="deposit-section deposit-grid-2">
+                       (SourceOfFundsCheck). Not on the page until then: deposit.js shows and
+                       hides it as the amount changes. "Other" opens the remark. *@
+                    <section class="deposit-section deposit-grid-2" id="deposit-source-of-funds-section" hidden="@(!Model.SourceOfFunds.Asked)">
                         <div class="doc-column">
                             <label class="field-label" for="deposit-source-of-funds">Source of funds</label>
                             <div class="doc-select">
