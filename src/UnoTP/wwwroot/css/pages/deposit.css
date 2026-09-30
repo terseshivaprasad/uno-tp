@@ -306,3 +306,8 @@
     grid-template-columns: repeat(4, minmax(0,1fr));
   }
 }
+
+/* The Form 121 card stands alone: one column, the width of a card on Upload Documents */
+.deposit-tds-form .doc-grid--docs {
+  grid-template-columns: minmax(0, 367px);
+}
