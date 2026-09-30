@@ -74,7 +74,13 @@
       input.setAttribute('aria-describedby', 'deposit-amount-hint');
       return;
     }
-    if (!sayProblem) return;
+    // While the amount is still being typed, only an amount over the maximum is
+    // said at once - more digits can only make it worse; anything else waits until
+    // the partner leaves the field.
+    var digits = Number(input.value.replace(/\D/g, '') || 0);
+    var max = Number(input.getAttribute('data-max') || 0);
+    var overMax = max > 0 && digits > max;
+    if (!sayProblem && !overMax) return;
     if (!error) {
       error = document.createElement('p');
       error.className = 'field-error';

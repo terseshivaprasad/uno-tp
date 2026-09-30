@@ -235,9 +235,6 @@
                             <input type="checkbox" id="deposit-no-tds" name="NoTds" value="true" class="investor-switch" checked="@form.NoTds" data-quote>
                             <input type="hidden" name="NoTds" value="false">
                         </label>
-                        <div class="alert alert-warning deposit-note" data-show-when="NoTds=true" hidden="@(!form.NoTds)">
-                            <div class="deposit-note__text"><strong>@Model.TdsForm is needed for the primary holder</strong>, by the investor&rsquo;s date of birth: file the signed form below before proceeding. Turning this off removes the requirement; TDS is then deducted at the applicable rate.</div>
-                        </div>
                         @* The form itself, filed here as a document is on Upload Documents; shut with the switch. *@
                         <fieldset class="doc-choice deposit-tds-form" data-show-when="NoTds=true" hidden="@(!form.NoTds)" disabled="@(!form.NoTds)">
                             <div class="doc-grid doc-grid--docs">
