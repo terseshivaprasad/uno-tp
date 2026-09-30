@@ -132,7 +132,7 @@ public class InvestorController(
         if (outcome.Conflict is not null)
         {
             TempData["categoryConflict"] = outcome.Conflict;
-            return Back("holder-1");
+            return Back("investorCategoryConflict");
         }
         if (outcome.MovedTo is not null)
         {
@@ -164,7 +164,7 @@ public class InvestorController(
         {
             await SaveAsync(docs);
             TempData["screeningNotAllowed"] = string.Join(", ", notAllowed);
-            return Back("holder-1");
+            return Back("investorScreeningStopped");
         }
 
         docs.KeepJoint(form);

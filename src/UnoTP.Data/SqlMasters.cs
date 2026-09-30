@@ -9,7 +9,8 @@ namespace UnoTP.Data;
 /// folio database), the sourcing registers, bank branches, PIN codes and the rate
 /// card (the masters database).
 /// </summary>
-public sealed class SqlMasters(Db db, SqlReference reference) : IInvestorApi, ISourcingApi, IDepositApi, IPlaceApi
+/// <param name="register">The FD system's register of the folio's earlier deposits - their nominees and repayment accounts - which the mock stands in for until it answers.</param>
+public sealed class SqlMasters(Db db, SqlReference reference, UnoTP.Backend.Mock.MockInvestors register) : IInvestorApi, ISourcingApi, IDepositApi, IPlaceApi
 {
     private const int Found = 20;
 
@@ -54,11 +55,12 @@ public sealed class SqlMasters(Db db, SqlReference reference) : IInvestorApi, IS
             new { Folio = folio.Trim().ToUpperInvariant() }))?.Record();
     }
 
-    // What the app itself has on record against a folio: the nominees and repayment
-    // accounts on its submitted applications, latest first. The FD system's own
-    // records join these once its register answers.
+    // What is on record against a folio: the nominees and repayment accounts on the
+    // folio's earlier deposits, from the register, and on the app's own submitted
+    // applications, latest first.
     public async Task<IReadOnlyList<NomineeOnRecord>> NomineesByFolioAsync(string folio, CancellationToken ct = default)
     {
+        var found = new List<NomineeOnRecord>(await register.NomineesByFolioAsync(folio, ct));
         await using var connection = await db.OpenAsync(ct);
         var rows = await connection.QueryAsync<(string Name, DateTime? Dob, string Relation, string GuardianName, string AppNo)>("""
             SELECT n.c_Name, n.d_Dob, n.c_Relation, n.c_Guardian_Name, m.c_App_No
@@ -67,7 +69,6 @@ public sealed class SqlMasters(Db db, SqlReference reference) : IInvestorApi, IS
             WHERE m.c_Folio = @Folio AND n.c_Status = 'APR' AND n.f_Active = 1
             ORDER BY m.d_Submitted_On DESC
             """, new { Folio = folio.Trim() });
-        var found = new List<NomineeOnRecord>();
         foreach (var r in rows)
         {
             if (found.Any(f => f.Name == r.Name && f.Dob == Dates.FromDb(r.Dob))) continue;
@@ -78,6 +79,7 @@ public sealed class SqlMasters(Db db, SqlReference reference) : IInvestorApi, IS
 
     public async Task<IReadOnlyList<AccountOnRecord>> AccountsByFolioAsync(string folio, CancellationToken ct = default)
     {
+        var found = new List<AccountOnRecord>(await register.AccountsByFolioAsync(folio, ct));
         await using var connection = await db.OpenAsync(ct);
         var rows = await connection.QueryAsync<(string Ifsc, string AccountNo, string Bank, string Branch, string AppNo)>("""
             SELECT b.c_Ifsc, b.c_Account_No, b.c_Bank_Name, b.c_Branch_Name, m.c_App_No
@@ -86,7 +88,6 @@ public sealed class SqlMasters(Db db, SqlReference reference) : IInvestorApi, IS
             WHERE m.c_Folio = @Folio AND b.c_Status = 'APR' AND b.f_Active = 1 AND b.c_Ifsc <> '' AND b.c_Account_No <> ''
             ORDER BY m.d_Submitted_On DESC
             """, new { Folio = folio.Trim() });
-        var found = new List<AccountOnRecord>();
         foreach (var r in rows)
         {
             if (found.Any(f => f.Ifsc == r.Ifsc && f.AccountNumber == r.AccountNo)) continue;

@@ -27,6 +27,8 @@ public static class SqlDataServiceCollectionExtensions
         services.AddSingleton<Db>();
         services.AddSingleton<SqlReference>();
         services.AddSingleton<IReferenceApi>(sp => sp.GetRequiredService<SqlReference>());
+        // The register of the folio's earlier deposits (nominees, repayment accounts) is the mock's until the FD system answers.
+        services.AddSingleton<UnoTP.Backend.Mock.MockInvestors>();
         services.AddSingleton<SqlMasters>();
         services.AddSingleton<IInvestorApi>(sp => sp.GetRequiredService<SqlMasters>());
         services.AddSingleton<ISourcingApi>(sp => sp.GetRequiredService<SqlMasters>());

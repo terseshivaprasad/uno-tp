@@ -672,7 +672,7 @@
            stops here until it is corrected there. *@
         @if (Model.CategoryConflict is not null)
         {
-            <div class="alert alert-danger page-missing-items investor-unfinished" role="alert">
+            <div class="alert alert-danger page-missing-items investor-unfinished" role="alert" id="investorCategoryConflict" tabindex="-1">
                 <svg class="page-missing-items__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 7v6"></path><circle cx="12" cy="16.8" r=".8" fill="currentColor"></circle></svg>
                 <div class="page-missing-items__body">
                     <div class="page-missing-items__title">The deposit category does not fit the applicant</div>
@@ -684,7 +684,7 @@
         @* Name screening does not allow a holder to invest online: Proceed stops here. *@
         @if (Model.ScreeningNotAllowed is not null)
         {
-            <div class="alert alert-danger page-missing-items investor-unfinished" role="alert">
+            <div class="alert alert-danger page-missing-items investor-unfinished" role="alert" id="investorScreeningStopped" tabindex="-1">
                 <svg class="page-missing-items__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 7v6"></path><circle cx="12" cy="16.8" r=".8" fill="currentColor"></circle></svg>
                 <div class="page-missing-items__body">
                     <div class="page-missing-items__title">Not allowed to invest online</div>

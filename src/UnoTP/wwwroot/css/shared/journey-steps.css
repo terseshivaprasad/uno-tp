@@ -1232,6 +1232,19 @@
 .doc-slot__na[hidden] {
   display: none;
 }
+/* A document that asks nothing: its label, "Not applicable", the info mark and View
+   on one line, and no box. Sits at the top of its cell rather than stretching to the
+   cards beside it. */
+.doc-slot--slim {
+  align-self: start;
+}
+.doc-slot--slim .doc-slot__bar {
+  padding-bottom: 0;
+  border-bottom: 1px solid var(--divider);
+}
+.doc-slot--slim .doc-slot__na-title {
+  color: var(--muted-2);
+}
 /* Dashed and red only while a file is over it or a cursor is on it: the box says
    "drop here" when dropping is what you are doing, not for the whole page. */
 .doc-drop:not(:disabled):not(.is-filled):hover, .doc-drop.is-over {
