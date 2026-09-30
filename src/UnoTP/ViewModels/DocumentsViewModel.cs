@@ -543,11 +543,10 @@ public class DocumentsViewModel(
     private const string LinkWaits =
         "Whether an Aadhaar is linked to it is asked once an Aadhaar is read on this application — file one as the proof of address.";
 
-    // The holder's consent to their Aadhaar being read and checked, which IDfy asks
-    // for on every Aadhaar call. The step does not ask the partner for it, so it is
-    // never given: behind a real IDfy an Aadhaar is turned back, saying why. The
-    // mock does not ask.
-    private const bool AadhaarConsent = false;
+    // The holder's consent to their Aadhaar being read, masked and checked, which
+    // IDfy asks for on every Aadhaar call. It is taken as given: the investor consents
+    // on the application form the partner holds, so every Aadhaar call carries it.
+    private const bool AadhaarConsent = true;
 
     // The Aadhaar number OCR read for a holder on this application, for asking the
     // PAN-Aadhaar link with. An Aadhaar number is not to be stored, so it is never
