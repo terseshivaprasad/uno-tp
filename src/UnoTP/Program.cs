@@ -255,6 +255,10 @@ app.UsePartner();
 // (see PartialFollow). Before routing, so the page it follows on to is routed afresh.
 app.UsePartialFollow();
 
+// Input no page of this app would send - a parameter given twice, a character no
+// field takes - is refused before a page sees it.
+app.UseMiddleware<InputScreening>();
+
 app.UseRouting();
 
 app.UseAuthorization();

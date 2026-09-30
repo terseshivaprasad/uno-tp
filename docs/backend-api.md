@@ -287,7 +287,7 @@ A slot holds one copy:
 | GET | `sourcing/brokers` | `Party[]` (`code`, `name`) |
 | GET | `sourcing/staff` | `Party[]`. Includes the partner at the keyboard. |
 | GET | `sourcing/brokers?q={text}`, `sourcing/staff?q={text}` | `Party[]`: the parties whose code or name holds every word of the text, best first, at most 20 — the code fields on Upload Documents are searched this way as they are typed |
-| GET | `payin-slips` | `SlipRecord[]`: every application paying by cheque or DD, cancelled ones included |
+| GET | `payin-slips` | `SlipRecord[]`: every application paying by cheque, cancelled ones included |
 | GET | `links` | `SentLinkRecord[]`: links sent to investors, each by SMS and e-mail, with the masked `mobile` and `email` it went to. The link itself is never returned. |
 | GET | `links/pending` | `PendingRecord[]`: applications waiting on the investor (`appNo`, `investor`, `applied`, masked `mobile` and `email`, `due`) |
 | GET | `console/schedule` | `{ windows: WindowRecord[], announcements: AnnouncementRecord[] }` |

@@ -81,7 +81,7 @@
         <div class="field-grid">
             <div class="form-field" data-for="pan">
                 <label class="field-label" for="@(idPrefix)Pan">Enter PAN</label>
-                <input class="field-input field-input--caps @panInvalid" id="@(idPrefix)Pan" name="@Model.Name("Pan")" value="@search.Pan"
+                <input class="field-input field-input--caps @panInvalid" id="@(idPrefix)Pan" maxlength="10" name="@Model.Name("Pan")" value="@search.Pan"
                        maxlength="10" autocomplete="off" spellcheck="false" aria-describedby="@(idPrefix)PanError"
                        data-required="Enter the PAN" data-check="pan"
                        aria-invalid="@(search.PanError is not null ? "true" : null)" autofocus="@(focus == idPrefix + "Pan")">
@@ -105,7 +105,7 @@
             {
                 <div class="form-field" data-for="folio">
                     <label class="field-label" for="@(idPrefix)Folio">Enter Folio Number</label>
-                    <input class="field-input field-input--caps @folioInvalid" id="@(idPrefix)Folio" name="@Model.Name("Folio")" data-chars="code" value="@search.Folio"
+                    <input class="field-input field-input--caps @folioInvalid" id="@(idPrefix)Folio" maxlength="20" name="@Model.Name("Folio")" data-chars="code" value="@search.Folio"
                            maxlength="16" autocomplete="off" spellcheck="false" aria-describedby="@(idPrefix)FolioError"
                            data-required="Enter the folio number"
                            aria-invalid="@(search.FolioError is not null ? "true" : null)" autofocus="@(focus == idPrefix + "Folio")">

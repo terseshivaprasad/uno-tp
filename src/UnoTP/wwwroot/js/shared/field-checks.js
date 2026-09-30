@@ -35,7 +35,10 @@
   var filters = {
     pan: [/[^A-Za-z0-9]/g, true], code: [/[^A-Za-z0-9\-\/]/g, true],
     mobile: [/\D/g], pin: [/\D/g], account: [/\D/g], digits: [/\D/g], match: [/\D/g], aadhaar: [/[^\d ]/g],
-    email: [/[^A-Za-z0-9@._+\-]/g], name: [/[^A-Za-z .'\-]/g], text: [/[^A-Za-z0-9 ,.\-\/#&()']/g], search: [/[^A-Za-z0-9 .\-&]/g]
+    // A name takes letters and spaces; a line of text and a search take letters, digits,
+    // spaces and - , & / . only; an amount digits only (InputRules on the server).
+    email: [/[^A-Za-z0-9@._+\-]/g], name: [/[^A-Za-z ]/g], text: [/[^A-Za-z0-9 ,.\-\/&]/g], search: [/[^A-Za-z0-9 ,.\-\/&]/g],
+    amount: [/\D/g]
   };
   document.addEventListener('input', function (e) {
     var el = e.target;

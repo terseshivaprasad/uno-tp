@@ -96,7 +96,7 @@
             </div>
             <div class="doc-column">
                 <label class="field-label" for="@(id)Email">E-Mail</label>
-                <input class="field-input field-input--caps @Invalid($"{prefix}.Email")" id="@(id)Email" name="@(prefix).Email" value="@Model.Value($"{prefix}.Email")" type="email" autocomplete="off" data-required="Enter the e-mail" data-check="email" aria-invalid="@AriaInvalid($"{prefix}.Email")" aria-describedby="@DescribedBy($"{prefix}.Email", id + "Email")">
+                <input class="field-input field-input--caps @Invalid($"{prefix}.Email")" id="@(id)Email" name="@(prefix).Email" maxlength="50" value="@Model.Value($"{prefix}.Email")" type="email" autocomplete="off" data-required="Enter the e-mail" data-check="email" aria-invalid="@AriaInvalid($"{prefix}.Email")" aria-describedby="@DescribedBy($"{prefix}.Email", id + "Email")">
                 @{ await FieldError($"{prefix}.Email", id + "Email"); }
             </div>
         </div>
@@ -476,7 +476,7 @@
                 </div>
                 <div class="investor-field investor-field--sm">
                     <label for="h@(holder)-parent">Father / Mother / Spouse name</label>
-                    <input id="h@(holder)-parent" name="@(prefix).ParentName" class="investor-control @InvalidControl($"{prefix}.ParentName")" value="@Model.Value($"{prefix}.ParentName")" required data-required="Enter the father's, mother's or spouse's name" data-check="name" aria-invalid="@AriaInvalid($"{prefix}.ParentName")" aria-describedby="@DescribedBy($"{prefix}.ParentName", $"h{holder}-parent")" />
+                    <input id="h@(holder)-parent" name="@(prefix).ParentName" maxlength="50" class="investor-control @InvalidControl($"{prefix}.ParentName")" value="@Model.Value($"{prefix}.ParentName")" required data-required="Enter the father's, mother's or spouse's name" data-check="name" aria-invalid="@AriaInvalid($"{prefix}.ParentName")" aria-describedby="@DescribedBy($"{prefix}.ParentName", $"h{holder}-parent")" />
                     @{ await FieldError($"{prefix}.ParentName", $"h{holder}-parent"); }
                 </div>
             </div>
@@ -528,7 +528,7 @@
                         var check = line.Field == "City" ? "name" : "text";
                         <div class="investor-field investor-field--sm @optionalClass">
                             <label for="@(id)@line.Suffix">@line.Label @if (line.Required is null) { <span class="doc-optional">(Non-mandatory)</span> }</label>
-                            <input class="investor-control @InvalidControl(name)" id="@(id)@line.Suffix" name="@name" value="@Model.Value(name)" maxlength="60" autocomplete="off" data-required="@line.Required" data-check="@check" aria-invalid="@AriaInvalid(name)" aria-describedby="@DescribedBy(name, id + line.Suffix)">
+                            <input class="investor-control @InvalidControl(name)" id="@(id)@line.Suffix" name="@name" value="@Model.Value(name)" maxlength="@(line.Field == "City" ? InputRules.MaxField : InputRules.MaxAddressLine)" autocomplete="off" data-required="@line.Required" data-check="@check" aria-invalid="@AriaInvalid(name)" aria-describedby="@DescribedBy(name, id + line.Suffix)">
                             @{ await FieldError(name, id + line.Suffix); }
                         </div>
                     }
@@ -721,7 +721,7 @@
                 <div class="doc-grid">
                     <div class="doc-column">
                         <label class="field-label" for="investorNomineeName">Name</label>
-                        <input class="field-input @Invalid("Nominee.Name")" id="investorNomineeName" name="Nominee.Name" value="@Model.Value("Nominee.Name")" autocomplete="off" data-required="Enter the nominee's name" data-check="name" aria-invalid="@AriaInvalid("Nominee.Name")" aria-describedby="@DescribedBy("Nominee.Name", "investorNomineeName")">
+                        <input class="field-input @Invalid("Nominee.Name")" id="investorNomineeName" name="Nominee.Name" maxlength="50" value="@Model.Value("Nominee.Name")" autocomplete="off" data-required="Enter the nominee's name" data-check="name" aria-invalid="@AriaInvalid("Nominee.Name")" aria-describedby="@DescribedBy("Nominee.Name", "investorNomineeName")">
                         @{ await FieldError("Nominee.Name", "investorNomineeName"); }
                     </div>
                     <div class="doc-column">
@@ -749,23 +749,23 @@
                 <div class="doc-grid">
                     <div class="doc-column">
                         <label class="field-label" for="investorNomineeGuardian">Guardian Name</label>
-                        <input class="field-input @Invalid("Nominee.GuardianName")" id="investorNomineeGuardian" name="Nominee.GuardianName" value="@Model.Value("Nominee.GuardianName")" autocomplete="off" data-required="Enter the guardian's name" data-check="name" aria-invalid="@AriaInvalid("Nominee.GuardianName")" aria-describedby="@DescribedBy("Nominee.GuardianName", "investorNomineeGuardian")">
+                        <input class="field-input @Invalid("Nominee.GuardianName")" id="investorNomineeGuardian" name="Nominee.GuardianName" maxlength="50" value="@Model.Value("Nominee.GuardianName")" autocomplete="off" data-required="Enter the guardian's name" data-check="name" aria-invalid="@AriaInvalid("Nominee.GuardianName")" aria-describedby="@DescribedBy("Nominee.GuardianName", "investorNomineeGuardian")">
                         @{ await FieldError("Nominee.GuardianName", "investorNomineeGuardian"); }
                     </div>
                 </div>
                 <div class="doc-grid">
                     <div class="doc-column">
                         <label class="field-label" for="investorGuardian1">Address Line 1</label>
-                        <input class="field-input @Invalid("Nominee.GuardianAddress.Line1")" id="investorGuardian1" name="Nominee.GuardianAddress.Line1" value="@Model.Value("Nominee.GuardianAddress.Line1")" data-required="Enter the first line of the address" data-check="text" aria-invalid="@AriaInvalid("Nominee.GuardianAddress.Line1")" aria-describedby="@DescribedBy("Nominee.GuardianAddress.Line1", "investorGuardian1")">
+                        <input class="field-input @Invalid("Nominee.GuardianAddress.Line1")" id="investorGuardian1" name="Nominee.GuardianAddress.Line1" maxlength="40" value="@Model.Value("Nominee.GuardianAddress.Line1")" data-required="Enter the first line of the address" data-check="text" aria-invalid="@AriaInvalid("Nominee.GuardianAddress.Line1")" aria-describedby="@DescribedBy("Nominee.GuardianAddress.Line1", "investorGuardian1")">
                         @{ await FieldError("Nominee.GuardianAddress.Line1", "investorGuardian1"); }
                     </div>
                     <div class="doc-column">
                         <label class="field-label" for="investorGuardian2">Address Line 2 (Non-mandatory)</label>
-                        <input class="field-input" id="investorGuardian2" name="Nominee.GuardianAddress.Line2" value="@Model.Value("Nominee.GuardianAddress.Line2")" data-check="text">
+                        <input class="field-input" id="investorGuardian2" name="Nominee.GuardianAddress.Line2" maxlength="40" value="@Model.Value("Nominee.GuardianAddress.Line2")" data-check="text">
                     </div>
                     <div class="doc-column">
                         <label class="field-label" for="investorGuardian3">Address Line 3 (Non-mandatory)</label>
-                        <input class="field-input" id="investorGuardian3" name="Nominee.GuardianAddress.Line3" value="@Model.Value("Nominee.GuardianAddress.Line3")" data-check="text">
+                        <input class="field-input" id="investorGuardian3" name="Nominee.GuardianAddress.Line3" maxlength="40" value="@Model.Value("Nominee.GuardianAddress.Line3")" data-check="text">
                     </div>
                     <div class="doc-column">
                         <label class="field-label" for="investorGuardianPin">Pin Code</label>
@@ -774,7 +774,7 @@
                     </div>
                     <div class="doc-column">
                         <label class="field-label" for="investorGuardianCity">City</label>
-                        <input class="field-input @Invalid("Nominee.GuardianAddress.City")" id="investorGuardianCity" name="Nominee.GuardianAddress.City" value="@Model.Value("Nominee.GuardianAddress.City")" data-required="Enter the city" data-check="name" aria-invalid="@AriaInvalid("Nominee.GuardianAddress.City")" aria-describedby="@DescribedBy("Nominee.GuardianAddress.City", "investorGuardianCity")">
+                        <input class="field-input @Invalid("Nominee.GuardianAddress.City")" id="investorGuardianCity" name="Nominee.GuardianAddress.City" maxlength="50" value="@Model.Value("Nominee.GuardianAddress.City")" data-required="Enter the city" data-check="name" aria-invalid="@AriaInvalid("Nominee.GuardianAddress.City")" aria-describedby="@DescribedBy("Nominee.GuardianAddress.City", "investorGuardianCity")">
                         @{ await FieldError("Nominee.GuardianAddress.City", "investorGuardianCity"); }
                     </div>
                 </div>

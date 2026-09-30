@@ -22,7 +22,7 @@ public sealed record Party(string Code, string Name);
 /// <summary>The Axis pay-in slips for the partner's applications paid on paper.</summary>
 public interface IPayInSlipApi
 {
-    /// <summary>Every application paying by cheque or DD, cancelled ones included.</summary>
+    /// <summary>Every application paying by cheque, cancelled ones included.</summary>
     Task<IReadOnlyList<SlipRecord>> SlipsAsync(CancellationToken ct = default);
 
     /// <summary>

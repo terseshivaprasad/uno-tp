@@ -23,7 +23,7 @@ public sealed class SqlReference(Db db, IMemoryCache cache) : IReferenceApi
         cache.GetOrCreateAsync<IReadOnlyDictionary<string, string>>("t_Unotp_App_Config", async entry =>
         {
             (entry.AbsoluteExpirationRelativeToNow, entry.Size) = (KeptFor, 1);
-            await using var connection = await db.OpenAsync(ct);
+            await using var connection = await db.OpenAsync(Db.Masters, ct);
             var rows = await connection.QueryAsync<(string Key, string Value)>("SELECT c_Key, c_Value FROM dbo.t_Unotp_App_Config WHERE f_Active = 1");
             return rows.ToDictionary(r => r.Key, r => r.Value, StringComparer.OrdinalIgnoreCase);
         })!;
@@ -73,7 +73,7 @@ public sealed class SqlReference(Db db, IMemoryCache cache) : IReferenceApi
         cache.GetOrCreateAsync("t_Unotp_Ref_List", async cacheEntry =>
         {
             (cacheEntry.AbsoluteExpirationRelativeToNow, cacheEntry.Size) = (KeptFor, 1);
-            await using var connection = await db.OpenAsync(ct);
+            await using var connection = await db.OpenAsync(Db.Masters, ct);
             var entries = (await connection.QueryAsync<Entry>("""
                 SELECT c_List AS List, c_Code AS Code, c_Name AS Name, j_Attrs AS Attrs
                 FROM dbo.t_Unotp_Ref_List WHERE f_Active = 1 ORDER BY c_List, n_Seq

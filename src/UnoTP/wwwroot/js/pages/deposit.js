@@ -147,12 +147,4 @@
     timer = setTimeout(function () { refreshQuote(false); }, 600);
   });
 
-  // Once the partner leaves the amount it is grouped the Indian way (10,00,000), as
-  // the quote card shows it. Only the digits are ever posted or checked.
-  form.addEventListener('focusout', function (e) {
-    if (e.target.id !== 'deposit-amount') return;
-    var digits = e.target.value.replace(/\D/g, '');
-    if (digits === '') return;
-    e.target.value = Number(digits).toLocaleString('en-IN');
-  });
 })();

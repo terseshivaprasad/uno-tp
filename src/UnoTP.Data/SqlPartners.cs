@@ -27,17 +27,24 @@ public sealed class SqlPartners(Db db, IPartner partner, SqlReference reference)
     public async Task<IReadOnlyList<MenuItem>> MenuAsync(CancellationToken ct = default)
     {
         if (partner.SessionId is not { } session) return [];
+        // The keys on the partner's menu, from the main database; what each is called,
+        // and their order, from the feature list (the masters database).
         await using var connection = await db.OpenAsync(ct);
-        return (await connection.QueryAsync<MenuItem>("""
-            SELECT f.c_Feature_Key AS [Key], f.c_Name AS Name
+        var keys = (await connection.QueryAsync<string>("""
+            SELECT m.c_Feature_Key
             FROM dbo.t_Unotp_User_Session s
             JOIN dbo.t_Unotp_Partner_Menu m ON m.c_User_Id = s.c_User_Id
-            JOIN dbo.t_Unotp_Feature_Mst f ON f.c_Feature_Key = m.c_Feature_Key
             WHERE s.c_Session_Id = @Session AND s.c_User_Id = @Partner
               AND s.d_Ended_On IS NULL AND s.d_Expires_On > SYSDATETIME()
-              AND s.f_Active = 1 AND m.f_Active = 1 AND f.f_Active = 1
-            ORDER BY f.n_Seq
+              AND s.f_Active = 1 AND m.f_Active = 1
             """, new { Session = session, Partner = partner.Id })).ToList();
+
+        var menu = new List<MenuItem>();
+        foreach (var feature in (await reference.ReferenceAsync(ct)).Features ?? [])
+        {
+            if (keys.Contains(feature.Code)) menu.Add(new MenuItem(feature.Code, feature.Name));
+        }
+        return menu;
     }
 
     public async Task<PartnerProfile> MeAsync(CancellationToken ct = default) =>

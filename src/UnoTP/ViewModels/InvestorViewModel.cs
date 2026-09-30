@@ -247,6 +247,7 @@ public sealed class InvestorViewModel(InvestorInfoState state, DocumentsViewMode
 
         var need = new Needs(state.Fields, found);
         need.Need("Nominee.Name", "investorNomineeName", "Enter the nominee's name", LettersOnly, IsName);
+        need.AtMost("Nominee.Name", "investorNomineeName", InputRules.MaxField);
         var (dd, mm, yyyy) = (need.Of("Nominee.Dd"), need.Of("Nominee.Mm"), need.Of("Nominee.Yyyy"));
         if (dd.Length == 0 || mm.Length == 0 || yyyy.Length == 0) found.Add(("Nominee.Dob", "investorNomineeDd", "Enter the nominee's date of birth"));
         else if (!IsDate(dd, mm, yyyy, DateTime.Today)) found.Add(("Nominee.Dob", "investorNomineeDd", "Enter a real date of birth, not a future one"));
@@ -259,6 +260,11 @@ public sealed class InvestorViewModel(InvestorInfoState state, DocumentsViewMode
             need.Shape("Nominee.GuardianAddress.Line3", "investorGuardian3", NoSpecialCharacters, IsText);
             need.Need("Nominee.GuardianAddress.PinCode", "investorGuardianPin", "Enter the PIN code", "Enter a 6-digit PIN code", IsPin);
             need.Need("Nominee.GuardianAddress.City", "investorGuardianCity", "Enter the city", LettersOnly, IsName);
+            need.AtMost("Nominee.GuardianName", "investorNomineeGuardian", InputRules.MaxField);
+            need.AtMost("Nominee.GuardianAddress.Line1", "investorGuardian1", InputRules.MaxAddressLine);
+            need.AtMost("Nominee.GuardianAddress.Line2", "investorGuardian2", InputRules.MaxAddressLine);
+            need.AtMost("Nominee.GuardianAddress.Line3", "investorGuardian3", InputRules.MaxAddressLine);
+            need.AtMost("Nominee.GuardianAddress.City", "investorGuardianCity", InputRules.MaxField);
         }
         return found;
     }
@@ -280,6 +286,10 @@ public sealed class InvestorViewModel(InvestorInfoState state, DocumentsViewMode
             need.Shape(c + "Line2", $"h{holder}-comm2", NoSpecialCharacters, IsText);
             need.Shape(c + "Line3", $"h{holder}-comm3", NoSpecialCharacters, IsText);
             need.Need(c + "City", $"h{holder}-commcity", "Enter the city", LettersOnly, IsName);
+            need.AtMost(c + "Line1", $"h{holder}-comm1", InputRules.MaxAddressLine);
+            need.AtMost(c + "Line2", $"h{holder}-comm2", InputRules.MaxAddressLine);
+            need.AtMost(c + "Line3", $"h{holder}-comm3", InputRules.MaxAddressLine);
+            need.AtMost(c + "City", $"h{holder}-commcity", InputRules.MaxField);
             need.Need(c + "PinCode", $"h{holder}-commpin", "Enter the PIN code", "Enter a 6-digit PIN code", IsPin);
             if (IsPin(need.Of(c + "PinCode")) && places?.ContainsKey(need.Of(c + "PinCode")) == false)
                 found.Add((c + "PinCode", $"h{holder}-commpin", "No district is found for this PIN code; check it"));
@@ -293,6 +303,7 @@ public sealed class InvestorViewModel(InvestorInfoState state, DocumentsViewMode
             else if (field == "Email") need.Need(name, at, empty, "Enter a valid e-mail", v => Regex.IsMatch(v, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"));
             else if (field == "ParentName") need.Need(name, at, empty, LettersOnly, IsName);
             else need.Need(name, at, empty);
+            if (field is "ParentName" or "Email") need.AtMost(name, at, InputRules.MaxField);
         }
         if (!PepAsked(who)) return found;
         foreach (var (field, _) in PepQuestions)
@@ -322,6 +333,13 @@ public sealed class InvestorViewModel(InvestorInfoState state, DocumentsViewMode
         {
             var value = Of(name);
             if (value.Length > 0 && !valid(value)) found.Add((name, id, wrong));
+        }
+
+        /// <summary>A field that may not run past so many characters (a field 50, an address line 40).</summary>
+        public void AtMost(string name, string id, int max)
+        {
+            if (found.Any(f => f.Field == name)) return;
+            if (Of(name).Length > max) found.Add((name, id, InputRules.TooLong(max)));
         }
     }
 
@@ -383,12 +401,12 @@ public sealed class InvestorViewModel(InvestorInfoState state, DocumentsViewMode
 
     public static bool IsPin(string value) => Regex.IsMatch(value, @"^[1-9]\d{5}$");
 
-    /// <summary>A name as printed: letters, with spaces, dots, apostrophes and hyphens between.</summary>
-    public static bool IsName(string value) => Regex.IsMatch(value, @"^[A-Za-z][A-Za-z .'\-]*$");
+    /// <summary>A name as printed: letters and spaces only (InputRules).</summary>
+    public static bool IsName(string value) => InputRules.IsName(value);
 
-    /// <summary>A line of an address: letters, digits and the punctuation an address carries.</summary>
-    public static bool IsText(string value) => Regex.IsMatch(value, @"^[A-Za-z0-9 ,.\-/#&()']+$");
+    /// <summary>A line of text: letters, digits, spaces and - , & / . only (InputRules).</summary>
+    public static bool IsText(string value) => InputRules.IsClean(value);
 
-    public const string LettersOnly = "Enter letters only";
-    public const string NoSpecialCharacters = "No special characters";
+    public const string LettersOnly = InputRules.LettersOnly;
+    public const string NoSpecialCharacters = InputRules.OnlyAllowed;
 }

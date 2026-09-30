@@ -118,7 +118,7 @@ internal sealed class SqlLogWriter(Channel<LogRow> queue, Db db) : BackgroundSer
         if (batch.Count == 0) return;
         try
         {
-            await using var connection = await db.OpenAsync(ct);
+            await using var connection = await db.OpenAsync(Db.Errors, ct);
             await connection.ExecuteAsync(new CommandDefinition(Insert, batch, cancellationToken: ct));
         }
         catch (Exception e) when (e is not OperationCanceledException || !ct.IsCancellationRequested)

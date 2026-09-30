@@ -49,7 +49,7 @@ internal sealed class SubmittedRow
 
 /// <summary>
 /// Axis pay-in slips (t_Unotp_Pay_In_Slip) for the partner's applications paying by an
-/// instrument: a payment mode whose reference entry names a document (cheque, DD).
+/// instrument: a payment mode whose reference entry names a document (a cheque).
 /// </summary>
 public sealed class SqlPayInSlips(Db db, IPartner partner, SqlReference reference) : IPayInSlipApi
 {
@@ -113,30 +113,51 @@ public sealed class SqlLinks(Db db, IPartner partner, SqlReference reference, IL
         public string Email { get; set; } = "";
         public DateTime SentOn { get; set; }
         public DateTime ExpiresOn { get; set; }
+    }
+
+    private sealed class SentApplicationRow
+    {
+        public string AppNo { get; set; } = "";
+        public string Name { get; set; } = "";
         public DateTime SubmittedOn { get; set; }
         public DateTime? AcceptedOn { get; set; }
         public DateTime? PaidOn { get; set; }
     }
 
-    // The live link for each application and purpose: the latest sent. Those before it no longer open.
+    // The live link for each application and purpose: the latest sent. Those before it
+    // no longer open. The partner's submitted applications come from the main database
+    // and the links from the links database, so the two are put together here.
     public async Task<IReadOnlyList<SentLinkRecord>> SentAsync(CancellationToken ct = default)
     {
         await using var connection = await db.OpenAsync(ct);
-        var rows = await connection.QueryAsync<LinkRow>("""
-            SELECT l.c_App_No AS AppNo, COALESCE(NULLIF(k.c_Name, N''), m.c_Name) AS Name, l.c_Purpose AS Purpose, l.c_Mobile AS Mobile, l.c_Email AS Email,
-                l.d_Sent_On AS SentOn, l.d_Expires_On AS ExpiresOn, m.d_Submitted_On AS SubmittedOn,
+        var applications = (await connection.QueryAsync<SentApplicationRow>("""
+            SELECT m.c_App_No AS AppNo, COALESCE(NULLIF(k.c_Name, N''), m.c_Name) AS Name, m.d_Submitted_On AS SubmittedOn,
                 m.d_Accepted_On AS AcceptedOn, m.d_Paid_On AS PaidOn
-            FROM dbo.t_Unotp_Payment_Link l
-            JOIN dbo.t_Unotp_Application_Mst m ON m.c_App_No = l.c_App_No AND m.f_Active = 1
+            FROM dbo.t_Unotp_Application_Mst m
             LEFT JOIN dbo.t_Unotp_Kyc_Dtls k ON k.c_App_No = m.c_App_No AND k.n_App_Version = m.n_Details_Ver AND k.c_Holder_Type = '01' AND k.f_Active = 1
-            WHERE m.c_Partner_Id = @Partner
+            WHERE m.c_Partner_Id = @Partner AND m.f_Active = 1 AND m.d_Submitted_On IS NOT NULL
+            """, new { Partner = partner.Id })).ToDictionary(a => a.AppNo);
+        if (applications.Count == 0) return [];
+
+        await using var links = await db.OpenAsync(Db.Links, ct);
+        var rows = await links.QueryAsync<LinkRow>("""
+            SELECT l.c_App_No AS AppNo, l.c_Purpose AS Purpose, l.c_Mobile AS Mobile, l.c_Email AS Email, l.d_Sent_On AS SentOn, l.d_Expires_On AS ExpiresOn
+            FROM dbo.t_Unotp_Payment_Link l
+            WHERE l.c_App_No IN @AppNos
               AND l.n_Id IN (SELECT MAX(n_Id) FROM dbo.t_Unotp_Payment_Link WHERE f_Active = 1 GROUP BY c_App_No, c_Purpose)
             ORDER BY l.d_Sent_On DESC
-            """, new { Partner = partner.Id });
+            """, new { AppNos = applications.Keys.ToList() });
+
         var now = DateTime.Now;
-        return rows.Select(r => new SentLinkRecord(r.AppNo, Masks.Name(r.Name), r.Mobile, r.Email, r.Purpose, r.SentOn, r.ExpiresOn,
-            (r.Purpose == "payment" ? r.PaidOn : r.AcceptedOn) is not null ? "done" : r.ExpiresOn <= now ? "expired" : "open",
-            r.SubmittedOn)).ToList();
+        var sent = new List<SentLinkRecord>();
+        foreach (var r in rows)
+        {
+            var a = applications[r.AppNo];
+            var done = (r.Purpose == "payment" ? a.PaidOn : a.AcceptedOn) is not null;
+            var status = done ? "done" : r.ExpiresOn <= now ? "expired" : "open";
+            sent.Add(new SentLinkRecord(r.AppNo, Masks.Name(a.Name), r.Mobile, r.Email, r.Purpose, r.SentOn, r.ExpiresOn, status, a.SubmittedOn));
+        }
+        return sent;
     }
 
     public async Task<IReadOnlyList<PendingRecord>> PendingAsync(CancellationToken ct = default) =>
@@ -167,7 +188,7 @@ public sealed class SqlLinks(Db db, IPartner partner, SqlReference reference, IL
         if (waiting.Record is null || waiting.Record.Due != purpose) return null;
         var hours = (await reference.ConfigAsync(ct)).LinkValidityHours.GetValueOrDefault(purpose);
         if (hours <= 0) return null;
-        await using var connection = await db.OpenAsync(ct);
+        await using var connection = await db.OpenAsync(Db.Links, ct);
         await connection.ExecuteAsync("""
             INSERT dbo.t_Unotp_Payment_Link (c_App_No, c_Purpose, c_Url, c_Short_Url, c_Mobile, c_Email, d_Expires_On, c_Sent_By)
             SELECT @AppNo, @Purpose, ISNULL(last.c_Url, ''), ISNULL(last.c_Short_Url, ''), @Mobile, @Email, DATEADD(HOUR, @Hours, SYSDATETIME()), @Partner

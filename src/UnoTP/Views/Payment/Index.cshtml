@@ -96,7 +96,7 @@
         <div class="doc-grid">
             <div class="doc-column bank-search">
                 <label class="field-label" for="@(id)-ifsc">Bank &mdash; search by name, branch, @Glossary.Term("IFSC") or @Glossary.Term("MICR")</label>
-                <input class="field-input @Invalid(ifscKey)" id="@(id)-ifsc" name="@(key).Ifsc" value="@account.Ifsc" maxlength="60" autocomplete="off" spellcheck="false" placeholder="e.g. HDFC Andheri or HDFC0000521"
+                <input class="field-input @Invalid(ifscKey)" id="@(id)-ifsc" name="@(key).Ifsc" value="@account.Ifsc" maxlength="50" autocomplete="off" spellcheck="false" placeholder="e.g. HDFC Andheri or HDFC0000521"
                        data-required="Search for the bank and pick its branch"
                        role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="@(id)-suggest"
                        data-chars="search" data-bank-search="@Url.Action("Branches")" data-find="bank-find-@(key.ToLowerInvariant())"
@@ -206,7 +206,7 @@
                     <div class="doc-column">
                         <label class="field-label" for="cms-location">Axis @Glossary.Term("CMS") Branch</label>
                         @* Typed, with the backend's branches offered as the browser's own suggestions. *@
-                        <input class="field-input @Invalid("Cheque.CmsLocation")" id="cms-location" name="Cheque.CmsLocation" data-chars="text" value="@form.Cheque.CmsLocation" list="cms-locations" placeholder="Start typing a branch" autocomplete="off" spellcheck="false" data-required="Enter the Axis CMS branch" aria-invalid="@AriaInvalid("Cheque.CmsLocation")" aria-describedby="@(DescribedBy("Cheque.CmsLocation", "cms-location") ?? "cms-location-hint")">
+                        <input class="field-input @Invalid("Cheque.CmsLocation")" id="cms-location" name="Cheque.CmsLocation" maxlength="50" data-chars="text" value="@form.Cheque.CmsLocation" list="cms-locations" placeholder="Start typing a branch" autocomplete="off" spellcheck="false" data-required="Enter the Axis CMS branch" aria-invalid="@AriaInvalid("Cheque.CmsLocation")" aria-describedby="@(DescribedBy("Cheque.CmsLocation", "cms-location") ?? "cms-location-hint")">
                         <datalist id="cms-locations">
                             @foreach (var location in Model.CmsLocations)
                             {

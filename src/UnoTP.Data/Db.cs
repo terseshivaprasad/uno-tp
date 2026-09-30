@@ -3,15 +3,37 @@ using Microsoft.Data.SqlClient;
 
 namespace UnoTP.Data;
 
-/// <summary>The UnoTP database, at ConnectionStrings:UnoTP. Tables: db/001_unotp_tables.sql.</summary>
+/// <summary>
+/// The databases. ConnectionStrings:UnoTP holds the applications and everything
+/// else, unless an area is given a database of its own, as the old portal has them:
+///   UnoTP_Masters   the brokers, staff, IFSC and PIN code masters, the rate card, and
+///                   the config, feature and reference lists (db/002's lists, db/004)
+///   UnoTP_Folios    the investor folios (db/004)
+///   UnoTP_Links     the payment links behind Short URL (db/002)
+///   UnoTP_Errors    the error log (db/006)
+/// An area's connection string left blank means its tables are in the main database.
+/// No query joins across areas, so each may be anywhere.
+/// </summary>
 public sealed class Db(IConfiguration config)
 {
-    private readonly string connectionString = config.GetConnectionString("UnoTP") is { Length: > 0 } cs
+    public const string Main = "UnoTP";
+    public const string Masters = "UnoTP_Masters";
+    public const string Folios = "UnoTP_Folios";
+    public const string Links = "UnoTP_Links";
+    public const string Errors = "UnoTP_Errors";
+
+    private readonly string mainConnectionString = config.GetConnectionString(Main) is { Length: > 0 } cs
         ? cs
         : throw new InvalidOperationException("ConnectionStrings:UnoTP is not set.");
 
-    public async Task<SqlConnection> OpenAsync(CancellationToken ct)
+    /// <summary>The main database: the applications and their parts, partners, sessions, slips, the console.</summary>
+    public Task<SqlConnection> OpenAsync(CancellationToken ct) => OpenAsync(Main, ct);
+
+    /// <summary>An area's database, or the main one where the area has none of its own.</summary>
+    public async Task<SqlConnection> OpenAsync(string area, CancellationToken ct)
     {
+        var connectionString = config.GetConnectionString(area);
+        if (string.IsNullOrWhiteSpace(connectionString)) connectionString = mainConnectionString;
         var connection = new SqlConnection(connectionString);
         await connection.OpenAsync(ct);
         return connection;

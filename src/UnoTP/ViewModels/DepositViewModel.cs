@@ -34,7 +34,7 @@ public sealed class DepositForm
         }
         : new DepositForm
         {
-            Amount = saved.Amount > 0 ? Money.Group(saved.Amount) : "",
+            Amount = saved.Amount > 0 ? saved.Amount.ToString(CultureInfo.InvariantCulture) : "",
             TenureMonths = saved.TenureMonths,
             InterestPayout = saved.Payout,
             AutoRenewal = saved.AutoRenewal,
@@ -107,6 +107,8 @@ public sealed class DepositForm
             var sources = reference.SourcesOfFunds ?? [];
             if (sources.All(s => s.Code != SourceOfFunds)) problems["SourceOfFunds"] = "Required — choose the source of funds";
             else if (SourceOfFunds == SourceOfFundsCheck.Other && SourceOfFundsRemark.Length == 0) problems["SourceOfFundsRemark"] = "Required — say what the source of funds is";
+            else if (SourceOfFunds == SourceOfFundsCheck.Other && SourceOfFundsRemark.Length > InputRules.MaxRemark) problems["SourceOfFundsRemark"] = InputRules.TooLong(InputRules.MaxRemark);
+            else if (SourceOfFunds == SourceOfFundsCheck.Other && !InputRules.IsClean(SourceOfFundsRemark)) problems["SourceOfFundsRemark"] = InputRules.OnlyAllowed;
         }
         return problems;
     }

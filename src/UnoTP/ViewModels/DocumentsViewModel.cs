@@ -1045,7 +1045,7 @@ public class DocumentsViewModel(
     public ReadItem PaymentRead() => View(PaymentSlot).Used
         ? new("Account", State.Reads["payment"], "payment")
         : new("Account", NotRead("Not applicable", "No instrument is copied for this payment mode.",
-            "An account is read only off a cheque or demand draft."));
+            "An account is read only off a cheque."));
 
     // What NSDL said about a joint holder's PAN, and - when it holds the PAN
     // against another name - where the name printed on the card is typed to ask again.

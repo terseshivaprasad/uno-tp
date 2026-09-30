@@ -28,8 +28,9 @@ public class InvestorRulesTests
 
     [Theory]
     [InlineData("ANJALI VIKRAM PATIL", true)]
-    [InlineData("Karan D. Mehta", true)]
-    [InlineData("O'Brien-Smith", true)]
+    [InlineData("Karan D Mehta", true)]
+    [InlineData("Karan D. Mehta", false)]
+    [InlineData("O'Brien-Smith", false)]
     [InlineData("ANJALI 2", false)]
     [InlineData("ANJALI@PATIL", false)]
     [InlineData("<script>", false)]
@@ -38,7 +39,8 @@ public class InvestorRulesTests
 
     [Theory]
     [InlineData("Flat 4, Sea View", true)]
-    [InlineData("12/3 M.G. Road (near SBI) #2 & Co.", true)]
+    [InlineData("12/3 M.G. Road, near SBI - 2 & Co.", true)]
+    [InlineData("12/3 M.G. Road (near SBI) #2", false)]
     [InlineData("Flat 4; drop table", false)]
     [InlineData("Flat <b>4</b>", false)]
     [InlineData("Flat 4 @ Sea View", false)]

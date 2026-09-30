@@ -5,8 +5,9 @@ using UnoTP.Backend;
 namespace UnoTP.Data;
 
 /// <summary>
-/// The masters the purchase journey reads (db/004): the investors on record, the
-/// sourcing registers, bank branches, PIN codes and the rate card.
+/// The masters the purchase journey reads (db/004): the investors on record (the
+/// folio database), the sourcing registers, bank branches, PIN codes and the rate
+/// card (the masters database).
 /// </summary>
 public sealed class SqlMasters(Db db, SqlReference reference) : IInvestorApi, ISourcingApi, IDepositApi, IPlaceApi
 {
@@ -39,7 +40,7 @@ public sealed class SqlMasters(Db db, SqlReference reference) : IInvestorApi, IS
     // Every folio held against the PAN: more than one is a record Operations has to merge.
     public async Task<IReadOnlyList<FolioRecord>> FoliosByPanAsync(string pan, CancellationToken ct = default)
     {
-        await using var connection = await db.OpenAsync(ct);
+        await using var connection = await db.OpenAsync(Db.Folios, ct);
         return (await connection.QueryAsync<FolioRow>(
             $"SELECT {FolioColumns} FROM dbo.t_Unotp_Investor_Folio WHERE c_Pan = @Pan AND f_Active = 1 ORDER BY c_Folio",
             new { Pan = pan.Trim().ToUpperInvariant() })).Select(f => f.Record()).ToList();
@@ -47,7 +48,7 @@ public sealed class SqlMasters(Db db, SqlReference reference) : IInvestorApi, IS
 
     public async Task<FolioRecord?> FolioAsync(string folio, CancellationToken ct = default)
     {
-        await using var connection = await db.OpenAsync(ct);
+        await using var connection = await db.OpenAsync(Db.Folios, ct);
         return (await connection.QuerySingleOrDefaultAsync<FolioRow>(
             $"SELECT {FolioColumns} FROM dbo.t_Unotp_Investor_Folio WHERE c_Folio = @Folio AND f_Active = 1",
             new { Folio = folio.Trim().ToUpperInvariant() }))?.Record();
@@ -65,7 +66,7 @@ public sealed class SqlMasters(Db db, SqlReference reference) : IInvestorApi, IS
 
     private async Task<IReadOnlyList<Party>> PartiesAsync(string table, CancellationToken ct)
     {
-        await using var connection = await db.OpenAsync(ct);
+        await using var connection = await db.OpenAsync(Db.Masters, ct);
         return (await connection.QueryAsync<Party>($"SELECT c_Code AS Code, c_Name AS Name FROM dbo.{table} WHERE f_Active = 1 ORDER BY c_Name")).ToList();
     }
 
@@ -76,7 +77,7 @@ public sealed class SqlMasters(Db db, SqlReference reference) : IInvestorApi, IS
         if (words.Length == 0) return [];
         var (where, args) = AllWords(words, "c_Code + ' ' + c_Name");
         args.Add("First", EscapeLikePattern(words[0]) + "%");
-        await using var connection = await db.OpenAsync(ct);
+        await using var connection = await db.OpenAsync(Db.Masters, ct);
         return (await connection.QueryAsync<Party>($"""
             SELECT TOP ({Found}) c_Code AS Code, c_Name AS Name FROM dbo.{table}
             WHERE f_Active = 1 AND {where}
@@ -88,7 +89,7 @@ public sealed class SqlMasters(Db db, SqlReference reference) : IInvestorApi, IS
 
     public async Task<BankBranch?> BranchAsync(string ifsc, CancellationToken ct = default)
     {
-        await using var connection = await db.OpenAsync(ct);
+        await using var connection = await db.OpenAsync(Db.Masters, ct);
         return await connection.QuerySingleOrDefaultAsync<BankBranch>(
             "SELECT c_Ifsc AS Ifsc, c_Bank AS Bank, c_Branch AS Branch, c_Micr AS Micr FROM dbo.t_Unotp_Ifsc_Mst WHERE c_Ifsc = @Ifsc AND f_Active = 1",
             new { Ifsc = ifsc.Trim().ToUpperInvariant() });
@@ -102,7 +103,7 @@ public sealed class SqlMasters(Db db, SqlReference reference) : IInvestorApi, IS
         if (words.Length == 0) return [];
         var (where, args) = AllWords(words, "c_Bank + ' ' + c_Branch + ' ' + c_Ifsc + ' ' + c_Micr");
         args.Add("Start", EscapeLikePattern(query.Trim()) + "%");
-        await using var connection = await db.OpenAsync(ct);
+        await using var connection = await db.OpenAsync(Db.Masters, ct);
         return (await connection.QueryAsync<BankBranch>($"""
             SELECT TOP ({Found}) c_Ifsc AS Ifsc, c_Bank AS Bank, c_Branch AS Branch, c_Micr AS Micr FROM dbo.t_Unotp_Ifsc_Mst
             WHERE f_Active = 1 AND {where}
@@ -116,7 +117,7 @@ public sealed class SqlMasters(Db db, SqlReference reference) : IInvestorApi, IS
     {
         pin = pin.Trim();
         if (pin.Length != 6 || !pin.All(char.IsAsciiDigit)) return null;
-        await using var connection = await db.OpenAsync(ct);
+        await using var connection = await db.OpenAsync(Db.Masters, ct);
         return await connection.QuerySingleOrDefaultAsync<PinPlace>(
             "SELECT c_Pin_Code AS PinCode, c_District AS District, c_State AS State FROM dbo.t_Unotp_Pincode_Mst WHERE c_Pin_Code = @Pin AND f_Active = 1",
             new { Pin = pin });
@@ -140,7 +141,7 @@ public sealed class SqlMasters(Db db, SqlReference reference) : IInvestorApi, IS
         var fallback = await reference.SettingAsync("defaultRateCategory", ct);
         var lists = await reference.ReferenceAsync(ct);
 
-        await using var connection = await db.OpenAsync(ct);
+        await using var connection = await db.OpenAsync(Db.Masters, ct);
         var rows = await connection.QueryAsync<RateRow>("""
             SELECT c_Category AS Category, n_Tenure_Months AS TenureMonths, c_Scheme AS Scheme, c_Payout AS Payout, n_Rate AS Rate,
                    n_Min_Amount AS MinAmount, n_Max_Amount AS MaxAmount, d_Effective_From AS EffectiveFrom

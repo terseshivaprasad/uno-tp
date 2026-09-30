@@ -124,7 +124,7 @@
                         </div>
                         <div class="deposit-amount @amountBoxClass">
                             <span class="deposit-amount__currency" aria-hidden="true">&#8377;</span>
-                            <input id="deposit-amount" name="Amount" class="deposit-amount__input @Invalid("Amount")" value="@form.Amount" inputmode="numeric" autocomplete="off" data-quote readonly="@Model.AmountFixed"
+                            <input id="deposit-amount" name="Amount" class="deposit-amount__input @Invalid("Amount")" value="@form.Amount" inputmode="numeric" maxlength="12" autocomplete="off" data-quote readonly="@Model.AmountFixed"
                                    data-required="@amountRequired" data-check="@amountCheck" data-min="@Model.Config.MinAmount" data-max="@Model.Config.MaxAmount" data-step="@Model.Config.AmountStep" aria-invalid="@AriaInvalid("Amount")" aria-describedby="@amountDescribedBy">
                         </div>
                         @{ await FieldError("Amount", "deposit-amount"); }

@@ -21,7 +21,7 @@
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="13" rx="2"></rect><path d="M3.5 10h17"></path></svg>
             <div>
                 <div class="page-rail__note-title">Money arriving on paper</div>
-                <p>A cheque or DD is paid in at an Axis CMS branch with a slip. Anything paid online never reaches this list.</p>
+                <p>A cheque is paid in at an Axis CMS branch with a slip. Anything paid online never reaches this list.</p>
             </div>
         </div>
         <div class="page-rail__note">
@@ -49,7 +49,7 @@
 
     <div class="page-card">
         <div class="page-head"><h1 class="page-title">Pay In Slip Generation &mdash; Axis</h1></div>
-        <p class="page-note">Every application raised in the last @Model.WindowDays days whose money is coming by cheque or DD. @pending of @listed.Count @(pending == 1 ? "is" : "are") ready for a slip@(blocked > 0 ? $", and {blocked} {(blocked == 1 ? "is" : "are")} held back for acceptance" : "").</p>
+        <p class="page-note">Every application raised in the last @Model.WindowDays days whose money is coming by cheque. @pending of @listed.Count @(pending == 1 ? "is" : "are") ready for a slip@(blocked > 0 ? $", and {blocked} {(blocked == 1 ? "is" : "are")} held back for acceptance" : "").</p>
 
         <form class="payin-slip-form" id="payinSlipForm" novalidate>
             <fieldset class="search-by search-by--first">

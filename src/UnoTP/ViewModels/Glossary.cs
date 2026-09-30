@@ -16,7 +16,7 @@ public static class Glossary
         ["CERSAI"] = "The central registry that keeps Central KYC (CKYC) records",
         ["NSDL"] = "The PAN registry: it confirms the PAN, date of birth and name belong together",
         ["POA"] = "Proof of address",
-        ["CMS"] = "Axis Bank's cash-management branch, where a cheque or DD is paid in",
+        ["CMS"] = "Axis Bank's cash-management branch, where a cheque is paid in",
         ["IFSC"] = "The 11-character code of a bank branch",
         ["MICR"] = "The 9-digit code on a cheque's bottom line",
         ["OCR"] = "Reading the text off an uploaded copy",
