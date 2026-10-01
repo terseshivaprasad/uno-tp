@@ -1,12 +1,11 @@
 using System.Text.Json;
 using UnoTP.Models;
-using UnoTP.Services;
 
 namespace UnoTP.Infrastructure;
 
 /// <summary>
 /// What the server keeps for one partner's browser: the sign-in - who the partner
-/// is, the backend's session for them, when it ends and the menu it opens - and
+/// is, the backend's session for them and when it ends - and
 /// nothing else. The application and everything on it are the backend's, kept
 /// there for audit; the application a page is on is in its address (see
 /// ApplicationUrls), and addresses carry no PAN, date of birth, name or folio.
@@ -18,7 +17,6 @@ public static class PartnerSession
     private const string OwnerKey = "partner";
     private const string SessionIdKey = "entry.session";
     private const string ExpiresKey = "entry.expires";
-    private const string MenuKey = "entry.menu";
     private const string ProfileKey = "entry.profile";
     private const string UserKey = "entry.user";
     private const string PortalUserKey = "portal.userId";
@@ -41,17 +39,16 @@ public static class PartnerSession
     }
 
     /// <summary>
-    /// Keeps the user the portal sent in, the session started for them, who they are
-    /// and the menus they may open. Whatever the browser held before goes: a session
-    /// is never carried over from one user to another.
+    /// Keeps the user the portal sent in, the session started for them and who they
+    /// are. Whatever the browser held before goes: a session is never carried over
+    /// from one user to another.
     /// </summary>
-    public static void SignIn(this ISession session, UserSession user, IEnumerable<string> menu)
+    public static void SignIn(this ISession session, UserSession user)
     {
         session.Clear();
         session.SetString(OwnerKey, user.UserId);
         session.SetString(SessionIdKey, user.SessionId);
         session.SetString(ExpiresKey, user.ExpiresAt.ToString("o"));
-        session.SetString(MenuKey, JsonSerializer.Serialize(menu.Distinct().ToList()));
         session.SetString(ProfileKey, JsonSerializer.Serialize(user.Partner));
         session.SetString(UserKey, JsonSerializer.Serialize(user.User));
     }
@@ -102,10 +99,6 @@ public static class PartnerSession
 
     /// <summary>The backend session the user came in with; null before anyone has.</summary>
     public static string? BackendSession(this ISession session) => session.GetString(SessionIdKey);
-
-    /// <summary>The console feature keys the user's menu opens; null before anyone has come in.</summary>
-    public static IReadOnlySet<string>? Menu(this ISession session) =>
-        session.GetString(MenuKey) is { } json ? JsonSerializer.Deserialize<HashSet<string>>(json) : null;
 }
 
 /// <summary>The partner the backend is asked on behalf of: the session's owner.</summary>

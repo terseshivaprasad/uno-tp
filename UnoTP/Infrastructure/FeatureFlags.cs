@@ -56,21 +56,4 @@ public sealed class FeatureFlags
         "admin" => Admin,
         _ => true,
     };
-
-    /// <summary>Switches off the feature behind a console feature key.</summary>
-    public void SwitchOff(string key)
-    {
-        switch (key)
-        {
-            case "new-fd": NewFd = false; break;
-            case "pis": PisGeneration = false; break;
-            case "view-app": ViewApplication = false; break;
-            case "short-url": ShortUrl = false; break;
-            case "app-status": ApplicationStatus = false; break;
-            case "renew": RenewFd = false; break;
-            case "admin": Admin = false; break;
-        }
-    }
-
-    public FeatureFlags Clone() => (FeatureFlags)MemberwiseClone();
 }

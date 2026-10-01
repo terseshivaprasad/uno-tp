@@ -14,13 +14,13 @@ namespace UnoTP.Controllers;
 /// The portal's dashboard opens /Home/Index?UserId=...&amp;SysCode=... (the app's root
 /// leads there too), both values encrypted by the portal. Entry asks the E-Sarathi
 /// auth API three things: to decrypt the two values, to start a session for the
-/// user, and for the menus they may open. It keeps who the user is and their menus,
-/// and sends them to the dashboard, with nothing of either value left in the address.
+/// user, and for their Uno TP menus - a user with none is refused. It keeps who the user
+/// is, and sends them to the dashboard, with nothing of either value left in the address.
 ///
 /// Home goes back to the portal's dashboard with the same encrypted values, so the
 /// portal knows who is back. Logout ends the session here and goes to the portal's
 /// logout page. The controller also serves the session-expired, unauthorized and error
-/// pages, and the drawio download.
+/// pages.
 /// </summary>
 [AllowWithoutSession]
 public class EntryController(
@@ -28,7 +28,6 @@ public class EntryController(
     ISessionApi sessions,
     AppUrls apps,
     IOptions<PortalOptions> portal,
-    IOptions<MenuOptions> menuPages,
     ILogger<EntryController> log) : Controller
 {
     [HttpGet("Home")]
@@ -98,14 +97,14 @@ public class EntryController(
             return Refused("Uno TP could not start your session just now. Try again in a while.");
         }
 
-        // The pages of the portal's menu, as the console features they open.
-        var menuKeys = menuPages.Value.FeatureKeys(menu);
-        if (menuKeys.Count == 0)
+        // A user the portal gives no Uno TP menu to has no way in. Which features are on
+        // is not the menu's to say: that is the "Features" section of appsettings.
+        if (menu.Count == 0)
         {
             return Refused("Your menu does not include Uno TP. Ask your administrator for access.");
         }
 
-        HttpContext.Session.SignIn(started, menuKeys);
+        HttpContext.Session.SignIn(started);
         // Kept for the way back to the portal (Home). After SignIn, which clears the session.
         if (fromPortal) HttpContext.Session.KeepPortalValues(userId!, sysCode!);
         return Onward(returnUrl);
@@ -149,27 +148,15 @@ public class EntryController(
         return View();
     }
 
-    /// <summary>A feature the user's menu does not open, reached by its address.</summary>
+    /// <summary>A page that is not the user's to open.</summary>
     [HttpGet("Home/Unauthorized")]
-    public async Task<IActionResult> Unauthorized(string? feature, [FromServices] UnoTP.Models.ConsoleState console)
-    {
-        if (feature is not null && FeatureSet.MenuKeys.Contains(feature))
-        {
-            var name = (await console.BoardAsync()).NameOf(feature);
-            return Refused($"{name} is not in your menu. Ask your administrator if you need it.");
-        }
-        return Refused("You do not have access to this page.");
-    }
+    public IActionResult NoAccess() => Refused("You do not have access to this page.");
 
     [HttpGet("Home/Error")]
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     [IgnoreAntiforgeryToken]
     public IActionResult Error() =>
         View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
-
-    /// <summary>A standalone page to download the Uno TP search page's drawio file.</summary>
-    [HttpGet("Home/DrawioDownload")]
-    public IActionResult DrawioDownload() => View();
 
     // Only ever to a page of this app.
     private IActionResult Onward(string? returnUrl)

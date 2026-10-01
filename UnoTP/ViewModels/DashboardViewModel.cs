@@ -1,5 +1,4 @@
 using UnoTP.Models;
-using UnoTP.Services;
 using UnoTP.Infrastructure;
 
 namespace UnoTP.ViewModels;
@@ -117,7 +116,6 @@ public class DashboardViewModel(FeatureSet features, ConsoleBoard board, string?
     private static string? ClosedLine(FeatureSet features, ConsoleBoard board, string? off)
     {
         if (off is null) return null;
-        if (features.NotInMenu.Contains(off)) return $"{board.NameOf(off)} is not in your menu.";
         var reason = board.OffLabel(off, features.Flags);
         // The feature may have come back on between the redirect and this page.
         if (reason is null) return null;
@@ -135,8 +133,7 @@ public class DashboardViewModel(FeatureSet features, ConsoleBoard board, string?
     private DashboardTile Tile(string key, string glyph, string? controller)
     {
         var title = Board.NameOf(key);
-        var off = (features.NotInMenu.Contains(key) ? "Not in your menu" : null)
-            ?? Board.OffLabel(key, features.Flags) ?? (controller is null ? Board.Feature(key)?.OffReason ?? "Unavailable" : null);
+        var off = Board.OffLabel(key, features.Flags) ?? (controller is null ? Board.Feature(key)?.OffReason ?? "Unavailable" : null);
         return new(key, title, glyph, controller, off,
             off is null ? null : ClosedLine(features, Board, key) ?? $"{title} is not available yet.");
     }

@@ -1,6 +1,3 @@
-using Microsoft.Extensions.Configuration;
-using UnoTP.Models;
-
 namespace UnoTP.Services;
 
 /// <summary>

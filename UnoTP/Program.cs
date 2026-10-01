@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Routing;
@@ -54,7 +53,6 @@ builder.Services.Configure<UidMaskingOptions>(builder.Configuration.GetSection(U
 builder.Services.Configure<CkycOptions>(builder.Configuration.GetSection(CkycOptions.Section));
 builder.Services.Configure<NameScreeningOptions>(builder.Configuration.GetSection(NameScreeningOptions.Section));
 builder.Services.Configure<NameMatchOptions>(builder.Configuration.GetSection(NameMatchOptions.Section));
-builder.Services.Configure<MenuOptions>(builder.Configuration.GetSection(MenuOptions.Section));
 builder.Services.Configure<IdfyOptions>(builder.Configuration.GetSection(IdfyOptions.Section));
 builder.Services.Configure<ShortenerOptions>(builder.Configuration.GetSection(ShortenerOptions.Section));
 builder.Services.Configure<PaymentLinkOptions>(builder.Configuration.GetSection(PaymentLinkOptions.Section));
@@ -138,13 +136,6 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.KnownProxies.Clear();
 });
 
-// The keys that protect the session and antiforgery cookies. Kept at
-// DataProtection:KeysPath when it is set (a persistent disk), so a restart or a
-// second instance does not sign everyone out; without it they last as long as the process.
-var keys = builder.Services.AddDataProtection().SetApplicationName("UnoTP");
-if (builder.Configuration["DataProtection:KeysPath"] is { Length: > 0 } keysPath)
-    keys.PersistKeysToFileSystem(new DirectoryInfo(keysPath));
-
 // Pages, styles, scripts and JSON go compressed - Brotli where the browser takes
 // it, gzip otherwise. Over HTTPS too: the only secret a page carries is the
 // antiforgery token, which is issued afresh with every page, so compression gives
@@ -165,15 +156,10 @@ builder.Services.AddHealthChecks();
 // Who the partner is, from the backend (GET me), once a request.
 builder.Services.AddScoped<CurrentPartner>();
 
-// Feature switches: from appsettings, less what the user's menu does not open (see FeatureSet).
+// Feature switches: the "Features" section of appsettings, and nothing else.
 builder.Services.AddHttpContextAccessor();
 builder.Services.Configure<FeatureFlags>(builder.Configuration.GetSection("Features"));
-builder.Services.AddScoped(sp =>
-{
-    var ctx = sp.GetRequiredService<IHttpContextAccessor>().HttpContext;
-    return ctx?.Items[FeatureSet.ItemKey] as FeatureSet
-        ?? new FeatureSet(sp.GetRequiredService<IOptions<FeatureFlags>>().Value);
-});
+builder.Services.AddSingleton(sp => new FeatureSet(sp.GetRequiredService<IOptions<FeatureFlags>>().Value));
 
 var app = builder.Build();
 
@@ -247,9 +233,6 @@ app.Use((context, next) =>
     context.Items[SqlErrorLog.UserItem] = context.Session.SignedInUser();
     return next();
 });
-
-// The request's features, worked out once the session is read and before the pages run.
-app.UseFeatures();
 
 // A change posted from a page comes back as that page in one round trip, not two
 // (see PartialFollow). Before routing, so the page it follows on to is routed afresh.

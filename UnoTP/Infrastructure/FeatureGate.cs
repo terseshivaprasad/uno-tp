@@ -37,12 +37,6 @@ public sealed class FeatureGate : IAsyncActionFilter
         {
             var services = context.HttpContext.RequestServices;
             var features = services.GetRequiredService<FeatureSet>();
-            // A feature the user's menu does not open is not theirs to reach at all.
-            if (features.NotInMenu.Contains(key))
-            {
-                context.Result = new RedirectToActionResult("Unauthorized", "Entry", new { feature = key });
-                return;
-            }
             var board = await services.GetRequiredService<ConsoleState>().BoardAsync();
             if (board.OffLabel(key, features.Flags) is not null)
             {

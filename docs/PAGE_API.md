@@ -20,7 +20,7 @@ the ones kept in SQL Server, and the outside services have an HTTP client each i
 | Call | Used for |
 |---|---|
 | `IDecryptionService.DecryptAsync` | The portal's encrypted user id and system code (`POST cipher/decrypt` on the auth API). |
-| `ISessionApi.StartAsync`, `MenuAsync` | Start the session (`POST auth/sessions`); the pages the partner's menu opens (`GET app-menus/{userId}/{sysCode}`), mapped to features by `Menu:Pages`. |
+| `ISessionApi.StartAsync`, `MenuAsync` | Start the session (`POST auth/sessions`); the partner's Uno TP menus (`GET app-menus/{userId}/{sysCode}`): a partner with none is refused. Which features are on is the `Features` section of appsettings alone. |
 
 ## Dashboard
 

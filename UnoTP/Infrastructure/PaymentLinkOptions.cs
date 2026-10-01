@@ -1,5 +1,3 @@
-using Microsoft.Extensions.Configuration;
-
 namespace UnoTP.Infrastructure;
 
 /// <summary>

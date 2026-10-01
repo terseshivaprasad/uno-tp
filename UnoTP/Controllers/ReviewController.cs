@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using UnoTP.Models;
 using UnoTP.Services;
-using UnoTP.Services.Shortener;
 using UnoTP.Infrastructure;
 using UnoTP.ViewModels;
 

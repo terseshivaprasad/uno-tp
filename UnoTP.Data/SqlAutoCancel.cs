@@ -1,6 +1,5 @@
 using Dapper;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 
 namespace UnoTP.Data;
 

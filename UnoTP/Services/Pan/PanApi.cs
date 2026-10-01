@@ -1,10 +1,7 @@
 using System.Net;
-using System.Net.Http.Json;
 using System.Text.Json;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using UnoTP.Models;
-using UnoTP.Services;
 
 namespace UnoTP.Services.Pan;
 

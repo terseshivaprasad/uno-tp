@@ -167,7 +167,6 @@ underscore (`ConnectionStrings__UnoTP`).
 | `PanApi:VerifyPath` | Where a holder's PAN is checked with NSDL. Everything else the request carries - the app code, the sourcing type and sub type, who is asking - comes from the signed-in partner and the application. |
 | `UidMasking:MaskPath`, `UidMasking:MaskLength`, `UidMasking:OutputJpegQuality`, `UidMasking:CheckDocumentType` | Where an Aadhaar copy is masked, how many digits are masked, how good the masked JPEG comes back, and whether the API checks the copy is an Aadhaar first. |
 | `AuthApi:SessionHours`, `AuthApi:TimeoutSeconds` | Hours a session lasts after entry (8), and seconds the API is given to answer (55). |
-| `Menu:Pages` | Which console feature each page of the portal's menu opens: the menu's `PageName` against `new-fd`, `pis`, `view-app`, `short-url`, `app-status`, `renew` or `admin`. A user whose menu opens none of them is refused. |
 | `NameScreening:BasePath`, `NameScreening:ScreenPath` | The name screening API (NSA): whether a holder may invest online. |
 | `NameScreening:ApiKey` | The key it is called with, on its `apikey` header. Set in the environment (`NameScreening__ApiKey`), never in a committed file. |
 | `NameScreening:ApiCall` | `0` switches screening off: the API is not called, every holder goes on, and the KYC row says the check was skipped. Anything else is sent on as `Api_call`. |
@@ -179,7 +178,7 @@ underscore (`ConnectionStrings__UnoTP`).
 | `Idfy:ValidateDocumentPath`, `Idfy:ExtractPanPath`, `Idfy:ExtractAadhaarPath`, `Idfy:ExtractDrivingLicencePath`, `Idfy:ExtractPassportPath`, `Idfy:ExtractVoterIdPath`, `Idfy:ExtractChequePath`, `Idfy:VerifyDrivingLicencePath`, `Idfy:VerifyPassportPath`, `Idfy:VerifyVoterIdPath`, `Idfy:VerifyPanAadhaarLinkPath`, `Idfy:CompareFacesPath` | The path of each Idfy.Api call under the gateway. |
 | `Shortener:ShortenPath` | Where the payment link is shortened on submit. No path, and the link goes in full. |
 | `PaymentLink:Template` | The page the investor pays on, with `{appNo}` for the application's number. Blank, the app sends no link and the backend makes its own. |
-| `Apps:eSarathiLogin`, `Apps:eSarathiConsole`, … | The other apps' addresses, for the links out and the session-expired redirect. |
+| `Apps:eSarathiLogin`, `Apps:eSarathiConsole`, `Apps:UnoTP` | The other apps' addresses, for the links out and the session-expired redirect. |
 | `Portal:Home`, `Portal:Logout` | The portal's dashboard (where "Portal" goes back to, with the encrypted UserId and SysCode) and its logout page. Blank: the console's `/Classic` and the login portal's root. |
 | `Backend:TimeoutSeconds` | How long any backend API may take to answer: 55 s. Nothing is retried - every call may be charged. |
 | `Logging:Sql:MinLevel` | The least serious entry written to `t_Unotp_Logs` (`Error`): every error and critical error, with the request, the application number and the partner signed in, in the background. Only on the database. |

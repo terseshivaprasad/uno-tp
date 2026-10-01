@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Caching.Memory;
 using UnoTP.Models;
-using UnoTP.Services;
 
 namespace UnoTP.Infrastructure;
 

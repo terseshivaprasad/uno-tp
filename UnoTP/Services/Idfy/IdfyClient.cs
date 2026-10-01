@@ -1,13 +1,10 @@
 using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
-using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using UnoTP.Models;
-using UnoTP.Services;
 
 namespace UnoTP.Services.Idfy;
 
@@ -45,9 +42,9 @@ public sealed class IdfyClient(HttpClient http, IOptions<IdfyOptions> options, I
 
     // ----- Document validation ------------------------------------------------
 
-    /// <param name="docType">ind_pan, ind_aadhaar, ind_voter_id, ind_driving_license or ind_passport.</param>
-    /// <param name="docType">The type to check it against, or null to have IDfy say
-    /// what it is (in <c>detected_doc_type</c>) without checking it against anything.</param>
+    /// <param name="docType">The type to check it against - ind_pan, ind_aadhaar, ind_voter_id,
+    /// ind_driving_license or ind_passport - or null to have IDfy say what it is
+    /// (in <c>detected_doc_type</c>) without checking it against anything.</param>
     public Task<IdfyTask<ValidateResult>> ValidateAsync(UploadFile file, string? docType, CancellationToken ct = default) =>
         Post<ValidateResult>(paths.ValidateDocumentPath, new { document = Image(file), docType }, ct);
 

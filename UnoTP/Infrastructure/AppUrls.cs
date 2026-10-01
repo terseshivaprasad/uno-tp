@@ -1,12 +1,12 @@
 namespace UnoTP.Infrastructure;
 
 /// <summary>
-/// Where the other apps of the solution are served from. Each app runs on its own,
-/// so a link into another one needs that app's address. No two apps answer the
-/// same route, so the route alone says which app to send it to.
+/// Where the login portal and the console are served from. Each app runs on its
+/// own, so a link into another one needs that app's address. No two apps answer
+/// the same route, so the route alone says which app to send it to.
 ///
 /// The addresses come from the "Apps" section of appsettings. An app left blank
-/// there gets a plain route, which is right when all five sit behind one host.
+/// there gets a plain route, which is right when they all sit behind one host.
 /// </summary>
 public sealed class AppUrls(IConfiguration config)
 {
@@ -24,8 +24,6 @@ public sealed class AppUrls(IConfiguration config)
         {
             if (path.Equals(prefix, StringComparison.OrdinalIgnoreCase) || path.StartsWith(prefix + "/", StringComparison.OrdinalIgnoreCase)) return "UnoTP";
         }
-        if (path.StartsWith("/Apps/DmsExplorer", StringComparison.OrdinalIgnoreCase)) return "DmsExplorer";
-        if (path.StartsWith("/Apps/OvdExplorer", StringComparison.OrdinalIgnoreCase)) return "OvdExplorer";
         if (path.Equals("/Classic", StringComparison.OrdinalIgnoreCase)
             || path.Equals("/New", StringComparison.OrdinalIgnoreCase)) return "eSarathiConsole";
         return "eSarathiLogin";
