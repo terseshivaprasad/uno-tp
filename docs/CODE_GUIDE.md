@@ -27,7 +27,7 @@ through `@section Styles` and `@section Scripts` at the foot of its view.
 | Console Admin | `/Admin` | `AdminController` | `Views/Admin/Index` | `pages/admin.css` | `pages/admin.js` |
 | Error, Session expired, Unauthorized | `/Home/Error` … | `EntryController` | `Views/Entry/*`, `Shared/Error` (on `_StatusLayout`) | `pages/status.css` | – |
 
-Paths are under `src/UnoTP/`; stylesheets and scripts under `src/UnoTP/wwwroot/css/` and `wwwroot/js/`.
+Paths are under `UnoTP/`; stylesheets and scripts under `UnoTP/wwwroot/css/` and `wwwroot/js/`.
 
 ## Shared files (loaded by `Views/Shared/_Layout.cshtml`, in this order)
 
@@ -82,8 +82,8 @@ its elements by `data-*` and ids, almost never by class. Before renaming one, se
 `wwwroot/js/` for it and change both sides.
 
 **C#**: controllers stay thin and hand the work to a view model in `ViewModels/`.
-`UnoTP.Backend` holds the rules and the outside services (NSDL, IDfy, the shortener),
-`UnoTP.Data` the SQL layer over the `t_Unotp_` tables. `Infrastructure/` holds the cross-cutting parts: feature gate, security headers,
+`Services/` holds one folder per backend API (the way in, the PAN check, masking, IDfy, the
+shortener); `UnoTP.Data` is the SQL layer over the `t_Unotp_` tables, with the models both share. `Infrastructure/` holds the cross-cutting parts: feature gate, security headers,
 partner session, URL building. Every method has a `///` summary or a comment above it.
 
 ## Rules to keep
@@ -102,7 +102,7 @@ partner session, URL building. Every method has a `///` summary or a comment abo
 ## Running and checking
 
 ```
-dotnet run --project src/UnoTP --launch-profile http      # port 5102; PORT=5103 for a second copy
+dotnet run --project UnoTP --launch-profile http      # port 5102; PORT=5103 for a second copy
 ```
 
 Stylesheets and scripts are linked with `asp-append-version`, so a change shows on

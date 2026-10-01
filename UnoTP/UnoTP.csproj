@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <!-- The web app: pages, and the services that call the backend APIs. The
+       database logic and the models are in UnoTP.Data. -->
+  <ItemGroup>
+    <ProjectReference Include="..\UnoTP.Data\UnoTP.Data.csproj" />
+  </ItemGroup>
+
+</Project>

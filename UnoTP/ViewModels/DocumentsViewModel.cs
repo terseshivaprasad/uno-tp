@@ -1,0 +1,2412 @@
+using UnoTP.Models;
+using UnoTP.Services;
+
+namespace UnoTP.ViewModels;
+
+/// <summary>
+/// The old WA_FD_UNOTP/UploadInvestorDocuments: the documents an application
+/// carries, and the details it is sourced under. Step two of the classic wizard.
+///
+/// Everything happens on the server: a document is posted, put through its checks
+/// and filed or refused; a choice that reshapes the step (the application type, a
+/// proof's type, the payment or sourcing mode, the category) is posted and the page
+/// redrawn from it. What the step holds against the application is read from the
+/// backend and saved back to it (see <see cref="IApplicationApi"/>), so a reload or
+/// a visit later finds it as it was left. Every post redirects back to the page, so
+/// a refresh never posts twice.
+///
+/// The PAN copy, the photograph and the proof of address are asked of every holder,
+/// the same way: of the investor here, and of each joint holder on Investor
+/// Information, which hands its posts to this same model (see <see cref="DocHolder"/>).
+///
+/// A document's checks are outside services, each asked in turn: identification,
+/// OCR - which for an Aadhaar has to read the name and date of birth on the PAN - and
+/// whoever answers for what was read - the issuer or the bank - or for a PAN, the
+/// PAN-Aadhaar link. Only then is the copy filed with DMS (see <see cref="IDocumentApi"/>).
+///
+/// The address carries nothing: the application is the one the session is on,
+/// opened by Investor Identification, and only ever the owner's own (see
+/// <see cref="Controllers.DocumentsController"/>), which reads it, hands it
+/// here, and saves what this leaves in it.
+/// </summary>
+public class DocumentsViewModel(
+    UnoTP.Models.Application app,
+    ISession session,
+    IDocumentApi documents,
+    IDocumentIdentifier identifier,
+    IOcrService ocr,
+    IPanVerificationService pan,
+    ICkycService ckyc,
+    UnoTP.Infrastructure.FeatureSet features,
+    IVerificationService verification,
+    IPanAadhaarLinkService panLink,
+    IFaceMatchService faces,
+    IMaskingService masking,
+    INameScreeningService screening,
+    INameMatchService names,
+    OutsideSwitches switches,
+    UnoTP.Infrastructure.Lookups lookups,
+    UnoTP.Infrastructure.CurrentPartner currentPartner,
+    ISourcingApi sourcing)
+{
+    /// <summary>The application the session is on, read afresh for every request.</summary>
+    public UnoTP.Models.Application App { get; } = app;
+
+    // The investor as the application was opened on them, under the name NSDL has
+    // since verified where they came with no folio. Read off the saved state, not
+    // State, which is built from this.
+    private Holder Who => App.Upload is { Name.Length: > 0 } u ? App.Holder with { Name = u.Name } : App.Holder;
+
+    public string HolderName => Who.Name.Length > 0 ? Who.Name : "Name read off the PAN copy";
+
+    // A PAN established at the step before has no folio yet: one opens with the
+    // application, and the head of the page says so rather than leaving a blank.
+    public bool HasFolio => Who.Folio.Length > 0;
+
+    /// <summary>
+    /// Whether the investor's KYC can be fetched from CKYC now: only for an investor
+    /// with no folio, on the PAN and date of birth they were identified with - so
+    /// before any PAN copy is uploaded too. Once a copy is uploaded it has to hold:
+    /// while NSDL has not verified it (not asked yet, the name not agreeing, no such
+    /// PAN), the record is not fetched on it. A PAN established before the
+    /// application was opened needs no copy.
+    /// </summary>
+    public bool CkycPanVerified => !HasFolio && (PanFiled || View(PanSlot).Doc is null || NsdlOf(Investor) == "verified");
+
+    public const string CkycWaitsOnPan = "Available once NSDL verifies the uploaded PAN copy.";
+
+    /// <summary>The deposit this application renews, when it was opened from Renew FD; null for a new deposit.</summary>
+    public RenewalOf? Renewal => App.Renewal;
+
+    /// <summary>A renewal: no payment is made - the maturing deposit pays for the new one - and the amount is its maturity amount.</summary>
+    public bool IsRenewal => App.Renewal is not null;
+
+    public string Folio => Who.Folio;
+
+    public string HolderFolio => HasFolio ? Who.Folio : "Opens with this application";
+
+    public string HolderPan => MaskPan(Who.Pan);
+
+    public string HolderDob => MaskDate(Who.Dob);
+
+    /// <summary>Set when the step before already put a PAN copy on the application.</summary>
+    public bool PanFiled => Who.PanFiled;
+
+    /// <summary>The number the application is filed under, minted when it was opened.</summary>
+    public string AppNo => App.AppNo;
+
+    /// <summary>
+    /// Whose documents a slot holds, by the holder type DMS files them under: 01 the
+    /// investor, 02 the second holder, 03 the third. The investor's keys are the
+    /// slots' own ("pan"); a joint holder's carry their type in front ("h02-pan").
+    /// </summary>
+    public sealed record DocHolder(string Code, Holder Who)
+    {
+        public bool Joint => Code != HolderType.Investor;
+
+        /// <summary>The key a document slot is stored under: the slot itself for the investor, prefixed h{n}- for a joint holder.</summary>
+        public string Key(string slot) => Joint ? $"h{Code}-{slot}" : slot;
+    }
+
+    public DocHolder Investor => new(HolderType.Investor, Who);
+
+    /// <summary>The joint holders on the application: the second, then the third.</summary>
+    public IEnumerable<DocHolder> JointHolders =>
+        State.Joint.OrderBy(j => j.Key, StringComparer.Ordinal).Select(j => new DocHolder(j.Key, j.Value.Holder));
+
+    public DocHolder? JointHolder(string? code) =>
+        code is not null && State.Joint.TryGetValue(code, out var j) ? new DocHolder(code, j.Holder) : null;
+
+    private IEnumerable<DocHolder> Holders => JointHolders.Prepend(Investor);
+
+    /// <summary>
+    /// Whether a proof's type is set from what the copy is identified as, after the
+    /// upload (the document identification feature, on by default). Off, it is chosen
+    /// from a drop-down first, and the box waits for it.
+    /// </summary>
+    /// <summary>Whether a proof of address's type is detected off the copy: the feature on, and identification not switched off.</summary>
+    public bool AutoProofType => features.Flags.DocIdentification && switches.IsOn(OutsideSwitches.Identify);
+
+    /// <summary>
+    /// Whether a communication address other than the permanent one is proved with an
+    /// upload (the CommProofUpload feature, off for this release). Off, the box is not
+    /// shown, and the address is typed on Investor Information.
+    /// </summary>
+    public bool CommProofUpload => features.Flags.CommProofUpload;
+
+    /// <summary>Whether a holder's communication address is typed on Investor Information: it differs, and no proof of it is uploaded.</summary>
+    public bool MailTyped(DocHolder h) => MailDifferentOf(h) && !CommProofUpload;
+
+    /// <summary>The communication address typed for a holder, as last saved; null until one is.</summary>
+    public TypedAddress? TypedMailOf(DocHolder h) =>
+        App.Details?.Holders.FirstOrDefault(d => d.Holder == h.Code)?.Communication is { Line1.Length: > 0 } typed ? typed : null;
+
+    public const string MailTypedWhy = "The communication address is typed on Investor Information, so no proof of it is uploaded.";
+
+    /// <summary>A typed address on lines of its own, as a read card and the review show it.</summary>
+    public static string Lines(TypedAddress a) => string.Join(", ",
+        new[] { a.Line1, a.Line2, a.Line3, a.City, a.District, a.State }.Where(x => x.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase))
+        + (a.PinCode.Length > 0 ? " - " + a.PinCode : "");
+
+    /// <summary>The proof of address chosen for a holder.</summary>
+    public string PoaTypeOf(DocHolder h) => h.Joint ? State.Joint[h.Code].PoaType : State.PoaType;
+
+    private void SetPoaType(DocHolder h, string type)
+    {
+        if (h.Joint) State.Joint[h.Code].PoaType = type;
+        else State.PoaType = type;
+    }
+
+    /// <summary>
+    /// Whether a holder's communication address is theirs to give here. Not where
+    /// the system already holds the address - a folio with the proof of address or
+    /// the address on it, whose address is the mailing address too - nor, for the
+    /// investor, once CKYC is fetched, whose record brings it. Wherever a proof of
+    /// address is asked for, the address is being set now and post may go elsewhere.
+    /// </summary>
+    public bool MailCanDiffer(DocHolder h) =>
+        !(State.Ckyc && !h.Joint) && (h.Who.Folio.Length == 0 || View(PoaSlot, h).Used);
+
+    // Why a holder has no communication address of their own to prove.
+    private string MailWhy(DocHolder h) => h.Who.Folio.Length > 0
+        ? "The address is on the folio, so post goes there."
+        : "The communication address comes with the CKYC record, once the investor consents. It is not uploaded here.";
+
+    /// <summary>
+    /// Whether NSDL is asked about a holder's PAN when their PAN copy is filed: any
+    /// holder with no folio - the investor or a joint holder - who comes to this
+    /// step on their PAN and date of birth alone. OCR reads the name off the copy,
+    /// and NSDL is asked for all three. An application whose PAN was established
+    /// before it was opened is past it.
+    /// </summary>
+    public static bool NsdlApplies(DocHolder h) => h.Who.Folio.Length == 0 && !h.Who.PanFiled;
+
+    /// <summary>Where NSDL stands on a holder: empty until asked, "verified", "name" or "failed".</summary>
+    public string NsdlOf(DocHolder h) => h.Joint ? State.Joint[h.Code].Nsdl : State.Nsdl;
+
+    private string NsdlNameOf(DocHolder h) => h.Joint ? State.Joint[h.Code].NsdlName : State.NsdlName;
+
+    // The holder as the state now has them, after NSDL may have named them.
+    private DocHolder Again(DocHolder h) => h.Joint ? JointHolder(h.Code)! : Investor;
+
+    // What NSDL failing means for the holder: a joint holder is removed, and an
+    // investor the application was opened on is searched for again.
+    private static string NsdlFailedNext(DocHolder h) => h.Joint
+        ? "Remove this holder and search again."
+        : "Start again from Investor Identification with the right PAN and date of birth.";
+
+    /// <summary>
+    /// Whether the PAN-Aadhaar link is asked for a holder: only one with no folio
+    /// yet. A holder on a folio is past it.
+    /// </summary>
+    public static bool LinkApplies(DocHolder h) => h.Who.Folio.Length == 0;
+
+    /// <summary>
+    /// Whether "What the PAN was checked with" is shown for a holder: only one with no
+    /// folio yet, and only once their PAN copy is filed, since every check starts
+    /// from it. A holder on a folio was checked when it opened - NSDL and the
+    /// PAN-Aadhaar link are not asked again - so the section is left off.
+    /// </summary>
+    public bool PanChecksShown(DocHolder h) => h.Who.Folio.Length == 0 && State.Docs.ContainsKey(h.Key("pan"));
+
+    /// <summary>Whether a holder's post goes to an address other than the permanent one.</summary>
+    public bool MailDifferentOf(DocHolder h) =>
+        MailCanDiffer(h) && (h.Joint ? State.Joint[h.Code].MailDifferent : State.MailDifferent);
+
+    /// <summary>What a holder's communication address is proved with.</summary>
+    public string MailTypeOf(DocHolder h) => h.Joint ? State.Joint[h.Code].MailPoaType : State.MailPoaType;
+
+    private void SetMail(DocHolder h, bool different, string type)
+    {
+        if (h.Joint) (State.Joint[h.Code].MailDifferent, State.Joint[h.Code].MailPoaType) = (different, type);
+        else (State.MailDifferent, State.MailPoaType) = (different, type);
+    }
+
+    // What a proof is handed in as within its kind: the type chosen above its box.
+    private string TypeOf(SlotDef def, DocHolder h) => def.Key switch
+    {
+        "poa" => PoaTypeOf(h),
+        "mail" => MailTypeOf(h),
+        "payment" => State.PayMode,
+        _ => "",
+    };
+
+    // A KYC document is filed under the holder it belongs to; the rest belong to
+    // the application and file as not holder-specific.
+    private static string FiledUnder(SlotDef def, DocHolder h) => HolderSlots.Contains(def) ? h.Code : HolderType.None;
+
+    /// <summary>Where DMS holds the copy behind a slot's key: its holder type and slot.</summary>
+    public (string Holder, string Slot)? DmsOf(string key) =>
+        Locate(key) is { } found ? (FiledUnder(found.Def, found.Holder), found.Def.Key) : null;
+
+    // The same masking the register uses: a PAN keeps its first five and last
+    // character, a date of birth only its year.
+    /// <summary>
+    /// Why a PAN copy is not the holder's, or null when it is. The PAN and date of
+    /// birth were settled before any copy was asked for and cannot be changed, so
+    /// the copy has to read as both: another PAN or date of birth, or one OCR could
+    /// not read, and it is refused.
+    /// </summary>
+    public static string? PanCopyMismatch(OcrReading reading, string pan, string dob)
+    {
+        var read = reading.Pan.Replace(" ", "").ToUpperInvariant();
+        if (read.Length == 0) return "OCR could not read the PAN number on it";
+        if (read != pan.ToUpperInvariant()) return $"The PAN on it reads as {MaskPan(read)}, not {MaskPan(pan)}";
+        if (dob.Length == 0) return null;
+        if (reading.Dob.Length == 0) return "OCR could not read the date of birth on it";
+        if (reading.Dob != dob) return $"The date of birth on it does not match the one entered ({MaskDate(dob)})";
+        return null;
+    }
+
+    /// <summary>A PAN with its middle hidden, as the pages show it.</summary>
+    public static string MaskPan(string pan) =>
+        pan.Length == 10 ? pan[..5] + "••••" + pan[9..] : pan;
+
+    public static string MaskDate(string dob) =>
+        dob.Length == 10 ? "••/••/" + dob[6..] : dob;
+
+    // ===== What the page offers ================================================
+
+    /// <summary>What a drop zone takes, and what it says it takes.</summary>
+    public record Accepts(string Mime, string Label, int MaxMb);
+
+    public static readonly Accepts Form = new("application/pdf,image/jpeg", "PDF/JPG/JPEG", 4);
+    public static readonly Accepts Image = new("image/jpeg", "JPG/JPEG", 2);
+    public static readonly Accepts Proof = new("application/pdf,image/jpeg", "PDF/JPG/JPEG", 2);
+
+    // An application made on paper carries a signed form; a digital one is
+    // accepted through the investor's own link instead, so that slot is not used.
+    public const string Digital = "DIGITAL";
+    public const string Physical = "PHYSICAL";
+
+    // ----- What the backend offers, and who is asking ---------------------------
+    // Read before the page is drawn (see ReadyAsync): every list the step offers,
+    // the rules it keeps, and the partner at the keyboard. None of it is written
+    // here.
+
+    /// <summary>Every list the step offers, from the backend.</summary>
+    public ReferenceData Ref { get; private set; } = null!;
+
+    /// <summary>The limits and rules the step keeps, from the backend.</summary>
+    public AppConfig Config { get; private set; } = null!;
+
+    /// <summary>The partner at the keyboard, from the backend.</summary>
+    public PartnerProfile Partner { get; private set; } = null!;
+
+    /// <summary>Reads the lists, the rules, the partner and the sourcing registers. Every request calls it before the model is used.</summary>
+    public async Task<DocumentsViewModel> ReadyAsync(CancellationToken ct = default)
+    {
+        var (reference, config, partner) = (lookups.ReferenceAsync(ct), lookups.ConfigAsync(ct), currentPartner.ProfileAsync(ct));
+        var (brokers, staff) = (sourcing.BrokersAsync(ct), sourcing.StaffAsync(ct));
+        (Ref, Config, Partner, Brokers, Staff) = (await reference, await config, await partner, await brokers, await staff);
+        return this;
+    }
+
+    public IReadOnlyList<Option> ApplicationTypes => Ref.ApplicationTypes;
+
+    /// <summary>What a digital application carries where a paper one carries its form number.</summary>
+    public const string DigitalFormNo = "0000";
+
+    /// <summary>The proofs of address the step takes, by type.</summary>
+    public IReadOnlyList<string> ProofsOfAddress => [.. Ref.ProofsOfAddress.Select(p => p.Type)];
+
+    /// <summary>
+    /// The proofs a box takes. The permanent address is proved only by an officially
+    /// valid document - one that carries the holder's photograph: an Aadhaar, a
+    /// passport, a driving licence or a voter ID. A utility bill says only where post
+    /// goes, so it proves the communication address alone.
+    /// </summary>
+    public IReadOnlyList<string> ProofsFor(string slot) =>
+        slot == PoaSlot.Key ? [.. Ref.ProofsOfAddress.Where(p => p.HasPhoto).Select(p => p.Type)] : ProofsOfAddress;
+
+    // "Aadhaar, Passport, Driving Licence or Voter ID".
+    private static string OneOf(IReadOnlyList<string> types) =>
+        types.Count <= 1 ? string.Join("", types) : string.Join(", ", types.Take(types.Count - 1)) + " or " + types[^1];
+
+    // Only the modes settled by an instrument carry a document; the rest are
+    // settled electronically and have nothing to file.
+    public IReadOnlyList<PaymentModeOption> PaymentModes => Ref.PaymentModes;
+
+    // The partner in the top bar, whose code fills the sourcing field.
+    private string PartnerCode => Partner.Code;
+
+    // ----- What a deposit is booked as -------------------------------------------
+
+    /// <summary>Whether a category is booked against a staff record - which is what
+    /// the block of employee fields is for, and only a sourcing agency books.</summary>
+    public bool IsEmployee(string category) => Ref.Categories.Any(c => c.Code == category && c.Employee);
+
+    /// <summary>A category as the backend names it.</summary>
+    public string CategoryName(string code) => Ref.Categories.FirstOrDefault(c => c.Code == code)?.Name ?? code;
+
+    /// <summary>
+    /// The category the holder's date of birth and gender make them: a senior
+    /// citizen from the senior age, and the women's category of either for a
+    /// woman. With no gender known yet, the one the date of birth alone gives.
+    /// </summary>
+    public string CategoryFor(string dob, string gender, DateTime today)
+    {
+        var senior = DateTime.TryParseExact(dob, "dd-MM-yyyy", System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.None, out var born) && born.AddYears(Config.SeniorAge) <= today.Date;
+        var woman = gender == Genders.Female;
+        return Ref.Categories.FirstOrDefault(c => !c.Employee && c.Senior == senior && c.Women == woman)?.Code ?? "";
+    }
+
+    // ----- How the application is sourced --------------------------------------
+    // One answer the rest of Additional Details hangs off: what the two code
+    // fields are called, which of them is typed and which the mode fills itself,
+    // whose register the typed one is searched against, and what the deposit may
+    // be booked as. The old screen keys the modes by number and posts them that
+    // way, so they keep their numbers here.
+
+    /// <summary>What the second code field does under a mode.</summary>
+    public static class SubField
+    {
+        /// <summary>Shut and empty: the mode has no sub-broker.</summary>
+        public const string Shut = "shut";
+
+        /// <summary>Shut, carrying the same house code as the field above it.</summary>
+        public const string House = "house";
+
+        /// <summary>There if there is one, empty if there is not.</summary>
+        public const string Free = "free";
+
+        /// <summary>The partner's own code, and theirs to change.</summary>
+        public const string Employee = "employee";
+
+        /// <summary>The partner's own code, and not theirs to change.</summary>
+        public const string EmployeeShut = "employeeShut";
+    }
+
+    /// <summary>Which register a mode searches its typed code against.</summary>
+    public static class Register
+    {
+        public const string None = "";
+        public const string Brokers = "brokers";
+        public const string Employees = "employees";
+    }
+
+    /// <summary>The ways an application can be sourced, in the backend's order.</summary>
+    public IReadOnlyList<SourcingModeOption> SourcingModes => Ref.SourcingModes;
+
+    /// <summary>The broker mode, the only one a partner other than the sourcing agency sources under.</summary>
+    public SourcingModeOption BrokerMode => SourcingModes.First(m => m.Register == Register.Brokers);
+
+    /// <summary>
+    /// Whether the partner chooses how the application is sourced and what it is
+    /// booked as: agency type 1033. Anyone else sources as a broker under their own
+    /// business broker code, and the category follows the holder's date of birth
+    /// and gender.
+    /// </summary>
+    public bool Chooses => Partner.AgencyType == Config.SourcingAgency;
+
+    /// <summary>The business broker code a partner other than the sourcing agency files under.</summary>
+    public string BusinessBroker => Partner.BrokerCode;
+
+    /// <summary>The gender the category is set from: the folio's, else an Aadhaar's read here.</summary>
+    public string HolderGender => GenderIn(State);
+
+    // Read off the state handed in, not State, which settles through here. The
+    // folio's gender, else an Aadhaar's read on this step, else what Investor
+    // Information asked and saved.
+    private string GenderIn(UploadState s)
+    {
+        if (Who.Gender.Length > 0) return Who.Gender;
+        if (s.Gender.Length > 0) return s.Gender;
+        return InvestorInformationGender;
+    }
+
+    /// <summary>
+    /// Whether a holder may invest online, from the name screening service. Asked
+    /// once per holder and name - the answer is kept on the application, and a call
+    /// may be charged - so a holder answered already, under the same name, is not
+    /// asked again. Throws ExternalServiceException when the service is not answering.
+    /// </summary>
+    public async Task<ScreeningOutcome> ScreenAsync(DocHolder h, string mobile)
+    {
+        var s = State;
+        if (s.Screening.TryGetValue(h.Code, out var kept) && kept.Name == h.Who.Name) return kept;
+
+        var result = await screening.ScreenAsync(new NameScreeningRequest(AppNo, h.Code, h.Who.Name, h.Who.Dob, mobile));
+        var outcome = new ScreeningOutcome(result.Allowed, result.Reference, h.Who.Name, DateTime.Now);
+        s.Screening[h.Code] = outcome;
+        return outcome;
+    }
+
+    /// <summary>The investor's gender as Investor Information saved it, for a holder nothing read one for; empty until then.</summary>
+    public string InvestorInformationGender =>
+        App.Details?.Holders.FirstOrDefault(h => h.Holder == HolderType.Investor)?.Gender ?? "";
+
+    /// <summary>A category by code, or null.</summary>
+    public CategoryOption? CategoryOf(string code) => Ref.Categories.FirstOrDefault(c => c.Code == code);
+
+    /// <summary>
+    /// The women's counterpart of a category: the one with the same employee and
+    /// senior standing and Women set (Public / General to Women, Senior citizen to
+    /// Senior citizen women, Employee to Employee women). Null for a women's category,
+    /// or one with no counterpart.
+    /// </summary>
+    public CategoryOption? WomensCategoryFor(string code)
+    {
+        var category = CategoryOf(code);
+        if (category is null) return null;
+        if (category.Women) return null;
+        return Ref.Categories.FirstOrDefault(c => c.Women && c.Employee == category.Employee && c.Senior == category.Senior);
+    }
+
+    /// <summary>
+    /// Whether the deposit category and the investor's gender agree, once Investor
+    /// Information has the gender. A female applicant under a non-women category:
+    /// the category moves to its women's counterpart (<see cref="CategoryGenderOutcome.MovedTo"/>),
+    /// so she gets the women's rate. A male applicant under a women's category: the
+    /// category is wrong and is corrected on Upload Documents (<see cref="CategoryGenderOutcome.Conflict"/>).
+    /// </summary>
+    public CategoryGenderOutcome CategoryAgainstGender(string gender)
+    {
+        var category = CategoryOf(State.Category);
+        if (category is null) return new CategoryGenderOutcome();
+
+        if (gender == Genders.Female && WomensCategoryFor(category.Code) is { } womens)
+        {
+            return new CategoryGenderOutcome(MovedFrom: category, MovedTo: womens);
+        }
+        if (gender == Genders.Male && category.Women)
+        {
+            return new CategoryGenderOutcome(Conflict: $"The category on Upload Documents is {category.Name}, a women's category, but the applicant's gender is male. Correct the category on Upload Documents before proceeding.");
+        }
+        return new CategoryGenderOutcome();
+    }
+
+    /// <summary>Why the category stands as it does, for a partner who does not choose it.</summary>
+    public string SetCategoryWhy =>
+        (Who.Dob.Length == 0 ? "No date of birth is on record" : "Set from the date of birth")
+        + (HolderGender.Length > 0 ? $" and gender ({HolderGender.ToLowerInvariant()})."
+            : ". The gender is read off an Aadhaar filed as the proof of address; until then a women's category cannot be given.");
+
+    // A partner other than 1033 has nothing to choose: broker mode, their own
+    // code, and the category the holder's details set. Kept whenever the state is
+    // read, so a saved state from before holds to it too.
+    private void Settle(UploadState s)
+    {
+        if (Chooses) return;
+        s.Sourcing = BrokerMode.Code;
+        s.SourceCode = BusinessBroker;
+        s.Category = CategoryFor(Who.Dob, GenderIn(s), DateTime.Today);
+    }
+
+    /// <summary>The brokers a broker-sourced application can be filed under, from the backend.</summary>
+    public IReadOnlyList<Party> Brokers { get; private set; } = [];
+
+    /// <summary>The staff a sub-broker or employee code is searched against, the
+    /// partner at the keyboard among them, from the backend.</summary>
+    public IReadOnlyList<Party> Staff { get; private set; } = [];
+
+    /// <summary>The name the staff register holds against a code, or null.</summary>
+    public string? StaffName(string code) =>
+        Staff.FirstOrDefault(p => p.Code.Equals(code, StringComparison.OrdinalIgnoreCase))?.Name;
+
+    public IReadOnlyList<string> EmployeeHolders => Ref.EmployeeHolders;
+
+    public IReadOnlyList<string> EmployeeRelations => Ref.EmployeeRelations;
+
+    /// <summary>The primary holder, as the employee holders list names it: its first entry.</summary>
+    public string PrimaryHolder => EmployeeHolders.FirstOrDefault() ?? "";
+
+    /// <summary>The employee's relation with the primary holder when they are the primary holder: the relations list's first entry.</summary>
+    public string SelfRelation => EmployeeRelations.FirstOrDefault() ?? "";
+
+    /// <summary>The employee is the primary holder, so the relation is Self and is not chosen.</summary>
+    public bool EmployeeIsPrimary => PrimaryHolder.Length > 0 && State.EmpHolder == PrimaryHolder;
+
+    public IReadOnlyList<string> EmployeeProofs => Ref.EmployeeProofs;
+
+    // ----- The address the application carries ---------------------------------
+    // A proof of address is not filed on its own: OCR reads the address off it and
+    // the issuer is asked whether that is the address they hold. Only an answer
+    // that comes back clean replaces what the application already carries, which
+    // is why the step shows both addresses where the pickers can change them.
+
+    /// <summary>Who stands behind each proof, as the empty box names them before
+    /// anything is uploaded. A bill has no register to ask, so it is Operations who
+    /// settle it and the address is left as it stands.</summary>
+    public IReadOnlyDictionary<string, string> Issuers => Ref.ProofsOfAddress.ToDictionary(p => p.Type, p => p.Issuer);
+
+    /// <summary>Who answers for a PAN.</summary>
+    public const string PanAuthority = "the Income Tax Department";
+
+    // The same, short enough for a card.
+    private const string LinkWaitsShort = "Asked once an Aadhaar is filed as the proof of address, with its number.";
+
+    private const string LinkWaits =
+        "Whether an Aadhaar is linked to it is asked once an Aadhaar is read on this application — file one as the proof of address.";
+
+    // The holder's consent to their Aadhaar being read, masked and checked, which
+    // IDfy asks for on every Aadhaar call. It is taken as given: the investor consents
+    // on the application form the partner holds, so every Aadhaar call carries it.
+    private const bool AadhaarConsent = true;
+
+    // The copy with its Aadhaar number masked, as it is filed and as it is kept
+    // aside. The masking API is told which application and holder it is for.
+    private async Task<UploadFile> MaskedAsync(DocHolder h, UploadFile copy)
+    {
+        var aadhaar = new AadhaarToMask(AppNo, h.Who.Folio, State.FormNo, h.Code, h.Who.Pan, h.Who.Dob, copy, AadhaarConsent);
+        return (await masking.MaskAsync(aadhaar)).Copy;
+    }
+
+    // The Aadhaar number OCR read for a holder on this application, for asking the
+    // PAN-Aadhaar link with. An Aadhaar number is not to be stored, so it is never
+    // saved with the application: it is held in the server's session, and goes with it.
+    private string AadhaarKey(DocHolder h) => "aadhaar:" + AppNo + (h.Joint ? ":" + h.Code : "");
+
+    private string AadhaarOf(DocHolder h) => session.GetString(AadhaarKey(h)) ?? "";
+
+    // What the register already holds against the folio the application was opened
+    // on. A document on the folio is not asked for again: the step shows it as not
+    // applicable and says which folio carries it.
+    private static DocsOnRecord? FolioDocsOf(DocHolder h) => h.Who.Folio.Length > 0 ? h.Who.OnRecord : null;
+
+    // ===== The documents =======================================================
+
+    /// <summary>A document the step asks for, by the key its markup and posts carry.</summary>
+    public record SlotDef(string Key, string Label, Accepts Accepts);
+
+    public static readonly SlotDef FormSlot = new("form", "Application Form", Form);
+    public static readonly SlotDef PanSlot = new("pan", "PAN copy", Proof);
+    public static readonly SlotDef PhotoSlot = new("photo", "photograph", Image);
+    public static readonly SlotDef PoaSlot = new("poa", "POA", Image);
+    public static readonly SlotDef MailSlot = new("mail", "communication address proof", Image);
+    public static readonly SlotDef PaymentSlot = new("payment", "the instrument", Image);
+    public static readonly SlotDef EmpProofSlot = new("empproof", "Employee Proof", Proof);
+
+    /// <summary>Form 121, the TDS declaration, filed on FD Configuration when no TDS is to be deducted.</summary>
+    public static readonly SlotDef TdsFormSlot = new("tdsform", "Form 121", Form);
+
+    public static readonly SlotDef[] Slots = [FormSlot, PanSlot, PhotoSlot, PoaSlot, MailSlot, PaymentSlot, EmpProofSlot, TdsFormSlot];
+
+    /// <summary>
+    /// Set while FD Configuration is drawn: its Form 121 box is asked for by the
+    /// switch on the page, before the deposit is saved with it. Elsewhere the box is
+    /// asked for by the deposit as saved.
+    /// </summary>
+    public bool TdsFormWanted { get; set; }
+
+    /// <summary>What every holder files for themselves: the investor on this step, and
+    /// each joint holder on Investor Information. The rest belong to the application.</summary>
+    public static readonly SlotDef[] HolderSlots = [PanSlot, PhotoSlot, PoaSlot, MailSlot];
+
+    /// <summary>Refusals in a row before a document goes to Operations, from the backend's rules.</summary>
+    public int MaxAttempts => Config.MaxAttempts;
+
+    /// <summary>What a slot shows: whether it is asked for at all, and what is in it.</summary>
+    /// <param name="Key">The slot's key for its holder, which its markup and posts carry.</param>
+    /// <param name="Optional">Asked for, but not needed to proceed.</param>
+    public sealed record SlotView(
+        SlotDef Def, string Key, bool Used, string? NotApplicable, string? Locked, StoredDoc? Doc,
+        string? Must, string? With, int Attempts, string? Error, string? ErrorLog, bool Optional = false,
+        ReadCard? Read = null, string? LockedHint = null, int MaxAttempts = int.MaxValue, string? Final = null)
+    {
+        /// <summary>Wanted before the step can go on: asked for, not optional, and not in yet.</summary>
+        public bool Missing => Used && !Optional && Doc is null;
+
+        public bool Spent => Attempts >= MaxAttempts;
+        public string Title => Def.Key switch { "payment" => "the cheque", "mail" => "the proof", _ => Def.Label };
+        public bool Unconfirmed => Doc?.CheckKind is "warn" or "bad";
+
+        public string? Tries => Attempts == 0 ? null
+            : Spent ? $"{MaxAttempts} refused one after another — this document now goes to Operations."
+            : $"{Attempts} of {MaxAttempts} refused in a row this session — a copy the checks take clears it.";
+    }
+
+    private const string CkycWhy =
+        "CKYC supplies this once the investor consents, which is asked for after the application is completed. It is not uploaded here.";
+
+    // The three checks are named on the empty box too: a partner who knows UIDAI
+    // will be asked reaches for the copy UIDAI would recognise.
+    private const string Run = "Once uploaded: identified, read by OCR, then ";
+
+    /// <summary>A document card as one value of a choice would leave it. Now: this value is the one chosen.</summary>
+    public sealed record SlotAlternative(string Value, bool Now, SlotView Slot);
+
+    /// <summary>
+    /// One document card per value a choice can take, for the choices that reshape a card:
+    /// the application type (the form's card), the communication address (the proof's
+    /// card) and the payment mode (the instrument's card). The page draws every card and
+    /// hides all but the chosen one, so it can swap them in the moment the choice changes.
+    /// </summary>
+    /// <param name="field">The choice's form field: appType, mailing or payMode.</param>
+    public IReadOnlyList<SlotAlternative> AlternativesFor(string field)
+    {
+        var alternatives = new List<SlotAlternative>();
+
+        if (field == "appType")
+        {
+            foreach (var type in ApplicationTypes)
+            {
+                alternatives.Add(new SlotAlternative(type.Code, type.Code == State.AppType, ViewWithAppType(type.Code)));
+            }
+        }
+        else if (field == "mailing")
+        {
+            var different = MailDifferentOf(Investor);
+            alternatives.Add(new SlotAlternative("same", !different, ViewWithMailDifferent(false)));
+            alternatives.Add(new SlotAlternative("different", different, ViewWithMailDifferent(true)));
+        }
+        else if (field == "payMode")
+        {
+            alternatives.Add(new SlotAlternative("", State.PayMode == "", ViewWithPayMode("")));
+            foreach (var mode in PaymentModes)
+            {
+                alternatives.Add(new SlotAlternative(mode.Name, mode.Name == State.PayMode, ViewWithPayMode(mode.Name)));
+            }
+        }
+
+        return alternatives;
+    }
+
+    // The three helpers below draw a card as it would stand with the choice set to a
+    // value: the choice is set on the state for the moment the card is worked out, then put back.
+    private SlotView ViewWithAppType(string type)
+    {
+        var was = State.AppType;
+        State.AppType = type;
+        try { return View(FormSlot); }
+        finally { State.AppType = was; }
+    }
+
+    private SlotView ViewWithMailDifferent(bool different)
+    {
+        var was = State.MailDifferent;
+        State.MailDifferent = different;
+        try { return View(MailSlot); }
+        finally { State.MailDifferent = was; }
+    }
+
+    private SlotView ViewWithPayMode(string mode)
+    {
+        var was = State.PayMode;
+        State.PayMode = mode;
+        try { return View(PaymentSlot); }
+        finally { State.PayMode = was; }
+    }
+
+    /// <summary>How a document slot stands for the investor: its copy, its checks and what can be done.</summary>
+    public SlotView View(SlotDef def) => View(def, Investor);
+
+    /// <summary>How a document slot stands for a holder: its copy, its checks and what can be done.</summary>
+    public SlotView View(SlotDef def, DocHolder h)
+    {
+        var s = State;
+        var key = h.Key(def.Key);
+        var proofType = TypeOf(def, h);
+        var held = FolioDocsOf(h);
+        string heldWhy = "Already on the folio, so it is not filed again.";
+        var (used, na) = def.Key switch
+        {
+            "form" => (s.AppType == Physical, "A digital application is accepted through the investor’s own link, so there is no signed form to file."),
+            "pan" => held?.Pan == true ? (false, heldWhy) : (true, null),
+            // CKYC is fetched for the investor only: a joint holder files their own.
+            "photo" => held?.Photo == true ? (false, heldWhy) : s.Ckyc && !h.Joint ? (false, CkycWhy) : (true, null),
+            // A folio that holds the proof, or the address itself, needs no proof of
+            // it - but takes a newer one, should the address have changed (optional, below).
+            "poa" => s.Ckyc && !h.Joint ? (false, CkycWhy) : (true, null),
+            "mail" => !MailCanDiffer(h) ? (false, MailWhy(h))
+                : MailTyped(h) ? (false, MailTypedWhy)
+                : MailDifferentOf(h) ? (true, null) : (false, "Post goes to the permanent address, so there is no other address to prove."),
+            // A renewal is paid by the maturing deposit. Otherwise, until a mode is
+            // chosen the box waits on the choice (locked below).
+            "payment" => IsRenewal ? (false, $"The maturing deposit {Renewal!.DepositNumber} pays for the new one, so there is no instrument to copy.")
+                : (s.PayMode.Length == 0 || DocumentOf(s.PayMode) is not null, $"{s.PayMode} is settled electronically, so there is no instrument to copy."),
+            "empproof" => (IsEmployee(s.Category), "Only a deposit booked against a staff record carries an employee proof."),
+            "tdsform" => (TdsFormWanted || App.Deposit?.NoTds == true, "Asked only when no TDS is to be deducted: the switch on FD Configuration."),
+            _ => (true, (string?)null),
+        };
+
+        // A proof of address is read and checked against the holder the PAN copy
+        // establishes, so it waits for that copy wherever one is needed. And a
+        // proof is checked as whatever type was chosen above it, so there is
+        // nothing to check it as until one is.
+        var waitsOnPan = used && def.Key is "poa" or "mail" && PanWanted(h);
+        string? locked = !used ? null : waitsOnPan ? "Upload the PAN copy first" : def.Key switch
+        {
+            "poa" when !AutoProofType && proofType.Length == 0 => "Choose the proof of address first",
+            "mail" when !AutoProofType && proofType.Length == 0 => "Choose the communication address proof first",
+            "empproof" when s.EmpProofType.Length == 0 => "Choose the employee proof first",
+            "payment" when s.PayMode.Length == 0 => "Choose the payment mode first",
+            _ => null,
+        };
+
+        string? with = def.Key switch
+        {
+            "pan" when NsdlApplies(h) => Run + "the PAN, date of birth and name are checked with NSDL.",
+            "pan" => Run + $"checked with {PanAuthority}.",
+            "payment" => Run + "the account is confirmed with the bank it is drawn on.",
+            "poa" or "mail" when Issuers.TryGetValue(proofType, out var issuer) => issuer.Length > 0
+                ? Run + $"the address is confirmed with {issuer}."
+                : $"Once uploaded: identified and read by OCR. A {proofType.ToLowerInvariant()} has no issuer to confirm the address with, so Operations settle it.",
+            // The type is what the copy is identified as, so until one is filed it is
+            // not known: the box names the proofs it takes.
+            "poa" or "mail" => $"{OneOf(ProofsFor(def.Key))}: identified on upload, then confirmed with its issuer.",
+            _ => null,
+        };
+
+        // A holder on a folio has been through KYC: a PAN copy the folio does not
+        // hold is taken if there is one, but not needed; and where the folio holds
+        // the proof of address, or the address, a newer proof is taken but not needed.
+        var optional = used && h.Who.Folio.Length > 0
+            && (def.Key == "pan" || def.Key == "poa" && (held?.Poa == true || h.Who.Address.Length > 0));
+
+        // What the copy was read to say stands in its own box once it is filed. An
+        // address the folio holds is shown where its proof would be, as it stands:
+        // nothing here checked it.
+        var doc = used ? s.Docs.GetValueOrDefault(key) : null;
+        var folioAddress = held is not null && h.Who.Address.Length > 0;
+        ReadCard? read = def.Key switch
+        {
+            "poa" when doc is not null => s.Reads.GetValueOrDefault(key),
+            "mail" when doc is not null => MailReadOf(h),
+            "payment" when doc is not null => s.Reads.GetValueOrDefault("payment"),
+            "pan" when doc is not null => PanReadOf(h, doc),
+            "poa" when doc is null && folioAddress => FolioAddress(h, used ? "file a newer proof only if the address has changed." : "not checked here."),
+            "mail" when !used && folioAddress && !MailCanDiffer(h) => FolioAddress(h, "post goes there."),
+            _ => null,
+        };
+
+        var flash = Shown;
+        return new SlotView(def, key, used, used ? null : na, locked, doc,
+            optional ? (def.Key == "poa" ? "Not mandatory: the folio's address stands unless a newer proof is filed." : "Not mandatory: the holder is on a folio.") : null,
+            with, s.AttemptsOf(key),
+            flash?.Errors.GetValueOrDefault(key), flash?.ErrorLog.GetValueOrDefault(key), optional, read,
+            // Waiting on the PAN, the box still names the proofs it will take.
+            waitsOnPan ? $"Accepted: {OneOf(ProofsFor(def.Key))}. Checked against the holder the PAN copy establishes." : null, MaxAttempts,
+            FinalWhy(def, h, doc));
+    }
+
+    // A PAN copy NSDL has verified - the PAN, the date of birth and the name read off
+    // it all held together - is final on the application: it is not replaced, as a
+    // new copy could only undo what NSDL confirmed. Null for any other copy.
+    private string? FinalWhy(SlotDef def, DocHolder h, StoredDoc? doc) =>
+        def.Key == PanSlot.Key && doc is not null && NsdlApplies(h) && NsdlOf(h) == "verified"
+            ? "Verified with NSDL — the PAN, date of birth and name all match — so this PAN copy is final and cannot be replaced."
+            : null;
+
+    /// <summary>
+    /// What a holder's KYC copies were read to say, always the same cards in the
+    /// same order: the permanent address, the communication address, for a joint
+    /// holder NSDL, and the PAN's link with Aadhaar. A card with nothing to read says
+    /// why rather than going missing.
+    /// </summary>
+    public IReadOnlyList<ReadItem> ReadsOf(DocHolder h)
+    {
+        List<ReadItem> cards =
+        [
+            ("Permanent address", State.Reads[h.Key("poa")]),
+            ("Communication address", MailTyped(h) ? TypedMailOf(h) is { } typed
+                    ? new ReadCard("Typed", Lines(typed), "Typed on Investor Information; the district and state are the PIN code's.")
+                    : NotRead("To be typed", "Different from permanent: typed on Investor Information.",
+                        "No proof of it is uploaded in this release; it is entered with the holder's details.")
+                : MailDifferentOf(h) ? MailReadOf(h)
+                : !MailCanDiffer(h) && h.Who.Folio.Length > 0 && h.Who.Address.Length > 0 ? FolioAddress(h, "post goes there.")
+                : !MailCanDiffer(h) && h.Who.Folio.Length > 0 ? NotRead("Same as permanent", "Post goes to the address on the folio.",
+                    "The system holds the address, and it is the mailing address too.")
+                : !MailCanDiffer(h) ? NotRead("From CKYC", "The communication address comes with the CKYC record.",
+                    "It is fetched once the investor consents, with the permanent address and the photograph.")
+                : NotRead("Same as permanent", "Post goes to the permanent address, so there is no other address to read.",
+                    CommProofUpload ? "Choose Different from Permanent to file a proof of another address."
+                        : "Choose Different from Permanent to type another address on Investor Information.")),
+        ];
+        if (h.Joint || NsdlApplies(h)) cards.Add(NsdlCard(h));
+        // The link is asked with the number an Aadhaar carries. Its card stands once
+        // the PAN is on the application - waiting on an Aadhaar until one is filed -
+        // and, for a holder on a folio, once an Aadhaar is filed, to say it is not asked.
+        if (AadhaarFiled(h) || LinkApplies(h) && PanOnApplication(h))
+            cards.Add(new ReadItem("PAN–Aadhaar link", LinkApplies(h) ? State.Reads[h.Key("pan")]
+                : NotRead("Not applicable", $"{MaskPan(h.Who.Pan)} · on the folio",
+                    "The PAN–Aadhaar link is asked only for a holder with no folio yet."), h.Key("link"),
+                Error: Shown?.Errors.GetValueOrDefault(h.Key("link"))));
+        if (View(PoaSlot, h).Used)
+        {
+            cards.Add(new ReadItem("PAN–POA name & DOB", DetailsOf(h), h.Key("details"), Error: Shown?.Errors.GetValueOrDefault(h.Key("details"))));
+            cards.Add(new ReadItem("PAN–POA face match", FaceOf(h), h.Key("face")));
+        }
+        return cards;
+    }
+
+    // Whether an Aadhaar is filed as a holder's proof of address, or of the address post goes to.
+    private bool AadhaarFiled(DocHolder h) =>
+        PoaTypeOf(h) == "Aadhaar" && State.Docs.ContainsKey(h.Key("poa"))
+        || MailDifferentOf(h) && MailTypeOf(h) == "Aadhaar" && State.Docs.ContainsKey(h.Key("mail"));
+
+    // ----- The PAN-POA name and date of birth ---------------------------------------
+    // The name and date of birth OCR reads off the proof of address are held up to
+    // the holder's own - the name NSDL or the folio gives, and the date of birth
+    // searched on. For now it is only said: a proof is filed whatever it reads.
+
+    /// <summary>What the proof of address was read to say of the holder, or that it waits on one.</summary>
+    public ReadCard DetailsOf(DocHolder h) =>
+        State.Docs.ContainsKey(h.Key("poa")) && State.Reads.TryGetValue(h.Key("details"), out var card) ? card
+        : new ReadCard("Not yet compared", "Compared once the proof of address is filed.",
+            "The name and date of birth read off the proof are matched with the holder's.", "is-na");
+
+    /// <summary>How a name read off a document stands against the holder's:
+    /// "match", "partial" (initials, or a name left out) or "mismatch".</summary>
+    // The name and date of birth on a proof of address against the PAN's: the name
+    // by the name match service, the date of birth exactly. What it found stands in
+    // the "PAN-POA name & DOB" card and the history.
+    private async Task DetailsAsync(DocHolder h, OcrReading reading, string type, LogEntry entry)
+    {
+        var named = Printed(type);
+        // With OCR switched off nothing was read to compare: not asked, and Operations check.
+        if (!switches.IsOn(OutsideSwitches.Ocr))
+        {
+            State.Reads[h.Key("details")] = new ReadCard("Not asked", $"OCR is {OutsideSwitches.Off}, so nothing was read off the {named} to compare.",
+                "The proof is filed; Operations compare the name and date of birth.", "is-na");
+            entry.Add($"Name and date of birth on the {named} not compared: OCR is {OutsideSwitches.Off}.", "warn");
+            return;
+        }
+        string nameSays, dobSays;
+        bool nameOk, dobOk, dobNa = false;
+        var name = reading.Name.Trim();
+        if (h.Who.Name.Length == 0) (nameSays, nameOk) = ("name not compared: the holder's name is not verified yet", false);
+        else if (name.Length == 0) (nameSays, nameOk) = ("name could not be read", false);
+        else
+        {
+            var match = (await names.MatchAsync(name, h.Who.Name)).Outcome;
+            if (match == NameMatchOutcome.NotAsked)
+            {
+                State.Reads[h.Key("details")] = new ReadCard("Not asked", $"The name match is {OutsideSwitches.Off}, so the name on the {named} was not compared.",
+                    "The proof is filed; Operations compare the name and date of birth.", "is-na");
+                entry.Add($"Name on the {named} not compared: the name match is {OutsideSwitches.Off}.", "warn");
+                return;
+            }
+            (nameSays, nameOk) = match switch
+            {
+                NameMatchOutcome.Match => ("name matches", true),
+                NameMatchOutcome.Partial => ($"name partly matches ({name})", false),
+                _ => ($"name does not match ({name})", false),
+            };
+        }
+        if (!HasPhoto(type)) (dobSays, dobOk, dobNa) = ($"no date of birth on a {named}", true, true);
+        else if (reading.Dob.Length == 0) (dobSays, dobOk) = ("date of birth could not be read", false);
+        else if (reading.Dob == h.Who.Dob) (dobSays, dobOk) = ("date of birth matches", true);
+        else (dobSays, dobOk) = ($"date of birth does not match ({MaskDate(reading.Dob)})", false);
+
+        var bad = nameSays.Contains("does not match") || dobSays.Contains("does not match");
+        var (state, kind) = nameOk && dobOk ? (dobNa ? "Name matches" : "Details match", "is-done")
+            : bad ? ("Do not match", "is-failed")
+            : ("Partly match", "is-failed");
+        State.Reads[h.Key("details")] = new ReadCard(state, $"{Capitalize(nameSays)} · {dobSays}.",
+            kind == "is-done" ? $"Read off the {named} and matched with the holder's name{(dobNa ? "" : " and date of birth")}."
+                : $"Read off the {named}. The proof is filed; Operations check the details.", kind);
+        entry.Add($"Name and date of birth on the {named}: {nameSays}; {dobSays}.", kind == "is-done" ? "ok" : bad ? "bad" : "warn");
+    }
+
+    // ----- The PAN-POA face match -------------------------------------------------
+    // The photograph on the PAN copy is compared with the one on the proof of
+    // address once both are filed. For now it is only said: a proof is filed
+    // whatever the answer.
+
+    /// <summary>What the face match said, or that it waits on the copies.</summary>
+    public ReadCard FaceOf(DocHolder h) =>
+        State.Docs.ContainsKey(h.Key("poa")) && State.Reads.TryGetValue(h.Key("face"), out var card) ? card
+        : new ReadCard("Not yet compared", "Compared once the PAN copy and the proof of address are both filed.",
+            "The photograph on the PAN copy is matched with the one on the proof of address.", "is-na");
+
+    /// <summary>
+    /// What a filed PAN copy was read to say - the name, the PAN and the date of
+    /// birth - under where NSDL stands on it, for its box. A copy filed before this
+    /// step shows the holder as the application has them.
+    /// </summary>
+    private ReadCard PanReadOf(DocHolder h, StoredDoc doc)
+    {
+        var ocr = State.Reads.GetValueOrDefault(h.Key("panocr"));
+        var name = ocr?.Lines is { Length: > 0 } n ? n : h.Who.Name;
+        var pan = ocr?.Number is { Length: > 0 } p ? p : h.Who.Pan;
+        var dob = ocr?.Dob is { Length: > 0 } d ? d : h.Who.Dob;
+        var (state, kind) = doc.Before ? ("On the application", "is-done")
+            : !NsdlApplies(h) ? ("PAN & DOB match", "is-done")
+            : NsdlOf(h) switch
+            {
+                "verified" => ("Verified with NSDL", "is-done"),
+                "name" => ("Name not matched", "is-failed"),
+                "failed" => ("Not verified", "is-failed"),
+                _ => ("Not yet checked", "is-na"),
+            };
+        return new ReadCard(state, name.Length > 0 ? name : "Name not read", "", kind)
+        {
+            Number = $"PAN {MaskPan(pan)}" + (dob.Length > 0 ? $" · DOB {MaskDate(dob)}" : ""),
+        };
+    }
+
+    /// <summary>The number a proof carries, labelled as it is shown: an Aadhaar by its
+    /// last four digits only, anything else in full.</summary>
+    public string ProofNumber(string type, OcrReading reading)
+    {
+        var number = (reading.Number.Length > 0 ? reading.Number : reading.IdNumber).Trim();
+        if (number.Length == 0) return "";
+        return type switch
+        {
+            "Aadhaar" => number.Replace(" ", "") is { Length: >= 4 } digits ? $"Aadhaar XXXX XXXX {digits[^4..]}" : "",
+            "Driving Licence" => "DL " + number,
+            _ when !HasPhoto(type) => "",
+            _ => $"{type} {number}",
+        };
+    }
+
+    /// <summary>
+    /// An address and the PIN code it ends with, apart: the address is cut to fit
+    /// its box, and the PIN has to show whatever the length. Empty PIN when none
+    /// can be found.
+    /// </summary>
+    public static (string Body, string Pin) SplitPin(string address)
+    {
+        var found = System.Text.RegularExpressions.Regex.Matches(address, @"(?<!\d)(\d{3})\s?(\d{3})(?!\d)");
+        if (found.Count == 0) return (address, "");
+        var last = found[^1];
+        var body = (address[..last.Index] + address[(last.Index + last.Length)..]).Trim().TrimEnd(',', '-', ' ');
+        return (body, last.Groups[1].Value + last.Groups[2].Value);
+    }
+
+    /// <summary>Whether a proof's expiry date has passed.</summary>
+    public static bool Expired(string expiry) =>
+        DateTime.TryParseExact(expiry, "dd-MM-yyyy", System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.None, out var until) && until < DateTime.Today;
+
+    // A proof named as it is printed in a sentence: the Aadhaar, the Voter ID, the utility bill.
+    // A proof with no photograph is a paper - a bill - named in lower case; an ID keeps its capitals.
+    private string Printed(string type) => type.Length == 0 ? "proof" : HasPhoto(type) ? type : type.ToLowerInvariant();
+
+    // A proof whose type carries no photograph has no face to compare.
+    private bool HasPhoto(string proofType) => Ref.ProofsOfAddress.Any(p => p.Type == proofType && p.HasPhoto);
+
+    private async Task FaceAsync(DocHolder h, LogEntry entry)
+    {
+        var key = h.Key("face");
+        var type = PoaTypeOf(h);
+        void FlashMessages(string state, string lines, string from, string kind) => State.Reads[key] = new ReadCard(state, lines, from, kind);
+
+        if (!State.Docs.ContainsKey(h.Key("poa"))) return;
+        if (!HasPhoto(type))
+        {
+            FlashMessages("Not applicable", $"A {type.ToLowerInvariant()} carries no photograph.", "There is no face on the proof to compare with the PAN copy.", "is-na");
+            return;
+        }
+        // Only a PAN copy filed on this application can be sent: one the folio holds,
+        // or one filed before this step, is not here to compare with.
+        var pan = State.Docs.GetValueOrDefault(h.Key("pan")) is { Before: false }
+            ? await documents.CopyAsync(AppNo, FiledUnder(PanSlot, h), PanSlot.Key) : null;
+        var proof = await documents.CopyAsync(AppNo, FiledUnder(PoaSlot, h), PoaSlot.Key);
+        if (pan is null || proof is null)
+        {
+            FlashMessages("Not compared", "No PAN copy was filed on this application to compare with.",
+                "The PAN copy is on the folio or was filed before this step, so Operations compare the faces.", "is-na");
+            entry.Add("Face match not asked: no PAN copy on this application to compare with.", "warn");
+            return;
+        }
+        FaceMatch answer;
+        try
+        {
+            answer = await faces.CompareAsync(pan, proof);
+        }
+        catch (ExternalServiceException e)
+        {
+            FlashMessages("Could not answer", "The face match could not be asked.", $"{e.Message} The proof is filed; Operations compare the faces.", "is-failed");
+            entry.Add($"Face match could not answer: {e.Message}", "warn");
+            return;
+        }
+        var named = Printed(type);
+        if (answer.Unsure is { } why)
+        {
+            FlashMessages("Not sure", $"Score {answer.Score} of 100", $"{Capitalize(why)}. The proof is filed; Operations compare the faces.", "is-failed");
+            entry.Add($"Face match not sure: {why}.", "warn");
+        }
+        else if (answer.Matched)
+        {
+            FlashMessages("Faces match", $"Score {answer.Score} of 100", $"The photograph on the PAN copy and on the {named} are the same person.", "is-done");
+            entry.Add($"Face match: the PAN copy and the {named} are the same person (score {answer.Score}).", "ok");
+        }
+        else
+        {
+            FlashMessages("Faces do not match", $"Score {answer.Score} of 100", $"The photograph on the {named} is not the one on the PAN copy. The proof is filed; Operations look into it.", "is-failed");
+            entry.Add($"Face match: the {named} is not the person on the PAN copy (score {answer.Score}).", "bad");
+        }
+    }
+
+    /// <summary>
+    /// What a holder's PAN was checked with: NSDL, for a joint holder, and the
+    /// PAN-Aadhaar link. These take two copies, or a name typed again, so they stand
+    /// as cards; an address stands in the box of the proof it was read off.
+    /// </summary>
+    public IReadOnlyList<ReadItem> PanReadsOf(DocHolder h) =>
+        [.. ReadsOf(h).Where(i => i.Kind is not ("Permanent address" or "Communication address"))];
+
+    /// <summary>
+    /// What the payment instrument was read to say, beside its box. A mode settled
+    /// electronically carries no instrument, and the card says so.
+    /// </summary>
+    public ReadItem PaymentRead() => View(PaymentSlot).Used
+        ? new("Account", State.Reads["payment"], "payment")
+        : new("Account", NotRead("Not applicable", "No instrument is copied for this payment mode.",
+            "An account is read only off a cheque."));
+
+    // What NSDL said about a joint holder's PAN, and - when it holds the PAN
+    // against another name - where the name printed on the card is typed to ask again.
+    private ReadItem NsdlCard(DocHolder h)
+    {
+        var pan = MaskPan(h.Who.Pan);
+        if (!NsdlApplies(h))
+            return new("PAN – NSDL", NotRead("Not applicable", $"{pan} · on the folio", "A holder on a folio is not asked about with NSDL again."));
+        var (nsdlState, nsdlName) = (NsdlOf(h), NsdlNameOf(h));
+        var key = h.Key("nsdl");
+        return nsdlState switch
+        {
+            "verified" => new("PAN – NSDL", new ReadCard("Verified with NSDL", $"{pan} · {h.Who.Name}", "The PAN, date of birth and name read off the PAN copy all match.", "is-done"), key),
+            "name" => new("PAN – NSDL", new ReadCard("Name not matched", $"Put to NSDL: {nsdlName}",
+                "NSDL holds the PAN and date of birth, but not against that name. Type the name exactly as printed on the PAN card, and NSDL is asked again.", "is-failed"), key,
+                new NameRetry(h.Key("nsdlName"), nsdlName, Shown?.Errors.GetValueOrDefault(key))),
+            "failed" => new("PAN – NSDL", new ReadCard("Not verified", $"No record of {pan} against {MaskDate(h.Who.Dob)}",
+                $"NSDL holds no such PAN and date of birth, so this {(h.Joint ? "holder" : "application")} cannot go on. {NsdlFailedNext(h)}", "is-failed"), key),
+            _ => new("PAN – NSDL", new ReadCard("Not yet checked", "Checked once the PAN copy is filed above.",
+                "OCR reads the name off the PAN copy, and NSDL is asked whether it holds the PAN, the date of birth and that name."), key),
+        };
+    }
+
+    // The address a folio holds, shown as it stands: nothing on this step checked it.
+    private static ReadCard FolioAddress(DocHolder h, string then) =>
+        new("Not verified", h.Who.Address, $"On the folio, {then}", "is-unverified");
+
+    // A card for something there is nothing to read off, saying why. Not kept.
+    private static ReadCard NotRead(string state, string lines, string from) => new(state, lines, from, "is-na");
+
+    /// <summary>What a holder's communication address proof was read to say.</summary>
+    public ReadCard MailReadOf(DocHolder h)
+    {
+        var key = h.Key("mail");
+        if (!State.Reads.TryGetValue(key, out var card)) State.Reads[key] = card = MailCard();
+        return card;
+    }
+
+    private static ReadCard MailCard() => new("Not yet read", "Read off the communication address proof once one is filed.",
+        "Confirmed with whoever issued the proof, as the permanent address is.");
+
+    public string? DocumentOf(string payMode) =>
+        PaymentModes.FirstOrDefault(m => m.Name == payMode)?.Document;
+
+    public SourcingModeOption? ModeOf(string code) => SourcingModes.FirstOrDefault(m => m.Code == code);
+
+    // ===== The state of this application =======================================
+
+    /// <summary>What the step holds against this application, opened on first sight.</summary>
+    public UploadState State
+    {
+        get
+        {
+            var s = App.Upload ??= new UploadState();
+            Ready(s);
+            Settle(s);
+            return s;
+        }
+    }
+
+    // A holder's cards are opened the first time the step sees them: the reads as
+    // the step before left them, the PAN copy that came over, and the attempts the
+    // backend has on record from before this page - on the record without counting
+    // against the three. A state the backend opened with holders already on it - a
+    // renewal's, with the deposit's joint holders - has theirs opened here too.
+    private void Ready(UploadState s)
+    {
+        if (!s.Reads.ContainsKey(Investor.Key("poa")))
+        {
+            OpenHolder(s, Investor);
+            s.Reads.TryAdd("payment", new ReadCard("Not yet read", "Read off the instrument once a copy is filed.",
+                "The account the deposit is paid from. Bank Details & Payment opens with whatever is confirmed here."));
+            if (s.Log.Count == 0) s.Log.AddRange(App.Prior);
+        }
+        foreach (var (code, joint) in s.Joint)
+        {
+            var h = new DocHolder(code, joint.Holder);
+            if (!s.Reads.ContainsKey(h.Key("poa"))) OpenHolder(s, h);
+        }
+    }
+
+    // A holder's cards open with what identifying them established: the PAN copy
+    // it came with, and the address the folio holds.
+    private static void OpenHolder(UploadState s, DocHolder h)
+    {
+        var pan = MaskPan(h.Who.Pan);
+        s.Reads[h.Key("pan")] = h.Who.PanFiled
+            ? new ReadCard("Waiting on an Aadhaar", pan + " · link with Aadhaar not asked yet",
+                $"PAN confirmed with NSDL. {LinkWaitsShort}")
+            : new ReadCard("Not yet read", "Read off the PAN copy once one is filed here.", LinkWaitsShort);
+        // The folio's address is shown as it stands, until a proof filed here is confirmed.
+        s.Reads[h.Key("poa")] = h.Who.Address.Length > 0
+            ? FolioAddress(h, "not checked here.")
+            : new ReadCard("Not on record", $"No address is held for this {(h.Joint ? "holder" : "investor")} yet.",
+                "Read off the proof of address once one is filed here.");
+
+        if (h.Who.PanFiled)
+        {
+            s.Docs[h.Key("pan")] = new StoredDoc("PAN copy on the application", 0, "",
+                $"Identified, read and confirmed with NSDL when the PAN was established {(h.Joint ? "as this holder was identified" : "on the step before")}.", "ok", Before: true);
+        }
+    }
+
+    /// <summary>What a log entry's holder becomes once that joint holder is taken off.</summary>
+    public const string RemovedHolder = "removed";
+
+    /// <summary>Puts a joint holder on the application under their type, with their documents yet to come.</summary>
+    public void AddJoint(string code, Holder holder)
+    {
+        if (State.Joint.ContainsKey(code)) return;
+        State.Joint[code] = new JointHolder { Holder = holder };
+        OpenHolder(State, new DocHolder(code, holder));
+    }
+
+    /// <summary>
+    /// Takes a joint holder off the application, and every document of theirs with
+    /// them. Only the last one opened can go - the second only once there is no
+    /// third - so nobody ever changes holder type.
+    /// </summary>
+    public void RemoveJoint(string code)
+    {
+        if (JointHolder(code) is not { } h) return;
+        foreach (var def in HolderSlots)
+        {
+            var key = h.Key(def.Key);
+            TakeOffApplication(key);
+            State.Attempts.Remove(key);
+            State.Reads.Remove(key);
+        }
+        State.Joint.Remove(code);
+        session.Remove(AadhaarKey(h));
+        // Their attempts stay on the application's history, but no longer as any
+        // holder's: whoever takes their type next does not inherit them.
+        foreach (var entry in State.Log.Where(e => e.Holder == code)) entry.Holder = RemovedHolder;
+
+    }
+
+    /// <summary>What the last post left to say, taken out of the session as the page is drawn.</summary>
+    public Flash? Shown { get; set; }
+
+    /// <summary>What this post has to say, kept for the page it redirects to.</summary>
+    public Flash? Said { get; set; }
+
+    /// <summary>Set once Proceed finds everything in: the post moves on to Investor Information.</summary>
+    public bool Complete { get; private set; }
+
+    // The copies this post took off the application, as DMS holds them. DMS follows
+    // once the save that takes them off has gone through (see SettleAsync).
+    private readonly HashSet<(string Holder, string Slot)> dropped = [];
+
+    /// <summary>Takes a document off the application; a copy that was already filed is deleted from DMS once the save goes through.</summary>
+    private void TakeOffApplication(string key)
+    {
+        if (DmsOf(key) is { } at && State.Docs.Remove(key, out var doc) && !doc.Before) dropped.Add(at);
+    }
+
+    /// <summary>Brings DMS in line with what was just saved: the copies taken off are deleted.</summary>
+    public async Task SettleAsync()
+    {
+        foreach (var (holder, slot) in dropped) await documents.DeleteAsync(AppNo, holder, slot);
+    }
+
+    // ===== What the form posts ================================================
+
+    /// <summary>What this post carried; every post carries the whole form.</summary>
+    public UploadForm Posted { get; set; } = new();
+
+    // ===== What a post does ===================================================
+
+    /// <summary>Upload: the file posted for the slot whose button was pressed.
+    /// Returns where on the page to come back to.</summary>
+    public Task<string?> UploadAsync(IFormFileCollection files) => UploadAsync(Posted.Slot, files);
+
+    /// <summary>Upload for a slot by its key, the investor's or a joint holder's.</summary>
+    public async Task<string?> UploadAsync(string? key, IFormFileCollection files)
+    {
+        if (Locate(key) is not { } found) return null;
+        Keep();
+        await TakeAsync(found.Def, found.Holder, files.GetFile("file_" + key));
+        return "slot-" + key;
+    }
+
+    // The slot a key is for, and whose it is.
+    private (SlotDef Def, DocHolder Holder)? Locate(string? key)
+    {
+        foreach (var h in Holders)
+        {
+            foreach (var def in h.Joint ? HolderSlots : Slots)
+            {
+                if (h.Key(def.Key) == key) return (def, h);
+            }
+        }
+        return null;
+    }
+
+    // Nothing is requested of the investor from this step: choosing CKYC only says
+    // how the KYC will arrive. The addresses - permanent and communication - and
+    // the photograph come with that record, so those stop being asked for; the PAN
+    // copy does not, and
+    // nor does anything of a joint holder's, whose KYC is not fetched. It
+    // cannot be taken back, and it closes the paper route - consent is given
+    // online, through the link the investor is sent.
+    //
+    // CERSAI is asked first whether it holds a record for the investor's PAN and
+    // date of birth. Only when it does is the route taken; when it does not, or
+    // cannot be asked, the documents are uploaded as before.
+    public async Task<string?> CkycAsync()
+    {
+        Keep();
+        var s = State;
+        if (!CkycPanVerified || s.Ckyc || s.AppType == Physical) return "docsRoute";
+
+        CkycSearchResult found;
+        try
+        {
+            found = await ckyc.SearchAsync(new CkycSearch(AppNo, Investor.Code, Who.Pan, Who.Dob));
+        }
+        catch (ExternalServiceException e)
+        {
+            FlashMessages().Banner = $"{e.Message} The KYC was not fetched; upload the proof of address and the photograph, or try again.";
+            return "docsRoute";
+        }
+
+        if (!found.Available)
+        {
+            var why = found.Why.Length > 0 ? $" ({found.Why})" : "";
+            FlashMessages().Banner = $"CERSAI holds no CKYC record for this PAN and date of birth{why}. Upload the proof of address and the photograph instead.";
+            return "docsRoute";
+        }
+
+        s.Ckyc = true;
+        s.CkycReference = found.Reference;
+        s.PoaType = "";
+        TakeOffApplication("poa");
+        TakeOffApplication("photo");
+        s.Reads["poa"].Reset();
+        ForgetMail(Investor);
+        SetMail(Investor, false, "");
+        var record = found.MaskedCkycId.Length > 0 ? $" (CKYC number {found.MaskedCkycId})" : "";
+        FlashMessages().Banner = $"CERSAI holds a CKYC record for this PAN{record}. The addresses and the photograph will come from it once the investor consents.";
+        return "docsRoute";
+    }
+
+    // Proceed says what is missing where it is missing, and the page comes back
+    // to the first of it.
+    public string? Proceed()
+    {
+        Keep();
+        var s = State;
+        var flash = FlashMessages();
+        void Need(bool ok, string key, string message)
+        {
+            if (ok) return;
+            flash.Errors[key] = message;
+            flash.Focus ??= key;
+        }
+
+        var mode = ModeOf(s.Sourcing);
+        // A type chosen from the drop-down, when it is not set from the upload.
+        if (!AutoProofType && View(PoaSlot).Used) Need(s.PoaType.Length > 0, "docsPoaType", "Choose the proof of address");
+        if (!AutoProofType && View(MailSlot).Used) Need(s.MailPoaType.Length > 0, "docsMailType", "Choose the communication address proof");
+        if (!IsRenewal) Need(s.PayMode.Length > 0, "docsPayMode", "Choose the payment mode");
+        Need(s.Sourcing.Length > 0, "docsSourcing", "Choose the sourcing mode");
+        if (mode is not null)
+        {
+            Need(s.SourceCode.Length > 0, "docsSourceCode", $"Enter the {mode.CodeLabel.ToLowerInvariant()}");
+            if (SubRequired(mode)) Need(s.SubBroker.Length > 0, "docsSubBroker", "Enter the sub broker code");
+        }
+        Need(s.Category.Length > 0, "docsCategory", "Choose the deposit category");
+        if (IsEmployee(s.Category))
+        {
+            // A code this screen cannot put a name to is not a reason to stop:
+            // the staff register is Operations' to check.
+            Need(s.EmpCode.Length > 0, "docsEmployeeCode", "Enter the employee code");
+            Need(s.EmpCompany.Length > 0, "docsEmployeeCompany", "Enter the employee company name");
+            Need(s.EmpHolder.Length > 0, "docsEmployeeHolder", "Choose which holder is the employee");
+            Need(s.EmpRelation.Length > 0, "docsEmployeeRelation", "Choose the relation with the holder");
+            Need(s.EmpProofType.Length > 0, "docsEmployeeProofType", "Choose the employee proof");
+        }
+        if (s.AppType == Physical) Need(s.TypedFormNo.Length > 0, "docsFormNo", "Enter the physical form number");
+
+        foreach (var slot in Slots.Select(View).Where(v => v.Missing))
+        {
+            flash.Errors[slot.Key] = "This document is required";
+            flash.Focus ??= "slot-" + slot.Key;
+        }
+        // An investor with no folio goes on only once NSDL has verified their PAN.
+        if (NsdlUnsettled(Investor))
+        {
+            flash.Errors["nsdl"] = NsdlNeed(Investor);
+            flash.Focus ??= "read-nsdl";
+        }
+        // ...and, with an Aadhaar filed, once the PAN-Aadhaar link is confirmed...
+        if (LinkApplies(Investor) && AadhaarFiled(Investor) && LinkNeed(Investor) is { } linkNeed)
+        {
+            flash.Errors[Investor.Key("link")] = linkNeed;
+            flash.Focus ??= "read-" + Investor.Key("link");
+        }
+        // ...and once the name and date of birth on the proof of address match the PAN's.
+        if (State.Docs.ContainsKey(Investor.Key("poa")) && DetailsNeed(Investor) is { } detailsNeed)
+        {
+            flash.Errors[Investor.Key("details")] = detailsNeed;
+            flash.Focus ??= "read-" + Investor.Key("details");
+        }
+
+        if (flash.Errors.Count == 0)
+        {
+            Said = null;
+            Complete = true;
+        }
+        return flash.Focus;
+    }
+
+    /// <summary>The messages this post will show on the page it returns to (made on first use).</summary>
+    private Flash FlashMessages() => Said ??= new Flash();
+
+    // What stops Proceed on the PAN-Aadhaar link, by where the link card stands; null once it is linked.
+    private string? LinkNeed(DocHolder h)
+    {
+        var card = State.Reads.GetValueOrDefault(h.Key("pan"));
+        if (card is null) return "The PAN-Aadhaar link must be confirmed before proceeding.";
+        return card.State switch
+        {
+            "Linked with Aadhaar" => null,
+            "Not asked" => null,
+            "Not linked" => "The PAN is not linked with Aadhaar. The investor links it with the Income Tax department; the application cannot proceed until it is.",
+            "Aadhaar number needed" => "Type the Aadhaar number in the row under the proofs of address, so the PAN-Aadhaar link can be asked.",
+            "Link not checked" => "The PAN-Aadhaar link could not be checked. Upload the Aadhaar again, or type its number, to ask again.",
+            _ => "The PAN-Aadhaar link must be confirmed before proceeding.",
+        };
+    }
+
+    // What stops Proceed on the PAN-POA name and date of birth; null once they match.
+    private string? DetailsNeed(DocHolder h)
+    {
+        var card = State.Reads.GetValueOrDefault(h.Key("details"));
+        if (card is null) return "The name on the proof of address must be matched with the PAN's before proceeding.";
+        if (card.Kind == "is-done") return null;
+        if (card.Kind == "is-na") return null;
+        return "The name and date of birth on the proof of address must match the PAN's before proceeding. Upload a clearer copy of the holder's own proof.";
+    }
+
+    /// <summary>
+    /// What Proceed on Investor Information asks of each joint holder, the same way
+    /// this step asks the investor: every document that is theirs to file. Returns
+    /// where on the page to come back to; nothing missing, it returns null and says nothing.
+    /// </summary>
+    public string? ProceedJoint()
+    {
+        var flash = FlashMessages();
+        void Need(string key, string message, string? focus = null)
+        {
+            flash.Errors[key] = message;
+            flash.Focus ??= focus ?? key;
+        }
+
+        foreach (var h in JointHolders)
+        {
+            if (!AutoProofType && View(PoaSlot, h).Used && PoaTypeOf(h).Length == 0) Need(h.Key("poaType"), "Choose the proof of address");
+            if (!AutoProofType && View(MailSlot, h).Used && MailTypeOf(h).Length == 0) Need(h.Key("mailType"), "Choose the communication address proof");
+            foreach (var v in HolderSlots.Select(d => View(d, h)).Where(v => v.Missing))
+                Need(v.Key, "This document is required", "slot-" + v.Key);
+            if (NsdlUnsettled(h)) Need(h.Key("nsdl"), NsdlNeed(h), "read-" + h.Key("nsdl"));
+        }
+        if (flash.Errors.Count == 0 && flash.Banner is null) Said = null;
+        return flash.Focus;
+    }
+
+    /// <summary>
+    /// What each joint holder's card on Investor Information posted: where their post
+    /// goes. Post going back to the permanent address takes the communication address
+    /// proof off. A proof's type is not posted: it is what the copy is identified as.
+    /// </summary>
+    public void KeepJoint(IFormCollection form)
+    {
+        string Proof(string? type, string slot) => ProofsFor(slot).Contains(type) ? type! : "";
+        foreach (var h in JointHolders)
+        {
+            if (!AutoProofType && form.TryGetValue(h.Key("poaType"), out var poa)) SetPoaType(h, Proof(poa, PoaSlot.Key));
+            if (!MailCanDiffer(h) || !form.TryGetValue(h.Key("mailing"), out var mailing)) continue;
+            var different = mailing == "different";
+            if (!different) ForgetMail(h);
+            var type = !different ? "" : !AutoProofType && form.TryGetValue(h.Key("mailType"), out var mail) ? Proof(mail, MailSlot.Key) : MailTypeOf(h);
+            SetMail(h, different, type);
+        }
+    }
+
+    // Asked before post goes back to the permanent address, when a copy is filed.
+    public const string MailDropAsk =
+        "Post will go to the permanent address, and the communication address proof uploaded will be removed. Switch to Same as Permanent?";
+
+    // The proof of another address, and what it was read to say, taken off.
+    private void ForgetMail(DocHolder h)
+    {
+        TakeOffApplication(h.Key("mail"));
+        State.Reads[h.Key("mail")] = MailCard();
+    }
+
+    // ===== Keeping what was typed ===============================================
+
+    // Every post carries the whole form, so every post keeps it, and applies what
+    // each answer settles for the rest of the step. A field shut by the page is not
+    // posted, so what it holds is the page's to say, not the post's.
+    public void Keep()
+    {
+        var s = State;
+
+        if (Posted.AppType is Digital or Physical) s.AppType = s.Ckyc ? Digital : Posted.AppType;
+        // A digital application has no paper form, and the register will not take an
+        // empty field for one: it is filed as 0000. A number typed for a paper
+        // application is kept through a change of mind and put back.
+        var typed = (Posted.FormNo ?? "").Trim();
+        if (typed.Length > 0 && typed != DigitalFormNo) s.TypedFormNo = typed;
+        else if (typed.Length == 0 && s.AppType == Physical && Posted.FormNo is not null) s.TypedFormNo = "";
+        s.FormNo = s.AppType == Physical ? s.TypedFormNo : DigitalFormNo;
+        // A slot the application has no use for keeps nothing.
+        if (s.AppType != Physical) TakeOffApplication("form");
+
+        // A type chosen from the drop-down, when it is not set from the upload.
+        if (!AutoProofType && Posted.PoaType is not null) s.PoaType = ProofsFor(PoaSlot.Key).Contains(Posted.PoaType) ? Posted.PoaType : "";
+
+        // Post going to the permanent address has nothing else to prove: the proof
+        // of another address goes with the answer.
+        if (Posted.Mailing is "same" or "different" && MailCanDiffer(Investor))
+        {
+            var different = Posted.Mailing == "different";
+            if (!different) ForgetMail(Investor);
+            var type = !different ? "" : !AutoProofType && Posted.MailType is not null ? (ProofsOfAddress.Contains(Posted.MailType) ? Posted.MailType : "") : s.MailPoaType;
+            SetMail(Investor, different, type);
+        }
+
+        if (Posted.PayMode is not null)
+        {
+            s.PayMode = PaymentModes.Any(m => m.Name == Posted.PayMode) ? Posted.PayMode : "";
+            if (DocumentOf(s.PayMode) is null)
+            {
+                TakeOffApplication("payment");
+                s.Reads["payment"].Reset();
+            }
+        }
+
+        KeepSourcing(s);
+
+        if (IsEmployee(s.Category))
+        {
+            if (Posted.EmpCode is not null) s.EmpCode = Posted.EmpCode.Trim().ToUpperInvariant();
+            if (Posted.EmpCompany is not null) s.EmpCompany = Posted.EmpCompany.Trim();
+            if (Posted.EmpHolder is not null) s.EmpHolder = EmployeeHolders.Contains(Posted.EmpHolder) ? Posted.EmpHolder : "";
+            if (Posted.EmpRelation is not null) s.EmpRelation = EmployeeRelations.Contains(Posted.EmpRelation) ? Posted.EmpRelation : "";
+            // The primary holder is the employee themselves; anyone else cannot be.
+            if (EmployeeIsPrimary) s.EmpRelation = SelfRelation;
+            else if (s.EmpRelation == SelfRelation) s.EmpRelation = "";
+            if (Posted.EmpProofType is not null) s.EmpProofType = EmployeeProofs.Contains(Posted.EmpProofType) ? Posted.EmpProofType : "";
+        }
+        else
+        {
+            // Every other category asks none of it, and anything typed goes with the block.
+            (s.EmpCode, s.EmpCompany, s.EmpHolder, s.EmpRelation, s.EmpProofType) = ("", "", "", "", "");
+            TakeOffApplication("empproof");
+        }
+    }
+
+    // The old screen hangs the whole of Additional Details off the sourcing mode.
+    // A change of mode is a fresh answer: whatever was typed under the last one
+    // goes, the way the old screen empties both fields before it fills them.
+    private void KeepSourcing(UploadState s)
+    {
+        // Nothing here is a partner's other than 1033 to choose; the sub broker is.
+        if (!Chooses)
+        {
+            if (Posted.SubBroker is not null) s.SubBroker = Posted.SubBroker.Trim().ToUpperInvariant();
+            Settle(s);
+            return;
+        }
+        if (Posted.Sourcing is null) return;
+        var mode = ModeOf(Posted.Sourcing);
+        var fresh = Posted.Sourcing != s.Sourcing;
+        s.Sourcing = mode?.Code ?? "";
+
+        if (mode is null)
+        {
+            (s.SourceCode, s.SubBroker, s.Category) = ("", "", "");
+            return;
+        }
+
+        var postedSource = fresh ? "" : (Posted.SourceCode ?? s.SourceCode).Trim().ToUpperInvariant();
+        var postedSub = fresh ? "" : (Posted.SubBroker ?? s.SubBroker).Trim().ToUpperInvariant();
+
+        s.SourceCode = mode.House.Length > 0 ? mode.House : postedSource;
+        s.SubBroker = mode.Sub switch
+        {
+            SubField.House => mode.House,
+            SubField.Shut => "",
+            SubField.Free => postedSub,
+            // Sourced by an employee: the application opens with the code of whoever
+            // is at the keyboard, theirs to change under MFL-EX and not under MIBS.
+            SubField.EmployeeShut => PartnerCode,
+            _ => postedSub.Length > 0 ? postedSub : PartnerCode,
+        };
+
+        // What a deposit may be booked as belongs to the mode. A mode with one
+        // category settles it; otherwise what was chosen stands if the mode allows it.
+        var chosen = Posted.Category ?? s.Category;
+        s.Category = mode.Categories.Count == 1 ? mode.Categories[0]
+            : mode.Categories.Contains(chosen) ? chosen : "";
+    }
+
+    public static bool SubRequired(SourcingModeOption mode) => mode.Sub is SubField.Employee or SubField.EmployeeShut;
+
+    // ===== Taking a document ===================================================
+
+    private const long Mb = 1024 * 1024;
+
+    // Everything that has to be true of the file itself is checked first: a file
+    // turned away for its type or its size never reached the document, so it costs
+    // no attempt.
+    private async Task TakeAsync(SlotDef def, DocHolder h, IFormFile? file)
+    {
+        var view = View(def, h);
+        if (!view.Used) return;
+        string? refuse =
+            file is null || file.Length == 0 ? "Choose a file to upload"
+            : view.Locked is not null ? view.Locked
+            : view.Final is not null ? view.Final
+            : view.Spent ? $"{MaxAttempts} copies of this document were refused one after another this session, so it is no longer filed here — book a service call to file it."
+            : !Accepted(def, file) ? "That file type is not accepted here"
+            : file.Length > def.Accepts.MaxMb * Mb ? $"The file is over {def.Accepts.MaxMb} MB — {SizeOf(file.Length)}"
+            : null;
+
+        byte[] bytes = [];
+        if (refuse is null)
+        {
+            bytes = await ReadAllAsync(file!);
+            // The name and the type the browser gives are only claims: the first
+            // bytes say what the file is. Costs no attempt, like any other file problem.
+            if (!LooksLike(bytes, file!)) refuse = "That file is not a readable PDF or JPEG";
+            else if (def.Key == "photo") refuse = PhotoProblem(bytes);
+        }
+        if (refuse is not null)
+        {
+            FlashMessages().Errors[view.Key] = refuse;
+            return;
+        }
+
+        await PutAsync(def, h, file!, bytes);
+    }
+
+    private static bool Accepted(SlotDef def, IFormFile file)
+    {
+        var accepted = def.Accepts.Mime.Split(',');
+        if (accepted.Contains(file.ContentType)) return true;
+        // Some browsers send a PDF or a JPEG as a bare stream: its name says what it is.
+        var byName = Path.GetExtension(file.FileName).ToLowerInvariant() switch
+        {
+            ".pdf" => "application/pdf",
+            ".jpg" or ".jpeg" => "image/jpeg",
+            _ => "",
+        };
+        return accepted.Contains(byName);
+    }
+
+    /// <summary>
+    /// A posted file, read straight into one array of its own length. The request
+    /// size limit has already capped how long that can be.
+    /// </summary>
+    public static async Task<byte[]> ReadAllAsync(IFormFile file)
+    {
+        var bytes = new byte[file.Length];
+        await using var stream = file.OpenReadStream();
+        await stream.ReadExactlyAsync(bytes);
+        return bytes;
+    }
+
+    /// <summary>Whether a file's first bytes are those of the type it claims to be.</summary>
+    public static bool LooksLike(byte[] bytes, IFormFile file)
+    {
+        var pdf = bytes.Length >= 5 && bytes[0] == '%' && bytes[1] == 'P' && bytes[2] == 'D' && bytes[3] == 'F' && bytes[4] == '-';
+        var jpeg = bytes.Length >= 3 && bytes[0] == 0xFF && bytes[1] == 0xD8 && bytes[2] == 0xFF;
+        var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+        return file.ContentType == "application/pdf" || ext == ".pdf" ? pdf : jpeg;
+    }
+
+    public static string SizeOf(long bytes) =>
+        bytes < Mb
+            ? $"{Math.Max(1, (int)Math.Round(bytes / 1024.0))} KB"
+            : (bytes / (double)Mb).ToString(bytes < 10 * Mb ? "0.0" : "0") + " MB";
+
+    // What a photograph has to be to be worth comparing a face against. The
+    // dimensions are read off the image itself rather than assumed from its weight.
+    private const int MinKb = 15, MaxKb = 2048, MinPx = 150, MaxPx = 4096;
+
+    private static string? PhotoProblem(byte[] bytes)
+    {
+        var kb = bytes.Length / 1024.0;
+        if (kb < MinKb) return $"That photograph is {Math.Round(kb)} KB. A face cannot be compared against anything under {MinKb} KB.";
+        if (kb > MaxKb) return $"That photograph is {Math.Round(kb)} KB, over the {MaxKb} KB a photograph may be.";
+        if (JpegSize(bytes) is not var (w, h)) return "That file could not be read as a photograph.";
+        if (w < MinPx || h < MinPx) return $"That photograph is {w}×{h} pixels. It must be at least {MinPx} pixels on both sides.";
+        if (w > MaxPx || h > MaxPx) return $"That photograph is {w}×{h} pixels, over the {MaxPx} a side that can be handled.";
+        return null;
+    }
+
+    // A JPEG says its size in its start-of-frame marker; nothing else is needed to find it.
+    private static (int Width, int Height)? JpegSize(byte[] b)
+    {
+        if (b.Length < 4 || b[0] != 0xFF || b[1] != 0xD8) return null;
+        var i = 2;
+        while (i + 9 < b.Length)
+        {
+            if (b[i] != 0xFF) { i++; continue; }
+            var marker = b[i + 1];
+            if (marker is 0xD8 or 0x01 or (>= 0xD0 and <= 0xD7)) { i += 2; continue; }
+            var length = (b[i + 2] << 8) | b[i + 3];
+            // SOF0-SOF15, bar DHT (C4), JPG (C8) and DAC (CC).
+            if (marker is >= 0xC0 and <= 0xCF and not 0xC4 and not 0xC8 and not 0xCC)
+                return ((b[i + 7] << 8) | b[i + 8], (b[i + 5] << 8) | b[i + 6]);
+            i += 2 + length;
+        }
+        return null;
+    }
+
+    // What a slot is checked as, for the documents somebody outside answers for,
+    // and what a refusal calls it.
+    private static readonly Dictionary<string, (DocumentKind Kind, string What)> Checked = new()
+    {
+        ["pan"] = (DocumentKind.PanCard, "a PAN card"),
+        ["poa"] = (DocumentKind.ProofOfAddress, "a proof of address"),
+        ["mail"] = (DocumentKind.ProofOfAddress, "a proof of address"),
+        ["payment"] = (DocumentKind.Cheque, "a cheque"),
+    };
+
+    // Not every document has somebody behind it to ask: the card says who does
+    // look at the copy instead, and when.
+    /// <summary>What happens to a document no register outside answers for, once uploaded.</summary>
+    public static string NoCheckOf(string slot) => NoCheck.GetValueOrDefault(slot, "Filed as handed over.");
+
+    private static readonly Dictionary<string, string> NoCheck = new()
+    {
+        ["form"] = "Filed as handed over. No register outside answers for an application form — Operations check it against the application before the deposit is booked.",
+        ["photo"] = "Filed as handed over. No register outside answers for a photograph — Operations compare it with the KYC record before the deposit is booked.",
+        ["empproof"] = "Filed as handed over. No register outside answers for an employee proof — Operations check it against the staff register.",
+    };
+
+    // From here it is the document that is being checked, and that is what an
+    // attempt is spent on. Each outside service is asked in turn, and each attempt
+    // is kept in the history as the checks it went through. A copy that gets
+    // through them is filed with DMS; one that does not is kept aside there.
+    private async Task PutAsync(SlotDef def, DocHolder h, IFormFile file, byte[] bytes)
+    {
+        var s = State;
+        var key = h.Key(def.Key);
+        var entry = new LogEntry(Guid.NewGuid().ToString("n")[..8], h.Joint ? $"{def.Label} · {h.Who.Name}" : def.Label,
+            s.AttemptsOf(key) + 1, DateTime.Now.ToString("HH:mm:ss"), $"{file.FileName} · {SizeOf(file.Length)}") { Holder = h.Joint ? h.Code : "" };
+        s.Log.Insert(0, entry);
+        var copy = new UploadFile(Path.GetFileName(file.FileName), file.ContentType, bytes);
+
+        // What is filed is described as stored: an Aadhaar is filed masked, a different file from the one handed over.
+        StoredDoc Filed(UploadFile stored, string check, string kind) =>
+            new(stored.FileName, stored.Bytes.Length, stored.ContentType, check, kind);
+
+        if (!Checked.TryGetValue(def.Key, out var rule))
+        {
+            await FileAsync(def, h, copy);
+            s.Attempts[key] = 0;
+            entry.Add("Filed as handed over — nothing outside answers for this document.");
+            entry.End("Filed", "ok");
+            s.Docs[key] = Filed(copy, NoCheck.GetValueOrDefault(def.Key, "Filed as handed over."), "");
+            return;
+        }
+
+        try
+        {
+            await CheckAsync(def, h, rule, copy, entry, Filed);
+        }
+        catch (ExternalServiceException e)
+        {
+            // Nothing was checked, so nothing is filed and no attempt is spent.
+            entry.Add($"{e.Service} could not answer: {e.Message}", "bad");
+            if (e.TraceId is not null) entry.Add("Trace " + e.TraceId);
+            entry.End("Not checked", "bad");
+            FlashMessages().Errors[key] = $"{e.Message} Nothing was filed, and it does not count as a refusal.";
+            FlashMessages().ErrorLog[key] = entry.Id;
+        }
+    }
+
+    private async Task CheckAsync(SlotDef def, DocHolder h, (DocumentKind Kind, string What) rule, UploadFile copy, LogEntry entry, Func<UploadFile, string, string, StoredDoc> filed)
+    {
+        var s = State;
+        var key = h.Key(def.Key);
+
+        // 1. Identification: is it the document it is handed in as? A proof of
+        // address is handed in as nothing in particular: which proof it is is what
+        // identification says, and that is its type from here on. A payment is
+        // handed in as the mode chosen for it.
+        var proof = def.Key is "poa" or "mail";
+        var detect = proof && AutoProofType;
+        var identified = await identifier.IdentifyAsync(rule.Kind, detect ? "" : TypeOf(def, h), copy);
+        if (detect && identified.Matches && !ProofsOfAddress.Contains(identified.Type))
+            identified = new Identification(false, $"It could not be told which proof of address it is. Upload a clearer copy of {OneOf(ProofsFor(def.Key)).ToLowerInvariant().Replace("aadhaar", "an Aadhaar")}.");
+        var type = detect ? identified.Type ?? "" : TypeOf(def, h);
+
+        async Task RefuseAsync(string why, string whatNext, params (string Text, string Kind)[] stages)
+        {
+            var attempts = s.Attempts[key] = s.AttemptsOf(key) + 1;
+            // An Aadhaar is kept aside masked, as it is filed masked.
+            if (proof && type == "Aadhaar") copy = await MaskedAsync(h, copy);
+            var kept = await documents.KeepRefusedAsync(AppNo, FiledUnder(def, h), def.Key, copy);
+            // Telling a partner to upload it again when there is nothing left to
+            // upload with is worse than saying nothing.
+            var message = attempts >= MaxAttempts
+                ? $"{why}, and that is {MaxAttempts} refused one after another. It now goes to Operations — book a service call to file it, quoting {kept.Ref}."
+                : $"{why}. {whatNext} The copy is kept for a week as {kept.Ref}.";
+            foreach (var (text, kind) in stages) entry.Add(text, kind);
+            entry.Add($"Copy kept for analysis as {kept.Ref} until {kept.KeptUntil:dd MMM yyyy}, and deleted after.", "warn");
+            entry.End("Refused", "bad");
+            FlashMessages().Errors[key] = message;
+            FlashMessages().ErrorLog[key] = entry.Id;
+        }
+
+        if (!identified.Matches)
+        {
+            await RefuseAsync($"That does not read as {rule.What}", identified.Hint ?? "Upload a clearer copy.", ($"Not identified as {rule.What}.", "bad"));
+            return;
+        }
+        // A proof the box does not take - a utility bill for the permanent address.
+        if (proof && !ProofsFor(def.Key).Contains(type))
+        {
+            await RefuseAsync($"A {type.ToLowerInvariant()} is not taken as proof of the permanent address",
+                $"Upload {(h.Joint ? "this holder's" : "the investor's")} {OneOf(ProofsFor(def.Key))} — a {type.ToLowerInvariant()} proves only a communication address.",
+                ($"Identified as a {type.ToLowerInvariant()}, which proves only a communication address.", "bad"));
+            return;
+        }
+        if (switches.IsOn(OutsideSwitches.Identify)) entry.Add($"Identified as {(proof ? "a proof of address: " + type : rule.What)}.", "ok");
+        else entry.Add($"Identification is {OutsideSwitches.Off}: taken as {(proof ? type : rule.What)} as handed in; Operations check the copy.", "warn");
+
+        // 2. OCR. An Aadhaar is taken only when the name and date of birth it reads
+        // are the PAN's; masked or not, its number need not be read (see ReadAddressAsync).
+        var reading = await ocr.ReadAsync(rule.Kind, type, copy, new OcrSubject(h.Who.Pan, h.Who.Dob, h.Who.Name), AadhaarConsent);
+        if (!switches.IsOn(OutsideSwitches.Ocr)) entry.Add($"OCR is {OutsideSwitches.Off}: nothing is read off the copy, and it is taken as the holder's own; Operations check it.", "warn");
+        // A PAN copy has to be the holder's own: the PAN and date of birth it reads
+        // as are the ones already on the application, which cannot be changed here.
+        if (def.Key == "pan" && PanCopyMismatch(reading, h.Who.Pan, h.Who.Dob) is { } notTheirs)
+        {
+            await RefuseAsync(notTheirs, $"Upload {(h.Joint ? "this holder's" : "the investor's")} own PAN card, clear enough to read.",
+                ($"OCR read: PAN {(reading.Pan.Length > 0 ? MaskPan(reading.Pan) : "none")}, date of birth {(reading.Dob.Length > 0 ? MaskDate(reading.Dob) : "none")}.", ""),
+                ("It does not match the PAN and date of birth on the application.", "bad"));
+            return;
+        }
+        // What the PAN copy reads, for its box once it is filed.
+        if (def.Key == "pan")
+            State.Reads[h.Key("panocr")] = new ReadCard("", NewApplicationViewModel.NormaliseName(reading.Name), "")
+                { Number = reading.Pan.Replace(" ", "").ToUpperInvariant(), Dob = reading.Dob };
+        if (proof && type == "Aadhaar" && await AadhaarMismatchAsync(h, reading) is { } notTheirs2)
+        {
+            await RefuseAsync(notTheirs2, $"Upload {(h.Joint ? "this holder's" : "the investor's")} own Aadhaar, clear enough to read the name and date of birth.",
+                ($"OCR read: name {(reading.Name.Trim().Length > 0 ? reading.Name.Trim() : "none")}, date of birth {(reading.Dob.Length > 0 ? MaskDate(reading.Dob) : "none")}.", ""),
+                ("An Aadhaar is taken only when its name and date of birth match the PAN's.", "bad"));
+            return;
+        }
+
+        // A joint holder with no folio is put to NSDL with the name the copy reads.
+        if (def.Key == "pan" && NsdlApplies(h))
+        {
+            await NsdlAsync(h, NewApplicationViewModel.NormaliseName(reading.Name), entry, typed: false);
+            h = Again(h);
+        }
+
+        if (detect)
+        {
+            // Taken: the proof's type is what it was identified as, whatever it was before.
+            if (def.Key == "poa") SetPoaType(h, type);
+            else SetMail(h, true, type);
+            entry.Add($"Its type is set to {type} from the copy.", "ok");
+        }
+
+        // 3. Whoever answers for what was read.
+        var (check, kind) = def.Key switch
+        {
+            "pan" => await ReadPanAsync(h, reading, entry),
+            "poa" or "mail" => await ReadAddressAsync(def, h, reading, entry),
+            _ => await ReadInstrumentAsync(reading, entry),
+        };
+
+        // 4. An Aadhaar is masked before it is filed - after OCR has read the whole
+        // number off it and the name and date of birth have been matched - so no copy
+        // with the whole number is ever stored.
+        if (proof && type == "Aadhaar")
+        {
+            copy = await MaskedAsync(h, copy);
+            entry.Add("Aadhaar number masked before the copy is filed.", "ok");
+        }
+        await FileAsync(def, h, copy);
+        s.Docs[key] = filed(copy, check, kind);
+        // Taken, so whatever was refused before it is behind the partner.
+        s.Attempts[key] = 0;
+
+        // 5. The PAN-Aadhaar link, with the number read before masking.
+        if (proof && type == "Aadhaar") await LinkAfterFilingAsync(h, reading, entry);
+
+        if (def.Key == "poa") await DetailsAsync(h, reading, type, entry);
+
+        // Both copies filed: the faces on them are compared - again, when either is replaced.
+        if (def.Key is "poa" or "pan") await FaceAsync(h, entry);
+    }
+
+    // 5. After an Aadhaar is filed: it carries the number the PAN-Aadhaar link is
+    // asked with, so a PAN already on the application can be asked about now. The
+    // number is the one OCR read off the copy before it was masked, and is kept in
+    // the session alone. Where OCR could not read the whole number - masked already,
+    // or not clear enough - it is typed instead.
+    private async Task LinkAfterFilingAsync(DocHolder h, OcrReading reading, LogEntry entry)
+    {
+        if (!LinkApplies(h)) return;
+        if (AadhaarNumbers.IsWhole(reading.IdNumber))
+        {
+            await AskLinkWithAsync(h, reading.IdNumber, entry);
+            return;
+        }
+        session.Remove(AadhaarKey(h));
+        LinkWaitsOnNumber(h);
+        entry.Add("OCR read no whole 12-digit Aadhaar number off it; the number is typed for the PAN-Aadhaar link.", "warn");
+    }
+
+    // A slot holds one copy in DMS: a copy filed before is deleted, then the new
+    // one filed. One that came over from the step before has no copy here.
+    private async Task FileAsync(SlotDef def, DocHolder h, UploadFile copy)
+    {
+        var under = FiledUnder(def, h);
+        if (State.Docs.GetValueOrDefault(h.Key(def.Key)) is { Before: false }) await documents.DeleteAsync(AppNo, under, def.Key);
+        await documents.FileAsync(AppNo, under, def.Key, copy);
+    }
+
+    /// <summary>The words with the first letter in capitals.</summary>
+    private static string Capitalize(string words) => char.ToUpperInvariant(words[0]) + words[1..];
+
+    // The issuer behind that proof is asked whether the address OCR read is the
+    // one they hold. Only a clean answer replaces the address the application carries.
+    private async Task<(string, string)> ReadAddressAsync(SlotDef def, DocHolder h, OcrReading reading, LogEntry entry)
+    {
+        // The permanent address, or the communication address where post goes elsewhere.
+        var mailing = def.Key == "mail";
+        var what = mailing ? "communication address" : "address";
+        var card = mailing ? MailReadOf(h) : State.Reads[h.Key("poa")];
+        var type = TypeOf(def, h);
+        var named = type.Length > 0 ? type.ToLowerInvariant() : "proof";
+        entry.Add("OCR read: " + reading.Address);
+        // The number the proof carries, and when it runs out, stand in its box. An
+        // Aadhaar shows its last four digits only.
+        (card.Number, card.Expiry) = (ProofNumber(type, reading), reading.Expiry);
+        if (card.Number.Length > 0) entry.Add($"Number read: {card.Number}{(card.Expiry.Length > 0 ? $", valid till {Dates.Show(card.Expiry)}" : "")}.");
+        // The investor's gender, where the folio gives none, sets the category.
+        if (!h.Joint && Who.Gender.Length == 0 && reading.Gender.Length > 0 && State.Gender != reading.Gender)
+        {
+            State.Gender = reading.Gender;
+            entry.Add($"Gender read: {reading.Gender}.");
+        }
+        var answer = await verification.ConfirmProofAsync(type, reading, h.Who.Dob);
+        var issuer = answer.Verifier;
+
+        // The issuer's own validity stands over the one read off the copy, which OCR
+        // can take from the wrong line - a licence's issue date, say.
+        if (answer.Confirmed && answer.Expiry.Length > 0 && answer.Expiry != card.Expiry)
+        {
+            entry.Add(card.Expiry.Length > 0
+                ? $"{Capitalize(issuer)} holds it valid till {Dates.Show(answer.Expiry)}; the copy read {Dates.Show(card.Expiry)}, which is set aside."
+                : $"{Capitalize(issuer)} holds it valid till {Dates.Show(answer.Expiry)}; no expiry could be read off the copy.");
+            card.Expiry = answer.Expiry;
+        }
+        if (answer.Confirmed && answer.Standing.Length > 0 && !answer.Standing.Equals("Active", StringComparison.OrdinalIgnoreCase))
+            entry.Add($"{Capitalize(issuer)} holds it as {answer.Standing}.", "warn");
+
+        if (answer.NotAsked is { } why)
+        {
+            (card.State, card.Kind) = ("With Operations", "is-failed");
+            card.From = $"{Capitalize(issuer)} could not be asked: {why}. The {what} is left as it stands for Operations to settle.";
+            entry.Add($"{Capitalize(issuer)} not asked: {why}.", "warn");
+            entry.End($"Filed, {what} unchanged", "warn");
+            return ($"Read, but {issuer} could not be asked: {why}. The copy is filed and Operations settle the {what}; the application keeps the one it carries until they do.", "warn");
+        }
+
+        if (issuer.Length == 0)
+        {
+            (card.State, card.Kind) = ("With Operations", "is-failed");
+            card.From = $"A {named} has no issuer to check with, so the {what} is left as it stands for Operations to settle.";
+            entry.Add($"A {named} has no register behind it to put that address to.", "warn");
+            entry.End($"Filed, {what} unchanged", "warn");
+            return ($"Read, but nothing outside answers for a {named}. The copy is filed and Operations settle the {what}; the application keeps the one it carries until they do.", "warn");
+        }
+        if (!answer.Confirmed)
+        {
+            (card.State, card.Kind) = ("Not confirmed", "is-failed");
+            card.From = $"{issuer} did not confirm the address on this proof, so the application keeps the {what} it carries. Upload a clearer copy, or a different proof.";
+            entry.Add($"{issuer} did not confirm that address.", "bad");
+            entry.End($"Filed, {what} unchanged", "warn");
+            return ($"Read, but {issuer} did not confirm what it says. The copy is filed and the application keeps the {what} it carries — upload a clearer copy, or another proof.", "bad");
+        }
+        // A communication address read for the first time replaces nothing.
+        var before = mailing && card.Kind != "is-done" ? "" : card.Lines;
+        (card.Lines, card.Was) = (reading.Address, before);
+        (card.State, card.Kind) = ($"Verified with {issuer}", "is-done");
+        card.From = $"Read off the {named} filed above and confirmed with {issuer}.";
+        entry.Add($"{issuer} confirmed that address.", "ok");
+        entry.Add(before.Length > 0 ? $"{Capitalize(what)} on the application replaced. Was: " + before : $"{Capitalize(what)} on the application set.", "ok");
+        entry.End("Filed", "ok");
+        return ($"Identified, read and confirmed with {issuer}. The {what} on the application now comes from this proof.", "ok");
+    }
+
+    // A cheque carries an account rather than an address, and it is the bank it is
+    // drawn on that is asked to stand behind it.
+    private async Task<(string, string)> ReadInstrumentAsync(OcrReading reading, LogEntry entry)
+    {
+        var card = State.Reads["payment"];
+        var mode = State.PayMode.Length > 0 ? State.PayMode.ToLowerInvariant() : "cheque";
+        entry.Add("OCR read: " + reading.Account);
+        var answer = await verification.ConfirmAccountAsync(reading.Account, reading.Bank);
+        var bank = answer.Verifier.Length > 0 ? answer.Verifier : "The bank";
+
+        // The bank could not be asked: nothing was found either way, so what was read
+        // off the cheque is carried forward for the partner to check on Bank Details.
+        if (answer.NotAsked is { } why)
+        {
+            if (reading.Cheque is null || reading.Cheque.AccountNumber.Length == 0)
+            {
+                State.ChequeRead = null;
+                (card.State, card.Kind) = ("Not read", "is-failed");
+                card.From = $"The account could not be read off this {mode}, so nothing is carried forward. Upload a clearer copy of the instrument.";
+                entry.Add("No account could be read off the copy.", "warn");
+                entry.End("Filed, account not carried", "warn");
+                return ($"Filed, but no account could be read off this {mode}. Enter the account on Bank Details & Payment.", "warn");
+            }
+            card.Lines = reading.Account;
+            State.ChequeRead = reading.Cheque;
+            (card.State, card.Kind) = ("Read, not confirmed", "is-done");
+            card.From = $"Read off the {mode} filed above. The bank was not asked: {why}. Bank Details & Payment opens with this account - check it there.";
+            entry.Add($"The bank was not asked: {why}.", "warn");
+            entry.Add("Account carried to Bank Details & Payment, as read.", "ok");
+            entry.End("Filed", "ok");
+            return ($"Read off the {mode}; the bank was not asked to confirm it. Bank Details & Payment opens with this account - check it there.", "warn");
+        }
+
+        if (!answer.Confirmed)
+        {
+            State.ChequeRead = null;
+            (card.State, card.Kind) = ("Not confirmed", "is-failed");
+            card.From = $"{bank} did not confirm that account against this {mode}, so nothing is carried forward. Upload a clearer copy of the instrument.";
+            entry.Add($"{bank} did not confirm that account.", "bad");
+            entry.End("Filed, account not carried", "warn");
+            return ($"Read, but {bank} did not confirm the account on this {mode}. The copy is filed and no account is carried to Bank Details & Payment.", "bad");
+        }
+        card.Lines = reading.Account;
+        // What Bank Details opens with: the account, its IFSC and the cheque itself.
+        State.ChequeRead = reading.Cheque;
+        (card.State, card.Kind) = ($"Confirmed with {bank}", "is-done");
+        card.From = $"Read off the {mode} filed above and confirmed with {bank}. Bank Details & Payment opens with this account.";
+        entry.Add($"{bank} confirmed that account.", "ok");
+        entry.Add("Account carried to Bank Details & Payment.", "ok");
+        entry.End("Filed", "ok");
+        return ($"Identified, read and confirmed with {bank}. Bank Details & Payment opens with this account.", "ok");
+    }
+
+    // A PAN copy is read for the number on it, and - for a holder with no folio -
+    // the PAN-Aadhaar link is asked whether an Aadhaar is held against their PAN,
+    // once there is an Aadhaar number on the application to ask with. An unlinked PAN does not stop
+    // the application: TDS runs at the higher rate until the investor links it.
+    private async Task<(string, string)> ReadPanAsync(DocHolder h, OcrReading reading, LogEntry entry)
+    {
+        entry.Add("OCR read: PAN " + MaskPan(reading.Pan.Length > 0 ? reading.Pan : h.Who.Pan));
+        if (NsdlApplies(h) && NsdlOf(h) != "verified")
+        {
+            // Not verified: the link waits for NSDL, and the copy and its card say why.
+            LinkWaitsOnNsdl(h);
+            entry.Add("The PAN-Aadhaar link waits until NSDL verifies the PAN.", "warn");
+            entry.End("Filed, not verified", NsdlOf(h) == "failed" ? "bad" : "warn");
+            return NsdlOf(h) == "failed"
+                ? ($"Filed, but NSDL holds no record of this PAN against the date of birth searched. {NsdlFailedNext(h)}", "bad")
+                : ("Filed, but NSDL does not hold this PAN against the name read off it. Type the name as printed on the card, in the NSDL card below.", "warn");
+        }
+        if (!LinkApplies(h))
+        {
+            // On a folio: the link is not asked.
+            entry.End("Filed", "ok");
+            return ($"Identified and read as PAN {MaskPan(h.Who.Pan)}.", "ok");
+        }
+        var link = await LinkAsync(h, entry);
+        entry.End(link switch
+        {
+            PanAadhaarLink.Linked => "Filed",
+            PanAadhaarLink.NotLinked => "Filed, PAN not linked",
+            _ => "Filed, link not checked",
+        }, link == PanAadhaarLink.Linked ? "ok" : "warn");
+        return PanCheck(h, link);
+    }
+
+    // A joint holder's PAN on the application but not verified with NSDL: the link
+    // card says what it waits on, rather than still asking for the PAN copy.
+    private void LinkWaitsOnNsdl(DocHolder h)
+    {
+        var card = State.Reads[h.Key("pan")];
+        card.Lines = MaskPan(h.Who.Pan) + " · link with Aadhaar not asked yet";
+        (card.State, card.Kind, card.From) = NsdlOf(h) == "failed"
+            ? ("Not asked", "is-failed", "NSDL did not verify the PAN, so the link is not asked.")
+            : ("Waiting on NSDL", "", $"Asked once NSDL verifies the PAN{(AadhaarOf(h).Length > 0 ? ", with the Aadhaar already read" : "")}.");
+    }
+
+    // An Aadhaar number, read or typed, kept for the link and asked with now - or,
+    // while NSDL has not verified the PAN, once it does.
+    private async Task AskLinkWithAsync(DocHolder h, string number, LogEntry entry)
+    {
+        session.SetString(AadhaarKey(h), number);
+        if (PanOnApplication(h) && (!NsdlApplies(h) || NsdlOf(h) == "verified")) await RelinkPanAsync(h, entry);
+        else if (PanOnApplication(h))
+        {
+            // The Aadhaar number is kept, and asked with once NSDL verifies the PAN.
+            LinkWaitsOnNsdl(h);
+            entry.Add("The PAN-Aadhaar link waits until NSDL verifies the PAN; this Aadhaar is asked with then.", "warn");
+        }
+    }
+
+    // An Aadhaar filed whose number OCR could not read whole: the link card says it
+    // waits on the number, typed in the row under the proofs.
+    private void LinkWaitsOnNumber(DocHolder h)
+    {
+        var card = State.Reads[h.Key("pan")];
+        card.Lines = MaskPan(h.Who.Pan) + " · link with Aadhaar not asked yet";
+        (card.State, card.Kind) = ("Aadhaar number needed", "is-failed");
+        card.From = "OCR could not read the whole Aadhaar number off the copy. Type it in the row under the proofs of address, and the link is asked.";
+    }
+
+    /// <summary>
+    /// Whether the Aadhaar number is asked for by hand: an Aadhaar is filed for a
+    /// holder with no folio, and no whole number is held for the link - OCR could
+    /// not read it, or the session it was kept in has ended.
+    /// </summary>
+    public bool AsksAadhaarNumber(DocHolder h) =>
+        LinkApplies(h) && AadhaarFiled(h) && AadhaarOf(h).Length == 0
+        && State.Reads[h.Key("pan")] is { Kind: not "is-done" } card && card.State != "Not linked";
+
+    /// <summary>The Aadhaar number row's field, and what was wrong with the number last typed.</summary>
+    public (string Field, string? Error) AadhaarNumberField(DocHolder h) =>
+        (h.Key("aadhaarNo"), Shown?.Errors.GetValueOrDefault(h.Key("aadhaarNo")));
+
+    /// <summary>
+    /// The 12-digit Aadhaar number, typed where OCR could not read it off the
+    /// Aadhaar filed, and the PAN-Aadhaar link asked with it. Like one read, it is
+    /// held in the session only, never saved. Returns where on the page to come back to.
+    /// </summary>
+    public async Task<string?> AadhaarNumberAsync(DocHolder h, string? typed)
+    {
+        var key = h.Key("aadhaarNo");
+        if (!AsksAadhaarNumber(h)) return "read-" + h.Key("link");
+        var number = new string((typed ?? "").Where(char.IsAsciiDigit).ToArray());
+        if (!AadhaarNumbers.IsValid(number))
+        {
+            FlashMessages().Errors[key] = number.Length != 12 ? "Enter the 12-digit Aadhaar number" : "That is not a valid Aadhaar number — check it against the card";
+            return "row-" + key;
+        }
+        var entry = new LogEntry(Guid.NewGuid().ToString("n")[..8], "PAN–Aadhaar link · number typed", 1,
+            DateTime.Now.ToString("HH:mm:ss"), "Aadhaar number typed: XXXX XXXX " + number[^4..]) { Holder = h.Joint ? h.Code : "" };
+        State.Log.Insert(0, entry);
+        await AskLinkWithAsync(h, number, entry);
+        var card = State.Reads[h.Key("pan")];
+        entry.End(card.Kind == "is-done" ? "Linked" : card.State, card.Kind == "is-done" ? "ok" : "warn");
+        return "read-" + h.Key("link");
+    }
+
+    // An Aadhaar is taken only when the name and date of birth it reads are the
+    // PAN's: the name as NSDL or the folio holds it - or, until NSDL verifies it,
+    // as read off the PAN copy - allowing initials and a name left out, and the
+    // date of birth exactly. Null when they match; otherwise why not.
+    private async Task<string?> AadhaarMismatchAsync(DocHolder h, OcrReading reading)
+    {
+        var panName = h.Who.Name.Length > 0 ? h.Who.Name
+            : State.Reads.TryGetValue(h.Key("panocr"), out var panRead) ? panRead.Lines : "";
+        var name = reading.Name.Trim();
+        if (panName.Length == 0) return "The PAN's name is not known yet, so the Aadhaar cannot be matched with it — file the PAN copy first";
+        // The name match switched off is not a mismatch: the Aadhaar is taken, and Operations compare.
+        var nameOk = name.Length > 0 && !(await names.MatchAsync(name, panName)).IsMismatch;
+        var dobOk = reading.Dob.Length > 0 && reading.Dob == h.Who.Dob;
+        return (nameOk, dobOk) switch
+        {
+            (true, true) => null,
+            (false, false) => "The name and date of birth on the Aadhaar do not match the PAN's",
+            (false, _) => name.Length == 0 ? "The name on the Aadhaar could not be read" : "The name on the Aadhaar does not match the PAN's",
+            _ => reading.Dob.Length == 0 ? "The date of birth on the Aadhaar could not be read" : "The date of birth on the Aadhaar does not match the PAN's",
+        };
+    }
+
+    // NSDL asked about a joint holder's PAN, date of birth and a name; verified,
+    // the name is theirs from here on.
+    private async Task NsdlAsync(DocHolder h, string name, LogEntry entry, bool typed)
+    {
+        var answer = await pan.VerifyAsync(new PanToVerify(AppNo, h.Code, h.Who.Pan, h.Who.Dob, name));
+        var result = !answer.PairOk ? "failed" : answer.NameOk ? "verified" : "name";
+        if (h.Joint)
+        {
+            var j = State.Joint[h.Code];
+            (j.NsdlName, j.Nsdl) = (name, result);
+            if (result == "verified") j.Holder = j.Holder with { Name = name };
+        }
+        else
+        {
+            (State.NsdlName, State.Nsdl) = (name, result);
+            if (result == "verified") State.Name = name;
+        }
+        entry.Add(answer.PairOk ? "NSDL holds the PAN against the date of birth." : "NSDL holds no such PAN and date of birth.", answer.PairOk ? "ok" : "bad");
+        if (answer.PairOk)
+            entry.Add(answer.NameOk ? $"NSDL holds it against {name}{(typed ? ", as typed" : "")}." : $"NSDL does not hold it against {name}{(typed ? ", as typed" : "")}.", answer.NameOk ? "ok" : "warn");
+    }
+
+    /// <summary>
+    /// The name printed on a joint holder's PAN card, typed where NSDL did not hold
+    /// the PAN against the name OCR read, and put to NSDL again. Returns where on
+    /// the page to come back to.
+    /// </summary>
+    public async Task<string?> RetryNsdlAsync(DocHolder h, string? typed)
+    {
+        var key = h.Key("nsdl");
+        if (!NsdlApplies(h) || NsdlOf(h) != "name" || State.Docs.GetValueOrDefault(h.Key("pan")) is not { } doc) return "read-" + key;
+        var name = NewApplicationViewModel.NormaliseName(typed);
+        if (name.Length < 3 || !InvestorViewModel.IsName(name))
+        {
+            FlashMessages().Errors[key] = name.Length < 3 ? "Enter the name as printed on the PAN" : "Enter the name as printed on the PAN: letters only";
+            return "read-" + key;
+        }
+        var entry = new LogEntry(Guid.NewGuid().ToString("n")[..8], $"{PanSlot.Label} · NSDL again", 1,
+            DateTime.Now.ToString("HH:mm:ss"), $"Name typed from the PAN card: {name}") { Holder = h.Code };
+        State.Log.Insert(0, entry);
+        try
+        {
+            await NsdlAsync(h, name, entry, typed: true);
+        }
+        catch (ExternalServiceException e)
+        {
+            entry.Add($"{e.Service} could not answer: {e.Message}", "bad");
+            entry.End("Not checked", "bad");
+            FlashMessages().Errors[key] = e.Message;
+            return "read-" + key;
+        }
+        h = Again(h);
+        if (NsdlOf(h) != "verified")
+        {
+            entry.End("Not verified", "warn");
+            FlashMessages().Errors[key] = $"NSDL does not hold PAN {MaskPan(h.Who.Pan)} against that name";
+            return "read-" + key;
+        }
+        // Verified: the link can be asked now, and the copy says what came of it.
+        var link = await LinkAsync(h, entry);
+        var (check, kind) = PanCheck(h, link);
+        State.Docs[h.Key("pan")] = doc with { Check = check, CheckKind = kind };
+        entry.End("Verified", "ok");
+        return "read-" + key;
+    }
+
+    private bool PanOnApplication(DocHolder h) => h.Who.PanFiled || State.Docs.ContainsKey(h.Key("pan"));
+
+    // A PAN copy the holder needs and has not filed yet: not one the folio holds,
+    // nor one a holder on a folio may leave out.
+    private bool PanWanted(DocHolder h) => !PanOnApplication(h) && View(PanSlot, h) is { Used: true, Optional: false };
+
+    // The Aadhaar arrived after the PAN: the link is asked now, and the PAN's card
+    // and what its copy says both follow the answer.
+    private async Task RelinkPanAsync(DocHolder h, LogEntry entry)
+    {
+        var link = await LinkAsync(h, entry);
+        if (State.Docs.GetValueOrDefault(h.Key("pan")) is { Before: false } doc)
+        {
+            var (check, kind) = PanCheck(h, link);
+            State.Docs[h.Key("pan")] = doc with { Check = check, CheckKind = kind };
+        }
+    }
+
+    // Null when the link check could not answer. The PAN or the Aadhaar that
+    // prompted it is filed all the same: the link is only ever a note on the PAN.
+    private async Task<PanAadhaarLink?> LinkAsync(DocHolder h, LogEntry entry)
+    {
+        var card = State.Reads[h.Key("pan")];
+        var pan = MaskPan(h.Who.Pan);
+        PanAadhaarLink link;
+        try
+        {
+            link = await panLink.CheckAsync(h.Who.Pan, AadhaarOf(h));
+        }
+        catch (ExternalServiceException e)
+        {
+            card.Lines = pan + " · link with Aadhaar not checked";
+            (card.State, card.Kind) = ("Link not checked", "");
+            card.From = $"The PAN-Aadhaar link could not be asked just now: {e.Message}";
+            entry.Add($"{e.Service} could not answer the PAN-Aadhaar link: {e.Message}", "warn");
+            return null;
+        }
+        switch (link)
+        {
+            case PanAadhaarLink.Linked:
+                card.Lines = pan + " · linked with Aadhaar";
+                (card.State, card.Kind) = ("Linked with Aadhaar", "is-done");
+                card.From = $"Confirmed with {PanAuthority} against the Aadhaar number on this application, read off the copy or typed.";
+                entry.Add($"{Capitalize(PanAuthority)} holds an Aadhaar against this PAN.", "ok");
+                break;
+            case PanAadhaarLink.NotLinked:
+                card.Lines = pan + " · not linked with Aadhaar";
+                (card.State, card.Kind) = ("Not linked", "is-failed");
+                card.From = $"{Capitalize(PanAuthority)} holds no Aadhaar against this PAN. The application cannot proceed until the investor links it.";
+                entry.Add("No Aadhaar against this PAN.", "warn");
+                break;
+            case PanAadhaarLink.NotAsked:
+                card.Lines = pan + " · link with Aadhaar not asked";
+                (card.State, card.Kind) = ("Not asked", "is-na");
+                card.From = $"The PAN-Aadhaar link is {OutsideSwitches.Off}. The application goes on; Operations check the link.";
+                entry.Add($"PAN-Aadhaar link not asked: {OutsideSwitches.Off}.", "warn");
+                break;
+            case PanAadhaarLink.NeedsAadhaar when AadhaarFiled(h):
+                // An Aadhaar is filed, but its number was not read: it is typed.
+                LinkWaitsOnNumber(h);
+                entry.Add("No Aadhaar number held for this application; it is typed for the PAN-Aadhaar link.", "warn");
+                break;
+            default:
+                card.Lines = pan + " · link with Aadhaar not asked yet";
+                (card.State, card.Kind) = ("Waiting on an Aadhaar", "");
+                card.From = LinkWaitsShort;
+                entry.Add("No Aadhaar number read on this application yet, so the PAN-Aadhaar link is not asked.", "warn");
+                break;
+        }
+        return link;
+    }
+
+    private static (string, string) PanCheck(DocHolder h, PanAadhaarLink? link) => (MaskPan(h.Who.Pan), link) switch
+    {
+        (var pan, PanAadhaarLink.Linked) => ($"Identified, read as PAN {pan} and confirmed with {PanAuthority}: an Aadhaar is held against it.", "ok"),
+        (var pan, PanAadhaarLink.NotLinked) => ($"Read as PAN {pan}, but {PanAuthority} holds no Aadhaar against it. The copy is filed and the deposit can be booked — TDS runs at the higher rate until the {(h.Joint ? "holder" : "investor")} links it.", "warn"),
+        (var pan, PanAadhaarLink.NeedsAadhaar) => ($"Identified and read as PAN {pan}. {LinkWaits}", "warn"),
+        (var pan, _) => ($"Identified and read as PAN {pan}. The PAN-Aadhaar link could not be asked just now; it is asked again when an Aadhaar is next filed.", "warn"),
+    };
+
+    // ===== What the page says about the rest ===================================
+
+    /// <summary>The name a register holds against a code field, or why there is none.</summary>
+    public (string Text, bool Found)? Resolved(SourcingModeOption? mode, bool sub)
+    {
+        var value = sub ? State.SubBroker : State.SourceCode;
+        if (mode is null || value.Length == 0) return null;
+        var house = sub ? (mode.Sub == SubField.House ? mode.House : "") : mode.House;
+        if (house.Length > 0 && value.Equals(house, StringComparison.OrdinalIgnoreCase))
+            return ("Stands for the sourcing mode itself — filled here, not typed.", false);
+        var register = RegisterOf(mode, sub);
+        var found = register.FirstOrDefault(p => p.Code.Equals(value, StringComparison.OrdinalIgnoreCase));
+        return found is not null
+            ? ($"{(sub ? "Sub Broker Name" : mode.NameLabel)} — {found.Name}", true)
+            : ("No name against this code here. You can still proceed — Operations check it before the deposit is booked.", false);
+    }
+
+    /// <summary>The register a code field is searched against as it is typed - "brokers" or "staff" - or null where it is not searched.</summary>
+    public static string? RegisterName(SourcingModeOption? mode, bool sub) =>
+        mode is null || mode.Search != (sub ? "sub" : "source") ? null
+        : mode.Register switch { Register.Brokers => "brokers", Register.Employees => "staff", _ => null };
+
+    /// <summary>What a code field is searched against under the mode, if it is searched at all.</summary>
+    public IReadOnlyList<Party> RegisterOf(SourcingModeOption? mode, bool sub)
+    {
+        if (mode is null || mode.Search != (sub ? "sub" : "source")) return [];
+        return mode.Register switch
+        {
+            Register.Brokers => Brokers,
+            Register.Employees => Staff,
+            _ => [],
+        };
+    }
+
+    /// <summary>What Proceed would ask for, in the order it asks, so the footer can say what is next.</summary>
+    // A PAN copy filed for a holder NSDL has not verified.
+    private bool NsdlUnsettled(DocHolder h) => NsdlApplies(h) && State.Docs.ContainsKey(h.Key("pan")) && NsdlOf(h) != "verified";
+
+    private string NsdlNeed(DocHolder h) => NsdlOf(h) == "failed"
+        ? $"NSDL holds no such PAN and date of birth. {NsdlFailedNext(h)}"
+        : "Type the name as printed on the PAN, and ask NSDL again";
+
+    // The bar's words for a missing document, and the card that holds it.
+    private static readonly Dictionary<string, string> SlotOfNeed = new()
+    {
+        ["the application form"] = "form", ["the PAN copy"] = "pan", ["the proof of address"] = "poa",
+        ["the photograph"] = "photo", ["the communication address proof"] = "mail",
+        ["the instrument copy"] = "payment", ["the employee proof"] = "empproof",
+    };
+
+    /// <summary>The card that holds the next thing to do, when that is a document; null otherwise.</summary>
+    public string? NextSlot() => Outstanding().FirstOrDefault() is { } first ? SlotOfNeed.GetValueOrDefault(first) : null;
+
+    public List<string> Outstanding()
+    {
+        var s = State;
+        var left = new List<string>();
+        var mode = ModeOf(s.Sourcing);
+        bool Missing(SlotDef d) => View(d).Missing;
+
+        if (Missing(FormSlot)) left.Add("the application form");
+        if (Missing(PanSlot)) left.Add("the PAN copy");
+        if (NsdlUnsettled(Investor)) left.Add("the PAN verified with NSDL");
+        if (!AutoProofType && View(PoaSlot).Used && s.PoaType.Length == 0) left.Add("the proof of address type");
+        if (Missing(PoaSlot)) left.Add("the proof of address");
+        if (Missing(PhotoSlot)) left.Add("the photograph");
+        if (!AutoProofType && View(MailSlot).Used && s.MailPoaType.Length == 0) left.Add("the communication address proof type");
+        if (Missing(MailSlot)) left.Add("the communication address proof");
+        if (!IsRenewal && s.PayMode.Length == 0) left.Add("the payment mode");
+        if (Missing(PaymentSlot)) left.Add("the instrument copy");
+        if (mode is null) left.Add("the sourcing mode");
+        else
+        {
+            if (s.SourceCode.Length == 0) left.Add("the " + mode.CodeLabel.ToLowerInvariant());
+            if (SubRequired(mode) && s.SubBroker.Length == 0) left.Add("the sub broker code");
+        }
+        if (s.Category.Length == 0) left.Add("the deposit category");
+        if (IsEmployee(s.Category))
+        {
+            if (s.EmpCode.Length == 0) left.Add("the employee code");
+            if (s.EmpCompany.Length == 0) left.Add("the employee company");
+            if (s.EmpHolder.Length == 0) left.Add("the employee holder");
+            if (s.EmpRelation.Length == 0) left.Add("the relation with the holder");
+            if (s.EmpProofType.Length == 0) left.Add("the employee proof type");
+            if (Missing(EmpProofSlot)) left.Add("the employee proof");
+        }
+        if (s.AppType == Physical && s.TypedFormNo.Length == 0) left.Add("the form number");
+        return left;
+    }
+}
+
+/// <summary>What the upload step's form posts. Every post carries all of it; a
+/// field the page shut is not posted, and stays null.</summary>
+public sealed class UploadForm
+{
+    public string? AppType { get; set; }
+    /// <summary>The proof of address type, posted only while it is chosen rather than set from the upload.</summary>
+    public string? PoaType { get; set; }
+
+    /// <summary>Where post goes: "same" as the permanent address, or "different".</summary>
+    public string? Mailing { get; set; }
+
+    /// <summary>The communication address proof type, posted only while it is chosen.</summary>
+    public string? MailType { get; set; }
+    public string? PayMode { get; set; }
+    public string? Sourcing { get; set; }
+    public string? SourceCode { get; set; }
+    public string? SubBroker { get; set; }
+    public string? Category { get; set; }
+    public string? EmpCode { get; set; }
+    public string? EmpCompany { get; set; }
+    public string? EmpHolder { get; set; }
+    public string? EmpRelation { get; set; }
+    public string? EmpProofType { get; set; }
+    public string? FormNo { get; set; }
+
+    /// <summary>The slot whose Upload was pressed.</summary>
+    public string? Slot { get; set; }
+
+    /// <summary>The control whose change redrew the page, so the page comes back to it.</summary>
+    public string? Refresh { get; set; }
+}
+
+/// <summary>What <see cref="DocumentsViewModel.CategoryAgainstGender"/> found: nothing, a move to a women's category, or a conflict to correct.</summary>
+public sealed record CategoryGenderOutcome(CategoryOption? MovedFrom = null, CategoryOption? MovedTo = null, string? Conflict = null)
+{
+    /// <summary>What the page says when the category has moved to its women's counterpart.</summary>
+    public string MovedMessage =>
+        $"We notice a female applicant is selected under {MovedFrom?.Name}, a non-women category. The category has been updated to {MovedTo?.Name} to ensure they receive the applicable women's category benefits.";
+}

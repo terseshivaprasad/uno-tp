@@ -7,7 +7,7 @@ the deposit, review, submit. ASP.NET Core 10 MVC, server-rendered pages, no SPA.
 ## Run
 
 ```sh
-dotnet run --project src/UnoTP --launch-profile http
+dotnet run --project UnoTP --launch-profile http
 ```
 
 The app runs only on its database: set `ConnectionStrings__UnoTP` first (see Data
@@ -16,20 +16,21 @@ for an outside service, and there is no demo sign-in: the only way in is from th
 portal, at `/Home/Index?UserId=…&SysCode=…` with the values it encrypts. Opened any
 other way, the app shows Session Expired. The other
 E-Sarathi apps it links to run beside it: the login portal on 5100, the console on
-5101 (see `src/UnoTP/appsettings.Development.json`).
+5101 (see `UnoTP/appsettings.Development.json`).
 
 ## Layout
 
-| Project | What it is |
+| Folder | What it is |
 |---|---|
-| `src/UnoTP` | The web app: controllers, view models, Razor views, `wwwroot` |
-| `src/UnoTP.Backend` | The interfaces the pages read and their records, and one HTTP client per outside service (NSDL, OCR, masking, face match, PAN–Aadhaar link, decryption, IDfy, the shortener) |
-| `src/UnoTP.Data` | The interfaces answered from SQL Server through Dapper, in process, and the document store |
+| `UnoTP/` | The web app: `Controllers/`, `ViewModels/`, `Views/`, `wwwroot/`, `Infrastructure/`, and `Services/` |
+| `UnoTP/Services/` | One folder per backend API, each with its settings and its client: `Auth`, `Pan`, `UidMasking`, `Ckyc`, `Idfy`, `NameScreening`, `NameMatch`, `Shortener`. What they share (the gateway address, the switches) is at its top |
+| `UnoTP.Data/` | The database logic, in a project of its own: the `Sql*` classes that answer the pages from SQL Server through Dapper. A change to a query is deployed by replacing `UnoTP.Data.dll` alone |
+| `UnoTP.Data/Models/` | The interfaces the pages read and the records they pass. Both projects use them |
 | `db/` | The SQL Server scripts: three create scripts (the new tables, the tables the database already has, the masters), and the numbered scripts for the settings and lists |
 | `docs/backend-api.md` | What the pages ask of the data layer, interface by interface |
 | `docs/BRAND_GUIDELINES.md` | The visual rules every page keeps |
 
-Inside `src/UnoTP`: `Controllers/` one per page, the application steps sharing
+Inside `UnoTP`: `Controllers/` one per page, the application steps sharing
 `ApplicationStepController`; `ViewModels/` one per page, `DocumentsViewModel` holding
 the document rules; `Views/{Page}/`; `Infrastructure/` for routing, features, caching
 and the session.
@@ -61,7 +62,7 @@ No page has a script or style block of its own inside its markup; what a script
 needs from the server is on the page as `data-` attributes.
 
 The pages never touch the database: they read and write through the interfaces in
-`UnoTP.Backend`, which `UnoTP.Data` answers. Everything an application holds is saved
+`UnoTP.Data/Models`, which `UnoTP.Data` answers. Everything an application holds is saved
 under its number (the `appNo` in every URL), so a page can be reopened from any
 browser and every change is audited. The server session holds only the sign-in.
 
@@ -87,14 +88,17 @@ These are the old app's addresses, so the portal's links and saved links still w
 One app: the pages and the data layer run in the same process, behind a WAF or
 reverse proxy, with SQL Server in its own zone. `UnoTP.Data` answers the pages'
 interfaces from SQL Server through Dapper: the purchase journey end to end, the
-dashboard's lists, sign-in and menus, the lists and rules, and the console. Not
+dashboard's lists, the lists and rules, and the console. The way in is the
+E-Sarathi auth API's: it decrypts what the portal sent, starts
+the user's session and says who they are, and gives their menus. Not
 answered yet: the deposits a folio holds, which are the FD system's. Until it is
 wired in, Renew FD finds no deposits, the source-of-funds rule counts none, and the
 nominees and repayment accounts offered from a folio are those on the app's own
 submitted applications. The outside services (NSDL, OCR,
-identification, verification, masking, the PAN-Aadhaar link, face match, the
-portal's decryption) each answer at `Backend:External:{name}`, or IDfy's for the
-checks it has. Documents are kept under `Dms:Root` until DMS is wired in, and no SMS
+identification, verification, the PAN-Aadhaar link, face match: all Idfy.Api's), name
+screening, name match, the PAN check, Aadhaar masking and the link shortener are all
+behind one gateway (`Backend:BaseUrl`). Each is a service of its own, with its own
+settings section and its own client; none stands in for another. Documents are kept under `Dms:Root` until DMS is wired in, and no SMS
 or e-mail gateway is: sends are logged.
 
 The schema is in three scripts, with no rows in them. Each creates a table, with
@@ -114,18 +118,18 @@ sqlcmd -d UnoTP -i db/012_unotp_amount_limit_and_sub_occupations.sql # the 5 cro
 sqlcmd -d UnoTP -i db/013_unotp_link_validity.sql  # the payment link runs 3 days; a new one until the application cancels itself
 sqlcmd -d UnoTP -i db/014_unotp_gateway_banks.sql  # the banks the payment gateway takes for online payment
 export ConnectionStrings__UnoTP='Server=...;Database=UnoTP;...'   # never in a committed file
-dotnet run --project src/UnoTP --launch-profile http
+dotnet run --project UnoTP --launch-profile http
 ```
 
 Every script is safe to run again. No table has a foreign key or a CHECK
 constraint: each row is written inside the transaction that locks its application, and the app keeps the rules itself. Every table has `f_Active`; only
 active rows are read. The masters are loaded from their sources of record
 before go-live (the FD system, the broker and staff masters, the RBI's IFSC list,
-India Post, the rate card), as is `cmsLocations` in `t_Unotp_Ref_List`. Every page checks
-the partner's session in `t_Unotp_User_Session` (at most 30 seconds old), so ending it, or
-taking the partner out of use, signs them out.
+India Post, the rate card), as is `cmsLocations` in `t_Unotp_Ref_List`. A session
+lasts `AuthApi:SessionHours` from entry; after that the partner comes in from the
+portal again.
 
-The app will not start without `ConnectionStrings:UnoTP`. Outside Development it
+The app will not start without `ConnectionStrings:UnoTP` and `Backend:BaseUrl`. Outside Development it
 will not start with an outside service left without an address either; in
 Development it starts, and a page that asks such a service fails when it does.
 
@@ -149,22 +153,35 @@ trail. A page's working state (`t_Unotp_Page_State`) is scratch and is overwritt
 
 ## Configuration
 
-Settings are in `src/UnoTP/appsettings.json`; in the environment use a double
+Settings are in `UnoTP/appsettings.json`; in the environment use a double
 underscore (`ConnectionStrings__UnoTP`).
 
 | Setting | Meaning |
 |---|---|
 | `ConnectionStrings:UnoTP` | The database. Blank, the app does not start. Set it in the environment or a secret store, never in appsettings. |
+| `Backend:BaseUrl` | The one API gateway every backend API is behind. `appsettings.json` carries it as `https://<gateway-host>/`, the host left as a placeholder; the app does not start until the real host is set, in the environment (`Backend__BaseUrl`) and never in a committed file. Each API's own settings hold its `BasePath` under the gateway, and the path of each call under that (no leading slash). |
+| `Backend:ClientId` | The name the app calls itself by on every API's `X-Client-Id` header (`unotp`). |
 | `ConnectionStrings:UnoTP_Masters`, `UnoTP_Folios`, `UnoTP_Links`, `UnoTP_Errors` | Where an area lives in a database of its own, as the old portal keeps them: the masters (brokers, staff, IFSC, PIN codes, rate card, config, features, lists), the investor folios, the payment links behind Short URL, and the error log. Blank, the area's tables are in the main database. No query joins across areas. |
-| `Backend:Switches:{Identify, Ocr, Verification, PanAadhaarLink, FaceMatch, NameScreening, NameMatch}` | `false` switches the service off: it is not called, the page goes on, and the check is marked as not asked for Operations. Masking, NSDL and decryption have no switch. |
-| `Backend:External:{Nsdl, Identify, Masking, Ocr, Verification, PanAadhaarLink, FaceMatch, Decrypt, NameScreening, NameMatch}` | Each outside service's address. Outside Development each must be set (IDfy covers Masking, PanAadhaarLink and FaceMatch); in Development a service left blank is not there, and a page that asks it fails. |
+| `Backend:Switches:{Identify, Ocr, Verification, PanAadhaarLink, FaceMatch, NameMatch}` | `false` switches the check off: it is not called, the page goes on, and the check is marked as not asked for Operations. Masking and the PAN check have no switch; name screening has its own (`NameScreening:ApiCall`). |
+| `AuthApi:DecryptPath`, `AuthApi:SessionPath`, `AuthApi:MenuPath`, `AuthApi:SessionHours` | The way in: the path of each call under the gateway (`{userId}` and `{sysCode}` in the menu path are filled in), and how many hours a session lasts. |
+| `PanApi:VerifyPath` | Where a holder's PAN is checked with NSDL. Everything else the request carries - the app code, the sourcing type and sub type, who is asking - comes from the signed-in partner and the application. |
+| `UidMasking:MaskPath`, `UidMasking:MaskLength`, `UidMasking:OutputJpegQuality`, `UidMasking:CheckDocumentType` | Where an Aadhaar copy is masked, how many digits are masked, how good the masked JPEG comes back, and whether the API checks the copy is an Aadhaar first. |
+| `AuthApi:SessionHours`, `AuthApi:TimeoutSeconds` | Hours a session lasts after entry (8), and seconds the API is given to answer (55). |
+| `Menu:Pages` | Which console feature each page of the portal's menu opens: the menu's `PageName` against `new-fd`, `pis`, `view-app`, `short-url`, `app-status`, `renew` or `admin`. A user whose menu opens none of them is refused. |
+| `NameScreening:BasePath`, `NameScreening:ScreenPath` | The name screening API (NSA): whether a holder may invest online. |
+| `NameScreening:ApiKey` | The key it is called with, on its `apikey` header. Set in the environment (`NameScreening__ApiKey`), never in a committed file. |
+| `NameScreening:ApiCall` | `0` switches screening off: the API is not called, every holder goes on, and the KYC row says the check was skipped. Anything else is sent on as `Api_call`. |
+| `NameScreening:{BlackListCheck, CustomerDataBaseCheck, RejectedListCheck, EmployeeDataBaseCheck}` | Which lists a holder is screened against, as the API takes them. |
+| `NameMatch:BasePath`, `NameMatch:MatchPath` | The name match API: whether two names are the same person's. |
 | `Dms:Root` | Where filed copies are kept until DMS is wired in. |
-| `Idfy:BaseUrl`, `Idfy:ClientId` | Idfy.Api for the document checks it has an endpoint for, and the name the app calls itself by on its `X-Client-Id` header (`unotp`). |
-| `Shortener:BaseUrl`, `Shortener:ClientId` | UrlShortener.Api, which shortens the payment link on submit, and the `X-Client-Id` it is called with. Blank, the link goes in full. |
+| `Ckyc:BasePath`, `Ckyc:SearchPath`, `Ckyc:IncludeImages` | The CKYC (CERSAI) search: whether a record is held for a PAN and date of birth. Asked when the partner chooses Fetch from CKYC; only an investor it holds a record for takes that route. |
+| `Idfy:BasePath` | Idfy.Api, which alone answers document identification, OCR, verification with the issuer, the PAN-Aadhaar link and face match. A cheque is read with IDfy's `ind_cheque`; nobody confirms its account with the bank, so it is carried to Bank Details as read, for the partner to check. Where IDfy has no endpoint - a utility bill, an Aadhaar's issuer, a bank account - nothing is asked, and the page says so. |
+| `Idfy:ValidateDocumentPath`, `Idfy:ExtractPanPath`, `Idfy:ExtractAadhaarPath`, `Idfy:ExtractDrivingLicencePath`, `Idfy:ExtractPassportPath`, `Idfy:ExtractVoterIdPath`, `Idfy:ExtractChequePath`, `Idfy:VerifyDrivingLicencePath`, `Idfy:VerifyPassportPath`, `Idfy:VerifyVoterIdPath`, `Idfy:VerifyPanAadhaarLinkPath`, `Idfy:CompareFacesPath` | The path of each Idfy.Api call under the gateway. |
+| `Shortener:ShortenPath` | Where the payment link is shortened on submit. No path, and the link goes in full. |
 | `PaymentLink:Template` | The page the investor pays on, with `{appNo}` for the application's number. Blank, the app sends no link and the backend makes its own. |
 | `Apps:eSarathiLogin`, `Apps:eSarathiConsole`, … | The other apps' addresses, for the links out and the session-expired redirect. |
 | `Portal:Home`, `Portal:Logout` | The portal's dashboard (where "Portal" goes back to, with the encrypted UserId and SysCode) and its logout page. Blank: the console's `/Classic` and the login portal's root. |
-| `Backend:TimeoutSeconds`, `Idfy:TimeoutSeconds`, `Shortener:TimeoutSeconds` | How long an outside service may take to answer: 55 s each. Nothing is retried - every IDfy call may be charged. |
+| `Backend:TimeoutSeconds` | How long any backend API may take to answer: 55 s. Nothing is retried - every call may be charged. |
 | `Logging:Sql:MinLevel` | The least serious entry written to `t_Unotp_Logs` (`Error`): every error and critical error, with the request, the application number and the partner signed in, in the background. Only on the database. |
 | `Security:FrameAncestors` | Other sites allowed to show the pages in a frame (space-separated origins). Blank: none but the app itself. |
 

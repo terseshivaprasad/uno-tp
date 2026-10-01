@@ -1,16 +1,16 @@
-# Built from the repository root, where Render looks for it: the app and the
-# libraries it references, under src/.
+# Built from the repository root, where Render looks for it: the web app and the
+# database project it references.
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /repo
 
 COPY global.json ./
-COPY src/UnoTP/UnoTP.csproj src/UnoTP/
-COPY src/UnoTP.Backend/UnoTP.Backend.csproj src/UnoTP.Backend/
-COPY src/UnoTP.Data/UnoTP.Data.csproj src/UnoTP.Data/
-RUN dotnet restore src/UnoTP/UnoTP.csproj
+COPY UnoTP/UnoTP.csproj UnoTP/
+COPY UnoTP.Data/UnoTP.Data.csproj UnoTP.Data/
+RUN dotnet restore UnoTP/UnoTP.csproj
 
-COPY src/ src/
-RUN dotnet publish src/UnoTP/UnoTP.csproj -c Release -o /app --no-restore
+COPY UnoTP/ UnoTP/
+COPY UnoTP.Data/ UnoTP.Data/
+RUN dotnet publish UnoTP/UnoTP.csproj -c Release -o /app --no-restore
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app

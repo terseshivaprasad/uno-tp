@@ -8,7 +8,7 @@
 
    On the database that already has these tables this script does nothing. It is
    here for a database built from nothing, and as the record of the columns the
-   app's queries expect (src/UnoTP.Data).
+   app's queries expect (UnoTP.Data).
 
    An application is one row in t_Unotp_Application_Mst (create_new_tables.sql), and
    everything entered on it is rows in the detail tables here. A detail row is never

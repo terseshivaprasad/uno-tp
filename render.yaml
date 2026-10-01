@@ -20,12 +20,12 @@ services:
       # - key: Apps__OvdExplorer
       #   value: https://<ovd-service>.onrender.com
       # The database all data is kept in (db/ has the scripts), the outside services
-      # by name (see UnoTP.Backend/BackendOptions.cs), and Idfy.Api for the document
+      # by name (see UnoTP/Services/BackendOptions.cs), and Idfy.Api for the document
       # checks. The app does not start until the database and each outside
       # service's address are set.
       # - key: ConnectionStrings__UnoTP
       #   value: Server=<sql-host>;Database=UnoTP;User Id=<user>;Password=<secret>;Encrypt=True
-      # - key: Backend__External__Nsdl
-      #   value: https://<nsdl-service>/
+      # - key: PanApi__BaseUrl
+      #   value: https://<gateway-host>/
       # - key: Idfy__BaseUrl
       #   value: https://<idfy-api-host>

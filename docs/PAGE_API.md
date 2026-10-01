@@ -1,18 +1,17 @@
 # What each page asks of the backend
 
-The app talks to the backend through the interfaces in `src/UnoTP.Backend` and nothing
+The app talks to the backend through the interfaces in `UnoTP.Data/Models` and nothing
 else. They are grouped by what they are about, not by page, so a page uses a few of them
 and most are shared. This is the map, page by page, as the code stands. Each call's
-request and answer is in [backend-api.md](backend-api.md); `src/UnoTP.Data` answers
+request and answer is in [backend-api.md](backend-api.md); `UnoTP.Data` answers
 the ones kept in SQL Server, and the outside services have an HTTP client each in
-`src/UnoTP.Backend`.
+`UnoTP/Services`.
 
 ## Every page
 
 | Call | Used for |
 |---|---|
-| `ISessionApi.IsOpenAsync` | The session check on every request (the backend's session still open; answered once a minute at most). |
-| `IPartnerApi.MeAsync` | Who is signed in, for the header, the sourcing rules and the lists' ownership. |
+| `IPartnerApi.MeAsync` | Who is signed in, for the header, the sourcing rules and the lists' ownership: what the auth API said when the session started, kept with the sign-in. |
 | `IReferenceApi.ReferenceAsync`, `ConfigAsync` | The drop-down lists, notes and documents; the limits, ages and days. Kept for `Backend:ReferenceCacheMinutes`. |
 | `IConsoleApi.BoardAsync` | Which features are on, and the notices in the bell. |
 
@@ -20,8 +19,8 @@ the ones kept in SQL Server, and the outside services have an HTTP client each i
 
 | Call | Used for |
 |---|---|
-| `IDecryptionService.DecryptAsync` | The portal's encrypted user id and system code. |
-| `ISessionApi.StartAsync`, `MenuAsync` | Start the session; the features the partner's menu opens. |
+| `IDecryptionService.DecryptAsync` | The portal's encrypted user id and system code (`POST cipher/decrypt` on the auth API). |
+| `ISessionApi.StartAsync`, `MenuAsync` | Start the session (`POST auth/sessions`); the pages the partner's menu opens (`GET app-menus/{userId}/{sysCode}`), mapped to features by `Menu:Pages`. |
 
 ## Dashboard
 
@@ -46,7 +45,8 @@ the ones kept in SQL Server, and the outside services have an HTTP client each i
 | `IDocumentApi.FileAsync`, `DeleteAsync`, `CopyAsync`, `KeepRefusedAsync` | Filing a copy with DMS, replacing one, showing one, keeping a refused one aside. |
 | `IDocumentIdentifier.IdentifyAsync` | What the copy is. |
 | `IOcrService.ReadAsync` | What it says. |
-| `INsdlService.VerifyAsync` | The PAN, date of birth and name. |
+| `ICkycService.SearchAsync` | Whether CERSAI holds a record, when Fetch from CKYC is chosen (`Ckyc:SearchPath`). |
+| `IPanVerificationService.VerifyAsync` | The PAN, date of birth and name, checked with NSDL (`PanApi:VerifyPath`). |
 | `IVerificationService.ConfirmProofAsync`, `ConfirmAccountAsync` | The proof with its issuer; the cheque's account with its bank. |
 | `IMaskingService.MaskAsync` | An Aadhaar masked before it is filed. |
 | `INameMatchService.MatchAsync` | The name on a proof against the PAN's; an Aadhaar's name against the PAN's. |

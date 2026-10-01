@@ -1,10 +1,10 @@
 # Uno TP data layer
 
 This document lists everything the Uno TP pages ask of their data. The pages read
-and write only through the interfaces in `src/UnoTP.Backend` (`IApplicationApi`,
-`IReferenceApi` and the rest). `src/UnoTP.Data` answers them from SQL Server, in
+and write only through the interfaces in `UnoTP.Data/Models` (`IApplicationApi`,
+`IReferenceApi` and the rest). `UnoTP.Data` answers them from SQL Server, in
 the same process. The tables are in `db/`. The outside services for the
-document checks are reached over HTTP, one client each in `External/` and `Idfy/`.
+document checks are reached over HTTP, one client each under `UnoTP/Services/`.
 
 Each call is written below as a route, `GET applications/{appNo}`, with the
 interface method it stands for named in the code beside it: the routes are how the
@@ -33,7 +33,7 @@ in its address, never in the session.
 | `/unotp/admin` | Console Admin |
 | `/unotp/entry`, `/unotp/logout`, `/unotp/session-expired`, `/unotp/unauthorized`, `/unotp/error` | Entry and status pages |
 
-Each page is one controller (`src/UnoTP/Controllers/{Page}Controller.cs`), one view
+Each page is one controller (`UnoTP/Controllers/{Page}Controller.cs`), one view
 model (`ViewModels/{Page}ViewModel.cs`) and one folder of views (`Views/{Page}/`),
 named after the page: `NewApplication`, `Documents`, `Investor`, `Payment`,
 `Deposit`, `Review`, `Submitted`, `Applications`, `PayInSlips`, `Links`, `Admin`,
@@ -50,9 +50,12 @@ their query.
 | Setting | Meaning |
 |---|---|
 | `ConnectionStrings:UnoTP` | The database. If blank, the app does not start. |
-| `Backend:TimeoutSeconds` | Seconds an outside service is given. Default 30. |
-| `Backend:External:{Nsdl,Identify,Masking,Ocr,Verification,PanAadhaarLink,FaceMatch,Decrypt,NameScreening}` | Each outside service's address. Outside Development each must be set (IDfy covers Masking, PanAadhaarLink and FaceMatch); in Development a service left blank is not there, and a page that asks it fails. |
-| `Idfy:BaseUrl` | Idfy.Api. When set, IDfy handles the checks it has an endpoint for (see below). |
+| `Backend:BaseUrl` | The one gateway every backend API is behind. Blank or still the placeholder, the app does not start. |
+| `Backend:TimeoutSeconds` | Seconds an API is given to answer. Default 55. |
+| `AuthApi:DecryptPath`, `AuthApi:SessionPath`, `AuthApi:MenuPath` | The way in's three calls, by their path under the gateway. |
+| `PanApi:VerifyPath`, `UidMasking:MaskPath` | The PAN check and Aadhaar masking, by their path under the gateway. |
+| `NameScreening:*`, `NameMatch:*` | The name screening and name match APIs, each with its base path and the path of its call. |
+| `Idfy:*` | Idfy.Api's base path and the path of each call. It alone answers the checks listed below. |
 | `Idfy:TimeoutSeconds` | Default 75. The Idfy.Api guide asks for at least 70. |
 | `Backend:ReferenceCacheMinutes` | Minutes the lists and rules (`GET reference`, `GET config`) are kept for. Default 10; 0 asks every time. |
 | `Features:CommProofUpload` | Default false (off for this release). On, a holder whose post goes to an address other than the permanent one uploads a proof of it on Upload Documents. Off, that box is hidden and the address is typed on Investor Information (`communication` in `ApplicationDetails`). |
@@ -61,7 +64,7 @@ In the environment, use a double underscore, for example `ConnectionStrings__Uno
 
 ## What the app keeps, and for how long
 
-Answers that change seldom are kept in the app's memory (`src/UnoTP/Infrastructure/CachedBackend.cs`
+Answers that change seldom are kept in the app's memory (`UnoTP/Infrastructure/CachedBackend.cs`
 and `Lookups.cs`), so a page load does not ask the backend for them each time.
 Nothing that was not found is kept, and no failure is: the next request asks again.
 
@@ -85,29 +88,29 @@ times are set in `CachedBackend.cs`. The cache holds at most 50,000 entries.
 
 - **Partner:** every call is made for the user the portal sent in and the session
   started for them (`IPartner`, from the server session). Only that user's
-  applications are returned; anyone else's is not found. Every page checks the
-  session is still open (`ISessionApi.IsOpenAsync`, at most 30 seconds old): one
-  ended, expired or taken out of use shows Session Expired.
+  applications are returned; anyone else's is not found. A session lasts
+  `AuthApi:SessionHours` from entry: once it has ended, a page shows Session Expired.
 - **JSON:** camelCase in both directions.
 - **Not found:** `404` means not found wherever a route below says "or 404".
   Any other failure status is treated as an error.
 
 ## Entry
 
-The portal opens the app at `/unotp/entry?UserId=...&Syscode=...` (or at `/`, or
-the old `/Home`, with the same query), both values encrypted. The app decrypts each with the portal's
-decryption service, starts a session, reads the user's menu, keeps all three in
-the server session, and redirects to the Dashboard, so neither value stays in
-the address. Every other page needs that session; without one, or once it has
+The portal opens the app at `/Home/Index?UserId=...&SysCode=...` (or at `/`, with
+the same query), both values encrypted. The app asks the E-Sarathi auth API
+to decrypt each, to start a session, and for the user's menus;
+it keeps who the user is and their menus in the server session, and redirects to
+the Dashboard, so neither value stays in the address. Every answer of the auth API
+is `{ success, message, data }`. Every other page needs that session; without one, or once it has
 ended, the partner sees Session Expired. A refused entry shows Unauthorized.
 
 | Method | Route | Body | Returns |
 |---|---|---|---|
-| POST | `external/decrypt/decrypt` (or `Backend:External:Decrypt`) | `{ value }` | `{ value }` in plain text, or `400` when it cannot be decrypted |
-| POST | `external/namematch/match` (or `Backend:External:NameMatch`) | `{ name, other }` | `{ outcome, score }`: `outcome` match, partial or mismatch. Asked with the name read off a proof of address and the holder's name as the PAN holds it (the PAN-POA name match), and with an Aadhaar's name against the PAN's before the Aadhaar is taken. Switched off, the proof is filed with the match marked not asked. |
-| POST | `external/namescreening/screen` (or `Backend:External:NameScreening`) | `{ name, pan, dob }` | `{ status, reference }`: `status` "allowed" or "blocked". Asked of every holder on Investor Information before it goes on; a holder answered once, under the same name, is not asked again. A blocked holder invests offline, at a branch. The answer is kept on the holder's KYC row (`c_Screening_Status`, `c_Screening_Ref`, `d_Screened_On`). |
-| POST | `sessions` | `{ userId, sysCode }` | `UserSession`: `sessionId`, `userId`, `expiresAt`. `401`, `403` or `404` when the user or system code is refused. |
-| GET | `menu` | | `MenuItem[]` (`key`, `name`) for the session's user. `key` is a console feature: `new-fd`, `pis`, `view-app`, `short-url`, `app-status`, `renew` or `admin`. A feature the menu leaves out is closed, and its address shows Unauthorized. An empty menu refuses entry. |
+| POST | `cipher/decrypt` (auth API) | `{ Text }` | `data`: the plain text. A `4xx`, or `success` false, means it cannot be decrypted. |
+| POST | `NameMatch:MatchPath` | `{ name, other }` | `{ outcome, score }`: `outcome` match, partial or mismatch. Asked with the name read off a proof of address and the holder's name as the PAN holds it (the PAN-POA name match), and with an Aadhaar's name against the PAN's before the Aadhaar is taken. Switched off, the proof is filed with the match marked not asked. |
+| POST | `NameScreening:ScreenPath` | The API's own fields: `name1`, `dob` (`dd-MM-yyyy`), `country1` (`IN`), `appl_No`, `holderType`, `mobileNo`, `source` and `sourceSubType` (`UNO_TP`), `sourceType` (`FD`), `sessionId`, `createdBy`, `createdIP`, `Api_call` and the four list checks from `NameScreening:*`; the rest go empty. Header `apikey`. | `{ status, nameScreeingStatus, nameScreeningCode, data }`: a holder is allowed only when `status` is `SUCCESS` and `nameScreeingStatus` is `ALLOWED`. Asked of every holder on Investor Information before it goes on; a holder answered once, under the same name, is not asked again. A holder not allowed invests offline, at a branch. The answer is kept on the holder's KYC row, with `data.uniqueRequestId` as its reference. |
+| POST | `auth/sessions` (auth API) | `{ userId, sysCode, serverIP, domainName, ipAddress, macAddress, browserType, browserVersion, browserMajor, browserMinor, userAgent }` | `data`: the user and their session (`AgencyUserModel`), kept whole in the session. The pages read `entity_Name` (name), `entity_Id` (code), `agency_Type` and `busi_Broker_Cd` (broker code); `pk_Session_ID` is the session id sent with every backend call. A `4xx`, or `success` false, refuses the entry. |
+| GET | `app-menus/{userId}/{sysCode}` (auth API) | | `data`: the user's menus, each with `PageName` and `SubModName`. `Menu:Pages` says which console feature a page opens: `new-fd`, `pis`, `view-app`, `short-url`, `app-status`, `renew` or `admin`. A feature the menu leaves out is closed, and its address shows Unauthorized. A menu that opens none refuses entry. |
 
 ## Lists, rules and the partner
 
@@ -397,15 +400,20 @@ proof.
   pass the Verhoeff check digit. Like a number read, it is kept in the server
   session only and never sent to the backend, except to the link check.
 
-| Service | Interface | With Idfy.Api | Without IDfy (`external/{name}/`) |
+Each check is answered by one service, with a settings section of its own:
+
+| Check | Interface | Service | Calls |
 |---|---|---|---|
-| NSDL | `INsdlService` | Not covered by IDfy | `POST verify { pan, dob, name }` → `{ pairOk, nameOk }` |
-| Identification | `IDocumentIdentifier` | `POST /api/documents/validate`: with `docType` for a PAN; with no `docType` for a proof of address, whose `detected_doc_type` says which proof it is (Aadhaar, passport, driving licence or voter ID) | `POST identify` (multipart `file`, `expected`, `type`) → `{ matches, hint, type }`. Used for a cheque, and for a proof of address IDfy does not know (a utility bill). For a proof of address `type` is sent empty and the answer's `type` says which proof it is: `Aadhaar`, `Passport`, `Driving Licence`, `Voter ID` or `Utility bill`. That becomes the proof's type on the application: it is never chosen. |
-| Masking | `IMaskingService` | `POST /api/aadhaar/mask`; the masked image comes back Base64 as `masked_document` (field name to confirm against IDfy's response). A copy with no number to mask (`id_number_found: false`) is already masked and is kept as it is. | `POST mask` (multipart `file`, `consent`) → the masked image as the response body, with its content type. Called by the upload step for an Aadhaar in this order: identify, OCR, match the name and date of birth with the PAN's, mask, file (or keep aside if refused), then ask the PAN-Aadhaar link with the number OCR read before masking. No copy with the whole number is ever stored. |
-| OCR | `IOcrService` | `/api/pan/extract`, `/api/aadhaar/extract` (QR code read first), `/api/driving-license/extract` (expiry from `date_of_validity` and `validity`, leaving out any date that is an `issue_dates` date or not after the latest one), `/api/passport/extract`, `/api/voter-id/extract` | `POST read` (multipart `file`, `kind`, `type`, `pan`, `dob`, `name`, `consent`) → `OcrReading` (a PAN card's carries `pan` and `dob` as `dd-MM-yyyy`, which must match the holder's or the copy is refused; an Aadhaar's also carries `gender`; a cheque's carries `cheque` - `{ accountNumber, ifsc, micr, number, date }`, the date as `dd-MM-yyyy` - which Bank Details is filled in from once the bank confirms the account). Used for a utility bill or a cheque. |
-| Verification | `IVerificationService` | `/api/driving-license/verify/sync` and `/api/passport/verify/sync` (both with the holder's date of birth), `/api/voter-id/verify/sync`. `id_found` counts as confirmed. For a licence, the later of `nt_validity_to` and `t_validity_to` is returned as `expiry`, and `dl_status` as `standing`. | `POST proof { proofType, reading, holderDob }` and `POST account { account, bank }` → `{ confirmed, verifier, notAsked, expiry, standing }` (`expiry` as `dd-MM-yyyy`, or empty; once confirmed it replaces the expiry OCR read off the copy). Used for an Aadhaar (IDfy has no UIDAI source check) and for bank accounts. |
-| PAN–Aadhaar link | `IPanAadhaarLinkService` | `/api/pan-aadhaar-link/verify/sync` | `POST check { pan, aadhaarNumber }` → `{ link }` |
-| PAN–POA face match | `IFaceMatchService` | `POST /api/face/compare` with `document` (the PAN copy) and `document2` (the proof of address) as Base64, each 150–4,096 px a side; reads `is_a_match`, `match_score`, `review_recommended` and `image_1`/`image_2.face_detected` and `face_quality`. No face found, or a review recommended, is shown as "Not sure" | `POST compare` (multipart `pan`, `proof`) → `{ matched, score, unsure }` |
+| PAN check | `IPanVerificationService` | PAN verification API (`PanApi`) | `POST VerifyPath` with `App_Code`, `Appl_No`, `Holder_Type`, `PAN_No`, `PAN_Holder_Name`, `PAN_Holder_DOB` and who is asking → `PAN_No_Match_Status`, `PAN_Name_Match_Status`, `PAN_DOB_Match_Status` (`"1"` a match). The PAN and date of birth both matching is `pairOk`; the name matching too is `nameOk`. |
+| Aadhaar masking | `IMaskingService` | UID masking API (`UidMasking`) | `POST MaskPath` with the copy as Base64 (`FileType`, `FileData`), `MaskLength`, `OutputJpegQuality`, the application, folio, holder, PAN and date of birth → `Result.FileData` (the masked copy) and `Result.AadhaarSuffix`. Called by the upload step for an Aadhaar in this order: identify, OCR, match the name and date of birth with the PAN's, mask, file (or keep aside if refused). |
+| CKYC search | `ICkycService` | CKYC search API (`Ckyc`) | `POST SearchPath` with `IncludeImages` and one `SearchInCkycSearchParamDetail` (`InputIdType` `C`, `InputIdNo` the PAN, `DOB`, `ApplicationFormNo`, a ten-digit `TransactionId`, `RecordIdentifier`) → `ckycResponse.searchInCkycResponseDetail[0]`: `ckycAvailable` (`Y` or `Yes` is a record held), `masked_CKYCID`, `ckycName`, `ckycReferenceID`. Asked when the partner chooses Fetch from CKYC on Upload Documents. |
+| Identification | `IDocumentIdentifier` | Idfy.Api (`Idfy`) | `documents/validate`: with `docType` for a PAN; with no `docType` for a proof of address, whose `detected_doc_type` says which proof it is (Aadhaar, passport, driving licence or voter ID). A document IDfy has no type for is taken as what it was handed in as. |
+| OCR | `IOcrService` | Idfy.Api (`Idfy`) | `pan/extract`, `aadhaar/extract` (QR code read first), `driving-license/extract` (expiry from `date_of_validity` and `validity`, leaving out any date that is an `issue_dates` date or not after the latest one), `passport/extract`, `voter-id/extract`, and `cheque/extract` (IDfy's `ind_cheque`: `account_no`, `ifsc_code`, `micr_code`, `micr_cheque_number`, `date_of_issue`, `bank_name`, `account_name`). No other document is read. |
+| Verification | `IVerificationService` | Idfy.Api (`Idfy`) | `driving-license/verify/sync` and `passport/verify/sync` (both with the holder's date of birth), `voter-id/verify/sync`. `id_found` counts as confirmed. For a licence, the later of `nt_validity_to` and `t_validity_to` is returned as `expiry`, and `dl_status` as `standing`. An Aadhaar, a utility bill and a bank account have no check: the answer says it was not asked. A cheque's account, read but not confirmed, is still carried to Bank Details & Payment, marked as read and not confirmed. |
+| PAN–Aadhaar link | `IPanAadhaarLinkService` | Idfy.Api (`Idfy`) | `pan-aadhaar-link/verify/sync` |
+| PAN–POA face match | `IFaceMatchService` | Idfy.Api (`Idfy`) | `face/compare` with `document` (the PAN copy) and `document2` (the proof of address) as Base64, each 150–4,096 px a side; reads `is_a_match`, `match_score`, `review_recommended` and `image_1`/`image_2.face_detected` and `face_quality`. No face found, or a review recommended, is shown as "Not sure". |
+| Name screening | `INameScreeningService` | Name screening API (`NameScreening`) | `POST ScreenPath` with the holder's name, date of birth and mobile number → `status` and `nameScreeingStatus`; allowed only on `SUCCESS` and `ALLOWED`. |
+| Name match | `INameMatchService` | Name match API (`NameMatch`) | `POST MatchPath { name, other }` → `{ outcome, score }` |
 
 ### What the app expects from every outside service
 
