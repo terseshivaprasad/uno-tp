@@ -26,9 +26,7 @@ namespace UnoTP.Controllers;
 public class EntryController(
     IDecryptionService decryption,
     ISessionApi sessions,
-    FeatureSet features,
     AppUrls apps,
-    IOptions<EntryOptions> entry,
     IOptions<PortalOptions> portal,
     ILogger<EntryController> log) : Controller
 {
@@ -77,12 +75,6 @@ public class EntryController(
             user = decryptedUser;
             code = decryptedCode;
         }
-        else if (features.Flags.DemoData && entry.Value.DemoUserId.Length > 0)
-        {
-            // Demo mode comes in as its own user, through the same session and menu.
-            user = entry.Value.DemoUserId;
-            code = entry.Value.DemoSysCode;
-        }
         else
         {
             return RedirectToAction(nameof(SessionExpired));
@@ -123,7 +115,7 @@ public class EntryController(
 
     /// <summary>
     /// Back to the portal's dashboard, with the encrypted values the portal sent in, so it
-    /// knows who is back. Without them (demo mode) it is the plain dashboard address.
+    /// knows who is back. Without them it is the plain dashboard address.
     /// </summary>
     [HttpGet("Home/Home")]
     public IActionResult Home()

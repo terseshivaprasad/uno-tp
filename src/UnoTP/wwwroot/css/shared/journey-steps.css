@@ -272,9 +272,6 @@
     grid-column: auto;
   }
 }
-.page-main > .demo-data {
-  margin-top: 0;
-}
 /* A part a choice shows or hides in place (data-show-when): no fieldset frame. */
 .doc-choice {
   min-width: 0;
@@ -652,9 +649,6 @@
 .identify-actions {
   margin-top: 16px;
 }
-.demo-data__table td code + code {
-  margin-left: 6px;
-}
 /* What the check found, in place of the fields it was run from: who the investor
    is, the record the register holds, and what it is still short of - three bands
    of one card. */
@@ -834,102 +828,6 @@
   .identify-status {
     margin-left: 0;
     width: 100%;
-  }
-}
-/* The test data at the foot of the page: what to type to reach each outcome.
-   Quieter than the drafts above it, since it belongs to the mock and not to the
-   partner's own work. */
-.demo-data {
-  margin-top: 24px;
-  padding: 16px 20px;
-  border: 1px dashed var(--border-2);
-  border-radius: 8px;
-  background: var(--tint);
-}
-.demo-data__title {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--ink);
-}
-.demo-data__sub {
-  padding: 3px 0 12px;
-  font-size: 12px;
-  color: var(--muted);
-}
-.demo-data__sub strong {
-  color: var(--ink);
-  font-weight: 600;
-}
-.demo-data__table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 12px;
-  color: var(--text);
-}
-.demo-data__table th {
-  padding: 8px 12px 8px 0;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--muted);
-  text-align: left;
-  border-bottom: 1px solid var(--border-2);
-}
-.demo-data__table td {
-  padding: 8px 12px 8px 0;
-  border-bottom: 1px solid var(--divider);
-  vertical-align: top;
-}
-.demo-data__table tr:last-child td {
-  border-bottom: 0;
-}
-.demo-data__table code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: .02em;
-  color: var(--ink);
-}
-.demo-data__notes {
-  margin: 12px 0 0;
-  padding: 12px 0 0 16px;
-  border-top: 1px solid var(--border-2);
-  font-size: 12px;
-  line-height: 16px;
-  color: var(--muted);
-}
-.demo-data__notes strong {
-  color: var(--ink);
-  font-weight: 600;
-}
-@media (max-width: 900px) {
-  /* Each row becomes its own block, every cell labelled by its column. */
-  .demo-data__table thead {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-  }
-  .demo-data__table tr {
-    display: block;
-    padding: 12px 0;
-    border-bottom: 1px solid var(--divider);
-  }
-  .demo-data__table tr:last-child {
-    border-bottom: 0;
-  }
-  .demo-data__table td {
-    display: flex;
-    gap: 12px;
-    padding: 3px 0;
-    border: 0;
-  }
-  .demo-data__table td::before {
-    content: attr(data-label);
-    flex: none;
-    width: 108px;
-    font-size: 12px;
-    color: var(--muted);
   }
 }
 /* Every row on the step shares one grid: three columns across the card, which

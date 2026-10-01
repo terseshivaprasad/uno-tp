@@ -7,7 +7,7 @@ namespace UnoTP.Controllers;
 
 /// <summary>Bank Details &amp; Payment: the account the deposit is paid from, and the one it repays to.</summary>
 [Route("BankDetails/{appNo}")]
-public class PaymentController(IApplicationApi applications, IDepositApi deposits, IDemoApi demo, FeatureSet features, IInvestorApi investors, IServiceProvider services)
+public class PaymentController(IApplicationApi applications, IDepositApi deposits, IInvestorApi investors, IServiceProvider services)
     : ApplicationStepController(applications, deposits, services)
 {
     [HttpGet("")]
@@ -21,7 +21,6 @@ public class PaymentController(IApplicationApi applications, IDepositApi deposit
         var (pay, repay) = await BranchesAsync(byCheque ? form.Payment.CleanIfsc : "", form.RepaysToPayment(byCheque) ? form.Payment.CleanIfsc : form.Repayment.CleanIfsc);
         return View(new PaymentViewModel(docs, form, pay, repay, Said())
         {
-            Demo = features.Flags.DemoData ? await demo.BanksAsync() : null,
             FilledFromCheque = filled,
             AccountsOnRecord = await AccountsOnRecordAsync(docs),
         });

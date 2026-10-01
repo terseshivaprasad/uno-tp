@@ -22,18 +22,3 @@
 .identify-holder .page-on-record__foot {
   font-size: 12px;
 }
-.demo-data__none {
-  color: var(--muted);
-}
-.demo-data__no {
-  display: inline-block;
-  min-width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--border-2);
-  color: #fff;
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 16px;
-  text-align: center;
-}

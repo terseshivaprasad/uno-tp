@@ -251,26 +251,3 @@ public sealed record QuoteRequest(long Amount, int TenureMonths, string Payout, 
 public sealed record DepositQuote(decimal Rate, decimal InterestEach, decimal MaturityAmount, DateOnly MaturesOn, DateOnly RateAsOn);
 
 public sealed record BankBranch(string Ifsc, string Bank, string Branch, string Micr);
-
-/// <summary>
-/// GET demo/cases: the test records a demo backend holds, for the Test data card
-/// on Investor Identification. A live backend answers 404 and the card is not shown.
-/// </summary>
-public interface IDemoApi
-{
-    Task<DemoCases?> CasesAsync(CancellationToken ct = default);
-
-    /// <summary>GET demo/banks: the test branches, for the Test data card on Bank Details &amp; Payment; null (404) on a live backend.</summary>
-    Task<DemoBanks?> BanksAsync(CancellationToken ct = default);
-}
-
-/// <param name="Branches">Every branch a test IFSC names.</param>
-/// <param name="Notes">What else to try, one line each.</param>
-public sealed record DemoBanks(IReadOnlyList<BankBranch> Branches, IReadOnlyList<string> Notes);
-
-/// <param name="Dob">The date of birth every test record holds.</param>
-/// <param name="Notes">Further ways to reach an outcome, one line each.</param>
-public sealed record DemoCases(string Dob, IReadOnlyList<DemoCase> Cases, IReadOnlyList<string> Notes);
-
-/// <summary>One case: a PAN, its date of birth (empty when none is on record), its folios (none for a new investor), and what searching for it shows.</summary>
-public sealed record DemoCase(string Pan, string Dob, IReadOnlyList<string> Folios, string Shows);

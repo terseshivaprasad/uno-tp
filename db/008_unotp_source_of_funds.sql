@@ -15,13 +15,6 @@ SET QUOTED_IDENTIFIER ON;
 SET NOCOUNT ON;
 GO
 
-/* ----- The columns ------------------------------------------------------------- */
-IF COL_LENGTH(N'dbo.t_Unotp_Investment_Dtls', N'c_Source_Of_Funds') IS NULL
-    ALTER TABLE dbo.t_Unotp_Investment_Dtls ADD c_Source_Of_Funds VARCHAR(30) NOT NULL CONSTRAINT DF_Investment_Source_Of_Funds DEFAULT ('');
-IF COL_LENGTH(N'dbo.t_Unotp_Investment_Dtls', N'c_Source_Of_Funds_Remark') IS NULL
-    ALTER TABLE dbo.t_Unotp_Investment_Dtls ADD c_Source_Of_Funds_Remark NVARCHAR(200) NOT NULL CONSTRAINT DF_Investment_Source_Of_Funds_Remark DEFAULT ('');
-GO
-
 /* ----- The settings ---------------------------------------------------------------- */
 INSERT dbo.t_Unotp_App_Config (c_Key, c_Value, c_Description, c_Created_By)
 SELECT v.k, v.v, v.d, 'SEED' FROM (VALUES

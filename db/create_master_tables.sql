@@ -1,20 +1,22 @@
 /* =============================================================================
-   Uno TP - the masters the purchase journey reads (SQL Server 2016 or later).
-   Run after 003_unotp_seed.sql.
+   Uno TP - the masters the purchase journey reads, as the app reads them (SQL
+   Server 2016 or later): investor folios, brokers, staff, bank branches by IFSC,
+   PIN codes and the rate card.
 
-   t_Unotp_Investor_Folio   the investors on record, by folio: Investor Identification
-   t_Unotp_Broker_Mst       brokers a broker-sourced application is coded to
-   t_Unotp_Staff_Mst        employees an employee-sourced application is coded to
-   t_Unotp_Ifsc_Mst         bank branches by IFSC: Bank Details & Payment
-   t_Unotp_Pincode_Mst      PIN codes: the communication address on Investor Information
-   t_Unotp_Rate_Card        deposit rates by category and tenure: FD Configuration
+       sqlcmd -d UnoTP -i db/create_master_tables.sql
 
-   None of these is seeded for production. Each is loaded from its source of
-   record before go-live and kept in step with it: folios from the FD system,
-   brokers and staff from their masters, IFSC from the RBI's list, PIN codes from
-   India Post's directory, rates from the published rate card.
+   On the database that already has the masters this script does nothing. Each
+   master is loaded from its source of record, never from a script here: folios
+   from the FD system, brokers and staff from their masters, IFSC from the RBI's
+   list, PIN codes from India Post's directory, rates from the published rate card.
 
-   Safe to run again: each object is created only when it is not there yet.
+   A table is created, with its indexes, only when it is not there yet. A table
+   already there is not touched at all: no column, index or row of it changes,
+   whatever its columns are. Schema only: no rows are put in. Safe to run again.
+
+   Column prefixes: c_ text, n_ number, d_ date, f_ flag, j_ JSON. Every table has
+   f_Active: 0 takes a row out of use without deleting it. No table has a foreign
+   key or a CHECK constraint: the app keeps those rules itself.
    ============================================================================= */
 
 SET ANSI_NULLS ON;
@@ -28,6 +30,7 @@ GO
      f_Doc_*      the documents the folio already holds, not asked for again
    ----------------------------------------------------------------------------- */
 IF OBJECT_ID(N'dbo.t_Unotp_Investor_Folio', N'U') IS NULL
+BEGIN
 CREATE TABLE dbo.t_Unotp_Investor_Folio
 (
     c_Folio              VARCHAR(20)    NOT NULL,
@@ -47,9 +50,8 @@ CREATE TABLE dbo.t_Unotp_Investor_Folio
     d_Updated_On         DATETIME2(3)   NULL,
     CONSTRAINT PK_Investor_Folio PRIMARY KEY CLUSTERED (c_Folio)
 );
-GO
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_Investor_Folio_Pan')
-    CREATE INDEX IX_Investor_Folio_Pan ON dbo.t_Unotp_Investor_Folio (c_Pan) INCLUDE (f_Active);
+CREATE INDEX IX_Investor_Folio_Pan ON dbo.t_Unotp_Investor_Folio (c_Pan) INCLUDE (f_Active);
+END
 GO
 
 /* ----- t_Unotp_Broker_Mst, t_Unotp_Staff_Mst ---------------------------------------------
@@ -58,6 +60,7 @@ GO
    application to themselves.
    ----------------------------------------------------------------------------- */
 IF OBJECT_ID(N'dbo.t_Unotp_Broker_Mst', N'U') IS NULL
+BEGIN
 CREATE TABLE dbo.t_Unotp_Broker_Mst
 (
     c_Code               VARCHAR(20)    NOT NULL,
@@ -69,9 +72,12 @@ CREATE TABLE dbo.t_Unotp_Broker_Mst
     d_Updated_On         DATETIME2(3)   NULL,
     CONSTRAINT PK_Broker_Mst PRIMARY KEY CLUSTERED (c_Code)
 );
+END
 GO
 
+-- t_Unotp_Staff_Mst: Employees an employee-sourced application is coded to.
 IF OBJECT_ID(N'dbo.t_Unotp_Staff_Mst', N'U') IS NULL
+BEGIN
 CREATE TABLE dbo.t_Unotp_Staff_Mst
 (
     c_Code               VARCHAR(20)    NOT NULL,
@@ -83,10 +89,12 @@ CREATE TABLE dbo.t_Unotp_Staff_Mst
     d_Updated_On         DATETIME2(3)   NULL,
     CONSTRAINT PK_Staff_Mst PRIMARY KEY CLUSTERED (c_Code)
 );
+END
 GO
 
 /* ----- t_Unotp_Ifsc_Mst ------------------------------------------------------------ */
 IF OBJECT_ID(N'dbo.t_Unotp_Ifsc_Mst', N'U') IS NULL
+BEGIN
 CREATE TABLE dbo.t_Unotp_Ifsc_Mst
 (
     c_Ifsc               CHAR(11)       NOT NULL,
@@ -100,13 +108,13 @@ CREATE TABLE dbo.t_Unotp_Ifsc_Mst
     d_Updated_On         DATETIME2(3)   NULL,
     CONSTRAINT PK_Ifsc_Mst PRIMARY KEY CLUSTERED (c_Ifsc)
 );
-GO
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_Ifsc_Mst_Micr')
-    CREATE INDEX IX_Ifsc_Mst_Micr ON dbo.t_Unotp_Ifsc_Mst (c_Micr);
+CREATE INDEX IX_Ifsc_Mst_Micr ON dbo.t_Unotp_Ifsc_Mst (c_Micr);
+END
 GO
 
 /* ----- t_Unotp_Pincode_Mst ---------------------------------------------------------- */
 IF OBJECT_ID(N'dbo.t_Unotp_Pincode_Mst', N'U') IS NULL
+BEGIN
 CREATE TABLE dbo.t_Unotp_Pincode_Mst
 (
     c_Pin_Code           CHAR(6)        NOT NULL,
@@ -117,27 +125,30 @@ CREATE TABLE dbo.t_Unotp_Pincode_Mst
     d_Created_On         DATETIME2(3)   NOT NULL CONSTRAINT DF_Pincode_Mst_Created DEFAULT (SYSDATETIME()),
     CONSTRAINT PK_Pincode_Mst PRIMARY KEY CLUSTERED (c_Pin_Code)
 );
+END
 GO
 
-/* ----- t_Unotp_Rate_Card -----------------------------------------------------------
-   The card rate by deposit category and tenure, from the day it takes effect. A
-   new card is new rows with a later d_Effective_From: the rate a deposit gets is
-   the latest one in effect on the day it starts (a renewal: on its maturity date).
-   A category with no row of its own takes defaultRateCategory's (t_Unotp_App_Config).
-   ----------------------------------------------------------------------------- */
+-- t_Unotp_Rate_Card: The rate card, one row per line of the published chart.
 IF OBJECT_ID(N'dbo.t_Unotp_Rate_Card', N'U') IS NULL
+BEGIN
 CREATE TABLE dbo.t_Unotp_Rate_Card
 (
     n_Id                 INT IDENTITY(1,1) NOT NULL,
     c_Category           VARCHAR(30)    NOT NULL,
     n_Tenure_Months      INT            NOT NULL,
     n_Rate               DECIMAL(5,2)   NOT NULL,   -- % a year
+    c_Scheme             VARCHAR(20)    NOT NULL CONSTRAINT DF_Rate_Card_Scheme DEFAULT (''),   -- CUMULATIVE, NON-CUMULATIVE
+    c_Payout             VARCHAR(20)    NOT NULL CONSTRAINT DF_Rate_Card_Payout DEFAULT (''),
+    n_Min_Amount         BIGINT         NOT NULL CONSTRAINT DF_Rate_Card_Min_Amount DEFAULT (0),
+    n_Max_Amount         BIGINT         NULL,
+    c_Gender             VARCHAR(1)     NOT NULL CONSTRAINT DF_Rate_Card_Gender DEFAULT (''),   -- F for a women's line, '' for either
+    c_App_Type           VARCHAR(10)    NOT NULL CONSTRAINT DF_Rate_Card_App_Type DEFAULT (''),
     d_Effective_From     DATE           NOT NULL,
     c_Created_By         VARCHAR(20)    NOT NULL,
     d_Created_On         DATETIME2(3)   NOT NULL CONSTRAINT DF_Rate_Card_Created DEFAULT (SYSDATETIME()),
-    f_Active             BIT            NOT NULL CONSTRAINT DF_Rate_Card_Active DEFAULT (1),   -- 0 takes the row out of use without deleting it
+    f_Active             BIT            NOT NULL CONSTRAINT DF_Rate_Card_Active DEFAULT (1),
     CONSTRAINT PK_Rate_Card PRIMARY KEY CLUSTERED (n_Id),
-    CONSTRAINT UQ_Rate_Card UNIQUE (c_Category, n_Tenure_Months, d_Effective_From),
-    CONSTRAINT CK_Rate_Card_Rate CHECK (n_Rate > 0 AND n_Rate < 100)
+    CONSTRAINT UQ_Rate_Card_Line UNIQUE (c_Category, n_Tenure_Months, c_Payout, n_Min_Amount, c_Gender, c_App_Type, d_Effective_From)
 );
+END
 GO

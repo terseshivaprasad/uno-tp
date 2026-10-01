@@ -1,13 +1,8 @@
 namespace UnoTP.Infrastructure;
 
 /// <summary>
-/// The prototype's feature switches, bound from the "Features" section of
-/// appsettings.json. Each one is a slice of the flow that can be demoed on or off
-/// independently - see <see cref="FeatureSet"/> for the per-session override.
-///
-/// Adding a feature is two lines: a property here and an entry in
-/// <see cref="FeatureSet.Switches"/> so the ?ff= override can reach it - where
-/// overrides are allowed at all (<see cref="AllowOverrides"/>).
+/// The feature switches, bound from the "Features" section of appsettings.json.
+/// Each one is a slice of the flow that can be switched on or off on its own.
 /// </summary>
 public sealed class FeatureFlags
 {
@@ -36,13 +31,6 @@ public sealed class FeatureFlags
     public bool Admin { get; set; }
 
     /// <summary>
-    /// Demo mode: the test data cards, signing in as Entry:DemoUserId without the
-    /// portal, and ?agency= showing the app as another kind of partner. Off unless
-    /// configured on; appsettings.json turns it on for now, for the demo on Render.
-    /// </summary>
-    public bool DemoData { get; set; }
-
-    /// <summary>
     /// Document identification says which proof of address a copy is, and that
     /// sets its type after the upload. Off, the type is chosen from a drop-down
     /// first, and identification only checks the copy is that proof.
@@ -56,14 +44,7 @@ public sealed class FeatureFlags
     /// </summary>
     public bool CommProofUpload { get; set; }
 
-    /// <summary>
-    /// Whether ?ff= and the unotp.ff cookie may change these switches for a
-    /// browser. Off unless configured on, and configured on nowhere: only the
-    /// configuration sets what is on, and nothing a request carries can.
-    /// </summary>
-    public bool AllowOverrides { get; set; }
-
-    /// <summary>The switch behind a console feature key, as ?ff= and the tiles name it.</summary>
+    /// <summary>The switch behind a console feature key, as the tiles name it.</summary>
     public bool IsOn(string key) => key switch
     {
         "new-fd" => NewFd,
@@ -75,6 +56,21 @@ public sealed class FeatureFlags
         "admin" => Admin,
         _ => true,
     };
+
+    /// <summary>Switches off the feature behind a console feature key.</summary>
+    public void SwitchOff(string key)
+    {
+        switch (key)
+        {
+            case "new-fd": NewFd = false; break;
+            case "pis": PisGeneration = false; break;
+            case "view-app": ViewApplication = false; break;
+            case "short-url": ShortUrl = false; break;
+            case "app-status": ApplicationStatus = false; break;
+            case "renew": RenewFd = false; break;
+            case "admin": Admin = false; break;
+        }
+    }
 
     public FeatureFlags Clone() => (FeatureFlags)MemberwiseClone();
 }

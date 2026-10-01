@@ -1,8 +1,9 @@
-namespace UnoTP.Backend.Mock;
+namespace UnoTP.Backend;
 
 /// <summary>
-/// Where Renew FD opens its application: in memory here, in the database behind
-/// UnoTP.Api. What comes over from the deposit is on it from the start.
+/// Where Renew FD opens its application: whatever keeps the applications answers
+/// this, and whatever answers <see cref="IRenewalApi"/> calls it. What comes over
+/// from the deposit is on the application from the start.
 /// </summary>
 public interface IRenewalOpener
 {

@@ -8,7 +8,7 @@ using Microsoft.Extensions.Hosting;
 namespace UnoTP.Data;
 
 /// <summary>
-/// Errors to dbo.t_Unotp_Logs (db/006_unotp_logs.sql): every entry an ILogger writes at
+/// Errors to dbo.t_Unotp_Logs (db/create_new_tables.sql): every entry an ILogger writes at
 /// Logging:Sql:MinLevel (Error) or above, with the request it happened in and who
 /// was signed in. The logger only queues the row; <see cref="SqlLogWriter"/> writes
 /// the queue in the background, so a request never waits on the log, and a full

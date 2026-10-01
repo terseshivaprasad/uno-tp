@@ -7,10 +7,10 @@ namespace UnoTP.Data;
 /// The databases. ConnectionStrings:UnoTP holds the applications and everything
 /// else, unless an area is given a database of its own, as the old portal has them:
 ///   UnoTP_Masters   the brokers, staff, IFSC and PIN code masters, the rate card, and
-///                   the config, feature and reference lists (db/002's lists, db/004)
-///   UnoTP_Folios    the investor folios (db/004)
-///   UnoTP_Links     the payment links behind Short URL (db/002)
-///   UnoTP_Errors    the error log (db/006)
+///                   the config, feature and reference lists
+///   UnoTP_Folios    the investor folios
+///   UnoTP_Links     the payment links behind Short URL
+///   UnoTP_Errors    the error log
 /// An area's connection string left blank means its tables are in the main database.
 /// No query joins across areas, so each may be anywhere.
 /// </summary>

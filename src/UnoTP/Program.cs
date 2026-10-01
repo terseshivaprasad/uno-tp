@@ -1,14 +1,17 @@
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.AspNetCore.ResponseCompression;
-using UnoTP;
+using Microsoft.Extensions.Options;
 using UnoTP.Backend;
+using UnoTP.Backend.External;
 using UnoTP.Backend.Idfy;
-using UnoTP.Backend.Mock;
 using UnoTP.Backend.Shortener;
 using UnoTP.Data;
 using UnoTP.Infrastructure;
+using UnoTP.Models;
+using UnoTP.ViewModels;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,7 +22,6 @@ builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 // No Server header: what the app runs on is nobody's business (see SecurityHeaders).
 builder.WebHost.ConfigureKestrel(kestrel => kestrel.AddServerHeader = false);
 
-// Add services to the container.
 // MVC: controllers and their views. FeatureGate closes the pages of a console
 // feature that is switched off, and every post has to carry the antiforgery token
 // the form tag helper writes.
@@ -33,10 +35,9 @@ builder.Services.AddControllersWithViews(options =>
 builder.Services.AddSingleton<AppUrls>();
 // A wizard step's address carries the application's number, and every link and
 // redirect to another step carries it on (see ApplicationUrls).
-builder.Services.AddSingleton<Microsoft.AspNetCore.Mvc.Routing.IUrlHelperFactory>(
-    new ApplicationUrlHelperFactory(new Microsoft.AspNetCore.Mvc.Routing.UrlHelperFactory()));
+builder.Services.AddSingleton<IUrlHelperFactory>(new ApplicationUrlHelperFactory(new UrlHelperFactory()));
 // The app's data is in SQL Server (ConnectionStrings:UnoTP), read in process through
-// the same interfaces the mock answers (UnoTP.Data). Every outside check - NSDL,
+// the interfaces the pages read (UnoTP.Data). Every outside check - NSDL,
 // document identification, masking, OCR, verification, the PAN-Aadhaar link, face
 // match, the portal's decryption - is a service of its own at Backend:External:{name}.
 // With Idfy:BaseUrl set, IDfy answers the checks it has an endpoint for, and whatever
@@ -48,35 +49,31 @@ builder.Services.Configure<PaymentLinkOptions>(builder.Configuration.GetSection(
 builder.Services.Configure<PortalOptions>(builder.Configuration.GetSection(PortalOptions.Section));
 builder.Services.AddScoped<IPartner, SessionPartner>();
 // Investor Identification's steps, for the primary holder and each joint holder alike.
-builder.Services.AddScoped<UnoTP.ViewModels.HolderSearch>();
-// The mock answers with made-up investors, lists and checks: it is for development,
-// or a demo that says so. Anywhere else, anything left to it is a mistake.
-var mockAllowed = builder.Environment.IsDevelopment() || builder.Configuration.GetValue<bool>("Features:DemoData");
-var sql = SqlDataServiceCollectionExtensions.Configured(builder.Configuration);
-if (sql) builder.Services.AddSqlData();
-else if (mockAllowed) builder.Services.AddMockBackend();
-else throw new InvalidOperationException("ConnectionStrings:UnoTP is not set. Outside Development the app runs only on its database (or with Features:DemoData on, as a demo).");
+builder.Services.AddScoped<HolderSearch>();
+// Nothing stands in for the database or an outside service: each answers for real.
+if (!SqlDataServiceCollectionExtensions.Configured(builder.Configuration))
+    throw new InvalidOperationException("ConnectionStrings:UnoTP is not set. The app runs only on its database.");
+builder.Services.AddSqlData();
 builder.Services.AddOutsideServices(builder.Configuration);
 var idfy = IdfyOptions.Configured(builder.Configuration);
 if (idfy) builder.Services.AddIdfy();
-if (!mockAllowed)
-{
-    // IDfy takes masking, the PAN-Aadhaar link and face match over whole; for the
-    // others it answers only some documents, and hands the rest to the service's own address.
-    string[] takenByIdfy = [UnoTP.Backend.External.MaskingClient.Name, UnoTP.Backend.External.PanAadhaarLinkClient.Name, UnoTP.Backend.External.FaceMatchClient.Name];
-    var missing = BackendServiceCollectionExtensions.OutsideServices
-        .Where(s => !BackendOptions.HasAddress(builder.Configuration, s) && !(idfy && takenByIdfy.Contains(s))).ToList();
-    if (missing.Count > 0)
-        throw new InvalidOperationException($"No address for {string.Join(", ", missing.Select(m => "Backend:External:" + m))}: outside Development each outside service must answer for real.");
-}
+// IDfy takes masking, the PAN-Aadhaar link and face match over whole; for the
+// others it answers only some documents, and hands the rest to the service's own address.
+string[] takenByIdfy = [MaskingClient.Name, PanAadhaarLinkClient.Name, FaceMatchClient.Name];
+var missing = BackendServiceCollectionExtensions.OutsideServices
+    .Where(s => !BackendOptions.HasAddress(builder.Configuration, s) && !(idfy && takenByIdfy.Contains(s))).ToList();
+// Outside Development the app does not start with a service left without an address.
+// In Development it starts, and a page that asks such a service fails when it does.
+if (missing.Count > 0 && !builder.Environment.IsDevelopment())
+    throw new InvalidOperationException($"No address for {string.Join(", ", missing.Select(m => "Backend:External:" + m))}: outside Development each outside service must answer for real.");
 // The payment link is shortened on submit by UrlShortener.Api when Shortener:BaseUrl
-// is set; otherwise by the mock in development, and not at all on the database.
+// is set; otherwise it goes in full.
 if (ShortenerOptions.Configured(builder.Configuration)) builder.Services.AddShortener();
-else builder.Services.AddUnshortenedLinks(overMock: sql);
+else builder.Services.AddUnshortenedLinks();
 // The backend's slow-changing answers kept in memory, around whichever answers (see CachedBackend).
 builder.Services.AddBackendCaching();
 // The console's schedule, read once per request for the gate, the tiles and the bell.
-builder.Services.AddScoped<UnoTP.Models.ConsoleState>();
+builder.Services.AddScoped<ConsoleState>();
 // The backend's lists and rules, kept for a few minutes (see Lookups).
 // Each entry counts one; the limit keeps partners' searches from growing it without end.
 builder.Services.AddMemoryCache(options => options.SizeLimit = 50_000);
@@ -86,9 +83,8 @@ builder.Services.AddScoped<Lookups>();
 // application and everything on it are the backend's, for audit; the application a
 // page is on is in its address (see ApplicationUrls).
 builder.Services.AddDistributedMemoryCache();
-// The app's cookies all carry its name - unotp.session, unotp.antiforgery,
-// unotp.tempdata and unotp.ff (FeatureSet) - so they are told apart from other
-// apps' on the same host. Outside Development every one is Secure whatever the
+// The app's cookies all carry its name - unotp.session, unotp.antiforgery and
+// unotp.tempdata - so they are told apart from other apps' on the same host. Outside Development every one is Secure whatever the
 // request looks like, so none can go over plain HTTP even if the proxy's forwarded
 // scheme is lost; Development runs on http://localhost, so there they follow it.
 var cookieSecure = builder.Environment.IsDevelopment() ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
@@ -112,7 +108,7 @@ builder.Services.AddAntiforgery(options =>
 
 // TempData rides in a cookie encrypted with the keys below: the search typed on
 // Investor Identification until Proceed, and what a post has to say once.
-builder.Services.Configure<Microsoft.AspNetCore.Mvc.CookieTempDataProviderOptions>(options =>
+builder.Services.Configure<CookieTempDataProviderOptions>(options =>
 {
     options.Cookie.Name = "unotp.tempdata";
     options.Cookie.HttpOnly = true;
@@ -127,7 +123,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
     // The proxy's address is not fixed, so any is trusted; the app is only ever reached through it.
-    options.KnownNetworks.Clear();
+    options.KnownIPNetworks.Clear();
     options.KnownProxies.Clear();
 });
 
@@ -158,16 +154,14 @@ builder.Services.AddHealthChecks();
 // Who the partner is, from the backend (GET me), once a request.
 builder.Services.AddScoped<CurrentPartner>();
 
-// Feature switches: defaults from appsettings, per-session override via ?ff= (see FeatureSet).
+// Feature switches: from appsettings, less what the user's menu does not open (see FeatureSet).
 builder.Services.AddHttpContextAccessor();
 builder.Services.Configure<FeatureFlags>(builder.Configuration.GetSection("Features"));
-builder.Services.Configure<EntryOptions>(builder.Configuration.GetSection(EntryOptions.Section));
 builder.Services.AddScoped(sp =>
 {
     var ctx = sp.GetRequiredService<IHttpContextAccessor>().HttpContext;
     return ctx?.Items[FeatureSet.ItemKey] as FeatureSet
-        ?? new FeatureSet(
-            sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<FeatureFlags>>().Value);
+        ?? new FeatureSet(sp.GetRequiredService<IOptions<FeatureFlags>>().Value);
 });
 
 var app = builder.Build();
@@ -190,7 +184,6 @@ if (!string.IsNullOrWhiteSpace(pathBase))
     app.UsePathBase(pathBase);
 }
 
-// Configure the HTTP request pipeline.
 // Whatever a page lets through is logged and shown as the error page (see
 // GlobalExceptionMiddleware).
 // Development keeps the developer page, which shows the exception itself.
@@ -198,7 +191,6 @@ if (app.Environment.IsDevelopment()) app.UseDeveloperExceptionPage();
 else
 {
     app.UseMiddleware<GlobalExceptionMiddleware>();
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
@@ -241,15 +233,12 @@ app.UseSession();
 // session is read, so an error logged later in the request is put down to them.
 app.Use((context, next) =>
 {
-    context.Items[UnoTP.Data.SqlErrorLog.UserItem] = context.Session.SignedInUser();
+    context.Items[SqlErrorLog.UserItem] = context.Session.SignedInUser();
     return next();
 });
 
-// Must run before the pages so a ?ff= override applies to this render.
-app.UseFeatureOverrides();
-
-// After the features, so ?agency= is honoured only while the demo data is on.
-app.UsePartner();
+// The request's features, worked out once the session is read and before the pages run.
+app.UseFeatures();
 
 // A change posted from a page comes back as that page in one round trip, not two
 // (see PartialFollow). Before routing, so the page it follows on to is routed afresh.
@@ -260,8 +249,6 @@ app.UsePartialFollow();
 app.UseMiddleware<InputScreening>();
 
 app.UseRouting();
-
-app.UseAuthorization();
 
 app.MapControllers();
 app.MapHealthChecks("/health");
@@ -312,6 +299,3 @@ app.MapGet("/Apps/UnoTp/Application/{appNo}/{step}", (string appNo, string step,
         : Results.NotFound());
 
 app.Run();
-
-// So a test host (WebApplicationFactory<Program>) can start the app as it runs.
-public partial class Program;

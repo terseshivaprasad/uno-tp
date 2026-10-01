@@ -2,7 +2,6 @@ using System.Data;
 using System.Text.Json;
 using Dapper;
 using UnoTP.Backend;
-using UnoTP.Backend.Mock;
 
 namespace UnoTP.Data;
 
@@ -19,7 +18,7 @@ public enum SaveOutcome
 }
 
 /// <summary>
-/// The partner's applications, kept in SQL Server (db/001_unotp_tables.sql).
+/// The partner's applications, kept in SQL Server (db/create_new_tables.sql, db/create_existing_tables.sql).
 ///
 /// A save is checked against the version the page read, under a lock on the
 /// application's row, and inserts its section afresh at the next version with

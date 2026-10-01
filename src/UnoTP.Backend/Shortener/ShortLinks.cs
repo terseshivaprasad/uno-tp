@@ -65,7 +65,7 @@ public static class ShortenerServiceCollectionExtensions
 {
     /// <summary>
     /// Puts UrlShortener.Api behind <see cref="IShortLinkService"/>, in place of whatever
-    /// answered before (the mock, or nothing). Call it after the backend or the mock.
+    /// answered before.
     /// </summary>
     public static IServiceCollection AddShortener(this IServiceCollection services)
     {
@@ -80,13 +80,9 @@ public static class ShortenerServiceCollectionExtensions
         return services;
     }
 
-    /// <summary>
-    /// With no shortener configured, links go unshortened - unless the mock is
-    /// answering and <paramref name="overMock"/> is false, when it shortens them.
-    /// </summary>
-    public static IServiceCollection AddUnshortenedLinks(this IServiceCollection services, bool overMock = false)
+    /// <summary>With no shortener configured, links go unshortened.</summary>
+    public static IServiceCollection AddUnshortenedLinks(this IServiceCollection services)
     {
-        if (overMock) services.RemoveAll<IShortLinkService>();
         services.TryAddSingleton<IShortLinkService, UnshortenedLinks>();
         return services;
     }

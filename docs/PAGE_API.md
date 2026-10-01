@@ -3,8 +3,9 @@
 The app talks to the backend through the interfaces in `src/UnoTP.Backend` and nothing
 else. They are grouped by what they are about, not by page, so a page uses a few of them
 and most are shared. This is the map, page by page, as the code stands. Each call's
-request and answer is in [backend-api.md](backend-api.md); `src/UnoTP.Backend.Mock` is a
-working implementation of every one.
+request and answer is in [backend-api.md](backend-api.md); `src/UnoTP.Data` answers
+the ones kept in SQL Server, and the outside services have an HTTP client each in
+`src/UnoTP.Backend`.
 
 ## Every page
 

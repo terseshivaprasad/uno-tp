@@ -468,7 +468,6 @@ public sealed record MilestoneRecord(string Step, DateTime? At, string? Note = n
 
 /// <summary>
 /// An application's stages from entry to the FDR, in the order they happen, for View Application.
-/// One place for both the data layer and the demo data, so the two never tell it differently.
 /// </summary>
 public static class ApplicationStages
 {

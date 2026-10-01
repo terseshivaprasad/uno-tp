@@ -7,7 +7,7 @@ namespace UnoTP.Infrastructure;
 /// <summary>
 /// The backend's slow-changing answers - registers, bank branches, quotes, the
 /// console's schedule, who the partner is - kept in memory for as long as each
-/// stays true, around whichever client answers (the HTTP backend or the mock).
+/// stays true, around whichever client answers.
 /// Every page reads them through the same interfaces, so none of them knows.
 ///
 /// Nothing is kept that is not found, and no failure is kept: the next request asks
@@ -23,7 +23,6 @@ public static class CachedBackend
         services.Decorate<IDepositApi>((inner, sp) => new CachedDepositApi(inner, Cache(sp)));
         services.Decorate<IPlaceApi>((inner, sp) => new CachedPlaceApi(inner, Cache(sp)));
         services.Decorate<IConsoleApi>((inner, sp) => new CachedConsoleApi(inner, Cache(sp)));
-        services.Decorate<IDemoApi>((inner, sp) => new CachedDemoApi(inner, Cache(sp), Minutes(sp)));
         services.Decorate<IPartnerApi>((inner, sp) => new CachedPartnerApi(inner, Cache(sp), sp.GetRequiredService<IPartner>()));
         return services;
     }
@@ -155,16 +154,6 @@ internal sealed class CachedConsoleApi(IConsoleApi inner, IMemoryCache cache) : 
     {
         try { return await inner.RemoveAnnouncementAsync(id, ct); } finally { cache.Remove(Key); }
     }
-}
-
-/// <summary>The demo's test records, which change only with a deploy.</summary>
-internal sealed class CachedDemoApi(IDemoApi inner, IMemoryCache cache, TimeSpan keptFor) : IDemoApi
-{
-    public Task<DemoCases?> CasesAsync(CancellationToken ct = default) =>
-        cache.KeptAsync("backend:demo-cases", keptFor, () => inner.CasesAsync(ct));
-
-    public Task<DemoBanks?> BanksAsync(CancellationToken ct = default) =>
-        cache.KeptAsync("backend:demo-banks", keptFor, () => inner.BanksAsync(ct));
 }
 
 /// <summary>

@@ -18,8 +18,6 @@ namespace UnoTP.Controllers;
 [RequiresFeature("new-fd")]
 [Route("SearchInvestor")]
 public class NewApplicationController(
-    FeatureSet features,
-    IDemoApi demo,
     IApplicationApi applications,
     HolderSearch search) : Controller
 {
@@ -41,7 +39,6 @@ public class NewApplicationController(
     public async Task<IActionResult> Index()
     {
         var model = search.NewModel();
-        model.Demo = features.Flags.DemoData ? await demo.CasesAsync() : null;
         model.Drafts = await applications.DraftsAsync();
         Saved = await search.ShowAsync(model, Saved);
         return View(model);

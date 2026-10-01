@@ -33,7 +33,7 @@ public static class IdfyServiceCollectionExtensions
 
     /// <summary>
     /// Puts IDfy behind document identification, masking, OCR, verification and the
-    /// PAN-Aadhaar link. Call it after the backend (or the mock) is added: whatever
+    /// PAN-Aadhaar link. Call it after the backend is added: whatever
     /// answered those before is kept, and answers for the documents IDfy has no
     /// endpoint for. NSDL is not IDfy's, and is left as it is.
     /// </summary>
@@ -77,7 +77,7 @@ public static class IdfyServiceCollectionExtensions
     private static ServiceDescriptor Take<TService>(this IServiceCollection services)
     {
         var before = services.LastOrDefault(d => d.ServiceType == typeof(TService) && !d.IsKeyedService)
-            ?? throw new InvalidOperationException($"Add the backend or the mock before IDfy: nothing answers {typeof(TService).Name} yet.");
+            ?? throw new InvalidOperationException($"Add the backend before IDfy: nothing answers {typeof(TService).Name} yet.");
         services.Remove(before);
         return before;
     }

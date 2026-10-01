@@ -60,49 +60,6 @@
         <partial name="_Drafts" model="@(new DraftsBlock(Model.Drafts, Model.Drafts.Count, Partial: true))" />
         }
     </section>
-
-    @if (Model.Demo is { } demo)
-    {
-    <section class="demo-data">
-        <div class="demo-data__head">
-            <h2 class="demo-data__title">Test data</h2>
-            <p class="demo-data__sub">@demo.Cases.Count cases, and what each one does &middot; test records only &middot; every date of birth on record is <strong>@Dates.Show(demo.Dob)</strong></p>
-        </div>
-        <table class="demo-data__table">
-            <thead>
-                <tr>
-                    <th scope="col"><span class="visually-hidden">Case</span></th>
-                    <th scope="col">PAN</th>
-                    <th scope="col">Date of birth</th>
-                    <th scope="col">Folio</th>
-                    <th scope="col">What happens</th>
-                </tr>
-            </thead>
-            <tbody>
-                @for (var i = 0; i < demo.Cases.Count; i++)
-                {
-                    var c = demo.Cases[i];
-                    <tr>
-                        <td data-label="Case"><span class="demo-data__no">@(i + 1)</span></td>
-                        <td data-label="PAN"><code>@c.Pan</code></td>
-                        <td data-label="Date of birth">
-                            @if (c.Dob.Length > 0) { @Dates.Show(c.Dob) }
-                            else { <span class="demo-data__none">not on record</span> }
-                        </td>
-                        <td data-label="Folio">
-                            @if (c.Folios.Count == 0) { <span class="demo-data__none">no folio</span> }
-                            @foreach (var f in c.Folios) { <code>@f</code> }
-                        </td>
-                        <td data-label="What happens">@c.Shows</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-        <ul class="demo-data__notes">
-            @foreach (var note in demo.Notes) { <li>@note</li> }
-        </ul>
-    </section>
-    }
     </div>
 </div>
 

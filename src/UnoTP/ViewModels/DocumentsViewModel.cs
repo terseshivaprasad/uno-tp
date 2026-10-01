@@ -526,9 +526,6 @@ public class DocumentsViewModel(
     // that comes back clean replaces what the application already carries, which
     // is why the step shows both addresses where the pickers can change them.
 
-    /// <summary>The address on record, or empty for an investor with none yet.</summary>
-    public string PermanentAddress => Who.Address;
-
     /// <summary>Who stands behind each proof, as the empty box names them before
     /// anything is uploaded. A bill has no register to ask, so it is Operations who
     /// settle it and the address is left as it stands.</summary>
@@ -555,11 +552,9 @@ public class DocumentsViewModel(
 
     private string AadhaarOf(DocHolder h) => session.GetString(AadhaarKey(h)) ?? "";
 
-    /// <summary>What the register already holds against the folio the application
-    /// was opened on. A document on the folio is not asked for again: the step
-    /// shows it as not applicable and says which folio carries it.</summary>
-    public DocsOnRecord? FolioDocs => FolioDocsOf(Investor);
-
+    // What the register already holds against the folio the application was opened
+    // on. A document on the folio is not asked for again: the step shows it as not
+    // applicable and says which folio carries it.
     private static DocsOnRecord? FolioDocsOf(DocHolder h) => h.Who.Folio.Length > 0 ? h.Who.OnRecord : null;
 
     // ===== The documents =======================================================

@@ -1,13 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
   <!-- The app's data, kept in SQL Server through Dapper, behind the same interfaces
-       the pages read (UnoTP.Backend). What has no table yet is left to the mock. -->
+       the pages read (UnoTP.Backend). -->
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Dapper" Version="2.1.66" />
@@ -20,12 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="UnoTP.Tests" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\UnoTP.Backend\UnoTP.Backend.csproj" />
-    <ProjectReference Include="..\UnoTP.Backend.Mock\UnoTP.Backend.Mock.csproj" />
   </ItemGroup>
 
 </Project>

@@ -316,43 +316,6 @@
                 }
             </div>
         </section>
-
-        @* The test branches, while test data is on. *@
-        @if (Model.Demo is not null)
-        {
-            var demo = Model.Demo;
-            <section class="demo-data" aria-labelledby="bank-demo-title">
-                <h2 class="demo-data__title" id="bank-demo-title">Test banks</h2>
-                <p class="demo-data__sub">@demo.Branches.Count branches the bank search finds &middot; test records only</p>
-                <table class="demo-data__table">
-                    <thead>
-                        <tr>
-                            <th scope="col">IFSC</th>
-                            <th scope="col">Bank</th>
-                            <th scope="col">Branch</th>
-                            <th scope="col">MICR</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var branch in demo.Branches)
-                        {
-                            <tr>
-                                <td data-label="IFSC"><code>@branch.Ifsc</code></td>
-                                <td data-label="Bank">@branch.Bank</td>
-                                <td data-label="Branch">@branch.Branch</td>
-                                <td data-label="MICR"><code>@branch.Micr</code></td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-                <ul class="demo-data__notes">
-                    @foreach (var note in demo.Notes)
-                    {
-                        <li>@note</li>
-                    }
-                </ul>
-            </section>
-        }
     </form>
 </div>
 

@@ -15,8 +15,7 @@ public sealed class AllowWithoutSessionAttribute : Attribute;
 /// whose session has not ended - in the browser's sign-in, and in the session the
 /// backend keeps, so ending that one or taking the partner out of use signs them
 /// out within <see cref="Recheck"/>. It runs before anything else on the page.
-/// Without one, the demo signs its own user in and comes back to the page; anywhere
-/// else the partner is shown Session Expired, and opens the app from the portal again.
+/// Without one the partner is shown Session Expired, and opens the app from the portal again.
 /// </summary>
 public sealed class SessionAuthenticationFilter : IAsyncAuthorizationFilter
 {
@@ -32,14 +31,6 @@ public sealed class SessionAuthenticationFilter : IAsyncAuthorizationFilter
         var http = context.HttpContext;
         if (open || http.Session.SignedIn() && await StillOpenAsync(http)) return;
 
-        var demo = http.RequestServices.GetRequiredService<FeatureSet>().Flags.DemoData;
-        if (demo && HttpMethods.IsGet(http.Request.Method))
-        {
-            // Back to this very page once the demo user is in.
-            var back = http.Request.PathBase + http.Request.Path + http.Request.QueryString;
-            context.Result = new RedirectToActionResult("Index", "Entry", new { returnUrl = back.ToString() });
-            return;
-        }
         http.Session.Clear();
         context.Result = new RedirectToActionResult("SessionExpired", "Entry", null);
     }

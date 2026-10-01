@@ -32,12 +32,6 @@ public partial class NewApplicationViewModel(IInvestorApi investors, UnoTP.Infra
         "Review Summary",
     };
 
-    /// <summary>
-    /// The test data card at the foot of the page, switched in appsettings: the
-    /// cases GET demo/cases returns, or null when the backend holds none.
-    /// </summary>
-    public DemoCases? Demo { get; set; }
-
     // ----- What was typed ------------------------------------------------------
 
     /// <summary>"pan" to search by PAN and date of birth, "folio" by folio number.</summary>

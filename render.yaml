@@ -9,15 +9,6 @@ services:
     envVars:
       - key: ASPNETCORE_ENVIRONMENT
         value: Production
-      # This deployment is the demo, on the mock: the demo user signs in without the
-      # portal. appsettings.json keeps demo mode off, so it is turned on here. Before
-      # this deployment reaches a real backend, take these three out.
-      - key: Features__DemoData
-        value: "true"
-      - key: Entry__DemoUserId
-        value: "100002225"
-      - key: Entry__DemoSysCode
-        value: UNOTP
       # Addresses of the other eSarathi apps (see AppUrls.cs). Until they are
       # deployed, links out to the login, console and explorers stay plain paths.
       # - key: Apps__eSarathiLogin
@@ -30,7 +21,8 @@ services:
       #   value: https://<ovd-service>.onrender.com
       # The database all data is kept in (db/ has the scripts), the outside services
       # by name (see UnoTP.Backend/BackendOptions.cs), and Idfy.Api for the document
-      # checks. Left out, this demo runs on the mock.
+      # checks. The app does not start until the database and each outside
+      # service's address are set.
       # - key: ConnectionStrings__UnoTP
       #   value: Server=<sql-host>;Database=UnoTP;User Id=<user>;Password=<secret>;Encrypt=True
       # - key: Backend__External__Nsdl

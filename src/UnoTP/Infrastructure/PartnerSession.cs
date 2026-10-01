@@ -70,7 +70,7 @@ public static class PartnerSession
         session.SetString(PortalSysCodeKey, sysCode);
     }
 
-    /// <summary>The encrypted values the portal sent in, or null when the user did not come from the portal (demo mode).</summary>
+    /// <summary>The encrypted values the portal sent in, or null when the session holds none.</summary>
     public static (string UserId, string SysCode)? PortalValues(this ISession session)
     {
         var userId = session.GetString(PortalUserKey);
@@ -85,23 +85,6 @@ public static class PartnerSession
     /// <summary>The console feature keys the user's menu opens; null before anyone has come in.</summary>
     public static IReadOnlySet<string>? Menu(this ISession session) =>
         session.GetString(MenuKey) is { } json ? JsonSerializer.Deserialize<HashSet<string>>(json) : null;
-
-    private const string DemoAgencyKey = "partner.demo.agency";
-    private const string DemoBrokerKey = "partner.demo.broker";
-
-    /// <summary>
-    /// The agency type and broker code a demo is showing the app as, in place of the
-    /// signed-in partner's own; null when none is set (see <see cref="PartnerMiddleware"/>).
-    /// </summary>
-    public static (string Agency, string? Broker)? DemoPartner(this ISession session) =>
-        session.GetString(DemoAgencyKey) is { } agency ? (agency, session.GetString(DemoBrokerKey)) : null;
-
-    public static void SetDemoPartner(this ISession session, string agency, string? broker)
-    {
-        session.SetString(DemoAgencyKey, agency.Trim());
-        if (broker is { Length: > 0 }) session.SetString(DemoBrokerKey, broker.Trim().ToUpperInvariant());
-        else session.Remove(DemoBrokerKey);
-    }
 }
 
 /// <summary>The partner the backend is asked on behalf of: the session's owner.</summary>
@@ -116,36 +99,16 @@ public sealed class SessionPartner(IHttpContextAccessor http) : IPartner
 
 /// <summary>
 /// The partner the app is being used by, as the backend knows them (GET me), read
-/// once a request. While the demo data is on, a demo partner set with ?agency=
-/// stands in for their agency type and broker code.
+/// once a request.
 /// </summary>
-public sealed class CurrentPartner(IPartnerApi partners, IHttpContextAccessor http, FeatureSet features)
+public sealed class CurrentPartner(IPartnerApi partners)
 {
     private PartnerProfile? profile;
 
     public async Task<PartnerProfile> ProfileAsync(CancellationToken ct = default)
     {
         if (profile is not null) return profile;
-        var me = await partners.MeAsync(ct);
-        if (features.Flags.DemoData && http.HttpContext?.Session.DemoPartner() is { } demo)
-            me = me with { AgencyType = demo.Agency, BrokerCode = demo.Broker ?? me.BrokerCode };
-        return profile = me;
+        profile = await partners.MeAsync(ct);
+        return profile;
     }
-}
-
-public static class PartnerMiddleware
-{
-    /// <summary>
-    /// While the demo data is on, ?agency=1033 or ?agency=2001&amp;broker=BR10874 shows
-    /// the app as that kind of partner for the rest of the session, so both kinds can
-    /// be shown in one sitting. The partner's own details come from the backend.
-    /// </summary>
-    public static IApplicationBuilder UsePartner(this IApplicationBuilder app) =>
-        app.Use(async (ctx, next) =>
-        {
-            var demo = ctx.Items[FeatureSet.ItemKey] is FeatureSet { Flags.DemoData: true };
-            if (demo && ctx.Request.Query.TryGetValue("agency", out var agency) && agency.ToString().Trim().Length > 0)
-                ctx.Session.SetDemoPartner(agency.ToString(), ctx.Request.Query.TryGetValue("broker", out var b) ? b.ToString() : null);
-            await next();
-        });
 }

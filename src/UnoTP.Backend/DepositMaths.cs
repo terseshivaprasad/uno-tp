@@ -2,7 +2,7 @@ namespace UnoTP.Backend;
 
 /// <summary>
 /// How a deposit's returns are worked out, the way the published rate chart works
-/// them: the same sums on the SQL backend and on the mock.
+/// them.
 /// </summary>
 public static class DepositMaths
 {

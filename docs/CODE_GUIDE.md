@@ -83,8 +83,7 @@ its elements by `data-*` and ids, almost never by class. Before renaming one, se
 
 **C#**: controllers stay thin and hand the work to a view model in `ViewModels/`.
 `UnoTP.Backend` holds the rules and the outside services (NSDL, IDfy, the shortener),
-`UnoTP.Data` the SQL layer over the `t_Unotp_` tables, `UnoTP.Backend.Mock` the demo
-data. `Infrastructure/` holds the cross-cutting parts: feature gate, security headers,
+`UnoTP.Data` the SQL layer over the `t_Unotp_` tables. `Infrastructure/` holds the cross-cutting parts: feature gate, security headers,
 partner session, URL building. Every method has a `///` summary or a comment above it.
 
 ## Rules to keep
@@ -104,9 +103,8 @@ partner session, URL building. Every method has a `///` summary or a comment abo
 
 ```
 dotnet run --project src/UnoTP --launch-profile http      # port 5102; PORT=5103 for a second copy
-dotnet test                                               # routes, journey rules, status stages, links
 ```
 
 Stylesheets and scripts are linked with `asp-append-version`, so a change shows on
-the next reload. The tests do not look at the pages: after a UI change, open the page
+the next reload. There are no automated tests: after a UI change, open the page
 at desktop and phone width and check it by eye against BRAND_GUIDELINES.md.

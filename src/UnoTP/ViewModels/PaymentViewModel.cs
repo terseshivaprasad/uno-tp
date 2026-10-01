@@ -204,9 +204,6 @@ public sealed class PaymentViewModel(DocumentsViewModel docs, BankForm form, Ban
     public ReadCard? ChequeRead => Docs.State.Docs.ContainsKey("payment") ? Docs.State.Reads.GetValueOrDefault("payment") : null;
 
     public IReadOnlyList<string> CmsLocations => Docs.Ref.CmsLocations;
-
-    /// <summary>The test branches, while test data is on and the backend has them.</summary>
-    public DemoBanks? Demo { get; init; }
 }
 
 // ===== FD Configuration ======================================================

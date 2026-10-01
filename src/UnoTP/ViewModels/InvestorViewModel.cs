@@ -225,10 +225,6 @@ public sealed class InvestorViewModel(InvestorInfoState state, DocumentsViewMode
         }
     }
 
-    /// <summary>What the page says when name screening does not allow a holder to invest online.</summary>
-    public static string ScreeningOffline(string names) =>
-        $"This investment is not allowed online for {names}. It has to be made offline: kindly reach out to the nearest Mahindra Finance branch. A list of all our branches is available on our website.";
-
     /// <summary>The joint holder Proceed stopped at, not yet added.</summary>
     public int? Unfinished { get; init; }
 

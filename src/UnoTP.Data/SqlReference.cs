@@ -8,7 +8,7 @@ namespace UnoTP.Data;
 
 /// <summary>
 /// The lists and rules, from t_Unotp_Ref_List, t_Unotp_Feature_Mst and t_Unotp_App_Config
-/// (db/002, seeded by db/003). Kept for a minute, so an edit in the tables is
+/// (db/create_new_tables.sql, seeded by db/003). Kept for a minute, so an edit in the tables is
 /// seen within one; the web app keeps them longer on its side
 /// (Backend:ReferenceCacheMinutes).
 /// </summary>

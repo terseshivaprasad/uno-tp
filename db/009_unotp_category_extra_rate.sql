@@ -3,7 +3,7 @@
 
    The chart's "additional rates" - senior citizens and employees 0.35, women 0.05 -
    on the categories list as extraRate, so FD Configuration can say what a
-   category's rate includes. The rate card rows (db/007) already carry the
+   category's rate includes. The rate card rows already carry the
    addition; this is for the wording alone.
 
    Safe to run again: a category that already has extraRate is left alone.

@@ -5,12 +5,11 @@ using UnoTP.Backend;
 namespace UnoTP.Data;
 
 /// <summary>
-/// The masters the purchase journey reads (db/004): the investors on record (the
+/// The masters the purchase journey reads (db/create_master_tables.sql): the investors on record (the
 /// folio database), the sourcing registers, bank branches, PIN codes and the rate
 /// card (the masters database).
 /// </summary>
-/// <param name="register">The FD system's register of the folio's earlier deposits - their nominees and repayment accounts - which the mock stands in for until it answers.</param>
-public sealed class SqlMasters(Db db, SqlReference reference, UnoTP.Backend.Mock.MockInvestors register) : IInvestorApi, ISourcingApi, IDepositApi, IPlaceApi
+public sealed class SqlMasters(Db db, SqlReference reference) : IInvestorApi, ISourcingApi, IDepositApi, IPlaceApi
 {
     private const int Found = 20;
 
@@ -56,11 +55,11 @@ public sealed class SqlMasters(Db db, SqlReference reference, UnoTP.Backend.Mock
     }
 
     // What is on record against a folio: the nominees and repayment accounts on the
-    // folio's earlier deposits, from the register, and on the app's own submitted
-    // applications, latest first.
+    // app's own submitted applications, latest first. Those on the folio's earlier
+    // deposits are the FD system's, and are not read until it answers.
     public async Task<IReadOnlyList<NomineeOnRecord>> NomineesByFolioAsync(string folio, CancellationToken ct = default)
     {
-        var found = new List<NomineeOnRecord>(await register.NomineesByFolioAsync(folio, ct));
+        var found = new List<NomineeOnRecord>();
         await using var connection = await db.OpenAsync(ct);
         var rows = await connection.QueryAsync<(string Name, DateTime? Dob, string Relation, string GuardianName, string AppNo)>("""
             SELECT n.c_Name, n.d_Dob, n.c_Relation, n.c_Guardian_Name, m.c_App_No
@@ -79,7 +78,7 @@ public sealed class SqlMasters(Db db, SqlReference reference, UnoTP.Backend.Mock
 
     public async Task<IReadOnlyList<AccountOnRecord>> AccountsByFolioAsync(string folio, CancellationToken ct = default)
     {
-        var found = new List<AccountOnRecord>(await register.AccountsByFolioAsync(folio, ct));
+        var found = new List<AccountOnRecord>();
         await using var connection = await db.OpenAsync(ct);
         var rows = await connection.QueryAsync<(string Ifsc, string AccountNo, string Bank, string Branch, string AppNo)>("""
             SELECT b.c_Ifsc, b.c_Account_No, b.c_Bank_Name, b.c_Branch_Name, m.c_App_No

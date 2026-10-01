@@ -3,8 +3,7 @@
 This document lists everything the Uno TP pages ask of their data. The pages read
 and write only through the interfaces in `src/UnoTP.Backend` (`IApplicationApi`,
 `IReferenceApi` and the rest). `src/UnoTP.Data` answers them from SQL Server, in
-the same process; `src/UnoTP.Backend.Mock` answers them from memory for
-development and tests. The tables are in `db/`. The outside services for the
+the same process. The tables are in `db/`. The outside services for the
 document checks are reached over HTTP, one client each in `External/` and `Idfy/`.
 
 Each call is written below as a route, `GET applications/{appNo}`, with the
@@ -50,12 +49,11 @@ their query.
 
 | Setting | Meaning |
 |---|---|
-| `ConnectionStrings:UnoTP` | The database. If blank, the app runs on the in-memory mock (`src/UnoTP.Backend.Mock`), which only Development or a demo may do. |
+| `ConnectionStrings:UnoTP` | The database. If blank, the app does not start. |
 | `Backend:TimeoutSeconds` | Seconds an outside service is given. Default 30. |
-| `Backend:External:{Nsdl,Identify,Masking,Ocr,Verification,PanAadhaarLink,FaceMatch,Decrypt,NameScreening}` | Each outside service's address. Blank in Development, its mock answers; elsewhere each must be set (IDfy covers Masking, PanAadhaarLink and FaceMatch). |
+| `Backend:External:{Nsdl,Identify,Masking,Ocr,Verification,PanAadhaarLink,FaceMatch,Decrypt,NameScreening}` | Each outside service's address. Outside Development each must be set (IDfy covers Masking, PanAadhaarLink and FaceMatch); in Development a service left blank is not there, and a page that asks it fails. |
 | `Idfy:BaseUrl` | Idfy.Api. When set, IDfy handles the checks it has an endpoint for (see below). |
 | `Idfy:TimeoutSeconds` | Default 75. The Idfy.Api guide asks for at least 70. |
-| `Entry:DemoUserId`, `Entry:DemoSysCode` | The user the demo comes in as when the app is opened without the portal's values. Used only while `Features:DemoData` is on; leave empty in production. |
 | `Backend:ReferenceCacheMinutes` | Minutes the lists and rules (`GET reference`, `GET config`) are kept for. Default 10; 0 asks every time. |
 | `Features:CommProofUpload` | Default false (off for this release). On, a holder whose post goes to an address other than the permanent one uploads a proof of it on Upload Documents. Off, that box is hidden and the address is typed on Investor Information (`communication` in `ApplicationDetails`). |
 
@@ -79,7 +77,6 @@ Nothing that was not found is kept, and no failure is: the next request asks aga
 | `POST deposits/quote` | 1 minute, never past the day | Keyed by amount, tenure, payout and the same card key - nothing of the investor's |
 | `GET console/schedule` | 30 seconds | Dropped the moment the app adds, ends or removes a window or notice |
 | `GET me` | 5 minutes | Per user and per session; a new session asks again |
-| `GET demo/*` | `Backend:ReferenceCacheMinutes` | |
 
 A backend that changes one of these and needs it seen sooner should say so; the
 times are set in `CachedBackend.cs`. The cache holds at most 50,000 entries.
@@ -129,8 +126,6 @@ again; a failed answer is not kept.
 | GET | `ifsc/{code}` | | `BankBranch`: `ifsc`, `bank`, `branch`, `micr`, or 404 |
 | GET | `pincodes/{pin}` | | `PinPlace`: `pinCode`, `district`, `state` for a 6-digit PIN code, or 404 — shown beside a communication address typed on Investor Information, and saved with it. The page asks once all six digits are typed; nothing is suggested while typing. |
 | GET | `ifsc?q={text}` | | `BankBranch[]`: the branches whose bank name, branch, IFSC or MICR holds every word of the text, best first, at most 20 — the bank search on Bank Details &amp; Payment |
-| GET | `demo/cases` | | `DemoCases`: `dob`, `cases` (`{ pan, dob, folios, shows }`; an empty `dob` is none on record, no `folios` a new investor) and `notes`, for the Test data card on Investor Identification while `Features:DemoData` is on. A live backend answers 404 and the card is not shown. |
-| GET | `demo/banks` | | `DemoBanks`: `branches` (`BankBranch[]`) and `notes`, for the Test data card on Bank Details &amp; Payment while `Features:DemoData` is on. A live backend answers 404 and the card is not shown. |
 
 - **`ReferenceData`:** `applicationTypes` and `renewInstructions` and
   `deliveryTypes` as `{ code, name }`; `categories` as `{ code, name, employee,
@@ -153,8 +148,9 @@ again; a failed answer is not kept.
   `cancellationDays`, `draftDays`, and `linkValidityHours` by purpose
   (`payment`, `acceptance`). The backend checks the same rules again on save.
 - **Quote:** the rate is the card rate for the tenure and category, locked
-  when the application is submitted. The mock compounds a cumulative deposit
-  half-yearly and pays simple interest per period otherwise.
+  when the application is submitted. A cumulative deposit compounds
+  `compoundingPerYear` times a year; any other pays simple interest per period
+  (`DepositMaths`).
 
 ## Investors
 
@@ -328,7 +324,7 @@ loads. The code is in `DashboardController.cs`.
 | Tiles and the bell | `GET console/schedule` | | Tiles switched off for a window, and the notices in the bell. |
 | Top bar | `GET me` | | The partner's name. |
 
-Example answers, as the mock gives them (identifiers masked by the backend):
+Example answers (identifiers masked by the backend):
 
 `GET applications`
 
@@ -443,7 +439,7 @@ proof.
   count against the three attempts.
 - **Aadhaar consent:** Aadhaar calls are sent only with the holder's consent.
   The upload step doesn't ask for it, so behind a real IDfy an Aadhaar is
-  turned back with a message saying why. The mock doesn't ask for consent.
+  turned back with a message saying why.
 - **The link check needs both numbers:** it runs when the second of the PAN and
   the Aadhaar number arrives. The Aadhaar number, read by OCR or typed, is kept only in
   the server session for that application. It is never saved to the backend.
