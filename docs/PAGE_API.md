@@ -63,7 +63,6 @@ The joint holders' documents on Investor Information go through the same calls.
 | `IInvestorApi.FoliosByPanAsync`, `FolioAsync`, `NomineesByFolioAsync` | A joint holder's search; the nominees on the folio. |
 | `IPlaceApi.PinCodeAsync` | The district and state of a PIN code. |
 | `INameScreeningService.ScreenAsync` | Every holder, before Proceed. |
-| `IRenewalApi.DepositsByFolioAsync`, `DepositsByPanAsync` | Nothing here; see the steps below. |
 
 ## Bank Details & Payment (`PaymentController`)
 
