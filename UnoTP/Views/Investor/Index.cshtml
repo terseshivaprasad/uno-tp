@@ -661,6 +661,7 @@
 
 @* Once the investor's card head has scrolled away, this strip keeps who the step is for
    and the application number in view (sticky-app-strip.js). *@
+<partial name="_Popup" model="Model.Docs.Shown?.Popup" />
 <div class="app-sticky-strip" id="docsPin" hidden>
     <div class="app-sticky-strip__inner">
         <span class="app-sticky-strip__who">@Model.Docs.HolderName</span>
@@ -911,6 +912,7 @@
         <div class="page-action-bar__right">
             <button type="submit" form="investorInfoForm" class="btn btn-outline-primary" formaction="@Url.Action("Save")" formnovalidate data-toast="Draft saved">Save draft</button>
             <button type="submit" form="investorInfoForm" class="btn btn-primary" data-validate="form"
+                    data-loader="Checking and saving the investor details&hellip;" data-loader-progress="@Url.Action("Progress", "Documents")"
                     data-ask-nominee="@(nomineeAnswered ? null : "yes")">Proceed</button>
         </div>
     </div>

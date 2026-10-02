@@ -236,7 +236,8 @@
         @if (slot.Used && !slot.Spent)
         {
             <button type="submit" class="identify-check-button doc-upload" id="upload-@key" name="slot" value="@key" formaction="@Model.UploadUrl" form="@form"
-                    data-loader="Checking the @slot.Def.Label&hellip;" data-loader-hint="Identified, read by OCR, then checked with whoever stands behind it">Upload</button>
+                    data-loader="Checking the @slot.Def.Label&hellip;" data-loader-hint="Identified, read by OCR, then checked with whoever stands behind it"
+                    data-loader-progress="@Url.Action("Progress", "Documents")">Upload</button>
         }
     </div>
 

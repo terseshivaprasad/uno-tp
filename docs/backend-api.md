@@ -135,9 +135,9 @@ again; a failed answer is not kept.
   women, senior }`; `paymentModes` as `{ name, document }` (`document` is the
   instrument a copy is filed for, or null); `sourcingModes` as `{ code, name,
   codeLabel, nameLabel, house, search, register, sub, categories }`;
-  `proofsOfAddress` as `{ type, issuer, hasPhoto }` (only a proof with
-  `hasPhoto` - an officially valid document - proves the permanent address; one
-  without, a utility bill, proves only the communication address); `payouts` as `{ code, name,
+  `proofsOfAddress` as `{ type, issuer, hasPhoto }` (an Aadhaar, a passport, a driving
+  licence or a voter ID; a utility bill is not taken. Only a proof with `hasPhoto` -
+  an officially valid document - proves the permanent address); `payouts` as `{ code, name,
   perYear, each }` (`perYear` 0 is cumulative); `tenures` in months;
   `requiredDocuments` as `{ title, items, notes }`; and plain lists for
   `employeeHolders`, `employeeRelations`, `employeeProofs`, `incomeBands`,
@@ -381,7 +381,7 @@ The app asks each check separately, in this order: identification, OCR, then
 whoever answers for what was read. Only after that does it file the copy with
 DMS. The name and date of birth OCR reads off a proof of address are
 matched with the holder's (a name with an initial or a word left out partly
-matches; a utility bill prints no date of birth). Once both a holder's PAN copy
+matches). Once both a holder's PAN copy
 and their proof of address are filed, the faces on them are compared; for now both answers are only shown,
 and the proof stays filed whatever they say. A holder's PAN copy is taken before their proof of
 address, and the PAN–Aadhaar link card appears only once an Aadhaar is filed as a
@@ -409,7 +409,7 @@ Each check is answered by one service, with a settings section of its own:
 | CKYC search | `ICkycService` | CKYC search API (`Ckyc`) | `POST SearchPath` with `IncludeImages` and one `SearchInCkycSearchParamDetail` (`InputIdType` `C`, `InputIdNo` the PAN, `DOB`, `ApplicationFormNo`, a ten-digit `TransactionId`, `RecordIdentifier`) → `ckycResponse.searchInCkycResponseDetail[0]`: `ckycAvailable` (`Y` or `Yes` is a record held), `masked_CKYCID`, `ckycName`, `ckycReferenceID`. Asked when the partner chooses Fetch from CKYC on Upload Documents. |
 | Identification | `IDocumentIdentifier` | Idfy.Api (`Idfy`) | `documents/validate`: with `docType` for a PAN; with no `docType` for a proof of address, whose `detected_doc_type` says which proof it is (Aadhaar, passport, driving licence or voter ID). A document IDfy has no type for is taken as what it was handed in as. |
 | OCR | `IOcrService` | Idfy.Api (`Idfy`) | `pan/extract`, `aadhaar/extract` (QR code read first), `driving-license/extract` (expiry from `date_of_validity` and `validity`, leaving out any date that is an `issue_dates` date or not after the latest one), `passport/extract`, `voter-id/extract`, and `cheque/extract` (IDfy's `ind_cheque`: `account_no`, `ifsc_code`, `micr_code`, `micr_cheque_number`, `date_of_issue`, `bank_name`, `account_name`). No other document is read. |
-| Verification | `IVerificationService` | Idfy.Api (`Idfy`) | `driving-license/verify/sync` and `passport/verify/sync` (both with the holder's date of birth), `voter-id/verify/sync`. `id_found` counts as confirmed. For a licence, the later of `nt_validity_to` and `t_validity_to` is returned as `expiry`, and `dl_status` as `standing`. An Aadhaar, a utility bill and a bank account have no check: the answer says it was not asked. A cheque's account, read but not confirmed, is still carried to Bank Details & Payment, marked as read and not confirmed. |
+| Verification | `IVerificationService` | Idfy.Api (`Idfy`) | `driving-license/verify/sync` and `passport/verify/sync` (both with the holder's date of birth), `voter-id/verify/sync`. `id_found` counts as confirmed. For a licence, the later of `nt_validity_to` and `t_validity_to` is returned as `expiry`, and `dl_status` as `standing`. An Aadhaar and a bank account have no check: the answer says it was not asked, and an Aadhaar's address is taken as OCR read it. A cheque's account, read but not confirmed, is still carried to Bank Details & Payment, marked as read and not confirmed. |
 | PAN–Aadhaar link | `IPanAadhaarLinkService` | Idfy.Api (`Idfy`) | `pan-aadhaar-link/verify/sync` |
 | PAN–POA face match | `IFaceMatchService` | Idfy.Api (`Idfy`) | `face/compare` with `document` (the PAN copy) and `document2` (the proof of address) as Base64, each 150–4,096 px a side; reads `is_a_match`, `match_score`, `review_recommended` and `image_1`/`image_2.face_detected` and `face_quality`. No face found, or a review recommended, is shown as "Not sure". |
 | Name screening | `INameScreeningService` | Name screening API (`NameScreening`) | `POST ScreenPath` with the holder's name, date of birth and mobile number → `status` and `nameScreeingStatus`; allowed only on `SUCCESS` and `ALLOWED`. |

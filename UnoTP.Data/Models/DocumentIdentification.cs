@@ -14,5 +14,5 @@ public interface IDocumentIdentifier
 
 /// <param name="Hint">What to do differently next time, where the service has something to say.</param>
 /// <param name="Type">Which proof of address the copy is - Aadhaar, Passport, Driving
-/// Licence, Voter ID or Utility bill - when it is one; null for anything else.</param>
+/// Licence or Voter ID - when it is one; null for anything else.</param>
 public sealed record Identification(bool Matches, string? Hint = null, string? Type = null);

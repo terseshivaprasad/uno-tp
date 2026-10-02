@@ -21,6 +21,8 @@
     if (inFlight) inFlight.abort();
     inFlight = window.AbortController ? new AbortController() : null;
     document.documentElement.classList.add('is-saving');
+    // A quote that is slow to come says so (loader.js).
+    var waitOver = window.whenSlow ? window.whenSlow('Still fetching the quote \u2014 the connection is slow\u2026') : null;
     fetch(url, { method: 'POST', body: new FormData(form), credentials: 'same-origin', signal: inFlight ? inFlight.signal : undefined })
       .then(function (res) {
         if (!res.ok) throw new Error(res.status);
@@ -50,6 +52,7 @@
         if (note) note.textContent = 'The quote could not be fetched just now — it is asked for again with the next change.';
       })
       .then(function () {
+        if (waitOver) waitOver();
         if (mine === asked) document.documentElement.classList.remove('is-saving');
       });
   }

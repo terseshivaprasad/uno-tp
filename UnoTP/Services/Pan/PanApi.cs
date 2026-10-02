@@ -128,15 +128,14 @@ public sealed class PanApiClient(HttpClient http, IPartner partner, IPartnerApi 
         public string Ref_Type { get; set; } = "";
     }
 
-    // The answer, by the API's own names.
+    // The part of the answer the app reads, by the API's own names. Its error and
+    // status fields are not used, so they are left out: the answer is then read
+    // whether they come as text or as a number.
     private sealed class PanResponse
     {
         public string? PAN_No_Match_Status { get; set; }
         public string? PAN_Name_Match_Status { get; set; }
         public string? PAN_DOB_Match_Status { get; set; }
-        public string? ErrorCode { get; set; }
-        public string? ErrorMessage { get; set; }
-        public string? Status { get; set; }
     }
 }
 

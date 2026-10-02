@@ -150,10 +150,10 @@ public sealed class UidMaskingClient(HttpClient http, IPartner partner, IPartner
         public string AadharSuffix { get; set; } = "";
     }
 
+    // The part of the answer the app reads. Its status fields are not used, so they
+    // are left out: the answer is then read whether they come as text or as a number.
     private sealed class MaskResponse
     {
-        public string? IntStatusCode { get; set; }
-        public string? Status { get; set; }
         public MaskedFile? Result { get; set; }
         public string? Error { get; set; }
     }

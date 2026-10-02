@@ -4,8 +4,8 @@ using UnoTP.Models;
 namespace UnoTP.Services.Idfy;
 
 // The document checks IDfy answers: identification, OCR, verification with the
-// issuer, the PAN-Aadhaar link and face match. Where IDfy has no endpoint - a
-// utility bill, an Aadhaar's source check, a bank account - nothing is asked, and
+// issuer, the PAN-Aadhaar link and face match. Where IDfy has no endpoint - an
+// Aadhaar's source check, a bank account - nothing is asked, and
 // the answer says so, as it does for a check that is switched off.
 
 /// <summary>What IDfy calls each proof, for the proofs it knows.</summary>
@@ -52,11 +52,11 @@ internal static class IdfyDocTypes
 /// <summary>
 /// Identification by IDfy's document validation: readable, and the kind of document
 /// expected. A proof of address is validated against no type at all, and IDfy says
-/// which it is; one IDfy does not know - a utility bill - is not told apart.
+/// which it is; a document IDfy does not know - a utility bill, which is not taken - is not told apart.
 /// </summary>
 public sealed class IdfyDocumentIdentifier(IdfyClient idfy) : IDocumentIdentifier
 {
-    public const string NotAProof = "It reads as a PAN card, which is not a proof of address. Upload an Aadhaar, passport, driving licence, voter ID or utility bill.";
+    public const string NotAProof = "It reads as a PAN card, which is not a proof of address. Upload an Aadhaar, passport, driving licence or voter ID.";
 
     public async Task<Identification> IdentifyAsync(DocumentKind expected, string type, UploadFile file, CancellationToken ct = default)
     {
@@ -226,7 +226,7 @@ public sealed class IdfyVerification(IdfyClient idfy) : IVerificationService
                 return Answer((await idfy.VerifyVoterIdAsync(number, ct)).Result!, commission);
 
             default:
-                // IDfy has no source check for an Aadhaar, and nobody answers for a bill.
+                // IDfy has no source check for an Aadhaar.
                 return NotAsked("", "there is no issuer check for this proof");
         }
     }

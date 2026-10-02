@@ -130,7 +130,7 @@ public sealed record FeatureOption(string Code, string Name, string Group, strin
 /// <param name="MinAge">The youngest a depositor may be.</param>
 /// <param name="SeniorAge">The age a holder is a senior citizen from.</param>
 /// <param name="MaxJointHolders">Joint holders an application can carry beside the investor.</param>
-/// <param name="MaxAttempts">Copies of one document refused one after another before it goes to Operations.</param>
+/// <param name="MaxAttempts">Copies of one document refused one after another before it has to wait a while to be tried again.</param>
 /// <param name="MinAmount">The smallest deposit, in rupees.</param>
 /// <param name="MaxAmount">The largest deposit booked online, in rupees.</param>
 /// <param name="AmountStep">A deposit is a multiple of this, in rupees; 1 for any amount.</param>

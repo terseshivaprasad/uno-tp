@@ -144,7 +144,9 @@ public sealed class CkycApiClient(HttpClient http, IPartner partner, IOptions<Ck
         public string? Gender { get; set; }
     }
 
-    // The part of the answer the app reads, by the API's own names.
+    // The part of the answer the app reads, by the API's own names. The ids, statuses
+    // and codes it does not use are left out: the answer is then read whether they
+    // come as text or as a number.
     private sealed class SearchResponse
     {
         public CkycResponse? ckycResponse { get; set; }
@@ -152,20 +154,14 @@ public sealed class CkycApiClient(HttpClient http, IPartner partner, IOptions<Ck
 
     private sealed class CkycResponse
     {
-        public string? requestId { get; set; }
-        public string? requestStatus { get; set; }
-        public string? requestRejectionCode { get; set; }
         public string? requestRejectionDescription { get; set; }
         public List<SearchRecord>? searchInCkycResponseDetail { get; set; }
     }
 
     private sealed class SearchRecord
     {
-        public string? transactionId { get; set; }
-        public string? transactionStatus { get; set; }
         public string? ckycAvailable { get; set; }
         public string? ckycName { get; set; }
-        public string? transactionRejectionCode { get; set; }
         public string? transactionRejectionDescription { get; set; }
         public string? ckycReferenceID { get; set; }
         public string? masked_CKYCID { get; set; }

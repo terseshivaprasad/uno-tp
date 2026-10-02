@@ -294,6 +294,9 @@ public sealed class UploadState
     /// <summary>Refusals in a row per document; a copy the checks take clears it.</summary>
     public Dictionary<string, int> Attempts { get; init; } = [];
 
+    /// <summary>When each document was last refused: the wait before it may be tried again runs from then.</summary>
+    public Dictionary<string, DateTime> RefusedAt { get; init; } = [];
+
     /// <summary>What each copy was read to say, by the slot it came from.</summary>
     public Dictionary<string, ReadCard> Reads { get; init; } = [];
 
@@ -318,6 +321,27 @@ public sealed class UploadState
     public Dictionary<string, JointHolder> Joint { get; init; } = [];
 
     public int AttemptsOf(string key) => Attempts.GetValueOrDefault(key);
+
+    /// <summary>
+    /// When a document refused <paramref name="max"/> times in a row may be tried
+    /// again: <paramref name="wait"/> after its last refusal. Null while it has
+    /// tries left. A document refused before refusals were dated has waited long enough.
+    /// </summary>
+    public DateTime? RetryAt(string key, int max, TimeSpan wait)
+    {
+        if (AttemptsOf(key) < max) return null;
+        return RefusedAt.TryGetValue(key, out var at) ? at + wait : DateTime.MinValue;
+    }
+
+    /// <summary>
+    /// The refusals in a row that still count against a document. Once the wait
+    /// after <paramref name="max"/> of them is over, the count starts again from nothing.
+    /// </summary>
+    public int AttemptsNow(string key, int max, TimeSpan wait, DateTime now)
+    {
+        if (RetryAt(key, max, wait) is { } retry && retry <= now) return 0;
+        return AttemptsOf(key);
+    }
 }
 
 /// <summary>A joint holder on the application: who they are, and the proofs of address chosen for them.</summary>

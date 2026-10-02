@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Options;
 using UnoTP.Models;
 using UnoTP.Services;
@@ -19,8 +20,8 @@ namespace UnoTP.Controllers;
 ///
 /// Home goes back to the portal's dashboard with the same encrypted values, so the
 /// portal knows who is back. Logout ends the session here and goes to the portal's
-/// logout page. The controller also serves the session-expired, unauthorized and error
-/// pages.
+/// logout page. The controller also serves the session-expired, unauthorized,
+/// too-many-requests and error pages.
 /// </summary>
 [AllowWithoutSession]
 public class EntryController(
@@ -32,6 +33,7 @@ public class EntryController(
 {
     [HttpGet("Home")]
     [HttpGet("Home/Index")]
+    [EnableRateLimiting(RateLimits.Entry)]
     public async Task<IActionResult> Index(
         [FromQuery(Name = "UserId")] string? userId,
         [FromQuery(Name = "Syscode")] string? sysCode,
@@ -151,6 +153,14 @@ public class EntryController(
     /// <summary>A page that is not the user's to open.</summary>
     [HttpGet("Home/Unauthorized")]
     public IActionResult NoAccess() => Refused("You do not have access to this page.");
+
+    /// <summary>Where a request over its limit is sent (see <see cref="RateLimits"/>).</summary>
+    [HttpGet("Home/TooManyRequests")]
+    public IActionResult TooManyRequests()
+    {
+        Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        return View();
+    }
 
     [HttpGet("Home/Error")]
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

@@ -1,0 +1,26 @@
+# Builds the solution and runs its tests on every push and pull request. The build
+# is the strict one (see Directory.Build.props): any warning fails it, unused code included.
+name: Build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore UnoTP.sln
+
+      - name: Build
+        run: dotnet build UnoTP.sln --no-restore -c Release -p:Strict=true
+
+      - name: Test
+        run: dotnet test UnoTP.sln --no-build -c Release -p:Strict=true

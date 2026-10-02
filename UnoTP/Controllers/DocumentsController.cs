@@ -75,6 +75,19 @@ public class DocumentsController(
     }
 
     /// <summary>A choice that reshapes the step: kept, and the page redrawn around it.</summary>
+    /// <summary>
+    /// What the upload under way is doing now - which outside service it is waiting
+    /// on - for the wait on the screen to say. The page asks once a second while it
+    /// waits (partial-forms.js); with nothing under way the answer is empty.
+    /// </summary>
+    [HttpGet("progress")]
+    public IActionResult Progress([FromServices] UploadProgress progress)
+    {
+        var appNo = HttpContext.CurrentApplication();
+        var stage = appNo is null ? null : progress.Of(UploadProgress.SessionOf(HttpContext.Session), appNo);
+        return Json(new { stage = stage ?? "" });
+    }
+
     [HttpPost("refresh")]
     public Task<IActionResult> Refresh(UploadForm form) => Change(form, model =>
     {
@@ -97,12 +110,12 @@ public class DocumentsController(
     /// <summary>The name typed from the investor's PAN card, put to NSDL again.</summary>
     [HttpPost("nsdl")]
     public Task<IActionResult> Nsdl(UploadForm form) =>
-        ChangeAsync(form, model => model.RetryNsdlAsync(model.Investor, Request.Form["nsdlName"]));
+        ChangeAsync(form, model => model.RetryNsdlAsync(model.Investor, form.NsdlName));
 
     /// <summary>The investor's 12-digit Aadhaar number, typed where OCR could not read it, for the PAN-Aadhaar link.</summary>
     [HttpPost("aadhaar-number")]
     public Task<IActionResult> AadhaarNumber(UploadForm form) =>
-        ChangeAsync(form, model => model.AadhaarNumberAsync(model.Investor, Request.Form["aadhaarNo"]));
+        ChangeAsync(form, model => model.AadhaarNumberAsync(model.Investor, form.AadhaarNo));
 
     /// <summary>Fetch from CKYC: CERSAI is searched for the investor's record, which then stands in for the proofs.</summary>
     [HttpPost("ckyc")]

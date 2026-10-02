@@ -3,10 +3,11 @@
 // console list, and the dashboard tile search. Each part does nothing on a page
 // without its markup, so the file is safe on every page.
 (function () {
-  var toastEl = document.getElementById('toast');
   var toastTimer = null;
-  // Shows a short message at the foot of the screen for two seconds.
+  // Shows a short message at the foot of the screen for two seconds. The toast is
+  // looked up each time: a page's <main> is redrawn after a post, and it with it.
   function showToast(message) {
+    var toastEl = document.getElementById('toast');
     if (!toastEl) return;
     toastEl.textContent = message;
     toastEl.classList.add('app-toast--visible');
@@ -16,9 +17,17 @@
   // Other page scripts raise the same toast.
   window.showToast = showToast;
 
-  // What the last post said, left on the page as data-toast-now.
-  var said = document.querySelector('[data-toast-now]');
-  if (said) showToast(said.getAttribute('data-toast-now'));
+  // What the last post said, left on the page as data-toast-now: said once, as the
+  // page arrives - on a full load, and when a post's answer is put in place.
+  function sayLastPost() {
+    var said = document.querySelector('[data-toast-now]');
+    if (!said) return;
+    var words = said.getAttribute('data-toast-now');
+    said.removeAttribute('data-toast-now');
+    if (words) showToast(words);
+  }
+  sayLastPost();
+  document.addEventListener('partial:swapped', sayLastPost);
 
   // Any control explicitly marked as a stub in this mock build.
   document.querySelectorAll('.js-stub').forEach(function (el) {

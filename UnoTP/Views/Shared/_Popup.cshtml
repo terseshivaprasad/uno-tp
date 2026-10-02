@@ -1,0 +1,25 @@
+@model string?
+@* What the last post was turned back for, said in a popup over the page it came from.
+   popup.js opens it as the page arrives; Esc, the cross, OK or a click outside closes it. *@
+@if (!string.IsNullOrEmpty(Model))
+{
+    <div class="doc-sheet doc-ckyc-pop" id="noticePopup" popover role="alertdialog" aria-modal="true" aria-labelledby="noticePopupTitle" aria-describedby="noticePopupText" data-popup-open>
+        <div class="doc-ckyc__sheet">
+            <header class="doc-ckyc__head">
+                <span class="doc-ckyc__mark" aria-hidden="true">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3 2"></path></svg>
+                </span>
+                <h2 class="doc-ckyc__title" id="noticePopupTitle">Too many tries in a minute</h2>
+                <button type="button" class="doc-preview__close" popovertarget="noticePopup" popovertargetaction="hide" aria-label="Close">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19"></path></svg>
+                </button>
+            </header>
+            <div class="doc-ckyc__body">
+                <p id="noticePopupText">@Model</p>
+            </div>
+            <footer class="doc-ckyc__foot">
+                <button type="button" class="btn btn-primary" popovertarget="noticePopup" popovertargetaction="hide">OK</button>
+            </footer>
+        </div>
+    </div>
+}

@@ -144,6 +144,12 @@ public class InvestorController(
         // Every holder is screened by name before the application goes on. One not
         // allowed to invest online invests offline, at a branch: the page says so and
         // stops. What screening said is saved with the application either way.
+        // Screening is charged for, so it keeps to the limit a document's checks do.
+        if (!docs.WithinLimit(docs.Investor, "screening"))
+        {
+            await SaveAsync(docs);
+            return Back("holder-1");
+        }
         var notAllowed = new List<string>();
         try
         {

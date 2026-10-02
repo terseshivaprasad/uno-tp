@@ -250,8 +250,12 @@
     var words = from && from.getAttribute('data-loader');
     if (words && window.showLoader) window.showLoader(words, from.getAttribute('data-loader-hint') || '');
     // Anything else - a toggle, a drop-down - says it is on its way with a thin bar
-    // across the top, and leaves the page to be used meanwhile.
+    // across the top, and leaves the page to be used meanwhile. Should it last, a
+    // line at the foot of the screen says the connection is slow (loader.js).
     else document.documentElement.classList.add('is-saving');
+    var waitOver = !words && window.whenSlow
+      ? window.whenSlow('Still working \u2014 the connection is slow. You can carry on meanwhile.')
+      : null;
 
     // A file on its way says how far it has got - on a slow connection the send is
     // most of the wait - and then what the server is doing with it.
@@ -262,11 +266,34 @@
         : from.getAttribute('data-loader-hint') || '');
     } : null;
 
+    // An upload goes through several checks, one after another, each an outside
+    // service and each a wait of its own. A button that names where to ask
+    // (data-loader-progress) has the server asked once a second which one it is on,
+    // and the wait says it. Until the server has the file there is nothing to say,
+    // and the wait keeps to how much of it has gone.
+    var progressUrl = words && window.setLoaderHint ? from.getAttribute('data-loader-progress') : null;
+    var progressTimer = progressUrl ? setInterval(function () {
+      fetch(progressUrl, { credentials: 'same-origin', headers: { Accept: 'application/json' } })
+        .then(function (res) { return res.ok ? res.json() : null; })
+        .then(function (now) { if (busy && now && now.stage) window.setLoaderHint(now.stage); })
+        .catch(function () { /* the wait goes on saying what it last said */ });
+    }, 1000) : null;
+
     sendWithProgress(url, init, onProgress)
       .then(function (res) {
-        // Anything but a page to show - a refused post, a server error - goes the
-        // ordinary way, so it is seen as it would be without this script.
-        if (res.ok === false) { fallback(); return null; }
+        // A page asked for that did not come goes the ordinary way, so it is seen as
+        // it would be without this script. A post the server answered with an error
+        // is never sent again - an upload sent twice is checked, and charged for,
+        // twice: what the server answered, its error page, is shown as it stands.
+        if (res.ok === false) {
+          if (push) { fallback(); return null; }
+          return res.text().then(function (html) {
+            if (!html) { fallback(); return; }
+            document.open();
+            document.write(html);
+            document.close();
+          });
+        }
         // Where the answer stands: the page the server followed on to, or where
         // the browser was redirected.
         var at = res.headers.get('X-Partial-Url');
@@ -288,6 +315,8 @@
       .then(function () {
         busy = false;
         if (window.hideLoader) window.hideLoader();
+        if (waitOver) waitOver();
+        if (progressTimer) clearInterval(progressTimer);
         document.documentElement.classList.remove('is-saving');
         if (quick) { from.classList.remove('is-busy'); from.removeAttribute('aria-busy'); }
         if (waiting) {

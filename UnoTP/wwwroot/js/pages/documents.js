@@ -87,13 +87,16 @@
     if (q.length < 2) { closeSuggestions(input); return; }
     var mine = ++asked;
     var url = input.getAttribute('data-register-search') + '?register=' + encodeURIComponent(input.getAttribute('data-register')) + '&q=' + encodeURIComponent(q);
+    // A search that is slow to answer says so (loader.js).
+    var waitOver = window.whenSlow ? window.whenSlow('Still searching \u2014 the connection is slow\u2026') : function () {};
     fetch(url, { credentials: 'same-origin', headers: { Accept: 'application/json' } })
       .then(function (r) { return r.ok ? r.json() : []; })
       .then(function (parties) {
         // Only the answer to the latest question, and only while the field still has the caret.
         if (mine === asked && document.activeElement === input) showSuggestions(input, parties);
       })
-      .catch(function () { closeSuggestions(input); });
+      .catch(function () { closeSuggestions(input); })
+      .then(waitOver);
   }
 
   // Moves the highlighted option up or down (arrow keys).

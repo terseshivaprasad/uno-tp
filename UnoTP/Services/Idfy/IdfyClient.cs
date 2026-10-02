@@ -227,8 +227,6 @@ public sealed record FaceCompare(
 /// <param name="FaceQuality">How good the face is, in IDfy's words.</param>
 public sealed record FaceImage(bool? FaceDetected, string? FaceQuality);
 
-/// <param name="IdNumberFound">False when there was no Aadhaar number on the copy to mask.</param>
-/// <param name="MaskedDocument">The masked image, Base64, when a number was found and masked.</param>
 /// <param name="DateOfValidity">When the licence runs out, as OCR read it. On some cards it reads an issue date instead.</param>
 /// <param name="IssueDates">When each vehicle class was issued, keyed by class (LMV, MCWG...).</param>
 /// <param name="Validity">When the licence runs out, keyed by category (non_transport, transport); "" where it has none.</param>
@@ -238,7 +236,6 @@ public sealed record DrivingLicenceCard(
 
 public sealed record PassportPage(string? FileNumber, string? NameOnCard, string? Address, string? DateOfBirth = null, string? PassportNumber = null, string? DateOfExpiry = null);
 
-/// <param name="IdNumber">The EPIC number, which IDfy may return partly masked, as T*****0275.</param>
 /// <summary>IDfy's cheque output (ind_cheque), field for field.</summary>
 /// <param name="DateOfIssue">The date written on the cheque; empty when none is.</param>
 /// <param name="IsScanned">Whether the copy is a scan rather than a photograph.</param>
@@ -247,6 +244,7 @@ public sealed record ChequeLeaf(
     string? AccountName, string? AccountNo, string? BankAddress, string? BankName,
     string? DateOfIssue, string? IfscCode, bool? IsScanned, string? MicrChequeNumber, string? MicrCode);
 
+/// <param name="IdNumber">The EPIC number, which IDfy may return partly masked, as T*****0275.</param>
 public sealed record VoterIdCard(string? IdNumber, string? NameOnCard, string? Address, string? DateOfBirth = null);
 
 /// <summary>What a verify-with-source call found.</summary>

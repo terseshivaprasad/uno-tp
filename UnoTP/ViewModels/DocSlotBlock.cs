@@ -49,7 +49,7 @@ public sealed class SlotToolbar
     /// <summary>Why View is disabled.</summary>
     public string NoViewReason { get; private set; } = "";
 
-    /// <summary>What the action button says: Upload, Replace, Newer proof, Final or No tries left.</summary>
+    /// <summary>What the action button says: Upload, Replace, Newer proof, Final or Try again later.</summary>
     public string ActionLabel { get; private set; } = "Upload";
 
     /// <summary>Why the action cannot be done now, or null when it can.</summary>
@@ -118,8 +118,8 @@ public sealed class SlotToolbar
         }
         else if (slot.Spent)
         {
-            toolbar.ActionLabel = "No tries left";
-            toolbar.ActionBlockedReason = slot.Tries ?? "Refused too many times in a row: this document now goes to Operations.";
+            toolbar.ActionLabel = "Try again later";
+            toolbar.ActionBlockedReason = slot.Tries ?? "Refused too many times in a row: try again after some time.";
         }
         else if (filed)
         {

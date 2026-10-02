@@ -14,6 +14,9 @@ public sealed class Flash
 
     public string? Banner { get; set; }
 
+    /// <summary>A line said in a popup over the page: a try turned back by the limit on documents.</summary>
+    public string? Popup { get; set; }
+
     /// <summary>The field that takes the caret: the first one with something wrong.</summary>
     public string? Focus { get; set; }
 }

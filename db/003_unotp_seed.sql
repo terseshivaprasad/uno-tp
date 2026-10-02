@@ -82,7 +82,6 @@ SELECT v.l, v.s, v.c, v.n, v.a, 'SEED' FROM (VALUES
     (N'proofsOfAddress', 2, N'Passport', N'Passport', N'{"issuer":"Passport Seva","hasPhoto":true}'),
     (N'proofsOfAddress', 3, N'Driving Licence', N'Driving Licence', N'{"issuer":"Sarathi","hasPhoto":true}'),
     (N'proofsOfAddress', 4, N'Voter ID', N'Voter ID', N'{"issuer":"the Election Commission","hasPhoto":true}'),
-    (N'proofsOfAddress', 5, N'Utility bill', N'Utility bill', N'{"issuer":"","hasPhoto":false}'),
     (N'employeeHolders', 1, N'First holder', N'First holder', NULL),
     (N'employeeHolders', 2, N'Second holder', N'Second holder', NULL),
     (N'employeeHolders', 3, N'Third holder', N'Third holder', NULL),

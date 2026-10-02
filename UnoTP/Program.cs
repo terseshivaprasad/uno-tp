@@ -150,6 +150,12 @@ builder.Services.AddResponseCompression(options =>
 builder.Services.Configure<BrotliCompressionProviderOptions>(o => o.Level = System.IO.Compression.CompressionLevel.Fastest);
 builder.Services.Configure<GzipCompressionProviderOptions>(o => o.Level = System.IO.Compression.CompressionLevel.Fastest);
 
+// A cap on how often one caller may come in, and on tries at one document (see RateLimits).
+builder.Services.AddRateLimits(builder.Configuration);
+
+// What an upload is doing now, for the wait on the screen to say (see UploadProgress).
+builder.Services.AddSingleton<UploadProgress>();
+
 // /health, for the host to check the app is up. It asks nothing of the backend.
 builder.Services.AddHealthChecks();
 
@@ -243,6 +249,9 @@ app.UsePartialFollow();
 app.UseMiddleware<InputScreening>();
 
 app.UseRouting();
+
+// After routing, so the limit meets only the action marked with it: the way in.
+app.UseRateLimiter();
 
 app.MapControllers();
 app.MapHealthChecks("/health");

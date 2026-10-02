@@ -447,7 +447,7 @@ public sealed class InvestorViewModel(InvestorInfoState state, DocumentsViewMode
     /// <summary>A name as printed: letters and spaces only (InputRules).</summary>
     public static bool IsName(string value) => InputRules.IsName(value);
 
-    /// <summary>A line of text: letters, digits, spaces and - , & / . only (InputRules).</summary>
+    /// <summary>A line of text: letters, digits, spaces and - , &amp; / . only (InputRules).</summary>
     public static bool IsText(string value) => InputRules.IsClean(value);
 
     public const string LettersOnly = InputRules.LettersOnly;

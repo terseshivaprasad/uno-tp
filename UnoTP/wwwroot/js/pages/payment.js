@@ -78,6 +78,8 @@
     var q = input.value.trim();
     if (q.length < 2) { closeSuggestions(input); return; }
     var mine = ++asked;
+    // A search that is slow to answer says so (loader.js).
+    var waitOver = window.whenSlow ? window.whenSlow('Still searching \u2014 the connection is slow\u2026') : function () {};
     fetch(input.getAttribute('data-bank-search') + '?q=' + encodeURIComponent(q), {
       credentials: 'same-origin',
       headers: { Accept: 'application/json' }
@@ -87,7 +89,8 @@
         // Only the answer to the latest question, and only while the field still has the caret.
         if (mine === asked && document.activeElement === input) showBranchSuggestions(input, branches);
       })
-      .catch(function () { closeSuggestions(input); });
+      .catch(function () { closeSuggestions(input); })
+      .then(waitOver);
   }
 
   // Moves the highlighted option up or down (arrow keys).

@@ -15,7 +15,7 @@ public interface IVerificationService
     Task<Verification> ConfirmAccountAsync(string account, string bank, CancellationToken ct = default);
 }
 
-/// <param name="Verifier">Who answers for it; empty when nobody does, as for a utility bill.</param>
+/// <param name="Verifier">Who answers for it; empty when nobody does, as for an Aadhaar.</param>
 /// <param name="NotAsked">Why the verifier could not be asked, when it could not -
 /// the number it is asked with was not on the copy, or not readable. Nothing was
 /// found either way, so this is not a refusal.</param>

@@ -203,7 +203,7 @@
     </div>
 </div>
 
-<div class="app-toast" id="toast" role="status" aria-live="polite"></div>
+<div class="app-toast" id="toast" role="status" aria-live="polite" data-toast-now="@(ViewData["Toast"] as string)"></div>
 
 @section Scripts {
     <script src="~/js/pages/pay-in-slips.js" asp-append-version="true"></script>

@@ -18,6 +18,39 @@ other way, the app shows Session Expired. The other
 E-Sarathi apps it links to run beside it: the login portal on 5100, the console on
 5101 (see `UnoTP/appsettings.Development.json`).
 
+## Build and test
+
+```
+dotnet build UnoTP.sln                 # the everyday build
+dotnet build UnoTP.sln -p:Strict=true  # the strict build: any warning fails it, unused code included
+dotnet test UnoTP.sln                  # the tests: no database, gateway or running app needed
+```
+
+Every push runs the strict build and the tests (`.github/workflows/build.yml`). The
+rules the strict build holds the code to are in `.editorconfig`; what makes a build
+strict is in `Directory.Build.props`. The tests (`UnoTP.Tests/`) check each backend
+API client against a stand-in for the network - what it sends, how it reads the
+answer, and that an outage is told apart from a refusal - the limit on documents,
+and the deposit maths.
+
+## Waiting, and slow connections
+
+The server decides everything and draws every page; the browser only shows at once
+what the server already sent (a choice that shows or hides a part, a list filtered
+or paged) and carries posts there and back without reloading the page. So nothing
+on the screen waits where it need not, and where it must wait it says so:
+
+- A press that goes to an outside service (an upload, a check, Proceed) puts the
+  wait up at once, with the words on the button (`data-loader`).
+- An upload is several outside services asked in turn. The wait says which one it
+  is on - identifying, OCR, the issuer or NSDL, the PAN-Aadhaar link, the face
+  match, filing - asked of the server once a second (`UploadProgress`,
+  `data-loader-progress`).
+- A change that redraws the page (a drop-down, a toggle), a quote and a search as
+  it is typed leave the page usable; if one lasts over a second, a line at the
+  foot of the screen says the connection is slow (`whenSlow` in `loader.js`).
+- A move to another page that lasts over a second puts the wait up by itself.
+
 ## Layout
 
 | Folder | What it is |
@@ -26,13 +59,14 @@ E-Sarathi apps it links to run beside it: the login portal on 5100, the console 
 | `UnoTP/Services/` | One folder per backend API, each with its settings and its client: `Auth`, `Pan`, `UidMasking`, `Ckyc`, `Idfy`, `NameScreening`, `NameMatch`, `Shortener`. What they share (the gateway address, the switches) is at its top |
 | `UnoTP.Data/` | The database logic, in a project of its own: the `Sql*` classes that answer the pages from SQL Server through Dapper. A change to a query is deployed by replacing `UnoTP.Data.dll` alone |
 | `UnoTP.Data/Models/` | The interfaces the pages read and the records they pass. Both projects use them |
+| `UnoTP.Tests/` | The tests of the code alone: the API clients, the limit on documents, the deposit maths |
 | `db/` | The SQL Server scripts: three create scripts (the new tables, the tables the database already has, the masters), and the numbered scripts for the settings and lists |
 | `docs/backend-api.md` | What the pages ask of the data layer, interface by interface |
 | `docs/BRAND_GUIDELINES.md` | The visual rules every page keeps |
 
 Inside `UnoTP`: `Controllers/` one per page, the application steps sharing
 `ApplicationStepController`; `ViewModels/` one per page, `DocumentsViewModel` holding
-the document rules; `Views/{Page}/`; `Infrastructure/` for routing, features, caching
+the document rules, in one file a concern (`DocumentsViewModel.Slots.cs`, `.Upload.cs`, `.PanChecks.cs` ...); `Views/{Page}/`; `Infrastructure/` for routing, features, caching
 and the session.
 
 ### Styles and scripts, page by page
@@ -117,6 +151,7 @@ sqlcmd -d UnoTP -i db/011_unotp_any_amount.sql     # any whole-rupee amount, not
 sqlcmd -d UnoTP -i db/012_unotp_amount_limit_and_sub_occupations.sql # the 5 crore maximum and its message; sub occupations by occupation
 sqlcmd -d UnoTP -i db/013_unotp_link_validity.sql  # the payment link runs 3 days; a new one until the application cancels itself
 sqlcmd -d UnoTP -i db/014_unotp_gateway_banks.sql  # the banks the payment gateway takes for online payment
+sqlcmd -d UnoTP -i db/015_unotp_no_utility_bill.sql # a utility bill is not taken as a proof of address
 export ConnectionStrings__UnoTP='Server=...;Database=UnoTP;...'   # never in a committed file
 dotnet run --project UnoTP --launch-profile http
 ```
@@ -174,12 +209,15 @@ underscore (`ConnectionStrings__UnoTP`).
 | `NameMatch:BasePath`, `NameMatch:MatchPath` | The name match API: whether two names are the same person's. |
 | `Dms:Root` | Where filed copies are kept until DMS is wired in. |
 | `Ckyc:BasePath`, `Ckyc:SearchPath`, `Ckyc:IncludeImages` | The CKYC (CERSAI) search: whether a record is held for a PAN and date of birth. Asked when the partner chooses Fetch from CKYC; only an investor it holds a record for takes that route. |
-| `Idfy:BasePath` | Idfy.Api, which alone answers document identification, OCR, verification with the issuer, the PAN-Aadhaar link and face match. A cheque is read with IDfy's `ind_cheque`; nobody confirms its account with the bank, so it is carried to Bank Details as read, for the partner to check. Where IDfy has no endpoint - a utility bill, an Aadhaar's issuer, a bank account - nothing is asked, and the page says so. |
+| `Idfy:BasePath` | Idfy.Api, which alone answers document identification, OCR, verification with the issuer, the PAN-Aadhaar link and face match. A cheque is read with IDfy's `ind_cheque`; nobody confirms its account with the bank, so it is carried to Bank Details as read, for the partner to check. Where IDfy has no endpoint - an Aadhaar's issuer, a bank account - nothing is asked, and the page says so; an Aadhaar's address is taken as OCR read it. A utility bill is not taken as a proof of address. |
 | `Idfy:ValidateDocumentPath`, `Idfy:ExtractPanPath`, `Idfy:ExtractAadhaarPath`, `Idfy:ExtractDrivingLicencePath`, `Idfy:ExtractPassportPath`, `Idfy:ExtractVoterIdPath`, `Idfy:ExtractChequePath`, `Idfy:VerifyDrivingLicencePath`, `Idfy:VerifyPassportPath`, `Idfy:VerifyVoterIdPath`, `Idfy:VerifyPanAadhaarLinkPath`, `Idfy:CompareFacesPath` | The path of each Idfy.Api call under the gateway. |
 | `Shortener:ShortenPath` | Where the payment link is shortened on submit. No path, and the link goes in full. |
 | `PaymentLink:Template` | The page the investor pays on, with `{appNo}` for the application's number. Blank, the app sends no link and the backend makes its own. |
 | `Apps:eSarathiLogin`, `Apps:eSarathiConsole`, `Apps:UnoTP` | The other apps' addresses, for the links out and the session-expired redirect. |
 | `Portal:Home`, `Portal:Logout` | The portal's dashboard (where "Portal" goes back to, with the encrypted UserId and SysCode) and its logout page. Blank: the console's `/Classic` and the login portal's root. |
+| `RateLimits:EntryPerMinute` | How often one address may come in from the portal: 60 a minute. Over it, the Too Many Requests page until the minute is out. 0 takes the limit off. |
+| `RateLimits:PerDocumentPerMinute` | Tries a session has, on one application, at one holder's document of one type - their PAN copy, their proof of address, the cheque - and at each check typed by hand (the name for NSDL, the Aadhaar number, CKYC, name screening): 3 a minute, counted by holder and document type within the session and the application. The next try reaches no outside service, uses no attempt, and the page says so in a popup. 0 takes the limit off. |
+| `RateLimits:RefusedWaitMinutes` | How long a document waits once its copies have been refused `maxAttempts` times in a row (3, from `t_Unotp_App_Config`): 15 minutes from the last refusal. Until then its box says how long is left and takes no copy; after it the count starts again. Nothing goes to Operations. |
 | `Backend:TimeoutSeconds` | How long any backend API may take to answer: 55 s. Nothing is retried - every call may be charged. |
 | `Logging:Sql:MinLevel` | The least serious entry written to `t_Unotp_Logs` (`Error`): every error and critical error, with the request, the application number and the partner signed in, in the background. Only on the database. |
 | `Security:FrameAncestors` | Other sites allowed to show the pages in a frame (space-separated origins). Blank: none but the app itself. |

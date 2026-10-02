@@ -90,6 +90,7 @@
     }
 }
 
+<partial name="_Popup" model="flash?.Popup" />
 <div class="doc-page" data-partial-focus="@(flash?.Focus)">
 
 @* Once the head has scrolled away, this strip keeps who the step is for and the
@@ -301,7 +302,7 @@
                     </div>
                     <footer class="doc-ckyc__foot">
                         <button type="button" class="link-button" popovertarget="docsCkycAsk" popovertargetaction="hide">Cancel</button>
-                        <button type="submit" class="btn btn-primary" asp-action="Ckyc">Proceed <span aria-hidden="true">&rarr;</span></button>
+                        <button type="submit" class="btn btn-primary" asp-action="Ckyc" data-loader="Searching CKYC for the investor&rsquo;s record&hellip;" data-loader-progress="@Url.Action("Progress", "Documents")">Proceed <span aria-hidden="true">&rarr;</span></button>
                     </footer>
                 </div>
             </div>

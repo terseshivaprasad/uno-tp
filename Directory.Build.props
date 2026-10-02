@@ -1,0 +1,15 @@
+<Project>
+
+  <!-- The strict build, run on every push (.github/workflows/build.yml) and by hand with
+         dotnet build UnoTP.sln -p:Strict=true
+       Any warning fails it, the unused-code rules in .editorconfig among them. The
+       documentation file is only generated because the unused-using rule needs it. -->
+  <PropertyGroup Condition="'$(Strict)' == 'true'">
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- Not every member carries a comment, and not every parameter a tag. -->
+    <NoWarn>$(NoWarn);CS1591;CS1573</NoWarn>
+  </PropertyGroup>
+
+</Project>
