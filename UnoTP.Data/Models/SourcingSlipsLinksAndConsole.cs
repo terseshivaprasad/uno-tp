@@ -1,19 +1,33 @@
 namespace UnoTP.Models;
 
-/// <summary>The registers an application's sourcing codes are searched against.</summary>
+/// <summary>
+/// The registers an application's sourcing codes are searched against: the brokers
+/// and the staff. Each is far too big to read whole, so nothing here lists one: a
+/// code is looked up by itself, and a search is run only on what was typed.
+/// </summary>
 public interface ISourcingApi
 {
-    /// <summary>The brokers a broker-sourced application can be filed under.</summary>
-    Task<IReadOnlyList<Party>> BrokersAsync(CancellationToken ct = default);
+    /// <summary>The broker a code names, or null.</summary>
+    Task<Party?> BrokerAsync(string code, CancellationToken ct = default);
 
-    /// <summary>The staff an employee code is searched against.</summary>
-    Task<IReadOnlyList<Party>> StaffAsync(CancellationToken ct = default);
+    /// <summary>The employee a code names, or null. Only the departments given are looked in; with none given, every department.</summary>
+    Task<Party?> StaffMemberAsync(string code, IReadOnlyList<string> departments, CancellationToken ct = default);
 
     /// <summary>GET sourcing/brokers?q=: the brokers whose code or name holds every word of the text, best first; at most 20.</summary>
     Task<IReadOnlyList<Party>> SearchBrokersAsync(string query, CancellationToken ct = default);
 
-    /// <summary>GET sourcing/staff?q=: the same, on the staff register.</summary>
-    Task<IReadOnlyList<Party>> SearchStaffAsync(string query, CancellationToken ct = default);
+    /// <summary>GET sourcing/staff?q=: the same, on the staff register, within the departments given; with none given, every department.</summary>
+    Task<IReadOnlyList<Party>> SearchStaffAsync(string query, IReadOnlyList<string> departments, CancellationToken ct = default);
+}
+
+/// <summary>A search of a big table (brokers, staff, bank branches) as its text is typed.</summary>
+public static class TypedSearch
+{
+    /// <summary>The fewest characters a search is run on. On less, nothing is asked and nothing is listed.</summary>
+    public const int FromLength = 3;
+
+    /// <summary>Whether enough was typed for a search to be run.</summary>
+    public static bool LongEnough(string text) => text.Trim().Length >= FromLength;
 }
 
 /// <summary>A code and the name the register holds against it.</summary>

@@ -19,14 +19,44 @@ public partial class DocumentsViewModel
     /// <summary>The partner at the keyboard, from the backend.</summary>
     public PartnerProfile Partner { get; private set; } = null!;
 
-    /// <summary>Reads the lists, the rules, the partner and the sourcing registers. Every request calls it before the model is used.</summary>
+    /// <summary>
+    /// Reads the lists, the rules and the partner, and the names behind the sourcing
+    /// codes the application holds. Every request calls it before the model is used.
+    /// </summary>
     public async Task<DocumentsViewModel> ReadyAsync(CancellationToken ct = default)
     {
         var (reference, config, partner) = (lookups.ReferenceAsync(ct), lookups.ConfigAsync(ct), currentPartner.ProfileAsync(ct));
-        var (brokers, staff) = (sourcing.BrokersAsync(ct), sourcing.StaffAsync(ct));
-        (Ref, Config, Partner, Brokers, Staff) = (await reference, await config, await partner, await brokers, await staff);
+        (Ref, Config, Partner) = (await reference, await config, await partner);
+        await ReadSourcingNamesAsync(ct);
         return this;
     }
+
+    // The brokers and the staff are far too many to read whole, so only the codes the
+    // application holds are looked up, a row each: the source code, the sub broker and
+    // the employee. A page is always drawn on a request of its own, after a post has
+    // been saved, so the codes read here are the ones the page shows.
+    private async Task ReadSourcingNamesAsync(CancellationToken ct)
+    {
+        var s = State;
+        var mode = ModeOf(s.Sourcing);
+        sourceParty = await FindPartyAsync(RegisterName(mode, sub: false), s.SourceCode, mode, ct);
+        subParty = await FindPartyAsync(RegisterName(mode, sub: true), s.SubBroker, mode, ct);
+        employee = await FindPartyAsync("staff", s.EmpCode, mode, ct);
+    }
+
+    // The party a code names on a register ("brokers" or "staff"); null for no code, no
+    // register, or a code the register does not hold. The staff are looked for in the
+    // departments the sourcing mode takes.
+    private async Task<Party?> FindPartyAsync(string? register, string code, SourcingModeOption? mode, CancellationToken ct)
+    {
+        if (code.Length == 0) return null;
+        if (register == "brokers") return await sourcing.BrokerAsync(code, ct);
+        if (register == "staff") return await sourcing.StaffMemberAsync(code, DepartmentsOf(mode), ct);
+        return null;
+    }
+
+    /// <summary>The staff departments a sourcing mode takes; none for every department.</summary>
+    public static IReadOnlyList<string> DepartmentsOf(SourcingModeOption? mode) => mode?.Departments ?? [];
 
     public IReadOnlyList<Option> ApplicationTypes => Ref.ApplicationTypes;
 
@@ -222,16 +252,14 @@ public partial class DocumentsViewModel
         s.Category = CategoryFor(Who.Dob, GenderIn(s), DateTime.Today);
     }
 
-    /// <summary>The brokers a broker-sourced application can be filed under, from the backend.</summary>
-    public IReadOnlyList<Party> Brokers { get; private set; } = [];
+    // Who the application's source code, sub broker and employee code name, as the
+    // registers hold them; null for a code not on its register (ReadSourcingNamesAsync).
+    private Party? sourceParty;
+    private Party? subParty;
+    private Party? employee;
 
-    /// <summary>The staff a sub-broker or employee code is searched against, the
-    /// partner at the keyboard among them, from the backend.</summary>
-    public IReadOnlyList<Party> Staff { get; private set; } = [];
-
-    /// <summary>The name the staff register holds against a code, or null.</summary>
-    public string? StaffName(string code) =>
-        Staff.FirstOrDefault(p => p.Code.Equals(code, StringComparison.OrdinalIgnoreCase))?.Name;
+    /// <summary>The name the staff register holds against the employee code, or null.</summary>
+    public string? EmployeeName => employee?.Name;
 
     public IReadOnlyList<string> EmployeeHolders => Ref.EmployeeHolders;
 

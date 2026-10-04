@@ -17,7 +17,7 @@ internal static partial class Sections
     private const string Individual = "IND";
 
     /// <param name="line">The rate card's row for the deposit - its scheme, scheme code and rate are the row's; null where the card offers none.</param>
-    /// <param name="lists">The categories and payouts lists, for the name the FD system's rate card gives each.</param>
+    /// <param name="lists">The employee relations list, for the code a relation is saved as.</param>
     public static async Task WriteDepositAsync(IDbConnection db, IDbTransaction tx, Stamp at, UploadState? upload,
         DepositDetails deposit, string? renews, RateOption? line, ReferenceData lists)
     {
@@ -42,47 +42,17 @@ internal static partial class Sections
                 @Rate, 1, @CreatedBy, @UserName, GETDATE(), @Ip, @SessionId)
             """, new
         {
-            at.AppNo, at.Status, deposit.Amount, Tenure = deposit.TenureMonths, Payout = InterestFreqOf(deposit.Payout, lists.Payouts),
+            at.AppNo, at.Status, deposit.Amount, Tenure = deposit.TenureMonths, deposit.Payout,
             line?.Scheme, line?.SchemeCode,
             deposit.AutoRenewal, RenewInstruction = PrincipalOrFull(deposit.RenewInstruction), TdsFlag = TdsFlag(deposit.NoTds), deposit.DeliveryType,
             deposit.SourceOfFunds, deposit.SourceOfFundsRemark, deposit.SourceOfFundsReason,
-            u.AppType, Category = RateCategoryOf(u.Category, lists.Categories), Source, u.SourceCode,
+            u.AppType, u.Category, Source, u.SourceCode,
             u.EmpCode, u.EmpCompany, EmpHolder = EmpHolderCode(u.EmpHolder),
             EmpRelation = MasterLists.CodeOf((lists.Masters ?? MasterLists.None).EmployeeRelations, u.EmpRelation), Renews = renews,
             ExistingRenewalFor = renews is null ? null : PrincipalOrFull(deposit.RenewalFor),
             Individual, Hng = FormFiled(deposit.NoTds), at.Folio,
             line?.Rate, CreatedBy = at.UserClusterId, at.UserName, at.Ip, at.SessionId,
         }, tx);
-    }
-
-    /// <summary>
-    /// f_Category: the category as the FD system's rate card names it (its rateCategory
-    /// in the categories list). The app's own code, where the list gives it no such name.
-    /// </summary>
-    public static string RateCategoryOf(string category, IReadOnlyList<CategoryOption> categories)
-    {
-        var option = categories.FirstOrDefault(c => c.Code == category);
-        if (option is null || option.RateCategory.Length == 0) return category;
-        return option.RateCategory;
-    }
-
-    /// <summary>
-    /// f_Int_Freq: the payout as the FD system's rate card names it (its interestFreq
-    /// in the payouts list). The app's own code, where the list gives it no such name.
-    /// </summary>
-    public static string InterestFreqOf(string payout, IReadOnlyList<PayoutOption> payouts)
-    {
-        var option = payouts.FirstOrDefault(p => p.Code == payout);
-        if (option is null || option.InterestFreq.Length == 0) return payout;
-        return option.InterestFreq;
-    }
-
-    /// <summary>The app's payout code for what f_Int_Freq holds: <see cref="InterestFreqOf"/> the other way.</summary>
-    public static string PayoutOf(string? interestFreq, IReadOnlyList<PayoutOption> payouts)
-    {
-        var option = payouts.FirstOrDefault(p => p.InterestFreq.Length > 0 && p.InterestFreq == interestFreq);
-        if (option is null) return interestFreq ?? "";
-        return option.Code;
     }
 
     // f_Renewal_For and f_ExistingFDRNoRenewalFor: P, the principal; F, principal and interest.

@@ -20,7 +20,7 @@ public static class CachedBackend
     /// <summary>Wraps the backend's clients, registered already, in their caches.</summary>
     public static IServiceCollection AddBackendCaching(this IServiceCollection services)
     {
-        services.Decorate<ISourcingApi>((inner, sp) => new CachedSourcingApi(inner, Cache(sp), Minutes(sp)));
+        services.Decorate<ISourcingApi>((inner, sp) => new CachedSourcingApi(inner, Cache(sp)));
         services.Decorate<IDepositApi>((inner, sp) => new CachedDepositApi(inner, Cache(sp)));
         services.Decorate<IPlaceApi>((inner, sp) => new CachedPlaceApi(inner, Cache(sp)));
         services.Decorate<IConsoleApi>((inner, sp) => new CachedConsoleApi(inner, Cache(sp)));
@@ -58,44 +58,60 @@ public static class CachedBackend
         ?? ActivatorUtilities.CreateInstance(sp, d.ImplementationType!);
 }
 
-/// <summary>The brokers and staff registers: the same for everyone, changed a few times a day.</summary>
-internal sealed class CachedSourcingApi(ISourcingApi inner, IMemoryCache cache, TimeSpan keptFor) : ISourcingApi
+/// <summary>
+/// The brokers and staff registers. Neither is ever kept whole: what a code names and
+/// what a search finds are kept five minutes, and only when something was found, so a
+/// party added to a register is found by the next look.
+/// </summary>
+internal sealed class CachedSourcingApi(ISourcingApi inner, IMemoryCache cache) : ISourcingApi
 {
-    public Task<IReadOnlyList<Party>> BrokersAsync(CancellationToken ct = default) =>
-        cache.KeptAsync("backend:brokers", keptFor, () => inner.BrokersAsync(ct));
+    private static readonly TimeSpan KeptFor = TimeSpan.FromMinutes(5);
 
-    public Task<IReadOnlyList<Party>> StaffAsync(CancellationToken ct = default) =>
-        cache.KeptAsync("backend:staff", keptFor, () => inner.StaffAsync(ct));
+    public Task<Party?> BrokerAsync(string code, CancellationToken ct = default) =>
+        FoundAsync(("backend:broker", Key(code)), () => inner.BrokerAsync(code, ct));
 
-    // A search is kept five minutes, and only when it found something: a party
-    // added to the register is found by the next search.
+    public Task<Party?> StaffMemberAsync(string code, IReadOnlyList<string> departments, CancellationToken ct = default) =>
+        FoundAsync(("backend:staff-member", Key(code), string.Join("|", departments)), () => inner.StaffMemberAsync(code, departments, ct));
+
     public Task<IReadOnlyList<Party>> SearchBrokersAsync(string query, CancellationToken ct = default) =>
-        SearchAsync("backend:brokers", query, q => inner.SearchBrokersAsync(q, ct));
+        SearchAsync(("backend:brokers", Key(query)), () => inner.SearchBrokersAsync(query, ct));
 
-    public Task<IReadOnlyList<Party>> SearchStaffAsync(string query, CancellationToken ct = default) =>
-        SearchAsync("backend:staff", query, q => inner.SearchStaffAsync(q, ct));
+    public Task<IReadOnlyList<Party>> SearchStaffAsync(string query, IReadOnlyList<string> departments, CancellationToken ct = default) =>
+        SearchAsync(("backend:staff", Key(query), string.Join("|", departments)), () => inner.SearchStaffAsync(query, departments, ct));
 
-    private async Task<IReadOnlyList<Party>> SearchAsync(string register, string query, Func<string, Task<IReadOnlyList<Party>>> ask)
+    private static string Key(string text) => text.Trim().ToLowerInvariant();
+
+    private async Task<Party?> FoundAsync(object key, Func<Task<Party?>> ask)
     {
-        var key = (register, query.Trim().ToLowerInvariant());
+        if (cache.TryGetValue(key, out Party? kept) && kept is not null) return kept;
+        var found = await ask();
+        if (found is not null) cache.Set(key, found, new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = KeptFor, Size = 1 });
+        return found;
+    }
+
+    private async Task<IReadOnlyList<Party>> SearchAsync(object key, Func<Task<IReadOnlyList<Party>>> ask)
+    {
         if (cache.TryGetValue(key, out IReadOnlyList<Party>? kept) && kept is not null) return kept;
-        var found = await ask(query);
-        if (found.Count > 0)
-            cache.Set(key, found, new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5), Size = 1 });
+        var found = await ask();
+        if (found.Count > 0) cache.Set(key, found, new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = KeptFor, Size = 1 });
         return found;
     }
 }
 
 /// <summary>
-/// Bank branches, the branch search and deposit quotes. A bank or branch added to
-/// the backend shows at once: an IFSC not found, and a search that finds nothing,
-/// are never kept. What is found is kept only briefly - a branch an IFSC names an
-/// hour, a search's suggestions five minutes - so a change to a known branch shows
-/// within that. A quote is the card rate for the amount, tenure, payout and category
-/// - nothing about the investor - kept a minute and never past the day's rate card.
+/// Bank branches, the branch search and deposit quotes. The bank master is never kept
+/// whole. A bank or branch added to the backend shows at once: an IFSC not found, and
+/// a search that finds nothing, are never kept. What is found - the branch an IFSC
+/// names, a search's suggestions - is kept ten minutes, so a change to a known branch
+/// shows within that. A quote is the card rate for the amount, tenure, payout and
+/// category - nothing about the investor - kept a minute and never past the day's
+/// rate card.
 /// </summary>
 internal sealed class CachedDepositApi(IDepositApi inner, IMemoryCache cache) : IDepositApi
 {
+    // How long a branch found, or a bank search's results, are kept.
+    private static readonly TimeSpan BankKeptFor = TimeSpan.FromMinutes(10);
+
     public Task<IReadOnlyList<RateOption>> RatesAsync(RatesRequest request, CancellationToken ct = default) =>
         cache.KeptAsync(("backend:rates", DateTime.Today, request), TimeSpan.FromMinutes(1), () => inner.RatesAsync(request, ct));
 
@@ -103,7 +119,7 @@ internal sealed class CachedDepositApi(IDepositApi inner, IMemoryCache cache) : 
         cache.KeptAsync(("backend:quote", DateTime.Today, request), TimeSpan.FromMinutes(1), () => inner.QuoteAsync(request, ct));
 
     public Task<BankBranch?> BranchAsync(string ifsc, CancellationToken ct = default) =>
-        cache.KeptAsync(("backend:ifsc", ifsc.Trim().ToUpperInvariant()), TimeSpan.FromHours(1), () => inner.BranchAsync(ifsc, ct));
+        cache.KeptAsync(("backend:ifsc", ifsc.Trim().ToUpperInvariant()), BankKeptFor, () => inner.BranchAsync(ifsc, ct));
 
     public async Task<IReadOnlyList<BankBranch>> SearchBranchesAsync(string query, CancellationToken ct = default)
     {
@@ -112,7 +128,7 @@ internal sealed class CachedDepositApi(IDepositApi inner, IMemoryCache cache) : 
         var found = await inner.SearchBranchesAsync(query, ct);
         // Nothing found is not kept: a bank added a moment later is found by the next search.
         if (found.Count > 0)
-            cache.Set(key, found, new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5), Size = 1 });
+            cache.Set(key, found, new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = BankKeptFor, Size = 1 });
         return found;
     }
 }

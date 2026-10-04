@@ -30,15 +30,14 @@ public sealed partial class SqlMasters
     /// The rate card in effect today, for the deposit's category
     /// (or, failing rows of its own, defaultRateCategory's) and the application's mode:
     /// one row per tenure, payout and minimum amount, the latest in effect. Only the
-    /// rows of a scheme and interest frequency the payouts list names are offered.
+    /// rows whose interest frequency is a payout's code, under that payout's scheme, are offered.
     /// Rows come in the order the tenures and payouts are listed. A renewal is read
     /// off today's card as well, not the card of the day its deposit matures.
     /// </summary>
     public async Task<IReadOnlyList<RateOption>> RatesAsync(RatesRequest request, CancellationToken ct = default)
     {
         var lists = await reference.ReferenceAsync(ct);
-        var category = Sections.RateCategoryOf(request.Category, lists.Categories);
-        var fallback = Sections.RateCategoryOf(await reference.SettingAsync("defaultRateCategory", ct), lists.Categories);
+        var fallback = await reference.SettingAsync("defaultRateCategory", ct);
 
         await using var connection = await db.OpenAsync(ct);
         var rows = await connection.QueryAsync<SchemeRow>($"""
@@ -46,7 +45,7 @@ public sealed partial class SqlMasters
             WHERE r.Category IN (@Category, @Fallback) AND r.Mode = @Mode
               AND r.FromDate <= @Today AND (r.ToDate IS NULL OR r.ToDate >= @Today)
             ORDER BY CASE WHEN r.Category = @Category THEN 0 ELSE 1 END, r.FromDate DESC, r.SchemeId DESC
-            """, new { Category = category, Fallback = fallback, Mode = request.ApplicationType, DateTime.Today });
+            """, new { request.Category, Fallback = fallback, Mode = request.ApplicationType, DateTime.Today });
 
         // The rows come the category's own first and the latest first, so the first
         // row seen for a tenure, payout and minimum amount is the one that stands.
@@ -76,15 +75,14 @@ public sealed partial class SqlMasters
         return ordered;
     }
 
-    // The payout a row of the card is: the one the payouts list files under the row's
-    // interest frequency and, where the list names one, its scheme. Null for a row
-    // of a scheme the app does not offer.
+    // The payout a row of the card is: the one whose code is the row's interest
+    // frequency and, where the list names one, whose scheme is the row's. Null for a
+    // row of a scheme the app does not offer.
     private static PayoutOption? PayoutOf(SchemeRow row, IReadOnlyList<PayoutOption> payouts)
     {
         foreach (var payout in payouts)
         {
-            if (payout.InterestFreq.Length == 0) continue;
-            if (!SameName(payout.InterestFreq, row.InterestFreq)) continue;
+            if (!SameName(payout.Code, row.InterestFreq)) continue;
             if (payout.Scheme.Length > 0 && !SameName(payout.Scheme, row.Scheme)) continue;
             return payout;
         }

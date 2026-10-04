@@ -4,9 +4,7 @@ using Microsoft.Data.SqlClient;
 namespace UnoTP.Data;
 
 /// <summary>
-/// The two connections. ConnectionStrings:UnoTP is the main database - the applications
-/// and everything the app keeps of its own - and must be set. ConnectionStrings:UnoTP_Masters
-/// is the masters database; left blank, the masters are read from the main one.
+/// The one connection, ConnectionStrings:UnoTP, which must be set.
 /// A table in another database on the same server is named in full in its query:
 /// OtherDb.dbo.Table.
 /// </summary>
@@ -16,18 +14,10 @@ public sealed class Db(IConfiguration config)
         ? cs
         : throw new InvalidOperationException("ConnectionStrings:UnoTP is not set.");
 
-    private readonly string? masters = config.GetConnectionString("UnoTP_Masters");
-
-    /// <summary>The main database.</summary>
-    public Task<SqlConnection> OpenAsync(CancellationToken ct) => OpenAsync(main, ct);
-
-    /// <summary>The masters database, or the main one where its connection string is blank.</summary>
-    public Task<SqlConnection> OpenMastersAsync(CancellationToken ct) =>
-        OpenAsync(string.IsNullOrWhiteSpace(masters) ? main : masters, ct);
-
-    private static async Task<SqlConnection> OpenAsync(string connectionString, CancellationToken ct)
+    /// <summary>An open connection to the database.</summary>
+    public async Task<SqlConnection> OpenAsync(CancellationToken ct)
     {
-        var connection = new SqlConnection(connectionString);
+        var connection = new SqlConnection(main);
         await connection.OpenAsync(ct);
         return connection;
     }

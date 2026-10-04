@@ -8,9 +8,10 @@ namespace UnoTP.Data;
 
 /// <summary>
 /// The lists and rules, from t_Unotp_Ref_List, t_Unotp_Feature_Mst and t_Unotp_App_Config
-/// (db/create_new_tables.sql, seeded by db/003). Kept for a minute, so an edit in the tables is
-/// seen within one; the web app keeps them longer on its side
-/// (Backend:ReferenceCacheMinutes).
+/// (db/create_tables.sql, filled by db/insert_seed.sql). Every list the pages offer is
+/// rows of t_Unotp_Ref_List: c_Code is what is posted and saved, c_Name what is shown.
+/// Kept for a minute, so an edit in the tables is seen within one; the web app keeps
+/// them longer on its side (Backend:ReferenceCacheMinutes).
 /// </summary>
 public sealed partial class SqlReference(Db db, IMemoryCache cache) : IReferenceApi
 {
@@ -28,11 +29,11 @@ public sealed partial class SqlReference(Db db, IMemoryCache cache) : IReference
             return rows.ToDictionary(r => r.Key, r => r.Value, StringComparer.OrdinalIgnoreCase);
         })!;
 
-    /// <summary>A setting that must be there: a missing one is a deployment that skipped db/003.</summary>
+    /// <summary>A setting that must be there: a missing one is a deployment that skipped db/insert_seed.sql.</summary>
     public async Task<string> SettingAsync(string key, CancellationToken ct = default) =>
         (await SettingsAsync(ct)).TryGetValue(key, out var value)
             ? value
-            : throw new InvalidOperationException($"t_Unotp_App_Config has no '{key}'. Run db/003_unotp_seed.sql.");
+            : throw new InvalidOperationException($"t_Unotp_App_Config has no '{key}'. Run db/insert_seed.sql.");
 
     public async Task<int> NumberAsync(string key, CancellationToken ct = default) =>
         int.Parse(await SettingAsync(key, ct), CultureInfo.InvariantCulture);
@@ -40,7 +41,7 @@ public sealed partial class SqlReference(Db db, IMemoryCache cache) : IReference
     public async Task<AppConfig> ConfigAsync(CancellationToken ct = default)
     {
         var s = await SettingsAsync(ct);
-        string Text(string key) => s.TryGetValue(key, out var v) ? v : throw new InvalidOperationException($"t_Unotp_App_Config has no '{key}'. Run db/003_unotp_seed.sql.");
+        string Text(string key) => s.TryGetValue(key, out var v) ? v : throw new InvalidOperationException($"t_Unotp_App_Config has no '{key}'. Run db/insert_seed.sql.");
         int ReadInt(string key) => int.Parse(Text(key), CultureInfo.InvariantCulture);
         long Long(string key) => long.Parse(Text(key), CultureInfo.InvariantCulture);
         const string hours = "linkValidityHours.";
@@ -69,7 +70,8 @@ public sealed partial class SqlReference(Db db, IMemoryCache cache) : IReference
 
     // ----- Reference lists -----------------------------------------------------------
 
-    private sealed record Entry(string List, string Code, string Name, string? Attrs);
+    // One row of t_Unotp_Ref_List: Parent is the code of the entry it belongs under, in another list.
+    private sealed record Entry(string List, string Code, string Name, string? Parent, string? Attrs);
 
     public Task<ReferenceData> ReferenceAsync(CancellationToken ct = default) =>
         cache.GetOrCreateAsync("t_Unotp_Ref_List", async cacheEntry =>
@@ -77,7 +79,7 @@ public sealed partial class SqlReference(Db db, IMemoryCache cache) : IReference
             (cacheEntry.AbsoluteExpirationRelativeToNow, cacheEntry.Size) = (KeptFor, 1);
             await using var lists = await db.OpenAsync(ct);
             var entries = (await lists.QueryAsync<Entry>("""
-                SELECT c_List AS List, c_Code AS Code, c_Name AS Name, j_Attrs AS Attrs
+                SELECT c_List AS List, c_Code AS Code, c_Name AS Name, c_Parent AS Parent, j_Attrs AS Attrs
                 FROM dbo.t_Unotp_Ref_List WHERE f_Active = 1 ORDER BY c_List, n_Seq
                 """)).ToLookup(e => e.List);
             await using var featureMaster = await db.OpenAsync(ct);
@@ -85,28 +87,36 @@ public sealed partial class SqlReference(Db db, IMemoryCache cache) : IReference
                 SELECT c_Feature_Key AS Code, c_Name AS Name, c_Group AS [Group], c_Detail AS Detail, c_Off_Reason AS OffReason, f_Tile AS Tile
                 FROM dbo.t_Unotp_Feature_Mst WHERE f_Active = 1 ORDER BY n_Seq
                 """)).ToList();
+            await using var cmsMaster = await db.OpenAsync(ct);
+            var cmsLocations = (await cmsMaster.QueryAsync<string>(
+                $"SELECT c.Name FROM ({MasterQueries.CmsLocations}) c ORDER BY c.Name")).ToList();
+            await using var gatewayMaster = await db.OpenAsync(ct);
+            var gatewayBanks = (await gatewayMaster.QueryAsync<Option>(
+                $"SELECT g.Code, g.Name FROM ({MasterQueries.GatewayBanks}) g ORDER BY g.Name")).ToList();
             var settings = await SettingsAsync(ct);
-            var masters = await MasterListsAsync(settings.GetValueOrDefault("employeeSelfRelation", ""), settings.GetValueOrDefault("occupationTypesLeftOut", ""), ct);
-            var sourcesOfFunds = await SourcesOfFundsAsync(ct);
-            return Build(entries, features, settings, masters, sourcesOfFunds);
+            return Build(entries, features, settings, cmsLocations, gatewayBanks);
         })!;
 
     private static ReferenceData Build(ILookup<string, Entry> lists, IReadOnlyList<FeatureOption> features, IReadOnlyDictionary<string, string> settings,
-        MasterLists masters, IReadOnlyList<Option> sourcesOfFunds)
+        IReadOnlyList<string> cmsLocations, IReadOnlyList<Option> gatewayBanks)
     {
+        var masters = MasterListsOf(lists);
+
         // A text may name a setting, {renewFromDays}, which is filled in here.
         string Fill(string text) => settings.Aggregate(text, (t, s) => t.Replace("{" + s.Key + "}", s.Value, StringComparison.OrdinalIgnoreCase));
         IEnumerable<Entry> Of(string list) => lists[list];
         List<string> Names(string list) => Of(list).Select(e => Fill(e.Name)).ToList();
         List<Option> Options(string list) => Of(list).Select(e => new Option(e.Code, e.Name)).ToList();
+        // The codes of a list's entries that belong under one entry of another list.
+        List<string> Under(string list, string parent) => Of(list).Where(e => e.Parent == parent).Select(e => e.Code).ToList();
 
         return new ReferenceData(
             ApplicationTypes: Options("applicationTypes"),
-            Categories: Of("categories").Select(e => Attrs(e, a => new CategoryOption(e.Code, e.Name, ReadBool(a, "employee"), ReadBool(a, "women"), ReadBool(a, "senior"), ReadDecimal(a, "extraRate"), ReadString(a, "rateCategory") ?? ""))).ToList(),
+            Categories: Of("categories").Select(e => Attrs(e, a => new CategoryOption(e.Code, e.Name, ReadBool(a, "employee"), ReadBool(a, "women"), ReadBool(a, "senior"), ReadDecimal(a, "extraRate")))).ToList(),
             PaymentModes: Of("paymentModes").Select(e => Attrs(e, a => new PaymentModeOption(e.Name, ReadString(a, "document")))).ToList(),
             SourcingModes: Of("sourcingModes").Select(e => Attrs(e, a => new SourcingModeOption(e.Code, e.Name,
                 ReadString(a, "codeLabel") ?? "", ReadString(a, "nameLabel") ?? "", ReadString(a, "house") ?? "", ReadString(a, "search") ?? "",
-                ReadString(a, "register") ?? "", ReadString(a, "sub") ?? "", ReadStrings(a, "categories")))).ToList(),
+                ReadString(a, "register") ?? "", ReadString(a, "sub") ?? "", Under("sourcingModeCategories", e.Code), Under("sourcingModeDepartments", e.Code)))).ToList(),
             ProofsOfAddress: Of("proofsOfAddress").Select(e => Attrs(e, a => new ProofOption(e.Code, ReadString(a, "issuer") ?? "", ReadBool(a, "hasPhoto")))).ToList(),
             EmployeeHolders: Names("employeeHolders"),
             EmployeeRelations: masters.EmployeeRelations.Select(o => o.Name).ToList(),
@@ -119,20 +129,20 @@ public sealed partial class SqlReference(Db db, IMemoryCache cache) : IReference
             NameTypes: Names("nameTypes"),
             NomineeRelations: masters.NomineeRelations.Select(o => o.Name).ToList(),
             Tenures: Of("tenures").Select(e => int.Parse(e.Code, CultureInfo.InvariantCulture)).ToList(),
-            Payouts: Of("payouts").Select(e => Attrs(e, a => new PayoutOption(e.Code, e.Name, ReadInt(a, "perYear"), ReadString(a, "each") ?? "", ReadString(a, "interestFreq") ?? "", ReadString(a, "scheme") ?? ""))).ToList(),
+            Payouts: Of("payouts").Select(e => Attrs(e, a => new PayoutOption(e.Code, e.Name, ReadInt(a, "perYear"), ReadString(a, "each") ?? "", ReadString(a, "scheme") ?? ""))).ToList(),
             RenewInstructions: Options("renewInstructions"),
             DeliveryTypes: Options("deliveryTypes"),
-            CmsLocations: Names("cmsLocations"),
+            CmsLocations: cmsLocations,
             RequiredDocuments: Of("requiredDocuments").Select(e => Attrs(e, a => new RequiredDocumentGroup(e.Name, ReadStrings(a, "items"), ReadStrings(a, "notes")))).ToList(),
             IdentificationNotes: Names("identificationNotes"),
             DashboardNotes: Names("dashboardNotes"),
             NoticeKinds: Names("noticeKinds"),
             RenewalNotes: Names("renewalNotes"),
             Features: features,
-            SourcesOfFunds: sourcesOfFunds,
+            SourcesOfFunds: Options("sourcesOfFunds"),
             OccupationsWithSubs: masters.Occupations.GroupBy(o => o.TypeName)
                 .Select(type => new OccupationOption(type.Key, type.Select(o => o.SubTypeName).ToList())).ToList(),
-            GatewayBanks: Of("gatewayBanks").Select(e => new Option(e.Code, e.Name)).ToList(),
+            GatewayBanks: gatewayBanks,
             Masters: masters);
     }
 

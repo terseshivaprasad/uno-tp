@@ -28,7 +28,8 @@ public class PaymentController(IApplicationApi applications, IDepositApi deposit
 
     /// <summary>
     /// The bank search's suggestions: the branches whose bank name, branch, IFSC or
-    /// MICR holds what was typed, as the backend finds them.
+    /// MICR holds what was typed, as the backend finds them. The bank master is big:
+    /// nothing is looked up until three characters are typed.
     /// </summary>
     // The answer is bank master data, nothing of the investor's: the browser keeps it a
     // minute (privately), so typing back over the same words asks nothing, and a bank
@@ -39,7 +40,7 @@ public class PaymentController(IApplicationApi applications, IDepositApi deposit
     {
         if (HttpContext.CurrentApplication() is null) return NotFound();
         var text = (q ?? "").Trim();
-        if (text.Length < 2) return Json(Array.Empty<BankBranch>());
+        if (!TypedSearch.LongEnough(text)) return Json(Array.Empty<BankBranch>());
         return Json(await Deposits.SearchBranchesAsync(text[..Math.Min(text.Length, 60)]));
     }
 
@@ -91,11 +92,13 @@ public class PaymentController(IApplicationApi applications, IDepositApi deposit
     // there an account the deposit is paid from to ask for.
     private static bool ByCheque(DocumentsViewModel docs) => docs.State.PayMode.Length > 0 && docs.DocumentOf(docs.State.PayMode) is not null;
 
-    // The repayment accounts on the folio's earlier deposits; none for an investor without a folio.
+    // The repayment accounts on the deposit being renewed. None for a fresh purchase:
+    // an account is carried over only in a renewal, from the folio's selected deposit.
     private async Task<IReadOnlyList<AccountOnRecord>> AccountsOnRecordAsync(DocumentsViewModel docs)
     {
         var folio = docs.App.Holder.Folio;
         if (folio.Length == 0) return [];
-        return await investors.AccountsByFolioAsync(folio);
+        if (docs.App.Renewal is null) return [];
+        return await investors.AccountsOnDepositAsync(folio, docs.App.Renewal.DepositNumber);
     }
 }

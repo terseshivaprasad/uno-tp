@@ -18,7 +18,7 @@ public enum SaveOutcome
 }
 
 /// <summary>
-/// The partner's applications, kept in SQL Server (db/create_new_tables.sql, db/create_existing_tables.sql).
+/// The partner's applications, kept in SQL Server (db/create_tables.sql).
 ///
 /// A save is checked against the version the page read, under a lock on the
 /// application's row, and inserts its section afresh at the next version with
@@ -161,7 +161,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
             Upload = upload,
             Details = h.DetailsVer is null ? null : DetailsOf(kyc, addresses, nominee, HolderOf(h), upload, lists.Masters ?? MasterLists.None),
             Payment = pay is null || repay is null ? null : PaymentOf(pay, repay),
-            Deposit = deposit is null ? null : new DepositDetails(deposit.Amount, deposit.TenureMonths, Sections.PayoutOf(deposit.Payout, lists.Payouts),
+            Deposit = deposit is null ? null : new DepositDetails(deposit.Amount, deposit.TenureMonths, deposit.Payout,
                 deposit.AutoRenewal, deposit.RenewInstruction, deposit.NoTds, deposit.DeliveryType,
                 deposit.SourceOfFunds, deposit.SourceOfFundsRemark, deposit.SourceOfFundsReason, deposit.RenewalFor),
             Submitted = SubmissionOf(h, cancellationDays),
@@ -539,8 +539,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
 
         return rows.Select(r =>
         {
-            // The row holds the payout as the rate card names it.
-            var payout = payouts.FirstOrDefault(p => p.Code == Sections.PayoutOf(r.Payout, payouts));
+            var payout = payouts.FirstOrDefault(p => p.Code == r.Payout);
             var digital = r.AppType != "PHYSICAL";
             return new ApplicationRecord(
                 r.AppNo, r.Folio.Length > 0 ? r.Folio : null, Masks.Name(r.Name), Masks.Pan(r.Pan),

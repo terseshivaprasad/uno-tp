@@ -107,7 +107,7 @@
                 <input class="field-input @Invalid(ifscKey)" id="@(id)-ifsc" name="@(key).Ifsc" value="@account.Ifsc" maxlength="50" autocomplete="off" spellcheck="false" placeholder="e.g. HDFC Andheri or HDFC0000521"
                        data-required="Search for the bank and pick its branch"
                        role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="@(id)-suggest"
-                       data-chars="search" data-bank-search="@Url.Action("Branches")" data-find="bank-find-@(key.ToLowerInvariant())"
+                       data-chars="search" data-bank-search="@Url.Action("Branches")" data-search-from="@TypedSearch.FromLength" data-find="bank-find-@(key.ToLowerInvariant())"
                        aria-invalid="@AriaInvalid(ifscKey)" aria-describedby="@DescribedBy(ifscKey, id + "-ifsc")">
                 <ul class="bank-suggest" id="@(id)-suggest" role="listbox" aria-label="Branches found" hidden></ul>
                 @{ await FieldError(ifscKey, id + "-ifsc"); }
@@ -246,7 +246,7 @@
                 <p class="page-note">@howPaid</p>
             }
 
-            @* The accounts used on the folio's earlier deposits, each with Use, which fills the
+            @* The accounts used on the deposit being renewed, each with Use, which fills the
                repayment fields from it and opens them (the switch above them goes off).
                Above the switch, so it shows whatever the switch says. *@
             @if (Model.AccountsOnRecord.Count > 0)
@@ -254,7 +254,7 @@
                 @* The five most recent are shown; the rest open on Show all. *@
                 var shownAccounts = Math.Min(Model.AccountsOnRecord.Count, 5);
                 <div class="on-record">
-                    <div class="on-record__title">Accounts on this folio</div>
+                    <div class="on-record__title">Accounts on the deposit being renewed</div>
                     <ul class="on-record__list">
                         @for (var i = 0; i < shownAccounts; i++)
                         {

@@ -58,6 +58,7 @@ public class InvestorController(
         // backend holds for it.
         if (state.Fields.Count == 0 && docs.App.Details is { } saved) InvestorDetailsForm.FromDetails(state, saved);
         Recover(state, docs);
+        await FillFromFoliosAsync(state, docs);
         var model = new InvestorViewModel(state, docs)
         {
             Offline = TempData["offline"] is true,
@@ -283,6 +284,9 @@ public class InvestorController(
 
         state.Joint.RemoveAt(i);
         DropFieldsStartingWith(state, $"Holder{n}.", $"Joint{n}.");
+        // Whoever is added in this place next has their own folio looked at.
+        state.FolioLookedAt.Remove(n);
+        state.FilledFromFolio.Remove(n);
         State = state;
         return Back(state.Joint.Count > 0 ? $"holder-{state.Joint.Count + 1}" : "investorAddHolder");
     }
@@ -359,12 +363,35 @@ public class InvestorController(
         return Back("nominee");
     }
 
-    // The nominees named on the folio's earlier deposits; none for an investor without a folio.
+    // The nominees named on the deposit being renewed. None for a fresh purchase:
+    // a nominee is carried over only in a renewal, from the folio's selected deposit.
     private async Task<IReadOnlyList<NomineeOnRecord>> NomineesOnRecordAsync(DocumentsViewModel docs)
     {
         var folio = docs.App.Holder.Folio;
         if (folio.Length == 0) return [];
-        return await investors.NomineesByFolioAsync(folio);
+        if (docs.App.Renewal is null) return [];
+        return await investors.NomineesOnDepositAsync(folio, docs.App.Renewal.DepositNumber);
+    }
+
+    // A holder on a KYC compliant folio is not asked to type their details again: the
+    // first time the page sees them, the fields still empty are filled from what the
+    // folio holds, for the partner to check. A holder's folio is looked at once, so a
+    // field cleared afterwards stays cleared.
+    private async Task FillFromFoliosAsync(InvestorInfoState state, DocumentsViewModel docs)
+    {
+        var holders = new List<(int Number, string Folio)> { (1, docs.App.Holder.Folio) };
+        foreach (var joint in docs.JointHolders) holders.Add((int.Parse(joint.Code), joint.Who.Folio));
+
+        foreach (var (number, folio) in holders)
+        {
+            if (folio.Length == 0) continue;
+            if (state.FolioLookedAt.Contains(number)) continue;
+            state.FolioLookedAt.Add(number);
+            var onFolio = await investors.KycOnFolioAsync(folio);
+            if (onFolio is null) continue;
+            var filled = InvestorDetailsForm.FillHolder(state, number, onFolio);
+            if (filled > 0) state.FilledFromFolio.Add(number);
+        }
     }
 
     [HttpPost("nominee/remove")]

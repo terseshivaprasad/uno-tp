@@ -119,7 +119,6 @@ public sealed class SqlRenewals(Db db, IPartner partner, IRenewalOpener applicat
     private async Task<IReadOnlyList<HeldDeposit>> HeldAsync(string filter, object args, CancellationToken ct)
     {
         var config = await reference.ConfigAsync(ct);
-        var lists = await reference.ReferenceAsync(ct);
 
         await using var connection = await db.OpenAsync(ct);
         var rows = (await connection.QueryAsync<BookedRow>($"{Booked} AND {filter}", args)).ToList();
@@ -137,13 +136,13 @@ public sealed class SqlRenewals(Db db, IPartner partner, IRenewalOpener applicat
         foreach (var row in rows)
         {
             var holders = joint.Where(j => j.AppNo == row.AppNo).Select(j => new DepositHolder(j.Pan, Dates.FromDb(j.Dob), j.Name, j.Folio)).ToList();
-            held.Add(View(row, holders, config, lists, partner.Id));
+            held.Add(View(row, holders, config, partner.Id));
         }
         return held.OrderBy(d => d.MaturesOn).ToList();
     }
 
     // A deposit as it stands today: its dates, and whether a renewal can be entered now.
-    private static HeldDeposit View(BookedRow row, IReadOnlyList<DepositHolder> jointHolders, AppConfig config, ReferenceData lists, string partnerId)
+    private static HeldDeposit View(BookedRow row, IReadOnlyList<DepositHolder> jointHolders, AppConfig config, string partnerId)
     {
         var today = DateOnly.FromDateTime(DateTime.Today);
         var tenure = row.TenureMonths ?? 0;
@@ -155,16 +154,12 @@ public sealed class SqlRenewals(Db db, IPartner partner, IRenewalOpener applicat
         var renewal = RenewalOf(row, partnerId);
         var (status, why) = StatusOf(row, renewal, today, matures, config.RenewFromDays, until);
 
-        // The category and the payout are kept as the rate card names them, and read back as the app's own.
-        var category = lists.Categories.FirstOrDefault(c => c.RateCategory.Length > 0 && c.RateCategory == row.Category)?.Code ?? row.Category ?? "";
-        var payout = Sections.PayoutOf(row.InterestFreq, lists.Payouts);
-
         BankAccount? repayment = null;
         if (row.RepayIfsc is not null && row.RepayAccount is not null) repayment = new BankAccount(row.RepayIfsc, row.RepayAccount);
 
         // The maturity amount as quoted when it was submitted; the deposit's own amount where none was.
         var maturityAmount = (long)(row.MaturityAmount ?? row.Amount);
-        return new HeldDeposit(row.Number, row.Folio, row.Investor, category, row.Amount, row.Rate ?? 0, tenure, payout,
+        return new HeldDeposit(row.Number, row.Folio, row.Investor, row.Category ?? "", row.Amount, row.Rate ?? 0, tenure, row.InterestFreq ?? "",
             started, matures, maturityAmount, status, status == "due", why, jointHolders, repayment, row.AutoRenewal, renewal);
     }
 

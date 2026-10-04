@@ -21,8 +21,8 @@ internal sealed record Stamp(string AppNo, int Version, string Status, string By
 /// of use (f_Active = 0), then inserts the section afresh. Nothing is deleted, so
 /// the earlier rows stay on record as the section's history.
 ///
-/// The steps are in files of their own: Sections.Details.cs, Sections.Payment.cs
-/// and Sections.Deposit.cs.
+/// The steps are in files of their own: SaveStep.InvestorInformation.cs, SaveStep.BankAndPayment.cs
+/// and SaveStep.FdConfiguration.cs.
 /// </summary>
 internal static partial class Sections
 {
@@ -43,7 +43,7 @@ internal static partial class Sections
             """, new { at.AppNo, at.Version, at.Status, Json = JsonSerializer.Serialize(upload, Json), at.By }, tx);
 
         // One row per document on the application, coded as the FD system's document
-        // master codes it, with what the outside checks made of it (Sections.Documents.cs).
+        // master codes it, with what the outside checks made of it (SaveStep.DocumentCheckFlags.cs).
         // Its size and the words of its check stay on the upload step's JSON:
         // t_FD_BT_KYC_document has no column for them.
         await RetireAsync(db, tx, at, "t_FD_BT_KYC_document", "f_UpdatedDate");
@@ -106,7 +106,7 @@ internal static partial class Sections
         return holderType;
     }
 
-    // What a document is listed under in 'documentSubTypes': the slot it was filed in
+    // What a document is listed under in 'filedDocuments': the slot it was filed in
     // and, for a proof, which one it is. A communication address is proved by a
     // proof of address, so it is listed as one.
     private static string MasterKey(Document d)

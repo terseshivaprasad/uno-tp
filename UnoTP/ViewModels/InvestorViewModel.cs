@@ -16,6 +16,15 @@ public sealed class InvestorInfoState
     public List<SearchState> Joint { get; init; } = [];
 
     public bool Nominee { get; set; }
+
+    /// <summary>
+    /// The holders (1 the investor, 2 and 3 the joint holders) whose folio has been
+    /// looked at for KYC details to fill in. A holder's folio is looked at once.
+    /// </summary>
+    public List<int> FolioLookedAt { get; init; } = [];
+
+    /// <summary>The holders with a field filled from the KYC their compliant folio holds: the page says so on their card.</summary>
+    public List<int> FilledFromFolio { get; init; } = [];
 }
 
 /// <summary>
@@ -76,6 +85,34 @@ public static class InvestorDetailsForm
                 F("Nominee.GuardianAddress.PinCode"), F("Nominee.GuardianAddress.City"));
         }
         return details;
+    }
+
+    /// <summary>
+    /// One holder's fields filled from the KYC their compliant folio holds. A field
+    /// that already has something in it is left as it is. Gives back how many were filled.
+    /// </summary>
+    public static int FillHolder(InvestorInfoState state, int holderNumber, HolderDetails onFolio)
+    {
+        var prefix = $"Holder{holderNumber}.";
+        var filled = 0;
+        void Fill(string field, string value)
+        {
+            if (value.Length == 0) return;
+            if (state.Fields.GetValueOrDefault(prefix + field, "").Length > 0) return;
+            state.Fields[prefix + field] = value;
+            filled++;
+        }
+        Fill("NameType", onFolio.NameType);
+        Fill("ParentName", onFolio.ParentName);
+        Fill("AnnualIncome", onFolio.AnnualIncome);
+        Fill("Occupation", onFolio.Occupation);
+        Fill("SubOccupation", onFolio.SubOccupation);
+        Fill("MaritalStatus", onFolio.MaritalStatus);
+        Fill("Mobile", onFolio.Mobile);
+        Fill("Email", onFolio.Email);
+        Fill("Pep", onFolio.Pep);
+        Fill("PepRelated", onFolio.PepRelated);
+        return filled;
     }
 
     /// <summary>The form as the backend last saved it, for a page opened afresh.</summary>
@@ -153,6 +190,9 @@ public sealed class InvestorViewModel(InvestorInfoState state, DocumentsViewMode
     /// <summary>What a field last held, or what it opens with before anything is posted.</summary>
     public string Value(string name, string opening = "") =>
         State.Fields.TryGetValue(name, out var value) ? value : State.Fields.Count == 0 ? opening : "";
+
+    /// <summary>Whether a holder's fields were filled from the KYC their compliant folio holds.</summary>
+    public bool FilledFromFolio(int holder) => State.FilledFromFolio.Contains(holder);
 
     /// <summary>Whether a switch is on.</summary>
     public bool On(string name) => State.Fields.TryGetValue(name, out var value) && value is "on" or "true";

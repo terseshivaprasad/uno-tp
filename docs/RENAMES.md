@@ -15,6 +15,56 @@ Every name changed when the short prefixes were replaced with plain words (Octob
 | `js/shared/date-parts.js` | `js/shared/date-input.js` |
 | `js/shared/notices.js` | `js/shared/notices-bell.js` |
 
+## C# files (October 2026)
+
+File names changed to say what the file holds. Only the files were renamed: the classes inside keep their names.
+
+| Old | New |
+|---|---|
+| `UnoTP.Data/Db.cs` | `UnoTP.Data/DatabaseConnection.cs` |
+| `UnoTP.Data/FileDocuments.cs` | `UnoTP.Data/DocumentFileStore.cs` |
+| `UnoTP.Data/Masks.cs` | `UnoTP.Data/MaskedNameAndPan.cs` |
+| `UnoTP.Data/Models/Documents.cs` | `UnoTP.Data/Models/DocumentStore.cs` |
+| `UnoTP.Data/Models/Entry.cs` | `UnoTP.Data/Models/SignInSession.cs` |
+| `UnoTP.Data/Models/Masking.cs` | `UnoTP.Data/Models/AadhaarMasking.cs` |
+| `UnoTP.Data/Models/Places.cs` | `UnoTP.Data/Models/PinCodes.cs` |
+| `UnoTP.Data/Models/Reference.cs` | `UnoTP.Data/Models/ListsSettingsAndRates.cs` |
+| `UnoTP.Data/Models/Registers.cs` | `UnoTP.Data/Models/SourcingSlipsLinksAndConsole.cs` |
+| `UnoTP.Data/Models/Verification.cs` | `UnoTP.Data/Models/DocumentVerification.cs` |
+| `UnoTP.Data/Rows.cs` | `UnoTP.Data/ApplicationTableRows.cs` |
+| `UnoTP.Data/Sections.Deposit.cs` | `UnoTP.Data/SaveStep.FdConfiguration.cs` |
+| `UnoTP.Data/Sections.Details.cs` | `UnoTP.Data/SaveStep.InvestorInformation.cs` |
+| `UnoTP.Data/Sections.Documents.cs` | `UnoTP.Data/SaveStep.DocumentCheckFlags.cs` |
+| `UnoTP.Data/Sections.Payment.cs` | `UnoTP.Data/SaveStep.BankAndPayment.cs` |
+| `UnoTP.Data/Sections.cs` | `UnoTP.Data/SaveStep.UploadDocuments.cs` |
+| `UnoTP.Data/SqlConsole.cs` | `UnoTP.Data/SqlConsoleWindowsAndNotices.cs` |
+| `UnoTP.Data/SqlDataServiceCollectionExtensions.cs` | `UnoTP.Data/RegisterDataServices.cs` |
+| `UnoTP.Data/SqlReference.Documents.cs` | `UnoTP.Data/SqlReference.DocumentCodes.cs` |
+| `UnoTP.Data/SqlReference.Masters.cs` | `UnoTP.Data/SqlReference.CodeLists.cs` |
+| `UnoTP.Data/SqlRegisters.cs` | `UnoTP.Data/SqlPayInSlipsAndLinks.cs` |
+| `UnoTP/Infrastructure/AppUrls.cs` | `UnoTP/Infrastructure/OtherAppAddresses.cs` |
+| `UnoTP/Infrastructure/ApplicationUrls.cs` | `UnoTP/Infrastructure/ApplicationNumberInUrls.cs` |
+| `UnoTP/Infrastructure/Lookups.cs` | `UnoTP/Infrastructure/CachedListsAndSettings.cs` |
+| `UnoTP/Infrastructure/PartialFollow.cs` | `UnoTP/Infrastructure/PartialPostFollowsRedirect.cs` |
+| `UnoTP/Infrastructure/SessionStarts.cs` | `UnoTP/Infrastructure/SessionStartRequestDetails.cs` |
+| `UnoTP/Models/Flash.cs` | `UnoTP/Models/MessageAfterPost.cs` |
+| `UnoTP/Services/ApiClient.cs` | `UnoTP/Services/BackendHttpClientBase.cs` |
+| `UnoTP/Services/ExternalClient.cs` | `UnoTP/Services/OutsideServiceHttpClientBase.cs` |
+| `UnoTP/Services/OutsideSwitches.cs` | `UnoTP/Services/OutsideServiceSwitches.cs` |
+| `UnoTP/Services/SwitchedOff.cs` | `UnoTP/Services/SwitchedOffChecks.cs` |
+| `UnoTP/ViewModels/Dates.cs` | `UnoTP/ViewModels/DateText.cs` |
+| `UnoTP/ViewModels/DocSlotBlock.cs` | `UnoTP/ViewModels/DocumentSlotBlock.cs` |
+| `UnoTP/ViewModels/DocumentsViewModel.Outstanding.cs` | `UnoTP/ViewModels/DocumentsViewModel.SourcingNamesAndOutstanding.cs` |
+| `UnoTP/ViewModels/DocumentsViewModel.Posts.cs` | `UnoTP/ViewModels/DocumentsViewModel.PostedChanges.cs` |
+| `UnoTP/ViewModels/DocumentsViewModel.Reference.cs` | `UnoTP/ViewModels/DocumentsViewModel.ListsCategoryAndSourcing.cs` |
+| `UnoTP/ViewModels/DocumentsViewModel.Slots.cs` | `UnoTP/ViewModels/DocumentsViewModel.DocumentSlots.cs` |
+| `UnoTP/ViewModels/Glossary.cs` | `UnoTP/ViewModels/TradeTermGlossary.cs` |
+| `UnoTP/ViewModels/Money.cs` | `UnoTP/ViewModels/MoneyAndSentToText.cs` |
+| `UnoTP/ViewModels/ReadItem.cs` | `UnoTP/ViewModels/ReadCardBlocks.cs` |
+| `UnoTP/ViewModels/StepRail.cs` | `UnoTP/ViewModels/JourneyStepRail.cs` |
+| `UnoTP/ViewModels/Tones.cs` | `UnoTP/ViewModels/StatusBadgeTones.cs` |
+| `UnoTP/ViewModels/UploadForm.cs` | `UnoTP/ViewModels/UploadDocumentsForm.cs` |
+
 ## CSS classes and element ids (593)
 
 | Old | New |

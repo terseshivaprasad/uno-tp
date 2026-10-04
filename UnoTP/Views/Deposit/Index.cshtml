@@ -13,7 +13,7 @@
         ("Amount", "deposit-amount"),
         ("RenewalFor", "deposit-renewal-for"),
         ("TenureMonths", "deposit-tenure-" + Model.Tenures.FirstOrDefault()),
-        ("InterestPayout", "deposit-payout-" + (Model.Payouts.FirstOrDefault()?.Code ?? "")),
+        ("InterestPayout", "deposit-payout-1"),
         ("RenewInstruction", "deposit-renew"),
         ("SourceOfFunds", "deposit-source-of-funds"),
         ("SourceOfFundsRemark", "deposit-source-of-funds-remark"),
@@ -204,19 +204,22 @@
                            payout's minimum: on the chart a monthly or quarterly payout needs
                            ₹50,000, a half-yearly or yearly one ₹25,000. *@
                         <div class="deposit-options deposit-options--payout">
+                            @* A payout's id is its place on the list: its code can hold spaces, an id cannot. *@
+                            @{ var payoutNumber = 0; }
                             @foreach (var payout in Model.Payouts)
                             {
+                                payoutNumber++;
                                 if (Model.Rates.OffersPayout(payout.Code))
                                 {
                                     <label class="deposit-option">
-                                        <input type="radio" id="deposit-payout-@payout.Code" name="InterestPayout" value="@payout.Code" checked="@(payout.Code == form.InterestPayout)" data-quote>
+                                        <input type="radio" id="deposit-payout-@payoutNumber" name="InterestPayout" value="@payout.Code" checked="@(payout.Code == form.InterestPayout)" data-quote>
                                         <span class="deposit-option__face">@payout.Name</span>
                                     </label>
                                 }
                                 else
                                 {
                                     <label class="deposit-option deposit-option--off">
-                                        <input type="radio" id="deposit-payout-@payout.Code" name="InterestPayout" value="@payout.Code" checked="@(payout.Code == form.InterestPayout)" data-quote disabled>
+                                        <input type="radio" id="deposit-payout-@payoutNumber" name="InterestPayout" value="@payout.Code" checked="@(payout.Code == form.InterestPayout)" data-quote disabled>
                                         <span class="deposit-option__face">@payout.Name</span>
                                     </label>
                                 }

@@ -19,24 +19,24 @@ public interface IReferenceApi
 public sealed record Option(string Code, string Name);
 
 /// <summary>
-/// The FD system's own masters behind the lists whose choice is saved as the master's
-/// code: each entry's code and name, as the master has them. The pages offer the names
+/// The lists whose choice is saved as a code: each entry's code and name, as
+/// t_Unotp_Ref_List has them. The pages offer the names
 /// (<see cref="ReferenceData.MaritalStatuses"/>, <see cref="ReferenceData.NomineeRelations"/>,
 /// <see cref="ReferenceData.EmployeeRelations"/>); a save writes the code.
 /// </summary>
 /// <param name="EmployeeRelations">The employee's own relation - the employee is the holder - comes first.</param>
-/// <param name="Occupations">The occupation master's rows: the pages offer its types as occupations and, under each, its sub-types.</param>
+/// <param name="Occupations">One row per sub occupation, with the occupation it is under.</param>
 public sealed record MasterLists(
     IReadOnlyList<Option> MaritalStatuses, IReadOnlyList<Option> NomineeRelations, IReadOnlyList<Option> EmployeeRelations,
     IReadOnlyList<OccupationRow> Occupations)
 {
     public static readonly MasterLists None = new([], [], [], []);
 
-    /// <summary>The occupation master's row for an occupation and sub occupation as the pages name them; null where it has none.</summary>
+    /// <summary>The row for an occupation and sub occupation as the pages name them; null where the lists have none.</summary>
     public OccupationRow? OccupationOf(string occupation, string subOccupation) =>
         Occupations.FirstOrDefault(o => o.TypeName == occupation && o.SubTypeName == subOccupation);
 
-    /// <summary>The master's code for a name on a list; the name itself where the list does not hold it.</summary>
+    /// <summary>The code for a name on a list; the name itself where the list does not hold it.</summary>
     public static string CodeOf(IReadOnlyList<Option> list, string name)
     {
         var entry = list.FirstOrDefault(o => o.Name == name);
@@ -54,19 +54,19 @@ public sealed record MasterLists(
 }
 
 /// <summary>
-/// One row of the FD system's occupation master: a customer segment type (the
-/// occupation) and sub-type (the sub occupation), and the CKYC occupation they stand for.
+/// A sub occupation ('subOccupations' list) with the occupation it is under
+/// ('occupations' list), and the CKYC occupation they stand for.
 /// </summary>
 public sealed record OccupationRow(
     string TypeCode, string TypeName, string SubTypeCode, string SubTypeName, string OccupationCode, string OccupationName);
 
 /// <summary>A deposit category, and what booking under it takes.</summary>
+/// <param name="Code">The category as the FD system's rate card names it (CATEGORY): the rates are read by it, and it is what is saved.</param>
 /// <param name="Employee">Booked against a staff record, and open only to the sourcing agency.</param>
 /// <param name="Women">For a woman holder.</param>
 /// <param name="Senior">For a holder at the senior citizen age or over.</param>
 /// <param name="ExtraRate">What the category earns over the public rate, % a year (the chart's "additional rates"); 0 for the public category.</param>
-/// <param name="RateCategory">The category as the FD system's rate card names it (CATEGORY); empty when the list does not say.</param>
-public sealed record CategoryOption(string Code, string Name, bool Employee, bool Women, bool Senior, decimal ExtraRate = 0, string RateCategory = "");
+public sealed record CategoryOption(string Code, string Name, bool Employee, bool Women, bool Senior, decimal ExtraRate = 0);
 
 /// <summary>A payment mode, and the instrument a copy of is filed for it, if any.</summary>
 public sealed record PaymentModeOption(string Name, string? Document);
@@ -76,22 +76,24 @@ public sealed record PaymentModeOption(string Name, string? Document);
 /// first field itself, where it does; <c>Search</c> names the field that is searched
 /// ("source" or "sub"), <c>Register</c> what it is searched against ("brokers",
 /// "employees" or ""), <c>Sub</c> what the second field does ("shut", "house",
-/// "free", "employee" or "employeeShut"), and <c>Categories</c> the category codes
-/// a deposit under it may be booked as.
+/// "free", "employee" or "employeeShut"), <c>Categories</c> the category codes
+/// a deposit under it may be booked as (the 'sourcingModeCategories' list), and
+/// <c>Departments</c> the staff departments whose employees can be chosen under it
+/// (the 'sourcingModeDepartments' list; none listed: every department).
 /// </summary>
 public sealed record SourcingModeOption(
     string Code, string Name, string CodeLabel, string NameLabel,
-    string House, string Search, string Register, string Sub, IReadOnlyList<string> Categories);
+    string House, string Search, string Register, string Sub, IReadOnlyList<string> Categories, IReadOnlyList<string> Departments);
 
 /// <summary>A proof of address, who confirms it, and whether it carries a photograph.</summary>
 /// <param name="Issuer">Who is asked to confirm the address on it, or "" when nobody is.</param>
 public sealed record ProofOption(string Type, string Issuer, bool HasPhoto);
 
 /// <summary>How often a deposit pays interest: <c>PerYear</c> 0 is on maturity (cumulative).</summary>
+/// <param name="Code">The payout as the FD system's rate card names it (INTEREST_FREQ): the rates are read by it, and it is what is saved.</param>
 /// <param name="Each">The period one payment covers, as a sentence names it ("quarter").</param>
-/// <param name="InterestFreq">The payout as the FD system's rate card names it (INTEREST_FREQ); empty when the list does not say.</param>
 /// <param name="Scheme">The scheme the rate card files the payout under (SCHEME); empty when the list does not say.</param>
-public sealed record PayoutOption(string Code, string Name, int PerYear, string Each, string InterestFreq = "", string Scheme = "");
+public sealed record PayoutOption(string Code, string Name, int PerYear, string Each, string Scheme = "");
 
 /// <summary>What an investor type hands over, and the notes that go with it.</summary>
 public sealed record RequiredDocumentGroup(string Title, IReadOnlyList<string> Items, IReadOnlyList<string> Notes);

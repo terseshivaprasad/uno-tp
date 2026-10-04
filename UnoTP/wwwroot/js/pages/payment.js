@@ -12,6 +12,15 @@
   var IFSC = /^[A-Za-z]{4}0[A-Za-z0-9]{6}$/;
   var timer = null;
   var asked = 0;
+  // How long the typing must pause before a search is sent, milliseconds.
+  var PAUSE = 300;
+  // The search now on its way, so a newer one can call it off.
+  var underWay = null;
+  // What each search found, by its address, so typing back over the same text asks nothing.
+  var found = {};
+
+  // The fewest characters a search is run on (data-search-from; the server keeps the same rule).
+  function searchFrom(input) { return parseInt(input.getAttribute('data-search-from'), 10) || 3; }
 
   // The suggestion list an input controls (its aria-controls).
   function suggestionListFor(input) { return document.getElementById(input.getAttribute('aria-controls')); }
@@ -41,17 +50,30 @@
     findBankByIfsc(input);
   }
 
+  // One line under the input that is not a choice: what to type, that a search is
+  // under way, or that it could not be made.
+  function showNote(input, words) {
+    var list = suggestionListFor(input);
+    if (!list) return;
+    list.innerHTML = '';
+    var note = document.createElement('li');
+    note.className = 'bank-suggest__none';
+    note.textContent = words;
+    list.appendChild(note);
+    list.hidden = false;
+    input.setAttribute('aria-expanded', 'true');
+    input.removeAttribute('aria-activedescendant');
+  }
+
   // Draws the found branches as options under the input.
   function showBranchSuggestions(input, branches) {
     var list = suggestionListFor(input);
     if (!list) return;
-    list.innerHTML = '';
     if (branches.length === 0) {
-      var none = document.createElement('li');
-      none.className = 'bank-suggest__none';
-      none.textContent = 'No branch matches ' + '“' + input.value.trim() + '”';
-      list.appendChild(none);
+      showNote(input, 'No branch matches “' + input.value.trim() + '”');
+      return;
     }
+    list.innerHTML = '';
     branches.forEach(function (b, i) {
       var li = document.createElement('li');
       li.id = list.id + '-' + i;
@@ -73,23 +95,45 @@
     input.setAttribute('aria-expanded', 'true');
   }
 
-  // Looks the typed text (bank, branch, IFSC or MICR) up on the backend.
+  // Looks the typed text (bank, branch, IFSC or MICR) up on the backend. The bank
+  // master is big and the connection may be slow, so nothing is asked until three
+  // characters are typed, a search still on its way is called off when the text
+  // changes, and what was found for a text is shown again without asking.
   function searchBanks(input) {
     var q = input.value.trim();
-    if (q.length < 2) { closeSuggestions(input); return; }
+    // Whatever was being looked up is for text that has since changed.
+    if (underWay) { underWay.abort(); underWay = null; }
     var mine = ++asked;
+    if (q.length === 0) { closeSuggestions(input); return; }
+    if (q.length < searchFrom(input)) {
+      showNote(input, 'Type ' + searchFrom(input) + ' or more characters to search');
+      return;
+    }
+    var url = input.getAttribute('data-bank-search') + '?q=' + encodeURIComponent(q);
+    if (found[url]) { showBranchSuggestions(input, found[url]); return; }
+
+    // The list keeps what it shows while the answer is awaited; an empty one says a search is on.
+    var list = suggestionListFor(input);
+    if (list && list.querySelectorAll('[role="option"]').length === 0) showNote(input, 'Searching\u2026');
     // A search that is slow to answer says so (loader.js).
     var waitOver = window.whenSlow ? window.whenSlow('Still searching \u2014 the connection is slow\u2026') : function () {};
-    fetch(input.getAttribute('data-bank-search') + '?q=' + encodeURIComponent(q), {
-      credentials: 'same-origin',
-      headers: { Accept: 'application/json' }
-    })
-      .then(function (r) { return r.ok ? r.json() : []; })
+    underWay = window.AbortController ? new AbortController() : null;
+    fetch(url, { credentials: 'same-origin', headers: { Accept: 'application/json' }, signal: underWay ? underWay.signal : undefined })
+      .then(function (r) {
+        if (!r.ok) throw new Error('The search was not answered');
+        return r.json();
+      })
       .then(function (branches) {
+        // Nothing found is not kept: a branch added to the master is found by the next search.
+        if (branches.length > 0) found[url] = branches;
         // Only the answer to the latest question, and only while the field still has the caret.
         if (mine === asked && document.activeElement === input) showBranchSuggestions(input, branches);
       })
-      .catch(function () { closeSuggestions(input); })
+      .catch(function (error) {
+        // Called off for newer text: that search draws the list.
+        if (error && error.name === 'AbortError') return;
+        if (mine === asked && document.activeElement === input) showNote(input, 'Could not search just now. Check the connection and type again.');
+      })
       .then(waitOver);
   }
 
@@ -115,7 +159,7 @@
     var input = e.target.closest && e.target.closest('[data-bank-search]');
     if (!input) return;
     clearTimeout(timer);
-    timer = setTimeout(function () { searchBanks(input); }, 180);
+    timer = setTimeout(function () { searchBanks(input); }, PAUSE);
   });
 
   document.addEventListener('keydown', function (e) {

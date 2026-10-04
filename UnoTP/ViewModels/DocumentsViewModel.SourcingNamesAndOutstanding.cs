@@ -15,8 +15,7 @@ public partial class DocumentsViewModel
         var house = sub ? (mode.Sub == SubField.House ? mode.House : "") : mode.House;
         if (house.Length > 0 && value.Equals(house, StringComparison.OrdinalIgnoreCase))
             return ("Stands for the sourcing mode itself — filled here, not typed.", false);
-        var register = RegisterOf(mode, sub);
-        var found = register.FirstOrDefault(p => p.Code.Equals(value, StringComparison.OrdinalIgnoreCase));
+        var found = sub ? subParty : sourceParty;
         return found is not null
             ? ($"{(sub ? "Sub Broker Name" : mode.NameLabel)} — {found.Name}", true)
             : ("No name against this code here. You can still proceed — Operations check it before the deposit is booked.", false);
@@ -26,18 +25,6 @@ public partial class DocumentsViewModel
     public static string? RegisterName(SourcingModeOption? mode, bool sub) =>
         mode is null || mode.Search != (sub ? "sub" : "source") ? null
         : mode.Register switch { Register.Brokers => "brokers", Register.Employees => "staff", _ => null };
-
-    /// <summary>What a code field is searched against under the mode, if it is searched at all.</summary>
-    public IReadOnlyList<Party> RegisterOf(SourcingModeOption? mode, bool sub)
-    {
-        if (mode is null || mode.Search != (sub ? "sub" : "source")) return [];
-        return mode.Register switch
-        {
-            Register.Brokers => Brokers,
-            Register.Employees => Staff,
-            _ => [],
-        };
-    }
 
     /// <summary>What Proceed would ask for, in the order it asks, so the footer can say what is next.</summary>
     // A PAN copy filed for a holder NSDL has not verified.

@@ -61,7 +61,7 @@ The joint holders' documents on Investor Information go through the same calls.
 | Call | Used for |
 |---|---|
 | `IApplicationApi.FindAsync`, `SaveDetailsAsync`, `SavePageAsync`, `SaveUploadAsync` | The application; the details saved after every post; the page's working state; the category moved to a women's one, or a joint holder's documents. |
-| `IInvestorApi.FoliosByPanAsync`, `FolioAsync`, `NomineesByFolioAsync` | A joint holder's search; the nominees on the folio. |
+| `IInvestorApi.FoliosByPanAsync`, `FolioAsync`, `KycOnFolioAsync`, `NomineesOnDepositAsync` | A joint holder's search; the KYC details a compliant folio holds, filled in so they are not typed again; in a renewal, the nominees on the deposit being renewed. |
 | `IPlaceApi.PinCodeAsync` | The district and state of a PIN code. |
 | `INameScreeningService.ScreenAsync` | Every holder, before Proceed. |
 
@@ -71,7 +71,7 @@ The joint holders' documents on Investor Information go through the same calls.
 |---|---|
 | `IApplicationApi.FindAsync`, `SavePaymentAsync` | The application; the step saved. |
 | `IDepositApi.BranchAsync`, `SearchBranchesAsync` | The branch an IFSC names; the bank search. |
-| `IInvestorApi.AccountsByFolioAsync` | The repayment accounts on the folio. |
+| `IInvestorApi.AccountsOnDepositAsync` | In a renewal, the repayment accounts on the deposit being renewed. |
 
 ## FD Configuration (`DepositController`)
 

@@ -65,17 +65,17 @@ In the environment, use a double underscore, for example `ConnectionStrings__Uno
 ## What the app keeps, and for how long
 
 Answers that change seldom are kept in the app's memory (`UnoTP/Infrastructure/CachedBackend.cs`
-and `Lookups.cs`), so a page load does not ask the backend for them each time.
+and `CachedListsAndSettings.cs`), so a page load does not ask the backend for them each time.
 Nothing that was not found is kept, and no failure is: the next request asks again.
 
 | Answer | Kept for | Notes |
 |---|---|---|
 | `GET reference`, `GET config` (every list and rule) | `Backend:ReferenceCacheMinutes`, default 10 | The same for every partner |
-| `GET sourcing/brokers`, `GET sourcing/staff` | `Backend:ReferenceCacheMinutes` | The same for every partner |
-| `GET ifsc/{code}` | 1 hour | Only a branch that was found; a new IFSC is found at once |
+| `GET sourcing/brokers/{code}`, `GET sourcing/staff/{code}` | 5 minutes | Only a code that was found. The registers are never read whole |
+| `GET ifsc/{code}` | 10 minutes | Only a branch that was found; a new IFSC is found at once |
 | `GET pincodes/{pin}` | 1 day | Only a PIN code that was found |
-| `GET ifsc?q=` (the bank search) | 5 minutes, and 1 minute in the browser | Only a search that found something; a new bank is found by the next search |
-| `GET sourcing/brokers?q=`, `GET sourcing/staff?q=` | 5 minutes, and 1 minute in the browser | The same: only a search that found something |
+| `GET ifsc?q=` (the bank search) | 10 minutes, and 1 minute in the browser | Only a search that found something; a new bank is found by the next search |
+| `GET sourcing/brokers?q=`, `GET sourcing/staff?q=` | 5 minutes, and 1 minute in the browser | The same: only a search that found something. The staff are kept by the departments searched |
 | `GET deposits/rates` | 1 minute, never past the day | Keyed by category, gender, application type and start date - nothing of the investor's |
 | `POST deposits/quote` | 1 minute, never past the day | Keyed by amount, tenure, payout and the same card key - nothing of the investor's |
 | `GET console/schedule` | 30 seconds | Dropped the moment the app adds, ends or removes a window or notice |
@@ -128,13 +128,13 @@ again; a failed answer is not kept.
 | POST | `deposits/quote` | `{ amount, tenureMonths, payout, card: { category, gender, applicationType, startsOn? } }` | `DepositQuote`: `rate`, `interestEach`, `maturityAmount`, `maturesOn`, `rateAsOn`. A cumulative deposit compounds `compoundingPerYear` times a year, the months after the last whole period at simple interest. |
 | GET | `ifsc/{code}` | | `BankBranch`: `ifsc`, `bank`, `branch`, `micr`, or 404 |
 | GET | `pincodes/{pin}` | | `PinPlace`: `pinCode`, `district`, `state` for a 6-digit PIN code, or 404 — shown beside a communication address typed on Investor Information, and saved with it. The page asks once all six digits are typed; nothing is suggested while typing. |
-| GET | `ifsc?q={text}` | | `BankBranch[]`: the branches whose bank name, branch, IFSC or MICR holds every word of the text, best first, at most 20 — the bank search on Bank Details &amp; Payment |
+| GET | `ifsc?q={text}` | | `BankBranch[]`: the branches whose bank name, branch, IFSC or MICR holds every word of the text, best first, at most 20 — the bank search on Bank Details &amp; Payment. The bank master is big: nothing is searched until 3 characters are typed |
 
 - **`ReferenceData`:** `applicationTypes` and `renewInstructions` and
   `deliveryTypes` as `{ code, name }`; `categories` as `{ code, name, employee,
   women, senior }`; `paymentModes` as `{ name, document }` (`document` is the
   instrument a copy is filed for, or null); `sourcingModes` as `{ code, name,
-  codeLabel, nameLabel, house, search, register, sub, categories }`;
+  codeLabel, nameLabel, house, search, register, sub, categories, departments }`;
   `proofsOfAddress` as `{ type, issuer, hasPhoto }` (an Aadhaar, a passport, a driving
   licence or a voter ID; a utility bill is not taken. Only a proof with `hasPhoto` -
   an officially valid document - proves the permanent address); `payouts` as `{ code, name,
@@ -221,8 +221,8 @@ again; a failed answer is not kept.
   is fetched for the investor only, so it never takes a joint holder's
   photograph or proof of address off.
 
-**Deposit categories:** `PUBLIC/GENERAL`, `WOMEN`, `SR CITIZEN` and `SR CITIZEN
-WOMEN` (60 or over), plus `EMPLOYEE` and `EMPLOYEE WOMEN`, which only a 1033
+**Deposit categories** (the codes are the rate card's own): `PUBLIC`, `GENERAL-WOMEN`, `SR CITIZEN` and `SR CITIZEN-WOMEN`
+(60 or over), plus `EMPLOYEE` and `EMPLOYEE-WOMEN`, which only a 1033
 partner can book, under MFL-EX.
 
 ## Renewals
@@ -284,9 +284,9 @@ A slot holds one copy:
 
 | Method | Route | Returns |
 |---|---|---|
-| GET | `sourcing/brokers` | `Party[]` (`code`, `name`) |
-| GET | `sourcing/staff` | `Party[]`. Includes the partner at the keyboard. |
-| GET | `sourcing/brokers?q={text}`, `sourcing/staff?q={text}` | `Party[]`: the parties whose code or name holds every word of the text, best first, at most 20 — the code fields on Upload Documents are searched this way as they are typed |
+| GET | `sourcing/brokers/{code}` | `Party` (`code`, `name`): the broker a code names, or 404 |
+| GET | `sourcing/staff/{code}?departments=` | `Party`: the employee a code names, within the departments given (every department where none is given), or 404. The staff include the partner at the keyboard. |
+| GET | `sourcing/brokers?q={text}`, `sourcing/staff?q={text}` | `Party[]`: the parties whose code or name holds every word of the text, best first, at most 20 — the code fields on Upload Documents are searched this way as they are typed. Both registers are big, so nothing is searched until 3 characters are typed, and neither is ever listed whole. The staff are searched within the departments the sourcing mode chosen takes (`departments` on the mode; none listed, every department) |
 | GET | `payin-slips` | `SlipRecord[]`: every application paying by cheque, cancelled ones included |
 | GET | `links` | `SentLinkRecord[]`: links sent to investors, each by SMS and e-mail, with the masked `mobile` and `email` it went to. The link itself is never returned. |
 | GET | `links/pending` | `PendingRecord[]`: applications waiting on the investor (`appNo`, `investor`, `applied`, masked `mobile` and `email`, `due`) |
@@ -295,7 +295,7 @@ A slot holds one copy:
 Each application in these lists carries its `applied` date. The app counts the
 cancellation window (`cancellationDays` in `config`) from that date. A
 `SlipRecord` carries `acceptedOn` once the investor accepts a digital
-application. Field lists are in `Registers.cs`.
+application. Field lists are in `SourcingSlipsLinksAndConsole.cs`.
 
 ### Actions on the lists
 

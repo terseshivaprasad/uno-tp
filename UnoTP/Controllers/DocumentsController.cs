@@ -28,23 +28,25 @@ public class DocumentsController(
     IServiceProvider services) : Controller
 {
     /// <summary>
-    /// A register searched as a code is typed (register-search.js): the brokers or
-    /// the staff whose code or name holds the text, as the backend finds them.
+    /// A register searched as a code is typed (documents.js): the brokers or the staff
+    /// whose code or name holds the text, as the backend finds them. Nothing is looked
+    /// up until three characters are typed. The staff are searched within the
+    /// departments the sourcing mode chosen on the page takes.
     /// </summary>
     [HttpGet("sourcing")]
     [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Client)]
-    public async Task<IActionResult> Sourcing(string? register, string? q)
+    public async Task<IActionResult> Sourcing(string? register, string? q, string? mode, [FromServices] UnoTP.Infrastructure.Lookups lookups)
     {
         if (HttpContext.CurrentApplication() is null) return NotFound();
         var text = (q ?? "").Trim();
-        if (text.Length < 2) return Json(Array.Empty<Party>());
+        if (!TypedSearch.LongEnough(text)) return Json(Array.Empty<Party>());
         text = text[..Math.Min(text.Length, 40)];
-        return register switch
-        {
-            "brokers" => Json(await sourcing.SearchBrokersAsync(text)),
-            "staff" => Json(await sourcing.SearchStaffAsync(text)),
-            _ => NotFound(),
-        };
+        if (register == "brokers") return Json(await sourcing.SearchBrokersAsync(text));
+        if (register != "staff") return NotFound();
+
+        var modes = (await lookups.ReferenceAsync()).SourcingModes;
+        var chosen = modes.FirstOrDefault(m => m.Code == mode);
+        return Json(await sourcing.SearchStaffAsync(text, DocumentsViewModel.DepartmentsOf(chosen)));
     }
 
     [HttpGet("")]

@@ -113,6 +113,11 @@
         var prefix = $"Holder{holder}";
         var id = $"investor{holder}";
         <h3 class="section-title">More Information</h3>
+        @* A holder on a KYC compliant folio is not asked to type these again. *@
+        @if (Model.FilledFromFolio(holder))
+        {
+            <p class="page-note">This folio is KYC compliant, so these details are filled in from its record. Check them and change anything that is no longer right.</p>
+        }
         <div class="doc-grid">
             @{ await Select($"{id}Income", $"{prefix}.AnnualIncome", "Annual Income", lists.Incomes, required: "Select the annual income"); }
             @{ await Select($"{id}Occupation", $"{prefix}.Occupation", "Occupation", lists.Occupations, required: "Select the occupation"); }
@@ -634,10 +639,10 @@
         </section>
     }
 
-    // The nominees named on the folio's earlier deposits, each with Use, which fills
+    // The nominees named on the deposit being renewed, each with Use, which fills
     // the nominee's fields from it. In the open nominee card only, over the blank
     // form, so Add Nominee is the one way in; not on the closed question, nor in the
-    // Proceed dialog. Nothing for an investor without a folio.
+    // Proceed dialog. Nothing for a fresh purchase.
     private async Task NomineesOnRecordList()
     {
         var all = Model.NomineesOnRecord;
@@ -645,7 +650,7 @@
         // The five most recent are shown; the rest open on Show all.
         var shown = Math.Min(all.Count, OnRecordShown);
         <div class="on-record">
-            <div class="on-record__title">Nominees on this folio</div>
+            <div class="on-record__title">Nominees on the deposit being renewed</div>
             <ul class="on-record__list">
                 @for (var i = 0; i < shown; i++)
                 {
