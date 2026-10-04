@@ -16,7 +16,7 @@ public static class NameMatchOutcome
     /// <summary>The same name, whatever the order of the words.</summary>
     public const string Match = "match";
 
-    /// <summary>The same person, with an initial or a name left out (KARAN D MEHTA against KARAN DEEPAK MEHTA).</summary>
+    /// <summary>The same person, with an initial or a name left out (KARAN D MEHTA against KARAN DEEPAK MEHTA). The name match API answers only match or mismatch, so it never gives this.</summary>
     public const string Partial = "partial";
 
     public const string Mismatch = "mismatch";
@@ -26,7 +26,7 @@ public static class NameMatchOutcome
 }
 
 /// <param name="Outcome">A <see cref="NameMatchOutcome"/>.</param>
-/// <param name="Score">The service's score out of 100, where it gives one; 0 otherwise.</param>
+/// <param name="Score">The service's score out of 100, where it gives one; 0 otherwise. The name match API gives none.</param>
 public sealed record NameMatchResult(string Outcome, int Score = 0)
 {
     public bool IsMismatch => Outcome == NameMatchOutcome.Mismatch;
