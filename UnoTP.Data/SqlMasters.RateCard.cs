@@ -7,21 +7,14 @@ public sealed partial class SqlMasters
 {
     // ----- The rate card: t_FD_BOTC_SCHEME ---------------------------------------------
     //
-    // The FD system's own rate card, in the main database. A row is one scheme code:
+    // The FD system's own rate card, read by MasterQueries.RateCard. A row is one scheme code:
     // a category, mode (MODE_STATUS: a fresh application or a renewal), scheme, tenure
     // and interest frequency, for deposits from MINIMUM_AMOUNT to MAXIMUM_AMOUNT, in
     // effect from FROM_DATE to TO_DATE (no TO_DATE: still in effect).
 
+    // One row of MasterQueries.RateCard, as this reads it.
     private sealed class SchemeRow
     {
-        // The numbers are read through a cast: a row whose number does not read is left out.
-        public const string Columns = """
-            RTRIM(CATEGORY) AS Category, RTRIM(SCHEME) AS Scheme, RTRIM(SCHEME_CODE) AS SchemeCode, RTRIM(INTEREST_FREQ) AS InterestFreq,
-            TRY_CAST(PERIOD AS INT) AS TenureMonths, TRY_CAST(INTEREST_RATES AS DECIMAL(9,4)) AS Rate,
-            CAST(TRY_CAST(MINIMUM_AMOUNT AS DECIMAL(18,2)) AS BIGINT) AS MinAmount,
-            CAST(TRY_CAST(MAXIMUM_AMOUNT AS DECIMAL(18,2)) AS BIGINT) AS MaxAmount, FROM_DATE AS FromDate
-            """;
-
         public string? Category { get; set; }
         public string? Scheme { get; set; }
         public string? SchemeCode { get; set; }
@@ -49,11 +42,10 @@ public sealed partial class SqlMasters
 
         await using var connection = await db.OpenAsync(ct);
         var rows = await connection.QueryAsync<SchemeRow>($"""
-            SELECT {SchemeRow.Columns}
-            FROM dbo.t_FD_BOTC_SCHEME
-            WHERE CATEGORY IN (@Category, @Fallback) AND MODE_STATUS = @Mode
-              AND FROM_DATE <= @Today AND (TO_DATE IS NULL OR TO_DATE >= @Today)
-            ORDER BY CASE WHEN CATEGORY = @Category THEN 0 ELSE 1 END, FROM_DATE DESC, SCHEME_ID DESC
+            SELECT * FROM ({MasterQueries.RateCard}) r
+            WHERE r.Category IN (@Category, @Fallback) AND r.Mode = @Mode
+              AND r.FromDate <= @Today AND (r.ToDate IS NULL OR r.ToDate >= @Today)
+            ORDER BY CASE WHEN r.Category = @Category THEN 0 ELSE 1 END, r.FromDate DESC, r.SchemeId DESC
             """, new { Category = category, Fallback = fallback, Mode = request.ApplicationType, DateTime.Today });
 
         // The rows come the category's own first and the latest first, so the first

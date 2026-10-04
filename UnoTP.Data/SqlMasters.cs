@@ -15,11 +15,6 @@ public sealed partial class SqlMasters(Db db, SqlReference reference) : IInvesto
 
     // ----- Investors ---------------------------------------------------------------
 
-    private const string FolioColumns = """
-        c_Pan AS Pan, d_Dob AS Dob, c_Folio AS Folio, c_Name AS Name, c_Gender AS Gender, c_Address AS Address,
-        f_Doc_Pan AS DocPan, f_Doc_Photo AS DocPhoto, f_Doc_Poa AS DocPoa, c_Note AS Note, c_Source AS Source
-        """;
-
     private sealed class FolioRow
     {
         public string Pan { get; set; } = "";
@@ -41,17 +36,17 @@ public sealed partial class SqlMasters(Db db, SqlReference reference) : IInvesto
     // Every folio held against the PAN: more than one is a record Operations has to merge.
     public async Task<IReadOnlyList<FolioRecord>> FoliosByPanAsync(string pan, CancellationToken ct = default)
     {
-        await using var connection = await db.OpenAsync(Db.Folios, ct);
+        await using var connection = await db.OpenMastersAsync(ct);
         return (await connection.QueryAsync<FolioRow>(
-            $"SELECT {FolioColumns} FROM dbo.t_Unotp_Investor_Folio WHERE c_Pan = @Pan AND f_Active = 1 ORDER BY c_Folio",
+            $"SELECT * FROM ({MasterQueries.Folios}) f WHERE f.Pan = @Pan ORDER BY f.Folio",
             new { Pan = pan.Trim().ToUpperInvariant() })).Select(f => f.Record()).ToList();
     }
 
     public async Task<FolioRecord?> FolioAsync(string folio, CancellationToken ct = default)
     {
-        await using var connection = await db.OpenAsync(Db.Folios, ct);
+        await using var connection = await db.OpenMastersAsync(ct);
         return (await connection.QuerySingleOrDefaultAsync<FolioRow>(
-            $"SELECT {FolioColumns} FROM dbo.t_Unotp_Investor_Folio WHERE c_Folio = @Folio AND f_Active = 1",
+            $"SELECT * FROM ({MasterQueries.Folios}) f WHERE f.Folio = @Folio",
             new { Folio = folio.Trim().ToUpperInvariant() }))?.Record();
     }
 
@@ -100,32 +95,38 @@ public sealed partial class SqlMasters(Db db, SqlReference reference) : IInvesto
 
     // ----- Sourcing registers ------------------------------------------------------
 
-    public Task<IReadOnlyList<Party>> BrokersAsync(CancellationToken ct = default) => PartiesAsync("t_Unotp_Broker_Mst", ct);
+    // The brokers' and the staff's own queries are in MasterQueries: these list and search what they give back.
 
-    public Task<IReadOnlyList<Party>> StaffAsync(CancellationToken ct = default) => PartiesAsync("t_Unotp_Staff_Mst", ct);
+    public Task<IReadOnlyList<Party>> BrokersAsync(CancellationToken ct = default) =>
+        PartiesAsync(MasterQueries.Brokers, ct);
 
-    public Task<IReadOnlyList<Party>> SearchBrokersAsync(string query, CancellationToken ct = default) => SearchPartiesAsync("t_Unotp_Broker_Mst", query, ct);
+    public Task<IReadOnlyList<Party>> StaffAsync(CancellationToken ct = default) =>
+        PartiesAsync(MasterQueries.Staff, ct);
 
-    public Task<IReadOnlyList<Party>> SearchStaffAsync(string query, CancellationToken ct = default) => SearchPartiesAsync("t_Unotp_Staff_Mst", query, ct);
+    public Task<IReadOnlyList<Party>> SearchBrokersAsync(string query, CancellationToken ct = default) =>
+        SearchPartiesAsync(MasterQueries.Brokers, query, ct);
 
-    private async Task<IReadOnlyList<Party>> PartiesAsync(string table, CancellationToken ct)
+    public Task<IReadOnlyList<Party>> SearchStaffAsync(string query, CancellationToken ct = default) =>
+        SearchPartiesAsync(MasterQueries.Staff, query, ct);
+
+    private async Task<IReadOnlyList<Party>> PartiesAsync(string parties, CancellationToken ct)
     {
-        await using var connection = await db.OpenAsync(Db.Masters, ct);
-        return (await connection.QueryAsync<Party>($"SELECT c_Code AS Code, c_Name AS Name FROM dbo.{table} WHERE f_Active = 1 ORDER BY c_Name")).ToList();
+        await using var connection = await db.OpenMastersAsync(ct);
+        return (await connection.QueryAsync<Party>($"SELECT p.Code, p.Name FROM ({parties}) p ORDER BY p.Name")).ToList();
     }
 
     // Every word typed must be in the code or the name; a code that starts with the text comes first.
-    private async Task<IReadOnlyList<Party>> SearchPartiesAsync(string table, string query, CancellationToken ct)
+    private async Task<IReadOnlyList<Party>> SearchPartiesAsync(string parties, string query, CancellationToken ct)
     {
         var words = Words(query, ' ');
         if (words.Length == 0) return [];
-        var (where, args) = AllWords(words, "c_Code + ' ' + c_Name");
+        var (where, args) = AllWords(words, "p.Code + ' ' + p.Name");
         args.Add("First", EscapeLikePattern(words[0]) + "%");
-        await using var connection = await db.OpenAsync(Db.Masters, ct);
+        await using var connection = await db.OpenMastersAsync(ct);
         return (await connection.QueryAsync<Party>($"""
-            SELECT TOP ({Found}) c_Code AS Code, c_Name AS Name FROM dbo.{table}
-            WHERE f_Active = 1 AND {where}
-            ORDER BY CASE WHEN c_Code LIKE @First ESCAPE '\' THEN 0 ELSE 1 END, c_Name
+            SELECT TOP ({Found}) p.Code, p.Name FROM ({parties}) p
+            WHERE {where}
+            ORDER BY CASE WHEN p.Code LIKE @First ESCAPE '\' THEN 0 ELSE 1 END, p.Name
             """, args)).ToList();
     }
 
@@ -133,9 +134,9 @@ public sealed partial class SqlMasters(Db db, SqlReference reference) : IInvesto
 
     public async Task<BankBranch?> BranchAsync(string ifsc, CancellationToken ct = default)
     {
-        await using var connection = await db.OpenAsync(Db.Masters, ct);
+        await using var connection = await db.OpenAsync(ct);
         return await connection.QuerySingleOrDefaultAsync<BankBranch>(
-            "SELECT c_Ifsc AS Ifsc, c_Bank AS Bank, c_Branch AS Branch, c_Micr AS Micr FROM dbo.t_Unotp_Ifsc_Mst WHERE c_Ifsc = @Ifsc AND f_Active = 1",
+            $"SELECT b.Ifsc, b.Bank, b.Branch, b.Micr FROM ({MasterQueries.BankBranches}) b WHERE b.Ifsc = @Ifsc",
             new { Ifsc = ifsc.Trim().ToUpperInvariant() });
     }
 
@@ -145,13 +146,13 @@ public sealed partial class SqlMasters(Db db, SqlReference reference) : IInvesto
     {
         var words = Words(query, ' ', ',', '—', '-');
         if (words.Length == 0) return [];
-        var (where, args) = AllWords(words, "c_Bank + ' ' + c_Branch + ' ' + c_Ifsc + ' ' + c_Micr");
+        var (where, args) = AllWords(words, "b.Bank + ' ' + b.Branch + ' ' + b.Ifsc + ' ' + b.Micr");
         args.Add("Start", EscapeLikePattern(query.Trim()) + "%");
-        await using var connection = await db.OpenAsync(Db.Masters, ct);
+        await using var connection = await db.OpenAsync(ct);
         return (await connection.QueryAsync<BankBranch>($"""
-            SELECT TOP ({Found}) c_Ifsc AS Ifsc, c_Bank AS Bank, c_Branch AS Branch, c_Micr AS Micr FROM dbo.t_Unotp_Ifsc_Mst
-            WHERE f_Active = 1 AND {where}
-            ORDER BY CASE WHEN c_Ifsc LIKE @Start ESCAPE '\' OR c_Micr LIKE @Start ESCAPE '\' THEN 0 ELSE 1 END, c_Bank, c_Branch
+            SELECT TOP ({Found}) b.Ifsc, b.Bank, b.Branch, b.Micr FROM ({MasterQueries.BankBranches}) b
+            WHERE {where}
+            ORDER BY CASE WHEN b.Ifsc LIKE @Start ESCAPE '\' OR b.Micr LIKE @Start ESCAPE '\' THEN 0 ELSE 1 END, b.Bank, b.Branch
             """, args)).ToList();
     }
 
@@ -161,9 +162,9 @@ public sealed partial class SqlMasters(Db db, SqlReference reference) : IInvesto
     {
         pin = pin.Trim();
         if (pin.Length != 6 || !pin.All(char.IsAsciiDigit)) return null;
-        await using var connection = await db.OpenAsync(Db.Masters, ct);
+        await using var connection = await db.OpenMastersAsync(ct);
         return await connection.QuerySingleOrDefaultAsync<PinPlace>(
-            "SELECT c_Pin_Code AS PinCode, c_District AS District, c_State AS State FROM dbo.t_Unotp_Pincode_Mst WHERE c_Pin_Code = @Pin AND f_Active = 1",
+            $"SELECT p.PinCode, p.District, p.State FROM ({MasterQueries.PinCodes}) p WHERE p.PinCode = @Pin",
             new { Pin = pin });
     }
 

@@ -4,40 +4,29 @@ using Microsoft.Data.SqlClient;
 namespace UnoTP.Data;
 
 /// <summary>
-/// The databases. ConnectionStrings:UnoTP holds the applications, the FD system's
-/// rate card (t_FD_BOTC_SCHEME) and everything else, unless an area is given a
-/// database of its own, as the old portal has them:
-///   UnoTP_Masters   the brokers, staff, IFSC and PIN code masters, and the config,
-///                   feature and reference lists
-///   UnoTP_Folios    the investor folios
-///   UnoTP_Links     the payment links behind Short URL
-///   UnoTP_Errors    the error log
-/// An area's connection string left blank means its tables are in the main database.
-/// No query joins across areas, so each may be anywhere.
+/// The two connections. ConnectionStrings:UnoTP is the main database - the applications
+/// and everything the app keeps of its own - and must be set. ConnectionStrings:UnoTP_Masters
+/// is the masters database; left blank, the masters are read from the main one.
+/// A table in another database on the same server is named in full in its query:
+/// OtherDb.dbo.Table.
 /// </summary>
 public sealed class Db(IConfiguration config)
 {
-    public const string Main = "UnoTP";
-    public const string Masters = "UnoTP_Masters";
-    public const string Folios = "UnoTP_Folios";
-    public const string Links = "UnoTP_Links";
-    public const string Errors = "UnoTP_Errors";
-
-    /// <summary>The FD system's common database: the source of funds log and the document master.</summary>
-    public const string Common = "UnoTP_Common";
-
-    private readonly string mainConnectionString = config.GetConnectionString(Main) is { Length: > 0 } cs
+    private readonly string main = config.GetConnectionString("UnoTP") is { Length: > 0 } cs
         ? cs
         : throw new InvalidOperationException("ConnectionStrings:UnoTP is not set.");
 
-    /// <summary>The main database: the applications and their parts, partners, sessions, slips, the console.</summary>
-    public Task<SqlConnection> OpenAsync(CancellationToken ct) => OpenAsync(Main, ct);
+    private readonly string? masters = config.GetConnectionString("UnoTP_Masters");
 
-    /// <summary>An area's database, or the main one where the area has none of its own.</summary>
-    public async Task<SqlConnection> OpenAsync(string area, CancellationToken ct)
+    /// <summary>The main database.</summary>
+    public Task<SqlConnection> OpenAsync(CancellationToken ct) => OpenAsync(main, ct);
+
+    /// <summary>The masters database, or the main one where its connection string is blank.</summary>
+    public Task<SqlConnection> OpenMastersAsync(CancellationToken ct) =>
+        OpenAsync(string.IsNullOrWhiteSpace(masters) ? main : masters, ct);
+
+    private static async Task<SqlConnection> OpenAsync(string connectionString, CancellationToken ct)
     {
-        var connectionString = config.GetConnectionString(area);
-        if (string.IsNullOrWhiteSpace(connectionString)) connectionString = mainConnectionString;
         var connection = new SqlConnection(connectionString);
         await connection.OpenAsync(ct);
         return connection;

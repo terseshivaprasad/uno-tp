@@ -1,8 +1,11 @@
 /* =============================================================================
    Uno TP - the masters the purchase journey reads, as the app reads them (SQL
    Server 2016 or later): investor folios, brokers, staff, bank branches by IFSC,
-   PIN codes and the FD system's document master. The rate card is the FD system's
-   t_FD_BOTC_SCHEME, in create_existing_tables.sql.
+   PIN codes, and the FD system's own masters: its document master, and the marital
+   status, relation, occupation and source of funds masters, with its source of funds
+   log, which is kept beside them. Its rate card (t_FD_BOTC_SCHEME) is in the main
+   database: create_existing_tables.sql. The query that reads each master is in
+   UnoTP.Data/MasterQueries.cs.
 
        sqlcmd -d UnoTP -i db/create_master_tables.sql
 
@@ -130,9 +133,41 @@ CREATE TABLE dbo.t_Unotp_Pincode_Mst
 END
 GO
 
+/* ----- t_FD_CMN_AML_Source_Of_Funds_Log -----------------------------------------------
+   The FD system's log of the source of funds an investor gave, with the amount,
+   annual income and occupation it was asked for. It is kept with the masters, so
+   the app writes it on the masters connection.
+   ----------------------------------------------------------------------------- */
+IF OBJECT_ID(N'dbo.t_FD_CMN_AML_Source_Of_Funds_Log', N'U') IS NULL
+BEGIN
+CREATE TABLE [dbo].[t_FD_CMN_AML_Source_Of_Funds_Log](
+    [f_Pk_t_FD_CMN_AML_Source_Of_Funds_Log_Id] [bigint] IDENTITY(1,1) NOT NULL,
+    [f_Sys_Ref_no] [nvarchar](50) NULL,
+    [f_Appl_No] [nvarchar](50) NULL,
+    [f_Holder_Type] [nvarchar](20) NULL,
+    [f_Investment_Amt] [decimal](18, 2) NULL,
+    [f_AnnualIncome_Code] [nvarchar](20) NULL,
+    [f_AnnualIncome_Desc] [nvarchar](250) NULL,
+    [f_AML_Source_Of_Funds] [nvarchar](50) NULL,
+    [f_AML_Source_Of_Funds_Remarks] [nvarchar](1000) NULL,
+    [f_AML_Source_Of_Funds_reason] [nvarchar](1000) NULL,
+    [f_Active] [bit] NULL,
+    [f_CreatedBy] [nvarchar](50) NULL,
+    [f_CreatedByUName] [nvarchar](100) NULL,
+    [f_CreatedOn] [datetime] NULL,
+    [f_CreatedIP] [nvarchar](50) NULL,
+    [f_SessionId] [bigint] NULL,
+    [f_FormCode] [nvarchar](50) NULL,
+    [f_Source] [nvarchar](50) NULL,
+    [f_Folio_No] [varchar](20) NULL,
+    [f_Occupation_Code] [varchar](20) NULL,
+    [f_Occupation_Desc] [varchar](50) NULL
+);
+END
+GO
+
 /* ----- The FD system's document master -------------------------------------------------
-   T_FD_CMN_KYC_Document_Type_Mst and T_FD_CMN_KYC_Document_Sub_Type_Mst, in the FD
-   system's common database (ConnectionStrings:UnoTP_Common): the types a document
+   T_FD_CMN_KYC_Document_Type_Mst and T_FD_CMN_KYC_Document_Sub_Type_Mst: the types a document
    can be, and under each its sub-types, by depositor status ('IND' for an
    individual). Here with the columns the app reads and those seen beside them; the
    FD system's own tables have more. Created for a database built from nothing.
@@ -167,10 +202,8 @@ GO
 /* ----- The FD system's masters behind four of the pages' lists ---------------------------
    Marital status, the nominee's relation, the employee's relation and the source of
    funds are offered as these list them and saved as their codes (db/021). Here with
-   the columns the app reads; the FD system's own tables have more. The t_FD_BT_ and
-   t_FD_MMFSL_ masters are in the main database, the t_FD_CMN_ ones in the FD
-   system's common database (ConnectionStrings:UnoTP_Common). Created for a database
-   built from nothing.
+   the columns the app reads; the FD system's own tables have more. Created for a
+   database built from nothing.
    ----------------------------------------------------------------------------- */
 IF OBJECT_ID(N'dbo.t_FD_BT_Marital_Status_Mst', N'U') IS NULL
 BEGIN
@@ -217,7 +250,7 @@ END
 GO
 
 /* ----- t_FD_CMN_Ckyc_CustSeg_Mst: the occupation master --------------------------------
-   In the FD system's common database. A row is a customer segment type (the
+   A row is a customer segment type (the
    occupation the page offers), a sub-type under it (the sub occupation) and the
    CKYC occupation they stand for (db/022). Here with the columns the app reads.
    ----------------------------------------------------------------------------- */

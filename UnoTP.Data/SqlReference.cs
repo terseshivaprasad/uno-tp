@@ -23,7 +23,7 @@ public sealed partial class SqlReference(Db db, IMemoryCache cache) : IReference
         cache.GetOrCreateAsync<IReadOnlyDictionary<string, string>>("t_Unotp_App_Config", async entry =>
         {
             (entry.AbsoluteExpirationRelativeToNow, entry.Size) = (KeptFor, 1);
-            await using var connection = await db.OpenAsync(Db.Masters, ct);
+            await using var connection = await db.OpenAsync(ct);
             var rows = await connection.QueryAsync<(string Key, string Value)>("SELECT c_Key, c_Value FROM dbo.t_Unotp_App_Config WHERE f_Active = 1");
             return rows.ToDictionary(r => r.Key, r => r.Value, StringComparer.OrdinalIgnoreCase);
         })!;
@@ -75,12 +75,13 @@ public sealed partial class SqlReference(Db db, IMemoryCache cache) : IReference
         cache.GetOrCreateAsync("t_Unotp_Ref_List", async cacheEntry =>
         {
             (cacheEntry.AbsoluteExpirationRelativeToNow, cacheEntry.Size) = (KeptFor, 1);
-            await using var connection = await db.OpenAsync(Db.Masters, ct);
-            var entries = (await connection.QueryAsync<Entry>("""
+            await using var lists = await db.OpenAsync(ct);
+            var entries = (await lists.QueryAsync<Entry>("""
                 SELECT c_List AS List, c_Code AS Code, c_Name AS Name, j_Attrs AS Attrs
                 FROM dbo.t_Unotp_Ref_List WHERE f_Active = 1 ORDER BY c_List, n_Seq
                 """)).ToLookup(e => e.List);
-            var features = (await connection.QueryAsync<FeatureOption>("""
+            await using var featureMaster = await db.OpenAsync(ct);
+            var features = (await featureMaster.QueryAsync<FeatureOption>("""
                 SELECT c_Feature_Key AS Code, c_Name AS Name, c_Group AS [Group], c_Detail AS Detail, c_Off_Reason AS OffReason, f_Tile AS Tile
                 FROM dbo.t_Unotp_Feature_Mst WHERE f_Active = 1 ORDER BY n_Seq
                 """)).ToList();

@@ -429,11 +429,11 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
     // The header's columns as an UPDATE leaves them.
     private static readonly string Inserted = string.Join(", ", HeaderRow.Columns.Split(',').Select(c => "inserted." + c.Trim()));
 
-    // The payment link as sent, on record in t_Unotp_Payment_Link (the links database):
+    // The payment link as sent, on record in t_Unotp_Payment_Link:
     // every send is a row. Written once the application's own transaction is committed.
     private async Task RecordLinkAsync(string appNo, string url, string shortUrl, Submission sent, CancellationToken ct)
     {
-        await using var links = await db.OpenAsync(Db.Links, ct);
+        await using var links = await db.OpenAsync(ct);
         await links.ExecuteAsync("""
             INSERT dbo.t_Unotp_Payment_Link (c_App_No, c_Purpose, c_Url, c_Short_Url, c_Mobile, c_Email, d_Expires_On, c_Sent_By)
             VALUES (@AppNo, 'payment', @Url, @ShortUrl, @Mobile, @Email, @ExpiresOn, @Partner)
@@ -444,7 +444,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
     // The last payment link sent for an application: its addresses are sent again as they are.
     private async Task<(string Url, string ShortUrl)> LastLinkAsync(string appNo, CancellationToken ct)
     {
-        await using var links = await db.OpenAsync(Db.Links, ct);
+        await using var links = await db.OpenAsync(ct);
         var last = await links.QuerySingleOrDefaultAsync<(string Url, string ShortUrl)>("""
             SELECT TOP 1 c_Url, c_Short_Url FROM dbo.t_Unotp_Payment_Link WHERE c_App_No = @AppNo AND c_Purpose = 'payment' AND f_Active = 1 ORDER BY n_Id DESC
             """, new { AppNo = appNo });
@@ -526,6 +526,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
                 m.d_Cancelled_On AS CancelledOn, ISNULL(pm.c_Branch, N'') AS Branch,
                 (SELECT MIN(f.d_Created_On) FROM dbo.t_Unotp_Upload_State f WHERE f.c_App_No = m.c_App_No AND f.f_Active = 1) AS UploadedOn,
                 (SELECT MIN(p.d_Generated_On) FROM dbo.t_Unotp_Pay_In_Slip p WHERE p.c_App_No = m.c_App_No AND p.f_Active = 1) AS SlipOn,
+                (SELECT MIN(l.d_Sent_On) FROM dbo.t_Unotp_Payment_Link l WHERE l.c_App_No = m.c_App_No AND l.f_Active = 1) AS LinkSentOn,
                 m.d_Penny_Drop_On AS PennyDropOn, m.c_Penny_Drop_Status AS PennyDropStatus,
                 m.d_Kyc_Verified_On AS KycVerifiedOn, m.c_Kyc_Status AS KycStatus
             FROM dbo.t_Unotp_Application_Mst m
@@ -535,20 +536,6 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
             WHERE m.c_Partner_Id = @Partner AND m.f_Active = 1
             ORDER BY m.d_Created_On DESC
             """, new { Partner = partner.Id })).ToList();
-
-        // When each application's first link went out, from the links database.
-        if (rows.Count > 0)
-        {
-            await using var links = await db.OpenAsync(Db.Links, ct);
-            var firstSent = (await links.QueryAsync<(string AppNo, DateTime SentOn)>("""
-                SELECT c_App_No, MIN(d_Sent_On) FROM dbo.t_Unotp_Payment_Link
-                WHERE f_Active = 1 AND c_App_No IN @AppNos GROUP BY c_App_No
-                """, new { AppNos = rows.Select(r => r.AppNo).ToList() })).ToDictionary(x => x.AppNo, x => x.SentOn);
-            foreach (var row in rows)
-            {
-                if (firstSent.TryGetValue(row.AppNo, out var sentOn)) row.LinkSentOn = sentOn;
-            }
-        }
 
         return rows.Select(r =>
         {

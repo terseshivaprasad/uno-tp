@@ -145,7 +145,7 @@ rows, the rate card among them, are already in the database and have no script h
 ```sh
 sqlcmd -d UnoTP -i db/create_new_tables.sql      # new with this app: the application header, settings, lists, console, error log
 sqlcmd -d UnoTP -i db/create_existing_tables.sql # already in the database: what an application holds, the rate card, partners, links, slips
-sqlcmd -d UnoTP -i db/create_master_tables.sql   # already in the database: folios, brokers, staff, IFSC, PIN codes
+sqlcmd -d UnoTP -i db/create_master_tables.sql   # already in the database: folios, brokers, staff, IFSC, PIN codes, the FD system's masters and its source of funds log
 sqlcmd -d UnoTP -i db/003_unotp_seed.sql         # config, features and lists: review with the business
 sqlcmd -d UnoTP -i db/008_unotp_source_of_funds.sql # the source of funds on FD Configuration: settings, list
 sqlcmd -d UnoTP -i db/009_unotp_category_extra_rate.sql # what each category earns over the public rate, for the page's wording
@@ -187,7 +187,7 @@ on it is rows in the FD system's own tables, exactly as the database has them:
 | Upload Documents | `t_Unotp_Upload_State` (the step as JSON), `t_FD_BT_KYC_document` (one row per holder and document, coded as the FD system's document master codes it; the application's own go under `01`) |
 | Investor Information | `t_FD_BT_Kyc_Data_Dtl` (per holder), `t_FD_BT_Address_Dtl` (per holder and address type: `PER`, which also carries the mobile and e-mail, and `MAIL`), `t_FD_BT_Nominee_Dtl`. The gender is kept as the name prefix; the FATCA answers stay with the page's typed fields |
 | Bank Details & Payment | `t_FD_BT_Payment_Dtl` (the payment account and instrument), `t_FD_BT_Investor_Bank_Dtl` (the repayment account) |
-| FD Configuration | `t_FD_BT_Investment_Dtl` (the deposit, with category, sourcing and employee details), and `t_FD_CMN_AML_Source_Of_Funds_Log` in the FD system's common database where a source of funds is given |
+| FD Configuration | `t_FD_BT_Investment_Dtl` (the deposit, with category, sourcing and employee details), and `t_FD_CMN_AML_Source_Of_Funds_Log` where a source of funds is given |
 
 The FD system's tables have no version column. Each save is checked against the
 version the page read (`If-Match`), moves the version on, takes that step's rows
@@ -211,8 +211,8 @@ underscore (`ConnectionStrings__UnoTP`).
 | `Backend:BaseUrl` | The API gateway the backend APIs are behind. `appsettings.json` carries it as `https://<gateway-host>/`, the host left as a placeholder; the real host is set in the environment (`Backend__BaseUrl`) and never in a committed file. Each API's own settings hold its `BasePath` under the gateway, and the path of each call under that (no leading slash). |
 | `AuthApi:BaseUrl`, `PanApi:BaseUrl`, `UidMasking:BaseUrl`, `Ckyc:BaseUrl`, `Idfy:BaseUrl`, `NameScreening:BaseUrl`, `NameMatch:BaseUrl`, `Shortener:BaseUrl` | A service's own address, for one that is not behind the gateway: it is then called at `{BaseUrl}/{BasePath}/` and the gateway is not used for it. Blank (as committed), the service is called at `Backend:BaseUrl`. Set in the environment (`Ckyc__BaseUrl` and the like), never in a committed file. With every service given its own address, `Backend:BaseUrl` need not be set. |
 | `Backend:ClientId` | The name the app calls itself by on every API's `X-Client-Id` header (`unotp`). |
-| `ConnectionStrings:UnoTP_Masters`, `UnoTP_Folios`, `UnoTP_Links`, `UnoTP_Errors` | Where an area lives in a database of its own, as the old portal keeps them: the masters (brokers, staff, IFSC, PIN codes, config, features, lists), the investor folios, the payment links behind Short URL, and the error log. Blank, the area's tables are in the main database. No query joins across areas. |
-| `ConnectionStrings:UnoTP_Common` | The FD system's common database, where `t_FD_CMN_AML_Source_Of_Funds_Log` and the document master (`T_FD_CMN_KYC_Document_Type_Mst`, `T_FD_CMN_KYC_Document_Sub_Type_Mst`) are. Blank, they are looked for in the main database. |
+| `ConnectionStrings:UnoTP_Masters` | The masters database, the second of the app's two connections. Blank, the masters are looked for in the main database. |
+| (in code) | Which of the two connections a table is read on, and the SQL that reads each master, are in the code, not in settings: `UnoTP.Data/MasterQueries.cs` has one query per master. A table in another database on the same server is written there by its full name, `OtherDb.dbo.Table`. |
 | `Backend:Switches:{Identify, Ocr, Verification, PanAadhaarLink, FaceMatch, NameMatch}` | `false` switches the check off: it is not called, the page goes on, and the check is marked as not asked for Operations. Masking and the PAN check have no switch; name screening has its own (`NameScreening:ApiCall`). |
 | `AuthApi:DecryptPath`, `AuthApi:SessionPath`, `AuthApi:MenuPath`, `AuthApi:SessionHours` | The way in: the path of each call under the gateway (`{userId}` and `{sysCode}` in the menu path are filled in), and how many hours a session lasts. |
 | `PanApi:VerifyPath` | Where a holder's PAN is checked with NSDL. Everything else the request carries - the app code, the sourcing type and sub type, who is asking - comes from the signed-in partner and the application. |

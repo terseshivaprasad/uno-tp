@@ -9,8 +9,8 @@ public sealed partial class SqlReference
     //
     // Marital status, the nominee's and the employee's relation, the occupation and
     // the source of funds are offered as the FD system's masters list them, and saved
-    // as its codes. The t_FD_BT_ and t_FD_MMFSL_ masters are in the main database, the
-    // t_FD_CMN_ ones in the FD system's common database. Only active rows are offered.
+    // as its codes. The query that reads each one is in MasterQueries. Only active rows
+    // are offered.
 
     private sealed record EmployeeRelationRow(string Code, string Name, bool Active);
 
@@ -26,29 +26,25 @@ public sealed partial class SqlReference
     /// </param>
     private async Task<MasterLists> MasterListsAsync(string selfRelation, string occupationTypesLeftOut, CancellationToken ct)
     {
-        await using var main = await db.OpenAsync(ct);
-        var maritalStatuses = (await main.QueryAsync<Option>("""
-            SELECT RTRIM(f_MaritalStatus_Code) AS Code, RTRIM(f_MaritalStatus_Name) AS Name
-            FROM dbo.t_FD_BT_Marital_Status_Mst WHERE f_Active = 1 ORDER BY f_MaritalStatus_Code
-            """)).ToList();
-        var employeeRows = (await main.QueryAsync<EmployeeRelationRow>("""
-            SELECT RTRIM(f_Relation_Code) AS Code, RTRIM(f_Relation_Name) AS Name, CAST(ISNULL(f_Active, 0) AS BIT) AS Active
-            FROM dbo.t_FD_MMFSL_Employee_Relation_Mst ORDER BY f_Relation_Name
-            """)).ToList();
+        // Each master's own query is in MasterQueries: these sort what they give back.
+        await using var marital = await db.OpenMastersAsync(ct);
+        var maritalStatuses = (await marital.QueryAsync<Option>(
+            $"SELECT m.Code, m.Name FROM ({MasterQueries.MaritalStatuses}) m ORDER BY m.Code")).ToList();
 
-        await using var common = await db.OpenAsync(Db.Common, ct);
-        var nomineeRelations = (await common.QueryAsync<Option>("""
-            SELECT RTRIM(f_Relation_Code) AS Code, RTRIM(f_Relation_Name) AS Name
-            FROM dbo.t_FD_CMN_Relation_Mst WHERE f_Active = 1 ORDER BY f_Relation_Name
-            """)).ToList();
+        await using var employee = await db.OpenMastersAsync(ct);
+        var employeeRows = (await employee.QueryAsync<EmployeeRelationRow>(
+            $"SELECT e.Code, e.Name, e.Active FROM ({MasterQueries.EmployeeRelations}) e ORDER BY e.Name")).ToList();
+
+        await using var nominee = await db.OpenMastersAsync(ct);
+        var nomineeRelations = (await nominee.QueryAsync<Option>(
+            $"SELECT n.Code, n.Name FROM ({MasterQueries.NomineeRelations}) n ORDER BY n.Name")).ToList();
 
         var leftOut = occupationTypesLeftOut.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        var occupations = (await common.QueryAsync<OccupationRow>("""
-            SELECT RTRIM(ISNULL(f_Ckyc_CustSeg_Type_Code, '')) AS TypeCode, RTRIM(ISNULL(f_Ckyc_CustSeg_Type_Desc, '')) AS TypeName,
-                   RTRIM(ISNULL(f_Ckyc_CustSeg_SubType_Code, '')) AS SubTypeCode, RTRIM(ISNULL(f_Ckyc_CustSeg_SubType_Desc, '')) AS SubTypeName,
-                   RTRIM(ISNULL(f_Ckyc_Occupation_Code, '')) AS OccupationCode, RTRIM(ISNULL(f_Ckyc_Occupation_Desc, '')) AS OccupationName
-            FROM dbo.t_FD_CMN_Ckyc_CustSeg_Mst
-            ORDER BY TRY_CAST(f_Ckyc_CustSeg_Type_Code AS INT), TRY_CAST(f_Ckyc_CustSeg_SubType_Code AS INT)
+        await using var occupation = await db.OpenMastersAsync(ct);
+        var occupations = (await occupation.QueryAsync<OccupationRow>($"""
+            SELECT o.TypeCode, o.TypeName, o.SubTypeCode, o.SubTypeName, o.OccupationCode, o.OccupationName
+            FROM ({MasterQueries.Occupations}) o
+            ORDER BY TRY_CAST(o.TypeCode AS INT), TRY_CAST(o.SubTypeCode AS INT)
             """)).Where(o => !leftOut.Contains(o.TypeCode)).ToList();
 
         var employeeRelations = new List<Option>();
@@ -62,10 +58,8 @@ public sealed partial class SqlReference
 
     private async Task<IReadOnlyList<Option>> SourcesOfFundsAsync(CancellationToken ct)
     {
-        await using var common = await db.OpenAsync(Db.Common, ct);
-        return (await common.QueryAsync<Option>("""
-            SELECT RTRIM(f_AML_Source_Of_Funds_Code) AS Code, RTRIM(f_AML_Source_Of_Funds_Desc) AS Name
-            FROM dbo.t_FD_CMN_AML_Source_Of_Funds_Mst WHERE f_Active = 1 ORDER BY f_AML_Source_Of_Funds_Code
-            """)).ToList();
+        await using var connection = await db.OpenMastersAsync(ct);
+        return (await connection.QueryAsync<Option>(
+            $"SELECT s.Code, s.Name FROM ({MasterQueries.SourcesOfFunds}) s ORDER BY s.Code")).ToList();
     }
 }

@@ -1,7 +1,7 @@
 /* =============================================================================
    Uno TP - the occupation and sub occupation on Investor Information are offered as
-   the FD system's occupation master lists them (t_FD_CMN_Ckyc_CustSeg_Mst, in the
-   common database): its types as occupations and, under each, its sub-types. The
+   the FD system's occupation master lists them (t_FD_CMN_Ckyc_CustSeg_Mst, read on
+   the masters connection): its types as occupations and, under each, its sub-types. The
    save writes the chosen row's codes to t_FD_BT_Kyc_Data_Dtl - f_CustSeg_Type_Code,
    f_CustSeg_Subtype_Code, f_Kyc_Occupation_Code and f_Kyc_Occupation_Desc - beside
    the names. The 'occupations' and 'subOccupations' lists in t_Unotp_Ref_List are no

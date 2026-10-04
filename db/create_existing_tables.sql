@@ -394,40 +394,6 @@ CREATE TABLE [dbo].[t_FD_BT_Investor_Bank_Dtl](
 END
 GO
 
-/* ----- t_FD_CMN_AML_Source_Of_Funds_Log -----------------------------------------------
-   The FD system's log of the source of funds an investor gave, with the amount,
-   annual income and occupation it was asked for. It sits in the FD system's common
-   database (ConnectionStrings:UnoTP_Common); created here for a database built
-   from nothing, where everything is in one.
-   ----------------------------------------------------------------------------- */
-IF OBJECT_ID(N'dbo.t_FD_CMN_AML_Source_Of_Funds_Log', N'U') IS NULL
-BEGIN
-CREATE TABLE [dbo].[t_FD_CMN_AML_Source_Of_Funds_Log](
-    [f_Pk_t_FD_CMN_AML_Source_Of_Funds_Log_Id] [bigint] IDENTITY(1,1) NOT NULL,
-    [f_Sys_Ref_no] [nvarchar](50) NULL,
-    [f_Appl_No] [nvarchar](50) NULL,
-    [f_Holder_Type] [nvarchar](20) NULL,
-    [f_Investment_Amt] [decimal](18, 2) NULL,
-    [f_AnnualIncome_Code] [nvarchar](20) NULL,
-    [f_AnnualIncome_Desc] [nvarchar](250) NULL,
-    [f_AML_Source_Of_Funds] [nvarchar](50) NULL,
-    [f_AML_Source_Of_Funds_Remarks] [nvarchar](1000) NULL,
-    [f_AML_Source_Of_Funds_reason] [nvarchar](1000) NULL,
-    [f_Active] [bit] NULL,
-    [f_CreatedBy] [nvarchar](50) NULL,
-    [f_CreatedByUName] [nvarchar](100) NULL,
-    [f_CreatedOn] [datetime] NULL,
-    [f_CreatedIP] [nvarchar](50) NULL,
-    [f_SessionId] [bigint] NULL,
-    [f_FormCode] [nvarchar](50) NULL,
-    [f_Source] [nvarchar](50) NULL,
-    [f_Folio_No] [varchar](20) NULL,
-    [f_Occupation_Code] [varchar](20) NULL,
-    [f_Occupation_Desc] [varchar](50) NULL
-);
-END
-GO
-
 /* ----- t_FD_BOTC_SCHEME: the rate card -------------------------------------------------
    The FD system's own rate card: one row per scheme code. Here with the columns the
    app reads and those seen beside them; the column types are the app's reading of
