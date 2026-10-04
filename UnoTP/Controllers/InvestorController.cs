@@ -64,7 +64,6 @@ public class InvestorController(
             Offline = TempData["offline"] is true,
             Unfinished = TempData["unfinished"] as int?,
             Errors = TempData["errors"] is string errors ? JsonSerializer.Deserialize<Dictionary<string, string>>(errors)! : new Dictionary<string, string>(),
-            CategoryConflict = TempData["categoryConflict"] as string,
             ScreeningNotAllowed = TempData["screeningNotAllowed"] as string,
             Focus = docs.Shown?.Focus ?? TempData["focus"] as string,
             Places = await PlacesAsync(state),
@@ -121,26 +120,10 @@ public class InvestorController(
             return Back(first.Id);
         }
 
-        // The deposit category and the investor's gender must agree: the gender read
-        // off the folio or an Aadhaar, else the one chosen here. A female applicant
-        // under a non-women category moves to the women's counterpart, and the page
-        // says so; a male applicant under a women's category is corrected on Upload
-        // Documents first.
-        var gender = docs.HolderGender;
-        if (gender.Length == 0) gender = state.Fields.GetValueOrDefault("Holder1.Gender") ?? "";
-        var outcome = docs.CategoryAgainstGender(gender);
-        if (outcome.Conflict is not null)
-        {
-            TempData["categoryConflict"] = outcome.Conflict;
-            return Back("investorStopped");
-        }
-        if (outcome.MovedTo is not null)
-        {
-            docs.State.Category = outcome.MovedTo.Code;
-            docs.Said = new Flash { Banner = outcome.MovedMessage };
-            await SaveAsync(docs);
-            return Back("holder-1");
-        }
+        // The deposit category follows the investor's gender: the one read off the
+        // folio or a proof, else the one chosen on this page, which the documents
+        // model is given as it loads. It is set, not chosen, so there is nothing to
+        // put right by hand; it is saved with the application below.
 
         // Every holder is screened by name before the application goes on. One not
         // allowed to invest online invests offline, at a branch: the page says so and
@@ -205,9 +188,11 @@ public class InvestorController(
 
     /// <summary>Save draft: what the form holds, kept, and the page as it stands.</summary>
     [HttpPost("save")]
-    public IActionResult Save(IFormCollection form)
+    public async Task<IActionResult> Save(IFormCollection form)
     {
         KeepTypedFields(form);
+        // A gender chosen here moves the category, which is saved with it.
+        if (await LoadAsync() is { } docs && docs.State.Category != categoryAsSaved) await SaveAsync(docs);
         return Back(null);
     }
 
@@ -490,8 +475,18 @@ public class InvestorController(
     {
         var appNo = HttpContext.CurrentApplication();
         var app = appNo is null ? null : await applications.FindAsync(appNo);
-        return app is null ? null : await ActivatorUtilities.CreateInstance<DocumentsViewModel>(services, app, HttpContext.Session).ReadyAsync();
+        if (app is null) return null;
+        categoryAsSaved = app.Upload?.Category ?? "";
+        var docs = ActivatorUtilities.CreateInstance<DocumentsViewModel>(services, app, HttpContext.Session);
+        // The gender this page's form holds, for an investor nothing read one for:
+        // the category follows it from the moment it is chosen or changed.
+        docs.GenderOnPage = State.Fields.GetValueOrDefault("Holder1.Gender");
+        return await docs.ReadyAsync();
     }
+
+    // The category the application was saved with, as it was read: a gender chosen
+    // on this page since may have moved it.
+    private string categoryAsSaved = "";
 
     // Saved against the version read, then DMS brought in line. A save refused
     // because the application changed in between keeps nothing, and says so. What

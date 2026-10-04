@@ -23,11 +23,14 @@ public partial class DocumentsViewModel
         // Aadhaar shows its last four digits only.
         (card.Number, card.Expiry) = (ProofNumber(type, reading), reading.Expiry);
         if (card.Number.Length > 0) entry.Add($"Number read: {card.Number}{(card.Expiry.Length > 0 ? $", valid till {Dates.Show(card.Expiry)}" : "")}.");
-        // The investor's gender, where the folio gives none, sets the category.
-        if (!h.Joint && Who.Gender.Length == 0 && reading.Gender.Length > 0 && State.Gender != reading.Gender)
+        // The investor's gender, where the folio gives none, sets the category. An
+        // Aadhaar, a passport and a voter ID carry it on the copy; a driving licence
+        // does not, and its issuer gives it instead.
+        var gender = reading.Gender.Length > 0 ? reading.Gender : answer.Gender;
+        if (!h.Joint && Who.Gender.Length == 0 && gender.Length > 0 && State.Gender != gender)
         {
-            State.Gender = reading.Gender;
-            entry.Add($"Gender read: {reading.Gender}.");
+            State.Gender = gender;
+            entry.Add($"Gender read: {gender}.");
         }
         var issuer = answer.Verifier;
 

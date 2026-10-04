@@ -235,7 +235,7 @@ public sealed record DrivingLicenceCard(
     string? IdNumber, string? NameOnCard, string? Address, string? DateOfBirth = null, string? DateOfValidity = null,
     IReadOnlyDictionary<string, string?>? IssueDates = null, IReadOnlyDictionary<string, string?>? Validity = null, string? Pincode = null);
 
-public sealed record PassportPage(string? FileNumber, string? NameOnCard, string? Address, string? DateOfBirth = null, string? PassportNumber = null, string? DateOfExpiry = null, string? Pincode = null);
+public sealed record PassportPage(string? FileNumber, string? NameOnCard, string? Address, string? DateOfBirth = null, string? PassportNumber = null, string? DateOfExpiry = null, string? Pincode = null, string? Gender = null);
 
 /// <summary>IDfy's cheque output (ind_cheque), field for field.</summary>
 /// <param name="DateOfIssue">The date written on the cheque; empty when none is.</param>
@@ -246,7 +246,7 @@ public sealed record ChequeLeaf(
     string? DateOfIssue, string? IfscCode, bool? IsScanned, string? MicrChequeNumber, string? MicrCode);
 
 /// <param name="IdNumber">The EPIC number, which IDfy may return partly masked, as T*****0275.</param>
-public sealed record VoterIdCard(string? IdNumber, string? NameOnCard, string? Address, string? DateOfBirth = null, string? Pincode = null);
+public sealed record VoterIdCard(string? IdNumber, string? NameOnCard, string? Address, string? DateOfBirth = null, string? Pincode = null, string? Gender = null);
 
 /// <summary>What a verify-with-source call found.</summary>
 /// <param name="Status">IDfy's id_found or id_not_found.</param>
@@ -259,4 +259,5 @@ public sealed record PanAadhaarLinkSource(bool? IsLinked);
 /// <param name="DlStatus">The licence's standing at the source, as Active.</param>
 /// <param name="NtValidityTo">When the non-transport licence runs out; null where there is none.</param>
 /// <param name="TValidityTo">When the transport licence runs out; null where there is none.</param>
-public sealed record LicenceSource(string? Status, string? DlStatus, string? NtValidityTo, string? TValidityTo);
+/// <param name="Gender">The holder's gender as Sarathi holds it; the licence's own OCR gives none.</param>
+public sealed record LicenceSource(string? Status, string? DlStatus, string? NtValidityTo, string? TValidityTo, string? Gender = null);

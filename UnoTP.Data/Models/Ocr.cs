@@ -19,7 +19,7 @@ public sealed record OcrSubject(string Pan, string Dob, string Name);
 /// a passport file number, a voter ID. An Aadhaar number is never stored.</param>
 /// <param name="Account">A cheque's account, masked, with its IFSC and branch.</param>
 /// <param name="Bank">The bank a cheque is drawn on.</param>
-/// <param name="Gender">"Male", "Female" or "Transgender", as an Aadhaar prints it; empty otherwise.</param>
+/// <param name="Gender">"Male", "Female" or "Transgender", as an Aadhaar, a passport or a voter ID prints it; empty otherwise.</param>
 /// <param name="Number">The number printed on a proof, as it is shown: a passport
 /// number, a licence number, a voter ID's EPIC number, an Aadhaar number.</param>
 /// <param name="Expiry">When a passport or a driving licence runs out, as dd-MM-yyyy; empty otherwise.</param>

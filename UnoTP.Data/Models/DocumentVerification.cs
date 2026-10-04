@@ -22,4 +22,6 @@ public interface IVerificationService
 /// <param name="Expiry">When the issuer holds the document as running out, dd-MM-yyyy;
 /// empty when it gives none. It stands over the date OCR read off the copy.</param>
 /// <param name="Standing">The document's standing with the issuer, as Active; empty when it gives none.</param>
-public sealed record Verification(bool Confirmed, string Verifier, string? NotAsked = null, string Expiry = "", string Standing = "");
+/// <param name="Gender">The holder's gender as the issuer holds it (see <see cref="Genders"/>); empty when it gives none.
+/// A driving licence's comes this way, as its copy does not carry one.</param>
+public sealed record Verification(bool Confirmed, string Verifier, string? NotAsked = null, string Expiry = "", string Standing = "", string Gender = "");

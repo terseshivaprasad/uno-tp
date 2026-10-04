@@ -272,9 +272,9 @@ public sealed class UploadState
     public string SubBroker { get; set; } = "";
     public string Category { get; set; } = "";
 
-    /// <summary>The investor's gender as read off an Aadhaar on this step, for a
-    /// holder the folio gives none for. It sets the deposit category where the
-    /// partner does not choose it.</summary>
+    /// <summary>The investor's gender as read off the proof of address on this step
+    /// (or given by its issuer), for a holder the folio gives none for. It sets the
+    /// deposit category.</summary>
     public string Gender { get; set; } = "";
 
     /// <summary>Where NSDL stands on an investor with no folio: empty until their PAN

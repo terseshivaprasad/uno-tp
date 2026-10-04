@@ -233,9 +233,6 @@ public sealed class InvestorViewModel(InvestorInfoState state, DocumentsViewMode
     /// <summary>Set when a FATCA question was answered Yes and Proceed was pressed.</summary>
     public bool Offline { get; init; }
 
-    /// <summary>Proceed stopped: the category on Upload Documents is a women's one and the applicant is male. Corrected there.</summary>
-    public string? CategoryConflict { get; init; }
-
     /// <summary>The nominees on record against the investor's folio, to fill the nominee's fields from; empty without a folio.</summary>
     public IReadOnlyList<NomineeOnRecord> NomineesOnRecord { get; init; } = [];
 
@@ -250,13 +247,6 @@ public sealed class InvestorViewModel(InvestorInfoState state, DocumentsViewMode
     {
         get
         {
-            if (CategoryConflict is not null)
-            {
-                return new StopNotice("Cannot proceed: the deposit category does not fit the applicant",
-                    CategoryConflict,
-                    "Open Upload Documents, choose a category that is not a women's one, and come back to Proceed.",
-                    "Go to Upload Documents", "Documents");
-            }
             if (ScreeningNotAllowed is not null)
             {
                 return new StopNotice("Cannot proceed: not allowed to invest online",

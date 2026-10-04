@@ -120,13 +120,13 @@ public sealed class IdfyOcr(IdfyClient idfy) : IOcrService
                 // A passport is verified by its file number, not its passport number.
                 var passport = (await idfy.ExtractPassportAsync(file, ct)).Result!.ExtractionOutput;
                 return new OcrReading(Name: passport?.NameOnCard ?? "", Address: WithPin(passport?.Address, passport?.Pincode),
-                    IdNumber: passport?.FileNumber ?? "", Dob: Dobs.Of(passport?.DateOfBirth),
+                    IdNumber: passport?.FileNumber ?? "", Gender: Genders.Of(passport?.Gender), Dob: Dobs.Of(passport?.DateOfBirth),
                     Number: passport?.PassportNumber ?? "", Expiry: Dobs.Of(passport?.DateOfExpiry));
 
             case "ind_voter_id":
                 var voter = (await idfy.ExtractVoterIdAsync(file, ct)).Result!.ExtractionOutput;
                 return new OcrReading(Name: voter?.NameOnCard ?? "", Address: WithPin(voter?.Address, voter?.Pincode),
-                    IdNumber: voter?.IdNumber ?? "", Dob: Dobs.Of(voter?.DateOfBirth), Number: voter?.IdNumber ?? "");
+                    IdNumber: voter?.IdNumber ?? "", Gender: Genders.Of(voter?.Gender), Dob: Dobs.Of(voter?.DateOfBirth), Number: voter?.IdNumber ?? "");
 
             default:
                 // IDfy reads no other document: nothing is read off the copy, and the
@@ -259,7 +259,7 @@ public sealed class IdfyVerification(IdfyClient idfy) : IVerificationService
             .Select(d => DateOnly.TryParseExact(d, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var on) ? on : (DateOnly?)null)
             .OfType<DateOnly>().DefaultIfEmpty().Max();
         return new(found, verifier, Expiry: found && until != default ? until.ToString("dd-MM-yyyy", CultureInfo.InvariantCulture) : "",
-            Standing: found ? source?.DlStatus ?? "" : "");
+            Standing: found ? source?.DlStatus ?? "" : "", Gender: found ? Genders.Of(source?.Gender) : "");
     }
 
     private static Verification NotAsked(string verifier, string why) => new(false, verifier, why);

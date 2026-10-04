@@ -44,8 +44,6 @@
     var sourceCodeLabel = sourcingMode?.CodeLabel ?? "Broker Code";
     var sourceNameLabel = sourcingMode?.NameLabel ?? "Broker Name";
 
-    IReadOnlyList<string> categories = [state.Category];
-    if (partnerChoosesSourcing) categories = sourcingMode?.Categories ?? [];
 
     var isEmployeeCategory = Model.IsEmployee(state.Category);
     var employeeName = Model.EmployeeName;
@@ -552,26 +550,16 @@
                 @{ await FieldError("docsSubBroker"); }
             </div>
 
-            @* What a deposit may be booked as belongs to the sourcing mode. *@
+            @* What a deposit is booked as is not chosen: it is set from the sourcing mode
+               and the investor's date of birth and gender, and shown here with why. *@
             <div class="doc-column">
                 <label class="field-label" for="docsCategory">Deposit Category</label>
                 <div class="doc-select">
-                    <select class="field-input @Invalid("docsCategory")" id="docsCategory" name="category" form="docsForm" disabled="@(!partnerChoosesSourcing || sourcingMode is null)" data-submit="docsRefresh" autofocus="@Focus("docsCategory")">
-                        <option value="">Select</option>
-                        @foreach (var category in categories)
-                        {
-                            <option value="@category" selected="@(state.Category == category)">@Model.CategoryName(category)</option>
-                        }
+                    <select class="field-input @Invalid("docsCategory")" id="docsCategory" disabled>
+                        <option selected>@(state.Category.Length > 0 ? Model.CategoryName(state.Category) : "Not set yet")</option>
                     </select>
                 </div>
-                @if (!partnerChoosesSourcing)
-                {
-                    await Note(Model.SetCategoryWhy);
-                }
-                else if (categories.Count == 1)
-                {
-                    await Note($"An application sourced as {sourcingMode!.Name} can only be booked as {Model.CategoryName(categories[0])}, so it is chosen here.");
-                }
+                @{ await Note(Model.SetCategoryWhy); }
                 @{ await FieldError("docsCategory"); }
             </div>
 

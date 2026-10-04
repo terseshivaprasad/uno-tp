@@ -9,7 +9,8 @@
     var banner = Model.Docs.Shown?.Banner;
 
     var investor = Model.Docs.Investor;
-    var investorGender = Model.Docs.HolderGender;
+    // The gender as read off the folio or a proof; with none, the page asks for it.
+    var investorGender = Model.Docs.ReadGender;
     var investorPhoto = Model.Docs.State.Docs.GetValueOrDefault(investor.Key("photo"));
 
     // Every joint holder's upload attempts; the investor's own are on Upload Documents.

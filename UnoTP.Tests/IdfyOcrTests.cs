@@ -50,4 +50,42 @@ public class IdfyOcrTests
 
         Assert.Equal("", reading.Address);
     }
+
+    [Theory]
+    [InlineData("Passport", "Female", Genders.Female)]
+    [InlineData("Passport", "M", Genders.Male)]
+    [InlineData("Voter ID", "F", Genders.Female)]
+    [InlineData("Voter ID", "Male", Genders.Male)]
+    public async Task A_passport_and_a_voter_id_give_the_gender_on_the_copy(string proof, string printed, string gender)
+    {
+        var network = new StubNetwork
+        {
+            Answer = """{"status":"completed","task_id":"t","result":{"extraction_output":{"address":"22 PARK STREET, KOLKATA","pincode":"700016","name_on_card":"NEHA DAS","gender":"PRINTED"}}}""".Replace("PRINTED", printed),
+        };
+
+        var reading = await OcrOver(network).ReadAsync(DocumentKind.ProofOfAddress, proof, Copy, new OcrSubject("", "", ""), consent: false);
+
+        Assert.Equal(gender, reading.Gender);
+    }
+
+    [Fact]
+    public async Task A_driving_licence_copy_gives_no_gender_and_its_issuer_does()
+    {
+        var copy = new StubNetwork
+        {
+            Answer = """{"status":"completed","task_id":"t","result":{"extraction_output":{"address":"12 MG ROAD, PATNA","pincode":"800001","name_on_card":"A HOLDER","id_number":"BR0120200012345"}}}""",
+        };
+        var reading = await OcrOver(copy).ReadAsync(DocumentKind.ProofOfAddress, "Driving Licence", Copy, new OcrSubject("", "", ""), consent: false);
+        Assert.Equal("", reading.Gender);
+
+        var issuer = new StubNetwork
+        {
+            Answer = """{"status":"completed","task_id":"t","result":{"source_output":{"status":"id_found","dl_status":"Active","gender":"Female","nt_validity_to":"2031-07-18"}}}""",
+        };
+        var verification = new IdfyVerification(new IdfyClient(issuer.Client(), Options.Create(new IdfyOptions()), NullLogger<IdfyClient>.Instance));
+        var answer = await verification.ConfirmProofAsync("Driving Licence", reading, "12-04-1990");
+
+        Assert.True(answer.Confirmed);
+        Assert.Equal(Genders.Female, answer.Gender);
+    }
 }

@@ -138,7 +138,7 @@ public partial class DocumentsViewModel
             Need(s.SourceCode.Length > 0, "docsSourceCode", $"Enter the {mode.CodeLabel.ToLowerInvariant()}");
             if (SubRequired(mode)) Need(s.SubBroker.Length > 0, "docsSubBroker", "Enter the sub broker code");
         }
-        Need(s.Category.Length > 0, "docsCategory", "Choose the deposit category");
+        Need(s.Category.Length > 0, "docsCategory", "No deposit category is set: choose the sourcing mode");
         if (IsEmployee(s.Category))
         {
             // A code this screen cannot put a name to is not a reason to stop:
@@ -370,11 +370,9 @@ public partial class DocumentsViewModel
             _ => postedSub.Length > 0 ? postedSub : PartnerCode,
         };
 
-        // What a deposit may be booked as belongs to the mode. A mode with one
-        // category settles it; otherwise what was chosen stands if the mode allows it.
-        var chosen = Posted.Category ?? s.Category;
-        s.Category = mode.Categories.Count == 1 ? mode.Categories[0]
-            : mode.Categories.Contains(chosen) ? chosen : "";
+        // What a deposit may be booked as belongs to the mode, and within it to the
+        // investor's date of birth and gender: it is set, not chosen.
+        s.Category = CategoryUnder(mode, s);
     }
 
     public static bool SubRequired(SourcingModeOption mode) => mode.Sub is SubField.Employee or SubField.EmployeeShut;

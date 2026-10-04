@@ -17,7 +17,6 @@ public sealed class UploadForm
     public string? Sourcing { get; set; }
     public string? SourceCode { get; set; }
     public string? SubBroker { get; set; }
-    public string? Category { get; set; }
     public string? EmpCode { get; set; }
     public string? EmpCompany { get; set; }
     public string? EmpHolder { get; set; }

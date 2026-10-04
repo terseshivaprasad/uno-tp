@@ -103,10 +103,33 @@ public partial class DocumentsViewModel
     /// </summary>
     public string CategoryFor(string dob, string gender, DateTime today)
     {
-        var senior = DateTime.TryParseExact(dob, "dd-MM-yyyy", System.Globalization.CultureInfo.InvariantCulture,
-            System.Globalization.DateTimeStyles.None, out var born) && born.AddYears(Config.SeniorAge) <= today.Date;
+        var senior = IsSenior(dob, today);
         var woman = gender == Genders.Female;
         return Ref.Categories.FirstOrDefault(c => !c.Employee && c.Senior == senior && c.Women == woman)?.Code ?? "";
+    }
+
+    /// <summary>Whether a date of birth (dd-MM-yyyy) makes its holder a senior citizen on a day: the senior age reached. One that is not a date does not.</summary>
+    public bool IsSenior(string dob, DateTime today)
+    {
+        if (!DateTime.TryParseExact(dob, "dd-MM-yyyy", System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.None, out var born)) return false;
+        return born.AddYears(Config.SeniorAge) <= today.Date;
+    }
+
+    /// <summary>
+    /// The category a branch user's deposit is booked as under a sourcing mode. It
+    /// is not chosen: of the categories the mode allows, it is the one the investor's
+    /// date of birth and gender make them. A mode with no senior citizen category of
+    /// its own - an employee's - goes by gender alone.
+    /// </summary>
+    private string CategoryUnder(SourcingModeOption mode, UploadState s)
+    {
+        var senior = IsSenior(Who.Dob, DateTime.Today);
+        var woman = GenderIn(s) == Genders.Female;
+        var allowed = Ref.Categories.Where(c => mode.Categories.Contains(c.Code)).ToList();
+        var theirs = allowed.FirstOrDefault(c => c.Senior == senior && c.Women == woman);
+        if (theirs is not null) return theirs.Code;
+        return allowed.FirstOrDefault(c => c.Women == woman)?.Code ?? "";
     }
 
     // ----- How the application is sourced --------------------------------------
@@ -150,10 +173,10 @@ public partial class DocumentsViewModel
     public SourcingModeOption BrokerMode => SourcingModes.First(m => m.Register == Register.Brokers);
 
     /// <summary>
-    /// Whether the partner chooses how the application is sourced and what it is
-    /// booked as: agency type 1033. Anyone else sources as a broker under their own
-    /// business broker code, and the category follows the holder's date of birth
-    /// and gender.
+    /// Whether the partner chooses how the application is sourced: agency type 1033.
+    /// Anyone else sources as a broker under their own business broker code. Nobody
+    /// chooses the category: it follows the holder's date of birth and gender, within
+    /// what the sourcing mode allows.
     /// </summary>
     public bool Chooses => Partner.AgencyType == Config.SourcingAgency;
 
@@ -166,17 +189,40 @@ public partial class DocumentsViewModel
     /// <summary>The business broker code a partner other than the sourcing agency files under.</summary>
     public string BusinessBroker => Partner.BrokerCode;
 
-    /// <summary>The gender the category is set from: the folio's, else an Aadhaar's read here.</summary>
+    /// <summary>
+    /// The gender the category is set from: the one read - off the folio or an
+    /// Aadhaar - else the one chosen on Investor Information.
+    /// </summary>
     public string HolderGender => GenderIn(State);
 
-    // Read off the state handed in, not State, which settles through here. The
-    // folio's gender, else an Aadhaar's read on this step, else what Investor
-    // Information asked and saved.
-    private string GenderIn(UploadState s)
+    /// <summary>
+    /// The investor's gender as read: the folio's, else the one a proof of address
+    /// filed on Upload Documents gave. Empty when neither gives one, and Investor
+    /// Information asks for it.
+    /// </summary>
+    public string ReadGender => ReadGenderIn(State);
+
+    /// <summary>
+    /// The gender Investor Information holds in its form just now, set by that page
+    /// on every request it makes, so the category follows it as soon as it is chosen
+    /// or changed. Null anywhere else, where the one it last saved stands.
+    /// </summary>
+    public string? GenderOnPage { get; set; }
+
+    // Read off the state handed in, not State, which settles through here.
+    private string ReadGenderIn(UploadState s)
     {
         if (Who.Gender.Length > 0) return Who.Gender;
-        if (s.Gender.Length > 0) return s.Gender;
-        return InvestorInformationGender;
+        return s.Gender;
+    }
+
+    // The gender read, else the one chosen on Investor Information: as its form
+    // holds it now, or as it was last saved.
+    private string GenderIn(UploadState s)
+    {
+        var read = ReadGenderIn(s);
+        if (read.Length > 0) return read;
+        return GenderOnPage ?? InvestorInformationGender;
     }
 
     /// <summary>
@@ -201,58 +247,33 @@ public partial class DocumentsViewModel
     public string InvestorInformationGender =>
         App.Details?.Holders.FirstOrDefault(h => h.Holder == HolderType.Investor)?.Gender ?? "";
 
-    /// <summary>A category by code, or null.</summary>
-    public CategoryOption? CategoryOf(string code) => Ref.Categories.FirstOrDefault(c => c.Code == code);
-
-    /// <summary>
-    /// The women's counterpart of a category: the one with the same employee and
-    /// senior standing and Women set (Public / General to Women, Senior citizen to
-    /// Senior citizen women, Employee to Employee women). Null for a women's category,
-    /// or one with no counterpart.
-    /// </summary>
-    public CategoryOption? WomensCategoryFor(string code)
+    /// <summary>Why the category stands as it does: nobody chooses it.</summary>
+    public string SetCategoryWhy
     {
-        var category = CategoryOf(code);
-        if (category is null) return null;
-        if (category.Women) return null;
-        return Ref.Categories.FirstOrDefault(c => c.Women && c.Employee == category.Employee && c.Senior == category.Senior);
+        get
+        {
+            if (State.Category.Length == 0) return "Set once the sourcing mode is chosen: from it, the date of birth and the gender.";
+            var from = "Set from the date of birth";
+            if (Who.Dob.Length == 0) from = "No date of birth is on record";
+            if (IsEmployee(State.Category)) from = "Set from the sourcing mode";
+            if (HolderGender.Length > 0) return $"{from} and gender ({HolderGender.ToLowerInvariant()}).";
+            return from + ". The gender is read off the proof of address, or chosen on Investor Information; until then a women's category cannot be given.";
+        }
     }
 
-    /// <summary>
-    /// Whether the deposit category and the investor's gender agree, once Investor
-    /// Information has the gender. A female applicant under a non-women category:
-    /// the category moves to its women's counterpart (<see cref="CategoryGenderOutcome.MovedTo"/>),
-    /// so she gets the women's rate. A male applicant under a women's category: the
-    /// category is wrong and is corrected on Upload Documents (<see cref="CategoryGenderOutcome.Conflict"/>).
-    /// </summary>
-    public CategoryGenderOutcome CategoryAgainstGender(string gender)
-    {
-        var category = CategoryOf(State.Category);
-        if (category is null) return new CategoryGenderOutcome();
-
-        if (gender == Genders.Female && WomensCategoryFor(category.Code) is { } womens)
-        {
-            return new CategoryGenderOutcome(MovedFrom: category, MovedTo: womens);
-        }
-        if (gender == Genders.Male && category.Women)
-        {
-            return new CategoryGenderOutcome(Conflict: $"The category on Upload Documents is {category.Name}, a women's category, but the applicant's gender is male. Correct the category on Upload Documents before proceeding.");
-        }
-        return new CategoryGenderOutcome();
-    }
-
-    /// <summary>Why the category stands as it does, for a partner who does not choose it.</summary>
-    public string SetCategoryWhy =>
-        (Who.Dob.Length == 0 ? "No date of birth is on record" : "Set from the date of birth")
-        + (HolderGender.Length > 0 ? $" and gender ({HolderGender.ToLowerInvariant()})."
-            : ". The gender is read off an Aadhaar filed as the proof of address; until then a women's category cannot be given.");
-
-    // A partner other than 1033 has nothing to choose: broker mode, their own
-    // code, and the category the holder's details set. Kept whenever the state is
-    // read, so a saved state from before holds to it too.
+    // The category is nobody's to choose: it is set from the holder's details
+    // whenever the state is read, so a saved state from before holds to it too. A
+    // branch user (1033) chooses the sourcing mode, and the category follows within
+    // what that mode allows. Any other partner has nothing to choose: broker mode,
+    // their own code, and the category the holder's details set.
     private void Settle(UploadState s)
     {
-        if (Chooses) return;
+        if (Chooses)
+        {
+            var mode = ModeOf(s.Sourcing);
+            s.Category = mode is null ? "" : CategoryUnder(mode, s);
+            return;
+        }
         s.Sourcing = BrokerMode.Code;
         s.SourceCode = BusinessBroker;
         s.Category = CategoryFor(Who.Dob, GenderIn(s), DateTime.Today);
@@ -281,12 +302,4 @@ public partial class DocumentsViewModel
     public bool EmployeeIsPrimary => PrimaryHolder.Length > 0 && State.EmpHolder == PrimaryHolder;
 
     public IReadOnlyList<string> EmployeeProofs => Ref.EmployeeProofs;
-}
-
-/// <summary>What <see cref="DocumentsViewModel.CategoryAgainstGender"/> found: nothing, a move to a women's category, or a conflict to correct.</summary>
-public sealed record CategoryGenderOutcome(CategoryOption? MovedFrom = null, CategoryOption? MovedTo = null, string? Conflict = null)
-{
-    /// <summary>What the page says when the category has moved to its women's counterpart.</summary>
-    public string MovedMessage =>
-        $"We notice a female applicant is selected under {MovedFrom?.Name}, a non-women category. The category has been updated to {MovedTo?.Name} to ensure they receive the applicable women's category benefits.";
 }
