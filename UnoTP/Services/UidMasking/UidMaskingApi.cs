@@ -9,9 +9,12 @@ namespace UnoTP.Services.UidMasking;
 /// the call under the gateway (<see cref="BackendOptions.BaseUrl"/>), how the
 /// masked copy is to come back, and the codes every request carries.
 /// </summary>
-public sealed class UidMaskingOptions
+public sealed class UidMaskingOptions : IApiAddress
 {
     public const string Section = "UidMasking";
+
+    /// <summary>The API's own address, https://{host}/ ; blank while it is behind the gateway (Backend:BaseUrl).</summary>
+    public string BaseUrl { get; set; } = "";
 
     /// <summary>The API's base path under the gateway. Every path below is relative to it.</summary>
     public string BasePath { get; set; } = "";
@@ -171,7 +174,7 @@ public static class UidMaskingServiceCollectionExtensions
     public static IServiceCollection AddUidMasking(this IServiceCollection services)
     {
         services.AddApiClient<IMaskingService, UidMaskingClient>(
-            sp => sp.GetRequiredService<IOptions<UidMaskingOptions>>().Value.BasePath);
+            sp => sp.GetRequiredService<IOptions<UidMaskingOptions>>().Value);
         return services;
     }
 }

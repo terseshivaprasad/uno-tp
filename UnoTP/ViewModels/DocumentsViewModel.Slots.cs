@@ -133,7 +133,7 @@ public partial class DocumentsViewModel
     }
 
     private const string CkycWhy =
-        "CKYC supplies this once the investor consents, which is asked for after the application is completed. It is not uploaded here.";
+        "The investor\u2019s CKYC record stands as their KYC, so this is not uploaded here.";
 
     // The three checks are named on the empty box too: a partner who knows UIDAI
     // will be asked reaches for the copy UIDAI would recognise.

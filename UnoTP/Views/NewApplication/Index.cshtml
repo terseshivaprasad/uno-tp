@@ -6,7 +6,10 @@
 
     // The old WA_FD_UNOTP/searchinvestor, carrying the new Investor Identification
     // screen's working parts. No script: every step is a form the controller
-    // answers, and what it found is written into the page.
+    // answers, and what it found is written into the page. It is the start of a
+    // renewal too: the investor's deposits stand under their record, with Renew
+    // on each one that is due.
+    var due = Model.Deposits?.Due ?? 0;
 }
 
 @* Nothing typed travels in an address or a hidden field: every form below posts
@@ -35,6 +38,14 @@
             </div>
         </div>
 
+        @if (Model.Said is not null)
+        {
+            <div class="alert alert-danger page-missing-items" role="alert">
+                <svg class="page-missing-items__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 7v6"></path><circle cx="12" cy="16.5" r=".7" fill="currentColor"></circle></svg>
+                <div class="page-missing-items__body"><p>@Model.Said</p></div>
+            </div>
+        }
+
         <section class="identify-holder">
             <div class="identify-holder__head">
                 <span class="identify-holder__no">1</span>
@@ -46,6 +57,11 @@
             <partial name="_HolderIdentification" model="@(new HolderIdentificationBlock(Model, "csi", step => Url.Action(step)!,
                 NewPanNote: "No folio against this PAN: a new application opens, and the PAN copy is checked with NSDL on Upload Documents."))" />
         </section>
+
+        @if (Model.Deposits is { } deposits)
+        {
+            <partial name="_Deposits" model="deposits" />
+        }
     </section>
 
     @* Only the partner's own applications, opened here and not yet submitted. *@
@@ -72,7 +88,15 @@
         <a class="btn btn-outline-primary" asp-controller="Dashboard" asp-action="Index"
            data-loader="Going back to the dashboard">Back</a>
         <p class="page-action-bar__hint">
-            @if (Model.Identified)
+            @if (Model.NewFdOff is not null && Model.CanProceed)
+            {
+                @:@Model.NewFdOff @(due > 0 ? "A deposit that is due can still be renewed from its row." : "Proceed is disabled until it is back.")
+            }
+            else if (due > 0)
+            {
+                @:@due @(due == 1 ? "deposit is" : "deposits are") due &mdash; <strong>Renew</strong> on its row, or <strong>Proceed</strong> for a new FD
+            }
+            else if (Model.Identified)
             {
                 @:Investor identified &mdash; <strong>ready to proceed</strong>
             }
@@ -87,7 +111,7 @@
         </p>
         <div class="page-action-bar__right">
             <button type="submit" class="link-button btn-reset" form="pageClearForm">Clear All</button>
-            <button type="submit" class="btn btn-primary" form="pageProceedForm" disabled="@(!Model.CanProceed)"
+            <button type="submit" class="btn btn-primary" form="pageProceedForm" disabled="@(!Model.CanProceed || Model.NewFdOff is not null)" title="@Model.NewFdOff"
                     data-loader="Opening Upload Documents…">Proceed</button>
         </div>
     </div>
@@ -97,4 +121,5 @@
 
 @section Styles {
     <link rel="stylesheet" href="~/css/pages/new.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/pages/renew.css" asp-append-version="true" />
 }

@@ -13,4 +13,6 @@ public interface IFaceMatchService
 /// <param name="Matched">Whether the two faces are the same person.</param>
 /// <param name="Score">How alike they are, 0 to 100.</param>
 /// <param name="Unsure">Set when no answer either way could be given - no face found, or too close to call - and why.</param>
-public sealed record FaceMatch(bool Matched, int Score, string? Unsure = null);
+/// <param name="PanFace">Whether a face was found on the PAN copy.</param>
+/// <param name="ProofFace">Whether a face was found on the proof of address.</param>
+public sealed record FaceMatch(bool Matched, int Score, string? Unsure = null, bool PanFace = true, bool ProofFace = true);

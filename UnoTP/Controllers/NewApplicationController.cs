@@ -7,21 +7,28 @@ using UnoTP.ViewModels;
 namespace UnoTP.Controllers;
 
 /// <summary>
-/// Investor Identification, the first classic wizard step: the primary holder is
-/// taken through <see cref="HolderSearch"/>. Every step is a post, and every post
+/// Investor Identification, the first classic wizard step, for a new deposit and a
+/// renewal alike: the primary holder is taken through <see cref="HolderSearch"/>,
+/// and the deposits they hold are listed under their record. Proceed opens a new
+/// deposit's application; Renew on a deposit that is due opens its renewal
+/// (<see cref="RenewController"/>). Every step is a post, and every post
 /// redirects back to the bare page address: what was typed and what the check found
 /// are kept in the browser's encrypted TempData cookie until Proceed - never in the
 /// address, so no PAN, date of birth or name reaches a log, the history or a
 /// Referer header, and never in the server's session. Proceed opens the
 /// application in the backend, which keeps it and everything on it from then on.
 /// </summary>
-[RequiresFeature("new-fd")]
+[RequiresFeature("new-fd", "renew")]
 [Route("SearchInvestor")]
 public class NewApplicationController(
     IApplicationApi applications,
-    HolderSearch search) : Controller
+    HolderSearch search,
+    IRenewalApi renewals,
+    FeatureSet features,
+    ConsoleState console,
+    Lookups lookups) : Controller
 {
-    private const string SearchKey = "search";
+    internal const string SearchKey = "search";
 
     // Peeked, not read, so it stays until the page replaces or clears it.
     private SearchState? Saved
@@ -41,7 +48,27 @@ public class NewApplicationController(
         var model = search.NewModel();
         model.Drafts = await applications.DraftsAsync();
         Saved = await search.ShowAsync(model, Saved);
+        // The page serves a new deposit and a renewal, each switched on and off on its
+        // own: whichever is off is shown disabled, saying why.
+        var board = await console.BoardAsync();
+        model.NewFdOff = DashboardViewModel.ClosedLine(features, board, "new-fd");
+        model.Deposits = await DepositsOfAsync(model.Record, DashboardViewModel.ClosedLine(features, board, "renew"));
+        model.Said = TempData[RenewController.SaidKey] as string;
         return View(model);
+    }
+
+    // The deposits the investor found holds: by their folio, or - with none - by their
+    // PAN and date of birth. Nothing to list for one with none.
+    private async Task<DepositsBlock?> DepositsOfAsync(NewApplicationViewModel.Holder? record, string? renewOff)
+    {
+        if (record is null) return null;
+
+        IReadOnlyList<HeldDeposit>? held;
+        if (record.Folio.Length > 0) held = await renewals.DepositsByFolioAsync(record.Folio);
+        else held = await renewals.DepositsByPanAsync(record.Pan, record.Dob);
+
+        if (held is null || held.Count == 0) return null;
+        return new DepositsBlock(held, await lookups.ReferenceAsync(), await lookups.ConfigAsync(), renewOff);
     }
 
     /// <summary>Check record: what was typed is kept, and the page checks it.</summary>
@@ -74,6 +101,7 @@ public class NewApplicationController(
     /// is then filed and put to NSDL on the upload step. The application is held by
     /// the backend; the upload step finds it by the number in its address.
     /// </summary>
+    [RequiresFeature("new-fd")]
     [HttpPost("proceed")]
     public async Task<IActionResult> Proceed()
     {

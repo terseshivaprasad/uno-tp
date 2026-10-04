@@ -44,7 +44,6 @@ public class CkycApiClientTests
         var found = await ClientOver(network).SearchAsync(Investor);
 
         Assert.True(found.Available);
-        Assert.Equal("XXXXXXXXXX1234", found.MaskedCkycId);
         Assert.Equal("A HOLDER", found.Name);
         Assert.Equal("REF-9", found.Reference);
     }

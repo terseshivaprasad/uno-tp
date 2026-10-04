@@ -71,7 +71,7 @@ public sealed class HolderSearch(IInvestorApi investors, UnoTP.Infrastructure.Lo
     {
         var onFolio = record.Folio.Length > 0;
         return new Holder(record.Pan, record.Dob, record.Name, record.Folio, record.Docs.Pan,
-            record.Address, onFolio ? record.Docs : null, Genders.Of(record.Gender));
+            record.Address, onFolio ? record.Docs : null, Genders.Of(record.Gender), record.Source);
     }
 
     // The search as the session holds it, checked again. False with nothing checked.

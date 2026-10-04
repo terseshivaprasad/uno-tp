@@ -4,8 +4,7 @@ namespace UnoTP.Infrastructure;
 /// Screens every request's input before a page sees it, and refuses the request
 /// (400) when it is not what a page of this app would send:
 ///   - a query or form parameter given more than once (parameter pollution) - except
-///     a checkbox and the hidden "false" beside it, which post true and false together,
-///     and a group of checkboxes that posts under one name (the declarations);
+///     a checkbox and the hidden "false" beside it, which post true and false together;
 ///   - a query or form value carrying a character no field of this app takes:
 ///     angle brackets, quotes, semicolons, backslashes, braces and the like;
 ///   - a value longer than any field of this app takes (a remark, the longest, is 200).
@@ -16,9 +15,6 @@ public sealed class InputScreening(RequestDelegate next, ILogger<InputScreening>
 {
     /// <summary>Characters no typed value may carry, whatever the field.</summary>
     private const string NeverAllowed = "<>\"';\\{}%$#!*()[]^~|`";
-
-    /// <summary>Form fields a page posts more than once by design: a group of checkboxes under one name.</summary>
-    private static readonly string[] MultiValued = ["declarations"];
 
     /// <summary>The longest any value may be: a remark's 200 characters (a query value may carry a path).</summary>
     private const int LongestValue = 200;
@@ -60,7 +56,7 @@ public sealed class InputScreening(RequestDelegate next, ILogger<InputScreening>
         foreach (var (name, values) in form)
         {
             if (name == "__RequestVerificationToken") continue;
-            if (values.Count > 1 && !IsCheckboxPair(values) && !MultiValued.Contains(name)) return $"form field '{name}' given {values.Count} times";
+            if (values.Count > 1 && !IsCheckboxPair(values)) return $"form field '{name}' given {values.Count} times";
             foreach (var value in values)
             {
                 if (HasNeverAllowed(value)) return $"form field '{name}' carries a character not allowed";

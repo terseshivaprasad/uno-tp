@@ -111,6 +111,10 @@ public sealed class SessionPartner(IHttpContextAccessor http) : IPartner
     public string? SessionId => Session.BackendSession();
 
     public string IpAddress => http.HttpContext?.Connection.RemoteIpAddress?.ToString() ?? "";
+
+    public string UserClusterId => Session.User()?.Agency_Usr_Clustered_ID ?? "";
+
+    public string UserName => Session.Profile()?.UserName ?? "";
 }
 
 /// <summary>Who the partner is: what the auth API said of them when their session started, kept with the sign-in.</summary>

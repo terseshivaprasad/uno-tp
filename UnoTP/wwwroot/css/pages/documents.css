@@ -117,7 +117,9 @@
 }
 .doc-head__refs {
   display: flex;
-  gap: 32px;
+  /* A renewal carries a third reference - the deposit it renews - so on a phone they wrap. */
+  flex-wrap: wrap;
+  gap: 12px 32px;
   margin: 0;
 }
 .doc-head__refs dt {

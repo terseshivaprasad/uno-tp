@@ -64,9 +64,10 @@ public interface IApplicationApi
 /// <param name="Address">The address on record, or empty for an investor with none yet.</param>
 /// <param name="OnRecord">What the folio already holds, for an application opened on one.</param>
 /// <param name="Gender">As the folio holds it, or empty for an investor with no folio.</param>
+/// <param name="Source">Where the folio's record says the investor's KYC came from; empty for an investor with no folio, or a folio that does not say.</param>
 public sealed record Holder(
     string Pan, string Dob, string Name, string Folio, bool PanFiled,
-    string Address = "", DocsOnRecord? OnRecord = null, string Gender = "");
+    string Address = "", DocsOnRecord? OnRecord = null, string Gender = "", string Source = "");
 
 /// <summary>One application: who it is for, and the upload step's state.</summary>
 public sealed class Application
@@ -112,24 +113,17 @@ public sealed class Application
     public Dictionary<string, string> Pages { get; set; } = [];
 
     /// <summary>
-    /// Whose rate card the deposit is quoted from: the deposit's category, the holder's
-    /// gender - the folio's, else an Aadhaar's read on Upload Documents, else "M" - and
-    /// whether this is a purchase or a renewal. A renewal is quoted as on its maturity
-    /// date. The category is passed in: a page has it settled before the upload step is
+    /// Whose rate card the deposit is quoted from: the deposit's category, and whether
+    /// this is a purchase or a renewal. A renewal starts on its maturity date,
+    /// and is quoted off today's card like any other. The category is passed in: a page has it settled before the upload step is
     /// saved (Upload Documents sets it from the holder for a broker partner).
     /// </summary>
     public RatesRequest RateCardRequest(string category)
     {
-        var gender = Holder.Gender;
-        if (gender.Length == 0 && Upload is not null) gender = Upload.Gender;
-
-        var letter = "M";
-        if (gender.StartsWith('F') || gender.StartsWith('f')) letter = "F";
-
         var applicationType = RateCard.Purchase;
         if (Renewal is not null) applicationType = RateCard.Renew;
 
-        return new RatesRequest(category, letter, applicationType, Renewal?.MaturesOn);
+        return new RatesRequest(category, applicationType, Renewal?.MaturesOn);
     }
 }
 
@@ -199,13 +193,39 @@ public sealed record BankAccount(string Ifsc, string AccountNumber);
 public sealed record ChequeDetails(string Number, string Date, string CmsLocation);
 
 /// <summary>The deposit an application renews: what runs on into the new one.</summary>
-/// <param name="Amount">What is renewed - the deposit's maturity amount - which the new deposit is opened for, read-only.</param>
-public sealed record RenewalOf(string DepositNumber, long Amount, DateOnly MaturesOn, decimal Rate, int TenureMonths, string Payout);
+/// <param name="Amount">The deposit's maturity amount: what is renewed when principal and interest are.</param>
+/// <param name="Principal">The deposit's own amount: what is renewed when the principal only is; 0 when not known.</param>
+public sealed record RenewalOf(string DepositNumber, long Amount, DateOnly MaturesOn, decimal Rate, int TenureMonths, string Payout, long Principal = 0)
+{
+    /// <summary>Whether the principal is known, so the principal alone can be renewed.</summary>
+    public bool PrincipalKnown => Principal > 0;
+
+    /// <summary>The new deposit's amount, for what of this deposit is renewed (a <see cref="RenewalChoice"/> code).</summary>
+    public long AmountFor(string renewalFor)
+    {
+        if (renewalFor == RenewalChoice.Principal && PrincipalKnown) return Principal;
+        return Amount;
+    }
+}
+
+/// <summary>
+/// What a deposit is renewed for, as the renewInstructions list codes it: on a
+/// renewal, what of the old deposit runs on into the new one; under auto renewal,
+/// what the new deposit will renew for. The FD system keeps them as P and F.
+/// </summary>
+public static class RenewalChoice
+{
+    public const string Principal = "principal";
+
+    public const string PrincipalInterest = "principal-interest";
+}
 
 /// <summary>FD Configuration, as saved. Codes are the reference lists'.</summary>
 /// <param name="NoTds">Form 121, the TDS declaration, is submitted, so no TDS is deducted.</param>
 /// <param name="SourceOfFunds">A sourcesOfFunds code, where the deposit asks for one (AppConfig.SourceOfFundsFrom); empty otherwise.</param>
-/// <param name="SourceOfFundsRemark">What the source is, typed, when the code is "other".</param>
+/// <param name="SourceOfFundsRemark">What the source is, typed, when the source is the one that takes a remark (AppConfig.SourceOfFundsOther).</param>
+/// <param name="SourceOfFundsReason">Why the source of funds was asked: "Occupation" or "Annual Income"; empty when it was not.</param>
+/// <param name="RenewalFor">On a renewal, what of the old deposit is renewed (a <see cref="RenewalChoice"/> code); empty otherwise.</param>
 public sealed record DepositDetails(
     long Amount,
     int TenureMonths,
@@ -215,7 +235,9 @@ public sealed record DepositDetails(
     bool NoTds,
     string DeliveryType,
     string SourceOfFunds = "",
-    string SourceOfFundsRemark = "");
+    string SourceOfFundsRemark = "",
+    string SourceOfFundsReason = "",
+    string RenewalFor = "");
 
 /// <param name="Status">Where the application stands once submitted: "payment-pending", then the backend's own.</param>
 /// <param name="LinkSentTo">The mobile number the link went to by SMS, masked.</param>
@@ -273,10 +295,10 @@ public sealed class UploadState
     /// <summary>A paper form's number, kept through a switch to digital and back.</summary>
     public string TypedFormNo { get; set; } = "";
 
-    /// <summary>Set once the KYC is to come from CERSAI; it cannot be taken back.</summary>
+    /// <summary>Set once CERSAI's record stands as the investor's KYC; it cannot be taken back.</summary>
     public bool Ckyc { get; set; }
 
-    /// <summary>CERSAI's reference for the record its search found, for the fetch that follows the investor's consent.</summary>
+    /// <summary>The CKYC reference number of the record CERSAI's search found: kept as the investor's CKYC number (f_Kyc_Number).</summary>
     public string CkycReference { get; set; } = "";
 
     /// <summary>Set when the investor's post goes to an address other than the
@@ -374,7 +396,28 @@ public sealed class JointHolder
 /// <see cref="Before"/> is one that came over from the step before or the folio,
 /// which has a name but no copy here to show.
 /// </summary>
-public sealed record StoredDoc(string FileName, long Size, string ContentType, string Check, string CheckKind, bool Before = false);
+/// <param name="Checks">What the outside checks made of it as it was filed; null for a document none was run on.</param>
+public sealed record StoredDoc(string FileName, long Size, string ContentType, string Check, string CheckKind, bool Before = false, DocChecks? Checks = null);
+
+/// <summary>
+/// What the outside checks made of a document as it was filed, for the flags
+/// t_FD_BT_KYC_document keeps of it. Whether what was read was then confirmed is
+/// the document's <see cref="StoredDoc.CheckKind"/>, which a later check can change.
+/// </summary>
+/// <param name="IdentifiedAs">What identification took it for; empty when identification was not asked.</param>
+/// <param name="OcrAsked">Whether OCR was asked to read it.</param>
+/// <param name="Read">Whether OCR read anything off it.</param>
+/// <param name="Number">The number read off it: a PAN, a passport, licence or voter ID number, a cheque number. An Aadhaar's last four digits only.</param>
+/// <param name="Expiry">When it runs out, dd-MM-yyyy; empty for one that does not, or whose date was not read.</param>
+/// <param name="Masked">Whether it is an Aadhaar filed with its number masked.</param>
+/// <param name="Face">The comparison of the faces on the PAN copy and the proof of address; null when none was made.</param>
+public sealed record DocChecks(
+    string IdentifiedAs = "", bool OcrAsked = false, bool Read = false, string Number = "", string Expiry = "",
+    bool Masked = false, FaceCheck? Face = null);
+
+/// <param name="Found">Whether a face was found on this copy.</param>
+/// <param name="Score">How alike the two faces are, 0 to 100.</param>
+public sealed record FaceCheck(bool Found, int Score);
 
 /// <summary>What a card below the documents says; <see cref="Reset"/> puts back how it opened.</summary>
 public sealed class ReadCard
@@ -449,8 +492,9 @@ public sealed class LogEntry(string id, string document, int attempt, string at,
 /// <param name="StepsDone">How many of the four steps - Upload Documents, Investor Information, Bank Details &amp; Payment, FD Configuration - are saved.</param>
 /// <param name="NextStep">The first of them not saved yet, or Review Summary once all four are.</param>
 /// <param name="TouchedAt">When it was last saved, on the app's clock.</param>
+/// <param name="Renews">The deposit a renewal's draft renews; empty for a new deposit's.</param>
 public sealed record DraftSummary(string AppNo, string Name, string Pan, string Dob, long Amount,
-    int StepsDone = 0, string NextStep = "", DateTime? TouchedAt = null)
+    int StepsDone = 0, string NextStep = "", DateTime? TouchedAt = null, string Renews = "")
 {
     /// <summary>The steps an application goes through before its review, in order.</summary>
     public static readonly string[] Steps = ["Upload Documents", "Investor Information", "Bank Details & Payment", "FD Configuration"];

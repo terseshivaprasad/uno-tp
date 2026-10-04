@@ -39,28 +39,8 @@ public static class SqlDataServiceCollectionExtensions
         services.AddSqlErrorLog();
         // An unpaid application cancels itself cancellationDays after it was created.
         services.AddHostedService<SqlAutoCancel>();
-        // The deposits a folio holds are the FD system's: none are known until it answers.
-        services.AddSingleton<IRenewalApi, NoHeldDeposits>();
+        // The deposits a folio holds: those booked through this app (SqlRenewals).
+        services.AddScoped<IRenewalApi, SqlRenewals>();
         return services;
-    }
-
-    private sealed class NoHeldDeposits : IRenewalApi
-    {
-        private static readonly IReadOnlyList<HeldDeposit> None = [];
-
-        public Task<IReadOnlyList<HeldDeposit>?> DepositsByFolioAsync(string folio, CancellationToken ct = default) =>
-            Task.FromResult<IReadOnlyList<HeldDeposit>?>(None);
-
-        public Task<IReadOnlyList<HeldDeposit>?> DepositsByPanAsync(string pan, string dob, CancellationToken ct = default) =>
-            Task.FromResult<IReadOnlyList<HeldDeposit>?>(None);
-
-        public Task<HeldDeposit?> DepositAsync(string number, CancellationToken ct = default) =>
-            Task.FromResult<HeldDeposit?>(null);
-
-        public Task<Application?> StartAsync(string depositNumber, CancellationToken ct = default) =>
-            Task.FromResult<Application?>(null);
-
-        public Task<bool> CancelAsync(string depositNumber, CancellationToken ct = default) =>
-            Task.FromResult(false);
     }
 }

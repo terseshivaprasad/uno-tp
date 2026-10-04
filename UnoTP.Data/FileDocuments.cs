@@ -6,7 +6,7 @@ namespace UnoTP.Data;
 
 /// <summary>
 /// Where a filed copy is kept, relative to the store's root: {appNo}/{holder}/{slot}{extension}.
-/// The store files it there, and t_Unotp_Kyc_Documents records it (c_File_Path).
+/// The store files it there, and t_FD_BT_KYC_document records it (f_Doc_Filepath).
 /// </summary>
 public static class DmsPaths
 {

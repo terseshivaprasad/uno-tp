@@ -21,6 +21,9 @@ public sealed class DepositForm
     private string sourceOfFundsValue = "";
     public string SourceOfFundsRemark { get => sourceOfFundsRemarkValue; set => sourceOfFundsRemarkValue = (value ?? "").Trim(); }
     private string sourceOfFundsRemarkValue = "";
+    /// <summary>On a renewal, what of the old deposit is renewed: a <see cref="RenewalChoice"/> code.</summary>
+    public string RenewalFor { get => renewalForValue; set => renewalForValue = value ?? ""; }
+    private string renewalForValue = "";
 
     public long AmountValue => long.TryParse(new string(Amount.Where(char.IsAsciiDigit).ToArray()), out var n) ? n : 0;
 
@@ -43,13 +46,27 @@ public sealed class DepositForm
             DeliveryType = saved.DeliveryType,
             SourceOfFunds = saved.SourceOfFunds,
             SourceOfFundsRemark = saved.SourceOfFundsRemark,
+            RenewalFor = saved.RenewalFor,
         };
 
-    public DepositDetails ToDetails()
+    /// <param name="sourceOfFunds">Whether, and why, the source of funds is asked for this deposit.</param>
+    public DepositDetails ToDetails(SourceOfFundsCheck sourceOfFunds)
     {
         var renewInstruction = AutoRenewal ? RenewInstruction : "";
-        var remark = SourceOfFunds == SourceOfFundsCheck.Other ? SourceOfFundsRemark : "";
-        return new DepositDetails(AmountValue, TenureMonths, InterestPayout, AutoRenewal, renewInstruction, NoTds, DeliveryType, SourceOfFunds, remark);
+        var remark = sourceOfFunds.TakesRemark(SourceOfFunds) ? SourceOfFundsRemark : "";
+        return new DepositDetails(AmountValue, TenureMonths, InterestPayout, AutoRenewal, renewInstruction, NoTds, DeliveryType,
+            SourceOfFunds, remark, sourceOfFunds.Reason, RenewalFor);
+    }
+
+    /// <summary>
+    /// A renewal's amount is the old deposit's, whatever was posted: its maturity
+    /// amount, or its principal when the principal only is renewed. Until a choice
+    /// is made, principal and interest are renewed.
+    /// </summary>
+    public void TakeRenewalAmount(RenewalOf renewal)
+    {
+        if (RenewalFor.Length == 0) RenewalFor = RenewalChoice.PrincipalInterest;
+        Amount = Money.Group(renewal.AmountFor(RenewalFor));
     }
 
     /// <summary>Where the source of funds is not asked, nothing of it is kept.</summary>
@@ -74,12 +91,18 @@ public sealed class DepositForm
     /// <summary>What stops the step, by field.</summary>
     /// <param name="rates">The rate card at the amount posted: the tenure and payout must be on it, and offered at the amount.</param>
     /// <param name="sourceOfFunds">Whether the source of funds is asked for this deposit.</param>
-    /// <param name="amountFixed">A renewal: the amount is the deposit's maturity amount, not the partner's to change or the limits' to check.</param>
-    public Dictionary<string, string> Problems(AppConfig config, RateTable rates, SourceOfFundsCheck sourceOfFunds, bool amountFixed = false)
+    /// <param name="renewal">The deposit a renewal renews: the amount is its own, not the partner's to change or the limits' to check; null for a new deposit.</param>
+    public Dictionary<string, string> Problems(AppConfig config, RateTable rates, SourceOfFundsCheck sourceOfFunds, RenewalOf? renewal = null)
     {
         var reference = rates.Reference;
         var problems = new Dictionary<string, string>();
-        if (!amountFixed && AmountProblem(config) is { } amount) problems["Amount"] = amount;
+        if (renewal is null && AmountProblem(config) is { } amount) problems["Amount"] = amount;
+
+        if (renewal is not null)
+        {
+            if (reference.RenewInstructions.All(r => r.Code != RenewalFor)) problems["RenewalFor"] = "Required — choose what of the deposit is renewed";
+            else if (RenewalFor == RenewalChoice.Principal && !renewal.PrincipalKnown) problems["RenewalFor"] = "The deposit's principal is not known — renew principal and interest";
+        }
 
         if (!rates.Tenures.Contains(TenureMonths))
         {
@@ -107,9 +130,9 @@ public sealed class DepositForm
         {
             var sources = reference.SourcesOfFunds ?? [];
             if (sources.All(s => s.Code != SourceOfFunds)) problems["SourceOfFunds"] = "Required — choose the source of funds";
-            else if (SourceOfFunds == SourceOfFundsCheck.Other && SourceOfFundsRemark.Length == 0) problems["SourceOfFundsRemark"] = "Required — say what the source of funds is";
-            else if (SourceOfFunds == SourceOfFundsCheck.Other && SourceOfFundsRemark.Length > InputRules.MaxRemark) problems["SourceOfFundsRemark"] = InputRules.TooLong(InputRules.MaxRemark);
-            else if (SourceOfFunds == SourceOfFundsCheck.Other && !InputRules.IsClean(SourceOfFundsRemark)) problems["SourceOfFundsRemark"] = InputRules.OnlyAllowed;
+            else if (sourceOfFunds.TakesRemark(SourceOfFunds) && SourceOfFundsRemark.Length == 0) problems["SourceOfFundsRemark"] = "Required — say what the source of funds is";
+            else if (sourceOfFunds.TakesRemark(SourceOfFunds) && SourceOfFundsRemark.Length > InputRules.MaxRemark) problems["SourceOfFundsRemark"] = InputRules.TooLong(InputRules.MaxRemark);
+            else if (sourceOfFunds.TakesRemark(SourceOfFunds) && !InputRules.IsClean(SourceOfFundsRemark)) problems["SourceOfFundsRemark"] = InputRules.OnlyAllowed;
         }
         return problems;
     }
@@ -129,7 +152,7 @@ public sealed class DepositViewModel(DocumentsViewModel docs, DepositForm form, 
     public IReadOnlyList<Option> SourcesOfFunds => Ref.SourcesOfFunds ?? [];
 
     /// <summary>Whether the remark box is open: the field is asked and "Other" is chosen.</summary>
-    public bool RemarkOpen => SourceOfFunds.Asked && Form.SourceOfFunds == SourceOfFundsCheck.Other;
+    public bool RemarkOpen => SourceOfFunds.Asked && SourceOfFunds.TakesRemark(Form.SourceOfFunds);
 
     /// <summary>The rate card at the amount entered, or at the standing amount before one is.</summary>
     public RateTable Rates { get; } = rates;
@@ -222,10 +245,17 @@ public sealed class DepositViewModel(DocumentsViewModel docs, DepositForm form, 
     /// <summary>Where an e-receipt goes: the investor's e-mail on Investor Information.</summary>
     public string Email => Docs.App.Details?.Holders.FirstOrDefault(h => h.Holder == HolderType.Investor)?.Email ?? "";
 
-    /// <summary>A renewal's amount is the deposit's maturity amount: shown, not typed.</summary>
+    /// <summary>A renewal's amount is the old deposit's: shown, not typed.</summary>
     public bool AmountFixed => Docs.IsRenewal;
 
-    public string AmountHint => AmountFixed ? $"{Money.InWords(Form.AmountValue)} · the maturity amount of deposit {Docs.Renewal!.DepositNumber}, renewed on {Money.Day(Docs.Renewal.MaturesOn)} at the rate prevailing then"
+    /// <summary>On a renewal, what of the old deposit the amount is, for the line beside it.</summary>
+    public string RenewedAmountIs(string renewalFor)
+    {
+        if (renewalFor == RenewalChoice.Principal) return $"the principal of deposit {Docs.Renewal!.DepositNumber}";
+        return $"the maturity amount of deposit {Docs.Renewal!.DepositNumber}";
+    }
+
+    public string AmountHint => AmountFixed ? $"{Money.InWords(Form.AmountValue)} · {RenewedAmountIs(Form.RenewalFor)}, renewed on {Money.Day(Docs.Renewal!.MaturesOn)} at the card rate on the day of application"
         : Form.AmountProblem(Config) is { } problem ? problem
         : Config.AmountStep > 1 ? $"{Money.InWords(Form.AmountValue)} · in multiples of {Money.Rupees(Config.AmountStep)}"
         : Money.InWords(Form.AmountValue);

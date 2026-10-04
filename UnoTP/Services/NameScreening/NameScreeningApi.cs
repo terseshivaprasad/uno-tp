@@ -10,9 +10,12 @@ namespace UnoTP.Services.NameScreening;
 /// base path under the gateway (<see cref="BackendOptions.BaseUrl"/>), the path of
 /// the call, its key, and which lists a holder is screened against.
 /// </summary>
-public sealed class NameScreeningOptions
+public sealed class NameScreeningOptions : IApiAddress
 {
     public const string Section = "NameScreening";
+
+    /// <summary>The API's own address, https://{host}/ ; blank while it is behind the gateway (Backend:BaseUrl).</summary>
+    public string BaseUrl { get; set; } = "";
 
     /// <summary>The API's base path under the gateway. The path below is relative to it.</summary>
     public string BasePath { get; set; } = "";

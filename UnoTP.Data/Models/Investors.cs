@@ -38,4 +38,4 @@ public sealed record AccountOnRecord(string Ifsc, string AccountNumber, string B
 /// <param name="Address">Empty when the register holds none.</param>
 public sealed record FolioRecord(
     string Pan, string Dob, string Folio, string Name, string Gender,
-    string Address, DocsOnRecord Docs, string Note);
+    string Address, DocsOnRecord Docs, string Note, string Source = "");

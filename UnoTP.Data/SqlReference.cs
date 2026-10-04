@@ -12,7 +12,7 @@ namespace UnoTP.Data;
 /// seen within one; the web app keeps them longer on its side
 /// (Backend:ReferenceCacheMinutes).
 /// </summary>
-public sealed class SqlReference(Db db, IMemoryCache cache) : IReferenceApi
+public sealed partial class SqlReference(Db db, IMemoryCache cache) : IReferenceApi
 {
     private static readonly TimeSpan KeptFor = TimeSpan.FromMinutes(1);
 
@@ -54,7 +54,8 @@ public sealed class SqlReference(Db db, IMemoryCache cache) : IReferenceApi
             SourceOfFundsFrom: Long("sourceOfFundsFrom"),
             SourceOfFundsOccupations: await Names("sourceOfFundsOccupations"),
             SourceOfFundsIncomeBands: await Names("sourceOfFundsIncomeBands"),
-            OverMaxAmountMessage: s.GetValueOrDefault("overMaxAmountMessage", ""));
+            OverMaxAmountMessage: s.GetValueOrDefault("overMaxAmountMessage", ""),
+            SourceOfFundsOther: s.GetValueOrDefault("sourceOfFundsOther", ""));
     }
 
     // A setting that lists names, one after another with a semicolon between:
@@ -84,10 +85,13 @@ public sealed class SqlReference(Db db, IMemoryCache cache) : IReferenceApi
                 FROM dbo.t_Unotp_Feature_Mst WHERE f_Active = 1 ORDER BY n_Seq
                 """)).ToList();
             var settings = await SettingsAsync(ct);
-            return Build(entries, features, settings);
+            var masters = await MasterListsAsync(settings.GetValueOrDefault("employeeSelfRelation", ""), settings.GetValueOrDefault("occupationTypesLeftOut", ""), ct);
+            var sourcesOfFunds = await SourcesOfFundsAsync(ct);
+            return Build(entries, features, settings, masters, sourcesOfFunds);
         })!;
 
-    private static ReferenceData Build(ILookup<string, Entry> lists, IReadOnlyList<FeatureOption> features, IReadOnlyDictionary<string, string> settings)
+    private static ReferenceData Build(ILookup<string, Entry> lists, IReadOnlyList<FeatureOption> features, IReadOnlyDictionary<string, string> settings,
+        MasterLists masters, IReadOnlyList<Option> sourcesOfFunds)
     {
         // A text may name a setting, {renewFromDays}, which is filled in here.
         string Fill(string text) => settings.Aggregate(text, (t, s) => t.Replace("{" + s.Key + "}", s.Value, StringComparison.OrdinalIgnoreCase));
@@ -97,37 +101,38 @@ public sealed class SqlReference(Db db, IMemoryCache cache) : IReferenceApi
 
         return new ReferenceData(
             ApplicationTypes: Options("applicationTypes"),
-            Categories: Of("categories").Select(e => Attrs(e, a => new CategoryOption(e.Code, e.Name, ReadBool(a, "employee"), ReadBool(a, "women"), ReadBool(a, "senior"), ReadDecimal(a, "extraRate")))).ToList(),
+            Categories: Of("categories").Select(e => Attrs(e, a => new CategoryOption(e.Code, e.Name, ReadBool(a, "employee"), ReadBool(a, "women"), ReadBool(a, "senior"), ReadDecimal(a, "extraRate"), ReadString(a, "rateCategory") ?? ""))).ToList(),
             PaymentModes: Of("paymentModes").Select(e => Attrs(e, a => new PaymentModeOption(e.Name, ReadString(a, "document")))).ToList(),
             SourcingModes: Of("sourcingModes").Select(e => Attrs(e, a => new SourcingModeOption(e.Code, e.Name,
                 ReadString(a, "codeLabel") ?? "", ReadString(a, "nameLabel") ?? "", ReadString(a, "house") ?? "", ReadString(a, "search") ?? "",
                 ReadString(a, "register") ?? "", ReadString(a, "sub") ?? "", ReadStrings(a, "categories")))).ToList(),
             ProofsOfAddress: Of("proofsOfAddress").Select(e => Attrs(e, a => new ProofOption(e.Code, ReadString(a, "issuer") ?? "", ReadBool(a, "hasPhoto")))).ToList(),
             EmployeeHolders: Names("employeeHolders"),
-            EmployeeRelations: Names("employeeRelations"),
+            EmployeeRelations: masters.EmployeeRelations.Select(o => o.Name).ToList(),
             EmployeeProofs: Names("employeeProofs"),
             IncomeBands: Names("incomeBands"),
-            Occupations: Names("occupations"),
-            SubOccupations: Names("subOccupations"),
-            MaritalStatuses: Names("maritalStatuses"),
+            Occupations: masters.Occupations.Select(o => o.TypeName).Distinct().ToList(),
+            SubOccupations: masters.Occupations.Select(o => o.SubTypeName).Distinct().ToList(),
+            MaritalStatuses: masters.MaritalStatuses.Select(o => o.Name).ToList(),
             Genders: Names("genders"),
             NameTypes: Names("nameTypes"),
-            NomineeRelations: Names("nomineeRelations"),
+            NomineeRelations: masters.NomineeRelations.Select(o => o.Name).ToList(),
             Tenures: Of("tenures").Select(e => int.Parse(e.Code, CultureInfo.InvariantCulture)).ToList(),
-            Payouts: Of("payouts").Select(e => Attrs(e, a => new PayoutOption(e.Code, e.Name, ReadInt(a, "perYear"), ReadString(a, "each") ?? ""))).ToList(),
+            Payouts: Of("payouts").Select(e => Attrs(e, a => new PayoutOption(e.Code, e.Name, ReadInt(a, "perYear"), ReadString(a, "each") ?? "", ReadString(a, "interestFreq") ?? "", ReadString(a, "scheme") ?? ""))).ToList(),
             RenewInstructions: Options("renewInstructions"),
             DeliveryTypes: Options("deliveryTypes"),
             CmsLocations: Names("cmsLocations"),
             RequiredDocuments: Of("requiredDocuments").Select(e => Attrs(e, a => new RequiredDocumentGroup(e.Name, ReadStrings(a, "items"), ReadStrings(a, "notes")))).ToList(),
             IdentificationNotes: Names("identificationNotes"),
             DashboardNotes: Names("dashboardNotes"),
-            Declarations: Names("declarations"),
             NoticeKinds: Names("noticeKinds"),
             RenewalNotes: Names("renewalNotes"),
             Features: features,
-            SourcesOfFunds: Of("sourcesOfFunds").Select(e => new Option(e.Code, e.Name)).ToList(),
-            OccupationsWithSubs: Of("occupations").Select(e => Attrs(e, a => new OccupationOption(Fill(e.Name), ReadNames(a, "subOccupations")))).ToList(),
-            GatewayBanks: Of("gatewayBanks").Select(e => new Option(e.Code, e.Name)).ToList());
+            SourcesOfFunds: sourcesOfFunds,
+            OccupationsWithSubs: masters.Occupations.GroupBy(o => o.TypeName)
+                .Select(type => new OccupationOption(type.Key, type.Select(o => o.SubTypeName).ToList())).ToList(),
+            GatewayBanks: Of("gatewayBanks").Select(e => new Option(e.Code, e.Name)).ToList(),
+            Masters: masters);
     }
 
     // ----- An entry's attributes, j_Attrs -------------------------------------------
@@ -142,19 +147,6 @@ public sealed class SqlReference(Db db, IMemoryCache cache) : IReferenceApi
     private static bool ReadBool(JsonElement a, string name) => a.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.True;
 
     // A list of names in the attributes, or none when it is not there.
-    private static IReadOnlyList<string> ReadNames(JsonElement a, string name)
-    {
-        if (!a.TryGetProperty(name, out var v)) return [];
-        if (v.ValueKind != JsonValueKind.Array) return [];
-        var names = new List<string>();
-        foreach (var item in v.EnumerateArray())
-        {
-            var text = item.GetString() ?? "";
-            if (text.Length > 0) names.Add(text);
-        }
-        return names;
-    }
-
     // A number in the attributes, or 0 when it is not there.
     private static decimal ReadDecimal(JsonElement a, string name)
     {

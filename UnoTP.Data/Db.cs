@@ -4,10 +4,11 @@ using Microsoft.Data.SqlClient;
 namespace UnoTP.Data;
 
 /// <summary>
-/// The databases. ConnectionStrings:UnoTP holds the applications and everything
-/// else, unless an area is given a database of its own, as the old portal has them:
-///   UnoTP_Masters   the brokers, staff, IFSC and PIN code masters, the rate card, and
-///                   the config, feature and reference lists
+/// The databases. ConnectionStrings:UnoTP holds the applications, the FD system's
+/// rate card (t_FD_BOTC_SCHEME) and everything else, unless an area is given a
+/// database of its own, as the old portal has them:
+///   UnoTP_Masters   the brokers, staff, IFSC and PIN code masters, and the config,
+///                   feature and reference lists
 ///   UnoTP_Folios    the investor folios
 ///   UnoTP_Links     the payment links behind Short URL
 ///   UnoTP_Errors    the error log
@@ -21,6 +22,9 @@ public sealed class Db(IConfiguration config)
     public const string Folios = "UnoTP_Folios";
     public const string Links = "UnoTP_Links";
     public const string Errors = "UnoTP_Errors";
+
+    /// <summary>The FD system's common database: the source of funds log and the document master.</summary>
+    public const string Common = "UnoTP_Common";
 
     private readonly string mainConnectionString = config.GetConnectionString(Main) is { Length: > 0 } cs
         ? cs
@@ -46,6 +50,14 @@ public static class RowStatus
     public const string Pending = "PEN";
 
     public const string Approved = "APR";
+}
+
+/// <summary>How an application is signed, as Upload Documents and f_ApplicationDeclarationType name it.</summary>
+public static class ApplicationType
+{
+    public const string Digital = "DIGITAL";
+
+    public const string Physical = "PHYSICAL";
 }
 
 /// <summary>

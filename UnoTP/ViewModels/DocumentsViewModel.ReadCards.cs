@@ -156,6 +156,9 @@ public partial class DocumentsViewModel
         void FlashMessages(string state, string lines, string from, string kind) => State.Reads[key] = new ReadCard(state, lines, from, kind);
 
         if (!State.Docs.ContainsKey(h.Key("poa"))) return;
+        // A comparison made before, with a copy since replaced, no longer stands.
+        KeepFace(h, "pan", null);
+        KeepFace(h, "poa", null);
         if (!HasPhoto(type))
         {
             FlashMessages("Not applicable", $"A {type.ToLowerInvariant()} carries no photograph.", "There is no face on the proof to compare with the PAN copy.", "is-na");
@@ -185,6 +188,11 @@ public partial class DocumentsViewModel
             entry.Add($"Face match could not answer: {e.Message}", "warn");
             return;
         }
+        if (switches.IsOn(OutsideSwitches.FaceMatch))
+        {
+            KeepFace(h, "pan", new FaceCheck(answer.PanFace, answer.Score));
+            KeepFace(h, "poa", new FaceCheck(answer.ProofFace, answer.Score));
+        }
         var named = Printed(type);
         if (answer.Unsure is { } why)
         {
@@ -201,6 +209,14 @@ public partial class DocumentsViewModel
             FlashMessages("Faces do not match", $"Score {answer.Score} of 100", $"The photograph on the {named} is not the one on the PAN copy. The proof is filed; Operations look into it.", "is-failed");
             entry.Add($"Face match: the {named} is not the person on the PAN copy (score {answer.Score}).", "bad");
         }
+    }
+
+    // The face comparison, kept with each of the two copies it was made of.
+    private void KeepFace(DocHolder h, string slot, FaceCheck? face)
+    {
+        var key = h.Key(slot);
+        if (State.Docs.GetValueOrDefault(key) is not { Checks: not null } doc) return;
+        State.Docs[key] = doc with { Checks = doc.Checks with { Face = face } };
     }
 
     /// <summary>

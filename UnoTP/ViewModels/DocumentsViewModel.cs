@@ -164,7 +164,7 @@ public partial class DocumentsViewModel(
     /// Whether a holder's communication address is theirs to give here. Not where
     /// the system already holds the address - a folio with the proof of address or
     /// the address on it, whose address is the mailing address too - nor, for the
-    /// investor, once CKYC is fetched, whose record brings it. Wherever a proof of
+    /// investor, once CKYC is fetched, whose record stands as their KYC. Wherever a proof of
     /// address is asked for, the address is being set now and post may go elsewhere.
     /// </summary>
     public bool MailCanDiffer(DocHolder h) =>
@@ -173,7 +173,7 @@ public partial class DocumentsViewModel(
     // Why a holder has no communication address of their own to prove.
     private string MailWhy(DocHolder h) => h.Who.Folio.Length > 0
         ? "The address is on the folio, so post goes there."
-        : "The communication address comes with the CKYC record, once the investor consents. It is not uploaded here.";
+        : "The investor\u2019s CKYC record stands as their KYC, so no communication address proof is uploaded here.";
 
     /// <summary>
     /// Whether NSDL is asked about a holder's PAN when their PAN copy is filed: any

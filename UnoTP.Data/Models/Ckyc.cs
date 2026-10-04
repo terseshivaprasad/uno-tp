@@ -16,9 +16,8 @@ public interface ICkycService
 public sealed record CkycSearch(string AppNo, string HolderType, string Pan, string Dob);
 
 /// <param name="Available">Whether CERSAI holds a CKYC record for the PAN.</param>
-/// <param name="MaskedCkycId">The record's CKYC number, masked; empty when there is none.</param>
 /// <param name="Name">The name on the record; empty when there is none.</param>
-/// <param name="Reference">CERSAI's reference for the record, for the fetch that follows the investor's consent.</param>
+/// <param name="Reference">The record's CKYC reference number, which the application goes on with.</param>
 /// <param name="Why">Why no record came back, as CERSAI says it; empty when one did.</param>
 public sealed record CkycSearchResult(
-    bool Available, string MaskedCkycId = "", string Name = "", string Reference = "", string Why = "");
+    bool Available, string Name = "", string Reference = "", string Why = "");

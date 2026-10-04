@@ -36,7 +36,7 @@
                     <span class="draft__avatar @unknownClass" aria-hidden="true">@initials</span>
                     <span class="draft__main">
                         <span class="draft__name @unknownClass">@name</span>
-                        <span class="draft__meta"><span class="draft__no">@draft.AppNo</span> <span aria-hidden="true">&middot;</span> <span class="text-nowrap">PAN @draft.Pan</span></span>
+                        <span class="draft__meta"><span class="draft__no">@draft.AppNo</span> <span aria-hidden="true">&middot;</span> <span class="text-nowrap">PAN @draft.Pan</span>@if (draft.Renews.Length > 0) { <span aria-hidden="true">&middot;</span> <span class="draft__renews text-nowrap">Renewal of @draft.Renews</span> }</span>
                     </span>
                     <span class="draft__progress">
                         <span class="draft__bar" aria-hidden="true">

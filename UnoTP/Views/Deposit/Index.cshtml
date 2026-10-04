@@ -11,6 +11,7 @@
     (string Key, string Id)[] fieldIds =
     [
         ("Amount", "deposit-amount"),
+        ("RenewalFor", "deposit-renewal-for"),
         ("TenureMonths", "deposit-tenure-" + Model.Tenures.FirstOrDefault()),
         ("InterestPayout", "deposit-payout-" + (Model.Payouts.FirstOrDefault()?.Code ?? "")),
         ("RenewInstruction", "deposit-renew"),
@@ -35,7 +36,7 @@
     string? amountCheck = "amount";
     if (Model.AmountFixed)
     {
-        amountAside = $"the maturity amount of deposit {Model.Docs.Renewal!.DepositNumber}";
+        amountAside = Model.RenewedAmountIs(form.RenewalFor);
         amountRequired = null;
         amountCheck = null;
     }
@@ -121,7 +122,7 @@
                     <div class="deposit-group">
                         <div class="investor-section-head">
                             <label class="deposit-label" for="deposit-amount">Amount</label>
-                            <div class="deposit-aside">@amountAside</div>
+                            <div class="deposit-aside" id="deposit-amount-aside">@amountAside</div>
                         </div>
                         <div class="deposit-amount @amountBoxClass">
                             <span class="deposit-amount__currency" aria-hidden="true">&#8377;</span>
@@ -131,6 +132,38 @@
                         @{ await FieldError("Amount", "deposit-amount"); }
                         <div class="deposit-hint" id="deposit-amount-hint">@amountHint</div>
                     </div>
+
+                    @* ===== Renewal for: a renewal only ===== *@
+                    @* What of the old deposit runs on into the new one; the amount above follows
+                       the choice at once (deposit.js), from each option's own figure. The
+                       principal alone cannot be chosen while the deposit's principal is not known. *@
+                    @if (Model.Docs.Renewal is { } renewal)
+                    {
+                        <div class="deposit-group deposit-grid-2">
+                            <div class="doc-column">
+                                <label class="field-label" for="deposit-renewal-for">Renewal for</label>
+                                <div class="doc-select">
+                                    <select class="field-input @Invalid("RenewalFor")" id="deposit-renewal-for" name="RenewalFor" data-quote aria-invalid="@AriaInvalid("RenewalFor")" aria-describedby="deposit-renewal-for-hint">
+                                        @foreach (var choice in Model.Ref.RenewInstructions)
+                                        {
+                                            var shut = choice.Code == RenewalChoice.Principal && !renewal.PrincipalKnown;
+                                            <option value="@choice.Code" selected="@(choice.Code == form.RenewalFor)" disabled="@shut"
+                                                    data-amount="@Money.Group(renewal.AmountFor(choice.Code))" data-aside="@Model.RenewedAmountIs(choice.Code)">@choice.Name</option>
+                                        }
+                                    </select>
+                                </div>
+                                @{ await FieldError("RenewalFor", "deposit-renewal-for"); }
+                                @if (!renewal.PrincipalKnown)
+                                {
+                                    <p class="field-hint" id="deposit-renewal-for-hint">Principal only is not open: the deposit&rsquo;s principal is not known</p>
+                                }
+                                else
+                                {
+                                    <p class="field-hint" id="deposit-renewal-for-hint">Principal only pays the interest out; principal and interest renews the maturity amount</p>
+                                }
+                            </div>
+                        </div>
+                    }
 
                     @* ===== Tenure ===== *@
                     <div class="deposit-group" role="radiogroup" aria-labelledby="deposit-tenure-label">
@@ -206,7 +239,7 @@
                            disabled, so its choice is not posted. *@
                         <fieldset class="deposit-grid-2 doc-choice" data-show-when="AutoRenewal=true" hidden="@(!form.AutoRenewal)" disabled="@(!form.AutoRenewal)">
                             <div class="doc-column">
-                                <label class="field-label" for="deposit-renew">Renew</label>
+                                <label class="field-label" for="deposit-renew">@(Model.AmountFixed ? "Future renewal for" : "Renew")</label>
                                 <div class="doc-select">
                                     <select class="field-input @Invalid("RenewInstruction")" id="deposit-renew" name="RenewInstruction" data-quote data-required="Required — choose what auto renewal renews" aria-invalid="@AriaInvalid("RenewInstruction")">
                                         <option value="" selected="@(form.RenewInstruction.Length == 0)">Select</option>
@@ -256,7 +289,7 @@
                         <div class="doc-column">
                             <label class="field-label" for="deposit-source-of-funds">Source of funds</label>
                             <div class="doc-select">
-                                <select class="field-input @Invalid("SourceOfFunds")" id="deposit-source-of-funds" name="SourceOfFunds" disabled="@(!Model.SourceOfFunds.Asked)" data-quote aria-invalid="@AriaInvalid("SourceOfFunds")" aria-describedby="deposit-source-of-funds-why">
+                                <select class="field-input @Invalid("SourceOfFunds")" id="deposit-source-of-funds" name="SourceOfFunds" disabled="@(!Model.SourceOfFunds.Asked)" data-other="@Model.SourceOfFunds.Other" data-quote aria-invalid="@AriaInvalid("SourceOfFunds")" aria-describedby="deposit-source-of-funds-why">
                                     <option value="" selected="@(form.SourceOfFunds.Length == 0)">Choose</option>
                                     @foreach (var source in Model.SourcesOfFunds)
                                     {

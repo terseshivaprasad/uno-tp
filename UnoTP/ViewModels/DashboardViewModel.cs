@@ -61,8 +61,8 @@ public class DashboardViewModel(FeatureSet features, ConsoleBoard board, string?
 
     public IReadOnlyList<DashboardTile> NewFd => newFd ??= Listed(
     [
-        // A new page with a plus.
-        Tile("new-fd", Sheet + $"<path d=\"M13 11.5v8M9 15.5h8\" {White} stroke-width=\"2.4\"></path>", "NewApplication"),
+        // A new page with a plus: a new deposit, and a renewal, which start on the same page.
+        NewOrRenewTile(Sheet + $"<path d=\"M13 11.5v8M9 15.5h8\" {White} stroke-width=\"2.4\"></path>"),
         // A pay-in slip: a torn-off receipt with the rupee on it.
         Tile("pis", "<path d=\"M5 3.5a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v18l-2.3-1.5-2.4 1.5-2.3-1.5-2.3 1.5-2.4-1.5L5 21.5z\" fill=\"currentColor\"></path>"
             + $"<path d=\"M9 7h6M9 10h6M12.3 7c2.6 0 2.6 5-.8 5H9.4l4.8 4.3\" {White} stroke-width=\"1.8\" fill=\"none\"></path>", "PayInSlips"),
@@ -79,9 +79,6 @@ public class DashboardViewModel(FeatureSet features, ConsoleBoard board, string?
         // Where an application stands: a clipboard with a tick.
         Tile("app-status", "<rect x=\"4.5\" y=\"3.5\" width=\"15\" height=\"19\" rx=\"2\" fill=\"currentColor\"></rect><rect x=\"8.5\" y=\"1.5\" width=\"7\" height=\"4\" rx=\"1\" fill=\"currentColor\" stroke=\"#fff\" stroke-width=\"1.4\"></rect>"
             + $"<path d=\"M8.5 14l2.5 2.5 4.8-5\" {White} stroke-width=\"2.2\" fill=\"none\"></path>", null),
-        // Rolling a deposit over: arrows turning round the rupee.
-        Tile("renew", $"<g {Slate} stroke-width=\"2.3\"><path d=\"M20.5 12a8.5 8.5 0 0 1-15 5.5\"></path><path d=\"M3.5 12a8.5 8.5 0 0 1 15-5.5\"></path><path d=\"M19.5 2.5V7H15\"></path><path d=\"M4.5 21.5V17H9\"></path></g>"
-            + $"<path d=\"M10.2 9.2h3.6M10.2 11h3.6M12.1 9.2c1.6 0 1.6 3.4-.6 3.4h-1.3l3 2.6\" {Slate} stroke-width=\"1.4\"></path>", "Renew"),
     ]);
 
     // Only the tiles whose feature the backend lists, in its order.
@@ -113,7 +110,8 @@ public class DashboardViewModel(FeatureSet features, ConsoleBoard board, string?
     public string? Closed => off is null ? null
         : NewFd.Concat(Services).Concat(Admin).FirstOrDefault(t => t.Key == off)?.Why ?? ClosedLine(features, Board, off);
 
-    private static string? ClosedLine(FeatureSet features, ConsoleBoard board, string? off)
+    /// <summary>Why a feature is closed now, in a sentence; null while it is on.</summary>
+    internal static string? ClosedLine(FeatureSet features, ConsoleBoard board, string? off)
     {
         if (off is null) return null;
         var reason = board.OffLabel(off, features.Flags);
@@ -125,6 +123,20 @@ public class DashboardViewModel(FeatureSet features, ConsoleBoard board, string?
             : reason == "Unavailable"
                 ? $"{name} is switched off right now."
                 : $"{name} is not available: {reason.ToLowerInvariant()}.";
+    }
+
+    // A new deposit and a renewal are two features, switched on and off apart, behind
+    // one tile: both start on Investor Identification, which closes what is off. The
+    // tile is named after both, and is off only while both are.
+    private DashboardTile NewOrRenewTile(string glyph)
+    {
+        var fresh = Tile("new-fd", glyph, "NewApplication");
+        if (Board.Feature("renew") is null) return fresh;
+
+        var title = $"{fresh.Title} / {Board.NameOf("renew")}";
+        var bothOff = fresh.Off is not null && Board.OffLabel("renew", features.Flags) is not null;
+        if (bothOff) return fresh with { Title = title };
+        return fresh with { Title = title, Off = null, Why = null };
     }
 
     // A tile is named as the backend names its feature. One with no page behind it

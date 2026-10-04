@@ -9,16 +9,17 @@ namespace UnoTP.Data;
 /// </summary>
 internal sealed class SubmittedRow
 {
-    public const string Select = """
-        SELECT m.c_App_No AS AppNo, COALESCE(NULLIF(k.c_Name, N''), m.c_Name) AS Name, m.d_Submitted_On AS SubmittedOn,
+    public const string Select = $"""
+        SELECT m.c_App_No AS AppNo, COALESCE(NULLIF(k.f_Kyc_FullName, N''), m.c_Name) AS Name, m.d_Submitted_On AS SubmittedOn,
             m.d_Accepted_On AS AcceptedOn, m.d_Paid_On AS PaidOn, m.d_Booked_On AS BookedOn, m.d_Cancelled_On AS CancelledOn,
-            i.c_App_Type AS AppType, i.n_Amount AS Amount,
-            p.c_Pay_Mode AS PayMode, p.c_Cheque_No AS ChequeNo, p.c_Bank_Name AS BankName,
-            k.c_Mobile AS Mobile, k.c_Email AS Email, ISNULL(pm.c_Branch, N'') AS Branch
+            i.AppType, i.Amount,
+            p.f_Payment_Mode AS PayMode, p.f_Cheque_DD_No AS ChequeNo, p.f_Drawn_Bank_Name AS BankName,
+            a.f_MobileNumber AS Mobile, a.f_EmailAdd AS Email, ISNULL(pm.c_Branch, N'') AS Branch
         FROM dbo.t_Unotp_Application_Mst m
-        LEFT JOIN dbo.t_Unotp_Investment_Dtls i ON i.c_App_No = m.c_App_No AND i.n_App_Version = m.n_Deposit_Ver AND i.f_Active = 1
-        LEFT JOIN dbo.t_Unotp_Payment_Bank_Dtls p ON p.c_App_No = m.c_App_No AND p.n_App_Version = m.n_Payment_Ver AND p.f_Active = 1
-        LEFT JOIN dbo.t_Unotp_Kyc_Dtls k ON k.c_App_No = m.c_App_No AND k.n_App_Version = m.n_Details_Ver AND k.c_Holder_Type = '01' AND k.f_Active = 1
+        {InvestmentRow.CurrentOf}
+        LEFT JOIN dbo.t_FD_BT_Payment_Dtl p ON p.f_Appl_No = m.c_App_No AND p.f_Active = 1
+        LEFT JOIN dbo.t_FD_BT_Kyc_Data_Dtl k ON k.f_Appl_No = m.c_App_No AND k.f_Holder_Type = '01' AND k.f_Active = 1
+        LEFT JOIN dbo.t_FD_BT_Address_Dtl a ON a.f_Appl_No = m.c_App_No AND a.f_Holder_Type = '01' AND a.f_AddType_Code = 'PER' AND a.f_Active = 1
         LEFT JOIN dbo.t_Unotp_Partner_Mst pm ON pm.c_User_Id = m.c_Partner_Id
         WHERE m.c_Partner_Id = @Partner AND m.c_Status = 'APR' AND m.f_Active = 1
         """;
@@ -76,7 +77,7 @@ public sealed class SqlPayInSlips(Db db, IPartner partner, SqlReference referenc
         var cancellationDays = (await reference.ConfigAsync(ct)).CancellationDays;
         await using var connection = await db.OpenAsync(ct);
         var rows = await connection.QueryAsync<SubmittedRow>(
-            SubmittedRow.Select + " AND p.c_Pay_Mode IN @Paper" + (appNo is null ? "" : " AND m.c_App_No = @AppNo") + " ORDER BY m.d_Submitted_On DESC",
+            SubmittedRow.Select + " AND p.f_Payment_Mode IN @Paper" + (appNo is null ? "" : " AND m.c_App_No = @AppNo") + " ORDER BY m.d_Submitted_On DESC",
             new { Partner = partner.Id, Paper = paper, AppNo = appNo });
         var slips = (await connection.QueryAsync<(string AppNo, string SlipNo, DateTime? DepositedOn)>("""
             SELECT s.c_App_No, s.c_Slip_No, s.d_Deposited_On FROM dbo.t_Unotp_Pay_In_Slip s
@@ -131,10 +132,10 @@ public sealed class SqlLinks(Db db, IPartner partner, SqlReference reference, IL
     {
         await using var connection = await db.OpenAsync(ct);
         var applications = (await connection.QueryAsync<SentApplicationRow>("""
-            SELECT m.c_App_No AS AppNo, COALESCE(NULLIF(k.c_Name, N''), m.c_Name) AS Name, m.d_Submitted_On AS SubmittedOn,
+            SELECT m.c_App_No AS AppNo, COALESCE(NULLIF(k.f_Kyc_FullName, N''), m.c_Name) AS Name, m.d_Submitted_On AS SubmittedOn,
                 m.d_Accepted_On AS AcceptedOn, m.d_Paid_On AS PaidOn
             FROM dbo.t_Unotp_Application_Mst m
-            LEFT JOIN dbo.t_Unotp_Kyc_Dtls k ON k.c_App_No = m.c_App_No AND k.n_App_Version = m.n_Details_Ver AND k.c_Holder_Type = '01' AND k.f_Active = 1
+            LEFT JOIN dbo.t_FD_BT_Kyc_Data_Dtl k ON k.f_Appl_No = m.c_App_No AND k.f_Holder_Type = '01' AND k.f_Active = 1
             WHERE m.c_Partner_Id = @Partner AND m.f_Active = 1 AND m.d_Submitted_On IS NOT NULL
             """, new { Partner = partner.Id })).ToDictionary(a => a.AppNo);
         if (applications.Count == 0) return [];

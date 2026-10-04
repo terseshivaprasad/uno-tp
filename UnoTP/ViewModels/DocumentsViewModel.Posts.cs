@@ -61,16 +61,14 @@ public partial class DocumentsViewModel
         return null;
     }
 
-    // Nothing is requested of the investor from this step: choosing CKYC only says
-    // how the KYC will arrive. The addresses - permanent and communication - and
-    // the photograph come with that record, so those stop being asked for; the PAN
-    // copy does not, and
-    // nor does anything of a joint holder's, whose KYC is not fetched. It
-    // cannot be taken back, and it closes the paper route - consent is given
-    // online, through the link the investor is sent.
+    // CERSAI is searched for the investor's PAN and date of birth. What it gives of
+    // a record it holds is little - the name on it and its CKYC reference number -
+    // and the application goes on with those: the record stands as the investor's
+    // KYC, so the proof of address and the photograph stop being asked for. The PAN
+    // copy does not, nor does anything of a joint holder's, whose KYC is not fetched.
+    // It cannot be taken back, and it closes the paper route.
     //
-    // CERSAI is asked first whether it holds a record for the investor's PAN and
-    // date of birth. Only when it does is the route taken; when it does not, or
+    // Only when CERSAI holds a record is the route taken; when it does not, or
     // cannot be asked, the documents are uploaded as before.
     public async Task<string?> CkycAsync()
     {
@@ -100,14 +98,18 @@ public partial class DocumentsViewModel
 
         s.Ckyc = true;
         s.CkycReference = found.Reference;
+        // The name on the record is the investor's until NSDL verifies one off the PAN copy.
+        var ckycName = NewApplicationViewModel.NormaliseName(found.Name);
+        if (s.Name.Length == 0 && ckycName.Length > 0) s.Name = ckycName;
         s.PoaType = "";
         TakeOffApplication("poa");
         TakeOffApplication("photo");
         s.Reads["poa"].Reset();
         ForgetMail(Investor);
         SetMail(Investor, false, "");
-        var record = found.MaskedCkycId.Length > 0 ? $" (CKYC number {found.MaskedCkycId})" : "";
-        FlashMessages().Banner = $"CERSAI holds a CKYC record for this PAN{record}. The addresses and the photograph will come from it once the investor consents.";
+        var named = ckycName.Length > 0 ? $" in the name {ckycName}" : "";
+        var reference = found.Reference.Length > 0 ? $", CKYC reference {found.Reference}" : "";
+        FlashMessages().Banner = $"CERSAI holds a CKYC record for this PAN{named}{reference}. The application goes on with these; the proof of address and the photograph are not uploaded.";
         return "docsRoute";
     }
 

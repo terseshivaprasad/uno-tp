@@ -8,13 +8,13 @@ internal sealed class HeaderRow
     public const string Columns = """
         c_App_No AS AppNo, c_Status AS Status, n_Version AS Version,
         n_Upload_Ver AS UploadVer, n_Details_Ver AS DetailsVer, n_Payment_Ver AS PaymentVer, n_Deposit_Ver AS DepositVer,
-        c_Pan AS Pan, d_Dob AS Dob, c_Name AS Name, c_Folio AS Folio, c_Gender AS Gender, c_Address AS Address,
+        c_Pan AS Pan, d_Dob AS Dob, c_Name AS Name, c_Folio AS Folio, c_Gender AS Gender, c_Address AS Address, c_Data_Source AS DataSource,
         f_Pan_Filed AS PanFiled, f_Rec_Pan AS RecPan, f_Rec_Photo AS RecPhoto, f_Rec_Poa AS RecPoa,
         c_Renew_Dep_No AS RenewDepNo, n_Renew_Amount AS RenewAmount, d_Renew_Matures_On AS RenewMaturesOn,
-        n_Renew_Rate AS RenewRate, n_Renew_Tenure AS RenewTenure, c_Renew_Payout AS RenewPayout,
+        n_Renew_Rate AS RenewRate, n_Renew_Tenure AS RenewTenure, c_Renew_Payout AS RenewPayout, n_Renew_Principal AS RenewPrincipal,
         d_Submitted_On AS SubmittedOn, c_Sub_Status AS SubStatus, c_Link_Sent_To AS LinkSentTo,
         c_Link_Emailed_To AS LinkEmailedTo, d_Link_Valid_Until AS LinkValidUntil, n_Resends_Left AS ResendsLeft,
-        c_Short_Url AS ShortUrl, d_Created_On AS CreatedOn, d_Updated_On AS UpdatedOn
+        c_Short_Url AS ShortUrl, d_Created_On AS CreatedOn
         """;
 
     public string AppNo { get; set; } = "";
@@ -30,6 +30,7 @@ internal sealed class HeaderRow
     public string Folio { get; set; } = "";
     public string Gender { get; set; } = "";
     public string Address { get; set; } = "";
+    public string? DataSource { get; set; }
     public bool PanFiled { get; set; }
     public bool? RecPan { get; set; }
     public bool? RecPhoto { get; set; }
@@ -40,6 +41,7 @@ internal sealed class HeaderRow
     public decimal? RenewRate { get; set; }
     public int? RenewTenure { get; set; }
     public string? RenewPayout { get; set; }
+    public long? RenewPrincipal { get; set; }
     public DateTime? SubmittedOn { get; set; }
     public string? SubStatus { get; set; }
     public string? LinkSentTo { get; set; }
@@ -48,46 +50,45 @@ internal sealed class HeaderRow
     public int? ResendsLeft { get; set; }
     public string? ShortUrl { get; set; }
     public DateTime CreatedOn { get; set; }
-    public DateTime? UpdatedOn { get; set; }
 
     public bool Submitted => Status == RowStatus.Approved;
 }
 
 internal sealed class KycRow
 {
+    // What t_FD_BT_Kyc_Data_Dtl holds of a holder. The name given is the father's,
+    // the mother's or the spouse's: whichever was filled. The gender is read off
+    // the name prefix (NamePrefixes).
     public const string Columns = """
-        c_Holder_Type AS HolderType, c_Pan AS Pan, d_Dob AS Dob, c_Name AS Name, c_Folio AS Folio,
-        c_Gender AS Gender, c_Name_Type AS NameType, c_Parent_Name AS ParentName, c_Annual_Income AS AnnualIncome,
-        c_Occupation AS Occupation, c_Sub_Occupation AS SubOccupation, c_Marital_Status AS MaritalStatus,
-        c_Mobile AS Mobile, c_Email AS Email, f_Fatca_Tax_Res AS FatcaTaxResident, f_Fatca_Perm_Res AS FatcaPermanentResident,
-        c_Pep AS Pep, c_Pep_Related AS PepRelated
+        f_Holder_Type AS HolderType, f_Kyc_NamePrefix AS NamePrefix,
+        CASE WHEN f_Kyc_FatherFullName IS NOT NULL THEN 'Father' WHEN f_Kyc_MotherFullName IS NOT NULL THEN 'Mother'
+             WHEN f_Kyc_SpouseFullName IS NOT NULL THEN 'Spouse' ELSE '' END AS NameType,
+        COALESCE(f_Kyc_FatherFullName, f_Kyc_MotherFullName, f_Kyc_SpouseFullName, N'') AS ParentName,
+        f_Kyc_AnnualIncome_Desc AS AnnualIncome, f_CustSeg_Type_desc AS Occupation, f_CustSeg_Subtype_Desc AS SubOccupation,
+        f_Kyc_MaritalStatus AS MaritalStatus,
+        CASE f_IsPEP WHEN 1 THEN 'yes' WHEN 0 THEN 'no' ELSE '' END AS Pep,
+        CASE f_IsPEP_Relative WHEN 1 THEN 'yes' WHEN 0 THEN 'no' ELSE '' END AS PepRelated
         """;
 
     public string HolderType { get; set; } = "";
-    public string Pan { get; set; } = "";
-    public DateTime? Dob { get; set; }
-    public string Name { get; set; } = "";
-    public string Folio { get; set; } = "";
-    public string Gender { get; set; } = "";
+    public string NamePrefix { get; set; } = "";
     public string NameType { get; set; } = "";
     public string ParentName { get; set; } = "";
     public string AnnualIncome { get; set; } = "";
     public string Occupation { get; set; } = "";
     public string SubOccupation { get; set; } = "";
     public string MaritalStatus { get; set; } = "";
-    public string Mobile { get; set; } = "";
-    public string Email { get; set; } = "";
-    public bool FatcaTaxResident { get; set; }
-    public bool FatcaPermanentResident { get; set; }
     public string Pep { get; set; } = "";
     public string PepRelated { get; set; } = "";
 }
 
 internal sealed class AddressRow
 {
+    // The permanent address's row also carries the holder's mobile and e-mail.
     public const string Columns = """
-        c_Holder_Type AS HolderType, c_Addr_Type AS AddrType, c_Line1 AS Line1, c_Line2 AS Line2, c_Line3 AS Line3,
-        c_City AS City, c_Pin_Code AS PinCode, c_District AS District, c_State AS State
+        f_Holder_Type AS HolderType, f_AddType_Code AS AddrType, f_Add1 AS Line1, f_Add2 AS Line2, f_Add3 AS Line3,
+        f_AddCity_Desc AS City, f_AddPin AS PinCode, f_AddDistrict_Desc AS District, f_AddState_Desc AS State,
+        f_MobileNumber AS Mobile, f_EmailAdd AS Email
         """;
 
     public string HolderType { get; set; } = "";
@@ -99,14 +100,16 @@ internal sealed class AddressRow
     public string PinCode { get; set; } = "";
     public string District { get; set; } = "";
     public string State { get; set; } = "";
+    public string Mobile { get; set; } = "";
+    public string Email { get; set; } = "";
 }
 
 internal sealed class NomineeRow
 {
     public const string Columns = """
-        c_Name AS Name, d_Dob AS Dob, c_Relation AS Relation, c_Guardian_Name AS GuardianName,
-        c_Guardian_Line1 AS GuardianLine1, c_Guardian_Line2 AS GuardianLine2, c_Guardian_Line3 AS GuardianLine3,
-        c_Guardian_Pin_Code AS GuardianPinCode, c_Guardian_City AS GuardianCity
+        f_Nominee_Name AS Name, f_Nominee_DOB AS Dob, f_Nominee_Relations AS Relation, f_GuardianName AS GuardianName,
+        f_Address1 AS GuardianLine1, f_Address2 AS GuardianLine2, f_Address3 AS GuardianLine3,
+        f_PIN AS GuardianPinCode, f_City AS GuardianCity
         """;
 
     public string Name { get; set; } = "";
@@ -123,8 +126,8 @@ internal sealed class NomineeRow
 internal sealed class PaymentBankRow
 {
     public const string Columns = """
-        c_Ifsc AS Ifsc, c_Account_No AS AccountNo, c_Cheque_No AS ChequeNo, d_Cheque_Date AS ChequeDate,
-        c_Cms_Location AS CmsLocation
+        f_Bank_NEFT AS Ifsc, f_BankAccountNo AS AccountNo, f_Cheque_DD_No AS ChequeNo, f_Cheque_DD_Date AS ChequeDate,
+        f_CMS_Loc_Desc AS CmsLocation
         """;
 
     public string? Ifsc { get; set; }
@@ -136,7 +139,10 @@ internal sealed class PaymentBankRow
 
 internal sealed class RepaymentBankRow
 {
-    public const string Columns = "f_Same_As_Payment AS SameAsPayment, c_Ifsc AS Ifsc, c_Account_No AS AccountNo";
+    // The account's columns take no NULL: one not given is blank there, and NULL here.
+    public const string Columns = """
+        ISNULL(f_sameAsCheque, 0) AS SameAsPayment, NULLIF(f_NEFTCode, N'') AS Ifsc, NULLIF(f_BankAccountNo, N'') AS AccountNo
+        """;
 
     public bool SameAsPayment { get; set; }
     public string? Ifsc { get; set; }
@@ -146,9 +152,26 @@ internal sealed class RepaymentBankRow
 internal sealed class InvestmentRow
 {
     public const string Columns = """
-        n_Amount AS Amount, n_Tenure_Months AS TenureMonths, c_Payout AS Payout, f_Auto_Renewal AS AutoRenewal,
-        c_Renew_Instruction AS RenewInstruction, f_No_Tds AS NoTds, c_Delivery_Type AS DeliveryType,
-        c_Source_Of_Funds AS SourceOfFunds, c_Source_Of_Funds_Remark AS SourceOfFundsRemark
+        CAST(f_Amount AS BIGINT) AS Amount, TRY_CAST(f_Tenure AS INT) AS TenureMonths, f_Int_Freq AS Payout,
+        f_Is_Auto_Renewal AS AutoRenewal,
+        CASE f_Renewal_For WHEN 'P' THEN 'principal' WHEN 'F' THEN 'principal-interest' ELSE '' END AS RenewInstruction,
+        CASE f_ExistingFDRNoRenewalFor WHEN 'P' THEN 'principal' WHEN 'F' THEN 'principal-interest' ELSE '' END AS RenewalFor,
+        CAST(CASE WHEN f_TDS_Flag = 'N' THEN 1 ELSE 0 END AS BIT) AS NoTds, f_FDR_Dispatch_Mode AS DeliveryType,
+        f_AML_Source_Of_Funds AS SourceOfFunds, f_AML_Source_Of_Funds_Remarks AS SourceOfFundsRemark,
+        f_AML_Source_Of_Funds_reason AS SourceOfFundsReason
+        """;
+
+    /// <summary>
+    /// The application's current deposit row as i, for a query over t_Unotp_Application_Mst m:
+    /// its active row. The newest is taken, should there ever be two.
+    /// </summary>
+    public const string CurrentOf = """
+        OUTER APPLY (
+            SELECT TOP (1) CAST(d.f_Amount AS BIGINT) AS Amount, TRY_CAST(d.f_Tenure AS INT) AS TenureMonths,
+                d.f_Int_Freq AS Payout, d.f_ApplicationDeclarationType AS AppType
+            FROM dbo.t_FD_BT_Investment_Dtl d
+            WHERE d.f_Appl_No = m.c_App_No AND d.f_Active = 1
+            ORDER BY d.f_Pk_t_FD_BT_Investment_Dtl_Id DESC) i
         """;
 
     public long Amount { get; set; }
@@ -160,6 +183,8 @@ internal sealed class InvestmentRow
     public string DeliveryType { get; set; } = "";
     public string SourceOfFunds { get; set; } = "";
     public string SourceOfFundsRemark { get; set; } = "";
+    public string SourceOfFundsReason { get; set; } = "";
+    public string RenewalFor { get; set; } = "";
 }
 
 /// <summary>One application as View Application lists it, before it is masked.</summary>
@@ -210,4 +235,5 @@ internal sealed class DraftRow
     public int? PaymentVer { get; set; }
     public int? DepositVer { get; set; }
     public int MinutesAgo { get; set; }
+    public string? Renews { get; set; }
 }

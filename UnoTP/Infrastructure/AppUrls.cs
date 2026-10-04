@@ -19,7 +19,7 @@ public sealed class AppUrls(IConfiguration config)
         // Uno TP's pages, under their old names, and the old addresses that lead to them.
         string[] unoTp = ["/Home", "/Dashboard", "/SearchInvestor", "/UploadInvestorDocuments", "/InvestorInformation", "/BankDetails",
             "/FDConfiguration", "/ReviewSummary", "/ApplicationSubmitted", "/ViewApplication", "/PayInSlip", "/ShortUrl", "/RenewalDashboard",
-            "/Admin", "/Error", "/Apps/UnoTp", "/Purchase/"];
+            "/Admin", "/Error"];
         foreach (var prefix in unoTp)
         {
             if (path.Equals(prefix, StringComparison.OrdinalIgnoreCase) || path.StartsWith(prefix + "/", StringComparison.OrdinalIgnoreCase)) return "UnoTP";

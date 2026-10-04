@@ -4,9 +4,12 @@ using UnoTP.Models;
 namespace UnoTP.Services.NameMatch;
 
 /// <summary>The name match API, from the "NameMatch" section of appsettings.</summary>
-public sealed class NameMatchOptions
+public sealed class NameMatchOptions : IApiAddress
 {
     public const string Section = "NameMatch";
+
+    /// <summary>The API's own address, https://{host}/ ; blank while it is behind the gateway (Backend:BaseUrl).</summary>
+    public string BaseUrl { get; set; } = "";
 
     /// <summary>The API's base path under the gateway. The path below is relative to it.</summary>
     public string BasePath { get; set; } = "";

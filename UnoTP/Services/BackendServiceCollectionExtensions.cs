@@ -21,7 +21,7 @@ public static class BackendServiceCollectionExtensions
         var switches = new OutsideSwitches(config);
 
         // IDfy: one client, and the five checks it answers.
-        services.AddApiClient<IdfyClient>(sp => sp.GetRequiredService<IOptions<IdfyOptions>>().Value.BasePath);
+        services.AddApiClient<IdfyClient>(sp => sp.GetRequiredService<IOptions<IdfyOptions>>().Value);
         services.Check<IDocumentIdentifier, IdfyDocumentIdentifier, OffDocumentIdentifier>(switches, OutsideSwitches.Identify);
         services.Check<IOcrService, IdfyOcr, OffOcr>(switches, OutsideSwitches.Ocr);
         services.Check<IVerificationService, IdfyVerification, OffVerification>(switches, OutsideSwitches.Verification);
@@ -31,11 +31,11 @@ public static class BackendServiceCollectionExtensions
         // Name screening and name match: an API of its own each. Screening is
         // switched off by its own setting (NameScreening:ApiCall).
         services.AddApiClient<INameScreeningService, NameScreeningClient>(
-            sp => sp.GetRequiredService<IOptions<NameScreeningOptions>>().Value.BasePath);
+            sp => sp.GetRequiredService<IOptions<NameScreeningOptions>>().Value);
 
         if (switches.IsOn(OutsideSwitches.NameMatch))
             services.AddApiClient<INameMatchService, NameMatchClient>(
-                sp => sp.GetRequiredService<IOptions<NameMatchOptions>>().Value.BasePath);
+                sp => sp.GetRequiredService<IOptions<NameMatchOptions>>().Value);
         else
             services.AddSingleton<INameMatchService, OffNameMatch>();
 

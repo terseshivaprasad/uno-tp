@@ -7,7 +7,7 @@ using UnoTP.ViewModels;
 
 namespace UnoTP.Controllers;
 
-/// <summary>Review Summary: the application as a whole, the declarations, and Submit.</summary>
+/// <summary>Review Summary: the application as a whole, and Submit.</summary>
 [Route("ReviewSummary/{appNo}")]
 public class ReviewController(
     IApplicationApi applications, IDepositApi deposits, IServiceProvider services,
@@ -20,7 +20,10 @@ public class ReviewController(
     public async Task<IActionResult> Index()
     {
         if (await LoadAsync() is not { } docs) return Start();
-        if (docs.App.Submitted is not null) return RedirectToAction(nameof(SubmittedController.Index), "Submitted");
+        // A submitted application has nothing left to review. This page is where the
+        // browser's Back lands from Application Submitted, so it goes on to the
+        // dashboard: sending it back to Application Submitted would leave Back going nowhere.
+        if (docs.App.Submitted is not null) return RedirectToAction(nameof(DashboardController.Index), "Dashboard");
         var payment = docs.App.Payment;
         var (pay, repay) = await BranchesAsync(payment?.Payment?.Ifsc ?? "", payment?.Repayment?.Ifsc ?? "");
         var sourceOfFunds = await SourceOfFundsAsync(docs, docs.App.Deposit?.Amount ?? 0);
@@ -31,22 +34,25 @@ public class ReviewController(
     }
 
     /// <summary>
-    /// Submits the application once nothing blocks it and every declaration is
-    /// signed. The payment link goes with it, shortened first when the shortener
+    /// Submits the application once nothing blocks it. The payment link goes with it, shortened first when the shortener
     /// answers; a shortener that does not answer never holds up a submission.
     /// </summary>
     [HttpPost("submit")]
-    public async Task<IActionResult> Submit(int[]? declarations)
+    public async Task<IActionResult> Submit()
     {
         if (await LoadAsync() is not { } docs) return Start();
+        // Submitted already - from another tab, or by a second press: where it went is on its own page.
+        if (docs.App.Submitted is not null) return RedirectToAction(nameof(SubmittedController.Index), "Submitted");
         var review = new ReviewViewModel(docs, null, null, null, await SourceOfFundsAsync(docs, docs.App.Deposit?.Amount ?? 0));
         if (!review.Ready) return Back(nameof(Index), new() { ["banner"] = "Something is still missing, so the application was not submitted." });
-        if ((declarations ?? []).Distinct().Count(i => i >= 0 && i < docs.Ref.Declarations.Count) != docs.Ref.Declarations.Count)
-            return Back(nameof(Index), new() { ["banner"] = "Every declaration has to be signed before the application is submitted." });
 
         var (link, said) = await PaymentLinkAsync(docs.AppNo);
         if (await Applications.SubmitAsync(docs.AppNo, docs.App.Version, link) is null)
+        {
+            // Refused because it was submitted in the meantime: that submission's page stands.
+            if ((await Applications.FindAsync(docs.AppNo))?.Submitted is not null) return RedirectToAction(nameof(SubmittedController.Index), "Submitted");
             return Back(nameof(Index), new() { ["banner"] = Changed });
+        }
         if (said.Count > 0) TempData["said"] = System.Text.Json.JsonSerializer.Serialize(said);
         return RedirectToAction(nameof(SubmittedController.Index), "Submitted");
     }

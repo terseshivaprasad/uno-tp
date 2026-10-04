@@ -41,9 +41,9 @@ named after the page: `NewApplication`, `Documents`, `Investor`, `Payment`,
 addresses) is in `Infrastructure/`.
 
 A form posts to its page's address and a verb (`.../documents/upload`,
-`.../review/submit`). The old addresses (`/Home`, `/Dashboard`,
-`/Purchase/InvestorIdentification`, `/Apps/UnoTp/...`) redirect to these, with
-their query.
+`.../review/submit`). The old app's addresses that name no page here
+(`/Dashboard/Index`, a step's address with no application number) redirect to the
+page that took their place, with their query.
 
 ## Configuration
 

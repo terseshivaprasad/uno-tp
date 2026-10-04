@@ -9,9 +9,12 @@ namespace UnoTP.Services.Auth;
 /// The E-Sarathi auth API, from the "AuthApi" section of appsettings: the path of
 /// each call under the gateway (<see cref="BackendOptions.BaseUrl"/>).
 /// </summary>
-public sealed class AuthApiOptions
+public sealed class AuthApiOptions : IApiAddress
 {
     public const string Section = "AuthApi";
+
+    /// <summary>The API's own address, https://{host}/ ; blank while it is behind the gateway (Backend:BaseUrl).</summary>
+    public string BaseUrl { get; set; } = "";
 
     /// <summary>The API's base path under the gateway. Every path below is relative to it.</summary>
     public string BasePath { get; set; } = "";
@@ -147,11 +150,11 @@ public static class AuthApiServiceCollectionExtensions
     /// <summary>Puts the E-Sarathi auth API behind the way in: decryption, the session and the menus.</summary>
     public static IServiceCollection AddAuthApi(this IServiceCollection services)
     {
-        services.AddApiClient<IDecryptionService, AuthApiClient>(BasePath);
-        services.AddApiClient<ISessionApi, AuthApiClient>(BasePath);
+        services.AddApiClient<IDecryptionService, AuthApiClient>(Api);
+        services.AddApiClient<ISessionApi, AuthApiClient>(Api);
         return services;
     }
 
-    private static string BasePath(IServiceProvider sp) =>
-        sp.GetRequiredService<IOptions<AuthApiOptions>>().Value.BasePath;
+    private static IApiAddress Api(IServiceProvider sp) =>
+        sp.GetRequiredService<IOptions<AuthApiOptions>>().Value;
 }

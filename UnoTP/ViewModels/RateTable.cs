@@ -56,17 +56,7 @@ public sealed class RateTable
     }
 
     /// <summary>The row for a tenure and payout at the amount, or null when none is offered.</summary>
-    public RateOption? Row(int tenureMonths, string payout)
-    {
-        foreach (var row in card)
-        {
-            if (row.TenureMonths != tenureMonths) continue;
-            if (row.Payout != payout) continue;
-            if (!row.Offers(Amount)) continue;
-            return row;
-        }
-        return null;
-    }
+    public RateOption? Row(int tenureMonths, string payout) => RateCard.Line(card, tenureMonths, payout, Amount);
 
     /// <summary>Whether any line of the card offers this tenure at the amount.</summary>
     public bool OffersTenure(int tenureMonths)

@@ -6,191 +6,114 @@ using UnoTP.Models;
 namespace UnoTP.Data;
 
 /// <summary>Who wrote a set of rows, at which of the application's versions, and as what.</summary>
-internal sealed record Stamp(string AppNo, int Version, string Status, string By);
+/// <param name="SessionId">The partner's backend session, when it is a number; null otherwise.</param>
+/// <param name="Ip">The address the partner's browser called from; empty when not known.</param>
+/// <param name="UserClusterId">The signed-in user's Agency_Usr_Clustered_ID; empty when not known.</param>
+/// <param name="UserName">The signed-in user's name; empty when not known.</param>
+/// <param name="Folio">The investor's folio; empty for an investor with none.</param>
+internal sealed record Stamp(string AppNo, int Version, string Status, string By, long? SessionId = null, string Ip = "", string UserClusterId = "",
+    string UserName = "", string Folio = "");
 
 /// <summary>
-/// Writes each section of an application as rows. Nothing here updates or deletes:
-/// every call inserts the section afresh at the stamp's version, so the rows it
-/// replaces stay on record as the section's history.
+/// Writes each section of an application as rows in the FD system's own tables
+/// (t_FD_BT_...). Those tables have no version column, so a section's current rows
+/// are the application's active ones: a save first takes the rows it replaces out
+/// of use (f_Active = 0), then inserts the section afresh. Nothing is deleted, so
+/// the earlier rows stay on record as the section's history.
+///
+/// The steps are in files of their own: Sections.Details.cs, Sections.Payment.cs
+/// and Sections.Deposit.cs.
 /// </summary>
-internal static class Sections
+internal static partial class Sections
 {
     public static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
-    // ----- Upload Documents: t_Unotp_Upload_State, t_Unotp_Kyc_Documents ----------------
+    /// <summary>What every row written from here carries in f_Source.</summary>
+    private const string Source = "UNO_TP";
 
-    public static async Task WriteUploadAsync(IDbConnection db, IDbTransaction tx, Stamp at, UploadState upload)
+    // ----- Upload Documents: t_Unotp_Upload_State, t_FD_BT_KYC_document ----------------
+
+    /// <param name="codes">How each document is coded in the FD system's document master (SqlReference.DocumentCodesAsync).</param>
+    public static async Task WriteUploadAsync(IDbConnection db, IDbTransaction tx, Stamp at, UploadState upload,
+        IReadOnlyDictionary<string, DocumentCode> codes)
     {
         await db.ExecuteAsync("""
             INSERT dbo.t_Unotp_Upload_State (c_App_No, n_App_Version, c_Status, j_Upload, c_Created_By)
             VALUES (@AppNo, @Version, @Status, @Json, @By)
             """, new { at.AppNo, at.Version, at.Status, Json = JsonSerializer.Serialize(upload, Json), at.By }, tx);
 
-        // One row per document on the application, under the holder it is filed with.
+        // One row per document on the application, coded as the FD system's document
+        // master codes it, with what the outside checks made of it (Sections.Documents.cs).
+        // Its size and the words of its check stay on the upload step's JSON:
+        // t_FD_BT_KYC_document has no column for them.
+        await RetireAsync(db, tx, at, "t_FD_BT_KYC_document", "f_UpdatedDate");
+        var sequences = new Dictionary<(string, string), int>();
         foreach (var d in Documents(upload))
         {
+            var code = codes.GetValueOrDefault(MasterKey(d));
+            var holderType = FiledUnder(d.HolderType);
+            var flags = DocumentFlags.Of(d.Doc);
             await db.ExecuteAsync("""
-                INSERT dbo.t_Unotp_Kyc_Documents (c_App_No, n_App_Version, c_Status, c_Holder_Type, c_Doc_Type, c_Doc_Sub_Type,
-                    c_File_Name, c_File_Path, n_File_Size, c_Content_Type, c_Check, c_Result, f_On_Record, c_Created_By)
-                VALUES (@AppNo, @Version, @Status, @HolderType, @DocType, @SubType,
-                    @FileName, @FilePath, @Size, @ContentType, @Check, @Result, @OnRecord, @By)
+                INSERT dbo.t_FD_BT_KYC_document (f_Appl_No, f_Holder_Type_Code, f_Doc_Type_Code, f_Doc_Sub_Type_Code, f_Doc_Type_Desc, f_Doc_Sub_Type_Desc,
+                    f_Doc_FileName, f_Doc_Filepath, f_FolioNo, f_Doc_Sequence, f_Document_Source, f_doc_source, f_Doc_Ref_No, f_Doc_Exp_Date,
+                    f_IsDocumentMasked, f_is_ocrextract, f_isocrdataextract, f_isocrdataverified,
+                    f_IsidfyDocIdentified, f_IdfyIdentifiedDocument, f_IsidfyDocDataExtracted, f_IsidfyDocDataVerified,
+                    f_IsidfyFaceCompared, f_IsidfyDocFaceDetected, f_IdfyFaceMatchPercentage,
+                    f_Source, f_Status, f_Active, f_CreatedBy, f_CreatedByUName, f_CreatedDate, f_CreatedIP, f_Session_ID)
+                VALUES (@AppNo, @HolderType, @TypeCode, @SubTypeCode, @TypeName, @SubTypeName,
+                    @FileName, @FilePath, @Folio, @Sequence, @UploadedFrom, @UploadedFrom, @Number, @Expiry,
+                    @Masked, @OcrAsked, @Read, @Verified,
+                    @Identified, @IdentifiedAs, @Read, @Verified,
+                    @FaceCompared, @FaceFound, @FaceScore,
+                    @Source, @Status, 1, @CreatedBy, @UserName, GETDATE(), @Ip, @SessionId)
                 """, new
             {
-                at.AppNo, at.Version, at.Status, d.HolderType, d.DocType, d.SubType,
-                d.Doc.FileName, FilePath = d.Doc.Before ? null : DmsPaths.Of(at.AppNo, d.HolderType, d.DocType, d.Doc.FileName),
-                d.Doc.Size, d.Doc.ContentType, d.Doc.Check, Result = d.Doc.CheckKind, OnRecord = d.Doc.Before, at.By,
+                at.AppNo, HolderType = holderType, code?.TypeCode, code?.SubTypeCode, code?.TypeName, code?.SubTypeName,
+                FileName = Cut(d.Doc.FileName, 250),
+                FilePath = d.Doc.Before ? null : DmsPaths.Of(at.AppNo, d.HolderType, d.DocType, d.Doc.FileName),
+                Folio = FolioOf(d.HolderType, at, upload),
+                Sequence = NextSequence(sequences, holderType, code?.TypeCode ?? d.DocType),
+                // A document that came over from the folio or the step before was not uploaded here.
+                UploadedFrom = d.Doc.Before ? null : Source,
+                flags.Number, flags.Expiry, flags.Masked, flags.OcrAsked, flags.Read, flags.Verified,
+                flags.Identified, flags.IdentifiedAs, flags.FaceCompared, flags.FaceFound, flags.FaceScore,
+                Source, at.Status, CreatedBy = at.UserClusterId, at.UserName, at.Ip, at.SessionId,
             }, tx);
         }
     }
 
-    // ----- Investor Information: t_Unotp_Kyc_Dtls, t_Unotp_Address_Dtls, t_Unotp_Nominee_Dtls ---
-
-    public static async Task WriteDetailsAsync(IDbConnection db, IDbTransaction tx, Stamp at, Holder investor, UploadState? upload, ApplicationDetails details)
+    // f_Doc_Sequence: 1, 2, 3... among a holder's documents of one type.
+    private static string NextSequence(Dictionary<(string, string), int> sequences, string holderType, string docType)
     {
-        foreach (var h in details.Holders)
-        {
-            // Who the holder is comes from their search; what they said, from this page.
-            var who = WhoIs(h.Holder, investor, upload);
-            var kyc = KycOf(h.Holder, upload);
-            await db.ExecuteAsync("""
-                INSERT dbo.t_Unotp_Kyc_Dtls (c_App_No, n_App_Version, c_Status, c_Holder_Type, c_Pan, d_Dob, c_Name, c_Folio,
-                    c_Gender, c_Name_Type, c_Parent_Name, c_Annual_Income, c_Occupation, c_Sub_Occupation, c_Marital_Status,
-                    c_Mobile, c_Email, f_Fatca_Tax_Res, f_Fatca_Perm_Res, c_Pep, c_Pep_Related,
-                    c_Nsdl_Status, c_Nsdl_Name, f_Ckyc, f_Mail_Different, c_Screening_Status, c_Screening_Ref, d_Screened_On, c_Created_By)
-                VALUES (@AppNo, @Version, @Status, @HolderType, @Pan, @Dob, @Name, @Folio,
-                    @Gender, @NameType, @ParentName, @AnnualIncome, @Occupation, @SubOccupation, @MaritalStatus,
-                    @Mobile, @Email, @FatcaTaxResident, @FatcaPermanentResident, @Pep, @PepRelated,
-                    @Nsdl, @NsdlName, @Ckyc, @MailDifferent, @ScreeningStatus, @ScreeningRef, @ScreenedOn, @By)
-                """, new
-            {
-                at.AppNo, at.Version, at.Status, HolderType = h.Holder, who.Pan, Dob = Dates.ParseDdMmYyyy(who.Dob), who.Name, who.Folio,
-                h.Gender, h.NameType, h.ParentName, h.AnnualIncome, h.Occupation, h.SubOccupation, h.MaritalStatus,
-                h.Mobile, h.Email, h.FatcaTaxResident, h.FatcaPermanentResident, h.Pep, h.PepRelated,
-                kyc.Nsdl, kyc.NsdlName, kyc.Ckyc, kyc.MailDifferent, kyc.ScreeningStatus, kyc.ScreeningRef, kyc.ScreenedOn, at.By,
-            }, tx);
-
-            if (who.Address.Length > 0)
-                await InsertAddressAsync(db, tx, at, h.Holder, "PER", new TypedAddress(Line1: who.Address));
-            if (h.Communication is { } communication)
-                await InsertAddressAsync(db, tx, at, h.Holder, "COR", communication);
-        }
-
-        if (details.Nominee is { } n)
-        {
-            await db.ExecuteAsync("""
-                INSERT dbo.t_Unotp_Nominee_Dtls (c_App_No, n_App_Version, c_Status, c_Name, d_Dob, c_Relation, c_Guardian_Name,
-                    c_Guardian_Line1, c_Guardian_Line2, c_Guardian_Line3, c_Guardian_Pin_Code, c_Guardian_City, c_Created_By)
-                VALUES (@AppNo, @Version, @Status, @Name, @Dob, @Relation, @GuardianName,
-                    @GuardianLine1, @GuardianLine2, @GuardianLine3, @GuardianPinCode, @GuardianCity, @By)
-                """, new
-            {
-                at.AppNo, at.Version, at.Status, n.Name, Dob = Dates.ParseDdMmYyyy(n.Dob), n.Relation, n.GuardianName,
-                n.GuardianLine1, n.GuardianLine2, n.GuardianLine3, n.GuardianPinCode, n.GuardianCity, at.By,
-            }, tx);
-        }
+        var next = sequences.GetValueOrDefault((holderType, docType)) + 1;
+        sequences[(holderType, docType)] = next;
+        return next.ToString();
     }
 
-    private static Task InsertAddressAsync(IDbConnection db, IDbTransaction tx, Stamp at, string holder, string type, TypedAddress a) =>
-        db.ExecuteAsync("""
-            INSERT dbo.t_Unotp_Address_Dtls (c_App_No, n_App_Version, c_Status, c_Holder_Type, c_Addr_Type,
-                c_Line1, c_Line2, c_Line3, c_City, c_Pin_Code, c_District, c_State, c_Created_By)
-            VALUES (@AppNo, @Version, @Status, @HolderType, @AddrType,
-                @Line1, @Line2, @Line3, @City, @PinCode, @District, @State, @By)
-            """, new
-        {
-            at.AppNo, at.Version, at.Status, HolderType = holder, AddrType = type,
-            a.Line1, a.Line2, a.Line3, a.City, a.PinCode, a.District, a.State, at.By,
-        }, tx);
-
-    // ----- Bank Details & Payment: t_Unotp_Payment_Bank_Dtls, t_Unotp_Bank_Dtls ----------
-
-    /// <param name="branches">The branch each IFSC names, as looked up before the save.</param>
-    public static async Task WritePaymentAsync(IDbConnection db, IDbTransaction tx, Stamp at, UploadState? upload,
-        PaymentDetails payment, IReadOnlyDictionary<string, BankBranch> branches)
+    // f_FolioNo on a holder's row: their own folio. The application's own rows
+    // carry the investor's.
+    private static string FolioOf(string holderType, Stamp at, UploadState? upload)
     {
-        var pay = Branch(payment.Payment, branches);
-        await db.ExecuteAsync("""
-            INSERT dbo.t_Unotp_Payment_Bank_Dtls (c_App_No, n_App_Version, c_Status, c_Pay_Mode, c_Ifsc, c_Account_No,
-                c_Bank_Name, c_Branch_Name, c_Micr, c_Cheque_No, d_Cheque_Date, c_Cms_Location, c_Created_By)
-            VALUES (@AppNo, @Version, @Status, @PayMode, @Ifsc, @AccountNo,
-                @Bank, @BranchName, @Micr, @ChequeNo, @ChequeDate, @CmsLocation, @By)
-            """, new
-        {
-            at.AppNo, at.Version, at.Status, PayMode = upload?.PayMode ?? "",
-            payment.Payment?.Ifsc, AccountNo = payment.Payment?.AccountNumber, pay?.Bank, BranchName = pay?.Branch, pay?.Micr,
-            ChequeNo = payment.Cheque?.Number, ChequeDate = Dates.ParseDdMmYyyy(payment.Cheque?.Date), payment.Cheque?.CmsLocation, at.By,
-        }, tx);
-
-        var repay = Branch(payment.Repayment, branches);
-        await db.ExecuteAsync("""
-            INSERT dbo.t_Unotp_Bank_Dtls (c_App_No, n_App_Version, c_Status, f_Same_As_Payment, c_Ifsc, c_Account_No,
-                c_Bank_Name, c_Branch_Name, c_Micr, c_Created_By)
-            VALUES (@AppNo, @Version, @Status, @SameAsPayment, @Ifsc, @AccountNo, @Bank, @BranchName, @Micr, @By)
-            """, new
-        {
-            at.AppNo, at.Version, at.Status, SameAsPayment = payment.RepaymentSameAsPayment,
-            payment.Repayment?.Ifsc, AccountNo = payment.Repayment?.AccountNumber, repay?.Bank, BranchName = repay?.Branch, repay?.Micr, at.By,
-        }, tx);
+        if (holderType == HolderType.Investor || holderType == HolderType.None) return at.Folio;
+        return upload?.Joint.GetValueOrDefault(holderType)?.Holder.Folio ?? "";
     }
 
-    private static BankBranch? Branch(BankAccount? account, IReadOnlyDictionary<string, BankBranch> branches) =>
-        account is null ? null : branches.GetValueOrDefault(account.Ifsc.Trim().ToUpperInvariant());
-
-    // ----- FD Configuration: t_Unotp_Investment_Dtls --------------------------------
-
-    /// <param name="quote">The quote locked on submit; null on a step's save.</param>
-    public static Task WriteDepositAsync(IDbConnection db, IDbTransaction tx, Stamp at, UploadState? upload,
-        DepositDetails deposit, string? renews, DepositQuote? quote)
+    // The application's own documents - the form, the cheque, an employee proof, the
+    // Form 121 - go under the first holder: f_Holder_Type_Code has no "00".
+    private static string FiledUnder(string holderType)
     {
-        var u = upload ?? new UploadState();
-        return db.ExecuteAsync("""
-            INSERT dbo.t_Unotp_Investment_Dtls (c_App_No, n_App_Version, c_Status, n_Amount, n_Tenure_Months, c_Payout,
-                f_Auto_Renewal, c_Renew_Instruction, f_No_Tds, c_Delivery_Type, c_Source_Of_Funds, c_Source_Of_Funds_Remark,
-                c_App_Type, c_Form_No, c_Category, c_Sourcing, c_Source_Code, c_Sub_Broker,
-                c_Emp_Code, c_Emp_Company, c_Emp_Holder, c_Emp_Relation, c_Emp_Proof_Type, c_Renew_Dep_No,
-                n_Rate, n_Interest_Each, n_Maturity_Amount, d_Matures_On, d_Rate_As_On, c_Created_By)
-            VALUES (@AppNo, @Version, @Status, @Amount, @TenureMonths, @Payout,
-                @AutoRenewal, @RenewInstruction, @NoTds, @DeliveryType, @SourceOfFunds, @SourceOfFundsRemark,
-                @AppType, @FormNo, @Category, @Sourcing, @SourceCode, @SubBroker,
-                @EmpCode, @EmpCompany, @EmpHolder, @EmpRelation, @EmpProofType, @Renews,
-                @Rate, @InterestEach, @MaturityAmount, @MaturesOn, @RateAsOn, @By)
-            """, new
-        {
-            at.AppNo, at.Version, at.Status, deposit.Amount, deposit.TenureMonths, deposit.Payout,
-            deposit.AutoRenewal, deposit.RenewInstruction, deposit.NoTds, deposit.DeliveryType, deposit.SourceOfFunds, deposit.SourceOfFundsRemark,
-            u.AppType, u.FormNo, u.Category, u.Sourcing, u.SourceCode, u.SubBroker,
-            u.EmpCode, u.EmpCompany, u.EmpHolder, u.EmpRelation, u.EmpProofType, Renews = renews,
-            quote?.Rate, quote?.InterestEach, quote?.MaturityAmount,
-            MaturesOn = quote?.MaturesOn.ToDateTime(TimeOnly.MinValue), RateAsOn = quote?.RateAsOn.ToDateTime(TimeOnly.MinValue), at.By,
-        }, tx);
+        if (holderType == HolderType.None) return HolderType.Investor;
+        return holderType;
     }
 
-    // ----- Holders -------------------------------------------------------------
-
-    /// <summary>Where a holder's KYC stands: the NSDL result and name, whether CKYC was fetched, and whether the mailing address differs.</summary>
-    private sealed record Kyc(string Nsdl, string NsdlName, bool Ckyc, bool MailDifferent, string ScreeningStatus, string ScreeningRef, DateTime? ScreenedOn);
-
-    // Where a holder's KYC stands on Upload Documents. CKYC is fetched for the investor only.
-    // Where a holder's KYC stands, off the upload step: the NSDL result and name, CKYC,
-    // the mailing address, and what name screening said of them.
-    private static Kyc KycOf(string code, UploadState? u)
+    // What a document is listed under in 'documentSubTypes': the slot it was filed in
+    // and, for a proof, which one it is. A communication address is proved by a
+    // proof of address, so it is listed as one.
+    private static string MasterKey(Document d)
     {
-        if (u is null) return new Kyc("", "", false, false, "", "", null);
-
-        var screeningStatus = "";
-        var screeningRef = "";
-        DateTime? screenedOn = null;
-        if (u.Screening.TryGetValue(code, out var screening))
-        {
-            screeningStatus = screening.Allowed ? "allowed" : "blocked";
-            if (screening.Reference == NameScreeningResult.Skipped) screeningStatus = "skipped";
-            screeningRef = screening.Reference;
-            screenedOn = screening.At;
-        }
-
-        if (code == HolderType.Investor) return new Kyc(u.Nsdl, u.NsdlName, u.Ckyc, u.MailDifferent, screeningStatus, screeningRef, screenedOn);
-        if (u.Joint.GetValueOrDefault(code) is { } j) return new Kyc(j.Nsdl, j.NsdlName, false, j.MailDifferent, screeningStatus, screeningRef, screenedOn);
-        return new Kyc("", "", false, false, screeningStatus, screeningRef, screenedOn);
+        if (d.DocType == "poa" || d.DocType == "mail") return "poa:" + d.SubType;
+        if (d.DocType == "empproof") return "empproof:" + d.SubType;
+        return d.DocType;
     }
 
     private sealed record Document(string HolderType, string DocType, string SubType, StoredDoc Doc);
@@ -219,9 +142,22 @@ internal static class Sections
         }
     }
 
-    // The investor takes the name NSDL verified, when they came with no folio.
-    private static Holder WhoIs(string code, Holder investor, UploadState? upload) => code == HolderType.Investor
-        ? (upload is { Name.Length: > 0 } ? investor with { Name = upload.Name } : investor)
-        : upload?.Joint.GetValueOrDefault(code)?.Holder ?? new Holder("", "", "", "", false);
+    // ----- Shared ----------------------------------------------------------------
 
+    // The rows a save replaces go out of use, so the section's current rows are the
+    // application's active ones. The table and column names are this file's own.
+    private static Task RetireAsync(IDbConnection db, IDbTransaction tx, Stamp at, string table, string updatedOn = "f_UpdatedOn") =>
+        db.ExecuteAsync($"""
+            UPDATE dbo.{table}
+            SET f_Active = 0, f_UpdatedBy = @UpdatedBy, f_UpdatedByUName = @UserName, {updatedOn} = GETDATE(), f_UpdatedIP = @Ip
+            WHERE f_Appl_No = @AppNo AND f_Active = 1
+            """, new { at.AppNo, UpdatedBy = at.UserClusterId, at.UserName, at.Ip }, tx);
+
+    // A value cut to what its column holds, so a long one never fails the save.
+    private static string Cut(string? value, int length)
+    {
+        if (value is null) return "";
+        if (value.Length <= length) return value;
+        return value[..length];
+    }
 }

@@ -217,8 +217,8 @@
 
         @* Fetch from CKYC. Offered only to an investor without a folio (one with a folio has
            been through KYC already), before any PAN copy is uploaded or once NSDL has verified
-           the uploaded one (CkycPanVerified), and only for a digital application: consent is
-           given online, so a physical application never fetches it. *@
+           the uploaded one (CkycPanVerified), and only for a digital application: a physical
+           one is signed and filed by hand, with its own documents. *@
         @if (!Model.HasFolio)
         {
             var routeClass = state.Ckyc ? "is-on" : null;
@@ -227,21 +227,21 @@
                     @if (state.Ckyc)
                     {
                         <h2 class="doc-kyc-route__title">KYC from @Glossary.Term("CERSAI")</h2>
-                        <p class="doc-kyc-route__p">The addresses and the photograph come from the record; only the PAN copy is filed below.</p>
+                        <p class="doc-kyc-route__p">The application goes on with the name and the CKYC reference number from the record@(state.CkycReference.Length > 0 ? $" ({state.CkycReference})" : ""); only the PAN copy is filed below.</p>
                         <details class="doc-more-info">
                             <summary>How it works</summary>
-                            <p class="doc-kyc-route__p">The investor is asked for consent once the application is completed online: a link goes to their registered mobile number and email address, and they enter the OTP sent to the CERSAI-registered mobile number.</p>
-                            <p class="doc-kyc-route__p">The addresses &mdash; permanent and communication &mdash; and the photograph are CERSAI&rsquo;s to send. They are not uploaded here, and the record cannot be fetched again. Joint holders file their own documents on Investor Information.</p>
+                            <p class="doc-kyc-route__p">CERSAI&rsquo;s search gives the name on the record and its CKYC reference number, and the application goes on with these. The record stands as the investor&rsquo;s KYC.</p>
+                            <p class="doc-kyc-route__p">The proof of address and the photograph are not uploaded here, and the record cannot be fetched again. Joint holders file their own documents on Investor Information.</p>
                         </details>
                     }
                     else
                     {
                         <h2 class="doc-kyc-route__title">Fetch the KYC from @Glossary.Term("CERSAI")</h2>
-                        <p class="doc-kyc-route__p">Take the addresses and the photograph from the investor&rsquo;s record instead of uploading them.</p>
+                        <p class="doc-kyc-route__p">Go on with the name and the CKYC reference number from the investor&rsquo;s record, instead of uploading the proof of address and the photograph.</p>
                         <details class="doc-more-info">
                             <summary>How it works</summary>
-                            <p class="doc-kyc-route__p">If the record is fetched, the investor is asked for consent once the application is completed online: a link goes to their registered mobile number and email address, and they enter the OTP sent to the CERSAI-registered mobile number.</p>
-                            <p class="doc-kyc-route__p">The addresses &mdash; permanent and communication &mdash; and the photograph then come from CERSAI instead of being filed here, and anything uploaded for them is not used. The PAN copy is filed here either way, and the record is fetched for the investor only: joint holders file their own documents on Investor Information. Nothing changes until the record is fetched.</p>
+                            <p class="doc-kyc-route__p">CERSAI is searched with the investor&rsquo;s PAN and date of birth. If it holds a record, the application goes on with the name and the CKYC reference number it gives.</p>
+                            <p class="doc-kyc-route__p">The proof of address and the photograph are then not filed here, and anything uploaded for them is not used. The PAN copy is filed here either way, and the record is fetched for the investor only: joint holders file their own documents on Investor Information. Nothing changes until the record is fetched.</p>
                         </details>
                     }
                 </div>
@@ -297,8 +297,8 @@
                         </button>
                     </header>
                     <div class="doc-ckyc__body">
-                        <p>The addresses &mdash; permanent and communication &mdash; and the photograph will come from the CERSAI record instead of being filed here, and the investor will be asked for OTP consent once the application is completed online.</p>
-                        <p><strong>This cannot be undone on this application:</strong> the record cannot be fetched twice, and the application can no longer be filed as a physical one &mdash; consent is given online.</p>
+                        <p>CERSAI is searched with the investor&rsquo;s PAN and date of birth. If it holds a record, the application goes on with the name and the CKYC reference number it gives, and the proof of address and the photograph are not filed here.</p>
+                        <p><strong>This cannot be undone on this application:</strong> the record cannot be fetched twice, and the application can no longer be filed as a physical one.</p>
                     </div>
                     <footer class="doc-ckyc__foot">
                         <button type="button" class="link-button" popovertarget="docsCkycAsk" popovertargetaction="hide">Cancel</button>

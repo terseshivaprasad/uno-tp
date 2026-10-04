@@ -9,9 +9,12 @@ namespace UnoTP.Services.Shortener;
 /// call under the gateway (<see cref="BackendOptions.BaseUrl"/>). Left empty, the
 /// payment link goes in full.
 /// </summary>
-public sealed class ShortenerOptions
+public sealed class ShortenerOptions : IApiAddress
 {
     public const string Section = "Shortener";
+
+    /// <summary>The API's own address, https://{host}/ ; blank while it is behind the gateway (Backend:BaseUrl).</summary>
+    public string BaseUrl { get; set; } = "";
 
     /// <summary>The API's base path under the gateway. Every path below is relative to it.</summary>
     public string BasePath { get; set; } = "";
@@ -56,7 +59,7 @@ public static class ShortenerServiceCollectionExtensions
     {
         services.RemoveAll<IShortLinkService>();
         services.AddApiClient<IShortLinkService, ShortenerClient>(
-            sp => sp.GetRequiredService<IOptions<ShortenerOptions>>().Value.BasePath);
+            sp => sp.GetRequiredService<IOptions<ShortenerOptions>>().Value);
         return services;
     }
 

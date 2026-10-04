@@ -41,9 +41,10 @@ builder.Services.AddSingleton<AppUrls>();
 // redirect to another step carries it on (see ApplicationUrls).
 builder.Services.AddSingleton<IUrlHelperFactory>(new ApplicationUrlHelperFactory(new UrlHelperFactory()));
 // The app's data is in SQL Server (ConnectionStrings:UnoTP), read in process through
-// the interfaces the pages read (UnoTP.Data). Every backend API is behind one
-// gateway (Backend:BaseUrl), and each has a settings section of its own with its
-// base path and the path of its calls: the way in (AuthApi), the PAN check (PanApi),
+// the interfaces the pages read (UnoTP.Data). The backend APIs are behind one
+// gateway (Backend:BaseUrl), unless an API's own section gives it an address of its
+// own (BaseUrl); each has a settings section with that, its base path and the path
+// of its calls: the way in (AuthApi), the PAN check (PanApi),
 // Aadhaar masking (UidMasking), the CKYC search (Ckyc), the document checks (Idfy),
 // name screening, name match and the link shortener.
 builder.Services.Configure<BackendOptions>(builder.Configuration.GetSection(BackendOptions.Section));
@@ -64,8 +65,13 @@ builder.Services.AddScoped<HolderSearch>();
 if (!SqlDataServiceCollectionExtensions.Configured(builder.Configuration))
     throw new InvalidOperationException("ConnectionStrings:UnoTP is not set. The app runs only on its database.");
 builder.Services.AddSqlData();
-if (!BackendOptions.Configured(builder.Configuration))
-    throw new InvalidOperationException("Backend:BaseUrl is not set to the gateway's address (appsettings.json carries it with a <gateway-host> placeholder). Every backend API is behind it.");
+// Every API the app calls needs an address: its own, or the gateway's.
+var apiSections = new List<string> { AuthApiOptions.Section, PanApiOptions.Section, UidMaskingOptions.Section, CkycOptions.Section, IdfyOptions.Section, NameScreeningOptions.Section };
+if (new OutsideSwitches(builder.Configuration).IsOn(OutsideSwitches.NameMatch)) apiSections.Add(NameMatchOptions.Section);
+if (ShortenerOptions.Configured(builder.Configuration)) apiSections.Add(ShortenerOptions.Section);
+var unaddressed = BackendHttpClients.Unaddressed(builder.Configuration, [.. apiSections]);
+if (unaddressed.Count > 0)
+    throw new InvalidOperationException($"No address is set for {string.Join(", ", unaddressed)}. Set Backend:BaseUrl to the gateway they are behind (appsettings.json carries it with a <gateway-host> placeholder), or BaseUrl in each one's own section.");
 builder.Services.AddAuthApi();
 // Who the partner is: what the auth API said when their session started (see PartnerSession).
 builder.Services.AddScoped<IPartnerApi, SessionPartnerApi>();
@@ -261,44 +267,19 @@ app.MapGet("/", (HttpContext ctx) => Results.LocalRedirect("~/Home/Index" + ctx.
 
 // The pages keep the old app's addresses, so the portal's links and saved links
 // still work. The IIS virtual directory (e.g. /WA_FD_UNOTP) is the path base and is
-// never part of a route. Addresses the old app had that name no page here, and the
-// addresses of the redesign that was never deployed, land on the page that took
-// their place, with whatever query they carried.
+// never part of a route. Addresses the old app had that name no page here land on
+// the page that took their place, with whatever query they carried.
 var moved = new (string From, string To)[]
 {
     ("/Dashboard/Index", "/Dashboard"),
-    ("/Apps/UnoTp/Classic", "/Dashboard"),
-    ("/Apps/UnoTp/Dashboard/{**rest}", "/Dashboard"),
-    ("/Apps/UnoTp/ConsentTracker", "/Dashboard"),
-    ("/Apps/UnoTp/Desktop/ConsentTracker", "/Dashboard"),
-    ("/Purchase/InvestorIdentification", "/SearchInvestor"),
-    ("/Apps/UnoTp/Classic/SearchInvestor", "/SearchInvestor"),
-    ("/Apps/UnoTp/Application/HolderIdentification", "/SearchInvestor"),
     // A step's address with no application in it has none to open: the way in is a search.
     ("/UploadInvestorDocuments", "/SearchInvestor"),
     ("/InvestorInformation", "/SearchInvestor"),
     ("/BankDetails", "/SearchInvestor"),
     ("/FDConfiguration", "/SearchInvestor"),
     ("/ReviewSummary", "/SearchInvestor"),
-    ("/Apps/UnoTp/Application/UploadDocuments", "/SearchInvestor"),
-    ("/Apps/UnoTp/Classic/UploadDocuments", "/SearchInvestor"),
-    ("/Apps/UnoTp/Classic/ViewApplication", "/ViewApplication"),
-    ("/Apps/UnoTp/Classic/PayInSlip", "/PayInSlip"),
-    ("/Apps/UnoTp/Classic/ShortUrl", "/ShortUrl"),
-    ("/Apps/UnoTp/Classic/Admin", "/Admin"),
 };
 foreach (var (from, to) in moved)
     app.MapGet(from, (HttpContext ctx) => Results.LocalRedirect("~" + to + ctx.Request.QueryString));
-
-// A step of an application, under its old name.
-var steps = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-{
-    ["UploadDocuments"] = "UploadInvestorDocuments", ["InvestorInfo"] = "InvestorInformation", ["BankDetails"] = "BankDetails",
-    ["FdConfiguration"] = "FDConfiguration", ["ReviewSummary"] = "ReviewSummary", ["Submitted"] = "ApplicationSubmitted",
-};
-app.MapGet("/Apps/UnoTp/Application/{appNo}/{step}", (string appNo, string step, HttpContext ctx) =>
-    steps.TryGetValue(step, out var to)
-        ? Results.LocalRedirect($"~/{to}/{Uri.EscapeDataString(appNo)}{ctx.Request.QueryString}")
-        : Results.NotFound());
 
 app.Run();

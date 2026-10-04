@@ -51,7 +51,7 @@
         {
             <div class="alert alert-success doc-banner" role="status">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7"></path></svg>
-                <span><strong>Nothing is missing.</strong> Every step is complete &mdash; sign the declarations at the foot of the page to submit.</span>
+                <span><strong>Nothing is missing.</strong> Every step is complete &mdash; <strong>Submit Application</strong> sends it.</span>
             </div>
         }
         else
@@ -69,26 +69,16 @@
            details sheet draws, read-only there. *@
         <partial name="_ApplicationSummary" model="@(new ApplicationSummary(Model, Editable: true))" />
 
-        @* ── Declarations ──────────────────────────────────────────────────── *@
-        <section class="page-card section-card" id="review-declarations">
-            <div class="page-head"><h2 class="page-title page-title--section">Declarations</h2><span class="identify-status">Every one required</span></div>
-            <form method="post" asp-action="Submit" class="review-declarations" id="reviewForm" novalidate data-ready="@(Model.Ready ? "true" : "false")">
-                @for (var i = 0; i < Model.Ref.Declarations.Count; i++)
-                {
-                    <label class="review-declaration">
-                        <input type="checkbox" name="declarations" value="@i" class="review-declaration__box" />
-                        <span class="review-declaration__text">@Model.Ref.Declarations[i]</span>
-                    </label>
-                }
-            </form>
-        </section>
+        @* Submit posts this: nothing is typed on the page, so it carries the token alone.
+           Whether anything is still missing is the server's, here as data-ready. *@
+        <form method="post" asp-action="Submit" id="reviewForm" novalidate data-ready="@(Model.Ready ? "true" : "false")" hidden></form>
     </div>
 </div>
 
 <footer class="page-action-bar">
     <div class="page-action-bar__inner">
         <a class="btn btn-outline-primary" asp-controller="Deposit" asp-action="Index" data-loader="Going back to FD Configuration">Back</a>
-        <p class="page-action-bar__hint" id="review-footer-hint">@(Model.Ready ? "Nothing missing · sign every declaration to submit" : $"{blockers.Count} thing{(blockers.Count == 1 ? "" : "s")} still missing before submitting")</p>
+        <p class="page-action-bar__hint" id="review-footer-hint">@(Model.Ready ? "Nothing missing · ready to submit" : $"{blockers.Count} thing{(blockers.Count == 1 ? "" : "s")} still missing before submitting")</p>
         <div class="page-action-bar__right">
             <button type="button" class="btn btn-primary" id="openPaymentLinkModal" disabled>Submit Application</button>
         </div>

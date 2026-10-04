@@ -107,6 +107,9 @@ public class EntryController(
         }
 
         HttpContext.Session.SignIn(started);
+        // What the last user of this browser left on a page - an investor searched for,
+        // a message waiting to be shown - goes with their session.
+        TempData.Clear();
         // Kept for the way back to the portal (Home). After SignIn, which clears the session.
         if (fromPortal) HttpContext.Session.KeepPortalValues(userId!, sysCode!);
         return Onward(returnUrl);

@@ -54,6 +54,7 @@ CREATE TABLE dbo.t_Unotp_Application_Mst
     c_Folio              VARCHAR(20)    NOT NULL CONSTRAINT DF_Application_Mst_Folio DEFAULT (''),   -- '' for a new investor
     c_Gender             VARCHAR(20)    NOT NULL CONSTRAINT DF_Application_Mst_Gender DEFAULT (''),
     c_Address            NVARCHAR(500)  NOT NULL CONSTRAINT DF_Application_Mst_Address DEFAULT (''),
+    c_Data_Source        VARCHAR(50)    NULL,       -- the folio's source, for an investor on one: written to f_Data_Source
     f_Pan_Filed          BIT            NOT NULL CONSTRAINT DF_Application_Mst_Pan_Filed DEFAULT (0),
     f_Rec_Pan            BIT            NULL,       -- what the folio already holds;
     f_Rec_Photo          BIT            NULL,       -- NULL for an investor with no folio
@@ -66,9 +67,15 @@ CREATE TABLE dbo.t_Unotp_Application_Mst
     n_Renew_Rate         DECIMAL(5,2)   NULL,
     n_Renew_Tenure       INT            NULL,
     c_Renew_Payout       VARCHAR(20)    NULL,
+    n_Renew_Principal    BIGINT         NULL,       -- the deposit's own amount: renewed when the principal only is
 
     -- The submission, once submitted.
     d_Submitted_On       DATETIME2(3)   NULL,
+    -- The quote locked on submit, beside the rate on the deposit's 'APR' row.
+    n_Quote_Interest_Each   DECIMAL(18,2) NULL,  -- interest each payout; 0 for a cumulative deposit
+    n_Quote_Maturity_Amount DECIMAL(18,2) NULL,
+    d_Quote_Matures_On      DATE          NULL,
+    d_Quote_Rate_As_On      DATE          NULL,  -- the card the rate was read off
     c_Sub_Status         VARCHAR(30)    NULL,       -- payment-pending, then the backend's own
     c_Link_Sent_To       VARCHAR(20)    NULL,       -- masked
     c_Link_Emailed_To    VARCHAR(150)   NULL,       -- masked
@@ -103,7 +110,7 @@ GO
 /* ----- t_Unotp_Upload_State ---------------------------------------------------------
    Upload Documents as a whole, as the web app saved it: the choices, every
    check's reading and the attempt log, as JSON. It holds no file and no Aadhaar
-   number. t_Unotp_Kyc_Documents carries its documents a row each.
+   number. t_FD_BT_KYC_document carries its documents a row each.
    ----------------------------------------------------------------------------- */
 IF OBJECT_ID(N'dbo.t_Unotp_Upload_State', N'U') IS NULL
 BEGIN

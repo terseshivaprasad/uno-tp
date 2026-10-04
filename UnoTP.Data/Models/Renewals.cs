@@ -37,18 +37,32 @@ public interface IRenewalApi
 /// <summary>A deposit on a folio, as the register holds it.</summary>
 /// <param name="Category">A <see cref="CategoryOption.Code"/>: a renewal is quoted under it.</param>
 /// <param name="Payout">A <see cref="PayoutOption.Code"/>.</param>
-/// <param name="Status">running (too early), due (inside the renewal window), late (too near maturity: Operations'), matured, or renewed.</param>
+/// <param name="Status">running (too early), due (inside the renewal window), late (too near maturity: Operations'), matured, renewing (a renewal is being entered) or renewed (one is submitted).</param>
 /// <param name="Renewable">Whether a renewal can be entered now: due, and not renewed already.</param>
 /// <param name="Why">Why not, when it cannot be; empty otherwise.</param>
 /// <param name="JointHolders">The joint holders on the deposit, in order; they come on to a renewal.</param>
 /// <param name="Repayment">The account the deposit repays into, which a renewal opens with.</param>
 /// <param name="AutoRenewal">Tagged for auto renewal: its renewal window closes earlier.</param>
+/// <param name="Renewal">The application that renews it, while one is being entered or is submitted; null otherwise.</param>
 public sealed record HeldDeposit(
     string Number, string Folio, string Investor, string Category,
     long Amount, decimal Rate, int TenureMonths, string Payout,
     DateOnly StartedOn, DateOnly MaturesOn, long MaturityAmount,
     string Status, bool Renewable, string Why = "",
-    IReadOnlyList<DepositHolder>? JointHolders = null, BankAccount? Repayment = null, bool AutoRenewal = false);
+    IReadOnlyList<DepositHolder>? JointHolders = null, BankAccount? Repayment = null, bool AutoRenewal = false, RenewalApp? Renewal = null);
+
+/// <summary>
+/// The application that renews a deposit. A draft is picked up again or cancelled by
+/// the partner who opened it, and cancels itself once the deposit's renewal window
+/// closes. A submitted one can be cancelled only while it is a digital application
+/// the investor has not accepted yet; a physical one cannot be cancelled here.
+/// </summary>
+/// <param name="Submitted">False for a draft, still being entered.</param>
+/// <param name="NextStep">For a draft, the step it stopped before.</param>
+/// <param name="Mine">Whether the partner asking opened it.</param>
+/// <param name="CanCancel">Whether the renewal request can be cancelled now.</param>
+/// <param name="CancelWhy">Why not, when it cannot be; empty otherwise.</param>
+public sealed record RenewalApp(string AppNo, bool Submitted, string NextStep, bool Mine, bool CanCancel, string CancelWhy = "");
 
 /// <summary>A joint holder on a deposit: enough to find them on the register.</summary>
 public sealed record DepositHolder(string Pan, string Dob, string Name, string Folio);

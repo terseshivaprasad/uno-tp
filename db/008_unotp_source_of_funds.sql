@@ -6,7 +6,7 @@
    sourceOfFundsOccupations (homemaker, student, retired) or their annual income
    band is one of sourceOfFundsIncomeBands (up to Rs 5 lakh). A choice from the
    sourcesOfFunds list; "other" takes a typed remark. Both are kept on
-   t_Unotp_Investment_Dtls.
+   t_FD_BT_Investment_Dtl.
 
    Safe to run again: each change is made only when it is not there yet.
    ============================================================================= */

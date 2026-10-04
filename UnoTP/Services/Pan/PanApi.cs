@@ -10,9 +10,12 @@ namespace UnoTP.Services.Pan;
 /// the call under the gateway (<see cref="BackendOptions.BaseUrl"/>). Everything
 /// else the request carries comes from the signed-in partner and the application.
 /// </summary>
-public sealed class PanApiOptions
+public sealed class PanApiOptions : IApiAddress
 {
     public const string Section = "PanApi";
+
+    /// <summary>The API's own address, https://{host}/ ; blank while it is behind the gateway (Backend:BaseUrl).</summary>
+    public string BaseUrl { get; set; } = "";
 
     /// <summary>The API's base path under the gateway. Every path below is relative to it.</summary>
     public string BasePath { get; set; } = "";
@@ -145,7 +148,7 @@ public static class PanApiServiceCollectionExtensions
     public static IServiceCollection AddPanApi(this IServiceCollection services)
     {
         services.AddApiClient<IPanVerificationService, PanApiClient>(
-            sp => sp.GetRequiredService<IOptions<PanApiOptions>>().Value.BasePath);
+            sp => sp.GetRequiredService<IOptions<PanApiOptions>>().Value);
         return services;
     }
 }

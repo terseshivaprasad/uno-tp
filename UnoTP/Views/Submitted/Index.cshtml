@@ -93,6 +93,10 @@
                     <div><div class="submitted-key-value__key">Scheme</div><div class="submitted-key-value__value">@(payout?.PerYear == 0 ? "Cumulative" : "Non-cumulative") &middot; @Model.Docs.CategoryName(Model.Docs.State.Category)</div></div>
                     <div><div class="submitted-key-value__key">Interest payout</div><div class="submitted-key-value__value">@(payout?.Name ?? d.Payout)</div></div>
                     <div><div class="submitted-key-value__key">Maturity value</div><div class="submitted-key-value__value">@(q is null ? "—" : Money.Rupees(q.MaturityAmount))</div></div>
+                    @if (d.RenewalFor.Length > 0)
+                    {
+                        <div><div class="submitted-key-value__key">Renewal for</div><div class="submitted-key-value__value">@Model.Option(Model.Ref.RenewInstructions, d.RenewalFor)</div></div>
+                    }
                     <div><div class="submitted-key-value__key">Auto renewal</div><div class="submitted-key-value__value">@(d.AutoRenewal ? $"On · {Model.Option(Model.Ref.RenewInstructions, d.RenewInstruction)}" : "Off")</div></div>
                     <div><div class="submitted-key-value__key">TDS</div><div class="submitted-key-value__value">@(d.NoTds ? "Not deducted" : "Deducted")</div></div>
                     <div><div class="submitted-key-value__key">Delivery</div><div class="submitted-key-value__value">@Model.Option(Model.Ref.DeliveryTypes, d.DeliveryType)</div></div>

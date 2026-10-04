@@ -15,4 +15,10 @@ public interface IPartner
 
     /// <summary>The address the partner's browser is calling from; empty when it is not known.</summary>
     string IpAddress => "";
+
+    /// <summary>The signed-in user's Agency_Usr_Clustered_ID, as the auth API gave it; empty when not known.</summary>
+    string UserClusterId => "";
+
+    /// <summary>The signed-in user's name, as the auth API gave it; empty when not known.</summary>
+    string UserName => "";
 }

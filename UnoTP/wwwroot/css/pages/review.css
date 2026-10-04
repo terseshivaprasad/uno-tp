@@ -18,53 +18,6 @@
   flex-direction: column;
   gap: 12px;
 }
-.review-declarations {
-  padding-top: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-.review-declaration {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  cursor: pointer;
-}
-.review-declaration__box {
-  appearance: none;
-  -webkit-appearance: none;
-  margin: 1px 0 0;
-  flex: none;
-  width: 17px;
-  height: 17px;
-  border: 1px solid var(--red);
-  border-radius: 3px;
-  background: #fff;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.review-declaration__box:checked {
-  background: var(--red) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round'%3E%3Cpath d='M5 12l5 5L20 7'/%3E%3C/svg%3E") center / 11px no-repeat;
-}
-.review-declaration__box:focus-visible {
-  outline: 2px solid var(--ink);
-  outline-offset: 2px;
-}
-.review-declaration__text {
-  flex: 1;
-  min-width: 0;
-  font-size: 14px;
-  color: var(--text);
-  line-height: 20px;
-}
-/* Board 11 - Mobile. Display is set only inside the query so .phone-only keeps it hidden on a laptop. */
-@media (max-width: 560px) {
-  .review-declarations {
-    padding-top: 16px;
-  }
-}
 /* ===== Submit · payment link dialog (11A) =====
    Opens over Review Summary. Laptop is a centred dialog that answers who the link
    goes to, for how much, how long it lives and what happens if it is never paid;

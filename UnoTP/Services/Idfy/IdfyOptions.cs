@@ -6,9 +6,12 @@ namespace UnoTP.Services.Idfy;
 /// that. It answers document identification, OCR (a cheque's too), verification
 /// with the issuer, the PAN-Aadhaar link and face match.
 /// </summary>
-public sealed class IdfyOptions
+public sealed class IdfyOptions : IApiAddress
 {
     public const string Section = "Idfy";
+
+    /// <summary>The API's own address, https://{host}/ ; blank while it is behind the gateway (Backend:BaseUrl).</summary>
+    public string BaseUrl { get; set; } = "";
 
     /// <summary>The API's base path under the gateway. Every path below is relative to it.</summary>
     public string BasePath { get; set; } = "";

@@ -1,8 +1,8 @@
 /* =============================================================================
    Uno TP - the tables the database already has, as the app reads them (SQL Server
    2016 or later): what is entered on an application (KYC, addresses, documents,
-   nominee, payment and repayment accounts, the deposit), the partners and their
-   menus and sessions, the payment links and the pay-in slips.
+   nominee, payment and repayment accounts, the deposit), the partners, the payment
+   links and the pay-in slips.
 
        sqlcmd -d UnoTP -i db/create_existing_tables.sql
 
@@ -11,16 +11,13 @@
    app's queries expect (UnoTP.Data).
 
    An application is one row in t_Unotp_Application_Mst (create_new_tables.sql), and
-   everything entered on it is rows in the detail tables here. A detail row is never
-   updated or deleted: every save inserts the section afresh, so each earlier save
-   stays on record.
+   everything entered on it is rows in the FD system's detail tables here. A detail
+   row is never deleted: a save takes the section's rows out of use (f_Active = 0)
+   and inserts the section afresh, so each earlier save stays on record.
 
-     c_Status       'PEN' - saved on a step, before the application is submitted.
+     f_Status       'PEN' - saved on a step, before the application is submitted.
                     'APR' - written once, on submit: the whole application as it was
                             submitted, in a fresh set of rows.
-     n_App_Version  The application's version the rows were saved at. A section's
-                    current rows are those at the version t_Unotp_Application_Mst holds
-                    for it (n_Details_Ver and the like); older versions are its history.
 
    Holder types, as DMS codes them: 01 the investor, 02 the second holder, 03 the third.
 
@@ -28,292 +25,517 @@
    already there is not touched at all: no column, index or row of it changes,
    whatever its columns are. Schema only: no rows are put in. Safe to run again.
 
-   Column prefixes: c_ text, n_ number, d_ date, f_ flag, j_ JSON. Every table has
-   f_Active: 0 takes a row out of use without deleting it. No table has a foreign
-   key or a CHECK constraint: the app keeps those rules itself.
+   The app's own tables here (partners, links, slips) use the prefixes
+   c_ text, n_ number, d_ date, f_ flag, j_ JSON, and have f_Active: 0 takes a row
+   out of use without deleting it. The FD system's tables keep its own names. No
+   table has a foreign key or a CHECK constraint: the app keeps those rules itself.
    ============================================================================= */
 
 SET ANSI_NULLS ON;
 SET QUOTED_IDENTIFIER ON;
 GO
 
-/* ----- t_Unotp_Kyc_Documents: one row per application, holder and document ----------
-   Every document on the application as it stands after the save: the copy filed
-   with DMS, and what its checks said. A document not uploaded has no row.
-     c_Holder_Type   00 the application's own, 01 the investor, 02 and 03 the joint holders
-     c_Doc_Type      the slot the web app filed it in: pan, photo, poa (proof of
-                     address), mail (communication address proof) for a holder; form,
-                     payment (the cheque or DD), empproof (employee proof), tdsform
-                     (Form 121) for the application
-     c_Doc_Sub_Type  which it is: the proof (Aadhaar, Passport, ...), the payment
-                     mode, the employee proof, or the application type for the form
-     c_File_Path     where the copy is kept, relative to the document store's root
-                     (Dms:Root): {appNo}/{holder}/{slot}{extension}
-     c_Result        ok, warn or bad
-     f_On_Record     1 when it came over from the folio, with no copy here
+/* ----- The FD system's own tables, column for column as the database has them -----
+   What is entered on an application goes into these. None has a version column, a
+   key or an index: a section's current rows are the application's active ones
+   (f_Active = 1), and a save takes the rows it replaces out of use before it
+   inserts the section afresh. Every row carries f_Source = 'UNO_TP', f_Status
+   ('PEN' on a step's save, 'APR' on submit), who wrote it (the user's
+   Agency_Usr_Clustered_ID), from which session and address.
+
+   The lists' names go in the description columns (f_..._Desc); the FD system's
+   codes beside them stay empty until the lists are read off its masters.
    ----------------------------------------------------------------------------- */
-IF OBJECT_ID(N'dbo.t_Unotp_Kyc_Documents', N'U') IS NULL
+
+/* ----- t_FD_BT_KYC_document: one row per application, holder and document ----------
+     f_Holder_Type_Code   01 the investor, 02 and 03 the joint holders. The application's
+                          own documents - the form, the cheque, an employee proof, the
+                          Form 121 - go under 01
+     f_Doc_Type_Code, f_Doc_Sub_Type_Code, and their descriptions
+                          as the FD system's document master codes the document
+                          (T_FD_CMN_KYC_Document_Sub_Type_Mst); which sub-type each is,
+                          the 'documentSubTypes' list in t_Unotp_Ref_List says
+     f_Doc_Filepath       where the copy is kept, relative to the document store's
+                          root (Dms:Root); NULL for one on the folio with no copy here
+     f_Doc_Sequence       1, 2, 3... among a holder's documents of one type
+     f_Document_Source, f_doc_source
+                          UNO_TP for a copy uploaded here; NULL for one that came
+                          over from the folio or the step before
+     f_Doc_Ref_No         the number OCR read off it: a PAN, a passport, licence or
+                          voter ID number, a cheque number; an Aadhaar's last four
+                          digits only
+     f_Doc_Exp_Date       when a passport or driving licence runs out
+     f_IsDocumentMasked   1 for an Aadhaar filed with its number masked
+     f_is_ocrextract      1 when OCR was asked to read it
+     f_isocrdataextract, f_IsidfyDocDataExtracted   1 when OCR read something off it
+     f_isocrdataverified, f_IsidfyDocDataVerified   1 when what was read was confirmed
+     f_IsidfyDocIdentified, f_IdfyIdentifiedDocument
+                          1 and what it was identified as
+     f_IsidfyFaceCompared, f_IsidfyDocFaceDetected, f_IdfyFaceMatchPercentage
+                          on the PAN copy and the proof of address: whether their
+                          faces were compared, whether a face was found on this
+                          copy, and the score, 0 to 100
+                          Every one of these is NULL for a document no check was
+                          run on. The new DMS columns are not the app's to fill.
+   ----------------------------------------------------------------------------- */
+IF OBJECT_ID(N'dbo.t_FD_BT_KYC_document', N'U') IS NULL
 BEGIN
-CREATE TABLE dbo.t_Unotp_Kyc_Documents
-(
-    n_Id                 BIGINT IDENTITY(1,1) NOT NULL,
-    c_App_No             VARCHAR(20)    NOT NULL,
-    n_App_Version        INT            NOT NULL,
-    c_Status             CHAR(3)        NOT NULL,
-    c_Holder_Type        CHAR(2)        NOT NULL,
-    c_Doc_Type           VARCHAR(10)    NOT NULL,
-    c_Doc_Sub_Type       VARCHAR(30)    NOT NULL CONSTRAINT DF_Kyc_Documents_Sub_Type DEFAULT (''),
-    c_File_Name          NVARCHAR(260)  NOT NULL,   -- as it was uploaded
-    c_File_Path          NVARCHAR(400)  NULL,       -- where the copy is kept; NULL for one on record with no copy here
-    n_File_Size          BIGINT         NOT NULL CONSTRAINT DF_Kyc_Documents_Size DEFAULT (0),
-    c_Content_Type       VARCHAR(100)   NOT NULL CONSTRAINT DF_Kyc_Documents_Type DEFAULT (''),
-    c_Check              NVARCHAR(500)  NOT NULL CONSTRAINT DF_Kyc_Documents_Check DEFAULT (''),
-    c_Result             VARCHAR(10)    NOT NULL CONSTRAINT DF_Kyc_Documents_Result DEFAULT (''),
-    f_On_Record          BIT            NOT NULL CONSTRAINT DF_Kyc_Documents_On_Record DEFAULT (0),
-    c_Created_By         VARCHAR(20)    NOT NULL,
-    d_Created_On         DATETIME2(3)   NOT NULL CONSTRAINT DF_Kyc_Documents_Created DEFAULT (SYSDATETIME()),
-    f_Active             BIT            NOT NULL CONSTRAINT DF_Kyc_Documents_Active DEFAULT (1),
-    CONSTRAINT PK_Kyc_Documents PRIMARY KEY CLUSTERED (n_Id)
+CREATE TABLE [dbo].[t_FD_BT_KYC_document](
+    [f_Pk_t_FD_BT_KYC_document_ID] [bigint] IDENTITY(1,1) NOT NULL,
+    [f_Appl_No] [nvarchar](50) NULL,
+    [f_Holder_Type_Code] [nvarchar](50) NULL,
+    [f_Doc_Type_Code] [nvarchar](50) NULL,
+    [f_Doc_Sub_Type_Code] [nvarchar](100) NULL,
+    [f_Doc_Type_Desc] [nvarchar](50) NULL,
+    [f_Doc_Sub_Type_Desc] [nvarchar](50) NULL,
+    [f_Doc_Ref_No] [nvarchar](50) NULL,
+    [f_Doc_Exp_Date] [date] NULL,
+    [f_Doc_FileName] [nvarchar](250) NULL,
+    [f_Doc_Filepath] [nvarchar](max) NULL,
+    [f_Active] [bit] NULL,
+    [f_Session_ID] [nvarchar](50) NULL,
+    [f_CreatedBy] [nvarchar](50) NULL,
+    [f_CreatedByUName] [nvarchar](150) NULL,
+    [f_CreatedType] [nvarchar](10) NULL,
+    [f_CreatedDate] [datetime] NULL,
+    [f_CreatedIP] [nvarchar](50) NULL,
+    [f_UpdatedBy] [nvarchar](50) NULL,
+    [f_UpdatedByUName] [nvarchar](150) NULL,
+    [f_UpdatedType] [nvarchar](10) NULL,
+    [f_UpdatedDate] [datetime] NULL,
+    [f_UpdatedIP] [nvarchar](50) NULL,
+    [f_Source] [nvarchar](100) NULL,
+    [f_Status] [nvarchar](20) NULL,
+    [f_FolioNo] [nvarchar](50) NULL,
+    [f_Doc_Sequence] [nvarchar](50) NULL,
+    [f_Document_Source] [nvarchar](50) NULL,
+    [f_Doc_New_DMS_Id] [nvarchar](100) NULL,
+    [f_Doc_New_DMS_URL] [nvarchar](max) NULL,
+    [f_IsAddedto_NEW_DMS] [bit] NULL,
+    [f_IsDocumentMasked] [bit] NULL,
+    [f_Doc_New_DMS_Error] [nvarchar](max) NULL,
+    [f_doc_source] [nvarchar](50) NULL,
+    [f_is_ocrextract] [bit] NULL,
+    [f_isocrdataextract] [bit] NULL,
+    [f_isocrdataverified] [bit] NULL,
+    [f_IsidfyDocIdentified] [bit] NULL,
+    [f_IdfyIdentifiedDocument] [nvarchar](50) NULL,
+    [f_IdfyIdentifiedDocPercentage] [decimal](18, 0) NULL,
+    [f_IsidfyDocFaceDetected] [bit] NULL,
+    [f_IsidfyDocDataExtracted] [bit] NULL,
+    [f_IsidfyDocDataVerified] [bit] NULL,
+    [f_IsidfyFaceCompared] [bit] NULL,
+    [f_IdfyFaceMatchPercentage] [decimal](18, 0) NULL,
+    [F_Doc_New_DMS_Upload_Date] [datetime] NULL
 );
-CREATE INDEX IX_Kyc_Documents_App ON dbo.t_Unotp_Kyc_Documents (c_App_No, n_App_Version, c_Holder_Type, c_Doc_Type);
 END
 GO
 
-/* ----- t_Unotp_Kyc_Dtls: one row per holder -----------------------------------------
-   Who each holder is - from Investor Identification, or the joint holder's own
-   search - what Investor Information took down about them, and where their KYC
-   stands on Upload Documents (NSDL, CKYC).
+/* ----- t_FD_BT_Kyc_Data_Dtl: one row per holder --------------------------------------
+   Who each holder is and what Investor Information took down about them. The
+   holder's whole name goes in f_Kyc_FirstName and in f_Kyc_FullName; the name they
+   gave under the father's, mother's or spouse's columns, which says whose it is.
+   The gender is kept as the name prefix (Mr, Mrs or Miss) and read back off it.
+   The mobile and e-mail are on the holder's permanent address in
+   t_FD_BT_Address_Dtl. The FATCA answers have no column: the page keeps them with
+   its typed fields, and a "yes" stops the application going on online.
+
+     f_Kyc_Number    the CKYC reference number CERSAI's search gives, once CKYC is
+                     fetched for the investor
+     f_IsMinor       1 for a holder under the minimum age today, from the date of birth
+     f_CustSeg_Type_Code, f_CustSeg_Subtype_Code, f_Kyc_Occupation_Code, f_Kyc_Occupation_Desc
+                     the codes of the occupation master's row for the occupation and
+                     sub occupation chosen (t_FD_CMN_Ckyc_CustSeg_Mst)
+     f_Data_Source   where the holder's KYC came from: FRESH, given on the application;
+                     CKYC, fetched from CERSAI; for a holder on a folio, the source
+                     the folio's record names
    ----------------------------------------------------------------------------- */
-IF OBJECT_ID(N'dbo.t_Unotp_Kyc_Dtls', N'U') IS NULL
+IF OBJECT_ID(N'dbo.t_FD_BT_Kyc_Data_Dtl', N'U') IS NULL
 BEGIN
-CREATE TABLE dbo.t_Unotp_Kyc_Dtls
-(
-    n_Id                 BIGINT IDENTITY(1,1) NOT NULL,
-    c_App_No             VARCHAR(20)    NOT NULL,
-    n_App_Version        INT            NOT NULL,
-    c_Status             CHAR(3)        NOT NULL,
-    c_Holder_Type        CHAR(2)        NOT NULL,
-
-    c_Pan                VARCHAR(10)    NOT NULL,
-    d_Dob                DATE           NULL,
-    c_Name               NVARCHAR(150)  NOT NULL,
-    c_Folio              VARCHAR(20)    NOT NULL CONSTRAINT DF_Kyc_Dtls_Folio DEFAULT (''),
-
-    c_Gender             VARCHAR(20)    NOT NULL CONSTRAINT DF_Kyc_Dtls_Gender DEFAULT (''),
-    c_Name_Type          VARCHAR(20)    NOT NULL CONSTRAINT DF_Kyc_Dtls_Name_Type DEFAULT (''),   -- father's / spouse's
-    c_Parent_Name        NVARCHAR(150)  NOT NULL CONSTRAINT DF_Kyc_Dtls_Parent DEFAULT (''),
-    c_Annual_Income      VARCHAR(50)    NOT NULL CONSTRAINT DF_Kyc_Dtls_Income DEFAULT (''),
-    c_Occupation         VARCHAR(50)    NOT NULL CONSTRAINT DF_Kyc_Dtls_Occupation DEFAULT (''),
-    c_Sub_Occupation     VARCHAR(50)    NOT NULL CONSTRAINT DF_Kyc_Dtls_Sub_Occ DEFAULT (''),
-    c_Marital_Status     VARCHAR(20)    NOT NULL CONSTRAINT DF_Kyc_Dtls_Marital DEFAULT (''),
-    c_Mobile             VARCHAR(15)    NOT NULL CONSTRAINT DF_Kyc_Dtls_Mobile DEFAULT (''),
-    c_Email              VARCHAR(150)   NOT NULL CONSTRAINT DF_Kyc_Dtls_Email DEFAULT (''),
-    f_Fatca_Tax_Res      BIT            NOT NULL CONSTRAINT DF_Kyc_Dtls_Fatca_Tax DEFAULT (0),   -- tax resident elsewhere
-    f_Fatca_Perm_Res     BIT            NOT NULL CONSTRAINT DF_Kyc_Dtls_Fatca_Perm DEFAULT (0),
-    c_Pep                VARCHAR(3)     NOT NULL CONSTRAINT DF_Kyc_Dtls_Pep DEFAULT (''),        -- yes, no, '' unanswered
-    c_Pep_Related        VARCHAR(3)     NOT NULL CONSTRAINT DF_Kyc_Dtls_Pep_Rel DEFAULT (''),
-
-    -- From Upload Documents, as it stood when the row was written.
-    c_Nsdl_Status        VARCHAR(10)    NOT NULL CONSTRAINT DF_Kyc_Dtls_Nsdl DEFAULT (''),   -- '', verified, name, failed
-    c_Nsdl_Name          NVARCHAR(150)  NOT NULL CONSTRAINT DF_Kyc_Dtls_Nsdl_Name DEFAULT (''),
-    f_Ckyc               BIT            NOT NULL CONSTRAINT DF_Kyc_Dtls_Ckyc DEFAULT (0),   -- KYC from CERSAI (the investor only)
-    f_Mail_Different     BIT            NOT NULL CONSTRAINT DF_Kyc_Dtls_Mail_Diff DEFAULT (0),   -- post goes to another address
-
-    -- What name screening said of the holder.
-    c_Screening_Status   VARCHAR(10)    NOT NULL CONSTRAINT DF_Kyc_Dtls_Screening DEFAULT (''),
-    c_Screening_Ref      VARCHAR(50)    NOT NULL CONSTRAINT DF_Kyc_Dtls_Screening_Ref DEFAULT (''),
-    d_Screened_On        DATETIME2(3)   NULL,
-
-    c_Created_By         VARCHAR(20)    NOT NULL,
-    d_Created_On         DATETIME2(3)   NOT NULL CONSTRAINT DF_Kyc_Dtls_Created DEFAULT (SYSDATETIME()),
-    f_Active             BIT            NOT NULL CONSTRAINT DF_Kyc_Dtls_Active DEFAULT (1),
-    CONSTRAINT PK_Kyc_Dtls PRIMARY KEY CLUSTERED (n_Id)
+CREATE TABLE [dbo].[t_FD_BT_Kyc_Data_Dtl](
+    [f_Pk_t_FD_BT_Kyc_Data_Dtl_id] [bigint] IDENTITY(1,1) NOT NULL,
+    [f_Holder_Type] [nvarchar](10) NOT NULL,
+    [f_Appl_No] [nvarchar](50) NOT NULL,
+    [f_Kyc_ConstiType] [nvarchar](2) NOT NULL, -- 01
+    [f_Kyc_Number] [nvarchar](50) NULL, --CKYC Number
+    [f_Kyc_NamePrefix] [nvarchar](5) NOT NULL, --Based on gender(M/F) and Marital status => (Mr/Mrs/Miss)
+    [f_Kyc_FirstName] [nvarchar](50) NOT NULL, -- Full name
+    [f_Kyc_MiddleName] [nvarchar](50) NULL,
+    [f_Kyc_LastName] [nvarchar](50) NULL,
+    [f_Kyc_FullName] [nvarchar](200) NULL, -- Full name
+    [f_Kyc_FatherNamePrefix] [nvarchar](5) NULL,
+    [f_Kyc_FatherFirstName] [nvarchar](50) NULL,
+    [f_Kyc_FatherMiddleName] [nvarchar](50) NULL,
+    [f_Kyc_FatherLastName] [nvarchar](50) NULL,
+    [f_Kyc_FatherFullName] [nvarchar](200) NULL,
+    [f_Kyc_SpouseNamePrefix] [nvarchar](5) NULL,
+    [f_Kyc_SpouseFirstName] [nvarchar](50) NULL,
+    [f_Kyc_SpouseMiddleName] [nvarchar](50) NULL,
+    [f_Kyc_SpouseLastName] [nvarchar](50) NULL,
+    [f_Kyc_SpouseFullName] [nvarchar](200) NULL,
+    [f_Kyc_MotherNamePrefix] [nvarchar](5) NULL,
+    [f_Kyc_MotherFirstName] [nvarchar](50) NULL,
+    [f_Kyc_MotherMiddletName] [nvarchar](50) NULL,
+    [f_Kyc_MotherLastName] [nvarchar](50) NULL,
+    [f_Kyc_MotherFullName] [nvarchar](200) NULL,
+    [f_Kyc_MaritalStatus] [nvarchar](10) NULL,
+    [f_Kyc_Nationality_Code] [nvarchar](10) NULL, -- IN
+    [f_Kyc_Nationality_Desc] [nvarchar](150) NULL, -- India
+    [f_Kyc_Occupation_Code] [nvarchar](10) NULL,
+    [f_Kyc_Occupation_Desc] [nvarchar](50) NULL,
+    [f_Kyc_DOB] [date] NULL,
+    [f_Active] [bit] NULL,
+    [f_CreatedIP] [nvarchar](50) NULL,
+    [f_CreatedOn] [datetime] NULL,
+    [f_CreatedBy] [nvarchar](50) NULL,
+    [f_CreatedType] [nvarchar](10) NULL,
+    [f_UpdatedIP] [nvarchar](50) NULL,
+    [f_UpdatedBy] [nvarchar](50) NULL,
+    [f_UpdatedType] [nvarchar](10) NULL,
+    [f_UpdatedOn] [datetime] NULL,
+    [f_SessionID] [nvarchar](50) NULL,
+    [f_CreatedByUName] [nvarchar](100) NULL,
+    [f_UpdatedByUName] [nvarchar](100) NULL,
+    [f_Kyc_PAN] [nvarchar](20) NULL,
+    [f_IsMinor] [bit] NULL,
+    [f_Source] [nvarchar](100) NULL, --UNO_TP
+    [f_Status] [nvarchar](20) NULL,
+    [f_IsEditForCKYC] [bit] NULL,
+    [f_FolioNo] [nvarchar](50) NULL,
+    [f_Data_Source] [nvarchar](10) NULL,
+    [f_Source_Table_Id] [nvarchar](50) NULL,
+    [f_Kyc_AnnualIncome_Code] [nvarchar](50) NULL,
+    [f_Kyc_AnnualIncome_Desc] [nvarchar](100) NULL,
+    [f_CustSeg_Type_Code] [nvarchar](50) NULL, --Occupation
+    [f_CustSeg_Type_desc] [nvarchar](250) NULL,
+    [f_CustSeg_Subtype_Code] [nvarchar](50) NULL, -- Sub Occupation
+    [f_CustSeg_Subtype_Desc] [nvarchar](250) NULL,
+    [f_NSA_Response] [nvarchar](50) NULL,
+    [f_NSA_Date] [datetime] NULL,
+    [f_IsPEP] [bit] NULL,
+    [f_IsPEP_Relative] [bit] NULL,
+    [f_IsFaceToFace] [bit] NULL,
+    [f_IsOSV] [bit] NULL,
+    [f_IsPanVerified] [char](1) NULL
 );
-CREATE INDEX IX_Kyc_Dtls_App ON dbo.t_Unotp_Kyc_Dtls (c_App_No, n_App_Version, c_Holder_Type);
-CREATE INDEX IX_Kyc_Dtls_Pan ON dbo.t_Unotp_Kyc_Dtls (c_Pan) INCLUDE (c_App_No, c_Status);
 END
 GO
 
-/* ----- t_Unotp_Address_Dtls: one row per holder and address type --------------------
-     c_Addr_Type   PER - permanent, as on record for the holder
-                   COR - communication, typed on Investor Information when post
-                         goes elsewhere; no row when it goes to the permanent one
+/* ----- t_FD_BT_Address_Dtl: one row per holder and address type --------------------
+     f_AddType_Code   PER  - permanent, as on record for the holder; always written, for
+                             its row carries the holder's mobile and e-mail. A long
+                             address is broken across f_Add1 to f_Add3 at its spaces
+                      MAIL - mailing, typed on Investor Information when post goes
+                             elsewhere; no row when it goes to the permanent one
    ----------------------------------------------------------------------------- */
-IF OBJECT_ID(N'dbo.t_Unotp_Address_Dtls', N'U') IS NULL
+IF OBJECT_ID(N'dbo.t_FD_BT_Address_Dtl', N'U') IS NULL
 BEGIN
-CREATE TABLE dbo.t_Unotp_Address_Dtls
-(
-    n_Id                 BIGINT IDENTITY(1,1) NOT NULL,
-    c_App_No             VARCHAR(20)    NOT NULL,
-    n_App_Version        INT            NOT NULL,
-    c_Status             CHAR(3)        NOT NULL,
-    c_Holder_Type        CHAR(2)        NOT NULL,
-    c_Addr_Type          CHAR(3)        NOT NULL,
-
-    c_Line1              NVARCHAR(500)  NOT NULL CONSTRAINT DF_Address_Dtls_Line1 DEFAULT (''),
-    c_Line2              NVARCHAR(250)  NOT NULL CONSTRAINT DF_Address_Dtls_Line2 DEFAULT (''),
-    c_Line3              NVARCHAR(250)  NOT NULL CONSTRAINT DF_Address_Dtls_Line3 DEFAULT (''),
-    c_City               NVARCHAR(100)  NOT NULL CONSTRAINT DF_Address_Dtls_City DEFAULT (''),
-    c_Pin_Code           VARCHAR(6)     NOT NULL CONSTRAINT DF_Address_Dtls_Pin DEFAULT (''),
-    c_District           NVARCHAR(100)  NOT NULL CONSTRAINT DF_Address_Dtls_District DEFAULT (''),
-    c_State              NVARCHAR(100)  NOT NULL CONSTRAINT DF_Address_Dtls_State DEFAULT (''),
-
-    c_Created_By         VARCHAR(20)    NOT NULL,
-    d_Created_On         DATETIME2(3)   NOT NULL CONSTRAINT DF_Address_Dtls_Created DEFAULT (SYSDATETIME()),
-    f_Active             BIT            NOT NULL CONSTRAINT DF_Address_Dtls_Active DEFAULT (1),
-    CONSTRAINT PK_Address_Dtls PRIMARY KEY CLUSTERED (n_Id)
+CREATE TABLE [dbo].[t_FD_BT_Address_Dtl](
+    [f_Pk_t_FD_BT_Address_Dtl_Id] [bigint] IDENTITY(1,1) NOT NULL,
+    [f_Holder_Type] [nvarchar](10) NOT NULL,
+    [f_Appl_No] [nvarchar](50) NOT NULL,
+    [f_AddType_Code] [nvarchar](10) NOT NULL,
+    [f_AddType_Desc] [nvarchar](50) NULL,
+    [f_Add1] [nvarchar](100) NULL,
+    [f_Add2] [nvarchar](100) NULL,
+    [f_Add3] [nvarchar](100) NULL,
+    [f_AddCity_Code] [nvarchar](50) NULL,
+    [f_AddCity_Desc] [nvarchar](50) NULL,
+    [f_AddDistrict_Code] [nvarchar](50) NULL,
+    [f_AddDistrict_Desc] [nvarchar](50) NULL,
+    [f_AddState_Code] [nvarchar](50) NULL,
+    [f_AddState_Desc] [nvarchar](50) NULL,
+    [f_AddCountry_Code] [nvarchar](50) NULL,
+    [f_AddCountry_Desc] [nvarchar](150) NULL,
+    [f_AddPin] [nvarchar](10) NULL,
+    [f_MobileNumber] [nvarchar](50) NULL,
+    [f_EmailAdd] [nvarchar](100) NULL,
+    [f_Active] [bit] NULL,
+    [f_CreatedIP] [nvarchar](50) NULL,
+    [f_CreatedOn] [datetime] NULL,
+    [f_CreatedBy] [nvarchar](50) NULL,
+    [f_CreatedType] [nvarchar](10) NULL,
+    [f_UpdatedIP] [nvarchar](50) NULL,
+    [f_UpdatedBy] [nvarchar](50) NULL,
+    [f_UpdatedType] [nvarchar](10) NULL,
+    [f_UpdatedOn] [datetime] NULL,
+    [f_SessionID] [nvarchar](50) NULL,
+    [f_CreatedByUName] [nvarchar](100) NULL,
+    [f_UpdatedByUName] [nvarchar](100) NULL,
+    [f_Source] [nvarchar](100) NULL,
+    [f_Status] [nvarchar](20) NULL,
+    [f_FolioNo] [nvarchar](50) NULL
 );
-CREATE INDEX IX_Address_Dtls_App ON dbo.t_Unotp_Address_Dtls (c_App_No, n_App_Version, c_Holder_Type, c_Addr_Type);
 END
 GO
 
-/* ----- t_Unotp_Nominee_Dtls ---------------------------------------------------------
-   The nominee, with a guardian for one under the minimum age. No row when no
-   nominee is named.
+/* ----- t_FD_BT_Nominee_Dtl -----------------------------------------------------------
+   The nominee. f_Is_Nominee_Minor is worked out from the date of birth: under the
+   minimum age on the day of the save. A guardian is asked for only for a minor;
+   the address is the guardian's. No row when no nominee is named.
    ----------------------------------------------------------------------------- */
-IF OBJECT_ID(N'dbo.t_Unotp_Nominee_Dtls', N'U') IS NULL
+IF OBJECT_ID(N'dbo.t_FD_BT_Nominee_Dtl', N'U') IS NULL
 BEGIN
-CREATE TABLE dbo.t_Unotp_Nominee_Dtls
-(
-    n_Id                 BIGINT IDENTITY(1,1) NOT NULL,
-    c_App_No             VARCHAR(20)    NOT NULL,
-    n_App_Version        INT            NOT NULL,
-    c_Status             CHAR(3)        NOT NULL,
-
-    c_Name               NVARCHAR(150)  NOT NULL CONSTRAINT DF_Nominee_Dtls_Name DEFAULT (''),
-    d_Dob                DATE           NULL,
-    c_Relation           VARCHAR(30)    NOT NULL CONSTRAINT DF_Nominee_Dtls_Relation DEFAULT (''),
-    c_Guardian_Name      NVARCHAR(150)  NOT NULL CONSTRAINT DF_Nominee_Dtls_G_Name DEFAULT (''),
-    c_Guardian_Line1     NVARCHAR(250)  NOT NULL CONSTRAINT DF_Nominee_Dtls_G_Line1 DEFAULT (''),
-    c_Guardian_Line2     NVARCHAR(250)  NOT NULL CONSTRAINT DF_Nominee_Dtls_G_Line2 DEFAULT (''),
-    c_Guardian_Line3     NVARCHAR(250)  NOT NULL CONSTRAINT DF_Nominee_Dtls_G_Line3 DEFAULT (''),
-    c_Guardian_Pin_Code  VARCHAR(6)     NOT NULL CONSTRAINT DF_Nominee_Dtls_G_Pin DEFAULT (''),
-    c_Guardian_City      NVARCHAR(100)  NOT NULL CONSTRAINT DF_Nominee_Dtls_G_City DEFAULT (''),
-
-    c_Created_By         VARCHAR(20)    NOT NULL,
-    d_Created_On         DATETIME2(3)   NOT NULL CONSTRAINT DF_Nominee_Dtls_Created DEFAULT (SYSDATETIME()),
-    f_Active             BIT            NOT NULL CONSTRAINT DF_Nominee_Dtls_Active DEFAULT (1),
-    CONSTRAINT PK_Nominee_Dtls PRIMARY KEY CLUSTERED (n_Id)
+CREATE TABLE [dbo].[t_FD_BT_Nominee_Dtl](
+    [f_Pk_t_FD_BT_Nominee_Dtl_Id] [bigint] IDENTITY(1,1) NOT NULL,
+    [f_Appl_No] [nvarchar](50) NOT NULL,
+    [f_Nominee_Salutation] [nvarchar](20) NULL,
+    [f_Nominee_Name] [nvarchar](250) NOT NULL,
+    [f_Nominee_First_Name] [nvarchar](50) NULL,
+    [f_Nominee_Middle_Name] [nvarchar](50) NULL,
+    [f_Nominee_Last_Name] [nvarchar](50) NULL,
+    [f_Nominee_Relations] [nvarchar](20) NOT NULL,
+    [f_Nominee_DOB] [date] NULL,
+    [f_Is_Nominee_Minor] [bit] NULL,
+    [f_EmailID] [nvarchar](50) NULL,
+    [f_MobileNo] [nvarchar](10) NULL,
+    [f_Nominee_Status] [nvarchar](50) NULL,
+    [f_GuardianName] [nvarchar](100) NULL,
+    [f_Address1] [nvarchar](140) NULL,
+    [f_Address2] [nvarchar](140) NULL,
+    [f_Address3] [nvarchar](140) NULL,
+    [f_City] [nvarchar](100) NULL,
+    [f_StateCode] [nvarchar](50) NULL,
+    [f_DistrictCode] [nvarchar](50) NULL,
+    [f_StateName] [nvarchar](150) NULL,
+    [f_DistrictName] [nvarchar](150) NULL,
+    [f_Active] [bit] NULL,
+    [f_CreatedBy] [nvarchar](50) NULL,
+    [f_CreatedByUName] [nvarchar](100) NULL,
+    [f_CreatedOn] [datetime] NULL,
+    [f_CreatedIP] [nvarchar](50) NULL,
+    [f_UpdatedBy] [nvarchar](50) NULL,
+    [f_UpdatedByUName] [nvarchar](100) NULL,
+    [f_UpdatedOn] [datetime] NULL,
+    [f_UpdatedIP] [nvarchar](50) NULL,
+    [f_SessionId] [bigint] NULL,
+    [f_Guardian_Salution] [nvarchar](50) NULL,
+    [f_Guardian_First_Name] [nvarchar](50) NULL,
+    [f_Guardian_Middle_Name] [nvarchar](50) NULL,
+    [f_Guardian_Last_Name] [nvarchar](50) NULL,
+    [f_PIN] [nvarchar](10) NULL,
+    [f_Country_Code] [nvarchar](50) NULL,
+    [f_Country_Desc] [nvarchar](100) NULL,
+    [f_Source] [nvarchar](100) NULL,
+    [f_Status] [nvarchar](20) NULL,
+    [f_FolioNo] [nvarchar](50) NULL
 );
-CREATE INDEX IX_Nominee_Dtls_App ON dbo.t_Unotp_Nominee_Dtls (c_App_No, n_App_Version);
 END
 GO
 
-/* ----- t_Unotp_Payment_Bank_Dtls ----------------------------------------------------
-   The account the deposit is paid from, how it is paid, and the cheque or DD.
-   One row per save of Bank Details & Payment.
+/* ----- t_FD_BT_Payment_Dtl ------------------------------------------------------------
+   How the deposit is paid, the account it is paid from, and the cheque or DD with
+   the Axis Bank CMS location it is presented at, by code and name (f_CMS_Loc_CD,
+   f_CMS_Loc_Desc: the 'cmsLocations' list). One active row per application.
    ----------------------------------------------------------------------------- */
-IF OBJECT_ID(N'dbo.t_Unotp_Payment_Bank_Dtls', N'U') IS NULL
+IF OBJECT_ID(N'dbo.t_FD_BT_Payment_Dtl', N'U') IS NULL
 BEGIN
-CREATE TABLE dbo.t_Unotp_Payment_Bank_Dtls
-(
-    n_Id                 BIGINT IDENTITY(1,1) NOT NULL,
-    c_App_No             VARCHAR(20)    NOT NULL,
-    n_App_Version        INT            NOT NULL,
-    c_Status             CHAR(3)        NOT NULL,
-
-    c_Pay_Mode           VARCHAR(30)    NOT NULL CONSTRAINT DF_Payment_Bank_Mode DEFAULT (''),   -- Cheque, DD, Net banking, ...
-    c_Ifsc               VARCHAR(11)    NULL,       -- NULL when no payment account is given
-    c_Account_No         VARCHAR(30)    NULL,
-    c_Bank_Name          NVARCHAR(100)  NULL,       -- as GET ifsc/{code} named the branch at save
-    c_Branch_Name        NVARCHAR(150)  NULL,
-    c_Micr               VARCHAR(9)     NULL,
-
-    c_Cheque_No          VARCHAR(10)    NULL,       -- NULL when not paid by cheque
-    d_Cheque_Date        DATE           NULL,
-    c_Cms_Location       VARCHAR(50)    NULL,
-
-    c_Created_By         VARCHAR(20)    NOT NULL,
-    d_Created_On         DATETIME2(3)   NOT NULL CONSTRAINT DF_Payment_Bank_Created DEFAULT (SYSDATETIME()),
-    f_Active             BIT            NOT NULL CONSTRAINT DF_Payment_Bank_Dtls_Active DEFAULT (1),
-    CONSTRAINT PK_Payment_Bank_Dtls PRIMARY KEY CLUSTERED (n_Id)
+CREATE TABLE [dbo].[t_FD_BT_Payment_Dtl](
+    [f_Pk_t_FD_BT_Other_Dtl_Id] [bigint] IDENTITY(1,1) NOT NULL,
+    [f_Appl_No] [nvarchar](50) NOT NULL,
+    [f_Payment_Mode] [nvarchar](50) NULL,
+    [f_Cheque_DD_No] [nvarchar](50) NULL,
+    [f_Cheque_DD_Date] [date] NULL,
+    [f_Drawn_Bank_Name] [nvarchar](50) NULL,
+    [f_Bank_Branch_Name] [nvarchar](50) NULL,
+    [f_Bank_MICR] [nvarchar](50) NULL,
+    [f_Bank_NEFT] [nvarchar](50) NULL,
+    [f_Active] [bit] NULL,
+    [f_CreatedBy] [nvarchar](50) NULL,
+    [f_CreatedByUName] [nvarchar](100) NULL,
+    [f_CreatedOn] [datetime] NULL,
+    [f_CreatedIP] [nvarchar](50) NULL,
+    [f_UpdatedBy] [nvarchar](50) NULL,
+    [f_UpdatedByUName] [nvarchar](100) NULL,
+    [f_UpdatedOn] [datetime] NULL,
+    [f_UpdatedIP] [nvarchar](50) NULL,
+    [f_SessionId] [bigint] NULL,
+    [f_Source] [nvarchar](100) NULL,
+    [f_Status] [nvarchar](20) NULL,
+    [f_CMS_Loc_CD] [nvarchar](50) NULL,
+    [f_CMS_Loc_Desc] [nvarchar](100) NULL,
+    [f_FolioNo] [nvarchar](50) NULL,
+    [f_CMS_BANK_NAME] [nvarchar](50) NULL, -- Axis Bank
+    [f_BankAccountNo] [nvarchar](100) NULL
 );
-CREATE INDEX IX_Payment_Bank_Dtls_App ON dbo.t_Unotp_Payment_Bank_Dtls (c_App_No, n_App_Version);
 END
 GO
 
-/* ----- t_Unotp_Bank_Dtls: the repayment account -------------------------------------
-   Where interest and the maturity amount are paid. f_Same_As_Payment set, it is
-   the payment account.
+/* ----- t_FD_BT_Investor_Bank_Dtl: the repayment account ------------------------------
+   Where interest and the maturity amount are paid. f_sameAsCheque set, it is the
+   payment account. The account's columns take no NULL: one not given yet is blank.
    ----------------------------------------------------------------------------- */
-IF OBJECT_ID(N'dbo.t_Unotp_Bank_Dtls', N'U') IS NULL
+IF OBJECT_ID(N'dbo.t_FD_BT_Investor_Bank_Dtl', N'U') IS NULL
 BEGIN
-CREATE TABLE dbo.t_Unotp_Bank_Dtls
-(
-    n_Id                 BIGINT IDENTITY(1,1) NOT NULL,
-    c_App_No             VARCHAR(20)    NOT NULL,
-    n_App_Version        INT            NOT NULL,
-    c_Status             CHAR(3)        NOT NULL,
-
-    f_Same_As_Payment    BIT            NOT NULL CONSTRAINT DF_Bank_Dtls_Same DEFAULT (0),
-    c_Ifsc               VARCHAR(11)    NULL,
-    c_Account_No         VARCHAR(30)    NULL,
-    c_Bank_Name          NVARCHAR(100)  NULL,
-    c_Branch_Name        NVARCHAR(150)  NULL,
-    c_Micr               VARCHAR(9)     NULL,
-
-    c_Created_By         VARCHAR(20)    NOT NULL,
-    d_Created_On         DATETIME2(3)   NOT NULL CONSTRAINT DF_Bank_Dtls_Created DEFAULT (SYSDATETIME()),
-    f_Active             BIT            NOT NULL CONSTRAINT DF_Bank_Dtls_Active DEFAULT (1),
-    CONSTRAINT PK_Bank_Dtls PRIMARY KEY CLUSTERED (n_Id)
+CREATE TABLE [dbo].[t_FD_BT_Investor_Bank_Dtl](
+    [f_Pk_t_FD_BT_Investor_Bank_Dtl_Id] [bigint] IDENTITY(1,1) NOT NULL,
+    [f_Appl_No] [nvarchar](50) NOT NULL,
+    [f_MICRCode] [nvarchar](50) NOT NULL,
+    [f_NEFTCode] [nvarchar](50) NOT NULL,
+    [f_BankName] [nvarchar](50) NOT NULL,
+    [f_BranchName] [nvarchar](50) NOT NULL,
+    [f_BankAccountNo] [nvarchar](50) NOT NULL,
+    [f_Active] [bit] NULL,
+    [f_CreatedBy] [nvarchar](50) NULL,
+    [f_CreatedByUName] [nvarchar](100) NULL,
+    [f_CreatedOn] [datetime] NULL,
+    [f_CreatedIP] [nvarchar](50) NULL,
+    [f_UpdatedBy] [nvarchar](50) NULL,
+    [f_UpdatedByUName] [nvarchar](100) NULL,
+    [f_UpdatedOn] [datetime] NULL,
+    [f_UpdatedIP] [nvarchar](50) NULL,
+    [f_SessionId] [bigint] NULL,
+    [f_Source] [nvarchar](100) NULL,
+    [f_Status] [nvarchar](20) NULL,
+    [f_FolioNo] [nvarchar](50) NULL,
+    [f_IsProvBank] [bit] NULL,
+    [f_sameAsCheque] [bit] NULL
 );
-CREATE INDEX IX_Bank_Dtls_App ON dbo.t_Unotp_Bank_Dtls (c_App_No, n_App_Version);
 END
 GO
 
-/* ----- t_Unotp_Investment_Dtls: the deposit as configured ---------------------------
-   FD Configuration, and with it the application's other details chosen on Upload
-   Documents: the application type and form, the deposit category, how it is
-   sourced (broker, staff, sub-broker), the employee details for an employee
-   deposit, and the deposit a renewal renews. The quote - rate, interest, maturity
-   amount and date - is locked on submit, so it is set on the 'APR' row only.
+/* ----- t_FD_CMN_AML_Source_Of_Funds_Log -----------------------------------------------
+   The FD system's log of the source of funds an investor gave, with the amount,
+   annual income and occupation it was asked for. It sits in the FD system's common
+   database (ConnectionStrings:UnoTP_Common); created here for a database built
+   from nothing, where everything is in one.
    ----------------------------------------------------------------------------- */
-IF OBJECT_ID(N'dbo.t_Unotp_Investment_Dtls', N'U') IS NULL
+IF OBJECT_ID(N'dbo.t_FD_CMN_AML_Source_Of_Funds_Log', N'U') IS NULL
 BEGIN
-CREATE TABLE dbo.t_Unotp_Investment_Dtls
-(
-    n_Id                 BIGINT IDENTITY(1,1) NOT NULL,
-    c_App_No             VARCHAR(20)    NOT NULL,
-    n_App_Version        INT            NOT NULL,
-    c_Status             CHAR(3)        NOT NULL,
-
-    n_Amount             BIGINT         NOT NULL,   -- rupees
-    n_Tenure_Months      INT            NOT NULL,
-    c_Payout             VARCHAR(20)    NOT NULL,   -- maturity, monthly, quarterly, halfyearly, yearly
-    f_Auto_Renewal       BIT            NOT NULL CONSTRAINT DF_Investment_Auto DEFAULT (0),
-    c_Renew_Instruction  VARCHAR(20)    NOT NULL CONSTRAINT DF_Investment_Renew DEFAULT (''),
-    f_No_Tds             BIT            NOT NULL CONSTRAINT DF_Investment_No_Tds DEFAULT (0),   -- Form 121 filed
-    c_Delivery_Type      VARCHAR(20)    NOT NULL CONSTRAINT DF_Investment_Delivery DEFAULT (''),
-
-    c_App_Type           VARCHAR(10)    NOT NULL CONSTRAINT DF_Investment_App_Type DEFAULT (''),   -- DIGITAL, PHYSICAL
-    c_Form_No            VARCHAR(20)    NOT NULL CONSTRAINT DF_Investment_Form_No DEFAULT (''),
-    c_Category           VARCHAR(30)    NOT NULL CONSTRAINT DF_Investment_Category DEFAULT (''),
-    c_Sourcing           VARCHAR(20)    NOT NULL CONSTRAINT DF_Investment_Sourcing DEFAULT (''),
-    c_Source_Code        VARCHAR(20)    NOT NULL CONSTRAINT DF_Investment_Source DEFAULT (''),
-    c_Sub_Broker         VARCHAR(20)    NOT NULL CONSTRAINT DF_Investment_Sub_Broker DEFAULT (''),
-    c_Emp_Code           VARCHAR(20)    NOT NULL CONSTRAINT DF_Investment_Emp_Code DEFAULT (''),
-    c_Emp_Company        NVARCHAR(100)  NOT NULL CONSTRAINT DF_Investment_Emp_Company DEFAULT (''),
-    c_Emp_Holder         VARCHAR(30)    NOT NULL CONSTRAINT DF_Investment_Emp_Holder DEFAULT (''),
-    c_Emp_Relation       VARCHAR(30)    NOT NULL CONSTRAINT DF_Investment_Emp_Relation DEFAULT (''),
-    c_Emp_Proof_Type     VARCHAR(30)    NOT NULL CONSTRAINT DF_Investment_Emp_Proof DEFAULT (''),
-    c_Renew_Dep_No       VARCHAR(20)    NULL,       -- the deposit a renewal renews
-
-    -- The quote, locked on submit (POST deposits/quote at the moment of submitting).
-    n_Rate               DECIMAL(5,2)   NULL,       -- card rate, % a year
-    n_Interest_Each      DECIMAL(18,2)  NULL,       -- interest each payout; 0 for a cumulative deposit
-    n_Maturity_Amount    DECIMAL(18,2)  NULL,
-    d_Matures_On         DATE           NULL,
-    d_Rate_As_On         DATE           NULL,       -- the card the rate was read off
-
-    c_Source_Of_Funds    VARCHAR(30)    NOT NULL CONSTRAINT DF_Investment_Source_Of_Funds DEFAULT (''),
-    c_Source_Of_Funds_Remark NVARCHAR(200) NOT NULL CONSTRAINT DF_Investment_Source_Of_Funds_Remark DEFAULT (''),
-
-    c_Created_By         VARCHAR(20)    NOT NULL,
-    d_Created_On         DATETIME2(3)   NOT NULL CONSTRAINT DF_Investment_Created DEFAULT (SYSDATETIME()),
-    f_Active             BIT            NOT NULL CONSTRAINT DF_Investment_Dtls_Active DEFAULT (1),
-    CONSTRAINT PK_Investment_Dtls PRIMARY KEY CLUSTERED (n_Id)
+CREATE TABLE [dbo].[t_FD_CMN_AML_Source_Of_Funds_Log](
+    [f_Pk_t_FD_CMN_AML_Source_Of_Funds_Log_Id] [bigint] IDENTITY(1,1) NOT NULL,
+    [f_Sys_Ref_no] [nvarchar](50) NULL,
+    [f_Appl_No] [nvarchar](50) NULL,
+    [f_Holder_Type] [nvarchar](20) NULL,
+    [f_Investment_Amt] [decimal](18, 2) NULL,
+    [f_AnnualIncome_Code] [nvarchar](20) NULL,
+    [f_AnnualIncome_Desc] [nvarchar](250) NULL,
+    [f_AML_Source_Of_Funds] [nvarchar](50) NULL,
+    [f_AML_Source_Of_Funds_Remarks] [nvarchar](1000) NULL,
+    [f_AML_Source_Of_Funds_reason] [nvarchar](1000) NULL,
+    [f_Active] [bit] NULL,
+    [f_CreatedBy] [nvarchar](50) NULL,
+    [f_CreatedByUName] [nvarchar](100) NULL,
+    [f_CreatedOn] [datetime] NULL,
+    [f_CreatedIP] [nvarchar](50) NULL,
+    [f_SessionId] [bigint] NULL,
+    [f_FormCode] [nvarchar](50) NULL,
+    [f_Source] [nvarchar](50) NULL,
+    [f_Folio_No] [varchar](20) NULL,
+    [f_Occupation_Code] [varchar](20) NULL,
+    [f_Occupation_Desc] [varchar](50) NULL
 );
-CREATE INDEX IX_Investment_Dtls_App ON dbo.t_Unotp_Investment_Dtls (c_App_No, n_App_Version);
+END
+GO
+
+/* ----- t_FD_BOTC_SCHEME: the rate card -------------------------------------------------
+   The FD system's own rate card: one row per scheme code. Here with the columns the
+   app reads and those seen beside them; the column types are the app's reading of
+   them, not the FD system's own script, and its table may have more columns.
+
+     CATEGORY        the rate card's category (rateCategory in the categories list)
+     MODE_STATUS     AF a fresh application, R a renewal
+     SCHEME, INTEREST_FREQ   what a payout is (scheme and interestFreq in the payouts list)
+     PERIOD          the tenure, months
+     MINIMUM_AMOUNT, MAXIMUM_AMOUNT   the deposits the row is for, rupees, both ends included
+     FROM_DATE, TO_DATE      when the row is in effect; no TO_DATE, it still is
+   ----------------------------------------------------------------------------- */
+IF OBJECT_ID(N'dbo.t_FD_BOTC_SCHEME', N'U') IS NULL
+BEGIN
+CREATE TABLE [dbo].[t_FD_BOTC_SCHEME](
+    [SCHEME_ID] [int] IDENTITY(1,1) NOT NULL,
+    [SCHEME] [varchar](50) NULL,
+    [PERIOD] [int] NULL,
+    [CATEGORY] [varchar](50) NULL,
+    [SCHEME_CODE] [varchar](50) NULL,
+    [MINIMUM_AMOUNT] [numeric](18, 2) NULL,
+    [INTEREST_RATES] [numeric](9, 4) NULL,
+    [MATURITY_VALUE] [numeric](18, 4) NULL,
+    [BROKERGARE_PAYABLE] [numeric](9, 4) NULL,
+    [INTEREST_FREQ] [varchar](50) NULL,
+    [FROM_DATE] [datetime] NULL,
+    [TO_DATE] [datetime] NULL,
+    [CATEGORY_CODE] [varchar](10) NULL,
+    [MODE_STATUS] [varchar](10) NULL,
+    [MAXIMUM_AMOUNT] [numeric](18, 2) NULL
+);
+END
+GO
+
+/* ----- t_FD_BT_Investment_Dtl: the deposit as configured ---------------------------
+   The FD system's own table, column for column as the database has it. FD
+   Configuration, with the application type, category, sourcing and employee
+   details chosen on Upload Documents, and the deposit a renewal renews.
+
+   The rate, scheme and scheme code are the rate card's row for the deposit, on
+   every save; the rest of the quote is on t_Unotp_Application_Mst.
+
+     f_Amount        rupees            f_Tenure       months, a number
+     f_Category      the category as the rate card names it (rateCategory in the categories list)
+     f_Scheme, f_Scheme_Code, f_Int_Rate   the SCHEME, SCHEME_CODE and INTEREST_RATES of the rate card's row for the deposit
+     f_Int_Freq      the payout as the rate card names it (interestFreq in the payouts list)
+     f_Renewal_For   under auto renewal: P principal, F principal and interest
+     f_TDS_Flag      Y tax deducted, N the form for none was filed
+     f_EmpHolder     01, 02, 03        f_Source       UNO_TP, always
+     f_Broker_Code   the source code (a house code for the house's own modes)
+     f_ExistingFDRNo                the deposit a renewal renews
+     f_ExistingFDRNoRenewalFor      on a renewal, what of it is renewed: P or F
+     f_Depositor_Status_Code, f_Ind_Nind   IND, always: an individual
+     f_HNG                          121 when Form 121 is filed for no tax to be deducted
+     f_Cms_Location_Code, _Name     the cheque's CMS location, as on t_FD_BT_Payment_Dtl
+     f_FolioNo, f_CreatedByUName    the investor's folio and the signed-in user's name, on every table here
+     f_CreatedBy                    the signed-in user's Agency_Usr_Clustered_ID
+     f_AML_Source_Of_Funds_reason   why it was asked: Occupation or Annual Income
+     f_SessionId, f_CreatedIP       the partner's backend session and browser address
+   ----------------------------------------------------------------------------- */
+IF OBJECT_ID(N'dbo.t_FD_BT_Investment_Dtl', N'U') IS NULL
+BEGIN
+CREATE TABLE [dbo].[t_FD_BT_Investment_Dtl](
+    [f_Pk_t_FD_BT_Investment_Dtl_Id] [bigint] IDENTITY(1,1) NOT NULL,
+    [f_Broker_Code] [nvarchar](50) NULL,
+    [f_Appl_No] [nvarchar](50) NULL,
+    [f_Depositor_Status_Code] [nvarchar](20) NULL,
+    [f_Category] [nvarchar](50) NULL,
+    [f_Scheme] [nvarchar](50) NULL,
+    [f_Scheme_Code] [nvarchar](50) NULL,
+    [f_Int_Rate] [numeric](18, 2) NULL,
+    [f_Int_Freq] [nvarchar](50) NULL,
+    [f_Tenure] [nvarchar](50) NULL,
+    [f_FDR_Dispatch_Mode] [nvarchar](50) NULL,
+    [f_Renewal_For] [nvarchar](50) NULL,
+    [f_HNG] [nvarchar](50) NULL,
+    [f_TDS_Flag] [nvarchar](1) NULL,
+    [f_Is_Auto_Renewal] [bit] NULL,
+    [f_Amount] [numeric](18, 2) NULL,
+    [f_Cms_Location_Code] [nvarchar](50) NULL,
+    [f_Cms_Location_Name] [nvarchar](50) NULL,
+    [f_Active] [bit] NULL,
+    [f_CreatedBy] [nvarchar](50) NULL,
+    [f_CreatedByUName] [nvarchar](100) NULL,
+    [f_CreatedOn] [datetime] NULL,
+    [f_CreatedIP] [nvarchar](50) NULL,
+    [f_UpdatedBy] [nvarchar](50) NULL,
+    [f_UpdatedByUName] [nvarchar](100) NULL,
+    [f_UpdatedOn] [datetime] NULL,
+    [f_UpdatedIP] [nvarchar](50) NULL,
+    [f_SessionId] [bigint] NULL,
+    [f_Employee_Code] [nvarchar](100) NULL,
+    [f_Source] [nvarchar](100) NULL,
+    [f_Status] [nvarchar](20) NULL,
+    [f_FDRNo] [nvarchar](50) NULL,
+    [f_FolioNo] [nvarchar](50) NULL,
+    [f_Ind_Nind] [nvarchar](50) NULL,
+    [f_ApplicationDeclarationType] [nvarchar](20) NULL, --PHYSICAL/DIGITAL
+    [f_ExistingFDRNo] [nvarchar](50) NULL, --Renewal FDR No
+    [f_ExistingFDRNoRenewalFor] [nvarchar](10) NULL, -- Future Renewal For(P - Principal/F - Principal+Intr)
+    [f_Relation] [nvarchar](50) NULL,
+    [f_AML_Source_Of_Funds] [varchar](50) NULL,
+    [f_AML_Source_Of_Funds_Remarks] [varchar](400) NULL,
+    [f_AML_Source_Of_Funds_reason] [varchar](100) NULL, -- Validation reason - Occupation or Annual Income
+    [f_EmpRelation] [nvarchar](50) NULL,
+    [f_EmpCompanyName] [nvarchar](50) NULL,
+    [f_EmpHolder] [nvarchar](10) NULL
+);
 END
 GO
 
@@ -339,42 +561,6 @@ CREATE TABLE dbo.t_Unotp_Partner_Mst
     d_Updated_On         DATETIME2(3)   NULL,
     CONSTRAINT PK_Partner_Mst PRIMARY KEY CLUSTERED (c_User_Id)
 );
-END
-GO
-
--- t_Unotp_Partner_Menu: The features each partner's menu opens.
-IF OBJECT_ID(N'dbo.t_Unotp_Partner_Menu', N'U') IS NULL
-BEGIN
-CREATE TABLE dbo.t_Unotp_Partner_Menu
-(
-    c_User_Id            VARCHAR(20)    NOT NULL,
-    c_Feature_Key        VARCHAR(20)    NOT NULL,
-    c_Created_By         VARCHAR(20)    NOT NULL,
-    d_Created_On         DATETIME2(3)   NOT NULL CONSTRAINT DF_Partner_Menu_Created DEFAULT (SYSDATETIME()),
-    f_Active             BIT            NOT NULL CONSTRAINT DF_Partner_Menu_Active DEFAULT (1),
-    CONSTRAINT PK_Partner_Menu PRIMARY KEY CLUSTERED (c_User_Id, c_Feature_Key)
-);
-END
-GO
-
-/* ----- t_Unotp_User_Session --------------------------------------------------------
-   Started on entry from the portal; every call after carries it (X-Session-Id)
-   and is refused with 401 once it has expired or ended.
-   ----------------------------------------------------------------------------- */
-IF OBJECT_ID(N'dbo.t_Unotp_User_Session', N'U') IS NULL
-BEGIN
-CREATE TABLE dbo.t_Unotp_User_Session
-(
-    c_Session_Id         CHAR(32)       NOT NULL,
-    c_User_Id            VARCHAR(20)    NOT NULL,
-    c_Sys_Code           VARCHAR(20)    NOT NULL,
-    d_Started_On         DATETIME2(3)   NOT NULL CONSTRAINT DF_User_Session_Started DEFAULT (SYSDATETIME()),
-    d_Expires_On         DATETIME2(3)   NOT NULL,
-    d_Ended_On           DATETIME2(3)   NULL,
-    f_Active             BIT            NOT NULL CONSTRAINT DF_User_Session_Active DEFAULT (1),
-    CONSTRAINT PK_User_Session PRIMARY KEY CLUSTERED (c_Session_Id)
-);
-CREATE INDEX IX_User_Session_User ON dbo.t_Unotp_User_Session (c_User_Id, d_Expires_On);
 END
 GO
 

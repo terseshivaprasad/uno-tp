@@ -153,7 +153,8 @@
     var select = document.getElementById('deposit-source-of-funds');
     var remark = document.getElementById('deposit-source-of-funds-remark');
     if (!select || !remark) return;
-    remark.disabled = select.disabled || select.value !== 'other';
+    var other = select.getAttribute('data-other');
+    remark.disabled = select.disabled || !other || select.value !== other;
   }
 
   form.addEventListener('change', function (e) {
@@ -167,9 +168,23 @@
     if (tenure && field) field.value = 'Same tenure — ' + tenure.value + ' months';
   }
 
+  // A renewal's amount follows what of the old deposit is renewed: each choice
+  // carries its own figure, so the amount changes the moment it is chosen.
+  function showRenewalAmount() {
+    var select = document.getElementById('deposit-renewal-for');
+    var input = document.getElementById('deposit-amount');
+    if (!select || !input) return;
+    var chosen = select.options[select.selectedIndex];
+    if (!chosen) return;
+    input.value = chosen.getAttribute('data-amount') || input.value;
+    var aside = document.getElementById('deposit-amount-aside');
+    if (aside) aside.textContent = chosen.getAttribute('data-aside') || '';
+  }
+
   form.addEventListener('change', function (e) {
     if (!e.target.matches('[data-quote]')) return;
     clearTimeout(timer);
+    if (e.target.id === 'deposit-renewal-for') showRenewalAmount();
     showRenewSameTenure();
     refreshQuote(true);
   });

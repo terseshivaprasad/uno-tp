@@ -18,12 +18,55 @@ public interface IReferenceApi
 /// <summary>A choice as it is posted, and as it is shown.</summary>
 public sealed record Option(string Code, string Name);
 
+/// <summary>
+/// The FD system's own masters behind the lists whose choice is saved as the master's
+/// code: each entry's code and name, as the master has them. The pages offer the names
+/// (<see cref="ReferenceData.MaritalStatuses"/>, <see cref="ReferenceData.NomineeRelations"/>,
+/// <see cref="ReferenceData.EmployeeRelations"/>); a save writes the code.
+/// </summary>
+/// <param name="EmployeeRelations">The employee's own relation - the employee is the holder - comes first.</param>
+/// <param name="Occupations">The occupation master's rows: the pages offer its types as occupations and, under each, its sub-types.</param>
+public sealed record MasterLists(
+    IReadOnlyList<Option> MaritalStatuses, IReadOnlyList<Option> NomineeRelations, IReadOnlyList<Option> EmployeeRelations,
+    IReadOnlyList<OccupationRow> Occupations)
+{
+    public static readonly MasterLists None = new([], [], [], []);
+
+    /// <summary>The occupation master's row for an occupation and sub occupation as the pages name them; null where it has none.</summary>
+    public OccupationRow? OccupationOf(string occupation, string subOccupation) =>
+        Occupations.FirstOrDefault(o => o.TypeName == occupation && o.SubTypeName == subOccupation);
+
+    /// <summary>The master's code for a name on a list; the name itself where the list does not hold it.</summary>
+    public static string CodeOf(IReadOnlyList<Option> list, string name)
+    {
+        var entry = list.FirstOrDefault(o => o.Name == name);
+        if (entry is null) return name;
+        return entry.Code;
+    }
+
+    /// <summary>The name a list gives a code; the code itself where the list does not hold it.</summary>
+    public static string NameOf(IReadOnlyList<Option> list, string code)
+    {
+        var entry = list.FirstOrDefault(o => o.Code == code);
+        if (entry is null) return code;
+        return entry.Name;
+    }
+}
+
+/// <summary>
+/// One row of the FD system's occupation master: a customer segment type (the
+/// occupation) and sub-type (the sub occupation), and the CKYC occupation they stand for.
+/// </summary>
+public sealed record OccupationRow(
+    string TypeCode, string TypeName, string SubTypeCode, string SubTypeName, string OccupationCode, string OccupationName);
+
 /// <summary>A deposit category, and what booking under it takes.</summary>
 /// <param name="Employee">Booked against a staff record, and open only to the sourcing agency.</param>
 /// <param name="Women">For a woman holder.</param>
 /// <param name="Senior">For a holder at the senior citizen age or over.</param>
 /// <param name="ExtraRate">What the category earns over the public rate, % a year (the chart's "additional rates"); 0 for the public category.</param>
-public sealed record CategoryOption(string Code, string Name, bool Employee, bool Women, bool Senior, decimal ExtraRate = 0);
+/// <param name="RateCategory">The category as the FD system's rate card names it (CATEGORY); empty when the list does not say.</param>
+public sealed record CategoryOption(string Code, string Name, bool Employee, bool Women, bool Senior, decimal ExtraRate = 0, string RateCategory = "");
 
 /// <summary>A payment mode, and the instrument a copy of is filed for it, if any.</summary>
 public sealed record PaymentModeOption(string Name, string? Document);
@@ -46,13 +89,14 @@ public sealed record ProofOption(string Type, string Issuer, bool HasPhoto);
 
 /// <summary>How often a deposit pays interest: <c>PerYear</c> 0 is on maturity (cumulative).</summary>
 /// <param name="Each">The period one payment covers, as a sentence names it ("quarter").</param>
-public sealed record PayoutOption(string Code, string Name, int PerYear, string Each);
+/// <param name="InterestFreq">The payout as the FD system's rate card names it (INTEREST_FREQ); empty when the list does not say.</param>
+/// <param name="Scheme">The scheme the rate card files the payout under (SCHEME); empty when the list does not say.</param>
+public sealed record PayoutOption(string Code, string Name, int PerYear, string Each, string InterestFreq = "", string Scheme = "");
 
 /// <summary>What an investor type hands over, and the notes that go with it.</summary>
 public sealed record RequiredDocumentGroup(string Title, IReadOnlyList<string> Items, IReadOnlyList<string> Notes);
 
-/// <summary>Every list the pages offer. Codes are what is posted and saved. <c>Declarations</c> are
-/// what the partner signs on Review Summary before an application is submitted.</summary>
+/// <summary>Every list the pages offer. Codes are what is posted and saved.</summary>
 public sealed record ReferenceData(
     IReadOnlyList<Option> ApplicationTypes,
     IReadOnlyList<CategoryOption> Categories,
@@ -77,13 +121,13 @@ public sealed record ReferenceData(
     IReadOnlyList<RequiredDocumentGroup> RequiredDocuments,
     IReadOnlyList<string> IdentificationNotes,
     IReadOnlyList<string> DashboardNotes,
-    IReadOnlyList<string> Declarations,
     IReadOnlyList<string> NoticeKinds,
     IReadOnlyList<string> RenewalNotes,
     IReadOnlyList<FeatureOption>? Features = null,
     IReadOnlyList<Option>? SourcesOfFunds = null,
     IReadOnlyList<OccupationOption>? OccupationsWithSubs = null,
-    IReadOnlyList<Option>? GatewayBanks = null)
+    IReadOnlyList<Option>? GatewayBanks = null,
+    MasterLists? Masters = null)
 {
     /// <summary>
     /// Whether the payment gateway takes an account at this IFSC for online payment:
@@ -145,6 +189,7 @@ public sealed record FeatureOption(string Code, string Name, string Group, strin
 /// <param name="SourceOfFundsFrom">The source of funds is asked once the investor's active deposits, with the new one, pass this many rupees...</param>
 /// <param name="SourceOfFundsOccupations">...and their occupation is one of these (homemaker, student, retired)...</param>
 /// <param name="SourceOfFundsIncomeBands">...or their annual income band is one of these (up to ₹5 lakh).</param>
+/// <param name="SourceOfFundsOther">The source of funds, by its master code, that takes a typed remark.</param>
 public sealed record AppConfig(
     string SourcingAgency,
     int MinAge,
@@ -165,7 +210,8 @@ public sealed record AppConfig(
     long SourceOfFundsFrom = 1_00_00_000,
     IReadOnlyList<string>? SourceOfFundsOccupations = null,
     IReadOnlyList<string>? SourceOfFundsIncomeBands = null,
-    string OverMaxAmountMessage = "");
+    string OverMaxAmountMessage = "",
+    string SourceOfFundsOther = "");
 
 /// <summary>Who the app is being used by: GET me, from the signed-in partner.</summary>
 public interface IPartnerApi
@@ -205,37 +251,47 @@ public interface IDepositApi
     Task<IReadOnlyList<BankBranch>> SearchBranchesAsync(string query, CancellationToken ct = default);
 }
 
-/// <summary>Whose rate card: the deposit's category, the holder's gender and what the application is for.</summary>
+/// <summary>Whose rate card: the deposit's category, and whether the application is a fresh one or a renewal.</summary>
 /// <param name="Category">A <see cref="CategoryOption.Code"/>: from the holder's date of birth and gender, or the sourcing agency's choice.</param>
-/// <param name="Gender">"M" or "F"; "M" when the holder's is not known.</param>
-/// <param name="ApplicationType"><see cref="RateCard.Purchase"/> or <see cref="RateCard.Renew"/>.</param>
-/// <param name="StartsOn">The day the deposit is taken to start; the backend's today when null.</param>
-public sealed record RatesRequest(string Category, string Gender, string ApplicationType, DateOnly? StartsOn = null);
+/// <param name="ApplicationType"><see cref="RateCard.Purchase"/> or <see cref="RateCard.Renew"/>: the card's MODE_STATUS.</param>
+/// <param name="StartsOn">The day the deposit is taken to start, for the day it matures; the backend's today when null. The card read is always today's.</param>
+public sealed record RatesRequest(string Category, string ApplicationType, DateOnly? StartsOn = null);
 
 /// <summary>The words the rate card is keyed by.</summary>
 public static class RateCard
 {
-    /// <summary>A new deposit.</summary>
-    public const string Purchase = "PURCHASE";
+    /// <summary>A fresh application, as the card's MODE_STATUS has it.</summary>
+    public const string Purchase = "AF";
 
-    /// <summary>A maturing deposit renewed.</summary>
-    public const string Renew = "RENEW";
+    /// <summary>A maturing deposit renewed, as the card's MODE_STATUS has it.</summary>
+    public const string Renew = "R";
 
     /// <summary>Interest paid with the principal at maturity.</summary>
     public const string Cumulative = "CUMULATIVE";
 
-    /// <summary>Interest paid out through the tenure.</summary>
-    public const string NonCumulative = "NON-CUMULATIVE";
+    /// <summary>The card's row for a tenure and payout at an amount, or null when it offers none.</summary>
+    public static RateOption? Line(IReadOnlyList<RateOption> card, int tenureMonths, string payout, long amount)
+    {
+        foreach (var row in card)
+        {
+            if (row.TenureMonths != tenureMonths) continue;
+            if (row.Payout != payout) continue;
+            if (!row.Offers(amount)) continue;
+            return row;
+        }
+        return null;
+    }
 }
 
 /// <summary>One row of the rate card: a tenure, scheme and payout frequency, the rate, and the amounts it is offered for.</summary>
-/// <param name="Scheme"><see cref="RateCard.Cumulative"/> or <see cref="RateCard.NonCumulative"/>.</param>
+/// <param name="Scheme">The scheme as the rate card names it: <see cref="RateCard.Cumulative"/> for interest paid at maturity, or another for interest paid out through the tenure.</param>
 /// <param name="Payout">A <see cref="PayoutOption.Code"/>: the frequency.</param>
 /// <param name="Rate">% a year.</param>
 /// <param name="MinAmount">The smallest deposit the row is offered for, in rupees.</param>
 /// <param name="MaxAmount">The largest, or null for no ceiling.</param>
 /// <param name="AsOn">The day the rate took effect.</param>
-public sealed record RateOption(int TenureMonths, string Scheme, string Payout, decimal Rate, long MinAmount, long? MaxAmount, DateOnly AsOn)
+/// <param name="SchemeCode">The rate card's own code for the row (SCHEME_CODE).</param>
+public sealed record RateOption(int TenureMonths, string Scheme, string Payout, decimal Rate, long MinAmount, long? MaxAmount, DateOnly AsOn, string SchemeCode = "")
 {
     /// <summary>Whether the row is offered for a deposit of this amount.</summary>
     public bool Offers(long amount)

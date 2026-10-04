@@ -279,8 +279,8 @@ public sealed class IdfyFaceMatch(IdfyClient idfy) : IFaceMatchService
     {
         var result = (await idfy.CompareFacesAsync(panCopy, proof, ct)).Result!;
         var score = result.MatchScore ?? 0;
-        if (result.Image1?.FaceDetected == false) return new FaceMatch(false, score, "no face could be found on the PAN copy");
-        if (result.Image2?.FaceDetected == false) return new FaceMatch(false, score, "no face could be found on the proof of address");
+        if (result.Image1?.FaceDetected == false) return new FaceMatch(false, score, "no face could be found on the PAN copy", PanFace: false);
+        if (result.Image2?.FaceDetected == false) return new FaceMatch(false, score, "no face could be found on the proof of address", ProofFace: false);
         if (result.ReviewRecommended == true)
         {
             var quality = string.Join(", ", new[] { ("PAN copy", result.Image1?.FaceQuality), ("proof", result.Image2?.FaceQuality) }

@@ -384,6 +384,24 @@
         </div>
     }
 
+    // The investor's KYC, where Fetch from CKYC found their record: its reference number,
+    // and that the addresses and the documents are the record's, not this application's.
+    private async Task CkycPanel()
+    {
+        <div class="investor-panel__part">
+            <div class="investor-section-head" style="padding-bottom:10px">
+                <div class="investor-panel__label" style="flex:1;min-width:0">KYC &middot; from the investor&rsquo;s @Glossary.Term("CKYC") record</div>
+                <a class="investor-panel__action" asp-controller="Documents" asp-action="Index">Open documents</a>
+            </div>
+            <div class="investor-key-value-grid">
+                <div class="investor-key-value"><div class="investor-key-value__key">CKYC reference number</div><div class="investor-key-value__value">@OrDash(Model.Docs.State.CkycReference)</div></div>
+                <div class="investor-key-value"><div class="investor-key-value__key">Verification</div><div class="investor-key-value__value">Record found with CERSAI</div></div>
+                <div class="investor-key-value"><div class="investor-key-value__key">Proof of address &amp; photograph</div><div class="investor-key-value__value">Not uploaded</div></div>
+                <div class="investor-key-value investor-key-value--wide"><div class="investor-key-value__key">Permanent &amp; communication address</div><div class="investor-key-value__value">As on the CKYC record. They are not captured on this application.</div></div>
+            </div>
+        </div>
+    }
+
     // A holder's addresses, under their record: the permanent address and its proof, then
     // where post goes - the same, or what its proof was read to say. An address typed by
     // hand has its own box under the panel (CommunicationAddressEntry).
@@ -457,6 +475,11 @@
         var genderUnread = gender.Length == 0;
         var subtitle = genderUnread ? "Gender, and the father's, mother's or spouse's name" : "Father's, mother's or spouse's name";
         var whatIsMissing = genderUnread ? "Neither the record nor OCR gives a gender or a parent or spouse name" : "OCR does not read a parent or spouse name";
+        // The investor found on CKYC: its search gives the name and the reference number alone.
+        if (holder == 1 && Model.Docs.State.Ckyc)
+        {
+            whatIsMissing = genderUnread ? "The CKYC search gives no gender and no parent or spouse name" : "The CKYC search gives no parent or spouse name";
+        }
         var nameTypes = Model.Docs.Ref.NameTypes;
         var nameTypeSelected = Model.Value($"{prefix}.NameType", nameTypes.FirstOrDefault() ?? "");
         var genderSelected = Model.Value($"{prefix}.Gender");
@@ -737,6 +760,9 @@
                 var investorGenderText = investorGender.Length > 0 ? investorGender : "Not read — enter below";
                 var investorPhotoUsed = Model.Docs.View(DocumentsViewModel.PhotoSlot, investor).Used;
                 var investorPhotoNote = investorPhotoUsed ? "not uploaded" : "on the folio";
+                // An investor whose CKYC record stands as their KYC files no photograph or proof of address.
+                var fromCkyc = Model.Docs.State.Ckyc;
+                if (fromCkyc) investorPhotoNote = "on the CKYC record";
             }
             <div class="investor-record">
                 <div class="investor-panel investor-ckyc">
@@ -758,7 +784,14 @@
                             <div class="investor-key-value"><div class="investor-key-value__key">PAN</div><div class="investor-key-value__value">@Model.Docs.HolderPan</div></div>
                             <div class="investor-key-value"><div class="investor-key-value__key">Folio</div><div class="investor-key-value__value">@Model.Docs.HolderFolio</div></div>
                         </div>
-                        @{ await AddressPanel(investor); }
+                        @if (fromCkyc)
+                        {
+                            await CkycPanel();
+                        }
+                        else
+                        {
+                            await AddressPanel(investor);
+                        }
                     </div>
                 </div>
             </div>

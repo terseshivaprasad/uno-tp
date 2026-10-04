@@ -81,7 +81,7 @@
                                 await Kv("Tenure", $"{d.TenureMonths} months");
                                 if (review.Docs.Renewal is { } renewal)
                                 {
-                                    await Kv("Renews", $"Deposit {renewal.DepositNumber} · matures {Money.Day(renewal.MaturesOn)} · its maturity amount, at the rate prevailing on maturity, no payment", wide: true);
+                                    await Kv("Renews", $"Deposit {renewal.DepositNumber} · matures {Money.Day(renewal.MaturesOn)} · its maturity amount, at the card rate on the day of application, no payment", wide: true);
                                 }
                                 await Kv("Interest payout", review.Payout?.Name ?? d.Payout, q is not null && q.InterestEach > 0 ? $"{Money.Rupees(q.InterestEach)} each {review.Payout?.Each}" : null);
                                 await Kv("Scheme", review.Payout?.PerYear == 0 ? "Cumulative" : "Non-cumulative");
@@ -93,6 +93,7 @@
                         </div>
                         <div class="investor-key-value-grid investor-key-value-grid--divided">
                             @{
+                                if (d.RenewalFor.Length > 0) await Kv("Renewal for", review.Option(review.Ref.RenewInstructions, d.RenewalFor));
                                 await Kv("Auto renewal", d.AutoRenewal ? $"On · {review.Option(review.Ref.RenewInstructions, d.RenewInstruction)}" : "Off");
                                 await Kv("TDS", d.NoTds ? "Not deducted — exemption claimed" : "Deducted at the applicable rate");
                                 await Kv("Delivery type", review.Option(review.Ref.DeliveryTypes, d.DeliveryType), Or(review.DetailsOf(docs.Investor).Email, ""));
@@ -140,12 +141,23 @@
                         </div>
                         <div class="investor-key-value-grid investor-key-value-grid--divided">
                             @{
-                                await Kv("Permanent address", h.Permanent.Lines, wide: true);
-                                await Kv("Verification", h.Permanent.State);
-                                await Kv("POA type", Or(h.PoaType, "—"));
-                                await Kv("POA reference number", Or(h.Permanent.Number, "—"));
-                                await Kv("POA expiry date", Or(h.Permanent.Expiry, "—"));
-                                await Kv("Communication address", h.Mailing, h.MailingState, wide: true);
+                                // The investor found on CKYC: the record stands as their KYC, with its addresses.
+                                if (!h.Holder.Joint && review.Docs.State.Ckyc)
+                                {
+                                    await Kv("KYC", "From the investor’s CKYC record", "Record found with CERSAI");
+                                    await Kv("CKYC reference number", Or(review.Docs.State.CkycReference, "—"));
+                                    await Kv("Proof of address & photograph", "Not uploaded");
+                                    await Kv("Permanent & communication address", "As on the CKYC record", wide: true);
+                                }
+                                else
+                                {
+                                    await Kv("Permanent address", h.Permanent.Lines, wide: true);
+                                    await Kv("Verification", h.Permanent.State);
+                                    await Kv("POA type", Or(h.PoaType, "—"));
+                                    await Kv("POA reference number", Or(h.Permanent.Number, "—"));
+                                    await Kv("POA expiry date", Or(h.Permanent.Expiry, "—"));
+                                    await Kv("Communication address", h.Mailing, h.MailingState, wide: true);
+                                }
                             }
                         </div>
                     </div>

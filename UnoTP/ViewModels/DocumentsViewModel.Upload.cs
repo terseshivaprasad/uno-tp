@@ -288,13 +288,14 @@ public partial class DocumentsViewModel
         // 4. An Aadhaar is masked before it is filed - after OCR has read the whole
         // number off it and the name and date of birth have been matched - so no copy
         // with the whole number is ever stored.
-        if (proof && type == "Aadhaar")
+        var masked = proof && type == "Aadhaar";
+        if (masked)
         {
             copy = await MaskedAsync(h, copy);
             entry.Add("Aadhaar number masked before the copy is filed.", "ok");
         }
         await FileAsync(def, h, copy);
-        s.Docs[key] = filed(copy, check, kind);
+        s.Docs[key] = filed(copy, check, kind) with { Checks = ChecksOf(def, h, type, reading, masked) };
         // Taken, so whatever was refused before it is behind the partner.
         s.Attempts[key] = 0;
         s.RefusedAt.Remove(key);
@@ -306,6 +307,39 @@ public partial class DocumentsViewModel
 
         // Both copies filed: the faces on them are compared - again, when either is replaced.
         if (def.Key is "poa" or "pan") await FaceAsync(h, entry);
+    }
+
+    // What the checks made of a document, kept with it for the record of it
+    // (t_FD_BT_KYC_document). A service that is switched off was not asked.
+    private DocChecks ChecksOf(SlotDef def, DocHolder h, string type, OcrReading reading, bool masked)
+    {
+        var identifiedAs = "";
+        if (switches.IsOn(OutsideSwitches.Identify)) identifiedAs = def.Key == "pan" ? "PAN card" : type;
+
+        var ocrAsked = switches.IsOn(OutsideSwitches.Ocr);
+        var read = ocrAsked && reading != new OcrReading();
+        if (!read) return new DocChecks(identifiedAs, ocrAsked, Masked: masked);
+        return new DocChecks(identifiedAs, ocrAsked, true, NumberOn(def, type, reading), ExpiryOn(def, h), masked);
+    }
+
+    // The number a document carries. An Aadhaar's is never kept whole: its last four digits only.
+    private string NumberOn(SlotDef def, string type, OcrReading reading)
+    {
+        if (def.Key == "pan") return reading.Pan.Replace(" ", "").ToUpperInvariant();
+        if (def.Key == "payment") return reading.Cheque?.Number ?? "";
+
+        var number = (reading.Number.Length > 0 ? reading.Number : reading.IdNumber).Replace(" ", "");
+        if (type == "Aadhaar") return number.Length >= 4 ? "XXXXXXXX" + number[^4..] : "";
+        if (!HasPhoto(type)) return "";
+        return number;
+    }
+
+    // When a proof runs out, as its box shows it: the issuer's date where the issuer gave one.
+    private string ExpiryOn(SlotDef def, DocHolder h)
+    {
+        if (def.Key == "poa") return State.Reads[h.Key("poa")].Expiry;
+        if (def.Key == "mail") return MailReadOf(h).Expiry;
+        return "";
     }
 
     // 5. After an Aadhaar is filed: it carries the number the PAN-Aadhaar link is

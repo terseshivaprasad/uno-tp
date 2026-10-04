@@ -1,14 +1,15 @@
 /* =============================================================================
    Uno TP - the masters the purchase journey reads, as the app reads them (SQL
    Server 2016 or later): investor folios, brokers, staff, bank branches by IFSC,
-   PIN codes and the rate card.
+   PIN codes and the FD system's document master. The rate card is the FD system's
+   t_FD_BOTC_SCHEME, in create_existing_tables.sql.
 
        sqlcmd -d UnoTP -i db/create_master_tables.sql
 
    On the database that already has the masters this script does nothing. Each
    master is loaded from its source of record, never from a script here: folios
    from the FD system, brokers and staff from their masters, IFSC from the RBI's
-   list, PIN codes from India Post's directory, rates from the published rate card.
+   list, PIN codes from India Post's directory.
 
    A table is created, with its indexes, only when it is not there yet. A table
    already there is not touched at all: no column, index or row of it changes,
@@ -43,6 +44,7 @@ CREATE TABLE dbo.t_Unotp_Investor_Folio
     f_Doc_Photo          BIT            NOT NULL CONSTRAINT DF_Investor_Folio_Photo DEFAULT (0),
     f_Doc_Poa            BIT            NOT NULL CONSTRAINT DF_Investor_Folio_Poa DEFAULT (0),
     c_Note               NVARCHAR(200)  NOT NULL CONSTRAINT DF_Investor_Folio_Note DEFAULT (''),   -- e.g. CKYC available with us
+    c_Source             VARCHAR(50)    NULL,       -- where the folio's KYC came from, as the FD system says: written to f_Data_Source
     f_Active             BIT            NOT NULL CONSTRAINT DF_Investor_Folio_Active DEFAULT (1),
     c_Created_By         VARCHAR(20)    NOT NULL,
     d_Created_On         DATETIME2(3)   NOT NULL CONSTRAINT DF_Investor_Folio_Created DEFAULT (SYSDATETIME()),
@@ -128,27 +130,106 @@ CREATE TABLE dbo.t_Unotp_Pincode_Mst
 END
 GO
 
--- t_Unotp_Rate_Card: The rate card, one row per line of the published chart.
-IF OBJECT_ID(N'dbo.t_Unotp_Rate_Card', N'U') IS NULL
+/* ----- The FD system's document master -------------------------------------------------
+   T_FD_CMN_KYC_Document_Type_Mst and T_FD_CMN_KYC_Document_Sub_Type_Mst, in the FD
+   system's common database (ConnectionStrings:UnoTP_Common): the types a document
+   can be, and under each its sub-types, by depositor status ('IND' for an
+   individual). Here with the columns the app reads and those seen beside them; the
+   FD system's own tables have more. Created for a database built from nothing.
+   ----------------------------------------------------------------------------- */
+IF OBJECT_ID(N'dbo.T_FD_CMN_KYC_Document_Type_Mst', N'U') IS NULL
 BEGIN
-CREATE TABLE dbo.t_Unotp_Rate_Card
-(
-    n_Id                 INT IDENTITY(1,1) NOT NULL,
-    c_Category           VARCHAR(30)    NOT NULL,
-    n_Tenure_Months      INT            NOT NULL,
-    n_Rate               DECIMAL(5,2)   NOT NULL,   -- % a year
-    c_Scheme             VARCHAR(20)    NOT NULL CONSTRAINT DF_Rate_Card_Scheme DEFAULT (''),   -- CUMULATIVE, NON-CUMULATIVE
-    c_Payout             VARCHAR(20)    NOT NULL CONSTRAINT DF_Rate_Card_Payout DEFAULT (''),
-    n_Min_Amount         BIGINT         NOT NULL CONSTRAINT DF_Rate_Card_Min_Amount DEFAULT (0),
-    n_Max_Amount         BIGINT         NULL,
-    c_Gender             VARCHAR(1)     NOT NULL CONSTRAINT DF_Rate_Card_Gender DEFAULT (''),   -- F for a women's line, '' for either
-    c_App_Type           VARCHAR(10)    NOT NULL CONSTRAINT DF_Rate_Card_App_Type DEFAULT (''),
-    d_Effective_From     DATE           NOT NULL,
-    c_Created_By         VARCHAR(20)    NOT NULL,
-    d_Created_On         DATETIME2(3)   NOT NULL CONSTRAINT DF_Rate_Card_Created DEFAULT (SYSDATETIME()),
-    f_Active             BIT            NOT NULL CONSTRAINT DF_Rate_Card_Active DEFAULT (1),
-    CONSTRAINT PK_Rate_Card PRIMARY KEY CLUSTERED (n_Id),
-    CONSTRAINT UQ_Rate_Card_Line UNIQUE (c_Category, n_Tenure_Months, c_Payout, n_Min_Amount, c_Gender, c_App_Type, d_Effective_From)
+CREATE TABLE [dbo].[T_FD_CMN_KYC_Document_Type_Mst](
+    [f_T_FD_BT_KYC_Document_Type] [bigint] IDENTITY(1,1) NOT NULL,
+    [f_Depositor_Status_Code] [nvarchar](20) NULL,
+    [f_KYC_Document_Type_Code] [nvarchar](50) NULL,
+    [f_KYC_Document_Type_Desc] [nvarchar](50) NULL,
+    [f_From_Date] [datetime] NULL
+);
+END
+GO
+
+IF OBJECT_ID(N'dbo.T_FD_CMN_KYC_Document_Sub_Type_Mst', N'U') IS NULL
+BEGIN
+CREATE TABLE [dbo].[T_FD_CMN_KYC_Document_Sub_Type_Mst](
+    [f_Depositor_Status_Code] [nvarchar](20) NULL,
+    [f_KYC_Document_Sub_Type_Code] [nvarchar](100) NULL,
+    [f_KYC_Document_Sub_Type_Desc] [nvarchar](250) NULL,
+    [f_KYC_Document_Type_Code] [nvarchar](50) NULL,
+    [f_KYC_IsMultiple] [bit] NULL,
+    [f_Is_Doc_Ref_No_Required] [bit] NULL,
+    [f_Is_Doc_Exp_Date_Required] [bit] NULL,
+    [f_IsActive] [bit] NULL
+);
+END
+GO
+
+/* ----- The FD system's masters behind four of the pages' lists ---------------------------
+   Marital status, the nominee's relation, the employee's relation and the source of
+   funds are offered as these list them and saved as their codes (db/021). Here with
+   the columns the app reads; the FD system's own tables have more. The t_FD_BT_ and
+   t_FD_MMFSL_ masters are in the main database, the t_FD_CMN_ ones in the FD
+   system's common database (ConnectionStrings:UnoTP_Common). Created for a database
+   built from nothing.
+   ----------------------------------------------------------------------------- */
+IF OBJECT_ID(N'dbo.t_FD_BT_Marital_Status_Mst', N'U') IS NULL
+BEGIN
+CREATE TABLE [dbo].[t_FD_BT_Marital_Status_Mst](
+    [f_Pk_t_FD_BT_Marital_Status_Mst_ID] [bigint] IDENTITY(1,1) NOT NULL,
+    [f_MaritalStatus_Code] [nvarchar](20) NULL,
+    [f_MaritalStatus_Name] [nvarchar](50) NULL,
+    [f_Active] [bit] NULL
+);
+END
+GO
+
+IF OBJECT_ID(N'dbo.t_FD_CMN_Relation_Mst', N'U') IS NULL
+BEGIN
+CREATE TABLE [dbo].[t_FD_CMN_Relation_Mst](
+    [f_Pk_t_FD_CMN_Relation_Mst_ID] [bigint] IDENTITY(1,1) NOT NULL,
+    [f_Relation_Code] [nvarchar](20) NULL,
+    [f_Relation_Name] [nvarchar](50) NULL,
+    [f_Active] [bit] NULL
+);
+END
+GO
+
+IF OBJECT_ID(N'dbo.t_FD_MMFSL_Employee_Relation_Mst', N'U') IS NULL
+BEGIN
+CREATE TABLE [dbo].[t_FD_MMFSL_Employee_Relation_Mst](
+    [f_Pk_t_FD_MMFSL_Employee_Relation_Mst_ID] [bigint] IDENTITY(1,1) NOT NULL,
+    [f_Relation_Code] [nvarchar](20) NULL,
+    [f_Relation_Name] [nvarchar](50) NULL,
+    [f_Active] [bit] NULL
+);
+END
+GO
+
+IF OBJECT_ID(N'dbo.t_FD_CMN_AML_Source_Of_Funds_Mst', N'U') IS NULL
+BEGIN
+CREATE TABLE [dbo].[t_FD_CMN_AML_Source_Of_Funds_Mst](
+    [f_Pk_t_FD_CMN_AML_Source_Of_Funds_Mst_Id] [bigint] IDENTITY(1,1) NOT NULL,
+    [f_AML_Source_Of_Funds_Code] [nvarchar](20) NULL,
+    [f_AML_Source_Of_Funds_Desc] [nvarchar](250) NULL,
+    [f_Active] [bit] NULL
+);
+END
+GO
+
+/* ----- t_FD_CMN_Ckyc_CustSeg_Mst: the occupation master --------------------------------
+   In the FD system's common database. A row is a customer segment type (the
+   occupation the page offers), a sub-type under it (the sub occupation) and the
+   CKYC occupation they stand for (db/022). Here with the columns the app reads.
+   ----------------------------------------------------------------------------- */
+IF OBJECT_ID(N'dbo.t_FD_CMN_Ckyc_CustSeg_Mst', N'U') IS NULL
+BEGIN
+CREATE TABLE [dbo].[t_FD_CMN_Ckyc_CustSeg_Mst](
+    [f_Ckyc_CustSeg_Type_Code] [nvarchar](50) NULL,
+    [f_Ckyc_CustSeg_Type_Desc] [nvarchar](250) NULL,
+    [f_Ckyc_CustSeg_SubType_Code] [nvarchar](50) NULL,
+    [f_Ckyc_CustSeg_SubType_Desc] [nvarchar](250) NULL,
+    [f_Ckyc_Occupation_Code] [nvarchar](10) NULL,
+    [f_Ckyc_Occupation_Desc] [nvarchar](50) NULL
 );
 END
 GO

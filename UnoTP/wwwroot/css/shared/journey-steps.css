@@ -775,6 +775,13 @@
 .identify-holder .identify-result__head {
   padding-bottom: 12px;
 }
+/* A record that is its head alone needs no room under it. */
+.identify-holder .identify-result__head:last-child {
+  padding-bottom: 0;
+}
+.identify-holder .identify-result:has(> .identify-result__head:last-child) {
+  padding-bottom: 16px;
+}
 .identify-holder .identify-result .investor-key-value-grid {
   gap: 16px 24px;
 }

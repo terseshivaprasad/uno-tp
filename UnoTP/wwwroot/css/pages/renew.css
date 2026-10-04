@@ -1,2 +1,38 @@
-/* The renew page only. Loaded after the shared styles. It draws nothing of its own:
-   the search is Investor Identification's, and its chips are Bootstrap badges. */
+/* The deposits an investor holds, under their record on Investor Identification.
+   Loaded after the shared styles: the table is the registers', its chips the shared ones. */
+
+/* The renewal notes: closed until asked for, so the list stays the page's last word. */
+.deposits-notes {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.deposits-notes summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--ink);
+}
+.deposits-notes ul {
+  margin: 8px 0 0;
+  padding-left: 20px;
+  line-height: 20px;
+}
+
+/* Cancel request under Continue, on a renewal still being entered. */
+.register-table__actions .deposits-cancel {
+  display: block;
+  padding-top: 6px;
+}
+
+/* On a phone the two actions of a renewal in progress stand side by side, with room between. */
+@media (max-width: 900px) {
+  .register-table__actions .deposits-cancel {
+    display: inline;
+    padding: 0 0 0 16px;
+  }
+}
+
+/* Cancel request stays on one line beside Continue. */
+.deposits-cancel .link-button {
+  white-space: nowrap;
+}

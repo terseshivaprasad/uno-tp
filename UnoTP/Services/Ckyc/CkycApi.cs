@@ -10,9 +10,12 @@ namespace UnoTP.Services.Ckyc;
 /// path under the gateway (<see cref="BackendOptions.BaseUrl"/>) and the path of
 /// the call.
 /// </summary>
-public sealed class CkycOptions
+public sealed class CkycOptions : IApiAddress
 {
     public const string Section = "Ckyc";
+
+    /// <summary>The API's own address, https://{host}/ ; blank while it is behind the gateway (Backend:BaseUrl).</summary>
+    public string BaseUrl { get; set; } = "";
 
     /// <summary>The API's base path under the gateway. The path below is relative to it.</summary>
     public string BasePath { get; set; } = "";
@@ -68,7 +71,6 @@ public sealed class CkycApiClient(HttpClient http, IPartner partner, IOptions<Ck
 
         return new CkycSearchResult(
             Available: true,
-            MaskedCkycId: record.masked_CKYCID ?? "",
             Name: record.ckycName ?? "",
             Reference: record.ckycReferenceID ?? "");
     }
@@ -164,7 +166,6 @@ public sealed class CkycApiClient(HttpClient http, IPartner partner, IOptions<Ck
         public string? ckycName { get; set; }
         public string? transactionRejectionDescription { get; set; }
         public string? ckycReferenceID { get; set; }
-        public string? masked_CKYCID { get; set; }
     }
 }
 
@@ -174,7 +175,7 @@ public static class CkycServiceCollectionExtensions
     public static IServiceCollection AddCkyc(this IServiceCollection services)
     {
         services.AddApiClient<ICkycService, CkycApiClient>(
-            sp => sp.GetRequiredService<IOptions<CkycOptions>>().Value.BasePath);
+            sp => sp.GetRequiredService<IOptions<CkycOptions>>().Value);
         return services;
     }
 }

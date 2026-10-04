@@ -1333,6 +1333,11 @@ body.is-waiting {
   letter-spacing: .02em;
   color: var(--text);
 }
+/* A renewal's draft says which deposit it renews. */
+.draft__renews {
+  font-weight: 600;
+  color: var(--text);
+}
 .draft__progress {
   display: flex;
   flex-direction: column;

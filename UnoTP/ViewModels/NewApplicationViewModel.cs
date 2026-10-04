@@ -80,6 +80,15 @@ public partial class NewApplicationViewModel(IInvestorApi investors, UnoTP.Infra
     /// <summary>The record on the card, once a check has found or opened one.</summary>
     public Holder? Record { get; private set; }
 
+    /// <summary>Why a new deposit cannot be opened now; null while Create New FD is on.</summary>
+    public string? NewFdOff { get; set; }
+
+    /// <summary>The identified investor's deposits, to renew one from; null when they hold none.</summary>
+    public DepositsBlock? Deposits { get; set; }
+
+    /// <summary>What the last renewal post had to say, if anything.</summary>
+    public string? Said { get; set; }
+
     /// <summary>"Existing customer", "Not identified" or "New investor".</summary>
     public string Kind { get; private set; } = "";
 
@@ -196,7 +205,7 @@ public partial class NewApplicationViewModel(IInvestorApi investors, UnoTP.Infra
 
     private void ShowFolio(FolioRecord f, string how)
     {
-        Record = new Holder(f.Pan, f.Dob, f.Folio, f.Name, f.Gender, f.Address, f.Docs, f.Note);
+        Record = new Holder(f.Pan, f.Dob, f.Folio, f.Name, f.Gender, f.Address, f.Docs, f.Note, f.Source);
         Kind = "Existing customer";
         Detail = how;
         At = Stage.Found;
@@ -221,7 +230,7 @@ public partial class NewApplicationViewModel(IInvestorApi investors, UnoTP.Infra
     /// The investor the card shows. A PAN with no folio has no name, gender or
     /// address until its PAN copy is read and NSDL verifies it.
     /// </summary>
-    public sealed record Holder(string Pan, string Dob, string Folio, string Name, string Gender, string Address, DocsOnRecord Docs, string Note)
+    public sealed record Holder(string Pan, string Dob, string Folio, string Name, string Gender, string Address, DocsOnRecord Docs, string Note, string Source = "")
     {
         /// <summary>The name, or the PAN while a new investor has none.</summary>
         public string Heading => Name.Length > 0 ? Name : Pan;
