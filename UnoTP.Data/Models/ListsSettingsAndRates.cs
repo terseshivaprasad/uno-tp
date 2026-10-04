@@ -65,8 +65,7 @@ public sealed record OccupationRow(
 /// <param name="Employee">Booked against a staff record, and open only to the sourcing agency.</param>
 /// <param name="Women">For a woman holder.</param>
 /// <param name="Senior">For a holder at the senior citizen age or over.</param>
-/// <param name="ExtraRate">What the category earns over the public rate, % a year (the chart's "additional rates"); 0 for the public category.</param>
-public sealed record CategoryOption(string Code, string Name, bool Employee, bool Women, bool Senior, decimal ExtraRate = 0);
+public sealed record CategoryOption(string Code, string Name, bool Employee, bool Women, bool Senior);
 
 /// <summary>A payment mode, and the instrument a copy of is filed for it, if any.</summary>
 public sealed record PaymentModeOption(string Name, string? Document);
@@ -246,6 +245,14 @@ public interface IDepositApi
     /// <summary>POST deposits/quote: the card rate and the returns for a deposit as it stands.</summary>
     Task<DepositQuote> QuoteAsync(QuoteRequest request, CancellationToken ct = default);
 
+    /// <summary>
+    /// Whether the rate card itself holds a row in effect today for the deposit
+    /// exactly as it stands: its category, mode, scheme, interest frequency, tenure
+    /// and rate, with the amount within the row's limits. Asked when FD
+    /// Configuration proceeds, straight off the card and never from a kept copy.
+    /// </summary>
+    Task<bool> OnRateCardAsync(SchemeCheck check, CancellationToken ct = default);
+
     /// <summary>GET ifsc/{code}: the branch an IFSC names, or null (404) for none.</summary>
     Task<BankBranch?> BranchAsync(string ifsc, CancellationToken ct = default);
 
@@ -257,7 +264,18 @@ public interface IDepositApi
 /// <param name="Category">A <see cref="CategoryOption.Code"/>: from the holder's date of birth and gender, or the sourcing agency's choice.</param>
 /// <param name="ApplicationType"><see cref="RateCard.Purchase"/> or <see cref="RateCard.Renew"/>: the card's MODE_STATUS.</param>
 /// <param name="StartsOn">The day the deposit is taken to start, for the day it matures; the backend's today when null. The card read is always today's.</param>
-public sealed record RatesRequest(string Category, string ApplicationType, DateOnly? StartsOn = null);
+/// <param name="BranchUser">Whose card is read: a branch user's, which carries the employee and special schemes too, or a partner's.</param>
+public sealed record RatesRequest(string Category, string ApplicationType, DateOnly? StartsOn = null, bool BranchUser = false);
+
+/// <summary>A deposit as FD Configuration holds it, to be found on the rate card.</summary>
+/// <param name="Category">The application's deposit category, as the card's CATEGORY has it.</param>
+/// <param name="Mode"><see cref="RateCard.Purchase"/> or <see cref="RateCard.Renew"/>: the card's MODE_STATUS.</param>
+/// <param name="Scheme">The card's SCHEME.</param>
+/// <param name="InterestFreq">The payout's code: the card's INTEREST_FREQ.</param>
+/// <param name="Rate">% a year: the card's INTEREST_RATES.</param>
+/// <param name="Amount">The deposit, which has to be within the row's minimum and maximum.</param>
+/// <param name="BranchUser">Whose card is asked: a branch user's or a partner's.</param>
+public sealed record SchemeCheck(string Category, string Mode, string Scheme, string InterestFreq, int TenureMonths, decimal Rate, long Amount, bool BranchUser = false);
 
 /// <summary>The words the rate card is keyed by.</summary>
 public static class RateCard

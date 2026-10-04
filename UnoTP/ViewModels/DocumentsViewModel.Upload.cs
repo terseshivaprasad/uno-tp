@@ -166,7 +166,7 @@ public partial class DocumentsViewModel
         var chequeOff = def.Key == PaymentSlot.Key && !switches.IsOn(OutsideSwitches.Cheque);
         if (chequeOff || !Checked.TryGetValue(def.Key, out var rule))
         {
-            await FileAsync(def, h, copy);
+            copy = await FileAsync(def, h, copy);
             s.Attempts[key] = 0;
             s.RefusedAt.Remove(key);
             var said = NoCheck.GetValueOrDefault(def.Key, "Filed as handed over.");
@@ -281,6 +281,17 @@ public partial class DocumentsViewModel
             return;
         }
 
+        // A proof of address has to give the address: its first line and its PIN code
+        // are needed on every application, whichever proof it is. With OCR switched
+        // off nothing is read, so nothing can be asked of it.
+        if (proof && switches.IsOn(OutsideSwitches.Ocr) && AddressNotRead(reading.Address) is { } notRead)
+        {
+            await RefuseAsync(notRead, $"Upload a copy of the {type.ToLowerInvariant()} that shows the address with its PIN code, clear enough to read.",
+                ($"OCR read: address {(reading.Address.Trim().Length > 0 ? reading.Address.Trim() : "none")}.", ""),
+                ("A proof of address is taken only when its address and PIN code can be read.", "bad"));
+            return;
+        }
+
         // A holder with no folio is put to NSDL with the name the copy reads. NSDL not
         // answering does not cost the copy: it was identified and read, so it is filed
         // all the same, and NSDL is asked again from its card - not by uploading it,
@@ -326,7 +337,7 @@ public partial class DocumentsViewModel
             copy = await MaskedAsync(h, copy);
             entry.Add("Aadhaar number masked before the copy is filed.", "ok");
         }
-        await FileAsync(def, h, copy);
+        copy = await FileAsync(def, h, copy);
         s.Docs[key] = filed(copy, check, kind) with { Checks = ChecksOf(def, h, type, reading, masked) };
         // Taken, so whatever was refused before it is behind the partner.
         s.Attempts[key] = 0;
@@ -339,6 +350,16 @@ public partial class DocumentsViewModel
 
         // Both copies filed: the faces on them are compared - again, when either is replaced.
         if (def.Key is "poa" or "pan") await FaceAsync(h, entry);
+    }
+
+    // Why the address a proof reads is not enough: none at all, or no PIN code in it.
+    // Null when both are there.
+    private static string? AddressNotRead(string address)
+    {
+        var (lines, pin) = SplitPin(address.Trim());
+        if (lines.Length == 0) return "The address could not be read off it";
+        if (pin.Length == 0) return "The PIN code could not be read off it";
+        return null;
     }
 
     // What the checks made of a document, kept with it for the record of it
@@ -392,14 +413,33 @@ public partial class DocumentsViewModel
         entry.Add("OCR read no whole 12-digit Aadhaar number off it; the number is typed for the PAN-Aadhaar link.", "warn");
     }
 
-    // A slot holds one copy in DMS: a copy filed before is deleted, then the new
-    // one filed. One that came over from the step before has no copy here.
-    private async Task FileAsync(SlotDef def, DocHolder h, UploadFile copy)
+    // Every copy is filed as a new file, named after the application, the holder
+    // and the document; one filed before for the same slot is left where it is,
+    // for audit. Gives the copy back under the name it is kept as.
+    private async Task<UploadFile> FileAsync(SlotDef def, DocHolder h, UploadFile copy)
     {
-        var under = FiledUnder(def, h);
-        if (State.Docs.GetValueOrDefault(h.Key(def.Key)) is { Before: false }) await documents.DeleteAsync(AppNo, under, def.Key);
         Doing("Filing the copy\u2026");
-        await documents.FileAsync(AppNo, under, def.Key, copy);
+        var name = await documents.FileAsync(AppNo, LabelOf(def, h), copy);
+        return copy with { FileName = name };
+    }
+
+    // What a copy's file name is made from. A holder's own document goes under
+    // their folio and holder type; the application's own documents under the
+    // investor's, as their rows do.
+    private DocumentLabel LabelOf(SlotDef def, DocHolder h)
+    {
+        var owner = HolderSlots.Contains(def) ? h : Investor;
+        return new DocumentLabel(owner.Who.Folio, owner.Code, DocumentOf(def, h));
+    }
+
+    // The document as the document master lists it ('filedDocuments'): the slot,
+    // and for a proof, which one it is. A communication address is proved by a
+    // proof of address, so it is listed as one.
+    private string DocumentOf(SlotDef def, DocHolder h)
+    {
+        if (def.Key is "poa" or "mail") return "poa:" + TypeOf(def, h);
+        if (def.Key == "empproof") return "empproof:" + State.EmpProofType;
+        return def.Key;
     }
 
     /// <summary>The words with the first letter in capitals.</summary>

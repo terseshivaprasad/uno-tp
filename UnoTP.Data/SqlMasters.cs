@@ -67,6 +67,15 @@ public sealed partial class SqlMasters(Db db, SqlReference reference) : IInvesto
     public Task<IReadOnlyList<FolioDeposit>> FolioDepositsByFolioAsync(string folio, CancellationToken ct = default) =>
         FolioDepositsAsync("d.Folio = @Value", folio, ct);
 
+    public async Task<string> FolioOfFirstHolderAsync(string pan, CancellationToken ct = default)
+    {
+        await using var connection = await db.OpenAsync(ct);
+        var folio = await connection.QueryFirstOrDefaultAsync<string>(
+            $"SELECT TOP (1) h.Folio FROM ({MasterQueries.FirstHolders}) h WHERE h.Pan = @Pan ORDER BY h.Folio",
+            new { Pan = pan.Trim().ToUpperInvariant() });
+        return (folio ?? "").Trim();
+    }
+
     // The deposits the folio check looks at, for one PAN or one folio.
     private async Task<IReadOnlyList<FolioDeposit>> FolioDepositsAsync(string where, string value, CancellationToken ct)
     {

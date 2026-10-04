@@ -376,9 +376,13 @@ GO
                           'filedDocuments' list gives each document its sub-type,
                           'documentSubTypes' the sub-type's name and its type, and
                           'documentTypes' the type's name
+     f_Doc_FileName       the name the copy is filed under:
+                          {Folio_}{ApplNo}_{HolderType}_{DocSubType}_{yyyyMMddHHmmssfff}.ext,
+                          the folio only for a holder on one
      f_Doc_Filepath       where the copy is kept, in full: the document store's root
-                          (Dms:Root), then application / holder / document; NULL for
-                          one on the folio with no copy here
+                          (Dms:Root), the application's folder, the file name; NULL for
+                          one on record with no copy here. A copy uploaded again is a
+                          new file: the earlier rows keep pointing at their own
      f_Doc_Sequence       1, 2, 3... among a holder's documents of one type
      f_Document_Source, f_doc_source
                           UNO_TP for a copy uploaded here; NULL for one that came
@@ -544,9 +548,12 @@ END
 GO
 
 /* ----- t_FD_BT_Address_Dtl: one row per holder and address type --------------------
-     f_AddType_Code   PER  - permanent, as on record for the holder; always written, for
-                             its row carries the holder's mobile and e-mail. A long
-                             address is broken across f_Add1 to f_Add3 at its spaces
+     f_AddType_Code   PER  - permanent: the address read off the proof of address filed
+                             on the application, or the one on record for a holder on
+                             a folio who filed none; always written, for its row
+                             carries the holder's mobile and e-mail. The address is
+                             broken across f_Add1 to f_Add3 at its spaces, and its
+                             PIN code goes in f_AddPin
                       MAIL - mailing, typed on Investor Information when post goes
                              elsewhere; no row when it goes to the permanent one
    ----------------------------------------------------------------------------- */

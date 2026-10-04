@@ -124,7 +124,8 @@ again; a failed answer is not kept.
 | GET | `reference` | | `ReferenceData`: every list the pages offer (see below) |
 | GET | `config` | | `AppConfig`: the limits and rules the pages check |
 | GET | `me` | | `PartnerProfile`: `name`, `code`, `agencyType`, `brokerCode` of the signed-in partner. The `sourcingAgency` in `config` chooses the sourcing mode, broker code and deposit category; any other type sources as a broker under `brokerCode`, with the category set from the holder's date of birth and gender. While `Features:DemoData` is on, `?agency=2001&broker=BR10874` shows the app as another kind of partner for the session. |
-| GET | `deposits/rates` | `{ category, gender, applicationType, startsOn? }` - `gender` M or F (M when not known), `applicationType` PURCHASE or RENEW | The rate card for that key, one `RateOption` per line: `tenureMonths`, `scheme` (CUMULATIVE or NON-CUMULATIVE), `payout` (the frequency), `rate`, `minAmount`, `maxAmount`, `asOn`. FD Configuration draws its tenures and payouts from it at the amount entered, or at `config.quoteAmount` (₹50,000) before one is; a payout under its `minAmount` is shown shut. |
+| GET | `deposits/rates` | `{ category, gender, applicationType, startsOn? }` - `gender` M or F (M when not known), `applicationType` PURCHASE or RENEW | The rate card for that key, one `RateOption` per line: `tenureMonths`, `scheme` (CUMULATIVE or NON-CUMULATIVE), `payout` (the frequency), `rate`, `minAmount`, `maxAmount`, `asOn`. FD Configuration draws its tenures and payouts from it at the amount entered, or at `config.quoteAmount` (₹50,000) before one is; a payout under its `minAmount` is shown shut. There are two cards of the same structure, and `branchUser` on the request says which is read: a branch user's (`t_FD_BOTC_SCHEME`, with the employee and special schemes and their extra tenures) or a partner's (`FD_SCHEME`). A tenure shows only where the user's card has a row for it. What a women's or a senior citizen's category earns over the public rate is worked out from the two categories' rows for the tenure and payout chosen, so a benefit that starts at 36 months shows only from there. |
+| POST | `deposits/on-rate-card` | `SchemeCheck` (`category`, `mode`, `scheme`, `interestFreq`, `tenureMonths`, `rate`, `amount`) | `true` when the rate card holds a row in effect today for exactly that category, mode (`AF` or `R`), scheme, interest frequency, tenure and rate, with the amount within the row's minimum and maximum. FD Configuration asks it on Proceed, straight off the card, and does not go on without it. A deposit quoted off the default category's rates, for a category with no rows of its own, is therefore refused. |
 | POST | `deposits/quote` | `{ amount, tenureMonths, payout, card: { category, gender, applicationType, startsOn? } }` | `DepositQuote`: `rate`, `interestEach`, `maturityAmount`, `maturesOn`, `rateAsOn`. A cumulative deposit compounds `compoundingPerYear` times a year, the months after the last whole period at simple interest. |
 | GET | `ifsc/{code}` | | `BankBranch`: `ifsc`, `bank`, `branch`, `micr`, or 404 |
 | GET | `pincodes/{pin}` | | `PinPlace`: `pinCode`, `district`, `state` for a 6-digit PIN code, or 404 — shown beside a communication address typed on Investor Information, and saved with it. The page asks once all six digits are typed; nothing is suggested while typing. |
@@ -159,7 +160,7 @@ again; a failed answer is not kept.
 
 | Method | Route | Body | Returns |
 |---|---|---|---|
-| GET | `investors/folio-deposits?pan={pan}` or `?folio={folio}` | | `FolioDeposit[]` (`folio`, `pan`, `dob`): the deposits that are not cancelled, with their first holder, on a folio still in use. The folio check (`FolioCheck`) reads them in the FD system's order, but for a PAN whose fourth letter is not `P`, which is refused first, with a folio or without: no deposit, a new investor; no date of birth on record, refused; another date of birth than the one typed, refused; more than one folio, refused. A search by folio number is checked the same way but for the date of birth typed: the folio must hold a date of birth, and its PAN must not be on another folio too. |
+| GET | `investors/folio-deposits?pan={pan}` or `?folio={folio}` | | `FolioDeposit[]` (`folio`, `pan`, `dob`): the deposits that are not cancelled, with their first holder, on a folio still in use. The folio check (`FolioCheck`) reads them in the FD system's order, but for a PAN whose fourth letter is not `P`, which is refused first, with a folio or without: no deposit, a new investor, unless the folio master (`MasterQueries.FirstHolders`) holds the PAN as a first holder, which is refused so that nobody with a folio goes on as new; no date of birth on record, refused; another date of birth than the one typed, refused; more than one folio, refused. A search by folio number is checked the same way but for the date of birth typed: the folio must hold a date of birth, and its PAN must not be on another folio too. |
 | GET | `investors/folios/{folio}` | | `FolioRecord`, or 404 |
 | GET | `investors/folios/{folio}/on-record?pan={pan}&dob={dd-MM-yyyy}` | | `FolioRecord` as its data source has it, read at Investor Identification and when a renewal opens. `source` is where the holder's latest KYC is kept: `ORA` (the common tables), `BT` (an application submitted through this app) or `FHLD` (the folio master), the newest row among them for that folio, PAN and date of birth; it is saved as the holder's `f_Data_Source`. `address` is that source's latest permanent address (the folio master's where it holds none). `docs` (`pan`, `photo`, `poa`) says what is on record there: a PAN copy or a proof of address counts only once it is verified, a photograph when it is there; no other document is looked for. A document on record is not required again on Upload Documents; one that is not is required, folio or no folio. 404 for a folio the master does not hold |
 | GET | `investors/folios/{folio}/kyc?source={source}` | | `HolderDetails`: the KYC details the source holds (`ORA` or `BT`; the folio master holds none), with its mailing address as `communication` where it holds one. Filled into Investor Information the first time it opens and validated like anything typed; the mailing address only where the communication address is typed there |
@@ -256,31 +257,32 @@ repayment account.
 
 | Method | Route | Body | Returns |
 |---|---|---|---|
-| POST | `applications/{appNo}/documents/{holder}/{slot}` | multipart `file` | `2xx`. Files the copy against the holder's slot. |
-| DELETE | `applications/{appNo}/documents/{holder}/{slot}` | | `2xx`, or 404 if there is no copy (the app treats that as done) |
+| POST | `applications/{appNo}/documents` | multipart `file`, with the holder's `folio`, `holderType` and the `document` | The name the copy is kept under. Files the copy as a new file. |
 | POST | `applications/{appNo}/documents/{holder}/{slot}/refused` | multipart `file` | `{ ref, keptUntil }`. Keeps a refused copy aside for analysis, off the application. |
-| GET | `applications/{appNo}/documents/{holder}/{slot}` | | The copy, with `Content-Type` and `Content-Disposition`, or 404 |
+| GET | `applications/{appNo}/documents/{fileName}` | | The copy, or 404 |
 
-`{holder}` is the holder type DMS files under:
+Every copy is a file of its own, in its application's folder under `Dms:Root`:
 
-| Code | Holder | Slots |
-|---|---|---|
-| `00` | Not holder-specific | `form`, `payment`, `empproof` |
-| `01` | Investor | `pan`, `photo`, `poa` |
-| `02` | Second holder | `pan`, `photo`, `poa` |
-| `03` | Third holder | `pan`, `photo`, `poa` |
+| Holder | File name |
+|---|---|
+| With no folio | `{ApplNo}_{HolderType}_{DocSubType}_{yyyyMMddHHmmssfff}.ext` |
+| On a folio | `{Folio}_{ApplNo}_{HolderType}_{DocSubType}_{yyyyMMddHHmmssfff}.ext` |
 
-A holder never changes type: the second holder can only be removed once there
-is no third, so a third never becomes the second.
-
-A slot holds one copy:
-
-- **Re-upload:** the app deletes the old copy first, then files the new one.
-  This happens only once the new copy has passed its checks; a refused copy
-  leaves the old one in place.
-- **Dropped document:** when the partner's choices take a document off the
-  application (for example, switching to a payment mode that has no
-  instrument), the app deletes its copy once the save goes through.
+- **`HolderType`:** `01` the investor, `02` and `03` the joint holders. The
+  application's own documents (the form, the cheque, an employee proof, the Form
+  121) go under `01` with the investor's folio, as their rows do.
+- **`DocSubType`:** the document's sub-type code in the document master (`PAN`,
+  `Photograph`, `PASSPORT_A`, `PAYMENT_CHEQUE`). Some codes hold a `_` themselves.
+- **The time** is when the copy is filed, to the millisecond, so every upload is a
+  new file.
+- **Nothing is replaced or deleted.** A document uploaded again, or taken off the
+  application, leaves its earlier copy in the folder, for audit. The application
+  points at the latest; the earlier rows of `t_FD_BT_KYC_document`, kept with
+  `f_Active = 0`, still point at their own copy.
+- **The row** records the name in `f_Doc_FileName` and the full path in
+  `f_Doc_Filepath`. The name the partner's file had is not kept.
+- **A refused copy** is not filed on the application: it is kept aside under
+  `refused/` for a week.
 
 ## Registers and lists
 
@@ -423,6 +425,14 @@ Each check is answered by one service, with a settings section of its own:
   answers with something that can't be read is reported to the partner as
   "could not answer". Nothing is filed and no refusal is counted. This holds
   for the Idfy.Api client and the `external/{name}/` clients alike.
+- **A proof of address must give the address and its PIN code.** Whichever proof
+  it is (Aadhaar, passport, driving licence, voter ID), a copy OCR reads no address
+  or no PIN code off is refused: the copy has to show the address. IDfy gives the
+  PIN code in a field of its own, which is read and put at the end of the address.
+  The address read is the one the application takes, whether its issuer confirms
+  the proof or not, and is saved to the holder's permanent address row: its lines
+  in `f_Add1` to `f_Add3`, its PIN code in `f_AddPin`. With OCR switched off
+  nothing is read, so nothing is asked of the copy.
 - **NSDL failing does not cost the PAN copy.** Once a PAN copy is identified and
   read, it is filed whatever NSDL then says. If NSDL can't answer, or holds no such
   PAN and date of birth, its card offers "Retry NSDL check", which puts the same PAN,

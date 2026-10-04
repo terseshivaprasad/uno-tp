@@ -118,6 +118,9 @@ internal sealed class CachedDepositApi(IDepositApi inner, IMemoryCache cache) : 
     public Task<DepositQuote> QuoteAsync(QuoteRequest request, CancellationToken ct = default) =>
         cache.KeptAsync(("backend:quote", DateTime.Today, request), TimeSpan.FromMinutes(1), () => inner.QuoteAsync(request, ct));
 
+    // Never kept: Proceed asks the card as it stands this moment.
+    public Task<bool> OnRateCardAsync(SchemeCheck check, CancellationToken ct = default) => inner.OnRateCardAsync(check, ct);
+
     public Task<BankBranch?> BranchAsync(string ifsc, CancellationToken ct = default) =>
         cache.KeptAsync(("backend:ifsc", ifsc.Trim().ToUpperInvariant()), BankKeptFor, () => inner.BranchAsync(ifsc, ct));
 

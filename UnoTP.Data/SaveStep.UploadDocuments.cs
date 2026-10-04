@@ -78,7 +78,7 @@ internal static partial class Sections
             {
                 at.AppNo, HolderType = holderType, code?.TypeCode, code?.SubTypeCode, code?.TypeName, code?.SubTypeName,
                 FileName = Cut(d.Doc.FileName, 250),
-                FilePath = d.Doc.Before ? null : DmsPaths.Under(dmsRoot, at.AppNo, d.HolderType, d.DocType, d.Doc.FileName),
+                FilePath = d.Doc.Before ? null : DmsPaths.Under(dmsRoot, at.AppNo, d.Doc.FileName),
                 Folio = FolioOf(d.HolderType, at, upload),
                 Sequence = NextSequence(sequences, holderType, code?.TypeCode ?? d.DocType),
                 // A document that came over from the folio or the step before was not uploaded here.

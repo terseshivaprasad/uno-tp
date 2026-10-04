@@ -139,7 +139,8 @@ public sealed class DepositForm
 }
 
 /// <summary>FD Configuration: the deposit as configured, the rate card it is offered from, and what the backend quotes for it.</summary>
-public sealed class DepositViewModel(DocumentsViewModel docs, DepositForm form, RateTable rates, DepositQuote? quote,
+/// <param name="publicRates">The public category's card at the same amount, which a senior citizen's or a women's rate is compared with.</param>
+public sealed class DepositViewModel(DocumentsViewModel docs, DepositForm form, RateTable rates, RateTable publicRates, DepositQuote? quote,
     SourceOfFundsCheck sourceOfFunds, IReadOnlyDictionary<string, string> problems)
 {
     public DocumentsViewModel Docs { get; } = docs;
@@ -181,8 +182,10 @@ public sealed class DepositViewModel(DocumentsViewModel docs, DepositForm form, 
 
     /// <summary>
     /// The banner at the foot of the quote for a senior citizen or women's category:
-    /// what the rate includes over the public rate. Null for the public category, an
-    /// employee category, or one not chosen yet.
+    /// what its rate comes to over the public rate, for the tenure and payout chosen.
+    /// The two cards are compared row for row, so a benefit that starts at a longer
+    /// tenure shows only from there. Null for the public category, an employee
+    /// category, one not chosen yet, or where the rate is no higher than the public one.
     /// </summary>
     public string? ExtraRateBanner
     {
@@ -192,8 +195,13 @@ public sealed class DepositViewModel(DocumentsViewModel docs, DepositForm form, 
             if (category is null) return null;
             if (category.Employee) return null;
             if (!category.Senior && !category.Women) return null;
-            if (category.ExtraRate <= 0) return null;
-            return $"{category.Name} rate: includes an additional {category.ExtraRate:0.00}% a year over the public rate.";
+
+            var own = Rates.Row(Form.TenureMonths, Form.InterestPayout);
+            var open = publicRates.Row(Form.TenureMonths, Form.InterestPayout);
+            if (own is null || open is null) return null;
+            var extra = own.Rate - open.Rate;
+            if (extra <= 0) return null;
+            return $"{category.Name} rate: includes an additional {extra:0.00}% a year over the public rate.";
         }
     }
 

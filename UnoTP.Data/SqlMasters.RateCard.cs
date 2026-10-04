@@ -7,7 +7,8 @@ public sealed partial class SqlMasters
 {
     // ----- The rate card: t_FD_BOTC_SCHEME ---------------------------------------------
     //
-    // The FD system's own rate card, read by MasterQueries.RateCard. A row is one scheme code:
+    // The FD system's own rate cards, read by MasterQueries.RateCard (a branch user's)
+    // and MasterQueries.RateCardForPartners (a partner's). A row is one scheme code:
     // a category, mode (MODE_STATUS: a fresh application or a renewal), scheme, tenure
     // and interest frequency, for deposits from MINIMUM_AMOUNT to MAXIMUM_AMOUNT, in
     // effect from FROM_DATE to TO_DATE (no TO_DATE: still in effect).
@@ -41,7 +42,7 @@ public sealed partial class SqlMasters
 
         await using var connection = await db.OpenAsync(ct);
         var rows = await connection.QueryAsync<SchemeRow>($"""
-            SELECT * FROM ({MasterQueries.RateCard}) r
+            SELECT * FROM ({RateCardOf(request.BranchUser)}) r
             WHERE r.Category IN (@Category, @Fallback) AND r.Mode = @Mode
               AND r.FromDate <= @Today AND (r.ToDate IS NULL OR r.ToDate >= @Today)
             ORDER BY CASE WHEN r.Category = @Category THEN 0 ELSE 1 END, r.FromDate DESC, r.SchemeId DESC
@@ -73,6 +74,32 @@ public sealed partial class SqlMasters
             }
         }
         return ordered;
+    }
+
+    // The card a deposit is read off: a branch user's, or a partner's.
+    private static string RateCardOf(bool branchUser)
+    {
+        if (branchUser) return MasterQueries.RateCard;
+        return MasterQueries.RateCardForPartners;
+    }
+
+    // One row is enough: the card may hold the same scheme more than once over time,
+    // and only a row in effect today counts.
+    public async Task<bool> OnRateCardAsync(SchemeCheck check, CancellationToken ct = default)
+    {
+        await using var connection = await db.OpenAsync(ct);
+        var rows = await connection.ExecuteScalarAsync<int>($"""
+            SELECT COUNT(*) FROM ({RateCardOf(check.BranchUser)}) r
+            WHERE r.Category = @Category AND r.Mode = @Mode
+              AND r.Scheme = @Scheme AND r.InterestFreq = @InterestFreq
+              AND r.TenureMonths = @TenureMonths AND r.Rate = @Rate
+              AND r.MinAmount <= @Amount AND (r.MaxAmount IS NULL OR r.MaxAmount >= @Amount)
+              AND r.FromDate <= @Today AND (r.ToDate IS NULL OR r.ToDate >= @Today)
+            """, new
+        {
+            check.Category, check.Mode, check.Scheme, check.InterestFreq, check.TenureMonths, check.Rate, check.Amount, DateTime.Today,
+        });
+        return rows > 0;
     }
 
     // The payout a row of the card is: the one whose code is the row's interest

@@ -211,7 +211,8 @@ public sealed record PanCard(string? IdNumber, string? NameOnCard, string? DateO
 /// <param name="QrOutput">Decoded from the QR code, which UIDAI signs, when there is one.</param>
 public sealed record AadhaarExtraction(AadhaarCard? ExtractionOutput, AadhaarCard? QrOutput);
 
-public sealed record AadhaarCard(string? IdNumber, string? NameOnCard, string? Address, string? Gender = null, string? DateOfBirth = null);
+/// <param name="Pincode">The PIN code, which IDfy gives apart from the address on every proof.</param>
+public sealed record AadhaarCard(string? IdNumber, string? NameOnCard, string? Address, string? Gender = null, string? DateOfBirth = null, string? Pincode = null);
 
 /// <param name="IsAMatch">IDfy's decision: whether the two faces are the same person.</param>
 /// <param name="MatchScore">How alike they are.</param>
@@ -232,9 +233,9 @@ public sealed record FaceImage(bool? FaceDetected, string? FaceQuality);
 /// <param name="Validity">When the licence runs out, keyed by category (non_transport, transport); "" where it has none.</param>
 public sealed record DrivingLicenceCard(
     string? IdNumber, string? NameOnCard, string? Address, string? DateOfBirth = null, string? DateOfValidity = null,
-    IReadOnlyDictionary<string, string?>? IssueDates = null, IReadOnlyDictionary<string, string?>? Validity = null);
+    IReadOnlyDictionary<string, string?>? IssueDates = null, IReadOnlyDictionary<string, string?>? Validity = null, string? Pincode = null);
 
-public sealed record PassportPage(string? FileNumber, string? NameOnCard, string? Address, string? DateOfBirth = null, string? PassportNumber = null, string? DateOfExpiry = null);
+public sealed record PassportPage(string? FileNumber, string? NameOnCard, string? Address, string? DateOfBirth = null, string? PassportNumber = null, string? DateOfExpiry = null, string? Pincode = null);
 
 /// <summary>IDfy's cheque output (ind_cheque), field for field.</summary>
 /// <param name="DateOfIssue">The date written on the cheque; empty when none is.</param>
@@ -245,7 +246,7 @@ public sealed record ChequeLeaf(
     string? DateOfIssue, string? IfscCode, bool? IsScanned, string? MicrChequeNumber, string? MicrCode);
 
 /// <param name="IdNumber">The EPIC number, which IDfy may return partly masked, as T*****0275.</param>
-public sealed record VoterIdCard(string? IdNumber, string? NameOnCard, string? Address, string? DateOfBirth = null);
+public sealed record VoterIdCard(string? IdNumber, string? NameOnCard, string? Address, string? DateOfBirth = null, string? Pincode = null);
 
 /// <summary>What a verify-with-source call found.</summary>
 /// <param name="Status">IDfy's id_found or id_not_found.</param>

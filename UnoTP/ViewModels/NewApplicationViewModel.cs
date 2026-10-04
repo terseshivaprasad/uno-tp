@@ -161,7 +161,11 @@ public partial class NewApplicationViewModel(IInvestorApi investors, UnoTP.Infra
         if (PanError is not null || DobError is not null) return false;
 
         var onRecord = await investors.FolioDepositsByPanAsync(Pan);
-        var byPan = FolioCheck.ByPan(Pan, Dob, onRecord, today);
+        // A PAN with no deposit is looked for in the folio master too, as a first
+        // holder, so that nobody who already has a folio goes on as new. Proceed runs
+        // this check again, so it holds there as well.
+        var folioOnMaster = onRecord.Count == 0 ? await investors.FolioOfFirstHolderAsync(Pan) : "";
+        var byPan = FolioCheck.ByPan(Pan, Dob, onRecord, today, folioOnMaster);
 
         if (byPan.Problem is not null)
         {
@@ -170,6 +174,9 @@ public partial class NewApplicationViewModel(IInvestorApi investors, UnoTP.Infra
             // against, and only Operations can put one on the record.
             if (byPan.Problem == FolioCheck.NoDob) OpsError = NoDob(Pan, byPan.Folio);
             if (byPan.Folios is { } folios) OpsError = ManyFolios(Pan, folios);
+            if (byPan.Problem == FolioCheck.ExistingHolder)
+                OpsError = $"The folio master holds PAN {Pan} as the first holder of folio {byPan.Folio}, but no deposit of theirs was found on it. "
+                    + "Operations has to look at the record before a deposit can be booked.";
             return false;
         }
 

@@ -67,8 +67,8 @@ public class DocumentsController(
     {
         if (await LoadAsync() is not { } model) return NotFound();
         var doc = model.State.Docs.GetValueOrDefault(slot);
-        if (doc is null || doc.Before || model.DmsOf(slot) is not { } at) return NotFound();
-        var copy = await documents.CopyAsync(model.AppNo, at.Holder, at.Slot);
+        if (doc is null || doc.Before) return NotFound();
+        var copy = await documents.CopyAsync(model.AppNo, doc.FileName);
         if (copy is null) return NotFound();
         Response.Headers.CacheControl = "no-store";
         Response.Headers["X-Content-Type-Options"] = "nosniff";
@@ -150,10 +150,6 @@ public class DocumentsController(
         {
             model.Said = new Flash { Banner = "This application changed somewhere else while that was being sent, so it was not kept. The page shows it as it stands now — do it again." };
             at = null;
-        }
-        else
-        {
-            await model.SettleAsync();
         }
         if (model.Said is not null) TempData[FlashKey(model)] = JsonSerializer.Serialize(model.Said);
         return model.Complete && model.Said is null

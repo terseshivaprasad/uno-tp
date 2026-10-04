@@ -1,12 +1,18 @@
-using System.Text.Json;
+using System.Globalization;
 using Dapper;
 using UnoTP.Models;
 
 namespace UnoTP.Data;
 
 /// <summary>
-/// Where a filed copy is kept: under the store's root (Dms:Root), at {appNo}/{holder}/{slot}{extension}.
-/// The store files it there, and t_FD_BT_KYC_document records it in full, root and all (f_Doc_Filepath).
+/// Where a filed copy is kept, and what it is called. Each copy is a file of its own
+/// in its application's folder under the store's root (Dms:Root):
+///
+///   a holder with no folio   {ApplNo}_{HolderType}_{DocSubType}_{yyyyMMddHHmmssfff}.ext
+///   a holder on a folio      {Folio}_{ApplNo}_{HolderType}_{DocSubType}_{yyyyMMddHHmmssfff}.ext
+///
+/// The time in the name makes every upload a new file, so nothing is overwritten.
+/// t_FD_BT_KYC_document records the name (f_Doc_FileName) and the full path (f_Doc_Filepath).
 /// </summary>
 public static class DmsPaths
 {
@@ -18,13 +24,24 @@ public static class DmsPaths
         return Path.GetFullPath(configured);
     }
 
-    /// <summary>Where a document is kept in full: the root, then application / holder / slot.</summary>
-    public static string Under(string root, string appNo, string holder, string slot, string fileName) =>
-        Path.GetFullPath(Path.Combine(root, Of(appNo, holder, slot, fileName)));
+    /// <summary>The name a copy is filed under. The extension is the uploaded file's own.</summary>
+    /// <param name="folio">The holder's folio; empty for a holder with none, and then left out of the name.</param>
+    /// <param name="subType">The document's sub-type code, as the document master has it.</param>
+    /// <param name="filedAt">When it is filed, to the millisecond.</param>
+    public static string FileName(string folio, string appNo, string holderType, string subType, DateTime filedAt, string uploadedName)
+    {
+        var parts = new List<string>();
+        if (folio.Trim().Length > 0) parts.Add(SafePathSegment(folio.Trim()));
+        parts.Add(SafePathSegment(appNo));
+        parts.Add(SafePathSegment(holderType));
+        parts.Add(SafePathSegment(subType));
+        parts.Add(filedAt.ToString("yyyyMMddHHmmssfff", CultureInfo.InvariantCulture));
+        return string.Join("_", parts) + Extension(uploadedName);
+    }
 
-    /// <summary>Where a document is kept under the root: application / holder / slot, with the file's own extension.</summary>
-    public static string Of(string appNo, string holder, string slot, string fileName) =>
-        $"{SafePathSegment(appNo)}/{SafePathSegment(holder)}/{SafePathSegment(slot)}{Extension(fileName)}";
+    /// <summary>Where a copy is kept in full: the root, the application's folder, the file.</summary>
+    public static string Under(string root, string appNo, string fileName) =>
+        Path.GetFullPath(Path.Combine(root, SafePathSegment(appNo), SafePathSegment(fileName)));
 
     // The uploaded file's own extension, so the copy opens as what it is.
     private static string Extension(string fileName) =>
@@ -39,66 +56,50 @@ public static class DmsPaths
 }
 
 /// <summary>
-/// DMS, until the real one is wired in: each copy is a file under Dms:Root at
-/// <see cref="DmsPaths.Of"/>, with its name and type beside it. A refused copy is
-/// kept aside under Dms:Root/refused for a week. Only the partner's own
-/// application's copies are touched.
+/// DMS, until the real one is wired in: each copy is a file of its own under
+/// Dms:Root, in its application's folder, named by <see cref="DmsPaths.FileName"/>.
+/// Nothing filed is replaced or deleted. A refused copy is kept aside under
+/// Dms:Root/refused for a week. Only the partner's own application's copies are touched.
 /// </summary>
-public sealed class FileDocuments(Db db, IPartner partner, IConfiguration config) : IDocumentApi
+public sealed class FileDocuments(Db db, IPartner partner, SqlReference reference, IConfiguration config) : IDocumentApi
 {
     private readonly string root = DmsPaths.Root(config);
 
-    /// <summary>What is kept beside a stored file: its original name and content type.</summary>
-    private sealed record Meta(string FileName, string ContentType);
-
-    // A slot holds one copy: whatever was filed there before goes first.
-    public async Task FileAsync(string appNo, string holder, string slot, UploadFile file, CancellationToken ct = default)
+    public async Task<string> FileAsync(string appNo, DocumentLabel label, UploadFile file, CancellationToken ct = default)
     {
         if (!await MineAsync(appNo, ct)) throw new InvalidOperationException($"Application {appNo} is not the partner's: nothing filed.");
-        foreach (var old in CopiesIn(appNo, holder, slot)) Remove(old);
-        var path = DmsPaths.Under(root, appNo, holder, slot, file.FileName);
+
+        var name = DmsPaths.FileName(label.Folio, appNo, label.HolderType, await SubTypeOfAsync(label.Document, ct), DateTime.Now, file.FileName);
+        var path = DmsPaths.Under(root, appNo, name);
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         await File.WriteAllBytesAsync(path, file.Bytes, ct);
-        await File.WriteAllTextAsync(path + ".json", JsonSerializer.Serialize(new Meta(file.FileName, file.ContentType)), ct);
+        return name;
     }
 
-    // Deleting a copy that is not there is not a failure.
-    public async Task DeleteAsync(string appNo, string holder, string slot, CancellationToken ct = default)
+    // The sub-type code the document master files a document under; the document's
+    // own name where the master does not list it.
+    private async Task<string> SubTypeOfAsync(string document, CancellationToken ct)
     {
-        if (await MineAsync(appNo, ct)) CopiesIn(appNo, holder, slot).ToList().ForEach(Remove);
+        var codes = await reference.DocumentCodesAsync(ct);
+        if (codes.TryGetValue(document, out var code)) return code.SubTypeCode;
+        return document;
     }
 
     public async Task<RefusedCopy> KeepRefusedAsync(string appNo, string holder, string slot, UploadFile file, CancellationToken ct = default)
     {
-        var reference = "REJ-" + DateTime.UtcNow.ToString("yyMMddHHmmssfff");
-        var dir = Path.Combine(root, "refused", reference);
+        var keptAs = "REJ-" + DateTime.UtcNow.ToString("yyMMddHHmmssfff");
+        var dir = Path.Combine(root, "refused", keptAs);
         Directory.CreateDirectory(dir);
         await File.WriteAllBytesAsync(Path.Combine(dir, DmsPaths.SafePathSegment(file.FileName)), file.Bytes, ct);
-        return new RefusedCopy(reference, DateTime.Today.AddDays(7));
+        return new RefusedCopy(keptAs, DateTime.Today.AddDays(7));
     }
 
-    public async Task<UploadFile?> CopyAsync(string appNo, string holder, string slot, CancellationToken ct = default)
+    public async Task<UploadFile?> CopyAsync(string appNo, string fileName, CancellationToken ct = default)
     {
-        if (!await MineAsync(appNo, ct) || CopiesIn(appNo, holder, slot).FirstOrDefault() is not { } path) return null;
-        var meta = File.Exists(path + ".json") ? JsonSerializer.Deserialize<Meta>(await File.ReadAllTextAsync(path + ".json", ct)) : null;
-        return new UploadFile(meta?.FileName ?? Path.GetFileName(path), meta?.ContentType ?? "application/octet-stream", await File.ReadAllBytesAsync(path, ct));
-    }
-
-    // The copy in a slot, whatever its extension.
-    private IEnumerable<string> CopiesIn(string appNo, string holder, string slot)
-    {
-        var dir = Path.Combine(root, DmsPaths.SafePathSegment(appNo), DmsPaths.SafePathSegment(holder));
-        var name = DmsPaths.SafePathSegment(slot);
-        return Directory.Exists(dir)
-            ? Directory.EnumerateFiles(dir).Where(f => !f.EndsWith(".json", StringComparison.Ordinal)
-                && (Path.GetFileNameWithoutExtension(f) == name || Path.GetFileName(f) == name))
-            : [];
-    }
-
-    private static void Remove(string path)
-    {
-        File.Delete(path);
-        File.Delete(path + ".json");
+        if (!await MineAsync(appNo, ct)) return null;
+        var path = DmsPaths.Under(root, appNo, fileName);
+        if (!File.Exists(path)) return null;
+        return new UploadFile(Path.GetFileName(path), "application/octet-stream", await File.ReadAllBytesAsync(path, ct));
     }
 
     private async Task<bool> MineAsync(string appNo, CancellationToken ct)

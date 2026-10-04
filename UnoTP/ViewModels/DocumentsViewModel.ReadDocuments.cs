@@ -44,17 +44,32 @@ public partial class DocumentsViewModel
         if (answer.Confirmed && answer.Standing.Length > 0 && !answer.Standing.Equals("Active", StringComparison.OrdinalIgnoreCase))
             entry.Add($"{Capitalize(issuer)} holds it as {answer.Standing}.", "warn");
 
-        // An Aadhaar has no issuer to confirm its address with, so the address OCR
-        // read off it is the one the application takes: the copy has already been
-        // identified as an Aadhaar and read, and its number checked against the PAN.
-        if (issuer.Length == 0 && type == "Aadhaar" && reading.Address.Trim().Length > 0)
+        // The address the copy reads is the one the application takes, confirmed or
+        // not: a permanent address and its PIN code are needed either way. Who
+        // confirmed it, or why nobody did, stands beside it for Operations.
+        // With OCR switched off nothing was read, and the address stays as it stands.
+        var read = reading.Address.Trim().Length > 0;
+        var before = mailing ? (card.Kind == "is-done" ? card.Lines : "") : AddressOf(h);
+        var took = $"Nothing was read off the copy, so the {what} on the application is unchanged.";
+        var taken = $"the {what} is left as it stands";
+        if (read)
         {
-            var carried = mailing && card.Kind != "is-done" ? "" : card.Lines;
-            (card.Lines, card.Was) = (reading.Address, carried);
+            took = before.Length > 0 && before != reading.Address
+                ? $"{Capitalize(what)} on the application replaced. Was: " + before
+                : $"{Capitalize(what)} on the application set.";
+            taken = $"the {what} is taken as read off the proof";
+            (card.Lines, card.Was) = (reading.Address, before);
+            if (!mailing) KeepAddress(h, reading.Address);
+        }
+
+        // An Aadhaar has no issuer to confirm its address with: the copy has already
+        // been identified as an Aadhaar and read, and its name and date of birth matched.
+        if (issuer.Length == 0 && type == "Aadhaar" && read)
+        {
             (card.State, card.Kind) = ("Read off the Aadhaar", "is-done");
             card.From = "Read off the Aadhaar filed above by OCR. An Aadhaar has no issuer to confirm it with, so it is taken as read.";
             entry.Add("An Aadhaar has no issuer to confirm that address with: it is taken as OCR read it.", "ok");
-            entry.Add(carried.Length > 0 ? $"{Capitalize(what)} on the application replaced. Was: " + carried : $"{Capitalize(what)} on the application set.", "ok");
+            entry.Add(took, "ok");
             entry.End("Filed", "ok");
             return ($"Identified and read. The {what} on the application now comes from this Aadhaar, as OCR read it.", "ok");
         }
@@ -66,37 +81,54 @@ public partial class DocumentsViewModel
             // "An Aadhaar", "a passport": the proof as a sentence names it.
             var aProof = type == "Aadhaar" ? "an Aadhaar" : $"a {named}";
             (card.State, card.Kind) = ("With Operations", "is-failed");
-            card.From = $"{Capitalize(aProof)} has no issuer to check with, so the {what} is left as it stands for Operations to settle.";
+            card.From = $"{Capitalize(aProof)} has no issuer to check with, so {taken}, for Operations to settle.";
             entry.Add($"{Capitalize(aProof)} has no register behind it to put that address to.", "warn");
-            entry.End($"Filed, {what} unchanged", "warn");
-            return ($"Read, but nothing outside answers for {aProof}. The copy is filed and Operations settle the {what}; the application keeps the one it carries until they do.", "warn");
+            entry.Add(took, "ok");
+            entry.End($"Filed, {what} not confirmed", "warn");
+            return ($"Read, but nothing outside answers for {aProof}. The copy is filed and {taken}; Operations settle it.", "warn");
         }
 
         if (answer.NotAsked is { } why)
         {
             (card.State, card.Kind) = ("With Operations", "is-failed");
-            card.From = $"{Capitalize(issuer)} could not be asked: {why}. The {what} is left as it stands for Operations to settle.";
+            card.From = $"{Capitalize(issuer)} could not be asked: {why}. {Capitalize(taken)}, for Operations to settle.";
             entry.Add($"{Capitalize(issuer)} not asked: {why}.", "warn");
-            entry.End($"Filed, {what} unchanged", "warn");
-            return ($"Read, but {issuer} could not be asked: {why}. The copy is filed and Operations settle the {what}; the application keeps the one it carries until they do.", "warn");
+            entry.Add(took, "ok");
+            entry.End($"Filed, {what} not confirmed", "warn");
+            return ($"Read, but {issuer} could not be asked: {why}. The copy is filed and {taken}; Operations settle it.", "warn");
         }
         if (!answer.Confirmed)
         {
             (card.State, card.Kind) = ("Not confirmed", "is-failed");
-            card.From = $"{issuer} did not confirm the address on this proof, so the application keeps the {what} it carries. Upload a clearer copy, or a different proof.";
-            entry.Add($"{issuer} did not confirm that address.", "bad");
-            entry.End($"Filed, {what} unchanged", "warn");
-            return ($"Read, but {issuer} did not confirm what it says. The copy is filed and the application keeps the {what} it carries — upload a clearer copy, or another proof.", "bad");
+            card.From = $"{issuer} did not confirm this proof. {Capitalize(taken)}, unconfirmed: upload a clearer copy or a different proof, or Operations settle it.";
+            entry.Add($"{issuer} did not confirm that proof.", "bad");
+            entry.Add(took, "warn");
+            entry.End($"Filed, {what} not confirmed", "warn");
+            return ($"Read, but {issuer} did not confirm what it says. The copy is filed and {taken}, unconfirmed — upload a clearer copy, or another proof.", "bad");
         }
-        // A communication address read for the first time replaces nothing.
-        var before = mailing && card.Kind != "is-done" ? "" : card.Lines;
-        (card.Lines, card.Was) = (reading.Address, before);
         (card.State, card.Kind) = ($"Verified with {issuer}", "is-done");
         card.From = $"Read off the {named} filed above and confirmed with {issuer}.";
-        entry.Add($"{issuer} confirmed that address.", "ok");
-        entry.Add(before.Length > 0 ? $"{Capitalize(what)} on the application replaced. Was: " + before : $"{Capitalize(what)} on the application set.", "ok");
+        entry.Add($"{issuer} confirmed that proof.", "ok");
+        entry.Add(took, "ok");
         entry.End("Filed", "ok");
         return ($"Identified, read and confirmed with {issuer}. The {what} on the application now comes from this proof.", "ok");
+    }
+
+    // The permanent address a holder has on the application: the one read off the
+    // proof of address filed here, or the one on record for a holder on a folio.
+    private string AddressOf(DocHolder h)
+    {
+        var read = h.Joint ? State.Joint[h.Code].Address : State.Address;
+        if (read.Length > 0) return read;
+        return h.Who.Address;
+    }
+
+    // Keeps the address read off a holder's proof of address, PIN code and all, for
+    // their permanent address row.
+    private void KeepAddress(DocHolder h, string address)
+    {
+        if (h.Joint) State.Joint[h.Code].Address = address.Trim();
+        else State.Address = address.Trim();
     }
 
     // A cheque carries an account rather than an address, and it is the bank it is

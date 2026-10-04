@@ -112,7 +112,7 @@ public sealed partial class SqlReference(Db db, IMemoryCache cache) : IReference
 
         return new ReferenceData(
             ApplicationTypes: Options("applicationTypes"),
-            Categories: Of("categories").Select(e => Attrs(e, a => new CategoryOption(e.Code, e.Name, ReadBool(a, "employee"), ReadBool(a, "women"), ReadBool(a, "senior"), ReadDecimal(a, "extraRate")))).ToList(),
+            Categories: Of("categories").Select(e => Attrs(e, a => new CategoryOption(e.Code, e.Name, ReadBool(a, "employee"), ReadBool(a, "women"), ReadBool(a, "senior")))).ToList(),
             PaymentModes: Of("paymentModes").Select(e => Attrs(e, a => new PaymentModeOption(e.Name, ReadString(a, "document")))).ToList(),
             SourcingModes: Of("sourcingModes").Select(e => Attrs(e, a => new SourcingModeOption(e.Code, e.Name,
                 ReadString(a, "codeLabel") ?? "", ReadString(a, "nameLabel") ?? "", ReadString(a, "house") ?? "", ReadString(a, "search") ?? "",

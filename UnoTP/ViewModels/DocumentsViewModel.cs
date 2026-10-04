@@ -270,10 +270,6 @@ public partial class DocumentsViewModel(
     // the application and file as not holder-specific.
     private static string FiledUnder(SlotDef def, DocHolder h) => HolderSlots.Contains(def) ? h.Code : HolderType.None;
 
-    /// <summary>Where DMS holds the copy behind a slot's key: its holder type and slot.</summary>
-    public (string Holder, string Slot)? DmsOf(string key) =>
-        Locate(key) is { } found ? (FiledUnder(found.Def, found.Holder), found.Def.Key) : null;
-
     // The same masking the register uses: a PAN keeps its first five and last
     // character, a date of birth only its year.
     /// <summary>
@@ -401,20 +397,16 @@ public partial class DocumentsViewModel(
     /// <summary>Set once Proceed finds everything in: the post moves on to Investor Information.</summary>
     public bool Complete { get; private set; }
 
-    // The copies this post took off the application, as DMS holds them. DMS follows
-    // once the save that takes them off has gone through (see SettleAsync).
-    private readonly HashSet<(string Holder, string Slot)> dropped = [];
-
-    /// <summary>Takes a document off the application; a copy that was already filed is deleted from DMS once the save goes through.</summary>
+    /// <summary>Takes a document off the application. Its copy stays in DMS, where nothing filed is deleted.</summary>
     private void TakeOffApplication(string key)
     {
-        if (DmsOf(key) is { } at && State.Docs.Remove(key, out var doc) && !doc.Before) dropped.Add(at);
-    }
-
-    /// <summary>Brings DMS in line with what was just saved: the copies taken off are deleted.</summary>
-    public async Task SettleAsync()
-    {
-        foreach (var (holder, slot) in dropped) await documents.DeleteAsync(AppNo, holder, slot);
+        State.Docs.Remove(key);
+        // The address read off a proof of address goes with the proof.
+        if (key == PoaSlot.Key) State.Address = "";
+        foreach (var joint in State.Joint)
+        {
+            if (key == $"h{joint.Key}-{PoaSlot.Key}") joint.Value.Address = "";
+        }
     }
 
     // ===== What the form posts ================================================

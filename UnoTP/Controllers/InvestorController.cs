@@ -499,8 +499,7 @@ public class InvestorController(
     private async Task<bool> SaveAsync(DocumentsViewModel docs)
     {
         var saved = await applications.SaveUploadAsync(docs.AppNo, docs.App.Version, docs.State) is not null;
-        if (saved) await docs.SettleAsync();
-        else docs.Said = new Flash { Banner = Changed };
+        if (!saved) docs.Said = new Flash { Banner = Changed };
         if (docs.Said is not null) TempData[FlashKey(docs)] = JsonSerializer.Serialize(docs.Said);
         return saved;
     }

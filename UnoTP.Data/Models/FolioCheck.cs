@@ -20,6 +20,7 @@ public static class FolioCheck
     public const string NoDob = "DOB is not updated for Existing Folio.";
     public const string DobMismatch = "The DOB for the existing folio does not match the DOB provided for the search.";
     public const string ManyFolios = "Multiple folios found against the provided PAN. Please check with Mahindra Finance Fixed Deposit Team.";
+    public const string ExistingHolder = "A folio is already held against the provided PAN, so the investor cannot go on as new. Please check with Mahindra Finance Fixed Deposit Team.";
 
     /// <summary>What a check found.</summary>
     /// <param name="Folio">The folio found; empty when the investor has none.</param>
@@ -29,10 +30,15 @@ public static class FolioCheck
     public sealed record Answer(string Folio, string? Problem = null, bool AboutDob = false, IReadOnlyList<string>? Folios = null);
 
     /// <summary>A search by PAN and date of birth (dd-MM-yyyy), with the deposits the PAN is the first holder of.</summary>
-    public static Answer ByPan(string pan, string dob, IReadOnlyList<FolioDeposit> deposits, DateOnly today)
+    /// <param name="folioOnMaster">The folio the folio master holds the PAN as first holder of, where it has no deposit; empty for none.</param>
+    public static Answer ByPan(string pan, string dob, IReadOnlyList<FolioDeposit> deposits, DateOnly today, string folioOnMaster = "")
     {
         // A PAN that is not a person's is not allowed, with a folio or without.
         if (!IsIndividual(pan)) return new Answer(deposits.Count > 0 ? deposits[0].Folio : "", NonIndividual);
+
+        // No deposit against the PAN, but the folio master holds them as a first
+        // holder: an existing holder, who is not taken as new.
+        if (deposits.Count == 0 && folioOnMaster.Length > 0) return new Answer(folioOnMaster, ExistingHolder);
 
         // No folio against the PAN: a new investor.
         if (deposits.Count == 0) return new Answer("");

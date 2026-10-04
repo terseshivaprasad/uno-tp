@@ -24,6 +24,9 @@ public sealed class FeatureFlags
     /// <summary>Application status. Off while it is rebuilt.</summary>
     public bool ApplicationStatus { get; set; }
 
+    /// <summary>FD Calculator. Off while it is under development.</summary>
+    public bool FdCalculator { get; set; }
+
     /// <summary>Renew FD. Off until it is built.</summary>
     public bool RenewFd { get; set; }
 
@@ -52,6 +55,7 @@ public sealed class FeatureFlags
         "view-app" => ViewApplication,
         "short-url" => ShortUrl,
         "app-status" => ApplicationStatus,
+        "fd-calc" => FdCalculator,
         "renew" => RenewFd,
         "admin" => Admin,
         _ => true,

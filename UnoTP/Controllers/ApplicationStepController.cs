@@ -40,10 +40,24 @@ public abstract class ApplicationStepController(IApplicationApi applications, ID
     /// standing quoteAmount before one is entered. Whose card - the category, the
     /// holder's gender, purchase or renewal - the application says.
     /// </summary>
-    protected async Task<RateTable> RateTableAsync(DocumentsViewModel docs, long amount)
+    protected Task<RateTable> RateTableAsync(DocumentsViewModel docs, long amount) =>
+        RateTableAsync(docs, docs.State.Category, amount);
+
+    /// <summary>
+    /// The public category's card at the same amount: what a senior citizen's or a
+    /// women's rate is compared with, row for row. The public category is the one
+    /// that is not for employees, women or senior citizens.
+    /// </summary>
+    protected Task<RateTable> PublicRateTableAsync(DocumentsViewModel docs, long amount)
+    {
+        var open = docs.Ref.Categories.FirstOrDefault(c => !c.Employee && !c.Women && !c.Senior);
+        return RateTableAsync(docs, open?.Code ?? docs.State.Category, amount);
+    }
+
+    private async Task<RateTable> RateTableAsync(DocumentsViewModel docs, string category, long amount)
     {
         if (amount <= 0) amount = docs.Config.QuoteAmount;
-        var card = await deposits.RatesAsync(docs.App.RateCardRequest(docs.State.Category));
+        var card = await deposits.RatesAsync(docs.App.RateCardRequest(category, docs.BranchUser));
         return new RateTable(card, docs.Ref, amount);
     }
 
@@ -84,7 +98,7 @@ public abstract class ApplicationStepController(IApplicationApi applications, ID
         if (deposit.Amount <= 0) return null;
         var rates = await RateTableAsync(docs, deposit.Amount);
         if (rates.Row(deposit.TenureMonths, deposit.Payout) is null) return null;
-        return await deposits.QuoteAsync(new QuoteRequest(deposit.Amount, deposit.TenureMonths, deposit.Payout, docs.App.RateCardRequest(docs.State.Category)));
+        return await deposits.QuoteAsync(new QuoteRequest(deposit.Amount, deposit.TenureMonths, deposit.Payout, docs.App.RateCardRequest(docs.State.Category, docs.BranchUser)));
     }
 
     // What a post found, said once on the page it redirects to.

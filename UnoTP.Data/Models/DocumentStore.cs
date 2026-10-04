@@ -5,18 +5,14 @@ namespace UnoTP.Models;
 /// checks a copy goes through first - identification, masking, OCR, verification,
 /// the PAN-Aadhaar link - are services of their own (see the External folder).
 ///
-/// A document is filed under a holder type and a slot: a KYC document - the PAN
-/// copy, the photograph, the proof of address - under the holder it belongs to,
-/// and everything else under <see cref="HolderType.None"/>.
+/// Every copy is filed as a file of its own, named after the application, the
+/// holder and the document (see <see cref="DocumentLabel"/>). Nothing is replaced
+/// or deleted: a copy filed again leaves the earlier one where it is, for audit.
 /// </summary>
 public interface IDocumentApi
 {
-    /// <summary>Files a copy against the holder's slot. A slot holds one copy:
-    /// one filed before is deleted first (see <see cref="DeleteAsync"/>).</summary>
-    Task FileAsync(string appNo, string holder, string slot, UploadFile file, CancellationToken ct = default);
-
-    /// <summary>Deletes the copy filed against the holder's slot, if there is one.</summary>
-    Task DeleteAsync(string appNo, string holder, string slot, CancellationToken ct = default);
+    /// <summary>Files a copy as a new file on the application, and gives back the name it is kept under.</summary>
+    Task<string> FileAsync(string appNo, DocumentLabel label, UploadFile file, CancellationToken ct = default);
 
     /// <summary>
     /// Keeps a refused copy aside for analysis, off the application, and says the
@@ -24,9 +20,16 @@ public interface IDocumentApi
     /// </summary>
     Task<RefusedCopy> KeepRefusedAsync(string appNo, string holder, string slot, UploadFile file, CancellationToken ct = default);
 
-    /// <summary>The copy filed against the holder's slot, or null.</summary>
-    Task<UploadFile?> CopyAsync(string appNo, string holder, string slot, CancellationToken ct = default);
+    /// <summary>The copy kept on the application under this name, or null.</summary>
+    Task<UploadFile?> CopyAsync(string appNo, string fileName, CancellationToken ct = default);
 }
+
+/// <summary>What a filed copy's name is made from, beside its application number.</summary>
+/// <param name="Folio">The holder's folio; empty for a holder with none.</param>
+/// <param name="HolderType">01, 02 or 03. The application's own documents go under 01, as their rows do.</param>
+/// <param name="Document">The document as the app knows it: "pan", "photo", "poa:Passport", "payment".
+/// Its sub-type code in the document master goes in the name.</param>
+public sealed record DocumentLabel(string Folio, string HolderType, string Document);
 
 /// <summary>The holder type a document is filed under, as DMS codes it.</summary>
 public static class HolderType

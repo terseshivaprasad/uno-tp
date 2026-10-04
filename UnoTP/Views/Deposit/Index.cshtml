@@ -104,6 +104,14 @@
             </div>
         }
 
+        @* What the rate card said when Proceed put the deposit to it. *@
+        @if (Model.Problem("Scheme") is { } notOnCard)
+        {
+            <div class="alert alert-danger doc-banner" role="alert">
+                <span>@notOnCard</span>
+            </div>
+        }
+
         <section class="page-card section-card" id="deposit">
             <div class="page-head" data-pin-head>
                 <h1 class="page-title">Fixed Deposit Configuration</h1>

@@ -157,6 +157,12 @@ public partial class DocumentsViewModel
     /// </summary>
     public bool Chooses => Partner.AgencyType == Config.SourcingAgency;
 
+    /// <summary>
+    /// Whether a branch user is signed in (the sourcing agency's, agency type 1033)
+    /// and not a partner: their rate card carries the employee and special schemes too.
+    /// </summary>
+    public bool BranchUser => Partner.AgencyType == Config.SourcingAgency;
+
     /// <summary>The business broker code a partner other than the sourcing agency files under.</summary>
     public string BusinessBroker => Partner.BrokerCode;
 

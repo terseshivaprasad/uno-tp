@@ -106,26 +106,26 @@ public sealed class IdfyOcr(IdfyClient idfy) : IOcrService
                 // unless it carries only part of the number, as a secure QR code does.
                 var aadhaar = (await idfy.ExtractAadhaarAsync(file, consent, ct)).Result!;
                 var card = AadhaarNumbers.IsWhole(Digits(aadhaar.QrOutput?.IdNumber)) ? aadhaar.QrOutput : aadhaar.ExtractionOutput;
-                return new OcrReading(Name: card?.NameOnCard ?? "", Address: card?.Address ?? "",
+                return new OcrReading(Name: card?.NameOnCard ?? "", Address: WithPin(card?.Address, card?.Pincode),
                     IdNumber: Digits(card?.IdNumber), Gender: Genders.Of(card?.Gender ?? aadhaar.ExtractionOutput?.Gender),
                     Dob: Dobs.Of(card?.DateOfBirth ?? aadhaar.ExtractionOutput?.DateOfBirth), Number: Digits(card?.IdNumber));
 
             case "ind_driving_license":
                 var licence = (await idfy.ExtractDrivingLicenceAsync(file, ct)).Result!.ExtractionOutput;
-                return new OcrReading(Name: licence?.NameOnCard ?? "", Address: licence?.Address ?? "",
+                return new OcrReading(Name: licence?.NameOnCard ?? "", Address: WithPin(licence?.Address, licence?.Pincode),
                     IdNumber: licence?.IdNumber ?? "", Dob: Dobs.Of(licence?.DateOfBirth),
                     Number: licence?.IdNumber ?? "", Expiry: LicenceExpiry(licence));
 
             case "ind_passport":
                 // A passport is verified by its file number, not its passport number.
                 var passport = (await idfy.ExtractPassportAsync(file, ct)).Result!.ExtractionOutput;
-                return new OcrReading(Name: passport?.NameOnCard ?? "", Address: passport?.Address ?? "",
+                return new OcrReading(Name: passport?.NameOnCard ?? "", Address: WithPin(passport?.Address, passport?.Pincode),
                     IdNumber: passport?.FileNumber ?? "", Dob: Dobs.Of(passport?.DateOfBirth),
                     Number: passport?.PassportNumber ?? "", Expiry: Dobs.Of(passport?.DateOfExpiry));
 
             case "ind_voter_id":
                 var voter = (await idfy.ExtractVoterIdAsync(file, ct)).Result!.ExtractionOutput;
-                return new OcrReading(Name: voter?.NameOnCard ?? "", Address: voter?.Address ?? "",
+                return new OcrReading(Name: voter?.NameOnCard ?? "", Address: WithPin(voter?.Address, voter?.Pincode),
                     IdNumber: voter?.IdNumber ?? "", Dob: Dobs.Of(voter?.DateOfBirth), Number: voter?.IdNumber ?? "");
 
             default:
@@ -185,6 +185,18 @@ public sealed class IdfyOcr(IdfyClient idfy) : IOcrService
     }
 
     private static string OnlyDigits(string? value) => new((value ?? "").Where(char.IsAsciiDigit).ToArray());
+
+    // An address with its PIN code at the end. IDfy gives the PIN in a field of its
+    // own, and the address it gives may or may not carry it: a passport's and a
+    // voter ID's do not. With no address read, a PIN alone is not one.
+    internal static string WithPin(string? address, string? pincode)
+    {
+        var lines = (address ?? "").Trim();
+        var pin = OnlyDigits(pincode);
+        if (lines.Length == 0 || pin.Length == 0) return lines;
+        if (lines.Replace(" ", "").Contains(pin)) return lines;
+        return lines.TrimEnd(',', ' ') + " " + pin;
+    }
 
     // An Aadhaar number is printed in groups of four.
     private static string Digits(string? number) => (number ?? "").Replace(" ", "");

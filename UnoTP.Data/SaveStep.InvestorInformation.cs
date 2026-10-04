@@ -65,8 +65,8 @@ internal static partial class Sections
             await InsertKycAsync(db, tx, at, h, who, gender, KycOf(h.Holder, upload), masters, minorUnder);
 
             // The permanent address is written even when blank: its row carries the
-            // holder's mobile and e-mail.
-            await InsertAddressAsync(db, tx, at, h, who.Folio, AddressType.Permanent, "Permanent", InThreeLines(who.Address, 100));
+            // holder's mobile and e-mail. Its PIN code goes in a column of its own.
+            await InsertAddressAsync(db, tx, at, h, who.Folio, AddressType.Permanent, "Permanent", PermanentAddress(h.Holder, who, upload));
             if (h.Communication is { } communication)
                 await InsertAddressAsync(db, tx, at, h, who.Folio, AddressType.Communication, "Mailing", communication);
         }
@@ -202,6 +202,19 @@ internal static partial class Sections
         if (answer == "yes") return true;
         if (answer == "no") return false;
         return null;
+    }
+
+    // A holder's permanent address: the one read off the proof of address filed on
+    // this application, or the one on record for a holder on a folio who filed
+    // none. Its lines go in f_Add1 to f_Add3 and its PIN code in f_AddPin.
+    private static TypedAddress PermanentAddress(string code, Holder who, UploadState? upload)
+    {
+        var address = who.Address;
+        var read = code == HolderType.Investor ? upload?.Address : upload?.Joint.GetValueOrDefault(code)?.Address;
+        if (!string.IsNullOrEmpty(read)) address = read;
+
+        var (lines, pin) = Addresses.SplitPin(address);
+        return InThreeLines(lines, 100) with { PinCode = pin };
     }
 
     // An address kept as one line, broken at its spaces into three of the column's width.

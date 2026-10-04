@@ -24,7 +24,8 @@ public class DepositController(IApplicationApi applications, IDepositApi deposit
         docs.Shown = TempData[FlashKey(docs)] is string said ? JsonSerializer.Deserialize<Flash>(said) : null;
         var quote = await QuoteAsync(docs, AmountAccepted(docs, form) ? docs.App.Deposit : null);
         var sourceOfFunds = await SourceOfFundsAsync(docs, form.AmountValue);
-        return View(new DepositViewModel(docs, form, rates, quote, sourceOfFunds, problems));
+        var publicRates = await PublicRateTableAsync(docs, form.AmountValue);
+        return View(new DepositViewModel(docs, form, rates, publicRates, quote, sourceOfFunds, problems));
     }
 
     /// <summary>
@@ -49,6 +50,8 @@ public class DepositController(IApplicationApi applications, IDepositApi deposit
         // No TDS is a claim the investor signs: the form is filed here before Proceed.
         docs.TdsFormWanted = form.NoTds;
         if (form.NoTds && docs.View(DocumentsViewModel.TdsFormSlot).Doc is null) problems["TdsForm"] = "Upload the Form 121 before proceeding, or turn the switch off";
+        // Nothing else wanting, the deposit as it stands is put to the rate card itself.
+        if (refresh is null && problems.Count == 0 && await NotOnRateCardAsync(docs, form, rates) is { } notOnCard) problems["Scheme"] = notOnCard;
         if (refresh is not null)
         {
             // Redrawn around the choice that changed; an amount that is wrong says so as it is typed.
@@ -79,10 +82,6 @@ public class DepositController(IApplicationApi applications, IDepositApi deposit
             docs.Said = new Flash { Banner = Changed };
             at = null;
         }
-        else
-        {
-            await docs.SettleAsync();
-        }
         if (docs.Said is not null) TempData[FlashKey(docs)] = JsonSerializer.Serialize(docs.Said);
         return RedirectToAction(nameof(Index), null, null, at);
     }
@@ -102,7 +101,29 @@ public class DepositController(IApplicationApi applications, IDepositApi deposit
         var rates = await RateTableAsync(docs, form.AmountValue);
         var sourceOfFunds = await SourceOfFundsAsync(docs, form.AmountValue);
         var quote = await QuoteAsync(docs, AmountAccepted(docs, form) ? form.ToDetails(sourceOfFunds) : null);
-        return PartialView("_Quote", new DepositViewModel(docs, form, rates, quote, sourceOfFunds, new Dictionary<string, string>()));
+        var publicRates = await PublicRateTableAsync(docs, form.AmountValue);
+        return PartialView("_Quote", new DepositViewModel(docs, form, rates, publicRates, quote, sourceOfFunds, new Dictionary<string, string>()));
+    }
+
+    // FD Configuration's check against the master when it proceeds: the rate card
+    // must hold a row in effect for the deposit's category, mode (a fresh
+    // application or a renewal), scheme, interest frequency, tenure and rate, with
+    // the amount within that row's limits. Null when it does; otherwise what to say.
+    private async Task<string?> NotOnRateCardAsync(DocumentsViewModel docs, DepositForm form, RateTable rates)
+    {
+        var card = docs.App.RateCardRequest(docs.State.Category, docs.BranchUser);
+        var payout = rates.Payouts.FirstOrDefault(p => p.Code == form.InterestPayout)?.Name ?? form.InterestPayout;
+        var line = rates.Row(form.TenureMonths, form.InterestPayout);
+        if (line is null)
+            return $"The rate card offers no {payout} payout for {form.TenureMonths} months on {Money.Rupees(form.AmountValue)}. Change the tenure, the payout or the amount.";
+
+        var check = new SchemeCheck(card.Category, card.ApplicationType, line.Scheme, line.Payout, line.TenureMonths, line.Rate, form.AmountValue, card.BranchUser);
+        if (await Deposits.OnRateCardAsync(check)) return null;
+
+        var mode = card.ApplicationType == RateCard.Renew ? "a renewal" : "a fresh application";
+        return $"This deposit is not on the rate card: no {line.Scheme} scheme is in effect for category {card.Category} and {mode} "
+            + $"that pays {payout} for {line.TenureMonths} months at {line.Rate:0.##}% on {Money.Rupees(form.AmountValue)}. "
+            + "Check the category on Upload Documents, and the amount, tenure and payout here.";
     }
 
     // The returns are worked out once the amount passes its own checks; a renewal's amount always does.

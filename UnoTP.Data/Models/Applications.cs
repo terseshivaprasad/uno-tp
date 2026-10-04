@@ -118,12 +118,13 @@ public sealed class Application
     /// and is quoted off today's card like any other. The category is passed in: a page has it settled before the upload step is
     /// saved (Upload Documents sets it from the holder for a broker partner).
     /// </summary>
-    public RatesRequest RateCardRequest(string category)
+    /// <param name="branchUser">Whether a branch user is at the keyboard: their card carries the employee and special schemes too.</param>
+    public RatesRequest RateCardRequest(string category, bool branchUser)
     {
         var applicationType = RateCard.Purchase;
         if (Renewal is not null) applicationType = RateCard.Renew;
 
-        return new RatesRequest(category, applicationType, Renewal?.MaturesOn);
+        return new RatesRequest(category, applicationType, Renewal?.MaturesOn, branchUser);
     }
 }
 
@@ -285,6 +286,13 @@ public sealed class UploadState
 
     /// <summary>The investor's name as NSDL verified it, for one who came with no folio.</summary>
     public string Name { get; set; } = "";
+
+    /// <summary>
+    /// The investor's permanent address as read off the proof of address filed on
+    /// this application, its PIN code at the end; empty until one is filed. It is
+    /// what their permanent address row carries (f_Add1 to f_Add3 and f_AddPin).
+    /// </summary>
+    public string Address { get; set; } = "";
     public string EmpCode { get; set; } = "";
     public string EmpCompany { get; set; } = "";
     public string EmpHolder { get; set; } = "";
@@ -383,6 +391,9 @@ public sealed class JointHolder
     public string NsdlName { get; set; } = "";
 
     public string PoaType { get; set; } = "";
+
+    /// <summary>Their permanent address as read off the proof of address filed for them here, its PIN code at the end; empty until one is filed.</summary>
+    public string Address { get; set; } = "";
 
     /// <summary>Set when their post goes to an address other than the permanent one.</summary>
     public bool MailDifferent { get; set; }

@@ -35,6 +35,17 @@ internal static class MasterQueries
         """;
 
     /// <summary>
+    /// The first holders in the folio master: asked for a PAN the folio check found no
+    /// deposit for, so that a holder who already has a folio is not taken as new.
+    /// Must give back: Pan, Folio.
+    /// </summary>
+    public const string FirstHolders = """
+        SELECT f.PAN_NO AS Pan, f.FOLIO_NO AS Folio
+        FROM FD.dbo.t_Fd_Folio_holding f WITH (NOLOCK)
+        WHERE f.f_Active = 1 AND f.HOLD_TYPE = '1'
+        """;
+
+    /// <summary>
     /// The deposits the folio check looks at (FolioCheck): one row per deposit that is
     /// not cancelled, with its first holder, on a folio still in use. Must give back:
     /// Folio, Pan, Dob. An investor has a folio when their PAN is on a row here.
@@ -305,8 +316,13 @@ internal static class MasterQueries
         WHERE g.f_List = 'gatewayBanks' AND g.f_Active = 1
         """;
 
+    // ----- The rate cards -----------------------------------------------------------
+    // Two tables of the same structure: a branch user's card, which also carries the
+    // employee and special schemes (and their extra tenures), and a partner's, which
+    // does not. Which one a deposit is quoted from follows who is signed in.
+
     /// <summary>
-    /// The rate card, one row per scheme code. Must give back: Category, Mode (AF or R),
+    /// A branch user's rate card, one row per scheme code. Must give back: Category, Mode (AF or R),
     /// Scheme, SchemeCode, InterestFreq, TenureMonths, Rate, MinAmount, MaxAmount,
     /// FromDate, ToDate, SchemeId. The numbers are read through a cast: a row whose
     /// number does not read is left out.
@@ -318,5 +334,21 @@ internal static class MasterQueries
                CAST(TRY_CAST(r.MAXIMUM_AMOUNT AS DECIMAL(18,2)) AS BIGINT) AS MaxAmount,
                r.FROM_DATE AS FromDate, r.TO_DATE AS ToDate, r.SCHEME_ID AS SchemeId
         FROM dbo.t_FD_BOTC_SCHEME r
+        """;
+
+    /// <summary>
+    /// A partner's rate card: the same structure, without the employee and special
+    /// schemes. Must give back: Category, Mode (AF or R),
+    /// Scheme, SchemeCode, InterestFreq, TenureMonths, Rate, MinAmount, MaxAmount,
+    /// FromDate, ToDate, SchemeId. The numbers are read through a cast: a row whose
+    /// number does not read is left out.
+    /// </summary>
+    public const string RateCardForPartners = """
+        SELECT RTRIM(r.CATEGORY) AS Category, RTRIM(r.MODE_STATUS) AS Mode, RTRIM(r.SCHEME) AS Scheme, RTRIM(r.SCHEME_CODE) AS SchemeCode,
+               RTRIM(r.INTEREST_FREQ) AS InterestFreq, TRY_CAST(r.PERIOD AS INT) AS TenureMonths, TRY_CAST(r.INTEREST_RATES AS DECIMAL(9,4)) AS Rate,
+               CAST(TRY_CAST(r.MINIMUM_AMOUNT AS DECIMAL(18,2)) AS BIGINT) AS MinAmount,
+               CAST(TRY_CAST(r.MAXIMUM_AMOUNT AS DECIMAL(18,2)) AS BIGINT) AS MaxAmount,
+               r.FROM_DATE AS FromDate, r.TO_DATE AS ToDate, r.SCHEME_ID AS SchemeId
+        FROM dbo.FD_SCHEME r
         """;
 }

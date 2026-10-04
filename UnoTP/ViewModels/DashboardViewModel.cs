@@ -79,6 +79,9 @@ public class DashboardViewModel(FeatureSet features, ConsoleBoard board, string?
         // Where an application stands: a clipboard with a tick.
         Tile("app-status", "<rect x=\"4.5\" y=\"3.5\" width=\"15\" height=\"19\" rx=\"2\" fill=\"currentColor\"></rect><rect x=\"8.5\" y=\"1.5\" width=\"7\" height=\"4\" rx=\"1\" fill=\"currentColor\" stroke=\"#fff\" stroke-width=\"1.4\"></rect>"
             + $"<path d=\"M8.5 14l2.5 2.5 4.8-5\" {White} stroke-width=\"2.2\" fill=\"none\"></path>", null),
+        // Working a deposit out: a calculator, its display over its keys.
+        Tile("fd-calc", "<rect x=\"5\" y=\"1.5\" width=\"14\" height=\"21\" rx=\"2\" fill=\"currentColor\"></rect><rect x=\"7.5\" y=\"4\" width=\"9\" height=\"4.5\" rx=\".8\" fill=\"#fff\"></rect>"
+            + $"<path d=\"M8.5 12.5h.01M12 12.5h.01M15.5 12.5h.01M8.5 16h.01M12 16h.01M15.5 16h.01M8.5 19.5h.01M12 19.5h.01M15.5 19.5h.01\" {White} stroke-width=\"2.2\"></path>", null),
     ]);
 
     // Only the tiles whose feature the backend lists, in its order.

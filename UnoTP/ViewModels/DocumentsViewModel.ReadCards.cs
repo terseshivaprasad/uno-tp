@@ -130,14 +130,7 @@ public partial class DocumentsViewModel
     /// its box, and the PIN has to show whatever the length. Empty PIN when none
     /// can be found.
     /// </summary>
-    public static (string Body, string Pin) SplitPin(string address)
-    {
-        var found = System.Text.RegularExpressions.Regex.Matches(address, @"(?<!\d)(\d{3})\s?(\d{3})(?!\d)");
-        if (found.Count == 0) return (address, "");
-        var last = found[^1];
-        var body = (address[..last.Index] + address[(last.Index + last.Length)..]).Trim().TrimEnd(',', '-', ' ');
-        return (body, last.Groups[1].Value + last.Groups[2].Value);
-    }
+    public static (string Body, string Pin) SplitPin(string address) => Addresses.SplitPin(address);
 
     /// <summary>Whether a proof's expiry date has passed.</summary>
     public static bool Expired(string expiry) =>
@@ -168,9 +161,10 @@ public partial class DocumentsViewModel
         }
         // Only a PAN copy filed on this application can be sent: one the folio holds,
         // or one filed before this step, is not here to compare with.
-        var pan = State.Docs.GetValueOrDefault(h.Key("pan")) is { Before: false }
-            ? await documents.CopyAsync(AppNo, FiledUnder(PanSlot, h), PanSlot.Key) : null;
-        var proof = await documents.CopyAsync(AppNo, FiledUnder(PoaSlot, h), PoaSlot.Key);
+        var pan = State.Docs.GetValueOrDefault(h.Key("pan")) is { Before: false } panDoc
+            ? await documents.CopyAsync(AppNo, panDoc.FileName) : null;
+        var proof = State.Docs.GetValueOrDefault(h.Key("poa")) is { Before: false } proofDoc
+            ? await documents.CopyAsync(AppNo, proofDoc.FileName) : null;
         if (pan is null || proof is null)
         {
             FlashMessages("Not compared", "No PAN copy was filed on this application to compare with.",

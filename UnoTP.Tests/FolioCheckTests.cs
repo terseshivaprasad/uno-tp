@@ -20,6 +20,15 @@ public class FolioCheckTests
     }
 
     [Fact]
+    public void A_pan_with_no_deposit_but_a_folio_on_the_master_is_not_taken_as_new()
+    {
+        var answer = FolioCheck.ByPan(Pan, Dob, [], Today, folioOnMaster: "MF0090008");
+
+        Assert.Equal("MF0090008", answer.Folio);
+        Assert.Equal(FolioCheck.ExistingHolder, answer.Problem);
+    }
+
+    [Fact]
     public void A_pan_and_date_of_birth_that_match_give_the_folio()
     {
         var answer = FolioCheck.ByPan(Pan, Dob, [On("MF001"), On("MF001")], Today);

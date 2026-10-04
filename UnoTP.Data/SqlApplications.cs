@@ -116,7 +116,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
     // agency's (the sourcingAgency setting); anyone else is a partner.
     private async Task<ApplicationNumber.AskedBy> AskingAsync(CancellationToken ct)
     {
-        var branchUser = partner.AgencyType == await reference.SettingAsync("sourcingAgency", ct);
+        var branchUser = await BranchUserAsync(ct);
         return new ApplicationNumber.AskedBy(partner.UserClusterId, partner.UserName, partner.AgencyCode, partner.IpAddress, SessionNumber(), branchUser);
     }
 
@@ -275,6 +275,11 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
         return await SaveAsync(appNo, version, (c, tx, _, at, u) => Sections.WritePaymentAsync(c, tx, at, u, payment, branches, cmsLocationCode), "f_Payment_Ver", ct);
     }
 
+    // Whether the signed-in user is a branch user: one of the sourcing agency's (the
+    // sourcingAgency setting). Anyone else is a partner.
+    private async Task<bool> BranchUserAsync(CancellationToken ct) =>
+        partner.AgencyType == await reference.SettingAsync("sourcingAgency", ct);
+
     // Rows written now, by this partner, from their session and address.
     private Stamp StampAt(string appNo, int version, string status, string folio) =>
         new(appNo, version, status, partner.Id, SessionNumber(), partner.IpAddress, partner.UserClusterId, partner.UserName, folio);
@@ -291,7 +296,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
     // scheme code are read off. Null where the card offers none.
     private async Task<RateOption?> RateLineAsync(Application app, DepositDetails deposit, CancellationToken ct)
     {
-        var card = await deposits.RatesAsync(app.RateCardRequest(app.Upload?.Category ?? ""), ct);
+        var card = await deposits.RatesAsync(app.RateCardRequest(app.Upload?.Category ?? "", await BranchUserAsync(ct)), ct);
         return RateCard.Line(card, deposit.TenureMonths, deposit.Payout, deposit.Amount);
     }
 
@@ -375,7 +380,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
         if (seen is null) return (SaveOutcome.NotFound, null);
         if (seen.Version != version || seen.Submitted is not null) return (SaveOutcome.Conflict, null);
         var quote = seen.Deposit is { } d
-            ? await deposits.QuoteAsync(new QuoteRequest(d.Amount, d.TenureMonths, d.Payout, seen.RateCardRequest(seen.Upload?.Category ?? "")), ct)
+            ? await deposits.QuoteAsync(new QuoteRequest(d.Amount, d.TenureMonths, d.Payout, seen.RateCardRequest(seen.Upload?.Category ?? "", await BranchUserAsync(ct))), ct)
             : null;
         var line = seen.Deposit is null ? null : await RateLineAsync(seen, seen.Deposit, ct);
         var hours = (await reference.ConfigAsync(ct)).LinkValidityHours.GetValueOrDefault("payment");

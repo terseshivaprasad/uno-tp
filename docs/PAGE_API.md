@@ -42,7 +42,7 @@ the ones kept in SQL Server, and the outside services have an HTTP client each i
 | Call | Used for |
 |---|---|
 | `IApplicationApi.FindAsync`, `SaveUploadAsync` | The application; the step saved. |
-| `IDocumentApi.FileAsync`, `DeleteAsync`, `CopyAsync`, `KeepRefusedAsync` | Filing a copy with DMS, replacing one, showing one, keeping a refused one aside. |
+| `IDocumentApi.FileAsync`, `CopyAsync`, `KeepRefusedAsync` | Filing a copy with DMS as a new named file, showing one, keeping a refused one aside. Nothing filed is replaced or deleted. |
 | `IDocumentIdentifier.IdentifyAsync` | What the copy is. |
 | `IOcrService.ReadAsync` | What it says. |
 | `ICkycService.SearchAsync` | Whether CERSAI holds a record, when Fetch from CKYC is chosen (`Ckyc:SearchPath`). |

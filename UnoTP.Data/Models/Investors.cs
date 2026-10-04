@@ -10,6 +10,12 @@ public interface IInvestorApi
     /// <summary>The deposits a PAN is the first holder of, for the folio check (<see cref="FolioCheck"/>); empty for a PAN with no folio.</summary>
     Task<IReadOnlyList<FolioDeposit>> FolioDepositsByPanAsync(string pan, CancellationToken ct = default);
 
+    /// <summary>
+    /// The folio the folio master holds a PAN as the first holder of; empty when it
+    /// holds none. Asked for a PAN with no deposit, so an existing holder is not taken as new.
+    /// </summary>
+    Task<string> FolioOfFirstHolderAsync(string pan, CancellationToken ct = default);
+
     /// <summary>The deposits on a folio, with their first holder, for the folio check; empty for a folio that is not held.</summary>
     Task<IReadOnlyList<FolioDeposit>> FolioDepositsByFolioAsync(string folio, CancellationToken ct = default);
 

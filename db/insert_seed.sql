@@ -78,8 +78,9 @@ INSERT dbo.t_Unotp_Feature_Mst (f_Feature_Key, f_Name, f_Group, f_Detail, f_Off_
     (N'view-app', N'View existing application', N'Apply for a new FD', N'Looking an application up by number, folio or date.', N'Unavailable', 3, 1, 1, 'SEED'),
     (N'short-url', N'Short URL', N'Apply for a new FD', N'The payment and acceptance links sent to investors. A link already sent stops opening.', N'Unavailable', 4, 1, 1, 'SEED'),
     (N'app-status', N'Application status', N'FD Services', N'Where an application stands, holder by holder.', N'Under revamp', 5, 1, 1, 'SEED'),
-    (N'renew', N'Renew FD', N'FD Services', N'Rolling a maturing deposit over into a new one.', N'Coming soon', 6, 1, 1, 'SEED'),
-    (N'admin', N'Console Admin', N'Administration', N'Scheduling downtime windows and notices for the console.', N'Unavailable', 7, 0, 1, 'SEED');
+    (N'fd-calc', N'FD Calculator', N'FD Services', N'Working out what a deposit earns before it is booked.', N'Under development', 6, 1, 1, 'SEED'),
+    (N'renew', N'Renew FD', N'FD Services', N'Rolling a maturing deposit over into a new one.', N'Coming soon', 7, 1, 1, 'SEED'),
+    (N'admin', N'Console Admin', N'Administration', N'Scheduling downtime windows and notices for the console.', N'Unavailable', 8, 0, 1, 'SEED');
 
 /* ----- The lists ---------------------------------------------------------------
    One INSERT for every list. The columns:
@@ -103,12 +104,12 @@ INSERT dbo.t_Unotp_Ref_List (f_List, f_Seq, f_Code, f_Name, f_Parent, f_Attrs, f
 
     -- categories: the deposit categories. The code and the name are the rate card's CATEGORY: the rates are read by it, it is what is saved,
     -- and it is what is shown. extraRate is what the category earns over the public rate, for the page's wording
-    (N'categories', 1, N'PUBLIC', N'PUBLIC', NULL, N'{"employee":false,"women":false,"senior":false,"extraRate":0.00}', 1, 'SEED'),
-    (N'categories', 2, N'GENERAL-WOMEN', N'GENERAL-WOMEN', NULL, N'{"employee":false,"women":true,"senior":false,"extraRate":0.05}', 1, 'SEED'),
-    (N'categories', 3, N'SR CITIZEN', N'SR CITIZEN', NULL, N'{"employee":false,"women":false,"senior":true,"extraRate":0.35}', 1, 'SEED'),
-    (N'categories', 4, N'SR CITIZEN-WOMEN', N'SR CITIZEN-WOMEN', NULL, N'{"employee":false,"women":true,"senior":true,"extraRate":0.40}', 1, 'SEED'),
-    (N'categories', 5, N'EMPLOYEE', N'EMPLOYEE', NULL, N'{"employee":true,"women":false,"senior":false,"extraRate":0.35}', 1, 'SEED'),
-    (N'categories', 6, N'EMPLOYEE-WOMEN', N'EMPLOYEE-WOMEN', NULL, N'{"employee":true,"women":true,"senior":false,"extraRate":0.40}', 1, 'SEED'),
+    (N'categories', 1, N'PUBLIC', N'PUBLIC', NULL, N'{"employee":false,"women":false,"senior":false}', 1, 'SEED'),
+    (N'categories', 2, N'GENERAL-WOMEN', N'GENERAL-WOMEN', NULL, N'{"employee":false,"women":true,"senior":false}', 1, 'SEED'),
+    (N'categories', 3, N'SR CITIZEN', N'SR CITIZEN', NULL, N'{"employee":false,"women":false,"senior":true}', 1, 'SEED'),
+    (N'categories', 4, N'SR CITIZEN-WOMEN', N'SR CITIZEN-WOMEN', NULL, N'{"employee":false,"women":true,"senior":true}', 1, 'SEED'),
+    (N'categories', 5, N'EMPLOYEE', N'EMPLOYEE', NULL, N'{"employee":true,"women":false,"senior":false}', 1, 'SEED'),
+    (N'categories', 6, N'EMPLOYEE-WOMEN', N'EMPLOYEE-WOMEN', NULL, N'{"employee":true,"women":true,"senior":false}', 1, 'SEED'),
 
     -- sourcingModes: how an application is sourced, and how its two code fields behave
     (N'sourcingModes', 1, N'2', N'BROKER', NULL, N'{"codeLabel":"Broker Code","nameLabel":"Broker Name","house":"","search":"source","register":"brokers","sub":"free"}', 1, 'SEED'),
