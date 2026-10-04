@@ -2191,6 +2191,12 @@ body:has(.app-sticky-strip:not([hidden])) .page-rail {
   flex: 1;
   min-width: 0;
 }
+/* The last 4 digits of an Aadhaar number, read off the copy: shown beside the first 8, never typed. */
+.doc-retry__ask .doc-retry__last-four {
+  flex: none;
+  width: 76px;
+  text-align: center;
+}
 .doc-retry__ask .btn {
   flex: none;
 }

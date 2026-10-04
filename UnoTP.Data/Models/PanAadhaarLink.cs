@@ -37,6 +37,20 @@ public static class AadhaarNumbers
     public static bool IsWhole(string number) => number.Length == 12 && number.All(char.IsAsciiDigit);
 
     /// <summary>
+    /// The last four digits of an Aadhaar number as OCR read it: off a whole
+    /// 12-digit number, off a masked one that still shows them (XXXX XXXX 1234), or
+    /// where only the four were read. Empty for anything else - a number read in
+    /// part cannot be trusted for its last four either.
+    /// </summary>
+    public static string LastFour(string read)
+    {
+        var number = read.Replace(" ", "").Replace("-", "");
+        if (number.Length != 12 && number.Length != 4) return "";
+        var lastFour = number[^4..];
+        return lastFour.All(char.IsAsciiDigit) ? lastFour : "";
+    }
+
+    /// <summary>
     /// Whether a number typed by hand can be an Aadhaar number at all: 12 digits,
     /// not starting with 0 or 1, and its last digit the Verhoeff check digit of the
     /// rest - as UIDAI issues them - so a slip of the finger is caught here rather

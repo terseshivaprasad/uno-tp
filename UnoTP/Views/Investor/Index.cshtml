@@ -257,8 +257,8 @@
             @* An Aadhaar is filed but OCR could not read its number: it is typed here for the PAN-Aadhaar link. *@
             @if (docs.AsksAadhaarNumber(h))
             {
-                var (aadhaarField, aadhaarError) = docs.AadhaarNumberField(h);
-                <div class="doc-retry-row doc-retry-row--end"><partial name="_AadhaarNumber" model="@(new AadhaarNumberBlock(aadhaarField, Url.Action("JointAadhaarNumber", new { n = holder })!, aadhaarError))" /></div>
+                var (aadhaarField, aadhaarLastFour, aadhaarError) = docs.AadhaarNumberField(h);
+                <div class="doc-retry-row doc-retry-row--end"><partial name="_AadhaarNumber" model="@(new AadhaarNumberBlock(aadhaarField, aadhaarLastFour, Url.Action("JointAadhaarNumber", new { n = holder })!, aadhaarError))" /></div>
             }
         </div>
 

@@ -397,12 +397,24 @@ proof.
   the folio holds it, allowing initials or a name left out, and the date of birth
   exactly. If either differs or can't be read, the copy is refused, counts as an
   attempt, and is kept aside like any other refusal. A masked Aadhaar is
-  accepted. The masking service is not called by the upload step.
-- **An Aadhaar number OCR can't read is typed.** When an Aadhaar is filed for a
-  holder with no folio and OCR reads no whole 12-digit number, the partner types
-  it for the PAN–Aadhaar link. It must be 12 digits, not start with 0 or 1, and
-  pass the Verhoeff check digit. Like a number read, it is kept in the server
-  session only and never sent to the backend, except to the link check.
+  accepted.
+- **An Aadhaar is taken only when its number is read.** OCR must read the whole
+  12-digit number or the last 4 digits a masked one still shows. With neither,
+  the copy is refused, counts as an attempt, and is kept aside like any other
+  refusal.
+- **The first 8 digits are typed against the last 4 read.** When an Aadhaar is
+  filed for a holder with no folio and OCR reads only its last 4 digits, the
+  partner types the first 8 for the PAN–Aadhaar link. The last 4 are shown
+  read-only and are taken from the copy's record, never from the page; if they
+  were read wrong, the Aadhaar is uploaded again. The whole number must not
+  start with 0 or 1 and must pass the Verhoeff check digit. Like a number read,
+  it is kept in the server session only and never sent to the backend, except
+  to the link check. With OCR switched off nothing is read, and the whole
+  12-digit number is typed.
+- **Nothing is taken from a copy until it can be filed.** The proof's issuer is
+  asked and an Aadhaar is masked before the proof's type, address or number is
+  put on the application. If either cannot be done, nothing is filed and the
+  proof filed before stays as it was.
 
 Each check is answered by one service, with a settings section of its own:
 
@@ -434,11 +446,11 @@ Each check is answered by one service, with a settings section of its own:
   in `f_Add1` to `f_Add3`, its PIN code in `f_AddPin`. With OCR switched off
   nothing is read, so nothing is asked of the copy.
 - **NSDL failing does not cost the PAN copy.** Once a PAN copy is identified and
-  read, it is filed whatever NSDL then says. If NSDL can't answer, or holds no such
-  PAN and date of birth, its card offers "Retry NSDL check", which puts the same PAN,
-  date of birth and name to NSDL again; if it holds the PAN against another name, the
-  name printed on the card is typed first. The copy is never identified or read a
-  second time for a retry. Uploading another copy is still possible until NSDL
+  read, it is filed whatever NSDL then says. If NSDL holds the PAN against another
+  name, the name printed on the card is typed and NSDL is asked again, without the
+  copy being identified or read a second time. If NSDL can't answer, or holds no
+  such PAN and date of birth, there is no retry for now: the PAN copy is uploaded
+  again, and NSDL is asked with it. Uploading another copy is possible until NSDL
   verifies one. Proceed waits until NSDL has verified the PAN.
 - **"Not asked" is not a refusal.** Verification returns `notAsked` with a
   reason when it had nothing to ask the issuer with: a passport file number
@@ -451,8 +463,8 @@ Each check is answered by one service, with a settings section of its own:
   asked, the PAN or Aadhaar that prompted it is still filed. The link is
   marked "not checked" and asked again when an Aadhaar is next filed.
 - **Aadhaar number:** only a whole 12-digit number is used for the link
-  check: the one OCR reads, or the one the partner types when OCR can't read it.
-  A masked number, or the partial one a secure QR code carries, is ignored.
+  check: the one OCR reads, or the first 8 digits the partner types joined to
+  the last 4 OCR read off a masked copy.
 
 ### Rules the app keeps when calling Idfy.Api
 

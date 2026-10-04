@@ -31,43 +31,69 @@ public partial class DocumentsViewModel
         }
     }
 
-    // An Aadhaar filed whose number OCR could not read whole: the link card says it
-    // waits on the number, typed in the row under the proofs.
+    // An Aadhaar filed whose whole number is not held: the link card says it waits
+    // on the number, typed in the row under the proofs.
     private void LinkWaitsOnNumber(DocHolder h)
     {
         var card = State.Reads[h.Key("pan")];
         card.Lines = MaskPan(h.Who.Pan) + " · link with Aadhaar not asked yet";
         (card.State, card.Kind) = ("Aadhaar number needed", "is-failed");
-        card.From = "OCR could not read the whole Aadhaar number off the copy. Type it in the row under the proofs of address, and the link is asked.";
+        card.From = AadhaarLastFour(h).Length > 0
+            ? "Only the last 4 digits of the Aadhaar number are held, as read off the copy. Type the first 8 in the row under the proofs of address, and the link is asked."
+            : "The Aadhaar number was not read off the copy. Type it in the row under the proofs of address, and the link is asked.";
+    }
+
+    /// <summary>
+    /// The last four digits of the Aadhaar filed for a holder, as OCR read them off
+    /// the copy and as its record keeps them. Empty where nothing was read - OCR
+    /// switched off - and the whole number is typed.
+    /// </summary>
+    public string AadhaarLastFour(DocHolder h)
+    {
+        var slot = PoaTypeOf(h) == "Aadhaar" ? PoaSlot : MailSlot;
+        var kept = State.Docs.GetValueOrDefault(h.Key(slot.Key))?.Checks?.Number ?? "";
+        return AadhaarNumbers.LastFour(kept);
     }
 
     /// <summary>
     /// Whether the Aadhaar number is asked for by hand: an Aadhaar is filed for a
-    /// holder with no folio, and no whole number is held for the link - OCR could
-    /// not read it, or the session it was kept in has ended.
+    /// holder with no folio, and no whole number is held for the link - OCR read
+    /// only its last 4 digits, or the session it was kept in has ended.
     /// </summary>
     public bool AsksAadhaarNumber(DocHolder h) =>
         LinkApplies(h) && AadhaarFiled(h) && AadhaarOf(h).Length == 0
         && State.Reads[h.Key("pan")] is { Kind: not "is-done" } card && card.State != "Not linked";
 
-    /// <summary>The Aadhaar number row's field, and what was wrong with the number last typed.</summary>
-    public (string Field, string? Error) AadhaarNumberField(DocHolder h) =>
-        (h.Key("aadhaarNo"), Shown?.Errors.GetValueOrDefault(h.Key("aadhaarNo")));
+    /// <summary>The Aadhaar number row's field, the last four digits it is typed against, and what was wrong with the number last typed.</summary>
+    public (string Field, string LastFour, string? Error) AadhaarNumberField(DocHolder h) =>
+        (h.Key("aadhaarNo"), AadhaarLastFour(h), Shown?.Errors.GetValueOrDefault(h.Key("aadhaarNo")));
 
     /// <summary>
-    /// The 12-digit Aadhaar number, typed where OCR could not read it off the
-    /// Aadhaar filed, and the PAN-Aadhaar link asked with it. Like one read, it is
-    /// held in the session only, never saved. Returns where on the page to come back to.
+    /// The Aadhaar number, typed for the PAN-Aadhaar link: its first 8 digits, against
+    /// the last 4 OCR read off the Aadhaar filed. The last 4 are the copy's own and are
+    /// not typed, so a number that is not the copy's cannot be put to the link: where
+    /// they were read wrong, the Aadhaar is uploaded again. Like a number read whole,
+    /// it is held in the session only, never saved. Returns where on the page to come back to.
     /// </summary>
     public async Task<string?> AadhaarNumberAsync(DocHolder h, string? typed)
     {
         var key = h.Key("aadhaarNo");
         if (!AsksAadhaarNumber(h)) return "read-" + h.Key("link");
         if (!WithinLimit(h, "aadhaarNo")) return "row-" + key;
-        var number = new string((typed ?? "").Where(char.IsAsciiDigit).ToArray());
+        var digits = new string((typed ?? "").Where(char.IsAsciiDigit).ToArray());
+        var lastFour = AadhaarLastFour(h);
+        var number = digits + lastFour;
+        if (lastFour.Length > 0 && digits.Length != 8)
+        {
+            FlashMessages().Errors[key] = "Enter the first 8 digits of the Aadhaar number";
+            return "row-" + key;
+        }
         if (!AadhaarNumbers.IsValid(number))
         {
-            FlashMessages().Errors[key] = number.Length != 12 ? "Enter the 12-digit Aadhaar number" : "That is not a valid Aadhaar number — check it against the card";
+            // With no last 4 read (OCR switched off) the whole number is typed.
+            FlashMessages().Errors[key] = number.Length != 12 ? "Enter the 12-digit Aadhaar number"
+                : lastFour.Length > 0 ? $"That is not a valid Aadhaar number — check the first 8 digits against the card. If its last 4 are not {lastFour}, upload the Aadhaar again"
+                : "That is not a valid Aadhaar number — check it against the card";
             return "row-" + key;
         }
         var entry = new LogEntry(Guid.NewGuid().ToString("n")[..8], "PAN–Aadhaar link · number typed", 1,
@@ -127,38 +153,29 @@ public partial class DocumentsViewModel
 
     /// <summary>
     /// NSDL asked again about a PAN copy already filed, without the copy being
-    /// uploaded - and identified and read - again. Where NSDL held the PAN against
-    /// another name, the name printed on the card is typed and put to it; where it
-    /// held no such PAN and date of birth, or could not answer, the same PAN, date of
-    /// birth and name go to it again. Returns where on the page to come back to.
+    /// uploaded - and identified and read - again: only where NSDL held the PAN
+    /// against another name, with the name printed on the card typed and put to it.
+    /// Where it held no such PAN and date of birth, or could not answer, there is no
+    /// retry: the PAN copy is uploaded again. Returns where on the page to come back to.
     /// </summary>
     public async Task<string?> RetryNsdlAsync(DocHolder h, string? typed)
     {
         var key = h.Key("nsdl");
-        var was = NsdlOf(h);
-        if (!NsdlApplies(h) || was is "" or "verified" or NsdlNotAsked || State.Docs.GetValueOrDefault(h.Key("pan")) is not { } doc) return "read-" + key;
+        if (!NsdlApplies(h) || NsdlOf(h) != "name" || State.Docs.GetValueOrDefault(h.Key("pan")) is not { } doc) return "read-" + key;
         if (!WithinLimit(h, "nsdl")) return "read-" + key;
 
-        // Only a name NSDL did not match is typed; otherwise the name it was last asked with stands.
-        var typesName = was == "name";
-        var name = NsdlNameOf(h);
-        if (typesName)
+        var name = NewApplicationViewModel.NormaliseName(typed);
+        if (name.Length < 3 || !InvestorViewModel.IsName(name))
         {
-            name = NewApplicationViewModel.NormaliseName(typed);
-            if (name.Length < 3 || !InvestorViewModel.IsName(name))
-            {
-                FlashMessages().Errors[key] = name.Length < 3 ? "Enter the name as printed on the PAN" : "Enter the name as printed on the PAN: letters only";
-                return "read-" + key;
-            }
+            FlashMessages().Errors[key] = name.Length < 3 ? "Enter the name as printed on the PAN" : "Enter the name as printed on the PAN: letters only";
+            return "read-" + key;
         }
         var entry = new LogEntry(Guid.NewGuid().ToString("n")[..8], $"{PanSlot.Label} · NSDL again", 1,
-            DateTime.Now.ToString("HH:mm:ss"),
-            typesName ? $"Name typed from the PAN card: {name}" : "The PAN, date of birth and name asked again; the copy filed is not read again")
-            { Holder = h.Code };
+            DateTime.Now.ToString("HH:mm:ss"), $"Name typed from the PAN card: {name}") { Holder = h.Code };
         State.Log.Insert(0, entry);
         try
         {
-            await NsdlAsync(h, name, entry, typed: typesName);
+            await NsdlAsync(h, name, entry, typed: true);
         }
         catch (ExternalServiceException e)
         {

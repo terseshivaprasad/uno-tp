@@ -221,11 +221,12 @@ public partial class DocumentsViewModel
 
         async Task RefuseAsync(string why, string whatNext, params (string Text, string Kind)[] stages)
         {
+            // An Aadhaar is kept aside masked, as it is filed masked. It is masked before
+            // the refusal is counted: one that cannot be masked is not kept and costs no attempt.
+            if (proof && type == "Aadhaar") copy = await MaskedAsync(h, copy);
             // After the wait the count starts again; the wait runs from this refusal.
             var attempts = s.Attempts[key] = AttemptsNow(key) + 1;
             s.RefusedAt[key] = DateTime.Now;
-            // An Aadhaar is kept aside masked, as it is filed masked.
-            if (proof && type == "Aadhaar") copy = await MaskedAsync(h, copy);
             var kept = await documents.KeepRefusedAsync(AppNo, FiledUnder(def, h), def.Key, copy);
             // Telling a partner to upload it again when there is nothing left to
             // upload with is worse than saying nothing.
@@ -281,6 +282,19 @@ public partial class DocumentsViewModel
             return;
         }
 
+        // An Aadhaar has to give its number: the whole 12 digits, or the last 4 a
+        // masked one still shows. The link is asked with the whole number, and where
+        // only the last 4 are read the first 8 are typed against them - so with no
+        // number read at all there is nothing to hold what is typed to.
+        if (proof && type == "Aadhaar" && switches.IsOn(OutsideSwitches.Ocr) && AadhaarNumbers.LastFour(reading.IdNumber).Length == 0)
+        {
+            await RefuseAsync("The Aadhaar number could not be read off it",
+                "Upload a copy of the Aadhaar that shows its number — all 12 digits, or the last 4 of a masked one — clear enough to read.",
+                ("OCR read neither the whole Aadhaar number nor its last 4 digits.", "bad"),
+                ("An Aadhaar is taken only when its number, or the last 4 digits of it, can be read.", "bad"));
+            return;
+        }
+
         // A proof of address has to give the address: its first line and its PIN code
         // are needed on every application, whichever proof it is. With OCR switched
         // off nothing is read, so nothing can be asked of it.
@@ -294,8 +308,7 @@ public partial class DocumentsViewModel
 
         // A holder with no folio is put to NSDL with the name the copy reads. NSDL not
         // answering does not cost the copy: it was identified and read, so it is filed
-        // all the same, and NSDL is asked again from its card - not by uploading it,
-        // which would have it identified and read a second time.
+        // all the same, and NSDL is asked again when the PAN copy is uploaded again.
         if (def.Key == "pan" && NsdlApplies(h))
         {
             var readName = NewApplicationViewModel.NormaliseName(reading.Name);
@@ -306,10 +319,29 @@ public partial class DocumentsViewModel
             catch (ExternalServiceException e)
             {
                 SetNsdl(h, readName, Unanswered);
-                entry.Add($"{e.Service} could not answer: {e.Message} The copy is filed all the same; retry the NSDL check from its card.", "warn");
+                entry.Add($"{e.Service} could not answer: {e.Message} The copy is filed all the same; upload the PAN copy again to have NSDL asked again.", "warn");
                 if (e.TraceId is not null) entry.Add("Trace " + e.TraceId);
             }
             h = Again(h);
+        }
+
+        // 3. What may still fail is asked before the application takes anything from
+        // the copy: the proof's issuer, and the masking of an Aadhaar. An Aadhaar is
+        // masked after OCR has read the whole number off it, so no copy with the whole
+        // number is ever stored. If either cannot be done, nothing is filed and nothing
+        // changes: the proof filed before stays, with its own type and address, and no
+        // Aadhaar number is asked for or put to the PAN-Aadhaar link.
+        var issuerSays = new Verification(false, "");
+        if (proof)
+        {
+            Doing("Checking the address with the issuer\u2026");
+            issuerSays = await verification.ConfirmProofAsync(type, reading, h.Who.Dob);
+        }
+        var masked = proof && type == "Aadhaar";
+        if (masked)
+        {
+            copy = await MaskedAsync(h, copy);
+            entry.Add("Aadhaar number masked before the copy is filed.", "ok");
         }
 
         if (detect)
@@ -320,23 +352,14 @@ public partial class DocumentsViewModel
             entry.Add($"Its type is set to {type} from the copy.", "ok");
         }
 
-        // 3. Whoever answers for what was read.
+        // 4. What was read is taken, with whoever answers for it.
         var (check, kind) = def.Key switch
         {
             "pan" => await ReadPanAsync(h, reading, entry),
-            "poa" or "mail" => await ReadAddressAsync(def, h, reading, entry),
+            "poa" or "mail" => ReadAddress(def, h, reading, issuerSays, entry),
             _ => await ReadInstrumentAsync(reading, entry),
         };
 
-        // 4. An Aadhaar is masked before it is filed - after OCR has read the whole
-        // number off it and the name and date of birth have been matched - so no copy
-        // with the whole number is ever stored.
-        var masked = proof && type == "Aadhaar";
-        if (masked)
-        {
-            copy = await MaskedAsync(h, copy);
-            entry.Add("Aadhaar number masked before the copy is filed.", "ok");
-        }
         copy = await FileAsync(def, h, copy);
         s.Docs[key] = filed(copy, check, kind) with { Checks = ChecksOf(def, h, type, reading, masked) };
         // Taken, so whatever was refused before it is behind the partner.
@@ -375,14 +398,15 @@ public partial class DocumentsViewModel
         return new DocChecks(identifiedAs, ocrAsked, true, NumberOn(def, type, reading), ExpiryOn(def, h), masked);
     }
 
-    // The number a document carries. An Aadhaar's is never kept whole: its last four digits only.
+    // The number a document carries. An Aadhaar's is never kept whole, here or
+    // anywhere else: its last four digits are all that is stored.
     private string NumberOn(SlotDef def, string type, OcrReading reading)
     {
         if (def.Key == "pan") return reading.Pan.Replace(" ", "").ToUpperInvariant();
         if (def.Key == "payment") return reading.Cheque?.Number ?? "";
 
         var number = (reading.Number.Length > 0 ? reading.Number : reading.IdNumber).Replace(" ", "");
-        if (type == "Aadhaar") return number.Length >= 4 ? "XXXXXXXX" + number[^4..] : "";
+        if (type == "Aadhaar") return AadhaarNumbers.LastFour(number);
         if (!HasPhoto(type)) return "";
         return number;
     }
@@ -398,8 +422,8 @@ public partial class DocumentsViewModel
     // 5. After an Aadhaar is filed: it carries the number the PAN-Aadhaar link is
     // asked with, so a PAN already on the application can be asked about now. The
     // number is the one OCR read off the copy before it was masked, and is kept in
-    // the session alone. Where OCR could not read the whole number - masked already,
-    // or not clear enough - it is typed instead.
+    // the session alone. Where OCR read only its last 4 digits - a masked Aadhaar -
+    // the first 8 are typed against them.
     private async Task LinkAfterFilingAsync(DocHolder h, OcrReading reading, LogEntry entry)
     {
         if (!LinkApplies(h)) return;
@@ -410,7 +434,9 @@ public partial class DocumentsViewModel
         }
         session.Remove(AadhaarKey(h));
         LinkWaitsOnNumber(h);
-        entry.Add("OCR read no whole 12-digit Aadhaar number off it; the number is typed for the PAN-Aadhaar link.", "warn");
+        entry.Add(AadhaarLastFour(h).Length > 0
+            ? "OCR read only the last 4 digits of the Aadhaar number off it; the first 8 are typed for the PAN-Aadhaar link."
+            : "No Aadhaar number was read off it; the number is typed for the PAN-Aadhaar link.", "warn");
     }
 
     // Every copy is filed as a new file, named after the application, the holder

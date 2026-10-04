@@ -32,8 +32,8 @@ public partial class DocumentsViewModel
 
     private string NsdlNeed(DocHolder h) => NsdlOf(h) switch
     {
-        "failed" => $"NSDL holds no such PAN and date of birth. Retry the NSDL check if both are right. If not: {NsdlFailedNext(h)}",
-        Unanswered => "NSDL could not be asked about the PAN. Retry the NSDL check",
+        "failed" => $"NSDL holds no such PAN and date of birth. Upload the PAN copy again if both are right. If not: {NsdlFailedNext(h)}",
+        Unanswered => "NSDL could not be asked about the PAN. Upload the PAN copy again",
         _ => "Type the name as printed on the PAN, and ask NSDL again",
     };
 

@@ -6,10 +6,11 @@ namespace UnoTP.ViewModels;
 // What is done with what OCR read off a proof of address, a payment instrument and a PAN copy.
 public partial class DocumentsViewModel
 {
-    // The issuer behind that proof is asked whether the address OCR read is the
-    // one they hold. Only a clean answer replaces the address the application
-    // carries - or, for an Aadhaar, which has no issuer to ask, the address OCR read.
-    private async Task<(string, string)> ReadAddressAsync(SlotDef def, DocHolder h, OcrReading reading, LogEntry entry)
+    // The address OCR read off a proof is taken onto the application, with what
+    // the issuer behind that proof answered when asked about it - asked already,
+    // before anything is taken (see CheckAsync), so nothing here can fail part-way.
+    // An Aadhaar has no issuer to ask.
+    private (string, string) ReadAddress(SlotDef def, DocHolder h, OcrReading reading, Verification answer, LogEntry entry)
     {
         // The permanent address, or the communication address where post goes elsewhere.
         var mailing = def.Key == "mail";
@@ -28,8 +29,6 @@ public partial class DocumentsViewModel
             State.Gender = reading.Gender;
             entry.Add($"Gender read: {reading.Gender}.");
         }
-        Doing("Checking the address with the issuer\u2026");
-        var answer = await verification.ConfirmProofAsync(type, reading, h.Who.Dob);
         var issuer = answer.Verifier;
 
         // The issuer's own validity stands over the one read off the copy, which OCR
@@ -198,8 +197,8 @@ public partial class DocumentsViewModel
     // What a filed PAN copy says while NSDL has not verified it, and how it is put right.
     private (string, string) NotVerifiedCheck(DocHolder h) => NsdlOf(h) switch
     {
-        "failed" => ($"Filed, but NSDL holds no record of this PAN against the date of birth searched. If both are right, retry the NSDL check below. If not: {NsdlFailedNext(h)}", "bad"),
-        Unanswered => ("Filed, but NSDL could not be asked just now. Retry the NSDL check below; the copy need not be uploaded again.", "warn"),
+        "failed" => ($"Filed, but NSDL holds no record of this PAN against the date of birth searched. If both are right, upload the PAN copy again and NSDL is asked again. If not: {NsdlFailedNext(h)}", "bad"),
+        Unanswered => ("Filed, but NSDL could not be asked just now. Upload the PAN copy again and NSDL is asked again.", "warn"),
         _ => ("Filed, but NSDL does not hold this PAN against the name read off it. Type the name as printed on the card, in the NSDL card below.", "warn"),
     };
 

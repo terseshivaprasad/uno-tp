@@ -118,7 +118,7 @@ public partial class DocumentsViewModel
         if (number.Length == 0) return "";
         return type switch
         {
-            "Aadhaar" => number.Replace(" ", "") is { Length: >= 4 } digits ? $"Aadhaar XXXX XXXX {digits[^4..]}" : "",
+            "Aadhaar" => AadhaarNumbers.LastFour(number) is { Length: 4 } lastFour ? $"Aadhaar XXXX XXXX {lastFour}" : "",
             "Driving Licence" => "DL " + number,
             _ when !HasPhoto(type) => "",
             _ => $"{type} {number}",
@@ -240,9 +240,10 @@ public partial class DocumentsViewModel
     }
 
     // What NSDL said about a holder's PAN, and - while it has not verified it - how
-    // it is asked again: with the name printed on the card typed, where it holds the
-    // PAN against another name; with one button otherwise. Either way the copy filed
-    // stays, so it is not identified and read a second time.
+    // it is asked again. Where NSDL holds the PAN against another name, the name
+    // printed on the card is typed and put to it, and the copy filed is not read a
+    // second time. Where NSDL holds no such PAN and date of birth, or could not
+    // answer, there is nothing to retry with: the PAN copy is uploaded again.
     private ReadItem NsdlCard(DocHolder h)
     {
         var pan = MaskPan(h.Who.Pan);
@@ -251,20 +252,17 @@ public partial class DocumentsViewModel
         var (nsdlState, nsdlName) = (NsdlOf(h), NsdlNameOf(h));
         var key = h.Key("nsdl");
         var error = Shown?.Errors.GetValueOrDefault(key);
-        NsdlRetry Again(string title, string text) => new(h.Key("nsdlName"), nsdlName, error, TypesName: false, title, text);
         return nsdlState switch
         {
             "verified" => new("PAN – NSDL", new ReadCard("Verified with NSDL", $"{pan} · {h.Who.Name}", "The PAN, date of birth and name read off the PAN copy all match.", "is-done"), key),
             "name" => new("PAN – NSDL", new ReadCard("Name not matched", $"Put to NSDL: {nsdlName}",
                 "NSDL holds the PAN and date of birth, but not against that name. Type the name exactly as printed on the PAN card, and NSDL is asked again.", "is-failed"), key,
-                new NsdlRetry(h.Key("nsdlName"), nsdlName, error, TypesName: true,
+                new NsdlRetry(h.Key("nsdlName"), nsdlName, error,
                     "NSDL did not match the name", "Type the name exactly as printed on the PAN card, and NSDL is asked again.")),
             "failed" => new("PAN – NSDL", new ReadCard("Not verified", $"No record of {pan} against {MaskDate(h.Who.Dob)}",
-                $"NSDL holds no such PAN and date of birth, so this {(h.Joint ? "holder" : "application")} cannot go on as it stands. If both are right, retry the NSDL check. If not: {NsdlFailedNext(h)}", "is-failed"), key,
-                Again("NSDL did not verify the PAN", "If the PAN and date of birth are right, ask NSDL again. The copy filed is kept, so it is not read again.")),
+                $"NSDL holds no such PAN and date of birth, so this {(h.Joint ? "holder" : "application")} cannot go on as it stands. If both are right, upload the PAN copy again and NSDL is asked again. If not: {NsdlFailedNext(h)}", "is-failed"), key, Error: error),
             Unanswered => new("PAN – NSDL", new ReadCard("Not checked", $"{pan} · NSDL could not be asked",
-                "The PAN copy was identified, read and filed, but NSDL did not answer. Retry the NSDL check; the copy is not uploaded again.", "is-failed"), key,
-                Again("NSDL could not be asked", "The PAN copy is filed. Ask NSDL again; the copy is not read again.")),
+                "The PAN copy was identified, read and filed, but NSDL did not answer. Upload the PAN copy again and NSDL is asked again.", "is-failed"), key, Error: error),
             NsdlNotAsked => new("PAN – NSDL", NotRead("Not asked", $"{pan} · the PAN check is {OutsideSwitches.Off}",
                 "NSDL is not asked while the PAN check is switched off. The application goes on with the PAN as the copy reads it; Operations check it.")),
             _ when !switches.IsOn(OutsideSwitches.PanCheck) => new("PAN – NSDL", NotRead("Not asked", $"The PAN check is {OutsideSwitches.Off}.",

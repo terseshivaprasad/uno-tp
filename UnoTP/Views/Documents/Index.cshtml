@@ -426,8 +426,8 @@
                PAN-Aadhaar link, in a row under the proofs of address. *@
             @if (Model.AsksAadhaarNumber(Model.Investor))
             {
-                var (aadhaarField, aadhaarError) = Model.AadhaarNumberField(Model.Investor);
-                <div class="doc-retry-row doc-retry-row--end"><partial name="_AadhaarNumber" model="@(new AadhaarNumberBlock(aadhaarField, Url.Action("AadhaarNumber")!, aadhaarError))" /></div>
+                var (aadhaarField, aadhaarLastFour, aadhaarError) = Model.AadhaarNumberField(Model.Investor);
+                <div class="doc-retry-row doc-retry-row--end"><partial name="_AadhaarNumber" model="@(new AadhaarNumberBlock(aadhaarField, aadhaarLastFour, Url.Action("AadhaarNumber")!, aadhaarError))" /></div>
             }
         </div>
 
