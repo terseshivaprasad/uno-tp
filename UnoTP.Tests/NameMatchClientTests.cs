@@ -33,10 +33,12 @@ public class NameMatchClientTests
         Assert.Equal(NameMatchOutcome.Match, answer.Outcome);
     }
 
-    [Fact]
-    public async Task Fail_with_no_error_code_is_the_names_not_matching()
+    [Theory]
+    [InlineData("")]
+    [InlineData("NM01")]
+    public async Task Fail_is_the_names_not_matching_with_an_error_code_or_without(string errorCode)
     {
-        var network = new StubNetwork { Answer = """{"status":"FAIL","error_code":"","error_message":"Name match criteria does not meet"}""" };
+        var network = new StubNetwork { Answer = $$"""{"status":"FAIL","error_code":"{{errorCode}}","error_message":"Name match criteria does not meet"}""" };
 
         var answer = await ClientOver(network).MatchAsync("A NAME", "ANOTHER NAME");
 
@@ -44,20 +46,12 @@ public class NameMatchClientTests
     }
 
     [Fact]
-    public async Task Fail_with_an_error_code_is_an_outage_said_with_the_APIs_message()
+    public async Task A_status_that_is_neither_is_an_outage_not_a_mismatch()
     {
-        var network = new StubNetwork { Answer = """{"status":"FAIL","error_code":"E500","error_message":"Service unavailable"}""" };
+        var network = new StubNetwork { Answer = """{"status":"ERROR","error_code":"E500","error_message":"Service unavailable"}""" };
 
         var outage = await Assert.ThrowsAsync<ExternalServiceException>(() => ClientOver(network).MatchAsync("A NAME", "A NAME"));
 
         Assert.Contains("Service unavailable", outage.Message);
-    }
-
-    [Fact]
-    public async Task A_status_that_is_neither_is_an_outage_not_a_mismatch()
-    {
-        var network = new StubNetwork { Answer = """{"status":"","error_code":"","error_message":""}""" };
-
-        await Assert.ThrowsAsync<ExternalServiceException>(() => ClientOver(network).MatchAsync("A NAME", "A NAME"));
     }
 }

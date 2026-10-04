@@ -21,9 +21,9 @@ public sealed class NameMatchOptions : IApiAddress
 
 /// <summary>
 /// POST MatchPath { SourceName, TargetName } → { status, error_code, error_message }.
-/// SUCCESS is a match. FAIL with no error code is the names not matching (its message
-/// says the criteria were not met); FAIL with an error code is the service failing,
-/// which is an outage and not a mismatch.
+/// SUCCESS is a match. FAIL is the names not matching: it comes with an error code
+/// and a message saying the criteria were not met. Any other status is the service
+/// not having compared them, which is an outage and not a mismatch.
 /// </summary>
 public sealed class NameMatchClient(HttpClient http, IPartner partner, IOptions<NameMatchOptions> options)
     : ExternalClient(http, partner, Service), INameMatchService
@@ -42,13 +42,12 @@ public sealed class NameMatchClient(HttpClient http, IPartner partner, IOptions<
             response.EnsureSuccessStatusCode();
             var answer = await Read<Answer>(response, ct);
             var status = (answer.Status ?? "").Trim().ToUpperInvariant();
-            var errorCode = (answer.ErrorCode ?? "").Trim();
             var errorMessage = (answer.ErrorMessage ?? "").Trim();
 
             if (status == Matched) return new NameMatchResult(NameMatchOutcome.Match);
-            if (status == NotMatched && errorCode.Length == 0) return new NameMatchResult(NameMatchOutcome.Mismatch);
+            if (status == NotMatched) return new NameMatchResult(NameMatchOutcome.Mismatch);
 
-            // A failure with an error code, or a status that is neither: nothing was compared.
+            // A status that is neither: nothing was compared.
             throw new ExternalServiceException(Service, errorMessage.Length > 0
                 ? $"{Service} could not compare the names: {errorMessage}"
                 : $"{Service} could not compare the names just now. Try again in a while.");
