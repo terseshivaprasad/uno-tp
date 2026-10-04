@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Text.Json;
 using Microsoft.Extensions.Options;
@@ -28,7 +29,8 @@ public sealed class PanApiOptions : IApiAddress
 /// <summary>
 /// The PAN verification API: POST VerifyPath with the holder's PAN, date of birth
 /// and name, and it answers with a match status for each. "1" is a match and "0"
-/// is not; anything else is read as not a match.
+/// is not. An answer with no match status at all is the API not having checked:
+/// that is an outage, said with its ErrorMessage, and not a mismatch.
 /// </summary>
 public sealed class PanApiClient(HttpClient http, IPartner partner, IPartnerApi partners, IOptions<PanApiOptions> options)
     : IPanVerificationService
@@ -51,7 +53,7 @@ public sealed class PanApiClient(HttpClient http, IPartner partner, IPartnerApi 
             Holder_Type = pan.HolderType,
             PAN_No = pan.Pan,
             PAN_Holder_Name = pan.Name,
-            PAN_Holder_DOB = pan.Dob,
+            PAN_Holder_DOB = ApiDate(pan.Dob),
             User_Name = me.UserName,
             CreatedBy = partner.Id,
             CreatedByUName = me.UserName,
@@ -60,11 +62,27 @@ public sealed class PanApiClient(HttpClient http, IPartner partner, IPartnerApi 
         };
 
         var answer = await SendAsync(options.Value.VerifyPath, request, ct);
+        if (answer.NotChecked)
+        {
+            var why = Text(answer.ErrorMessage);
+            throw new ExternalServiceException(Service, why.Length > 0
+                ? $"{Service} could not be made: {why}"
+                : $"{Service} could not be made just now. Try again in a while.");
+        }
         // A PAN the API does not hold, or holds against another date of birth, is not
         // this holder's: the name is not asked about at all.
         var pairOk = answer.PAN_No_Match_Status == Matched && answer.PAN_DOB_Match_Status == Matched;
         var nameOk = pairOk && answer.PAN_Name_Match_Status == Matched;
         return new PanVerification(pairOk, nameOk);
+    }
+
+    // The API takes a date of birth as dd/MM/yyyy; the app holds it as dd-MM-yyyy.
+    // One that is not a date goes as it is, for the API to refuse.
+    private static string ApiDate(string dob)
+    {
+        if (DateTime.TryParseExact(dob, "dd-MM-yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
+            return date.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture);
+        return dob;
     }
 
     // The session's id as the number the API takes it as; 0 when there is none.
@@ -131,14 +149,29 @@ public sealed class PanApiClient(HttpClient http, IPartner partner, IPartnerApi 
         public string Ref_Type { get; set; } = "";
     }
 
-    // The part of the answer the app reads, by the API's own names. Its error and
-    // status fields are not used, so they are left out: the answer is then read
-    // whether they come as text or as a number.
+    // The answer, by the API's own names (its PANResBO). The error and status
+    // fields are taken as they come, so the answer is read whether they are text or
+    // a number.
     private sealed class PanResponse
     {
         public string? PAN_No_Match_Status { get; set; }
         public string? PAN_Name_Match_Status { get; set; }
         public string? PAN_DOB_Match_Status { get; set; }
+        public JsonElement ErrorCode { get; set; }
+        public JsonElement ErrorMessage { get; set; }
+        public JsonElement Status { get; set; }
+
+        /// <summary>No match status came back for the PAN, the name or the date of birth: nothing was checked.</summary>
+        public bool NotChecked =>
+            string.IsNullOrWhiteSpace(PAN_No_Match_Status) && string.IsNullOrWhiteSpace(PAN_Name_Match_Status) && string.IsNullOrWhiteSpace(PAN_DOB_Match_Status);
+    }
+
+    // An error or status field as text, whether the API sent text or a number; empty for none.
+    private static string Text(JsonElement value)
+    {
+        if (value.ValueKind == JsonValueKind.String) return (value.GetString() ?? "").Trim();
+        if (value.ValueKind == JsonValueKind.Number) return value.GetRawText();
+        return "";
     }
 }
 

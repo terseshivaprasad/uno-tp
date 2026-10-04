@@ -229,8 +229,8 @@
             <div class="doc-column">
                 <partial name="_DocSlot" model="@(new DocSlotBlock(pan, upload, Label: "PAN", LabelOptional: pan.Optional))" />
             </div>
-            @* NSDL asking for the name printed on the PAN: a row straight under the PAN's card. *@
-            @if (panReads.AsksName)
+            @* NSDL asked again about the PAN copy filed: a row straight under the PAN's card. *@
+            @if (panReads.AsksNsdl)
             {
                 <div class="doc-retry-row"><partial name="_NsdlRetry" model="@panReads" /></div>
             }

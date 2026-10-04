@@ -5,12 +5,24 @@ using UnoTP.Models;
 namespace UnoTP.Data;
 
 /// <summary>
-/// Where a filed copy is kept, relative to the store's root: {appNo}/{holder}/{slot}{extension}.
-/// The store files it there, and t_FD_BT_KYC_document records it (f_Doc_Filepath).
+/// Where a filed copy is kept: under the store's root (Dms:Root), at {appNo}/{holder}/{slot}{extension}.
+/// The store files it there, and t_FD_BT_KYC_document records it in full, root and all (f_Doc_Filepath).
 /// </summary>
 public static class DmsPaths
 {
-    /// <summary>Where a document is kept: application / holder / slot, with the file's own extension.</summary>
+    /// <summary>The store's root: Dms:Root, or a "dms" folder beside the app when none is set.</summary>
+    public static string Root(IConfiguration config)
+    {
+        var configured = config["Dms:Root"];
+        if (string.IsNullOrEmpty(configured)) configured = Path.Combine(AppContext.BaseDirectory, "dms");
+        return Path.GetFullPath(configured);
+    }
+
+    /// <summary>Where a document is kept in full: the root, then application / holder / slot.</summary>
+    public static string Under(string root, string appNo, string holder, string slot, string fileName) =>
+        Path.GetFullPath(Path.Combine(root, Of(appNo, holder, slot, fileName)));
+
+    /// <summary>Where a document is kept under the root: application / holder / slot, with the file's own extension.</summary>
     public static string Of(string appNo, string holder, string slot, string fileName) =>
         $"{SafePathSegment(appNo)}/{SafePathSegment(holder)}/{SafePathSegment(slot)}{Extension(fileName)}";
 
@@ -34,7 +46,7 @@ public static class DmsPaths
 /// </summary>
 public sealed class FileDocuments(Db db, IPartner partner, IConfiguration config) : IDocumentApi
 {
-    private readonly string root = Path.GetFullPath(config["Dms:Root"] is { Length: > 0 } r ? r : Path.Combine(AppContext.BaseDirectory, "dms"));
+    private readonly string root = DmsPaths.Root(config);
 
     /// <summary>What is kept beside a stored file: its original name and content type.</summary>
     private sealed record Meta(string FileName, string ContentType);
@@ -44,7 +56,7 @@ public sealed class FileDocuments(Db db, IPartner partner, IConfiguration config
     {
         if (!await MineAsync(appNo, ct)) throw new InvalidOperationException($"Application {appNo} is not the partner's: nothing filed.");
         foreach (var old in CopiesIn(appNo, holder, slot)) Remove(old);
-        var path = Path.Combine(root, DmsPaths.Of(appNo, holder, slot, file.FileName));
+        var path = DmsPaths.Under(root, appNo, holder, slot, file.FileName);
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         await File.WriteAllBytesAsync(path, file.Bytes, ct);
         await File.WriteAllTextAsync(path + ".json", JsonSerializer.Serialize(new Meta(file.FileName, file.ContentType)), ct);
@@ -93,7 +105,7 @@ public sealed class FileDocuments(Db db, IPartner partner, IConfiguration config
     {
         await using var connection = await db.OpenAsync(ct);
         return await connection.ExecuteScalarAsync<int>(
-            "SELECT COUNT(*) FROM dbo.t_Unotp_Application_Mst WHERE c_App_No = @AppNo AND c_Partner_Id = @Partner AND f_Active = 1",
+            "SELECT COUNT(*) FROM dbo.t_Unotp_Application_Mst WHERE f_App_No = @AppNo AND f_Partner_Id = @Partner AND f_Active = 1",
             new { AppNo = appNo, Partner = partner.Id }) > 0;
     }
 }

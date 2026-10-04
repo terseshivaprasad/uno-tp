@@ -75,7 +75,7 @@ Nothing that was not found is kept, and no failure is: the next request asks aga
 | `GET ifsc/{code}` | 10 minutes | Only a branch that was found; a new IFSC is found at once |
 | `GET pincodes/{pin}` | 1 day | Only a PIN code that was found |
 | `GET ifsc?q=` (the bank search) | 10 minutes, and 1 minute in the browser | Only a search that found something; a new bank is found by the next search |
-| `GET sourcing/brokers?q=`, `GET sourcing/staff?q=` | 5 minutes, and 1 minute in the browser | The same: only a search that found something. The staff are kept by the departments searched |
+| `GET sourcing/brokers?q=`, `GET sourcing/staff?q=` | 5 minutes, and 1 minute in the browser | The same: only a search that found something. The staff are kept by the sourcing mode's staff rule |
 | `GET deposits/rates` | 1 minute, never past the day | Keyed by category, gender, application type and start date - nothing of the investor's |
 | `POST deposits/quote` | 1 minute, never past the day | Keyed by amount, tenure, payout and the same card key - nothing of the investor's |
 | `GET console/schedule` | 30 seconds | Dropped the moment the app adds, ends or removes a window or notice |
@@ -134,7 +134,7 @@ again; a failed answer is not kept.
   `deliveryTypes` as `{ code, name }`; `categories` as `{ code, name, employee,
   women, senior }`; `paymentModes` as `{ name, document }` (`document` is the
   instrument a copy is filed for, or null); `sourcingModes` as `{ code, name,
-  codeLabel, nameLabel, house, search, register, sub, categories, departments }`;
+  codeLabel, nameLabel, house, search, register, sub, categories, staff }`;
   `proofsOfAddress` as `{ type, issuer, hasPhoto }` (an Aadhaar, a passport, a driving
   licence or a voter ID; a utility bill is not taken. Only a proof with `hasPhoto` -
   an officially valid document - proves the permanent address); `payouts` as `{ code, name,
@@ -159,8 +159,10 @@ again; a failed answer is not kept.
 
 | Method | Route | Body | Returns |
 |---|---|---|---|
-| GET | `investors/folios?pan={pan}` | | `FolioRecord[]`. Every folio held against the PAN; more than one is a record Operations has to merge. |
+| GET | `investors/folio-deposits?pan={pan}` or `?folio={folio}` | | `FolioDeposit[]` (`folio`, `pan`, `dob`): the deposits that are not cancelled, with their first holder, on a folio still in use. The folio check (`FolioCheck`) reads them in the FD system's order, but for a PAN whose fourth letter is not `P`, which is refused first, with a folio or without: no deposit, a new investor; no date of birth on record, refused; another date of birth than the one typed, refused; more than one folio, refused. A search by folio number is checked the same way but for the date of birth typed: the folio must hold a date of birth, and its PAN must not be on another folio too. |
 | GET | `investors/folios/{folio}` | | `FolioRecord`, or 404 |
+| GET | `investors/folios/{folio}/on-record?pan={pan}&dob={dd-MM-yyyy}` | | `FolioRecord` as its data source has it, read at Investor Identification and when a renewal opens. `source` is where the holder's latest KYC is kept: `ORA` (the common tables), `BT` (an application submitted through this app) or `FHLD` (the folio master), the newest row among them for that folio, PAN and date of birth; it is saved as the holder's `f_Data_Source`. `address` is that source's latest permanent address (the folio master's where it holds none). `docs` (`pan`, `photo`, `poa`) says what is on record there: a PAN copy or a proof of address counts only once it is verified, a photograph when it is there; no other document is looked for. A document on record is not required again on Upload Documents; one that is not is required, folio or no folio. 404 for a folio the master does not hold |
+| GET | `investors/folios/{folio}/kyc?source={source}` | | `HolderDetails`: the KYC details the source holds (`ORA` or `BT`; the folio master holds none), with its mailing address as `communication` where it holds one. Filled into Investor Information the first time it opens and validated like anything typed; the mailing address only where the communication address is typed there |
 
 `FolioRecord`: `pan`, `dob` (`dd-MM-yyyy`, or `""` when none is held),
 `folio`, `name`, `gender`, `address` (`""` when none is held),
@@ -170,7 +172,7 @@ again; a failed answer is not kept.
 
 | Method | Route | Body | Returns |
 |---|---|---|---|
-| POST | `applications` | `{ holder }` | `Application`. The backend mints the application number. |
+| POST | `applications` | `{ holder }` | `Application`. Its number comes from the FD system's `USP_FD_BTP_GetApplicationNo`: a purchase with `@BusType` `B` and `@DSource` `C` for a partner or `B` for a branch user; a renewal with `@DSource` `R` and `@BusType` `C` for a partner or `B` for a branch user. A branch user is one whose agency type is the `sourcingAgency`. |
 | GET | `applications/{appNo}` | | `Application`, or 404. Drafts included. |
 | PUT | `applications/{appNo}/upload` | `UploadState`, with header `If-Match: "{version}"` | `{ version }`, or `409`/`412` if the application changed since that version was read. Nothing is saved in that case. |
 | PUT | `applications/{appNo}/details` | `ApplicationDetails`, with `If-Match` | `{ version }`, or `409`/`412` |
@@ -285,8 +287,8 @@ A slot holds one copy:
 | Method | Route | Returns |
 |---|---|---|
 | GET | `sourcing/brokers/{code}` | `Party` (`code`, `name`): the broker a code names, or 404 |
-| GET | `sourcing/staff/{code}?departments=` | `Party`: the employee a code names, within the departments given (every department where none is given), or 404. The staff include the partner at the keyboard. |
-| GET | `sourcing/brokers?q={text}`, `sourcing/staff?q={text}` | `Party[]`: the parties whose code or name holds every word of the text, best first, at most 20 — the code fields on Upload Documents are searched this way as they are typed. Both registers are big, so nothing is searched until 3 characters are typed, and neither is ever listed whole. The staff are searched within the departments the sourcing mode chosen takes (`departments` on the mode; none listed, every department) |
+| GET | `sourcing/staff/{code}?staff=` | `Party`: the employee a code names, among the staff the sourcing mode's rule takes (`branch`, `mfis` or `mflEx`; any employee in service where none is given), or 404. |
+| GET | `sourcing/brokers?q={text}`, `sourcing/staff?q={text}` | `Party[]`: the parties whose code or name holds every word of the text, best first, at most 20 — the code fields on Upload Documents are searched this way as they are typed. Both registers are big, so nothing is searched until 3 characters are typed, and neither is ever listed whole. The staff are searched among those the sourcing mode chosen takes (`staff` on the mode: `branch`, `mfis` or `mflEx`, each a query in `MasterQueries.cs` over the employee view; none named, any employee in service) |
 | GET | `payin-slips` | `SlipRecord[]`: every application paying by cheque, cancelled ones included |
 | GET | `links` | `SentLinkRecord[]`: links sent to investors, each by SMS and e-mail, with the masked `mobile` and `email` it went to. The link itself is never returned. |
 | GET | `links/pending` | `PendingRecord[]`: applications waiting on the investor (`appNo`, `investor`, `applied`, masked `mobile` and `email`, `due`) |
@@ -404,7 +406,7 @@ Each check is answered by one service, with a settings section of its own:
 
 | Check | Interface | Service | Calls |
 |---|---|---|---|
-| PAN check | `IPanVerificationService` | PAN verification API (`PanApi`) | `POST VerifyPath` with `App_Code`, `Appl_No`, `Holder_Type`, `PAN_No`, `PAN_Holder_Name`, `PAN_Holder_DOB` and who is asking → `PAN_No_Match_Status`, `PAN_Name_Match_Status`, `PAN_DOB_Match_Status` (`"1"` a match). The PAN and date of birth both matching is `pairOk`; the name matching too is `nameOk`. |
+| PAN check | `IPanVerificationService` | PAN verification API (`PanApi`) | `POST VerifyPath` with `App_Code`, `Appl_No`, `Holder_Type`, `PAN_No`, `PAN_Holder_Name`, `PAN_Holder_DOB` (as `dd/MM/yyyy`) and who is asking → `PAN_No_Match_Status`, `PAN_Name_Match_Status`, `PAN_DOB_Match_Status` (`"1"` a match). The PAN and date of birth both matching is `pairOk`; the name matching too is `nameOk`. An answer with no match status at all is the API not having checked: an outage, said with its `ErrorMessage`, not a mismatch. `ErrorCode` and `Status` are read but decide nothing yet. |
 | Aadhaar masking | `IMaskingService` | UID masking API (`UidMasking`) | `POST MaskPath` with the copy as Base64 (`FileType`, `FileData`), `MaskLength`, `OutputJpegQuality`, the application, folio, holder, PAN and date of birth → `Result.FileData` (the masked copy) and `Result.AadhaarSuffix`. Called by the upload step for an Aadhaar in this order: identify, OCR, match the name and date of birth with the PAN's, mask, file (or keep aside if refused). |
 | CKYC search | `ICkycService` | CKYC search API (`Ckyc`) | `POST SearchPath` with `IncludeImages` and one `SearchInCkycSearchParamDetail` (`InputIdType` `C`, `InputIdNo` the PAN, `DOB`, `ApplicationFormNo`, a ten-digit `TransactionId`, `RecordIdentifier`) → `ckycResponse.searchInCkycResponseDetail[0]`: `ckycAvailable` (`Y` or `Yes` is a record held), `masked_CKYCID`, `ckycName`, `ckycReferenceID`. Asked when the partner chooses Fetch from CKYC on Upload Documents. |
 | Identification | `IDocumentIdentifier` | Idfy.Api (`Idfy`) | `documents/validate`: with `docType` for a PAN; with no `docType` for a proof of address, whose `detected_doc_type` says which proof it is (Aadhaar, passport, driving licence or voter ID). A document IDfy has no type for is taken as what it was handed in as. |
@@ -421,6 +423,13 @@ Each check is answered by one service, with a settings section of its own:
   answers with something that can't be read is reported to the partner as
   "could not answer". Nothing is filed and no refusal is counted. This holds
   for the Idfy.Api client and the `external/{name}/` clients alike.
+- **NSDL failing does not cost the PAN copy.** Once a PAN copy is identified and
+  read, it is filed whatever NSDL then says. If NSDL can't answer, or holds no such
+  PAN and date of birth, its card offers "Retry NSDL check", which puts the same PAN,
+  date of birth and name to NSDL again; if it holds the PAN against another name, the
+  name printed on the card is typed first. The copy is never identified or read a
+  second time for a retry. Uploading another copy is still possible until NSDL
+  verifies one. Proceed waits until NSDL has verified the PAN.
 - **"Not asked" is not a refusal.** Verification returns `notAsked` with a
   reason when it had nothing to ask the issuer with: a passport file number
   (it is on the last page), an unreadable licence number, or a voter ID EPIC

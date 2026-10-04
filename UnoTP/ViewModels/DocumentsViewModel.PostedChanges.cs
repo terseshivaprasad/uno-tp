@@ -74,7 +74,7 @@ public partial class DocumentsViewModel
     {
         Keep();
         var s = State;
-        if (!CkycPanVerified || s.Ckyc || s.AppType == Physical) return "docsRoute";
+        if (!CkycOn || !CkycPanVerified || s.Ckyc || s.AppType == Physical) return "docsRoute";
         if (!WithinLimit(Investor, "ckyc")) return "docsRoute";
 
         CkycSearchResult found;

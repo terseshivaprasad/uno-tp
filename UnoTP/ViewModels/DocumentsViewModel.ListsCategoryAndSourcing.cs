@@ -45,18 +45,18 @@ public partial class DocumentsViewModel
     }
 
     // The party a code names on a register ("brokers" or "staff"); null for no code, no
-    // register, or a code the register does not hold. The staff are looked for in the
-    // departments the sourcing mode takes.
+    // register, or a code the register does not hold. The staff are looked for among
+    // those the sourcing mode's staff rule takes.
     private async Task<Party?> FindPartyAsync(string? register, string code, SourcingModeOption? mode, CancellationToken ct)
     {
         if (code.Length == 0) return null;
         if (register == "brokers") return await sourcing.BrokerAsync(code, ct);
-        if (register == "staff") return await sourcing.StaffMemberAsync(code, DepartmentsOf(mode), ct);
+        if (register == "staff") return await sourcing.StaffMemberAsync(code, StaffRuleOf(mode), ct);
         return null;
     }
 
-    /// <summary>The staff departments a sourcing mode takes; none for every department.</summary>
-    public static IReadOnlyList<string> DepartmentsOf(SourcingModeOption? mode) => mode?.Departments ?? [];
+    /// <summary>The rule for which staff a sourcing mode takes; empty for any employee in service.</summary>
+    public static string StaffRuleOf(SourcingModeOption? mode) => mode?.Staff ?? "";
 
     public IReadOnlyList<Option> ApplicationTypes => Ref.ApplicationTypes;
 

@@ -30,8 +30,8 @@ public class DocumentsController(
     /// <summary>
     /// A register searched as a code is typed (documents.js): the brokers or the staff
     /// whose code or name holds the text, as the backend finds them. Nothing is looked
-    /// up until three characters are typed. The staff are searched within the
-    /// departments the sourcing mode chosen on the page takes.
+    /// up until three characters are typed. The staff are searched among those the
+    /// staff rule of the sourcing mode chosen on the page takes.
     /// </summary>
     [HttpGet("sourcing")]
     [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Client)]
@@ -46,7 +46,7 @@ public class DocumentsController(
 
         var modes = (await lookups.ReferenceAsync()).SourcingModes;
         var chosen = modes.FirstOrDefault(m => m.Code == mode);
-        return Json(await sourcing.SearchStaffAsync(text, DocumentsViewModel.DepartmentsOf(chosen)));
+        return Json(await sourcing.SearchStaffAsync(text, DocumentsViewModel.StaffRuleOf(chosen)));
     }
 
     [HttpGet("")]
@@ -109,7 +109,7 @@ public class DocumentsController(
     public Task<IActionResult> Upload(UploadForm form) =>
         ChangeAsync(form, model => model.UploadAsync(Request.Form.Files));
 
-    /// <summary>The name typed from the investor's PAN card, put to NSDL again.</summary>
+    /// <summary>NSDL asked again about the investor's PAN copy already filed, with the name typed from the card where NSDL did not match it.</summary>
     [HttpPost("nsdl")]
     public Task<IActionResult> Nsdl(UploadForm form) =>
         ChangeAsync(form, model => model.RetryNsdlAsync(model.Investor, form.NsdlName));

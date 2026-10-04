@@ -145,7 +145,7 @@ and is for empty tables: a row already there fails on its key.
 
 Every small list the pages offer (categories, payouts, relations, occupations,
 sources of funds, document codes and the rest) is rows of `t_Unotp_Ref_List`:
-`c_Code` is what is saved, `c_Name` what is shown. The tables that have a master of
+`f_Code` is what is saved, `f_Name` what is shown. The tables that have a master of
 their own are looked up where they are, and have no rows in a script here: folios,
 brokers, staff, bank branches, PIN codes, the Axis CMS locations, the payment
 gateway's banks and the rate card.
@@ -174,24 +174,23 @@ one table. A row is one entry of a list:
 
 | Column | What it holds |
 |---|---|
-| `c_List` | The list the row is an entry of |
-| `n_Seq` | Its place in the list |
-| `c_Code` | What is saved |
-| `c_Name` | What is shown |
-| `c_Parent` | The code of the entry it belongs under, in another list. This is how one drop-down depends on another. NULL where it belongs under none |
-| `j_Attrs` | The entry's own settings, as JSON. NULL where it has none |
+| `f_List` | The list the row is an entry of |
+| `f_Seq` | Its place in the list |
+| `f_Code` | What is saved |
+| `f_Name` | What is shown |
+| `f_Parent` | The code of the entry it belongs under, in another list. This is how one drop-down depends on another. NULL where it belongs under none |
+| `f_Attrs` | The entry's own settings, as JSON. NULL where it has none |
 | `f_Active` | 1 the entry is offered; 0 it is taken off the pages |
 
 To change what a drop-down offers, change its rows; nothing about a list is written
 in the code. The lists, and what each uses beyond code and name:
 
-| List | What it is | `c_Parent` | Settings in `j_Attrs` |
+| List | What it is | `f_Parent` | Settings in `f_Attrs` |
 |---|---|---|---|
 | `applicationTypes` | How an application is signed | | |
 | `categories` | The deposit categories. Code and name are the rate card's `CATEGORY` | | `employee`, `women`, `senior`: true or false, who the category is for. `extraRate`: what it earns over the public rate, % a year, for the page's wording |
-| `sourcingModes` | How an application is sourced | | `codeLabel`, `nameLabel`: what the first code field and its name are called. `house`: the code the mode puts in the first field itself; empty where it is typed. `search`: the field searched as it is typed, `source` or `sub`; empty for neither. `register`: what it is searched on, `brokers` or `employees`. `sub`: what the second field does: `shut`, `house`, `free`, `employee` or `employeeShut` |
+| `sourcingModes` | How an application is sourced | | `codeLabel`, `nameLabel`: what the first code field and its name are called. `house`: the code the mode puts in the first field itself; empty where it is typed. `search`: the field searched as it is typed, `source` or `sub`; empty for neither. `register`: what it is searched on, `brokers` or `employees`. `sub`: what the second field does: `shut`, `house`, `free`, `employee` or `employeeShut`. `staff`: which employees the mode takes: `branch`, `mfis` or `mflEx`, each a query in `UnoTP.Data/MasterQueries.cs`; left out, any employee in service |
 | `sourcingModeCategories` | The categories a deposit under a sourcing mode may be booked as. The code is a category's | The sourcing mode's code | |
-| `sourcingModeDepartments` | The staff departments a sourcing mode searches. The code is the department as the staff query gives it. With no rows for a mode, every department is searched | The sourcing mode's code | |
 | `paymentModes` | How a deposit is paid | | `document`: the instrument a copy is filed for (`cheque`); null where none is |
 | `proofsOfAddress` | The proofs of address taken | | `issuer`: who is asked to confirm it. `hasPhoto`: true where it carries a photograph, so it can prove the permanent address |
 | `employeeHolders` | Which holder is the employee. The first is the primary holder | | |
@@ -225,7 +224,8 @@ The FD system's tables have no version column. Each save is checked against the
 version the page read (`If-Match`), moves the version on, takes that step's rows
 out of use (`f_Active = 0`) and inserts them afresh with status `PEN`: a step's
 current rows are the application's active ones. Submitting writes every step once
-more with status `APR`, with the rate locked on `t_FD_BT_Investment_Dtl` and the
+more with status `APR` (or `PEN_E` where the investor's KYC was fetched from CKYC;
+the app's own tables say `APR` either way), with the rate locked on `t_FD_BT_Investment_Dtl` and the
 interest and maturity on `t_Unotp_Application_Mst`, and the application takes no
 saves after it. Nothing is deleted, so the earlier rows stay as the audit trail.
 Every row carries `f_Source = 'UNO_TP'`, the user's `Agency_Usr_Clustered_ID`, and
@@ -244,7 +244,7 @@ underscore (`ConnectionStrings__UnoTP`).
 | `AuthApi:BaseUrl`, `PanApi:BaseUrl`, `UidMasking:BaseUrl`, `Ckyc:BaseUrl`, `Idfy:BaseUrl`, `NameScreening:BaseUrl`, `NameMatch:BaseUrl`, `Shortener:BaseUrl` | A service's own address, for one that is not behind the gateway: it is then called at `{BaseUrl}/{BasePath}/` and the gateway is not used for it. Blank (as committed), the service is called at `Backend:BaseUrl`. Set in the environment (`Ckyc__BaseUrl` and the like), never in a committed file. With every service given its own address, `Backend:BaseUrl` need not be set. |
 | `Backend:ClientId` | The name the app calls itself by on every API's `X-Client-Id` header (`unotp`). |
 | (in code) | The SQL that reads each table with a master of its own (folios, brokers, staff, bank branches, PIN codes, the Axis CMS locations, the payment gateway's banks, the rate card) is in the code, not in settings: `UnoTP.Data/MasterQueries.cs` has one query per table. A table in another database on the same server is written there by its full name, `OtherDb.dbo.Table`. |
-| `Backend:Switches:{Identify, Ocr, Verification, PanAadhaarLink, FaceMatch, NameMatch}` | `false` switches the check off: it is not called, the page goes on, and the check is marked as not asked for Operations. Masking and the PAN check have no switch; name screening has its own (`NameScreening:ApiCall`). |
+| `Backend:Switches:{PanCheck, Identify, Ocr, Verification, PanAadhaarLink, FaceMatch, NameMatch, FetchCkyc, Cheque}` | `false` switches the check off: it is not called, the page goes on, and the check is marked as not asked for Operations. With `PanCheck` off, NSDL is not asked about a PAN copy: the PAN, date of birth and name stand as the copy reads them, the application goes on, and `PanApi` needs no address. With `FetchCkyc` off, the Fetch from CKYC button stays on Upload Documents, disabled, and says the service is unavailable; `Ckyc` needs no address. With `Cheque` off, a payment instrument's copy is filed as handed over: it is not read, and the account is entered on Bank Details & Payment. Face match and the cheque check are off as committed. Masking has no switch; name screening has its own (`NameScreening:ApiCall`). |
 | `AuthApi:DecryptPath`, `AuthApi:SessionPath`, `AuthApi:MenuPath`, `AuthApi:SessionHours` | The way in: the path of each call under the gateway (`{userId}` and `{sysCode}` in the menu path are filled in), and how many hours a session lasts. |
 | `PanApi:VerifyPath` | Where a holder's PAN is checked with NSDL. Everything else the request carries - the app code, the sourcing type and sub type, who is asking - comes from the signed-in partner and the application. |
 | `UidMasking:MaskPath`, `UidMasking:MaskLength`, `UidMasking:OutputJpegQuality`, `UidMasking:CheckDocumentType` | Where an Aadhaar copy is masked, how many digits are masked, how good the masked JPEG comes back, and whether the API checks the copy is an Aadhaar first. |
@@ -254,7 +254,7 @@ underscore (`ConnectionStrings__UnoTP`).
 | `NameScreening:ApiCall` | `0` switches screening off: the API is not called, every holder goes on, and the KYC row says the check was skipped. Anything else is sent on as `Api_call`. |
 | `NameScreening:{BlackListCheck, CustomerDataBaseCheck, RejectedListCheck, EmployeeDataBaseCheck}` | Which lists a holder is screened against, as the API takes them. |
 | `NameMatch:BasePath`, `NameMatch:MatchPath` | The name match API: whether two names are the same person's. |
-| `Dms:Root` | Where filed copies are kept until DMS is wired in. |
+| `Dms:Root` | Where filed copies are kept until DMS is wired in. Each copy's path is recorded in full, this root included, in `t_FD_BT_KYC_document.f_Doc_Filepath`. |
 | `Ckyc:BasePath`, `Ckyc:SearchPath`, `Ckyc:IncludeImages` | The CKYC (CERSAI) search: whether a record is held for a PAN and date of birth. Asked when the partner chooses Fetch from CKYC; only an investor it holds a record for takes that route. |
 | `Idfy:BasePath` | Idfy.Api, which alone answers document identification, OCR, verification with the issuer, the PAN-Aadhaar link and face match. A cheque is read with IDfy's `ind_cheque`; nobody confirms its account with the bank, so it is carried to Bank Details as read, for the partner to check. Where IDfy has no endpoint - an Aadhaar's issuer, a bank account - nothing is asked, and the page says so; an Aadhaar's address is taken as OCR read it. A utility bill is not taken as a proof of address. |
 | `Idfy:ValidateDocumentPath`, `Idfy:ExtractPanPath`, `Idfy:ExtractAadhaarPath`, `Idfy:ExtractDrivingLicencePath`, `Idfy:ExtractPassportPath`, `Idfy:ExtractVoterIdPath`, `Idfy:ExtractChequePath`, `Idfy:VerifyDrivingLicencePath`, `Idfy:VerifyPassportPath`, `Idfy:VerifyVoterIdPath`, `Idfy:VerifyPanAadhaarLinkPath`, `Idfy:CompareFacesPath` | The path of each Idfy.Api call under the gateway. |

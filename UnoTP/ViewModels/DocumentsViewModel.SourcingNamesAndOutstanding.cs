@@ -28,11 +28,14 @@ public partial class DocumentsViewModel
 
     /// <summary>What Proceed would ask for, in the order it asks, so the footer can say what is next.</summary>
     // A PAN copy filed for a holder NSDL has not verified.
-    private bool NsdlUnsettled(DocHolder h) => NsdlApplies(h) && State.Docs.ContainsKey(h.Key("pan")) && NsdlOf(h) != "verified";
+    private bool NsdlUnsettled(DocHolder h) => NsdlApplies(h) && State.Docs.ContainsKey(h.Key("pan")) && !NsdlSettled(h);
 
-    private string NsdlNeed(DocHolder h) => NsdlOf(h) == "failed"
-        ? $"NSDL holds no such PAN and date of birth. {NsdlFailedNext(h)}"
-        : "Type the name as printed on the PAN, and ask NSDL again";
+    private string NsdlNeed(DocHolder h) => NsdlOf(h) switch
+    {
+        "failed" => $"NSDL holds no such PAN and date of birth. Retry the NSDL check if both are right. If not: {NsdlFailedNext(h)}",
+        Unanswered => "NSDL could not be asked about the PAN. Retry the NSDL check",
+        _ => "Type the name as printed on the PAN, and ask NSDL again",
+    };
 
     // The bar's words for a missing document, and the card that holds it.
     private static readonly Dictionary<string, string> SlotOfNeed = new()

@@ -125,27 +125,33 @@ public partial class NewApplicationViewModel(IInvestorApi investors, UnoTP.Infra
     public async Task<bool> CheckAsync()
     {
         By = By == "folio" ? "folio" : "pan";
+        var today = DateOnly.FromDateTime(DateTime.Today);
 
         if (By == "folio")
         {
             Folio = Clean(Folio);
             if (Folio.Length == 0) { FolioError = "Enter the folio number"; return false; }
-            var byFolio = await investors.FolioAsync(Folio);
-            if (byFolio is null)
+            var onFolio = await investors.FolioDepositsByFolioAsync(Folio);
+            // The folio's PAN is looked up too: it must not be on another folio as well.
+            IReadOnlyList<FolioDeposit> ofPan = [];
+            if (onFolio.Count > 0 && onFolio[0].Pan.Length > 0) ofPan = await investors.FolioDepositsByPanAsync(onFolio[0].Pan);
+            var byFolio = FolioCheck.ByFolio(onFolio, ofPan, today);
+            if (byFolio.Folio.Length == 0)
             {
                 FolioError = "No record against that folio number — check it, or search by PAN instead";
                 return false;
             }
-            // Without a date of birth the record cannot be told apart from a minor's,
-            // and the partner cannot supply one: only Operations can correct it.
-            if (byFolio.Dob.Length == 0)
+            if (byFolio.Problem is not null)
             {
-                FolioError = "The date of birth is not available with us";
-                OpsError = NoDob(byFolio);
+                FolioError = byFolio.Problem;
+                // Without a date of birth the record cannot be told apart from a minor's,
+                // and the partner cannot supply one: only Operations can correct it.
+                if (byFolio.Problem == FolioCheck.NoDob) OpsError = NoDob(onFolio[0].Pan, byFolio.Folio);
+                if (byFolio.Folios is { } others) OpsError = ManyFolios(onFolio[0].Pan, others);
                 return false;
             }
-            ShowFolio(byFolio, "Matched on folio number");
-            return true;
+            var folioDob = onFolio.First(d => d.Dob.Length > 0).Dob;
+            return await ShowFolioAsync(byFolio.Folio, onFolio[0].Pan, folioDob, "Matched on folio number");
         }
 
         Pan = Clean(Pan);
@@ -154,43 +160,20 @@ public partial class NewApplicationViewModel(IInvestorApi investors, UnoTP.Infra
         DobError = DobProblem((await lookups.ConfigAsync()).MinAge);
         if (PanError is not null || DobError is not null) return false;
 
-        var onRecord = await investors.FoliosByPanAsync(Pan);
+        var onRecord = await investors.FolioDepositsByPanAsync(Pan);
+        var byPan = FolioCheck.ByPan(Pan, Dob, onRecord, today);
 
-        // More than one folio against a PAN is a record Operations has to merge:
-        // a search by PAN cannot say which of them the deposit is booked against.
-        // Each folio can still be searched by its number.
-        if (onRecord.Count > 1)
+        if (byPan.Problem is not null)
         {
-            PanError = $"{onRecord.Count} folios are held against this PAN";
-            var folios = onRecord.Select(f => f.Folio).ToList();
-            OpsError = $"Folios {string.Join(", ", folios.Take(folios.Count - 1))} and {folios[^1]} are all held against PAN {Pan}. "
-                + "Operations has to merge them before a deposit can be booked against the PAN. "
-                + "Until then, each can still be searched by its folio number.";
-            return false;
-        }
-
-        if (onRecord.Count == 1)
-        {
-            var only = onRecord[0];
+            if (byPan.AboutDob) DobError = byPan.Problem; else PanError = byPan.Problem;
             // The register has the PAN but no date of birth to check the one typed
             // against, and only Operations can put one on the record.
-            if (only.Dob.Length == 0)
-            {
-                DobError = "The date of birth is not available with us";
-                OpsError = NoDob(only);
-                return false;
-            }
-            if (only.Dob == Dob)
-            {
-                ShowFolio(only, "Matched on PAN and date of birth");
-                return true;
-            }
-            // A PAN on record against another date of birth is a typo far more often
-            // than a second investor, so it goes back to the field rather than opening
-            // as a new folio.
-            DobError = "This PAN is on record, but against a different date of birth";
+            if (byPan.Problem == FolioCheck.NoDob) OpsError = NoDob(Pan, byPan.Folio);
+            if (byPan.Folios is { } folios) OpsError = ManyFolios(Pan, folios);
             return false;
         }
+
+        if (byPan.Folio.Length > 0) return await ShowFolioAsync(byPan.Folio, Pan, Dob, "Matched on PAN and date of birth");
 
         Record = new Holder(Pan, Dob, "", "", "", "", new DocsOnRecord(false, false, false), "");
         Kind = "New investor";
@@ -199,16 +182,37 @@ public partial class NewApplicationViewModel(IInvestorApi investors, UnoTP.Infra
         return true;
     }
 
-    private static string NoDob(FolioRecord f) =>
-        $"The register holds PAN {f.Pan} (folio {f.Folio}) without a date of birth, so the investor's age cannot be checked. "
+    // More than one folio against a PAN is a record Operations has to merge: neither
+    // a search by PAN nor one by folio number can say which of them the deposit is
+    // booked against.
+    private static string ManyFolios(string pan, IReadOnlyList<string> folios) =>
+        $"Folios {string.Join(", ", folios.Take(folios.Count - 1))} and {folios[^1]} are all held against PAN {pan}. "
+        + "Operations has to merge them before a deposit can be booked against the PAN.";
+
+    private static string NoDob(string pan, string folio) =>
+        $"The register holds PAN {pan} (folio {folio}) without a date of birth, so the investor's age cannot be checked. "
         + "Operations has to add it to the record before a deposit can be booked.";
 
-    private void ShowFolio(FolioRecord f, string how)
+    // The folio the check found, shown with the details the register holds for it.
+    // The PAN and date of birth are the ones the check went by.
+    private async Task<bool> ShowFolioAsync(string folio, string pan, string dob, string how)
     {
-        Record = new Holder(f.Pan, f.Dob, f.Folio, f.Name, f.Gender, f.Address, f.Docs, f.Note, f.Source);
+        // The folio with what its data source holds: where the holder's latest KYC is
+        // kept, and the address and documents on record there.
+        var f = await investors.FolioOnRecordAsync(folio, pan, dob);
+        if (f is null)
+        {
+            var why = $"Folio {folio} is held, but the register has no details for it";
+            if (By == "folio") FolioError = why; else PanError = why;
+            OpsError = $"Folio {folio} has a deposit against PAN {pan}, but the folio's own record (name and address) could not be found. "
+                + "Operations has to look at the record before a deposit can be booked.";
+            return false;
+        }
+        Record = new Holder(pan, dob, f.Folio, f.Name, f.Gender, f.Address, f.Docs, f.Note, f.Source);
         Kind = "Existing customer";
         Detail = how;
         At = Stage.Found;
+        return true;
     }
 
     private string? DobProblem(int minAge)

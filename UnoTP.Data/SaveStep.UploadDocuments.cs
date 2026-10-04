@@ -12,7 +12,14 @@ namespace UnoTP.Data;
 /// <param name="UserName">The signed-in user's name; empty when not known.</param>
 /// <param name="Folio">The investor's folio; empty for an investor with none.</param>
 internal sealed record Stamp(string AppNo, int Version, string Status, string By, long? SessionId = null, string Ip = "", string UserClusterId = "",
-    string UserName = "", string Folio = "");
+    string UserName = "", string Folio = "")
+{
+    /// <summary>
+    /// What the app's own tables carry: PEN for a draft, APR once submitted, whatever
+    /// status the FD system's rows are given (a CKYC application's are PEN_E).
+    /// </summary>
+    public string OwnStatus => Status == RowStatus.Pending ? RowStatus.Pending : RowStatus.Approved;
+}
 
 /// <summary>
 /// Writes each section of an application as rows in the FD system's own tables
@@ -34,13 +41,14 @@ internal static partial class Sections
     // ----- Upload Documents: t_Unotp_Upload_State, t_FD_BT_KYC_document ----------------
 
     /// <param name="codes">How each document is coded in the FD system's document master (SqlReference.DocumentCodesAsync).</param>
+    /// <param name="dmsRoot">The document store's root (DmsPaths.Root), which each copy's path is recorded under.</param>
     public static async Task WriteUploadAsync(IDbConnection db, IDbTransaction tx, Stamp at, UploadState upload,
-        IReadOnlyDictionary<string, DocumentCode> codes)
+        IReadOnlyDictionary<string, DocumentCode> codes, string dmsRoot)
     {
         await db.ExecuteAsync("""
-            INSERT dbo.t_Unotp_Upload_State (c_App_No, n_App_Version, c_Status, j_Upload, c_Created_By)
+            INSERT dbo.t_Unotp_Upload_State (f_App_No, f_App_Version, f_Status, f_Upload, f_Created_By)
             VALUES (@AppNo, @Version, @Status, @Json, @By)
-            """, new { at.AppNo, at.Version, at.Status, Json = JsonSerializer.Serialize(upload, Json), at.By }, tx);
+            """, new { at.AppNo, at.Version, Status = at.OwnStatus, Json = JsonSerializer.Serialize(upload, Json), at.By }, tx);
 
         // One row per document on the application, coded as the FD system's document
         // master codes it, with what the outside checks made of it (SaveStep.DocumentCheckFlags.cs).
@@ -70,7 +78,7 @@ internal static partial class Sections
             {
                 at.AppNo, HolderType = holderType, code?.TypeCode, code?.SubTypeCode, code?.TypeName, code?.SubTypeName,
                 FileName = Cut(d.Doc.FileName, 250),
-                FilePath = d.Doc.Before ? null : DmsPaths.Of(at.AppNo, d.HolderType, d.DocType, d.Doc.FileName),
+                FilePath = d.Doc.Before ? null : DmsPaths.Under(dmsRoot, at.AppNo, d.HolderType, d.DocType, d.Doc.FileName),
                 Folio = FolioOf(d.HolderType, at, upload),
                 Sequence = NextSequence(sequences, holderType, code?.TypeCode ?? d.DocType),
                 // A document that came over from the folio or the step before was not uploaded here.

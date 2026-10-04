@@ -10,14 +10,14 @@ public interface ISourcingApi
     /// <summary>The broker a code names, or null.</summary>
     Task<Party?> BrokerAsync(string code, CancellationToken ct = default);
 
-    /// <summary>The employee a code names, or null. Only the departments given are looked in; with none given, every department.</summary>
-    Task<Party?> StaffMemberAsync(string code, IReadOnlyList<string> departments, CancellationToken ct = default);
+    /// <summary>The employee a code names, or null, among the staff a sourcing mode's rule takes (<see cref="SourcingModeOption.Staff"/>); with no rule, any employee in service.</summary>
+    Task<Party?> StaffMemberAsync(string code, string staffRule, CancellationToken ct = default);
 
     /// <summary>GET sourcing/brokers?q=: the brokers whose code or name holds every word of the text, best first; at most 20.</summary>
     Task<IReadOnlyList<Party>> SearchBrokersAsync(string query, CancellationToken ct = default);
 
-    /// <summary>GET sourcing/staff?q=: the same, on the staff register, within the departments given; with none given, every department.</summary>
-    Task<IReadOnlyList<Party>> SearchStaffAsync(string query, IReadOnlyList<string> departments, CancellationToken ct = default);
+    /// <summary>GET sourcing/staff?q=: the same, on the staff register, among the staff a sourcing mode's rule takes; with no rule, any employee in service.</summary>
+    Task<IReadOnlyList<Party>> SearchStaffAsync(string query, string staffRule, CancellationToken ct = default);
 }
 
 /// <summary>A search of a big table (brokers, staff, bank branches) as its text is typed.</summary>

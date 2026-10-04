@@ -34,7 +34,7 @@ the ones kept in SQL Server, and the outside services have an HTTP client each i
 
 | Call | Used for |
 |---|---|
-| `IInvestorApi.FoliosByPanAsync`, `FolioAsync` | The search by PAN and date of birth, or by folio. |
+| `IInvestorApi.FolioDepositsByPanAsync`, `FolioDepositsByFolioAsync`, `FolioAsync` | The search by PAN and date of birth, or by folio: the deposits the folio check (`FolioCheck`) looks at, then the details of the folio it finds. |
 | `IApplicationApi.OpenAsync`, `DraftsAsync` | Opening the application; the drafts offered instead. |
 
 ## Upload Documents (`DocumentsController`, `DocumentsViewModel`)
@@ -61,7 +61,7 @@ The joint holders' documents on Investor Information go through the same calls.
 | Call | Used for |
 |---|---|
 | `IApplicationApi.FindAsync`, `SaveDetailsAsync`, `SavePageAsync`, `SaveUploadAsync` | The application; the details saved after every post; the page's working state; the category moved to a women's one, or a joint holder's documents. |
-| `IInvestorApi.FoliosByPanAsync`, `FolioAsync`, `KycOnFolioAsync`, `NomineesOnDepositAsync` | A joint holder's search; the KYC details a compliant folio holds, filled in so they are not typed again; in a renewal, the nominees on the deposit being renewed. |
+| `IInvestorApi.FolioDepositsByPanAsync`, `FolioDepositsByFolioAsync`, `FolioAsync`, `KycOnFolioAsync`, `NomineesOnDepositAsync` | A joint holder's search; the KYC details held for a folio where its latest KYC is kept (its data source), filled in so they are not typed again and validated like anything typed; in a renewal, the nominees on the deposit being renewed. |
 | `IPlaceApi.PinCodeAsync` | The district and state of a PIN code. |
 | `INameScreeningService.ScreenAsync` | Every holder, before Proceed. |
 

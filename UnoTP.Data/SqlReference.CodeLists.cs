@@ -7,8 +7,8 @@ public sealed partial class SqlReference
     // ----- The lists whose choice is saved as a code -----------------------------------
     //
     // Marital status, the nominee's and the employee's relation and the occupation are
-    // rows of t_Unotp_Ref_List like every other list: c_Code is what a save writes,
-    // c_Name what the page shows, and n_Seq the order they are offered in.
+    // rows of t_Unotp_Ref_List like every other list: f_Code is what a save writes,
+    // f_Name what the page shows, and f_Seq the order they are offered in.
 
     /// <summary>
     /// The 'maritalStatuses', 'nomineeRelations', 'employeeRelations', 'occupations',

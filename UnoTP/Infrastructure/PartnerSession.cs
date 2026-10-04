@@ -115,6 +115,10 @@ public sealed class SessionPartner(IHttpContextAccessor http) : IPartner
     public string UserClusterId => Session.User()?.Agency_Usr_Clustered_ID ?? "";
 
     public string UserName => Session.Profile()?.UserName ?? "";
+
+    public string AgencyCode => Session.Profile()?.AgencyCode ?? "";
+
+    public string AgencyType => Session.Profile()?.AgencyType ?? "";
 }
 
 /// <summary>Who the partner is: what the auth API said of them when their session started, kept with the sign-in.</summary>

@@ -9,7 +9,7 @@ namespace UnoTP.Data;
 /// <summary>
 /// The lists and rules, from t_Unotp_Ref_List, t_Unotp_Feature_Mst and t_Unotp_App_Config
 /// (db/create_tables.sql, filled by db/insert_seed.sql). Every list the pages offer is
-/// rows of t_Unotp_Ref_List: c_Code is what is posted and saved, c_Name what is shown.
+/// rows of t_Unotp_Ref_List: f_Code is what is posted and saved, f_Name what is shown.
 /// Kept for a minute, so an edit in the tables is seen within one; the web app keeps
 /// them longer on its side (Backend:ReferenceCacheMinutes).
 /// </summary>
@@ -25,7 +25,7 @@ public sealed partial class SqlReference(Db db, IMemoryCache cache) : IReference
         {
             (entry.AbsoluteExpirationRelativeToNow, entry.Size) = (KeptFor, 1);
             await using var connection = await db.OpenAsync(ct);
-            var rows = await connection.QueryAsync<(string Key, string Value)>("SELECT c_Key, c_Value FROM dbo.t_Unotp_App_Config WHERE f_Active = 1");
+            var rows = await connection.QueryAsync<(string Key, string Value)>("SELECT f_Key, f_Value FROM dbo.t_Unotp_App_Config WHERE f_Active = 1");
             return rows.ToDictionary(r => r.Key, r => r.Value, StringComparer.OrdinalIgnoreCase);
         })!;
 
@@ -79,13 +79,13 @@ public sealed partial class SqlReference(Db db, IMemoryCache cache) : IReference
             (cacheEntry.AbsoluteExpirationRelativeToNow, cacheEntry.Size) = (KeptFor, 1);
             await using var lists = await db.OpenAsync(ct);
             var entries = (await lists.QueryAsync<Entry>("""
-                SELECT c_List AS List, c_Code AS Code, c_Name AS Name, c_Parent AS Parent, j_Attrs AS Attrs
-                FROM dbo.t_Unotp_Ref_List WHERE f_Active = 1 ORDER BY c_List, n_Seq
+                SELECT f_List AS List, f_Code AS Code, f_Name AS Name, f_Parent AS Parent, f_Attrs AS Attrs
+                FROM dbo.t_Unotp_Ref_List WHERE f_Active = 1 ORDER BY f_List, f_Seq
                 """)).ToLookup(e => e.List);
             await using var featureMaster = await db.OpenAsync(ct);
             var features = (await featureMaster.QueryAsync<FeatureOption>("""
-                SELECT c_Feature_Key AS Code, c_Name AS Name, c_Group AS [Group], c_Detail AS Detail, c_Off_Reason AS OffReason, f_Tile AS Tile
-                FROM dbo.t_Unotp_Feature_Mst WHERE f_Active = 1 ORDER BY n_Seq
+                SELECT f_Feature_Key AS Code, f_Name AS Name, f_Group AS [Group], f_Detail AS Detail, f_Off_Reason AS OffReason, f_Tile AS Tile
+                FROM dbo.t_Unotp_Feature_Mst WHERE f_Active = 1 ORDER BY f_Seq
                 """)).ToList();
             await using var cmsMaster = await db.OpenAsync(ct);
             var cmsLocations = (await cmsMaster.QueryAsync<string>(
@@ -116,7 +116,7 @@ public sealed partial class SqlReference(Db db, IMemoryCache cache) : IReference
             PaymentModes: Of("paymentModes").Select(e => Attrs(e, a => new PaymentModeOption(e.Name, ReadString(a, "document")))).ToList(),
             SourcingModes: Of("sourcingModes").Select(e => Attrs(e, a => new SourcingModeOption(e.Code, e.Name,
                 ReadString(a, "codeLabel") ?? "", ReadString(a, "nameLabel") ?? "", ReadString(a, "house") ?? "", ReadString(a, "search") ?? "",
-                ReadString(a, "register") ?? "", ReadString(a, "sub") ?? "", Under("sourcingModeCategories", e.Code), Under("sourcingModeDepartments", e.Code)))).ToList(),
+                ReadString(a, "register") ?? "", ReadString(a, "sub") ?? "", Under("sourcingModeCategories", e.Code), ReadString(a, "staff") ?? ""))).ToList(),
             ProofsOfAddress: Of("proofsOfAddress").Select(e => Attrs(e, a => new ProofOption(e.Code, ReadString(a, "issuer") ?? "", ReadBool(a, "hasPhoto")))).ToList(),
             EmployeeHolders: Names("employeeHolders"),
             EmployeeRelations: masters.EmployeeRelations.Select(o => o.Name).ToList(),
@@ -146,7 +146,7 @@ public sealed partial class SqlReference(Db db, IMemoryCache cache) : IReference
             Masters: masters);
     }
 
-    // ----- An entry's attributes, j_Attrs -------------------------------------------
+    // ----- An entry's attributes, f_Attrs -------------------------------------------
 
     private static T Attrs<T>(Entry e, Func<JsonElement, T> read)
     {

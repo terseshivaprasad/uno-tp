@@ -12,8 +12,8 @@
      t_Unotp_Ref_List      every list the pages offer
 
    t_Unotp_Ref_List is the one master for the small lists. A row is one entry of a
-   list: c_Code is what is posted and saved, c_Name what is shown, n_Seq the order,
-   c_Parent the entry it belongs under, j_Attrs the entry's own settings as JSON,
+   list: f_Code is what is posted and saved, f_Name what is shown, f_Seq the order,
+   f_Parent the entry it belongs under, f_Attrs the entry's own settings as JSON,
    and f_Active 0 takes it off the pages. To change a list, change its rows:
    nothing about a list is written in the code. The README ("The lists") says what
    each list is for and which settings it takes.
@@ -38,7 +38,7 @@
    ============================================================================= */
 
 /* ----- The settings ----------------------------------------------------------- */
-INSERT dbo.t_Unotp_App_Config (c_Key, c_Value, c_Description, f_Active, c_Created_By) VALUES
+INSERT dbo.t_Unotp_App_Config (f_Key, f_Value, f_Description, f_Active, f_Created_By) VALUES
     (N'sourcingAgency', N'1033', N'The agency type that sources as the house; any other sources as a broker', 1, 'SEED'),
     (N'minAge', N'18', N'Youngest a holder may be', 1, 'SEED'),
     (N'seniorAge', N'60', N'Age from which a senior citizen category applies', 1, 'SEED'),
@@ -60,7 +60,6 @@ INSERT dbo.t_Unotp_App_Config (c_Key, c_Value, c_Description, f_Active, c_Create
     (N'renewUntilDaysAutoRenewal', N'10', N'The same, for a deposit tagged for auto renewal', 1, 'SEED'),
     (N'sessionHours', N'8', N'Hours a session lasts after entry', 1, 'SEED'),
     (N'sysCode', N'UNOTP', N'The system code the portal enters Uno TP with', 1, 'SEED'),
-    (N'appNoPrefix', N'FBBMFL', N'Application numbers: {prefix}{yy}F{running number}', 1, 'SEED'),
     (N'slipNoPrefix', N'AXPIS', N'Pay-in slip numbers: {prefix}{running number}', 1, 'SEED'),
     (N'defaultRateCategory', N'PUBLIC', N'The category (a code of the ''categories'' list) whose rates a deposit takes when its own category has none', 1, 'SEED'),
     (N'compoundingPerYear', N'1', N'Times a year a cumulative deposit compounds; the months after the last whole period earn simple interest', 1, 'SEED'),
@@ -70,10 +69,10 @@ INSERT dbo.t_Unotp_App_Config (c_Key, c_Value, c_Description, f_Active, c_Create
     (N'sourceOfFundsOther', N'11', N'The source of funds (a code of the ''sourcesOfFunds'' list) that takes a typed remark', 1, 'SEED');
 
 /* ----- The console's features --------------------------------------------------
-   c_Group is the dashboard section a feature's tile sits in; c_Off_Reason is what
+   f_Group is the dashboard section a feature's tile sits in; f_Off_Reason is what
    the tile says while the feature is switched off; f_Tile 0 gives it no tile.
    ----------------------------------------------------------------------------- */
-INSERT dbo.t_Unotp_Feature_Mst (c_Feature_Key, c_Name, c_Group, c_Detail, c_Off_Reason, n_Seq, f_Tile, f_Active, c_Created_By) VALUES
+INSERT dbo.t_Unotp_Feature_Mst (f_Feature_Key, f_Name, f_Group, f_Detail, f_Off_Reason, f_Seq, f_Tile, f_Active, f_Created_By) VALUES
     (N'new-fd', N'Create New FD', N'Apply for a new FD', N'The booking wizard end to end, from investor search to submission.', N'Unavailable', 1, 1, 1, 'SEED'),
     (N'pis', N'PIS Generation - Axis', N'Apply for a new FD', N'Making and reprinting Axis pay-in slips. A slip already printed stays valid.', N'Unavailable', 2, 1, 1, 'SEED'),
     (N'view-app', N'View existing application', N'Apply for a new FD', N'Looking an application up by number, folio or date.', N'Unavailable', 3, 1, 1, 'SEED'),
@@ -85,19 +84,19 @@ INSERT dbo.t_Unotp_Feature_Mst (c_Feature_Key, c_Name, c_Group, c_Detail, c_Off_
 /* ----- The lists ---------------------------------------------------------------
    One INSERT for every list. The columns:
 
-     c_List     the list the row is an entry of
-     n_Seq      its place in the list
-     c_Code     what is saved
-     c_Name     what is shown
-     c_Parent   the code of the entry this one belongs under, in another list; NULL
+     f_List     the list the row is an entry of
+     f_Seq      its place in the list
+     f_Code     what is saved
+     f_Name     what is shown
+     f_Parent   the code of the entry this one belongs under, in another list; NULL
                 where it belongs under none. This is how one drop-down depends on
                 another: a sub occupation's parent is its occupation, and a row of
                 'sourcingModeCategories' has the sourcing mode as its parent
-     j_Attrs    the entry's own settings, as JSON; NULL where it has none. The
+     f_Attrs    the entry's own settings, as JSON; NULL where it has none. The
                 settings each list takes are listed in the README ("The lists")
      f_Active   1 the entry is offered, 0 it is taken off the pages
    ----------------------------------------------------------------------------- */
-INSERT dbo.t_Unotp_Ref_List (c_List, n_Seq, c_Code, c_Name, c_Parent, j_Attrs, f_Active, c_Created_By) VALUES
+INSERT dbo.t_Unotp_Ref_List (f_List, f_Seq, f_Code, f_Name, f_Parent, f_Attrs, f_Active, f_Created_By) VALUES
     -- applicationTypes: how an application is signed
     (N'applicationTypes', 1, N'DIGITAL', N'Digital', NULL, NULL, 1, 'SEED'),
     (N'applicationTypes', 2, N'PHYSICAL', N'Physical', NULL, NULL, 1, 'SEED'),
@@ -113,13 +112,12 @@ INSERT dbo.t_Unotp_Ref_List (c_List, n_Seq, c_Code, c_Name, c_Parent, j_Attrs, f
 
     -- sourcingModes: how an application is sourced, and how its two code fields behave
     (N'sourcingModes', 1, N'2', N'BROKER', NULL, N'{"codeLabel":"Broker Code","nameLabel":"Broker Name","house":"","search":"source","register":"brokers","sub":"free"}', 1, 'SEED'),
-    (N'sourcingModes', 2, N'1', N'MMFSS - BRANCH', NULL, N'{"codeLabel":"Sourcing Employee Code","nameLabel":"Sourcing Employee Name","house":"MFL","search":"","register":"","sub":"house"}', 1, 'SEED'),
-    (N'sourcingModes', 3, N'5', N'MFL-EX', NULL, N'{"codeLabel":"Sourcing Employee Code","nameLabel":"Sourcing Employee Name","house":"MFL-EX","search":"sub","register":"employees","sub":"employee"}', 1, 'SEED'),
-    (N'sourcingModes', 4, N'6', N'MFIS/FD', NULL, N'{"codeLabel":"Sourcing Employee Code","nameLabel":"Sourcing Employee Name","house":"MIBS","search":"sub","register":"employees","sub":"employeeShut"}', 1, 'SEED'),
+    (N'sourcingModes', 2, N'1', N'MMFSS - BRANCH', NULL, N'{"codeLabel":"Sourcing Employee Code","nameLabel":"Sourcing Employee Name","house":"MFL","search":"","register":"","sub":"house","staff":"branch"}', 1, 'SEED'),
+    (N'sourcingModes', 3, N'5', N'MFL-EX', NULL, N'{"codeLabel":"Sourcing Employee Code","nameLabel":"Sourcing Employee Name","house":"MFL-EX","search":"sub","register":"employees","sub":"employee","staff":"mflEx"}', 1, 'SEED'),
+    (N'sourcingModes', 4, N'6', N'MFIS/FD', NULL, N'{"codeLabel":"Sourcing Employee Code","nameLabel":"Sourcing Employee Name","house":"MIBS","search":"sub","register":"employees","sub":"employeeShut","staff":"mfis"}', 1, 'SEED'),
 
     -- sourcingModeCategories: the categories a deposit under a sourcing mode may be booked as. The parent is the sourcing mode's code, the code a category's.
-    -- (To limit the staff a mode searches to some departments, add rows to a list 'sourcingModeDepartments' the same way:
-    -- the parent is the mode's code, the code the department. With no rows for a mode, every department is searched.)
+    -- (Which staff a mode takes is its 'staff' setting above: branch, mfis or mflEx, each a query in UnoTP.Data/MasterQueries.cs.)
     (N'sourcingModeCategories', 1, N'PUBLIC', N'PUBLIC', N'2', NULL, 1, 'SEED'),
     (N'sourcingModeCategories', 2, N'GENERAL-WOMEN', N'GENERAL-WOMEN', N'2', NULL, 1, 'SEED'),
     (N'sourcingModeCategories', 3, N'SR CITIZEN', N'SR CITIZEN', N'2', NULL, 1, 'SEED'),

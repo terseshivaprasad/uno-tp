@@ -27,9 +27,9 @@ public sealed partial class SqlReference
 
             await using var connection = await db.OpenAsync(ct);
             var lists = (await connection.QueryAsync<Entry>("""
-                SELECT c_List AS List, c_Code AS Code, c_Name AS Name, c_Parent AS Parent, j_Attrs AS Attrs
+                SELECT f_List AS List, f_Code AS Code, f_Name AS Name, f_Parent AS Parent, f_Attrs AS Attrs
                 FROM dbo.t_Unotp_Ref_List
-                WHERE c_List IN ('filedDocuments', 'documentSubTypes', 'documentTypes') AND f_Active = 1
+                WHERE f_List IN ('filedDocuments', 'documentSubTypes', 'documentTypes') AND f_Active = 1
                 """)).ToLookup(e => e.List);
 
             var codes = new Dictionary<string, DocumentCode>();

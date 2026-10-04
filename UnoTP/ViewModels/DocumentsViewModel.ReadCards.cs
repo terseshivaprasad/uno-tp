@@ -100,6 +100,8 @@ public partial class DocumentsViewModel
                 "verified" => ("Verified with NSDL", "is-done"),
                 "name" => ("Name not matched", "is-failed"),
                 "failed" => ("Not verified", "is-failed"),
+                Unanswered => ("NSDL not checked", "is-failed"),
+                NsdlNotAsked => ("NSDL not asked", "is-na"),
                 _ => ("Not yet checked", "is-na"),
             };
         return new ReadCard(state, name.Length > 0 ? name : "Name not read", "", kind)
@@ -231,13 +233,22 @@ public partial class DocumentsViewModel
     /// What the payment instrument was read to say, beside its box. A mode settled
     /// electronically carries no instrument, and the card says so.
     /// </summary>
-    public ReadItem PaymentRead() => View(PaymentSlot).Used
-        ? new("Account", State.Reads["payment"], "payment")
-        : new("Account", NotRead("Not applicable", "No instrument is copied for this payment mode.",
-            "An account is read only off a cheque."));
+    public ReadItem PaymentRead()
+    {
+        if (!View(PaymentSlot).Used)
+            return new("Account", NotRead("Not applicable", "No instrument is copied for this payment mode.",
+                "An account is read only off a cheque."));
+        // The cheque check switched off: nothing is read off the copy, before or after it is filed.
+        if (!switches.IsOn(OutsideSwitches.Cheque))
+            return new("Account", NotRead("Not asked", $"The cheque check is {OutsideSwitches.Off}.",
+                "Nothing is read off the instrument. Enter the account on Bank Details & Payment."), "payment");
+        return new("Account", State.Reads["payment"], "payment");
+    }
 
-    // What NSDL said about a joint holder's PAN, and - when it holds the PAN
-    // against another name - where the name printed on the card is typed to ask again.
+    // What NSDL said about a holder's PAN, and - while it has not verified it - how
+    // it is asked again: with the name printed on the card typed, where it holds the
+    // PAN against another name; with one button otherwise. Either way the copy filed
+    // stays, so it is not identified and read a second time.
     private ReadItem NsdlCard(DocHolder h)
     {
         var pan = MaskPan(h.Who.Pan);
@@ -245,14 +256,25 @@ public partial class DocumentsViewModel
             return new("PAN – NSDL", NotRead("Not applicable", $"{pan} · on the folio", "A holder on a folio is not asked about with NSDL again."));
         var (nsdlState, nsdlName) = (NsdlOf(h), NsdlNameOf(h));
         var key = h.Key("nsdl");
+        var error = Shown?.Errors.GetValueOrDefault(key);
+        NsdlRetry Again(string title, string text) => new(h.Key("nsdlName"), nsdlName, error, TypesName: false, title, text);
         return nsdlState switch
         {
             "verified" => new("PAN – NSDL", new ReadCard("Verified with NSDL", $"{pan} · {h.Who.Name}", "The PAN, date of birth and name read off the PAN copy all match.", "is-done"), key),
             "name" => new("PAN – NSDL", new ReadCard("Name not matched", $"Put to NSDL: {nsdlName}",
                 "NSDL holds the PAN and date of birth, but not against that name. Type the name exactly as printed on the PAN card, and NSDL is asked again.", "is-failed"), key,
-                new NameRetry(h.Key("nsdlName"), nsdlName, Shown?.Errors.GetValueOrDefault(key))),
+                new NsdlRetry(h.Key("nsdlName"), nsdlName, error, TypesName: true,
+                    "NSDL did not match the name", "Type the name exactly as printed on the PAN card, and NSDL is asked again.")),
             "failed" => new("PAN – NSDL", new ReadCard("Not verified", $"No record of {pan} against {MaskDate(h.Who.Dob)}",
-                $"NSDL holds no such PAN and date of birth, so this {(h.Joint ? "holder" : "application")} cannot go on. {NsdlFailedNext(h)}", "is-failed"), key),
+                $"NSDL holds no such PAN and date of birth, so this {(h.Joint ? "holder" : "application")} cannot go on as it stands. If both are right, retry the NSDL check. If not: {NsdlFailedNext(h)}", "is-failed"), key,
+                Again("NSDL did not verify the PAN", "If the PAN and date of birth are right, ask NSDL again. The copy filed is kept, so it is not read again.")),
+            Unanswered => new("PAN – NSDL", new ReadCard("Not checked", $"{pan} · NSDL could not be asked",
+                "The PAN copy was identified, read and filed, but NSDL did not answer. Retry the NSDL check; the copy is not uploaded again.", "is-failed"), key,
+                Again("NSDL could not be asked", "The PAN copy is filed. Ask NSDL again; the copy is not read again.")),
+            NsdlNotAsked => new("PAN – NSDL", NotRead("Not asked", $"{pan} · the PAN check is {OutsideSwitches.Off}",
+                "NSDL is not asked while the PAN check is switched off. The application goes on with the PAN as the copy reads it; Operations check it.")),
+            _ when !switches.IsOn(OutsideSwitches.PanCheck) => new("PAN – NSDL", NotRead("Not asked", $"The PAN check is {OutsideSwitches.Off}.",
+                "NSDL is not asked while the PAN check is switched off. The PAN copy is identified and read, and Operations check it.")),
             _ => new("PAN – NSDL", new ReadCard("Not yet checked", "Checked once the PAN copy is filed above.",
                 "OCR reads the name off the PAN copy, and NSDL is asked whether it holds the PAN, the date of birth and that name."), key),
         };

@@ -218,7 +218,8 @@
         @* Fetch from CKYC. Offered only to an investor without a folio (one with a folio has
            been through KYC already), before any PAN copy is uploaded or once NSDL has verified
            the uploaded one (CkycPanVerified), and only for a digital application: a physical
-           one is signed and filed by hand, with its own documents. *@
+           one is signed and filed by hand, with its own documents. Switched off
+           (Backend:Switches:FetchCkyc), the button stays, disabled, and says why. *@
         @if (!Model.HasFolio)
         {
             var routeClass = state.Ckyc ? "is-on" : null;
@@ -252,11 +253,13 @@
                     }
                     else
                     {
+                        var ckycOn = Model.CkycOn;
                         var panVerifiedForCkyc = Model.CkycPanVerified;
+                        var canFetchCkyc = ckycOn && panVerifiedForCkyc;
 
                         @* Razor writes a data- attribute even when its value is null, so the button that
                            follows the application type is a separate element from the plain disabled one. *@
-                        if (panVerifiedForCkyc)
+                        if (canFetchCkyc)
                         {
                             <button type="button" class="btn btn-secondary btn-sm doc-ckyc-btn" popovertarget="docsCkycAsk" disabled="@isPhysical" data-enable-when="appType=@DocumentsViewModel.Digital">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5v11"></path><path d="M7.5 10L12 14.5 16.5 10"></path><path d="M4.5 15.5v3a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5v-3"></path></svg>
@@ -271,7 +274,11 @@
                             </button>
                         }
 
-                        @if (!panVerifiedForCkyc)
+                        @if (!ckycOn)
+                        {
+                            <p class="doc-ckyc-ask__note">@DocumentsViewModel.CkycOffWhy</p>
+                        }
+                        else if (!panVerifiedForCkyc)
                         {
                             <p class="doc-ckyc-ask__note">@DocumentsViewModel.CkycWaitsOnPan</p>
                         }
@@ -327,8 +334,8 @@
                 <partial name="_DocSlot" model="@(new DocSlotBlock(panSlot, uploadUrl, IsNext: panSlot.Key == nextSlotKey, Label: "PAN", LabelOptional: panSlot.Optional))" />
             </div>
 
-            @* NSDL asking for the name printed on the PAN: a row straight under the PAN's card. *@
-            @if (panReads.AsksName)
+            @* NSDL asked again about the PAN copy filed: a row straight under the PAN's card. *@
+            @if (panReads.AsksNsdl)
             {
                 <div class="doc-retry-row doc-retry-row--pan-second"><partial name="_NsdlRetry" model="@panReads" /></div>
             }

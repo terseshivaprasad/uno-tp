@@ -1,4 +1,5 @@
 using UnoTP.Models;
+using UnoTP.Services;
 
 namespace UnoTP.ViewModels;
 
@@ -104,6 +105,16 @@ public partial class DocumentsViewModel
     {
         var card = State.Reads["payment"];
         var mode = State.PayMode.Length > 0 ? State.PayMode.ToLowerInvariant() : "cheque";
+        // With OCR switched off nothing was read off the instrument: the copy is filed
+        // as handed over, and the account is entered on Bank Details & Payment.
+        if (!switches.IsOn(OutsideSwitches.Ocr))
+        {
+            State.ChequeRead = null;
+            (card.State, card.Kind) = ("Not asked", "is-na");
+            card.From = $"OCR is {OutsideSwitches.Off}, so the account was not read off this {mode}. Enter the account on Bank Details & Payment.";
+            entry.End("Filed", "ok");
+            return ($"Filed. OCR is {OutsideSwitches.Off}, so the account was not read off this {mode}; enter it on Bank Details & Payment.", "warn");
+        }
         entry.Add("OCR read: " + reading.Account);
         Doing("Checking the account with the bank\u2026");
         var answer = await verification.ConfirmAccountAsync(reading.Account, reading.Bank);
@@ -152,6 +163,14 @@ public partial class DocumentsViewModel
         return ($"Identified, read and confirmed with {bank}. Bank Details & Payment opens with this account.", "ok");
     }
 
+    // What a filed PAN copy says while NSDL has not verified it, and how it is put right.
+    private (string, string) NotVerifiedCheck(DocHolder h) => NsdlOf(h) switch
+    {
+        "failed" => ($"Filed, but NSDL holds no record of this PAN against the date of birth searched. If both are right, retry the NSDL check below. If not: {NsdlFailedNext(h)}", "bad"),
+        Unanswered => ("Filed, but NSDL could not be asked just now. Retry the NSDL check below; the copy need not be uploaded again.", "warn"),
+        _ => ("Filed, but NSDL does not hold this PAN against the name read off it. Type the name as printed on the card, in the NSDL card below.", "warn"),
+    };
+
     // A PAN copy is read for the number on it, and - for a holder with no folio -
     // the PAN-Aadhaar link is asked whether an Aadhaar is held against their PAN,
     // once there is an Aadhaar number on the application to ask with. An unlinked PAN does not stop
@@ -159,15 +178,13 @@ public partial class DocumentsViewModel
     private async Task<(string, string)> ReadPanAsync(DocHolder h, OcrReading reading, LogEntry entry)
     {
         entry.Add("OCR read: PAN " + MaskPan(reading.Pan.Length > 0 ? reading.Pan : h.Who.Pan));
-        if (NsdlApplies(h) && NsdlOf(h) != "verified")
+        if (NsdlApplies(h) && !NsdlSettled(h))
         {
             // Not verified: the link waits for NSDL, and the copy and its card say why.
             LinkWaitsOnNsdl(h);
             entry.Add("The PAN-Aadhaar link waits until NSDL verifies the PAN.", "warn");
             entry.End("Filed, not verified", NsdlOf(h) == "failed" ? "bad" : "warn");
-            return NsdlOf(h) == "failed"
-                ? ($"Filed, but NSDL holds no record of this PAN against the date of birth searched. {NsdlFailedNext(h)}", "bad")
-                : ("Filed, but NSDL does not hold this PAN against the name read off it. Type the name as printed on the card, in the NSDL card below.", "warn");
+            return NotVerifiedCheck(h);
         }
         if (!LinkApplies(h))
         {

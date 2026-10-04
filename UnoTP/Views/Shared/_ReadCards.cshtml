@@ -2,8 +2,8 @@
 @* What the PAN was checked with: a slim row per check - what it is, where it
    stands, what it matched - with the explanation behind the info mark by its name.
    Only a failure keeps its explanation written out, under its row, since it says
-   what is wrong and what follows. Where NSDL holds a PAN against another name, the
-   name printed on the card is asked for by _NsdlRetry, under the PAN's own box. *@
+   what is wrong and what follows. Where NSDL has not verified the PAN, it is asked
+   again from _NsdlRetry, under the PAN's own box. *@
 <ul class="doc-checks">
     @foreach (var item in Model.Items)
     {

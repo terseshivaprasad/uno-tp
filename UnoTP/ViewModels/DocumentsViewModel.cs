@@ -74,9 +74,14 @@ public partial class DocumentsViewModel(
     /// PAN), the record is not fetched on it. A PAN established before the
     /// application was opened needs no copy.
     /// </summary>
-    public bool CkycPanVerified => !HasFolio && (PanFiled || View(PanSlot).Doc is null || NsdlOf(Investor) == "verified");
+    public bool CkycPanVerified => !HasFolio && (PanFiled || View(PanSlot).Doc is null || NsdlSettled(Investor));
 
     public const string CkycWaitsOnPan = "Available once NSDL verifies the uploaded PAN copy.";
+
+    /// <summary>Whether Fetch from CKYC is switched on (Backend:Switches:FetchCkyc). Off, its button stays, disabled, and says why.</summary>
+    public bool CkycOn => switches.IsOn(OutsideSwitches.FetchCkyc);
+
+    public const string CkycOffWhy = "Unavailable: the CKYC service is switched off for now. Upload the proof of address and the photograph instead.";
 
     /// <summary>The deposit this application renews, when it was opened from Renew FD; null for a new deposit.</summary>
     public RenewalOf? Renewal => App.Renewal;
@@ -184,8 +189,35 @@ public partial class DocumentsViewModel(
     /// </summary>
     public static bool NsdlApplies(DocHolder h) => h.Who.Folio.Length == 0 && !h.Who.PanFiled;
 
-    /// <summary>Where NSDL stands on a holder: empty until asked, "verified", "name" or "failed".</summary>
+    /// <summary>NSDL was asked about a holder's PAN and could not answer: the copy is filed, and NSDL is asked again from its card.</summary>
+    public const string Unanswered = "unanswered";
+
+    /// <summary>The PAN check is switched off (Backend:Switches:PanCheck): NSDL was not asked about a holder's PAN, and the application goes on without it.</summary>
+    public const string NsdlNotAsked = "notasked";
+
+    /// <summary>
+    /// Where NSDL stands on a holder: empty until asked, "verified", "name", "failed",
+    /// <see cref="Unanswered"/> or <see cref="NsdlNotAsked"/>.
+    /// </summary>
     public string NsdlOf(DocHolder h) => h.Joint ? State.Joint[h.Code].Nsdl : State.Nsdl;
+
+    /// <summary>Whether NSDL holds nothing up for a holder: it verified the PAN, or the PAN check is switched off.</summary>
+    public bool NsdlSettled(DocHolder h) => NsdlOf(h) is "verified" or NsdlNotAsked;
+
+    // The name a holder goes by from here on: NSDL's, or the one read off the PAN
+    // copy while the PAN check is switched off.
+    private void TakeName(DocHolder h, string name)
+    {
+        if (h.Joint) State.Joint[h.Code].Holder = State.Joint[h.Code].Holder with { Name = name };
+        else State.Name = name;
+    }
+
+    // Where NSDL stands on a holder, and the name it was last asked with.
+    private void SetNsdl(DocHolder h, string name, string result)
+    {
+        if (h.Joint) (State.Joint[h.Code].NsdlName, State.Joint[h.Code].Nsdl) = (name, result);
+        else (State.NsdlName, State.Nsdl) = (name, result);
+    }
 
     private string NsdlNameOf(DocHolder h) => h.Joint ? State.Joint[h.Code].NsdlName : State.NsdlName;
 

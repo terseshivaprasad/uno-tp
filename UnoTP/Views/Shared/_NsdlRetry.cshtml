@@ -1,19 +1,24 @@
 @model ReadCardsBlock
-@* NSDL holds the PAN against another name: the name printed on the card, typed
-   and put to NSDL again. The page places it in its document grid, across the row
-   straight under the PAN's box (.doc-retry-row), where the PAN was just filed. *@
+@* NSDL has not verified a PAN copy that is filed: NSDL is asked again from here,
+   without the copy being uploaded - and identified and read - again. Where NSDL
+   holds the PAN against another name, the name printed on the card is typed first.
+   The page places the row in its document grid, straight under the PAN's box
+   (.doc-retry-row), where the PAN was just filed. *@
 @foreach (var item in Model.Items.Where(i => i.Retry is not null && Model.RetryUrl is not null))
 {
     var retry = item.Retry!;
     <div class="doc-retry @(retry.Error is null ? null : "is-invalid")" role="group" aria-labelledby="@(retry.Field)Label">
         <div class="doc-retry__say">
-            <span class="doc-retry__title" id="@(retry.Field)Label">@Glossary.Term("NSDL") did not match the name</span>
-            <span class="doc-retry__text">Type the name exactly as printed on the PAN card, and NSDL is asked again.</span>
+            <span class="doc-retry__title" id="@(retry.Field)Label">@retry.Title</span>
+            <span class="doc-retry__text">@retry.Text</span>
         </div>
         <div class="doc-retry__ask">
-            <input class="field-input field-input--caps @(retry.Error is null ? null : "is-invalid")" id="@retry.Field" name="@retry.Field" data-check="name" value="@retry.Value"
-                   maxlength="50" autocomplete="off" spellcheck="false" aria-label="Name exactly as printed on the PAN" aria-describedby="@(retry.Field)Error">
-            <button type="submit" class="btn btn-primary" formaction="@Model.RetryUrl" formnovalidate data-loader="Asking NSDL again&hellip;" data-loader-progress="@Url.Action("Progress", "Documents")">Retry NSDL</button>
+            @if (retry.TypesName)
+            {
+                <input class="field-input field-input--caps @(retry.Error is null ? null : "is-invalid")" id="@retry.Field" name="@retry.Field" data-check="name" value="@retry.Value"
+                       maxlength="50" autocomplete="off" spellcheck="false" aria-label="Name exactly as printed on the PAN" aria-describedby="@(retry.Field)Error">
+            }
+            <button type="submit" class="btn btn-primary" formaction="@Model.RetryUrl" formnovalidate data-loader="Asking NSDL again&hellip;" data-loader-progress="@Url.Action("Progress", "Documents")">@(retry.TypesName ? "Retry NSDL" : "Retry NSDL check")</button>
         </div>
         @if (retry.Error is not null)
         {

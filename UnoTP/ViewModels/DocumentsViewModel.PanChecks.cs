@@ -22,7 +22,7 @@ public partial class DocumentsViewModel
     private async Task AskLinkWithAsync(DocHolder h, string number, LogEntry entry)
     {
         session.SetString(AadhaarKey(h), number);
-        if (PanOnApplication(h) && (!NsdlApplies(h) || NsdlOf(h) == "verified")) await RelinkPanAsync(h, entry);
+        if (PanOnApplication(h) && (!NsdlApplies(h) || NsdlSettled(h))) await RelinkPanAsync(h, entry);
         else if (PanOnApplication(h))
         {
             // The Aadhaar number is kept, and asked with once NSDL verifies the PAN.
@@ -106,47 +106,59 @@ public partial class DocumentsViewModel
     // the name is theirs from here on.
     private async Task NsdlAsync(DocHolder h, string name, LogEntry entry, bool typed)
     {
+        // The PAN check switched off: NSDL is not asked. The PAN, date of birth and
+        // name stand as the copy reads them, and the application goes on.
+        if (!switches.IsOn(OutsideSwitches.PanCheck))
+        {
+            SetNsdl(h, name, NsdlNotAsked);
+            if (name.Length > 0) TakeName(h, name);
+            entry.Add($"The PAN check is {OutsideSwitches.Off}: NSDL is not asked, and the PAN is taken as the copy reads it; Operations check it.", "warn");
+            return;
+        }
         Doing("Checking the PAN with NSDL\u2026");
         var answer = await pan.VerifyAsync(new PanToVerify(AppNo, h.Code, h.Who.Pan, h.Who.Dob, name));
         var result = !answer.PairOk ? "failed" : answer.NameOk ? "verified" : "name";
-        if (h.Joint)
-        {
-            var j = State.Joint[h.Code];
-            (j.NsdlName, j.Nsdl) = (name, result);
-            if (result == "verified") j.Holder = j.Holder with { Name = name };
-        }
-        else
-        {
-            (State.NsdlName, State.Nsdl) = (name, result);
-            if (result == "verified") State.Name = name;
-        }
+        SetNsdl(h, name, result);
+        if (result == "verified") TakeName(h, name);
         entry.Add(answer.PairOk ? "NSDL holds the PAN against the date of birth." : "NSDL holds no such PAN and date of birth.", answer.PairOk ? "ok" : "bad");
         if (answer.PairOk)
             entry.Add(answer.NameOk ? $"NSDL holds it against {name}{(typed ? ", as typed" : "")}." : $"NSDL does not hold it against {name}{(typed ? ", as typed" : "")}.", answer.NameOk ? "ok" : "warn");
     }
 
     /// <summary>
-    /// The name printed on a joint holder's PAN card, typed where NSDL did not hold
-    /// the PAN against the name OCR read, and put to NSDL again. Returns where on
-    /// the page to come back to.
+    /// NSDL asked again about a PAN copy already filed, without the copy being
+    /// uploaded - and identified and read - again. Where NSDL held the PAN against
+    /// another name, the name printed on the card is typed and put to it; where it
+    /// held no such PAN and date of birth, or could not answer, the same PAN, date of
+    /// birth and name go to it again. Returns where on the page to come back to.
     /// </summary>
     public async Task<string?> RetryNsdlAsync(DocHolder h, string? typed)
     {
         var key = h.Key("nsdl");
-        if (!NsdlApplies(h) || NsdlOf(h) != "name" || State.Docs.GetValueOrDefault(h.Key("pan")) is not { } doc) return "read-" + key;
+        var was = NsdlOf(h);
+        if (!NsdlApplies(h) || was is "" or "verified" or NsdlNotAsked || State.Docs.GetValueOrDefault(h.Key("pan")) is not { } doc) return "read-" + key;
         if (!WithinLimit(h, "nsdl")) return "read-" + key;
-        var name = NewApplicationViewModel.NormaliseName(typed);
-        if (name.Length < 3 || !InvestorViewModel.IsName(name))
+
+        // Only a name NSDL did not match is typed; otherwise the name it was last asked with stands.
+        var typesName = was == "name";
+        var name = NsdlNameOf(h);
+        if (typesName)
         {
-            FlashMessages().Errors[key] = name.Length < 3 ? "Enter the name as printed on the PAN" : "Enter the name as printed on the PAN: letters only";
-            return "read-" + key;
+            name = NewApplicationViewModel.NormaliseName(typed);
+            if (name.Length < 3 || !InvestorViewModel.IsName(name))
+            {
+                FlashMessages().Errors[key] = name.Length < 3 ? "Enter the name as printed on the PAN" : "Enter the name as printed on the PAN: letters only";
+                return "read-" + key;
+            }
         }
         var entry = new LogEntry(Guid.NewGuid().ToString("n")[..8], $"{PanSlot.Label} · NSDL again", 1,
-            DateTime.Now.ToString("HH:mm:ss"), $"Name typed from the PAN card: {name}") { Holder = h.Code };
+            DateTime.Now.ToString("HH:mm:ss"),
+            typesName ? $"Name typed from the PAN card: {name}" : "The PAN, date of birth and name asked again; the copy filed is not read again")
+            { Holder = h.Code };
         State.Log.Insert(0, entry);
         try
         {
-            await NsdlAsync(h, name, entry, typed: true);
+            await NsdlAsync(h, name, entry, typed: typesName);
         }
         catch (ExternalServiceException e)
         {
@@ -158,8 +170,14 @@ public partial class DocumentsViewModel
         h = Again(h);
         if (NsdlOf(h) != "verified")
         {
+            // The copy says where NSDL stands now, which may not be where it stood before.
+            var (stillCheck, stillKind) = NotVerifiedCheck(h);
+            State.Docs[h.Key("pan")] = doc with { Check = stillCheck, CheckKind = stillKind };
+            LinkWaitsOnNsdl(h);
             entry.End("Not verified", "warn");
-            FlashMessages().Errors[key] = $"NSDL does not hold PAN {MaskPan(h.Who.Pan)} against that name";
+            FlashMessages().Errors[key] = NsdlOf(h) == "failed"
+                ? $"NSDL holds no record of PAN {MaskPan(h.Who.Pan)} against the date of birth searched"
+                : $"NSDL does not hold PAN {MaskPan(h.Who.Pan)} against that name";
             return "read-" + key;
         }
         // Verified: the link can be asked now, and the copy says what came of it.

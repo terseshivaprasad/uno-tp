@@ -78,12 +78,12 @@ public sealed record PaymentModeOption(string Name, string? Document);
 /// "employees" or ""), <c>Sub</c> what the second field does ("shut", "house",
 /// "free", "employee" or "employeeShut"), <c>Categories</c> the category codes
 /// a deposit under it may be booked as (the 'sourcingModeCategories' list), and
-/// <c>Departments</c> the staff departments whose employees can be chosen under it
-/// (the 'sourcingModeDepartments' list; none listed: every department).
+/// <c>Staff</c> the rule for which employees can be chosen under it: "branch",
+/// "mfis" or "mflEx", each a query in MasterQueries; empty for any employee in service.
 /// </summary>
 public sealed record SourcingModeOption(
     string Code, string Name, string CodeLabel, string NameLabel,
-    string House, string Search, string Register, string Sub, IReadOnlyList<string> Categories, IReadOnlyList<string> Departments);
+    string House, string Search, string Register, string Sub, IReadOnlyList<string> Categories, string Staff = "");
 
 /// <summary>A proof of address, who confirms it, and whether it carries a photograph.</summary>
 /// <param name="Issuer">Who is asked to confirm the address on it, or "" when nobody is.</param>

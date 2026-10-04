@@ -70,14 +70,14 @@ internal sealed class CachedSourcingApi(ISourcingApi inner, IMemoryCache cache) 
     public Task<Party?> BrokerAsync(string code, CancellationToken ct = default) =>
         FoundAsync(("backend:broker", Key(code)), () => inner.BrokerAsync(code, ct));
 
-    public Task<Party?> StaffMemberAsync(string code, IReadOnlyList<string> departments, CancellationToken ct = default) =>
-        FoundAsync(("backend:staff-member", Key(code), string.Join("|", departments)), () => inner.StaffMemberAsync(code, departments, ct));
+    public Task<Party?> StaffMemberAsync(string code, string staffRule, CancellationToken ct = default) =>
+        FoundAsync(("backend:staff-member", Key(code), staffRule), () => inner.StaffMemberAsync(code, staffRule, ct));
 
     public Task<IReadOnlyList<Party>> SearchBrokersAsync(string query, CancellationToken ct = default) =>
         SearchAsync(("backend:brokers", Key(query)), () => inner.SearchBrokersAsync(query, ct));
 
-    public Task<IReadOnlyList<Party>> SearchStaffAsync(string query, IReadOnlyList<string> departments, CancellationToken ct = default) =>
-        SearchAsync(("backend:staff", Key(query), string.Join("|", departments)), () => inner.SearchStaffAsync(query, departments, ct));
+    public Task<IReadOnlyList<Party>> SearchStaffAsync(string query, string staffRule, CancellationToken ct = default) =>
+        SearchAsync(("backend:staff", Key(query), staffRule), () => inner.SearchStaffAsync(query, staffRule, ct));
 
     private static string Key(string text) => text.Trim().ToLowerInvariant();
 

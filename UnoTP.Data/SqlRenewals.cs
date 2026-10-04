@@ -47,57 +47,57 @@ public sealed class SqlRenewals(Db db, IPartner partner, IRenewalOpener applicat
     // A booked application and its deposit as submitted, with the application that
     // renews it - the latest one open or submitted, and not cancelled.
     private const string Booked = """
-        SELECT m.c_Fdr_No AS Number, m.c_App_No AS AppNo, m.c_Folio AS Folio, m.c_Name AS Investor,
+        SELECT m.f_Fdr_No AS Number, m.f_App_No AS AppNo, m.f_Folio AS Folio, m.f_Name AS Investor,
                i.f_Category AS Category, CAST(i.f_Amount AS BIGINT) AS Amount, i.f_Int_Rate AS Rate, TRY_CAST(i.f_Tenure AS INT) AS TenureMonths,
                i.f_Int_Freq AS InterestFreq, CAST(ISNULL(i.f_Is_Auto_Renewal, 0) AS BIT) AS AutoRenewal,
-               m.d_Booked_On AS BookedOn, m.n_Quote_Maturity_Amount AS MaturityAmount,
+               m.f_Booked_On AS BookedOn, m.f_Quote_Maturity_Amount AS MaturityAmount,
                NULLIF(b.f_NEFTCode, N'') AS RepayIfsc, NULLIF(b.f_BankAccountNo, N'') AS RepayAccount,
-               rn.c_App_No AS RenewalAppNo, rn.c_Partner_Id AS RenewalPartner, rn.d_Submitted_On AS RenewalSubmittedOn, rn.d_Accepted_On AS RenewalAcceptedOn,
-               rn.AppType AS RenewalAppType, rn.n_Upload_Ver AS RenewalUploadVer, rn.n_Details_Ver AS RenewalDetailsVer,
-               rn.n_Payment_Ver AS RenewalPaymentVer, rn.n_Deposit_Ver AS RenewalDepositVer
+               rn.f_App_No AS RenewalAppNo, rn.f_Partner_Id AS RenewalPartner, rn.f_Submitted_On AS RenewalSubmittedOn, rn.f_Accepted_On AS RenewalAcceptedOn,
+               rn.AppType AS RenewalAppType, rn.f_Upload_Ver AS RenewalUploadVer, rn.f_Details_Ver AS RenewalDetailsVer,
+               rn.f_Payment_Ver AS RenewalPaymentVer, rn.f_Deposit_Ver AS RenewalDepositVer
         FROM dbo.t_Unotp_Application_Mst m
-        JOIN dbo.t_FD_BT_Investment_Dtl i ON i.f_Appl_No = m.c_App_No AND i.f_Active = 1 AND i.f_Status = 'APR'
+        JOIN dbo.t_FD_BT_Investment_Dtl i ON i.f_Appl_No = m.f_App_No AND i.f_Active = 1 AND i.f_Status IN ('APR', 'PEN_E')
         OUTER APPLY (
             SELECT TOP (1) r.f_NEFTCode, r.f_BankAccountNo FROM dbo.t_FD_BT_Investor_Bank_Dtl r
-            WHERE r.f_Appl_No = m.c_App_No AND r.f_Active = 1 ORDER BY r.f_Pk_t_FD_BT_Investor_Bank_Dtl_Id DESC) b
+            WHERE r.f_Appl_No = m.f_App_No AND r.f_Active = 1 ORDER BY r.f_Pk_t_FD_BT_Investor_Bank_Dtl_Id DESC) b
         OUTER APPLY (
-            SELECT TOP (1) r.c_App_No, r.c_Partner_Id, r.d_Submitted_On, r.d_Accepted_On, r.n_Upload_Ver, r.n_Details_Ver, r.n_Payment_Ver, r.n_Deposit_Ver,
+            SELECT TOP (1) r.f_App_No, r.f_Partner_Id, r.f_Submitted_On, r.f_Accepted_On, r.f_Upload_Ver, r.f_Details_Ver, r.f_Payment_Ver, r.f_Deposit_Ver,
                    (SELECT TOP (1) x.f_ApplicationDeclarationType FROM dbo.t_FD_BT_Investment_Dtl x
-                    WHERE x.f_Appl_No = r.c_App_No AND x.f_Active = 1 ORDER BY x.f_Pk_t_FD_BT_Investment_Dtl_Id DESC) AS AppType
+                    WHERE x.f_Appl_No = r.f_App_No AND x.f_Active = 1 ORDER BY x.f_Pk_t_FD_BT_Investment_Dtl_Id DESC) AS AppType
             FROM dbo.t_Unotp_Application_Mst r
-            WHERE r.c_Renew_Dep_No = m.c_Fdr_No AND r.f_Active = 1 AND r.d_Cancelled_On IS NULL
-            ORDER BY r.d_Created_On DESC) rn
-        WHERE m.f_Active = 1 AND m.d_Booked_On IS NOT NULL AND NULLIF(m.c_Fdr_No, '') IS NOT NULL AND m.d_Cancelled_On IS NULL
+            WHERE r.f_Renew_Dep_No = m.f_Fdr_No AND r.f_Active = 1 AND r.f_Cancelled_On IS NULL
+            ORDER BY r.f_Created_On DESC) rn
+        WHERE m.f_Active = 1 AND m.f_Booked_On IS NOT NULL AND NULLIF(m.f_Fdr_No, '') IS NOT NULL AND m.f_Cancelled_On IS NULL
         """;
 
     public async Task<IReadOnlyList<HeldDeposit>?> DepositsByFolioAsync(string folio, CancellationToken ct = default)
     {
         folio = folio.Trim().ToUpperInvariant();
         if (await investors.FolioAsync(folio, ct) is null) return null;
-        return await HeldAsync("m.c_Folio = @Folio", new { Folio = folio }, ct);
+        return await HeldAsync("m.f_Folio = @Folio", new { Folio = folio }, ct);
     }
 
     public async Task<IReadOnlyList<HeldDeposit>?> DepositsByPanAsync(string pan, string dob, CancellationToken ct = default)
     {
-        var held = await HeldAsync("m.c_Pan = @Pan AND m.d_Dob = @Dob", new { Pan = pan.Trim().ToUpperInvariant(), Dob = Dates.ParseDdMmYyyy(dob) }, ct);
+        var held = await HeldAsync("m.f_Pan = @Pan AND m.f_Dob = @Dob", new { Pan = pan.Trim().ToUpperInvariant(), Dob = Dates.ParseDdMmYyyy(dob) }, ct);
         if (held.Count == 0) return null;
         return held;
     }
 
     public async Task<HeldDeposit?> DepositAsync(string number, CancellationToken ct = default) =>
-        (await HeldAsync("m.c_Fdr_No = @Number", new { Number = number.Trim() }, ct)).FirstOrDefault();
+        (await HeldAsync("m.f_Fdr_No = @Number", new { Number = number.Trim() }, ct)).FirstOrDefault();
 
     public async Task<Application?> StartAsync(string depositNumber, CancellationToken ct = default)
     {
         if (await DepositAsync(depositNumber, ct) is not { Renewable: true } deposit) return null;
         // The investor as the register holds them, and the joint holders the deposit carries.
-        if (await investors.FolioAsync(deposit.Folio, ct) is not { } record) return null;
+        if (await OnRecordAsync(deposit.Folio, ct) is not { } record) return null;
 
         var upload = new UploadState();
         var code = 2;
         foreach (var joint in deposit.JointHolders ?? [])
         {
-            if (await investors.FolioAsync(joint.Folio, ct) is { } on) upload.Joint[code.ToString("00")] = new JointHolder { Holder = HolderOf(on) };
+            if (await OnRecordAsync(joint.Folio, ct) is { } on) upload.Joint[code.ToString("00")] = new JointHolder { Holder = HolderOf(on) };
             code++;
         }
 
@@ -111,6 +111,14 @@ public sealed class SqlRenewals(Db db, IPartner partner, IRenewalOpener applicat
 
     public Task<bool> CancelAsync(string depositNumber, CancellationToken ct = default) =>
         applications.CancelRenewalAsync(depositNumber.Trim());
+
+    // A holder of the deposit as their folio's data source has them, found by the
+    // PAN and date of birth the folio master holds.
+    private async Task<FolioRecord?> OnRecordAsync(string folio, CancellationToken ct)
+    {
+        if (await investors.FolioAsync(folio, ct) is not { } f) return null;
+        return await investors.FolioOnRecordAsync(f.Folio, f.Pan, f.Dob, ct);
+    }
 
     private static Holder HolderOf(FolioRecord r) =>
         new(r.Pan, r.Dob, r.Name, r.Folio, r.Docs.Pan, r.Address, r.Docs, r.Gender, r.Source);

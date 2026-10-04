@@ -27,7 +27,8 @@ public class PanApiClientTests
         Assert.Equal("APP001", sent.GetProperty("appl_No").GetString());
         Assert.Equal("01", sent.GetProperty("holder_Type").GetString());
         Assert.Equal("ABCDE1234F", sent.GetProperty("paN_No").GetString());
-        Assert.Equal("01-02-1980", sent.GetProperty("paN_Holder_DOB").GetString());
+        // The date of birth goes as dd/MM/yyyy, the way the API takes it.
+        Assert.Equal("01/02/1980", sent.GetProperty("paN_Holder_DOB").GetString());
         Assert.Equal("A HOLDER", sent.GetProperty("paN_Holder_Name").GetString());
         // What the request says of the user comes from the session, not from settings.
         Assert.Equal("TESTAPP01", sent.GetProperty("app_Code").GetString());
@@ -44,7 +45,6 @@ public class PanApiClientTests
     // A PAN the API does not hold, or holds against another date of birth: the name is not counted.
     [InlineData("0", "1", "1", false, false)]
     [InlineData("1", "0", "1", false, false)]
-    [InlineData("", "", "", false, false)]
     public async Task The_answer_is_a_match_only_where_the_API_says_1(string pan, string dob, string name, bool pairOk, bool nameOk)
     {
         var network = new StubNetwork
@@ -66,6 +66,32 @@ public class PanApiClientTests
         var network = new StubNetwork { Status = status };
 
         await Assert.ThrowsAsync<ExternalServiceException>(() => ClientOver(network).VerifyAsync(Holder));
+    }
+
+    [Fact]
+    public async Task An_answer_with_no_match_status_is_an_outage_said_with_the_APIs_error_message()
+    {
+        var network = new StubNetwork
+        {
+            Answer = """{"PAN_No_Match_Status":"","PAN_DOB_Match_Status":null,"PAN_Name_Match_Status":"","ErrorCode":"E101","ErrorMessage":"NSDL service timed out","Status":"Failure"}""",
+        };
+
+        var outage = await Assert.ThrowsAsync<ExternalServiceException>(() => ClientOver(network).VerifyAsync(Holder));
+
+        Assert.Contains("NSDL service timed out", outage.Message);
+    }
+
+    [Fact]
+    public async Task The_error_and_status_fields_are_read_as_text_or_as_a_number()
+    {
+        var network = new StubNetwork
+        {
+            Answer = """{"PAN_No_Match_Status":"1","PAN_DOB_Match_Status":"1","PAN_Name_Match_Status":"1","ErrorCode":0,"ErrorMessage":"","Status":1}""",
+        };
+
+        var answer = await ClientOver(network).VerifyAsync(Holder);
+
+        Assert.True(answer.NameOk);
     }
 
     [Fact]

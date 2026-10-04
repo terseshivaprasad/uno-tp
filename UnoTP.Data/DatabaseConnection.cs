@@ -29,6 +29,12 @@ public static class RowStatus
     public const string Pending = "PEN";
 
     public const string Approved = "APR";
+
+    /// <summary>
+    /// Submitted with the investor's KYC fetched from CKYC: the FD system's rows are
+    /// held as this, not as approved. The app's own tables still say APR, for submitted.
+    /// </summary>
+    public const string PendingCkyc = "PEN_E";
 }
 
 /// <summary>How an application is signed, as Upload Documents and f_ApplicationDeclarationType name it.</summary>

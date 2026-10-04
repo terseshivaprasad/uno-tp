@@ -121,8 +121,8 @@ internal static partial class Sections
         return value;
     }
 
-    // f_Data_Source: where the holder's KYC came from. A holder on a folio: the
-    // source their folio's record names. Otherwise CKYC once it is fetched for
+    // f_Data_Source: where the holder's KYC came from. A holder on a folio: where
+    // their latest KYC is kept (ORA, BT or FHLD), found when the folio was. Otherwise CKYC once it is fetched for
     // them, and FRESH for one whose details are given here.
     private static string? DataSourceOf(Holder who, Kyc kyc)
     {

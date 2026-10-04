@@ -128,6 +128,9 @@ public partial class DocumentsViewModel
         ["payment"] = (DocumentKind.Cheque, "a cheque"),
     };
 
+    /// <summary>What a payment instrument's copy says while the cheque check is switched off.</summary>
+    public const string ChequeNotChecked = "Filed as handed over. The cheque check is switched off, so nothing is read off it; enter the account on Bank Details & Payment.";
+
     // Not every document has somebody behind it to ask: the card says who does
     // look at the copy instead, and when.
     /// <summary>What happens to a document no register outside answers for, once uploaded.</summary>
@@ -157,14 +160,30 @@ public partial class DocumentsViewModel
         StoredDoc Filed(UploadFile stored, string check, string kind) =>
             new(stored.FileName, stored.Bytes.Length, stored.ContentType, check, kind);
 
-        if (!Checked.TryGetValue(def.Key, out var rule))
+        // A cheque whose check is switched off (Backend:Switches:Cheque) is filed as
+        // handed over, like a document nothing outside answers for: it is not
+        // identified or read, and its account is entered on Bank Details & Payment.
+        var chequeOff = def.Key == PaymentSlot.Key && !switches.IsOn(OutsideSwitches.Cheque);
+        if (chequeOff || !Checked.TryGetValue(def.Key, out var rule))
         {
             await FileAsync(def, h, copy);
             s.Attempts[key] = 0;
             s.RefusedAt.Remove(key);
-            entry.Add("Filed as handed over — nothing outside answers for this document.");
+            var said = NoCheck.GetValueOrDefault(def.Key, "Filed as handed over.");
+            if (chequeOff)
+            {
+                said = ChequeNotChecked;
+                s.ChequeRead = null;
+                var card = s.Reads[PaymentSlot.Key];
+                (card.State, card.Kind, card.From) = ("Not asked", "is-na", ChequeNotChecked);
+                entry.Add($"Filed as handed over — the cheque check is {OutsideSwitches.Off}.");
+            }
+            else
+            {
+                entry.Add("Filed as handed over — nothing outside answers for this document.");
+            }
             entry.End("Filed", "ok");
-            s.Docs[key] = Filed(copy, NoCheck.GetValueOrDefault(def.Key, "Filed as handed over."), "");
+            s.Docs[key] = Filed(copy, said, "");
             return;
         }
 
@@ -262,10 +281,23 @@ public partial class DocumentsViewModel
             return;
         }
 
-        // A joint holder with no folio is put to NSDL with the name the copy reads.
+        // A holder with no folio is put to NSDL with the name the copy reads. NSDL not
+        // answering does not cost the copy: it was identified and read, so it is filed
+        // all the same, and NSDL is asked again from its card - not by uploading it,
+        // which would have it identified and read a second time.
         if (def.Key == "pan" && NsdlApplies(h))
         {
-            await NsdlAsync(h, NewApplicationViewModel.NormaliseName(reading.Name), entry, typed: false);
+            var readName = NewApplicationViewModel.NormaliseName(reading.Name);
+            try
+            {
+                await NsdlAsync(h, readName, entry, typed: false);
+            }
+            catch (ExternalServiceException e)
+            {
+                SetNsdl(h, readName, Unanswered);
+                entry.Add($"{e.Service} could not answer: {e.Message} The copy is filed all the same; retry the NSDL check from its card.", "warn");
+                if (e.TraceId is not null) entry.Add("Trace " + e.TraceId);
+            }
             h = Again(h);
         }
 

@@ -1,4 +1,5 @@
 using UnoTP.Models;
+using UnoTP.Services;
 
 namespace UnoTP.ViewModels;
 
@@ -59,9 +60,10 @@ public partial class DocumentsViewModel
 
     private string AadhaarOf(DocHolder h) => session.GetString(AadhaarKey(h)) ?? "";
 
-    // What the register already holds against the folio the application was opened
-    // on. A document on the folio is not asked for again: the step shows it as not
-    // applicable and says which folio carries it.
+    // What is on record for the folio the application was opened on, where the
+    // holder's latest KYC is kept: a verified PAN copy, a photograph, a verified
+    // proof of address. A document on record is not required again; one that is not
+    // there, or is there unverified, is asked for like anyone's.
     private static DocsOnRecord? FolioDocsOf(DocHolder h) => h.Who.Folio.Length > 0 ? h.Who.OnRecord : null;
 
     // ===== The documents =======================================================
@@ -214,15 +216,16 @@ public partial class DocumentsViewModel
         var key = h.Key(def.Key);
         var proofType = TypeOf(def, h);
         var held = FolioDocsOf(h);
-        string heldWhy = "Already on the folio, so it is not filed again.";
+        string heldWhy = "Already on record and verified, so it is not filed again.";
+        string heldPhotoWhy = "Already on record, so it is not filed again.";
         var (used, na) = def.Key switch
         {
             "form" => (s.AppType == Physical, "A digital application is accepted through the investor’s own link, so there is no signed form to file."),
             "pan" => held?.Pan == true ? (false, heldWhy) : (true, null),
             // CKYC is fetched for the investor only: a joint holder files their own.
-            "photo" => held?.Photo == true ? (false, heldWhy) : s.Ckyc && !h.Joint ? (false, CkycWhy) : (true, null),
-            // A folio that holds the proof, or the address itself, needs no proof of
-            // it - but takes a newer one, should the address have changed (optional, below).
+            "photo" => held?.Photo == true ? (false, heldPhotoWhy) : s.Ckyc && !h.Joint ? (false, CkycWhy) : (true, null),
+            // A verified proof on record need not be filed again - but a newer one is
+            // taken, should the address have changed (optional, below).
             "poa" => s.Ckyc && !h.Joint ? (false, CkycWhy) : (true, null),
             "mail" => !MailCanDiffer(h) ? (false, MailWhy(h))
                 : MailTyped(h) ? (false, MailTypedWhy)
@@ -252,8 +255,10 @@ public partial class DocumentsViewModel
 
         string? with = def.Key switch
         {
+            "pan" when NsdlApplies(h) && !switches.IsOn(OutsideSwitches.PanCheck) => $"Once uploaded: identified and read by OCR. The PAN check is {OutsideSwitches.Off}, so NSDL is not asked.",
             "pan" when NsdlApplies(h) => Run + "the PAN, date of birth and name are checked with NSDL.",
             "pan" => Run + $"checked with {PanAuthority}.",
+            "payment" when !switches.IsOn(OutsideSwitches.Cheque) => $"Once uploaded: filed as handed over. The cheque check is {OutsideSwitches.Off}, so the account is entered on Bank Details & Payment.",
             "payment" => Run + "the account is confirmed with the bank it is drawn on.",
             "poa" or "mail" when Issuers.TryGetValue(proofType, out var issuer) => issuer.Length > 0
                 ? Run + $"the address is confirmed with {issuer}."
@@ -264,11 +269,10 @@ public partial class DocumentsViewModel
             _ => null,
         };
 
-        // A holder on a folio has been through KYC: a PAN copy the folio does not
-        // hold is taken if there is one, but not needed; and where the folio holds
-        // the proof of address, or the address, a newer proof is taken but not needed.
-        var optional = used && h.Who.Folio.Length > 0
-            && (def.Key == "pan" || def.Key == "poa" && (held?.Poa == true || h.Who.Address.Length > 0));
+        // Only a document already verified on record is not required. A PAN copy is
+        // then not asked for at all (above); a proof of address is still taken, but
+        // not needed. Anything not verified on record is required, folio or no folio.
+        var optional = used && def.Key == "poa" && held?.Poa == true;
 
         // What the copy was read to say stands in its own box once it is filed. An
         // address the folio holds is shown where its proof would be, as it stands:
@@ -281,19 +285,28 @@ public partial class DocumentsViewModel
             "mail" when doc is not null => MailReadOf(h),
             "payment" when doc is not null => s.Reads.GetValueOrDefault("payment"),
             "pan" when doc is not null => PanReadOf(h, doc),
-            "poa" when doc is null && folioAddress => FolioAddress(h, used ? "file a newer proof only if the address has changed." : "not checked here."),
+            "poa" when doc is null && folioAddress => FolioAddress(h, PoaOnRecordNext(used, optional)),
             "mail" when !used && folioAddress && !MailCanDiffer(h) => FolioAddress(h, "post goes there."),
             _ => null,
         };
 
         var flash = Shown;
         return new SlotView(def, key, used, used ? null : na, locked, doc,
-            optional ? (def.Key == "poa" ? "Not mandatory: the folio's address stands unless a newer proof is filed." : "Not mandatory: the holder is on a folio.") : null,
+            optional ? "Not mandatory: a verified proof is on record, and its address stands unless a newer proof is filed." : null,
             with, AttemptsNow(key),
             flash?.Errors.GetValueOrDefault(key), flash?.ErrorLog.GetValueOrDefault(key), optional, read,
             // Waiting on the PAN, the box still names the proofs it will take.
             waitsOnPan ? $"Accepted: {OneOf(ProofsFor(def.Key))}. Checked against the holder the PAN copy establishes." : null, MaxAttempts,
             FinalWhy(def, h, doc), RetryAt(key));
+    }
+
+    // What the address on record says of its proof: not asked for, taken but not
+    // needed, or needed because no proof on record is verified.
+    private static string PoaOnRecordNext(bool used, bool optional)
+    {
+        if (!used) return "not checked here.";
+        if (optional) return "file a newer proof only if the address has changed.";
+        return "a proof of it is needed: none on record is verified.";
     }
 
     // A PAN copy NSDL has verified - the PAN, the date of birth and the name read off

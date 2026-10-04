@@ -316,7 +316,7 @@ public class InvestorController(
                 : Task.FromResult<string?>(null);
         });
 
-    /// <summary>The name printed on a joint holder's PAN card, put to NSDL where it did not hold the name OCR read.</summary>
+    /// <summary>NSDL asked again about a joint holder's PAN copy already filed, with the name typed from the card where NSDL did not match it.</summary>
     [HttpPost("joint/{n:int}/nsdl")]
     public Task<IActionResult> JointNsdl(int n, IFormCollection form) =>
         JointDocsAsync(n, form, (docs, h) => docs.RetryNsdlAsync(h, form[h.Key("nsdlName")]));
@@ -373,23 +373,25 @@ public class InvestorController(
         return await investors.NomineesOnDepositAsync(folio, docs.App.Renewal.DepositNumber);
     }
 
-    // A holder on a KYC compliant folio is not asked to type their details again: the
-    // first time the page sees them, the fields still empty are filled from what the
-    // folio holds, for the partner to check. A holder's folio is looked at once, so a
-    // field cleared afterwards stays cleared.
+    // A holder on a folio is not asked to type their details again: the first time
+    // the page sees them, the fields still empty are filled from where their latest
+    // KYC is kept (their data source), for the partner to check. What is filled is
+    // validated like anything typed. A holder's folio is looked at once, so a field
+    // cleared afterwards stays cleared.
     private async Task FillFromFoliosAsync(InvestorInfoState state, DocumentsViewModel docs)
     {
-        var holders = new List<(int Number, string Folio)> { (1, docs.App.Holder.Folio) };
-        foreach (var joint in docs.JointHolders) holders.Add((int.Parse(joint.Code), joint.Who.Folio));
+        var holders = new List<(int Number, DocumentsViewModel.DocHolder Holder)> { (1, docs.Investor) };
+        foreach (var joint in docs.JointHolders) holders.Add((int.Parse(joint.Code), joint));
 
-        foreach (var (number, folio) in holders)
+        foreach (var (number, holder) in holders)
         {
+            var (folio, source) = (holder.Who.Folio, holder.Who.Source);
             if (folio.Length == 0) continue;
             if (state.FolioLookedAt.Contains(number)) continue;
             state.FolioLookedAt.Add(number);
-            var onFolio = await investors.KycOnFolioAsync(folio);
+            var onFolio = await investors.KycOnFolioAsync(source, folio);
             if (onFolio is null) continue;
-            var filled = InvestorDetailsForm.FillHolder(state, number, onFolio);
+            var filled = InvestorDetailsForm.FillHolder(state, number, onFolio, docs.MailTyped(holder));
             if (filled > 0) state.FilledFromFolio.Add(number);
         }
     }

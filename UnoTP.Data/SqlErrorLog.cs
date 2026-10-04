@@ -90,8 +90,8 @@ internal sealed class SqlLoggerProvider(Channel<LogRow> queue, IHttpContextAcces
 internal sealed class SqlLogWriter(Channel<LogRow> queue, Db db) : BackgroundService
 {
     private const string Insert = """
-        INSERT INTO dbo.t_Unotp_Logs (c_App_Name, c_Environment, c_Level, c_Category, n_Event_Id, c_Message, c_Exception,
-            c_Trace_Id, c_Request_Method, c_Request_Path, c_App_No, c_Client_Ip, c_Machine_Name, d_Logged_At, c_Created_By)
+        INSERT INTO dbo.t_Unotp_Logs (f_App_Name, f_Environment, f_Level, f_Category, f_Event_Id, f_Message, f_Exception,
+            f_Trace_Id, f_Request_Method, f_Request_Path, f_App_No, f_Client_Ip, f_Machine_Name, f_Logged_At, f_Created_By)
         VALUES (@AppName, @Environment, @Level, @Category, @EventId, @Message, @Exception,
             @TraceId, @RequestMethod, @RequestPath, @AppNo, @ClientIp, @MachineName, @LoggedAt, @CreatedBy)
         """;

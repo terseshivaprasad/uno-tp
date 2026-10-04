@@ -88,10 +88,12 @@ public static class InvestorDetailsForm
     }
 
     /// <summary>
-    /// One holder's fields filled from the KYC their compliant folio holds. A field
-    /// that already has something in it is left as it is. Gives back how many were filled.
+    /// One holder's fields filled from the KYC held where their latest KYC is kept. A
+    /// field that already has something in it is left as it is. The mailing address
+    /// held there is filled only where the holder's communication address is typed on
+    /// this page. Gives back how many were filled.
     /// </summary>
-    public static int FillHolder(InvestorInfoState state, int holderNumber, HolderDetails onFolio)
+    public static int FillHolder(InvestorInfoState state, int holderNumber, HolderDetails onFolio, bool mailTyped)
     {
         var prefix = $"Holder{holderNumber}.";
         var filled = 0;
@@ -112,6 +114,14 @@ public static class InvestorDetailsForm
         Fill("Email", onFolio.Email);
         Fill("Pep", onFolio.Pep);
         Fill("PepRelated", onFolio.PepRelated);
+        if (mailTyped && onFolio.Communication is { } mail)
+        {
+            Fill(Comm + "Line1", mail.Line1);
+            Fill(Comm + "Line2", mail.Line2);
+            Fill(Comm + "Line3", mail.Line3);
+            Fill(Comm + "City", mail.City);
+            Fill(Comm + "PinCode", mail.PinCode);
+        }
         return filled;
     }
 

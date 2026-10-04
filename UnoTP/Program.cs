@@ -66,8 +66,11 @@ if (!SqlDataServiceCollectionExtensions.Configured(builder.Configuration))
     throw new InvalidOperationException("ConnectionStrings:UnoTP is not set. The app runs only on its database.");
 builder.Services.AddSqlData();
 // Every API the app calls needs an address: its own, or the gateway's.
-var apiSections = new List<string> { AuthApiOptions.Section, PanApiOptions.Section, UidMaskingOptions.Section, CkycOptions.Section, IdfyOptions.Section, NameScreeningOptions.Section };
-if (new OutsideSwitches(builder.Configuration).IsOn(OutsideSwitches.NameMatch)) apiSections.Add(NameMatchOptions.Section);
+var apiSections = new List<string> { AuthApiOptions.Section, UidMaskingOptions.Section, IdfyOptions.Section, NameScreeningOptions.Section };
+var outsideSwitches = new OutsideSwitches(builder.Configuration);
+if (outsideSwitches.IsOn(OutsideSwitches.PanCheck)) apiSections.Add(PanApiOptions.Section);
+if (outsideSwitches.IsOn(OutsideSwitches.FetchCkyc)) apiSections.Add(CkycOptions.Section);
+if (outsideSwitches.IsOn(OutsideSwitches.NameMatch)) apiSections.Add(NameMatchOptions.Section);
 if (ShortenerOptions.Configured(builder.Configuration)) apiSections.Add(ShortenerOptions.Section);
 var unaddressed = BackendHttpClients.Unaddressed(builder.Configuration, [.. apiSections]);
 if (unaddressed.Count > 0)
@@ -75,10 +78,12 @@ if (unaddressed.Count > 0)
 builder.Services.AddAuthApi();
 // Who the partner is: what the auth API said when their session started (see PartnerSession).
 builder.Services.AddScoped<IPartnerApi, SessionPartnerApi>();
-// A holder's PAN is always checked with NSDL, and an Aadhaar always masked.
+// A holder's PAN is checked with NSDL unless the PAN check is switched off
+// (Backend:Switches:PanCheck), and an Aadhaar is always masked.
 builder.Services.AddPanApi();
 builder.Services.AddUidMasking();
-// CERSAI is searched when the partner chooses Fetch from CKYC.
+// CERSAI is searched when the partner chooses Fetch from CKYC, unless it is
+// switched off (Backend:Switches:FetchCkyc): its button is then disabled.
 builder.Services.AddCkyc();
 builder.Services.AddDocumentChecks(builder.Configuration);
 // The payment link is shortened on submit when the shortener has a path; otherwise

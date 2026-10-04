@@ -21,4 +21,10 @@ public interface IPartner
 
     /// <summary>The signed-in user's name, as the auth API gave it; empty when not known.</summary>
     string UserName => "";
+
+    /// <summary>The signed-in user's agency code (Agency_Cd), as the auth API gave it; empty when not known.</summary>
+    string AgencyCode => "";
+
+    /// <summary>The signed-in user's agency type, as the auth API gave it; empty when not known.</summary>
+    string AgencyType => "";
 }

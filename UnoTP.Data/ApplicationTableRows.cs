@@ -6,15 +6,15 @@ namespace UnoTP.Data;
 internal sealed class HeaderRow
 {
     public const string Columns = """
-        c_App_No AS AppNo, c_Status AS Status, n_Version AS Version,
-        n_Upload_Ver AS UploadVer, n_Details_Ver AS DetailsVer, n_Payment_Ver AS PaymentVer, n_Deposit_Ver AS DepositVer,
-        c_Pan AS Pan, d_Dob AS Dob, c_Name AS Name, c_Folio AS Folio, c_Gender AS Gender, c_Address AS Address, c_Data_Source AS DataSource,
+        f_App_No AS AppNo, f_Status AS Status, f_Version AS Version,
+        f_Upload_Ver AS UploadVer, f_Details_Ver AS DetailsVer, f_Payment_Ver AS PaymentVer, f_Deposit_Ver AS DepositVer,
+        f_Pan AS Pan, f_Dob AS Dob, f_Name AS Name, f_Folio AS Folio, f_Gender AS Gender, f_Address AS Address, f_Data_Source AS DataSource,
         f_Pan_Filed AS PanFiled, f_Rec_Pan AS RecPan, f_Rec_Photo AS RecPhoto, f_Rec_Poa AS RecPoa,
-        c_Renew_Dep_No AS RenewDepNo, n_Renew_Amount AS RenewAmount, d_Renew_Matures_On AS RenewMaturesOn,
-        n_Renew_Rate AS RenewRate, n_Renew_Tenure AS RenewTenure, c_Renew_Payout AS RenewPayout, n_Renew_Principal AS RenewPrincipal,
-        d_Submitted_On AS SubmittedOn, c_Sub_Status AS SubStatus, c_Link_Sent_To AS LinkSentTo,
-        c_Link_Emailed_To AS LinkEmailedTo, d_Link_Valid_Until AS LinkValidUntil, n_Resends_Left AS ResendsLeft,
-        c_Short_Url AS ShortUrl, d_Created_On AS CreatedOn
+        f_Renew_Dep_No AS RenewDepNo, f_Renew_Amount AS RenewAmount, f_Renew_Matures_On AS RenewMaturesOn,
+        f_Renew_Rate AS RenewRate, f_Renew_Tenure AS RenewTenure, f_Renew_Payout AS RenewPayout, f_Renew_Principal AS RenewPrincipal,
+        f_Submitted_On AS SubmittedOn, f_Sub_Status AS SubStatus, f_Link_Sent_To AS LinkSentTo,
+        f_Link_Emailed_To AS LinkEmailedTo, f_Link_Valid_Until AS LinkValidUntil, f_Resends_Left AS ResendsLeft,
+        f_Short_Url AS ShortUrl, f_Created_On AS CreatedOn
         """;
 
     public string AppNo { get; set; } = "";
@@ -170,7 +170,7 @@ internal sealed class InvestmentRow
             SELECT TOP (1) CAST(d.f_Amount AS BIGINT) AS Amount, TRY_CAST(d.f_Tenure AS INT) AS TenureMonths,
                 d.f_Int_Freq AS Payout, d.f_ApplicationDeclarationType AS AppType
             FROM dbo.t_FD_BT_Investment_Dtl d
-            WHERE d.f_Appl_No = m.c_App_No AND d.f_Active = 1
+            WHERE d.f_Appl_No = m.f_App_No AND d.f_Active = 1
             ORDER BY d.f_Pk_t_FD_BT_Investment_Dtl_Id DESC) i
         """;
 

@@ -29,13 +29,13 @@ public sealed class SqlConsole(Db db, IPartnerApi partners) : IConsoleApi
     }
 
     private const string WindowColumns = """
-        c_Window_Id AS Id, c_Features AS Features, d_From AS [From],
-        CASE WHEN d_Ended_On IS NOT NULL AND d_Ended_On < d_To THEN d_Ended_On ELSE d_To END AS [To],
-        c_Notice AS Notice, c_Set_By AS SetBy, d_Set_On AS SetOn
+        f_Window_Id AS Id, f_Features AS Features, f_From AS [From],
+        CASE WHEN f_Ended_On IS NOT NULL AND f_Ended_On < f_To THEN f_Ended_On ELSE f_To END AS [To],
+        f_Notice AS Notice, f_Set_By AS SetBy, f_Set_On AS SetOn
         """;
 
     private const string NoticeColumns = """
-        c_Notice_Id AS Id, c_Kind AS Kind, c_Title AS Title, d_At AS At, c_Detail AS Detail, c_Set_By AS SetBy, d_Set_On AS SetOn
+        f_Notice_Id AS Id, f_Kind AS Kind, f_Title AS Title, f_At AS At, f_Detail AS Detail, f_Set_By AS SetBy, f_Set_On AS SetOn
         """;
 
     public async Task<ConsoleSchedule> ScheduleAsync(CancellationToken ct = default)
@@ -43,12 +43,12 @@ public sealed class SqlConsole(Db db, IPartnerApi partners) : IConsoleApi
         await using var connection = await db.OpenAsync(ct);
         using var read = await connection.QueryMultipleAsync($"""
             SELECT {WindowColumns} FROM dbo.t_Unotp_Console_Window
-            WHERE f_Active = 1 AND (d_Ended_On IS NULL OR d_Ended_On > d_From)
-              AND d_To > DATEADD(DAY, -{KeptDays}, SYSDATETIME())
-            ORDER BY d_From;
+            WHERE f_Active = 1 AND (f_Ended_On IS NULL OR f_Ended_On > f_From)
+              AND f_To > DATEADD(DAY, -{KeptDays}, SYSDATETIME())
+            ORDER BY f_From;
             SELECT {NoticeColumns} FROM dbo.t_Unotp_Console_Notice
-            WHERE f_Active = 1 AND d_Removed_On IS NULL AND d_At > DATEADD(DAY, -{KeptDays}, SYSDATETIME())
-            ORDER BY d_At;
+            WHERE f_Active = 1 AND f_Removed_On IS NULL AND f_At > DATEADD(DAY, -{KeptDays}, SYSDATETIME())
+            ORDER BY f_At;
             """);
         var windows = (await read.ReadAsync<WindowRow>()).Select(w => w.Record()).ToList();
         var notices = (await read.ReadAsync<AnnouncementRecord>()).ToList();
@@ -61,9 +61,9 @@ public sealed class SqlConsole(Db db, IPartnerApi partners) : IConsoleApi
         await using var connection = await db.OpenAsync(ct);
         return (await connection.QuerySingleAsync<WindowRow>($"""
             DECLARE @Seq INT = NEXT VALUE FOR dbo.s_Console_Id;
-            INSERT dbo.t_Unotp_Console_Window (c_Window_Id, c_Features, d_From, d_To, c_Notice, c_Set_By)
-            OUTPUT inserted.c_Window_Id AS Id, inserted.c_Features AS Features, inserted.d_From AS [From], inserted.d_To AS [To],
-                inserted.c_Notice AS Notice, inserted.c_Set_By AS SetBy, inserted.d_Set_On AS SetOn
+            INSERT dbo.t_Unotp_Console_Window (f_Window_Id, f_Features, f_From, f_To, f_Notice, f_Set_By)
+            OUTPUT inserted.f_Window_Id AS Id, inserted.f_Features AS Features, inserted.f_From AS [From], inserted.f_To AS [To],
+                inserted.f_Notice AS Notice, inserted.f_Set_By AS SetBy, inserted.f_Set_On AS SetOn
             VALUES ('W-' + FORMAT(@From, 'ddMM') + '-' + RIGHT('00' + CAST(@Seq AS VARCHAR(10)), 3), @Features, @From, @To, @Notice, @By)
             """, new { Features = string.Join(',', window.Features), window.From, window.To, window.Notice, By = by })).Record();
     }
@@ -74,9 +74,9 @@ public sealed class SqlConsole(Db db, IPartnerApi partners) : IConsoleApi
         await using var connection = await db.OpenAsync(ct);
         return await connection.QuerySingleAsync<AnnouncementRecord>("""
             DECLARE @Seq INT = NEXT VALUE FOR dbo.s_Console_Id;
-            INSERT dbo.t_Unotp_Console_Notice (c_Notice_Id, c_Kind, c_Title, d_At, c_Detail, c_Set_By)
-            OUTPUT inserted.c_Notice_Id AS Id, inserted.c_Kind AS Kind, inserted.c_Title AS Title, inserted.d_At AS At,
-                inserted.c_Detail AS Detail, inserted.c_Set_By AS SetBy, inserted.d_Set_On AS SetOn
+            INSERT dbo.t_Unotp_Console_Notice (f_Notice_Id, f_Kind, f_Title, f_At, f_Detail, f_Set_By)
+            OUTPUT inserted.f_Notice_Id AS Id, inserted.f_Kind AS Kind, inserted.f_Title AS Title, inserted.f_At AS At,
+                inserted.f_Detail AS Detail, inserted.f_Set_By AS SetBy, inserted.f_Set_On AS SetOn
             VALUES ('N-' + FORMAT(@At, 'ddMM') + '-' + RIGHT('00' + CAST(@Seq AS VARCHAR(10)), 3), @Kind, @Title, @At, @Detail, @By)
             """, new { announcement.Kind, announcement.Title, announcement.At, announcement.Detail, By = by });
     }
@@ -87,8 +87,8 @@ public sealed class SqlConsole(Db db, IPartnerApi partners) : IConsoleApi
         var by = (await partners.MeAsync(ct)).Name;
         await using var connection = await db.OpenAsync(ct);
         return await connection.ExecuteAsync("""
-            UPDATE dbo.t_Unotp_Console_Window SET d_Ended_On = SYSDATETIME(), c_Ended_By = @By
-            WHERE c_Window_Id = @Id AND f_Active = 1 AND d_Ended_On IS NULL AND d_To > SYSDATETIME()
+            UPDATE dbo.t_Unotp_Console_Window SET f_Ended_On = SYSDATETIME(), f_Ended_By = @By
+            WHERE f_Window_Id = @Id AND f_Active = 1 AND f_Ended_On IS NULL AND f_To > SYSDATETIME()
             """, new { Id = id, By = by }) > 0;
     }
 
@@ -97,8 +97,8 @@ public sealed class SqlConsole(Db db, IPartnerApi partners) : IConsoleApi
         var by = (await partners.MeAsync(ct)).Name;
         await using var connection = await db.OpenAsync(ct);
         return await connection.ExecuteAsync("""
-            UPDATE dbo.t_Unotp_Console_Notice SET d_Removed_On = SYSDATETIME(), c_Removed_By = @By
-            WHERE c_Notice_Id = @Id AND f_Active = 1 AND d_Removed_On IS NULL
+            UPDATE dbo.t_Unotp_Console_Notice SET f_Removed_On = SYSDATETIME(), f_Removed_By = @By
+            WHERE f_Notice_Id = @Id AND f_Active = 1 AND f_Removed_On IS NULL
             """, new { Id = id, By = by }) > 0;
     }
 }
