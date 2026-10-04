@@ -54,40 +54,122 @@ internal static partial class Sections
         // master codes it, with what the outside checks made of it (SaveStep.DocumentCheckFlags.cs).
         // Its size and the words of its check stay on the upload step's JSON:
         // t_FD_BT_KYC_document has no column for them.
-        await RetireAsync(db, tx, at, "t_FD_BT_KYC_document", "f_UpdatedDate");
+        //
+        // Only what changed is written. A document whose row already says all of this
+        // is left as it is; one that is new, or says something else now (another copy,
+        // a check's answer, the status on submit), has its old row taken out of use and
+        // a new one inserted; one no longer on the application has its row taken out
+        // of use. So a row taken out of use is always an earlier state, never a copy.
+        var active = (await db.QueryAsync<DocumentRow>(DocumentRow.Select, new { at.AppNo }, tx)).ToList();
         var sequences = new Dictionary<(string, string), int>();
         foreach (var d in Documents(upload))
         {
             var code = codes.GetValueOrDefault(MasterKey(d));
             var holderType = FiledUnder(d.HolderType);
             var flags = DocumentFlags.Of(d.Doc);
-            await db.ExecuteAsync("""
-                INSERT dbo.t_FD_BT_KYC_document (f_Appl_No, f_Holder_Type_Code, f_Doc_Type_Code, f_Doc_Sub_Type_Code, f_Doc_Type_Desc, f_Doc_Sub_Type_Desc,
-                    f_Doc_FileName, f_Doc_Filepath, f_FolioNo, f_Doc_Sequence, f_Document_Source, f_doc_source, f_Doc_Ref_No, f_Doc_Exp_Date,
-                    f_IsDocumentMasked, f_is_ocrextract, f_isocrdataextract, f_isocrdataverified,
-                    f_IsidfyDocIdentified, f_IdfyIdentifiedDocument, f_IsidfyDocDataExtracted, f_IsidfyDocDataVerified,
-                    f_IsidfyFaceCompared, f_IsidfyDocFaceDetected, f_IdfyFaceMatchPercentage,
-                    f_Source, f_Status, f_Active, f_CreatedBy, f_CreatedByUName, f_CreatedDate, f_CreatedIP, f_Session_ID)
-                VALUES (@AppNo, @HolderType, @TypeCode, @SubTypeCode, @TypeName, @SubTypeName,
-                    @FileName, @FilePath, @Folio, @Sequence, @UploadedFrom, @UploadedFrom, @Number, @Expiry,
-                    @Masked, @OcrAsked, @Read, @Verified,
-                    @Identified, @IdentifiedAs, @Read, @Verified,
-                    @FaceCompared, @FaceFound, @FaceScore,
-                    @Source, @Status, 1, @CreatedBy, @UserName, GETDATE(), @Ip, @SessionId)
-                """, new
+            var row = new DocumentRow
             {
-                at.AppNo, HolderType = holderType, code?.TypeCode, code?.SubTypeCode, code?.TypeName, code?.SubTypeName,
+                HolderType = holderType, TypeCode = code?.TypeCode, SubTypeCode = code?.SubTypeCode, TypeName = code?.TypeName, SubTypeName = code?.SubTypeName,
                 FileName = Cut(d.Doc.FileName, 250),
                 FilePath = d.Doc.Before ? null : DmsPaths.Under(dmsRoot, at.AppNo, d.Doc.FileName),
                 Folio = FolioOf(d.HolderType, at, upload),
                 Sequence = NextSequence(sequences, holderType, code?.TypeCode ?? d.DocType),
                 // A document that came over from the folio or the step before was not uploaded here.
                 UploadedFrom = d.Doc.Before ? null : Source,
-                flags.Number, flags.Expiry, flags.Masked, flags.OcrAsked, flags.Read, flags.Verified,
-                flags.Identified, flags.IdentifiedAs, flags.FaceCompared, flags.FaceFound, flags.FaceScore,
-                Source, at.Status, CreatedBy = at.UserClusterId, at.UserName, at.Ip, at.SessionId,
-            }, tx);
+                Number = flags.Number, Expiry = flags.Expiry, Masked = flags.Masked, OcrAsked = flags.OcrAsked, Read = flags.Read, Verified = flags.Verified,
+                Identified = flags.Identified, IdentifiedAs = flags.IdentifiedAs, FaceCompared = flags.FaceCompared, FaceFound = flags.FaceFound, FaceScore = flags.FaceScore,
+                Status = at.Status,
+            };
+
+            // The row already there says the same: it stands.
+            var same = active.FirstOrDefault(there => there with { Id = 0 } == row);
+            if (same is not null)
+            {
+                active.Remove(same);
+                continue;
+            }
+            await InsertDocumentAsync(db, tx, at, row);
         }
+
+        // What is left was replaced, or is no longer on the application.
+        if (active.Count > 0)
+        {
+            await db.ExecuteAsync("""
+                UPDATE dbo.t_FD_BT_KYC_document
+                SET f_Active = 0, f_UpdatedBy = @UpdatedBy, f_UpdatedByUName = @UserName, f_UpdatedDate = GETDATE(), f_UpdatedIP = @Ip
+                WHERE f_Pk_t_FD_BT_KYC_document_ID IN @Ids
+                """, new { Ids = active.Select(row => row.Id).ToList(), UpdatedBy = at.UserClusterId, at.UserName, at.Ip }, tx);
+        }
+    }
+
+    private static Task InsertDocumentAsync(IDbConnection db, IDbTransaction tx, Stamp at, DocumentRow row) =>
+        db.ExecuteAsync("""
+            INSERT dbo.t_FD_BT_KYC_document (f_Appl_No, f_Holder_Type_Code, f_Doc_Type_Code, f_Doc_Sub_Type_Code, f_Doc_Type_Desc, f_Doc_Sub_Type_Desc,
+                f_Doc_FileName, f_Doc_Filepath, f_FolioNo, f_Doc_Sequence, f_Document_Source, f_doc_source, f_Doc_Ref_No, f_Doc_Exp_Date,
+                f_IsDocumentMasked, f_is_ocrextract, f_isocrdataextract, f_isocrdataverified,
+                f_IsidfyDocIdentified, f_IdfyIdentifiedDocument, f_IsidfyDocDataExtracted, f_IsidfyDocDataVerified,
+                f_IsidfyFaceCompared, f_IsidfyDocFaceDetected, f_IdfyFaceMatchPercentage,
+                f_Source, f_Status, f_Active, f_CreatedBy, f_CreatedByUName, f_CreatedDate, f_CreatedIP, f_Session_ID)
+            VALUES (@AppNo, @HolderType, @TypeCode, @SubTypeCode, @TypeName, @SubTypeName,
+                @FileName, @FilePath, @Folio, @Sequence, @UploadedFrom, @UploadedFrom, @Number, @Expiry,
+                @Masked, @OcrAsked, @Read, @Verified,
+                @Identified, @IdentifiedAs, @Read, @Verified,
+                @FaceCompared, @FaceFound, @FaceScore,
+                @Source, @Status, 1, @CreatedBy, @UserName, GETDATE(), @Ip, @SessionId)
+            """, new
+        {
+            at.AppNo, row.HolderType, row.TypeCode, row.SubTypeCode, row.TypeName, row.SubTypeName,
+            row.FileName, row.FilePath, row.Folio, row.Sequence, row.UploadedFrom, row.Number, row.Expiry,
+            row.Masked, row.OcrAsked, row.Read, row.Verified,
+            row.Identified, row.IdentifiedAs, row.FaceCompared, row.FaceFound, row.FaceScore,
+            Source, row.Status, CreatedBy = at.UserClusterId, at.UserName, at.Ip, at.SessionId,
+        }, tx);
+
+    /// <summary>
+    /// What a row of t_FD_BT_KYC_document says of a document, as the app writes it.
+    /// Two rows that are equal but for their <see cref="Id"/> say the same thing, and
+    /// the one already in the table is left as it is.
+    /// </summary>
+    private sealed record DocumentRow
+    {
+        /// <summary>The application's rows in use, read under the names below.</summary>
+        public const string Select = """
+            SELECT f_Pk_t_FD_BT_KYC_document_ID AS Id, f_Holder_Type_Code AS HolderType,
+                   f_Doc_Type_Code AS TypeCode, f_Doc_Sub_Type_Code AS SubTypeCode, f_Doc_Type_Desc AS TypeName, f_Doc_Sub_Type_Desc AS SubTypeName,
+                   f_Doc_FileName AS FileName, f_Doc_Filepath AS FilePath, f_FolioNo AS Folio, f_Doc_Sequence AS Sequence,
+                   f_Document_Source AS UploadedFrom, f_Doc_Ref_No AS Number, f_Doc_Exp_Date AS Expiry,
+                   f_IsDocumentMasked AS Masked, f_is_ocrextract AS OcrAsked, f_isocrdataextract AS [Read], f_isocrdataverified AS Verified,
+                   f_IsidfyDocIdentified AS Identified, f_IdfyIdentifiedDocument AS IdentifiedAs,
+                   f_IsidfyFaceCompared AS FaceCompared, f_IsidfyDocFaceDetected AS FaceFound, CAST(f_IdfyFaceMatchPercentage AS INT) AS FaceScore,
+                   f_Status AS Status
+            FROM dbo.t_FD_BT_KYC_document
+            WHERE f_Appl_No = @AppNo AND f_Active = 1
+            """;
+
+        /// <summary>The row's own number in the table; 0 for one not inserted yet.</summary>
+        public long Id { get; init; }
+        public string? HolderType { get; init; }
+        public string? TypeCode { get; init; }
+        public string? SubTypeCode { get; init; }
+        public string? TypeName { get; init; }
+        public string? SubTypeName { get; init; }
+        public string? FileName { get; init; }
+        public string? FilePath { get; init; }
+        public string? Folio { get; init; }
+        public string? Sequence { get; init; }
+        public string? UploadedFrom { get; init; }
+        public string? Number { get; init; }
+        public DateTime? Expiry { get; init; }
+        public bool? Masked { get; init; }
+        public bool? OcrAsked { get; init; }
+        public bool? Read { get; init; }
+        public bool? Verified { get; init; }
+        public bool? Identified { get; init; }
+        public string? IdentifiedAs { get; init; }
+        public bool? FaceCompared { get; init; }
+        public bool? FaceFound { get; init; }
+        public int? FaceScore { get; init; }
+        public string? Status { get; init; }
     }
 
     // f_Doc_Sequence: 1, 2, 3... among a holder's documents of one type.

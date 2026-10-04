@@ -368,6 +368,11 @@ GO
    ----------------------------------------------------------------------------- */
 
 /* ----- t_FD_BT_KYC_document: one row per application, holder and document ----------
+     Unlike the other tables here, a save writes only what changed: a document whose
+     row already says the same is left as it is; one that is new or changed (another
+     copy, a check's answer, the status on submit) has its old row taken out of use
+     and a new one inserted; one taken off the application has its row taken out of
+     use. So a row with f_Active = 0 is always an earlier state, never a copy.
      f_Holder_Type_Code   01 the investor, 02 and 03 the joint holders. The application's
                           own documents - the form, the cheque, an employee proof, the
                           Form 121 - go under 01

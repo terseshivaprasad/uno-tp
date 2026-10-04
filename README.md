@@ -228,6 +228,9 @@ more with status `APR` (or `PEN_E` where the investor's KYC was fetched from CKY
 the app's own tables say `APR` either way), with the rate locked on `t_FD_BT_Investment_Dtl` and the
 interest and maturity on `t_Unotp_Application_Mst`, and the application takes no
 saves after it. Nothing is deleted, so the earlier rows stay as the audit trail.
+The document table (`t_FD_BT_KYC_document`) is written more sparingly: a save
+touches only the documents that changed, so choosing a sourcing mode or a category
+does not write every document's row again.
 Every row carries `f_Source = 'UNO_TP'`, the user's `Agency_Usr_Clustered_ID`, and
 the session and address it was written from. A page's working state
 (`t_Unotp_Page_State`) is scratch and is overwritten.
