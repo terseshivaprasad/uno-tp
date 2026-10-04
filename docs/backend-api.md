@@ -417,7 +417,7 @@ Each check is answered by one service, with a settings section of its own:
 | PAN–Aadhaar link | `IPanAadhaarLinkService` | Idfy.Api (`Idfy`) | `pan-aadhaar-link/verify/sync` |
 | PAN–POA face match | `IFaceMatchService` | Idfy.Api (`Idfy`) | `face/compare` with `document` (the PAN copy) and `document2` (the proof of address) as Base64, each 150–4,096 px a side; reads `is_a_match`, `match_score`, `review_recommended` and `image_1`/`image_2.face_detected` and `face_quality`. No face found, or a review recommended, is shown as "Not sure". |
 | Name screening | `INameScreeningService` | Name screening API (`NameScreening`) | `POST ScreenPath` with the holder's name, date of birth and mobile number → `status` and `nameScreeingStatus`; allowed only on `SUCCESS` and `ALLOWED`. |
-| Name match | `INameMatchService` | Name match API (`NameMatch`) | `POST MatchPath { SourceName, TargetName }` → `{ status, error_code, error_message }` |
+| Name match | `INameMatchService` | Name match API (`NameMatch`) | `POST MatchPath { SourceName, TargetName }` → `{ status, error_code, error_message }`. Called as the Idfy.Api client calls: the body whole with its length, and no header but `X-Client-Id`; the gateway refuses it (403) otherwise. |
 
 ### What the app expects from every outside service
 

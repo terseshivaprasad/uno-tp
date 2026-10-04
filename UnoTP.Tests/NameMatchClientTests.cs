@@ -1,3 +1,5 @@
+using System.Net;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using UnoTP.Models;
 using UnoTP.Services;
@@ -8,7 +10,7 @@ namespace UnoTP.Tests;
 public class NameMatchClientTests
 {
     private static NameMatchClient ClientOver(StubNetwork network) =>
-        new(network.Client(), new TestPartner(), Options.Create(new NameMatchOptions { MatchPath = "match" }));
+        new(network.Client(), Options.Create(new NameMatchOptions { MatchPath = "match" }), NullLogger<NameMatchClient>.Instance);
 
     [Fact]
     public async Task The_two_names_go_under_the_APIs_own_names()
@@ -21,6 +23,27 @@ public class NameMatchClientTests
         Assert.Equal("http://gateway.test/some-api/api/v1/match", network.Address!.ToString());
         Assert.Equal("ESHA K MEHTA", network.Sent.GetProperty("SourceName").GetString());
         Assert.Equal("ESHA KIRAN MEHTA", network.Sent.GetProperty("TargetName").GetString());
+    }
+
+    [Fact]
+    public async Task The_call_carries_no_partner_or_session_header_as_the_IDfy_calls_do_not()
+    {
+        var network = new StubNetwork { Answer = """{"status":"SUCCESS","error_code":"","error_message":""}""" };
+
+        await ClientOver(network).MatchAsync("A NAME", "A NAME");
+
+        Assert.False(network.Headers.ContainsKey("X-Partner-Id"));
+        Assert.False(network.Headers.ContainsKey("X-Session-Id"));
+    }
+
+    [Fact]
+    public async Task A_refusal_by_the_gateway_is_an_outage_that_says_so()
+    {
+        var network = new StubNetwork { Status = HttpStatusCode.Forbidden, Answer = "Forbidden" };
+
+        var outage = await Assert.ThrowsAsync<ExternalServiceException>(() => ClientOver(network).MatchAsync("A NAME", "A NAME"));
+
+        Assert.Contains("403", outage.Message);
     }
 
     [Fact]
