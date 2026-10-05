@@ -38,17 +38,25 @@ public interface IApplicationApi
     Task<int?> SaveDepositAsync(string appNo, int version, DepositDetails deposit, CancellationToken ct = default);
 
     /// <summary>
-    /// POST applications/{appNo}/submit: the application is submitted and the
-    /// investor sent the link to pay and consent. Null on a conflict; the
-    /// application, as submitted, otherwise. <paramref name="link"/> is the payment
-    /// link the backend sends the investor; null leaves the backend to make its own.
+    /// POST applications/{appNo}/submit: the application is saved as submitted. Null
+    /// on a conflict; the application, as submitted, otherwise. Its link is made
+    /// after this, and put on record with <see cref="RecordPaymentLinkAsync"/>.
     /// </summary>
-    Task<Application?> SubmitAsync(string appNo, int version, PaymentLink? link = null, CancellationToken ct = default);
+    Task<Application?> SubmitAsync(string appNo, int version, CancellationToken ct = default);
+
+    /// <summary>
+    /// The link a submitted application's investor is sent to pay and consent, put on
+    /// record: in the payment link table for a purchase, in the re-payment link table
+    /// for a renewal. <paramref name="link"/> is null when the app builds no link.
+    /// The submission as it now stands, or null when no link may go any more.
+    /// </summary>
+    Task<Submission?> RecordPaymentLinkAsync(string appNo, PaymentLink? link, CancellationToken ct = default);
 
     /// <summary>
     /// POST applications/{appNo}/resend-link: sends a submitted application's payment
-    /// link again, while a resend is left. The submission as it now stands, or null
-    /// when there is none to resend.
+    /// link again, while its window is open. The submission as it now stands, or null
+    /// when there is none to resend: an application submitted with Try later has no
+    /// link yet, and gets its first with <see cref="RecordPaymentLinkAsync"/>.
     /// </summary>
     Task<Submission?> ResendLinkAsync(string appNo, CancellationToken ct = default);
 
@@ -247,17 +255,18 @@ public sealed record DepositDetails(
 /// <param name="LinkValidUntil">When the payment link stops working (linkValidityHours.payment from when it was last sent).</param>
 /// <param name="ResendsLeft">Kept for the row; the rule is <paramref name="RegenerateUntil"/>.</param>
 /// <param name="RegenerateUntil">A new link can be sent until then: cancellationDays after the application was created, when an unpaid application cancels itself.</param>
+/// <param name="LinkSent">Whether a payment link has gone out. False for an application submitted with Try later, until its link is generated.</param>
 public sealed record Submission(DateTime At, string Status, string LinkSentTo, DateTime LinkValidUntil, int ResendsLeft, string LinkEmailedTo = "", string ShortUrl = "",
-    DateTime? RegenerateUntil = null)
+    DateTime? RegenerateUntil = null, bool LinkSent = true)
 {
     /// <summary>Whether a new link can still be sent.</summary>
     public bool CanRegenerate(DateTime now) => RegenerateUntil is { } until && now <= until;
 }
 
 /// <summary>
-/// The payment link an application is submitted with: the page the investor pays
-/// on, and its short form when the shortener answered. The backend sends whichever
-/// it has - the short one when there is one - by SMS and e-mail.
+/// The payment link made once an application is saved as submitted: the page the
+/// investor pays on, and its short form when the shortener answered. Whichever
+/// there is - the short one when there is one - goes by SMS and e-mail.
 /// </summary>
 public sealed record PaymentLink(string Url, string? ShortUrl);
 
@@ -294,6 +303,10 @@ public sealed class UploadState
     /// what their permanent address row carries (f_Add1 to f_Add3 and f_AddPin).
     /// </summary>
     public string Address { get; set; } = "";
+
+    /// <summary>The district and the state read off that proof, apart from the address; empty where it gave none.</summary>
+    public string District { get; set; } = "";
+    public string State { get; set; } = "";
     public string EmpCode { get; set; } = "";
     public string EmpCompany { get; set; } = "";
     public string EmpHolder { get; set; } = "";
@@ -395,6 +408,10 @@ public sealed class JointHolder
 
     /// <summary>Their permanent address as read off the proof of address filed for them here, its PIN code at the end; empty until one is filed.</summary>
     public string Address { get; set; } = "";
+
+    /// <summary>The district and the state read off that proof, apart from the address; empty where it gave none.</summary>
+    public string District { get; set; } = "";
+    public string State { get; set; } = "";
 
     /// <summary>Set when their post goes to an address other than the permanent one.</summary>
     public bool MailDifferent { get; set; }

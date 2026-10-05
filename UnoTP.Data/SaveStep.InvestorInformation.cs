@@ -32,11 +32,13 @@ internal static class NamePrefixes
         return "";
     }
 
-    public static string GenderOf(string prefix)
+    /// <summary>The gender a name prefix stands for, however it is written: Mr, MR., Mrs, Miss, Ms, Mx. Empty for any other.</summary>
+    public static string GenderOf(string? prefix)
     {
-        if (prefix == "Mr") return Genders.Male;
-        if (prefix == "Mrs" || prefix == "Miss") return Genders.Female;
-        if (prefix == "Mx") return Genders.Transgender;
+        var known = (prefix ?? "").Trim().TrimEnd('.').ToUpperInvariant();
+        if (known == "MR") return Genders.Male;
+        if (known is "MRS" or "MISS" or "MS") return Genders.Female;
+        if (known == "MX") return Genders.Transgender;
         return "";
     }
 }
@@ -66,9 +68,11 @@ internal static partial class Sections
 
             // The permanent address is written even when blank: its row carries the
             // holder's mobile and e-mail. Its PIN code goes in a column of its own.
-            await InsertAddressAsync(db, tx, at, h, who.Folio, AddressType.Permanent, "Permanent", PermanentAddress(h.Holder, who, upload));
-            if (h.Communication is { } communication)
-                await InsertAddressAsync(db, tx, at, h, who.Folio, AddressType.Communication, "Mailing", communication);
+            var permanent = PermanentAddress(h.Holder, who, upload);
+            await InsertAddressAsync(db, tx, at, h, who.Folio, AddressType.Permanent, "Permanent", permanent);
+            // The mailing address has a row of its own either way: the one the holder
+            // gave, or - post going to the permanent address - that same address again.
+            await InsertAddressAsync(db, tx, at, h, who.Folio, AddressType.Communication, "Mailing", h.Communication ?? permanent);
         }
 
         if (details.Nominee is { } nominee)
@@ -88,14 +92,14 @@ internal static partial class Sections
             INSERT dbo.t_FD_BT_Kyc_Data_Dtl (f_Holder_Type, f_Appl_No, f_Kyc_ConstiType, f_Kyc_NamePrefix, f_Kyc_FirstName, f_Kyc_FullName,
                 f_Kyc_FatherFirstName, f_Kyc_FatherFullName, f_Kyc_SpouseFirstName, f_Kyc_SpouseFullName,
                 f_Kyc_MotherFirstName, f_Kyc_MotherFullName, f_Kyc_MaritalStatus, f_Kyc_Nationality_Code, f_Kyc_Nationality_Desc,
-                f_Kyc_DOB, f_IsMinor, f_Kyc_PAN, f_Kyc_Number, f_FolioNo, f_Kyc_AnnualIncome_Desc, f_CustSeg_Type_desc, f_CustSeg_Subtype_Desc,
+                f_Kyc_DOB, f_IsMinor, f_Kyc_PAN, f_Kyc_Number, f_FolioNo, f_Kyc_AnnualIncome_Code, f_Kyc_AnnualIncome_Desc, f_CustSeg_Type_desc, f_CustSeg_Subtype_Desc,
                 f_CustSeg_Type_Code, f_CustSeg_Subtype_Code, f_Kyc_Occupation_Code, f_Kyc_Occupation_Desc,
                 f_NSA_Response, f_NSA_Date, f_IsPEP, f_IsPEP_Relative, f_IsPanVerified, f_Data_Source,
                 f_Source, f_Status, f_Active, f_CreatedBy, f_CreatedByUName, f_CreatedOn, f_CreatedIP, f_SessionID)
             VALUES (@HolderType, @AppNo, '01', @NamePrefix, @FirstName, @Name,
                 @Father, @Father, @Spouse, @Spouse,
                 @Mother, @Mother, @MaritalStatus, 'IN', 'India',
-                @Dob, @Minor, @Pan, @CkycNumber, @Folio, @AnnualIncome, @Occupation, @SubOccupation,
+                @Dob, @Minor, @Pan, @CkycNumber, @Folio, @AnnualIncomeCode, @AnnualIncome, @Occupation, @SubOccupation,
                 @TypeCode, @SubTypeCode, @OccupationCode, @OccupationName,
                 @ScreeningStatus, @ScreenedOn, @Pep, @PepRelated, @PanVerified, @DataSource,
                 @Source, @Status, 1, @CreatedBy, @UserName, GETDATE(), @Ip, @SessionId)
@@ -107,6 +111,8 @@ internal static partial class Sections
             Father = ParentNamed("Father", h), Spouse = ParentNamed("Spouse", h), Mother = ParentNamed("Mother", h),
             MaritalStatus = MasterLists.CodeOf(masters.MaritalStatuses, h.MaritalStatus),
             Dob = born, Minor = IsMinor(born, DateTime.Today, minorUnder), who.Pan, CkycNumber = EmptyAsNull(kyc.CkycReference), who.Folio,
+            // The income band's code is the one its row in 'incomeBands' carries.
+            AnnualIncomeCode = EmptyAsNull(MasterLists.CodeOf(masters.IncomeBands, h.AnnualIncome)),
             h.AnnualIncome, h.Occupation, h.SubOccupation,
             occupation?.TypeCode, occupation?.SubTypeCode, occupation?.OccupationCode, occupation?.OccupationName,
             kyc.ScreeningStatus, kyc.ScreenedOn, Pep = YesOrNo(h.Pep), PepRelated = YesOrNo(h.PepRelated),
@@ -144,7 +150,8 @@ internal static partial class Sections
         {
             HolderType = h.Holder, at.AppNo, Type = type, TypeName = typeName,
             Line1 = Cut(a.Line1, 100), Line2 = Cut(a.Line2, 100), Line3 = Cut(a.Line3, 100),
-            City = Cut(a.City, 50), District = Cut(a.District, 50), State = Cut(a.State, 50), a.PinCode, h.Mobile, h.Email, Folio = folio,
+            // An address with no city - a proof read by OCR gives none - takes its district as the city.
+            City = Cut(a.City.Length > 0 ? a.City : a.District, 50), District = Cut(a.District, 50), State = Cut(a.State, 50), a.PinCode, h.Mobile, h.Email, Folio = folio,
             Source, at.Status, CreatedBy = at.UserClusterId, at.UserName, at.Ip, at.SessionId,
         }, tx);
 
@@ -209,12 +216,19 @@ internal static partial class Sections
     // none. Its lines go in f_Add1 to f_Add3 and its PIN code in f_AddPin.
     private static TypedAddress PermanentAddress(string code, Holder who, UploadState? upload)
     {
-        var address = who.Address;
-        var read = code == HolderType.Investor ? upload?.Address : upload?.Joint.GetValueOrDefault(code)?.Address;
-        if (!string.IsNullOrEmpty(read)) address = read;
+        // The address read off the proof filed here, with its district and state; else
+        // the one on record, which is held as one line.
+        var (read, district, state) = code == HolderType.Investor
+            ? (upload?.Address, upload?.District, upload?.State)
+            : (upload?.Joint.GetValueOrDefault(code)?.Address, upload?.Joint.GetValueOrDefault(code)?.District, upload?.Joint.GetValueOrDefault(code)?.State);
+        if (string.IsNullOrEmpty(read))
+        {
+            var (onRecord, pinOnRecord) = Addresses.SplitPin(who.Address);
+            return InThreeLines(onRecord, 100) with { PinCode = pinOnRecord };
+        }
 
-        var (lines, pin) = Addresses.SplitPin(address);
-        return InThreeLines(lines, 100) with { PinCode = pin };
+        var (lines, pin) = Addresses.SplitPin(read);
+        return InThreeLines(lines, 100) with { PinCode = pin, District = district ?? "", State = state ?? "" };
     }
 
     // An address kept as one line, broken at its spaces into three of the column's width.

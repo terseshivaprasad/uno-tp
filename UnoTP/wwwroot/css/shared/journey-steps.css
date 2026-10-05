@@ -1167,12 +1167,10 @@
   border-style: dashed;
   background: var(--pink-bg);
 }
-/* Room at the foot for View and Replace, which sit in that one place at every
-   width: the card's bottom right corner, on the card they act on. The document's
-   name keeps the card's whole width to be read in. */
+/* A filed copy opens when its card is clicked. View and Replace sit over the card,
+   on its label line, so the card keeps no room for them at its foot. */
 .doc-drop.is-filled {
   cursor: zoom-in;
-  padding-bottom: 44px;
 }
 .doc-drop.is-filled:hover {
   border-color: var(--border-3);
@@ -1315,10 +1313,17 @@
   line-height: 16px;
   color: var(--amber);
 }
+/* The address in a document card: plain text, cut after a few lines with an
+   ellipsis so every card keeps one height; the whole of it shows on hover (title). */
 .doc-on-file__lines {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: var(--doc-address-lines);
+  line-clamp: var(--doc-address-lines);
+  overflow: hidden;
   max-width: 100%;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 400;
   line-height: 20px;
   color: var(--ink);
   overflow-wrap: anywhere;
@@ -1327,6 +1332,15 @@
   font-size: 12px;
   line-height: 16px;
   color: var(--muted);
+}
+/* The last line of a card - where the address is from, or the proof's number and
+   expiry - keeps to one line, ending in an ellipsis, with the whole of it on hover:
+   with the address cut to its lines, every card then keeps the one height. */
+.doc-on-file__from, .doc-on-file__id {
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 /* Long addresses end in an ellipsis inside the box, with the whole of it on hover,
    and a long unbroken string breaks rather than running out of the box. */
@@ -1369,7 +1383,7 @@
 }
 .doc-on-file__id {
   max-width: 100%;
-  margin-top: 4px;
+  margin-top: 2px;
   font-size: 12px;
   line-height: 16px;
   color: var(--muted);
@@ -1381,7 +1395,7 @@
 /* The PIN code stands on a line of its own, so cutting the address to fit never loses it. */
 .doc-on-file__pin {
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 400;
   line-height: 20px;
   color: var(--ink);
 }

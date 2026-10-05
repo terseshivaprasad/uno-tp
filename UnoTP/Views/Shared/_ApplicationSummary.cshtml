@@ -117,7 +117,7 @@
                 {
                     var who = h.Holder.Who;
                     var det = h.Details;
-                    var gender = det.Gender.Length > 0 ? det.Gender : who.Gender;
+                    var gender = h.Gender;
                     <div class="investor-panel investor-panel--stack">
                         <div class="investor-panel__label">@(h.Holder.Joint ? "Joint holder" : "Primary holder") &middot; @Or(who.Name, "name not verified yet")</div>
                         <div class="investor-key-value-grid">

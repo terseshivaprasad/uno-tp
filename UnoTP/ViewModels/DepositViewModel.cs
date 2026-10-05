@@ -221,7 +221,7 @@ public sealed class DepositViewModel(DocumentsViewModel docs, DepositForm form, 
         get
         {
             if (Quote is not null) return $"Rate is the card rate for a {Form.TenureMonths}-month deposit as on {Money.Day(Quote.RateAsOn)}, and is locked when the application is submitted.";
-            if (Row is null && Form.AmountProblem(Docs.Config) is not null) return "The rate and the returns are quoted once a valid amount is entered.";
+            if (Row is null && Form.AmountProblem(Docs.Config) is not null) return "The rate is quoted once a valid amount is entered.";
             if (Row is null && Payout is not null && !Rates.OffersPayout(Form.InterestPayout))
             {
                 return $"A {Payout.Name.ToLowerInvariant()} payout is not offered for this amount. Choose another payout, or change the amount.";
@@ -230,8 +230,8 @@ public sealed class DepositViewModel(DocumentsViewModel docs, DepositForm form, 
             {
                 return $"A {Form.TenureMonths}-month deposit is not offered for this amount. Choose another tenure, or change the amount.";
             }
-            if (Row is null) return "The rate and the returns are quoted once a valid amount is entered.";
-            return $"Rate is the card rate for a {Form.TenureMonths}-month deposit of {Money.Rupees(Rates.Amount)} as on {Money.Day(Row.AsOn)}. The returns are worked out once a valid amount is entered.";
+            if (Row is null) return "The rate is quoted once a valid amount is entered.";
+            return $"Rate is the card rate for a {Form.TenureMonths}-month deposit of {Money.Rupees(Rates.Amount)} as on {Money.Day(Row.AsOn)}.";
         }
     }
 

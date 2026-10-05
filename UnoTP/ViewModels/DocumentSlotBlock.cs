@@ -15,7 +15,6 @@ namespace UnoTP.ViewModels;
 /// The label at the left of the card's header. Null when something is chosen above the card (a proof
 /// type picker, the payment mode): the toolbar then has the header line to itself.
 /// </param>
-/// <param name="LabelOptional">Adds "(Non-mandatory)" after the label.</param>
 /// <param name="ShowsProofType">The identified type of a proof is shown after the label (see _ProofType).</param>
 /// <param name="ProofType">The identified type; "" while it will be set from the upload; null when the proof is not asked for.</param>
 public sealed record DocSlotBlock(
@@ -25,7 +24,6 @@ public sealed record DocSlotBlock(
     bool Alternate = false,
     bool IsNext = false,
     string? Label = null,
-    bool LabelOptional = false,
     bool ShowsProofType = false,
     string? ProofType = null);
 
@@ -49,13 +47,13 @@ public sealed class SlotToolbar
     /// <summary>Why View is disabled.</summary>
     public string NoViewReason { get; private set; } = "";
 
-    /// <summary>What the action button says: Upload, Replace, Newer proof, Final or Try again later.</summary>
+    /// <summary>What the action button says: Upload, Replace, Final or Try again later.</summary>
     public string ActionLabel { get; private set; } = "Upload";
 
     /// <summary>Why the action cannot be done now, or null when it can.</summary>
     public string? ActionBlockedReason { get; private set; }
 
-    /// <summary>An address the folio already holds, standing in for a proof that is not filed. Null otherwise.</summary>
+    /// <summary>An address the folio already holds, standing where its proof would be while none is filed. Null otherwise.</summary>
     public ReadCard? Held { get; private set; }
 
     public static SlotToolbar For(DocumentsViewModel.SlotView slot)
@@ -129,10 +127,6 @@ public sealed class SlotToolbar
         {
             toolbar.ActionLabel = "Upload";
             toolbar.ActionBlockedReason = slot.Locked;
-        }
-        else if (held is not null)
-        {
-            toolbar.ActionLabel = "Newer proof";
         }
         else
         {

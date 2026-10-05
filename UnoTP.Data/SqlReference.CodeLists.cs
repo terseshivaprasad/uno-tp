@@ -6,12 +6,12 @@ public sealed partial class SqlReference
 {
     // ----- The lists whose choice is saved as a code -----------------------------------
     //
-    // Marital status, the nominee's and the employee's relation and the occupation are
-    // rows of t_Unotp_Ref_List like every other list: f_Code is what a save writes,
+    // Marital status, the nominee's and the employee's relation, the occupation and the
+    // annual income band are rows of t_Unotp_Ref_List like every other list: f_Code is what a save writes,
     // f_Name what the page shows, and f_Seq the order they are offered in.
 
     /// <summary>
-    /// The 'maritalStatuses', 'nomineeRelations', 'employeeRelations', 'occupations',
+    /// The 'maritalStatuses', 'nomineeRelations', 'employeeRelations', 'incomeBands', 'occupations',
     /// 'subOccupations' and 'subOccupationCkyc' lists. The first of 'employeeRelations'
     /// is the employee themselves. A sub occupation's parent is the occupation it is
     /// under, and the CKYC occupation saved with it is the row under it in
@@ -29,7 +29,7 @@ public sealed partial class SqlReference
             var row = OccupationRowOf(sub, lists["occupations"], lists["subOccupationCkyc"]);
             if (row is not null) occupations.Add(row);
         }
-        return new MasterLists(maritalStatuses, nomineeRelations, employeeRelations, occupations);
+        return new MasterLists(maritalStatuses, nomineeRelations, employeeRelations, occupations, OptionsOf(lists["incomeBands"]));
     }
 
     private static List<Option> OptionsOf(IEnumerable<Entry> entries)

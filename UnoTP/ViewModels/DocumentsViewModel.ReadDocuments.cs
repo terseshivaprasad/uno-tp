@@ -61,7 +61,7 @@ public partial class DocumentsViewModel
                 : $"{Capitalize(what)} on the application set.";
             taken = $"the {what} is taken as read off the proof";
             (card.Lines, card.Was) = (reading.Address, before);
-            if (!mailing) KeepAddress(h, reading.Address);
+            if (!mailing) KeepAddress(h, reading);
         }
 
         // An Aadhaar has no issuer to confirm its address with: the copy has already
@@ -125,12 +125,19 @@ public partial class DocumentsViewModel
         return h.Who.Address;
     }
 
-    // Keeps the address read off a holder's proof of address, PIN code and all, for
-    // their permanent address row.
-    private void KeepAddress(DocHolder h, string address)
+    // Keeps the address read off a holder's proof of address, PIN code and all, with
+    // the district and state the proof gives apart from it, for their permanent address row.
+    private void KeepAddress(DocHolder h, OcrReading reading)
     {
-        if (h.Joint) State.Joint[h.Code].Address = address.Trim();
-        else State.Address = address.Trim();
+        if (h.Joint)
+        {
+            var joint = State.Joint[h.Code];
+            (joint.Address, joint.District, joint.State) = (reading.Address.Trim(), reading.District, reading.State);
+        }
+        else
+        {
+            (State.Address, State.District, State.State) = (reading.Address.Trim(), reading.District, reading.State);
+        }
     }
 
     // A cheque carries an account rather than an address, and it is the bank it is

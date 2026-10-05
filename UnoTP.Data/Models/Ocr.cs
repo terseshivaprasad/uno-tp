@@ -27,10 +27,12 @@ public sealed record OcrSubject(string Pan, string Dob, string Name);
 /// address that carries one - as dd-MM-yyyy; empty otherwise.</param>
 /// <param name="Cheque">What a cheque prints, field by field, for Bank Details to be
 /// filled from; null for anything else.</param>
+/// <param name="District">The district a proof of address gives, apart from the address; empty when it gives none.</param>
+/// <param name="State">The state it gives; empty when it gives none.</param>
 public sealed record OcrReading(
     string Pan = "", string Name = "", string Address = "",
     string IdNumber = "", string Account = "", string Bank = "", string Gender = "", string Dob = "",
-    string Number = "", string Expiry = "", ChequeFields? Cheque = null);
+    string Number = "", string Expiry = "", ChequeFields? Cheque = null, string District = "", string State = "");
 
 /// <summary>A cheque's fields as OCR reads them.</summary>
 /// <param name="AccountNumber">The full account number, digits only.</param>

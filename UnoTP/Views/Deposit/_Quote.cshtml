@@ -2,9 +2,10 @@
 @* What the backend quotes for the deposit as it stands. Drawn with FD Configuration, and
    on its own in answer to Quote each time a choice changes (deposit.js). The rate comes
    off the card as soon as the page opens, at the standing amount until one is entered;
-   the returns once the amount is valid. The hidden lines at the end carry, for the
-   script, what the amount field should say under it and which tenures and payouts the
-   card offers at the amount. *@
+   the day it matures once the amount is valid. The maturity value and the interest paid
+   each period are not shown here. The hidden lines at the end carry, for the script,
+   what the amount field should say under it and which tenures and payouts the card
+   offers at the amount. *@
 @{
     var form = Model.Form;
     var quote = Model.Quote;
@@ -23,17 +24,12 @@
     var rateText = "—";
     if (Model.Row is not null) rateText = $"{Model.Row.Rate:0.00}%";
 
-    var maturityText = "—";
     var maturesOnText = "—";
     if (quote is not null)
     {
         rateText = $"{quote.Rate:0.00}%";
-        maturityText = Money.Rupees(quote.MaturityAmount);
         maturesOnText = Money.Day(quote.MaturesOn);
     }
-
-    var showsInterestEach = !Model.Cumulative && quote is not null && payout is not null;
-    var tdsNote = form.NoTds ? "Returns assume no TDS, on the exemption claimed." : "Returns are shown before TDS at the applicable rate.";
 }
 
 <div class="deposit-summary__label">This deposit</div>
@@ -53,20 +49,9 @@
 </div>
 <div class="deposit-summary__block">
     <div><div class="deposit-key-value__key">Scheme</div><div class="deposit-key-value__value">@schemeText</div></div>
-    @if (showsInterestEach)
-    {
-        <div><div class="deposit-key-value__key">Interest each @payout!.Each</div><div class="deposit-key-value__value">@Money.Rupees(quote!.InterestEach)</div></div>
-    }
-    <div><div class="deposit-key-value__key">Maturity value</div><div class="deposit-key-value__value">@maturityText</div></div>
     <div><div class="deposit-key-value__key">Matures on</div><div class="deposit-key-value__value">@maturesOnText</div></div>
 </div>
-<div class="deposit-summary__note">
-    @Model.QuoteNote
-    @if (quote is not null)
-    {
-        @tdsNote
-    }
-</div>
+<div class="deposit-summary__note">@Model.QuoteNote</div>
 @if (Model.ExtraRateBanner is not null)
 {
     <div class="deposit-summary__banner">@Model.ExtraRateBanner</div>

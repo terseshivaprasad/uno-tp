@@ -37,8 +37,6 @@ public static class SqlDataServiceCollectionExtensions
         services.AddScoped<IDocumentApi, FileDocuments>();
         // Errors, with the request and the partner, to dbo.t_Unotp_Logs.
         services.AddSqlErrorLog();
-        // An unpaid application cancels itself cancellationDays after it was created.
-        services.AddHostedService<SqlAutoCancel>();
         // The deposits a folio holds: those booked through this app (SqlRenewals).
         services.AddScoped<IRenewalApi, SqlRenewals>();
         return services;

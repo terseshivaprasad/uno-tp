@@ -58,6 +58,7 @@ public sealed partial class SqlMasters(Db db, SqlReference reference) : IInvesto
     // One row of MasterQueries.KycOnCommon or KycOnBt, as this reads it.
     private sealed class FolioKycRow
     {
+        public string? NamePrefix { get; set; }
         public string? NameType { get; set; }
         public string? ParentName { get; set; }
         public string? AnnualIncome { get; set; }
@@ -133,7 +134,24 @@ public sealed partial class SqlMasters(Db db, SqlReference reference) : IInvesto
         var address = await AddressOnFolioAsync(source, holder, ct) ?? row.AddressOnRecord;
         var documents = await DocumentsOnFolioAsync(source, holder, ct) ?? (row.DocPhoto, row.DocPoa);
         var docs = OnRecord(documents.Photo, documents.Poa, address);
-        return f with { Source = source, Address = address.Address, Docs = docs };
+
+        // The gender, where the folio master holds none: the one the holder's latest
+        // KYC row at their source gives, where it is kept as the prefix to their name.
+        var gender = f.Gender;
+        if (Genders.Of(gender).Length == 0) gender = await GenderOnSourceAsync(source, holder, ct);
+        return f with { Source = source, Address = address.Address, Docs = docs, Gender = gender };
+    }
+
+    // The gender the source's latest KYC row gives for the holder, off the prefix to
+    // their name; empty for the folio master, or where the row has no prefix it knows.
+    private async Task<string> GenderOnSourceAsync(string source, FolioHolder holder, CancellationToken ct)
+    {
+        var query = KycDetailsQuery(source);
+        if (query is null) return "";
+        await using var connection = await db.OpenAsync(ct);
+        var prefix = await connection.QueryFirstOrDefaultAsync<string>(
+            $"SELECT TOP (1) k.NamePrefix FROM ({query}) k ORDER BY k.SavedOn DESC", holder);
+        return NamePrefixes.GenderOf(prefix);
     }
 
     // A holder of a folio, as the sources are asked for them: a folio can have more

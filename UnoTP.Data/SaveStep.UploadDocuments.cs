@@ -50,8 +50,10 @@ internal static partial class Sections
             VALUES (@AppNo, @Version, @Status, @Json, @By)
             """, new { at.AppNo, at.Version, Status = at.OwnStatus, Json = JsonSerializer.Serialize(upload, Json), at.By }, tx);
 
-        // One row per document on the application, coded as the FD system's document
+        // One row per document uploaded on the application, coded as the FD system's document
         // master codes it, with what the outside checks made of it (SaveStep.DocumentCheckFlags.cs).
+        // A document that was not uploaded here - the PAN copy of a holder on a folio,
+        // who is not asked for it - has no row: there is no copy of it on this application.
         // Its size and the words of its check stay on the upload step's JSON:
         // t_FD_BT_KYC_document has no column for them.
         //
@@ -71,11 +73,10 @@ internal static partial class Sections
             {
                 HolderType = holderType, TypeCode = code?.TypeCode, SubTypeCode = code?.SubTypeCode, TypeName = code?.TypeName, SubTypeName = code?.SubTypeName,
                 FileName = Cut(d.Doc.FileName, 250),
-                FilePath = d.Doc.Before ? null : DmsPaths.Under(dmsRoot, at.AppNo, d.Doc.FileName),
+                FilePath = DmsPaths.Under(dmsRoot, at.AppNo, d.Doc.FileName),
                 Folio = FolioOf(d.HolderType, at, upload),
                 Sequence = NextSequence(sequences, holderType, code?.TypeCode ?? d.DocType),
-                // A document that came over from the folio or the step before was not uploaded here.
-                UploadedFrom = d.Doc.Before ? null : Source,
+                UploadedFrom = Source,
                 Number = flags.Number, Expiry = flags.Expiry, Masked = flags.Masked, OcrAsked = flags.OcrAsked, Read = flags.Read, Verified = flags.Verified,
                 Identified = flags.Identified, IdentifiedAs = flags.IdentifiedAs, FaceCompared = flags.FaceCompared, FaceFound = flags.FaceFound, FaceScore = flags.FaceScore,
                 Status = at.Status,
@@ -215,6 +216,9 @@ internal static partial class Sections
     {
         foreach (var (key, doc) in u.Docs.OrderBy(d => d.Key, StringComparer.Ordinal))
         {
+            // Not uploaded on this application - it stands for a document already on
+            // record, which the holder was not asked for: no row is written for it.
+            if (doc.Before) continue;
             var (holder, type) = key.Length > 4 && key[0] == 'h' && key[3] == '-'
                 ? (key[1..3], key[4..])
                 : (key is "pan" or "photo" or "poa" or "mail" ? HolderType.Investor : HolderType.None, key);

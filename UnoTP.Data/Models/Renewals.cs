@@ -53,8 +53,8 @@ public sealed record HeldDeposit(
 
 /// <summary>
 /// The application that renews a deposit. A draft is picked up again or cancelled by
-/// the partner who opened it, and cancels itself once the deposit's renewal window
-/// closes. A submitted one can be cancelled only while it is a digital application
+/// the partner who opened it; once the deposit's renewal window closes it is cancelled
+/// by the separate cancelling process, not by this app. A submitted one can be cancelled only while it is a digital application
 /// the investor has not accepted yet; a physical one cannot be cancelled here.
 /// </summary>
 /// <param name="Submitted">False for a draft, still being entered.</param>

@@ -337,7 +337,7 @@
 
             @* The PAN copy. It comes over already filed when the step before uploaded or matched one. *@
             <div class="doc-column">
-                <partial name="_DocSlot" model="@(new DocSlotBlock(panSlot, uploadUrl, IsNext: panSlot.Key == nextSlotKey, Label: "PAN", LabelOptional: panSlot.Optional))" />
+                <partial name="_DocSlot" model="@(new DocSlotBlock(panSlot, uploadUrl, IsNext: panSlot.Key == nextSlotKey, Label: "PAN"))" />
             </div>
 
             @* NSDL asked again about the PAN copy filed: a row straight under the PAN's card. *@

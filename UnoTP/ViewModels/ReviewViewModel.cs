@@ -6,6 +6,7 @@ namespace UnoTP.ViewModels;
 public sealed record ReviewHolder(
     DocumentsViewModel.DocHolder Holder,
     HolderDetails Details,
+    string Gender,
     ReadCard Permanent,
     string PoaType,
     string Mailing,
@@ -48,12 +49,21 @@ public sealed class ReviewViewModel(DocumentsViewModel docs, DepositQuote? quote
     public IReadOnlyList<ReviewHolder> Holders =>
     [
         .. Docs.JointHolders.Prepend(Docs.Investor).Select(h => new ReviewHolder(
-            h, DetailsOf(h), Docs.ReadsOf(h)[0].Card, Docs.PoaTypeOf(h),
+            h, DetailsOf(h), GenderOf(h), Docs.ReadsOf(h)[0].Card, Docs.PoaTypeOf(h),
             Docs.MailTyped(h) ? (Docs.TypedMailOf(h) is { } typed ? DocumentsViewModel.Lines(typed) : "Not typed yet")
                 : Docs.MailDifferentOf(h) ? Docs.MailReadOf(h).Lines : "Same as permanent",
             Docs.MailTyped(h) ? (Docs.TypedMailOf(h) is null ? "" : "Typed")
                 : Docs.MailDifferentOf(h) ? Docs.MailReadOf(h).State : "")),
     ];
+
+    // A holder's gender as Investor Information shows it: the one on the folio or
+    // read off a proof, else the one chosen on that page.
+    private string GenderOf(DocumentsViewModel.DocHolder h)
+    {
+        if (!h.Joint) return Docs.HolderGender;
+        if (h.Who.Gender.Length > 0) return h.Who.Gender;
+        return DetailsOf(h).Gender;
+    }
 
     /// <summary>Every document each holder files, and the payment's and the staff proof's.</summary>
     public IReadOnlyList<ReviewDocument> Documents
@@ -70,9 +80,8 @@ public sealed class ReviewViewModel(DocumentsViewModel docs, DepositQuote? quote
                     if (def.Key == DocumentsViewModel.MailSlot.Key && !Docs.CommProofUpload) continue;
                     var v = Docs.View(def, h);
                     list.Add(new ReviewDocument($"{Capitalize(def.Key == "poa" ? "proof of address" : def.Label)} · {who}",
-                        !v.Used ? v.NotApplicable ?? "" : v.Doc is { } d ? (d.Check.Length > 0 ? d.Check : "Filed")
-                            : v.Optional ? "Not filed: not needed for a holder on a folio" : "Not filed yet",
-                        v.Doc is not null || v.Optional, v.Used));
+                        !v.Used ? v.NotApplicable ?? "" : v.Doc is { } d ? (d.Check.Length > 0 ? d.Check : "Filed") : "Not filed yet",
+                        v.Doc is not null, v.Used));
                 }
             }
             foreach (var def in new[] { DocumentsViewModel.FormSlot, DocumentsViewModel.PaymentSlot, DocumentsViewModel.EmpProofSlot, DocumentsViewModel.TdsFormSlot })
@@ -123,6 +132,20 @@ public sealed class ReviewViewModel(DocumentsViewModel docs, DepositQuote? quote
     public PayoutOption? Payout => Deposit is null ? null : Ref.Payouts.FirstOrDefault(p => p.Code == Deposit.Payout);
 
     public int PaymentLinkHours => Config.LinkValidityHours.GetValueOrDefault("payment");
+
+    /// <summary>How long a payment link stays open, as the pages say it: in days when it is whole days, else in hours.</summary>
+    public string PaymentLinkValidFor
+    {
+        get
+        {
+            var hours = PaymentLinkHours;
+            if (hours >= 24 && hours % 24 == 0) return hours == 24 ? "1 day" : $"{hours / 24} days";
+            return $"{hours} hours";
+        }
+    }
+
+    /// <summary>Days an unpaid application stands from when it was started; a link can be sent, or sent again, until then.</summary>
+    public int ApplicationDays => Config.CancellationDays;
 
     /// <summary>The investor's mobile, where the payment link goes by SMS.</summary>
     public string InvestorMobile => DetailsOf(Docs.Investor).Mobile;

@@ -57,6 +57,8 @@ builder.Services.Configure<NameMatchOptions>(builder.Configuration.GetSection(Na
 builder.Services.Configure<IdfyOptions>(builder.Configuration.GetSection(IdfyOptions.Section));
 builder.Services.Configure<ShortenerOptions>(builder.Configuration.GetSection(ShortenerOptions.Section));
 builder.Services.Configure<PaymentLinkOptions>(builder.Configuration.GetSection(PaymentLinkOptions.Section));
+// A submitted application's payment link: made, shortened and put on record once the application is saved.
+builder.Services.AddScoped<PaymentLinkSender>();
 builder.Services.Configure<PortalOptions>(builder.Configuration.GetSection(PortalOptions.Section));
 builder.Services.AddScoped<IPartner, SessionPartner>();
 // Investor Identification's steps, for the primary holder and each joint holder alike.

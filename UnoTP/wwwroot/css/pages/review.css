@@ -40,6 +40,9 @@
   font-weight: 500;
   color: var(--ink);
 }
+.pay-link-head__close {
+  margin: 0 -4px 0 auto;
+}
 .pay-link-body {
   padding: 16px 24px 0;
   display: flex;

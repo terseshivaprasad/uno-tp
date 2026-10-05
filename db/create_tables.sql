@@ -6,7 +6,8 @@
         notices, and the error log.
      2. The tables the database already has: what is entered on an application
         (KYC, addresses, documents, nominee, payment and repayment accounts, the
-        deposit), the rate card, the partners, the payment links and the pay-in slips.
+        deposit), the rate card, the partners, the payment links (a purchase's, and a
+        renewal's re-payment links) and the pay-in slips.
      3. The big tables the app looks rows up in: investor folios, brokers, staff,
         bank branches by IFSC and PIN codes, with the source of funds log.
 
@@ -865,9 +866,11 @@ END
 GO
 
 /* ----- t_Unotp_Payment_Link --------------------------------------------------------
-   Every link sent to an investor, by SMS and e-mail both: on submit, on a resend,
-   and from Short URL. Never updated: the latest for an application and purpose
-   is the live one, and every one before it has stopped working.
+   Every link sent to an investor for a purchase, by SMS and e-mail both: on submit
+   (once the application is saved and the short link is made), on a resend, and
+   from Short URL. A renewal's links go in t_Unotp_RePayment_Link instead. Never
+   updated: the latest for an application and purpose is the live one, and every
+   one before it has stopped working.
      f_Purpose   payment, acceptance
      f_Mobile, f_Email   where it went, masked as the lists show them
    ----------------------------------------------------------------------------- */
@@ -889,6 +892,31 @@ CREATE TABLE dbo.t_Unotp_Payment_Link
     CONSTRAINT PK_Payment_Link PRIMARY KEY CLUSTERED (f_Id)
 );
 CREATE INDEX IX_Payment_Link_App ON dbo.t_Unotp_Payment_Link (f_App_No, f_Purpose, f_Id);
+END
+GO
+
+/* ----- t_Unotp_RePayment_Link ------------------------------------------------------
+   The same, for a renewal: every link sent to the investor of an application that
+   renews a deposit. Column for column as t_Unotp_Payment_Link.
+   ----------------------------------------------------------------------------- */
+IF OBJECT_ID(N'dbo.t_Unotp_RePayment_Link', N'U') IS NULL
+BEGIN
+CREATE TABLE dbo.t_Unotp_RePayment_Link
+(
+    f_Id                 BIGINT IDENTITY(1,1) NOT NULL,
+    f_App_No             VARCHAR(20)    NOT NULL,
+    f_Purpose            VARCHAR(12)    NOT NULL,
+    f_Url                VARCHAR(500)   NOT NULL CONSTRAINT DF_RePayment_Link_Url DEFAULT (''),
+    f_Short_Url          VARCHAR(300)   NOT NULL CONSTRAINT DF_RePayment_Link_Short DEFAULT (''),
+    f_Mobile             VARCHAR(20)    NOT NULL CONSTRAINT DF_RePayment_Link_Mobile DEFAULT (''),
+    f_Email              VARCHAR(150)   NOT NULL CONSTRAINT DF_RePayment_Link_Email DEFAULT (''),
+    f_Sent_On            DATETIME2(3)   NOT NULL CONSTRAINT DF_RePayment_Link_Sent DEFAULT (SYSDATETIME()),
+    f_Expires_On         DATETIME2(3)   NOT NULL,
+    f_Sent_By            VARCHAR(20)    NOT NULL,
+    f_Active             BIT            NOT NULL CONSTRAINT DF_RePayment_Link_Active DEFAULT (1),
+    CONSTRAINT PK_RePayment_Link PRIMARY KEY CLUSTERED (f_Id)
+);
+CREATE INDEX IX_RePayment_Link_App ON dbo.t_Unotp_RePayment_Link (f_App_No, f_Purpose, f_Id);
 END
 GO
 

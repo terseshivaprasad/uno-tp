@@ -12,7 +12,7 @@ namespace UnoTP.Controllers;
 /// </summary>
 [RequiresFeature("short-url")]
 [Route("ShortUrl")]
-public class LinksController(ILinkApi links, Lookups lookups) : Controller
+public class LinksController(ILinkApi links, Lookups lookups, IApplicationApi applications, PaymentLinkSender paymentLinks) : Controller
 {
     [HttpGet("")]
     public async Task<IActionResult> Index()
@@ -25,6 +25,16 @@ public class LinksController(ILinkApi links, Lookups lookups) : Controller
     [HttpPost("send")]
     public async Task<IActionResult> Send(string appNo, string purpose)
     {
+        // An application submitted with Try later has no payment link yet: its first
+        // is made here, shortened and put on record, before it is listed as sent.
+        if (purpose == "payment" && (await applications.FindAsync(appNo))?.Submitted is { LinkSent: false })
+        {
+            var (sent, _) = await paymentLinks.SendAsync(appNo, HttpContext.RequestAborted);
+            TempData["toast"] = sent is null
+                ? "No link could be sent for this application."
+                : $"Link sent to {SentTo.Both(sent.LinkSentTo, sent.LinkEmailedTo)}.";
+            return RedirectToAction(nameof(Index));
+        }
         TempData["toast"] = await links.SendAsync(appNo, purpose) is { } link
             ? $"Link sent to {SentTo.Both(link.Mobile, link.Email)} — any link sent before stops working."
             : "No link could be sent for this application.";

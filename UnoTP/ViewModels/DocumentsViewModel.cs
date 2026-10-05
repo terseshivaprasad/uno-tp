@@ -189,6 +189,12 @@ public partial class DocumentsViewModel(
     /// </summary>
     public static bool NsdlApplies(DocHolder h) => h.Who.Folio.Length == 0 && !h.Who.PanFiled;
 
+    /// <summary>
+    /// Whether a holder is screened by name on Investor Information: only one with
+    /// no folio yet. A holder on a folio was screened when it was opened.
+    /// </summary>
+    public static bool ScreeningApplies(DocHolder h) => h.Who.Folio.Length == 0;
+
     /// <summary>NSDL was asked about a holder's PAN and could not answer: the copy is filed, and NSDL is asked again from its card.</summary>
     public const string Unanswered = "unanswered";
 
@@ -342,7 +348,7 @@ public partial class DocumentsViewModel(
             : new ReadCard("Not yet read", "Read off the PAN copy once one is filed here.", LinkWaitsShort);
         // The folio's address is shown as it stands, until a proof filed here is confirmed.
         s.Reads[h.Key("poa")] = h.Who.Address.Length > 0
-            ? FolioAddress(h, "not checked here.")
+            ? FolioAddress(h)
             : new ReadCard("Not on record", $"No address is held for this {(h.Joint ? "holder" : "investor")} yet.",
                 "Read off the proof of address once one is filed here.");
 
@@ -402,10 +408,10 @@ public partial class DocumentsViewModel(
     {
         State.Docs.Remove(key);
         // The address read off a proof of address goes with the proof.
-        if (key == PoaSlot.Key) State.Address = "";
+        if (key == PoaSlot.Key) (State.Address, State.District, State.State) = ("", "", "");
         foreach (var joint in State.Joint)
         {
-            if (key == $"h{joint.Key}-{PoaSlot.Key}") joint.Value.Address = "";
+            if (key == $"h{joint.Key}-{PoaSlot.Key}") (joint.Value.Address, joint.Value.District, joint.Value.State) = ("", "", "");
         }
     }
 

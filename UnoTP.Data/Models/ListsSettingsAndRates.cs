@@ -26,11 +26,12 @@ public sealed record Option(string Code, string Name);
 /// </summary>
 /// <param name="EmployeeRelations">The employee's own relation - the employee is the holder - comes first.</param>
 /// <param name="Occupations">One row per sub occupation, with the occupation it is under.</param>
+/// <param name="IncomeBands">The annual income bands: the code is what the KYC row keeps beside the name.</param>
 public sealed record MasterLists(
     IReadOnlyList<Option> MaritalStatuses, IReadOnlyList<Option> NomineeRelations, IReadOnlyList<Option> EmployeeRelations,
-    IReadOnlyList<OccupationRow> Occupations)
+    IReadOnlyList<OccupationRow> Occupations, IReadOnlyList<Option> IncomeBands)
 {
-    public static readonly MasterLists None = new([], [], [], []);
+    public static readonly MasterLists None = new([], [], [], [], []);
 
     /// <summary>The row for an occupation and sub occupation as the pages name them; null where the lists have none.</summary>
     public OccupationRow? OccupationOf(string occupation, string subOccupation) =>
@@ -178,7 +179,7 @@ public sealed record FeatureOption(string Code, string Name, string Group, strin
 /// <param name="MinAmount">The smallest deposit, in rupees.</param>
 /// <param name="MaxAmount">The largest deposit booked online, in rupees.</param>
 /// <param name="AmountStep">A deposit is a multiple of this, in rupees; 1 for any amount.</param>
-/// <param name="CancellationDays">Days an unpaid application stands before it cancels itself.</param>
+/// <param name="CancellationDays">Days an unpaid application stands before it is cancelled. The cancelling is a separate process, not this app's: the app only counts the days and shows what that process marked cancelled.</param>
 /// <param name="DraftDays">Days since its last save an unsubmitted application stays on the lists to continue.</param>
 /// <param name="LinkValidityHours">How long a link to the investor stays open, by what it asks of them ("payment", "acceptance").</param>
 /// <param name="RenewFromDays">A renewal can be entered from this many days before the deposit matures...</param>

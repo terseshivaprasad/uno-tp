@@ -286,9 +286,29 @@ public partial class DocumentsViewModel
         };
     }
 
-    // The address a folio holds, shown as it stands: nothing on this step checked it.
-    private static ReadCard FolioAddress(DocHolder h, string then) =>
-        new("Not verified", h.Who.Address, $"On the folio, {then}", "is-unverified");
+    // The address a folio holds, where its proof would be. With its proof on record
+    // it stands as it is, and no proof is asked for. Without one - no document on
+    // record with its copy, or an address with no first line or PIN code - a proof
+    // of it is asked for.
+    private static ReadCard FolioAddress(DocHolder h)
+    {
+        if (FolioDocsOf(h)?.Poa == true)
+            return new("On record", h.Who.Address, "On the folio, with its proof on record: no proof is asked for.", "is-done");
+        return new("Proof needed", h.Who.Address, "On the folio, but no proof of it is on record: upload one.", "is-unverified");
+    }
+
+    // The address a folio holds, where post goes too.
+    private static ReadCard FolioMailAddress(DocHolder h) =>
+        new("On the folio", h.Who.Address, "On the folio; post goes there.", "is-na");
+
+    // What stands for a holder's permanent address: what a proof filed here read, or
+    // until one is filed the address the folio holds, as it stands today.
+    private ReadCard PermanentAddressOf(DocHolder h)
+    {
+        var filedHere = State.Docs.ContainsKey(h.Key("poa"));
+        if (!filedHere && FolioDocsOf(h) is not null && h.Who.Address.Length > 0) return FolioAddress(h);
+        return State.Reads[h.Key("poa")];
+    }
 
     // A card for something there is nothing to read off, saying why. Not kept.
     private static ReadCard NotRead(string state, string lines, string from) => new(state, lines, from, "is-na");

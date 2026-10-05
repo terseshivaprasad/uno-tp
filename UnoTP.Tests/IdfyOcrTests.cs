@@ -88,4 +88,21 @@ public class IdfyOcrTests
         Assert.True(answer.Confirmed);
         Assert.Equal(Genders.Female, answer.Gender);
     }
+
+    [Theory]
+    [InlineData("Passport")]
+    [InlineData("Driving Licence")]
+    [InlineData("Voter ID")]
+    public async Task A_proof_gives_its_district_and_state_apart_from_the_address(string proof)
+    {
+        var network = new StubNetwork
+        {
+            Answer = """{"status":"completed","task_id":"t","result":{"extraction_output":{"address":"22 PARK STREET, KOLKATA","pincode":"700016","district":" Kolkata ","state":"West Bengal","name_on_card":"NEHA DAS"}}}""",
+        };
+
+        var reading = await OcrOver(network).ReadAsync(DocumentKind.ProofOfAddress, proof, Copy, new OcrSubject("", "", ""), consent: false);
+
+        Assert.Equal("Kolkata", reading.District);
+        Assert.Equal("West Bengal", reading.State);
+    }
 }

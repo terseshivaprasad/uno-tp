@@ -67,20 +67,22 @@ internal static class MasterQueries
     /// The deposits the folio check looks at (FolioCheck) for a PAN (@Pan): one row per
     /// deposit that is not cancelled, with its first holder, on a folio still in use.
     /// Must give back: Folio, Pan, Dob. An investor has a folio when their PAN is on a row here.
+    /// FDR_MST holds primary holders only; the holder type is the folio holding table's,
+    /// whose first-holder row (HOLD_TYPE 1) is the one joined.
     /// </summary>
     public const string FolioDepositsByPan = """
         SELECT FOLIO AS Folio, PAN1 AS Pan, DOB AS Dob
         FROM FD.dbo.FDR_MST a WITH (NOLOCK)
-        INNER JOIN FD.dbo.FOLIO_MST b WITH (NOLOCK) ON a.FOLIO = b.FOLIO_NO AND b.f_Active = 1
-        WHERE HOLD_TYPE = '1' AND DEP_STATUS != 'X' AND PAN1 = @Pan
+        INNER JOIN FD.dbo.t_Fd_Folio_holding b WITH (NOLOCK) ON a.FOLIO = b.FOLIO_NO AND b.f_Active = 1
+        WHERE b.HOLD_TYPE = '1' AND DEP_STATUS != 'X' AND PAN1 = @Pan
         """;
 
     /// <summary>The same deposits, for a folio number (@Folio). Must give back the same names.</summary>
     public const string FolioDepositsByFolio = """
         SELECT FOLIO AS Folio, PAN1 AS Pan, DOB AS Dob
         FROM FD.dbo.FDR_MST a WITH (NOLOCK)
-        INNER JOIN FD.dbo.FOLIO_MST b WITH (NOLOCK) ON a.FOLIO = b.FOLIO_NO AND b.f_Active = 1
-        WHERE HOLD_TYPE = '1' AND DEP_STATUS != 'X' AND a.FOLIO = @Folio
+        INNER JOIN FD.dbo.t_Fd_Folio_holding b WITH (NOLOCK) ON a.FOLIO = b.FOLIO_NO AND b.f_Active = 1
+        WHERE b.HOLD_TYPE = '1' AND DEP_STATUS != 'X' AND a.FOLIO = @Folio
         """;
 
     /// <summary>
@@ -157,14 +159,15 @@ internal static class MasterQueries
     /// <summary>
     /// The KYC details the common tables hold, shown on Investor Information so they
     /// are not typed again, for one holder (@Folio, @Pan, @Dob). Must give back: SavedOn (the
-    /// latest row for the holder is the one used), NameType (Father, Mother or Spouse), ParentName, AnnualIncome,
+    /// latest row for the holder is the one used), NamePrefix (Mr, Mrs, Miss or Ms: the holder's
+    /// gender, where the folio master holds none), NameType (Father, Mother or Spouse), ParentName, AnnualIncome,
     /// Occupation, SubOccupation (the names the lists show), MaritalStatus (a code of the
     /// 'maritalStatuses' list), Pep and PepRelated (yes, no or empty), Mobile, Email,
     /// and the mailing address where one is held: MailLine1, MailLine2, MailLine3,
     /// MailCity, MailPinCode.
     /// </summary>
     public const string KycOnCommon = """
-        SELECT k.f_CreatedOn AS SavedOn,
+        SELECT k.f_CreatedOn AS SavedOn, k.f_Kyc_NamePrefix AS NamePrefix,
                CASE WHEN k.f_Kyc_FatherFullName IS NOT NULL THEN 'Father' WHEN k.f_Kyc_MotherFullName IS NOT NULL THEN 'Mother'
                     WHEN k.f_Kyc_SpouseFullName IS NOT NULL THEN 'Spouse' ELSE '' END AS NameType,
                COALESCE(k.f_Kyc_FatherFullName, k.f_Kyc_MotherFullName, k.f_Kyc_SpouseFullName, N'') AS ParentName,
@@ -187,7 +190,7 @@ internal static class MasterQueries
 
     /// <summary>The same KYC details, from the applications submitted through this app. Must give back the same names.</summary>
     public const string KycOnBt = """
-        SELECT k.f_CreatedOn AS SavedOn,
+        SELECT k.f_CreatedOn AS SavedOn, k.f_Kyc_NamePrefix AS NamePrefix,
                CASE WHEN k.f_Kyc_FatherFullName IS NOT NULL THEN 'Father' WHEN k.f_Kyc_MotherFullName IS NOT NULL THEN 'Mother'
                     WHEN k.f_Kyc_SpouseFullName IS NOT NULL THEN 'Spouse' ELSE '' END AS NameType,
                COALESCE(k.f_Kyc_FatherFullName, k.f_Kyc_MotherFullName, k.f_Kyc_SpouseFullName, N'') AS ParentName,

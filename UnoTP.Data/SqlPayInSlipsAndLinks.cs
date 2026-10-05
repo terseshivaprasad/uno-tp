@@ -12,7 +12,7 @@ internal sealed class SubmittedRow
     public const string Select = $"""
         SELECT m.f_App_No AS AppNo, COALESCE(NULLIF(k.f_Kyc_FullName, N''), m.f_Name) AS Name, m.f_Submitted_On AS SubmittedOn,
             m.f_Accepted_On AS AcceptedOn, m.f_Paid_On AS PaidOn, m.f_Booked_On AS BookedOn, m.f_Cancelled_On AS CancelledOn,
-            i.AppType, i.Amount,
+            i.AppType, i.Amount, CAST(CASE WHEN m.f_Renew_Dep_No IS NULL THEN 0 ELSE 1 END AS BIT) AS Renewal,
             p.f_Payment_Mode AS PayMode, p.f_Cheque_DD_No AS ChequeNo, p.f_Drawn_Bank_Name AS BankName,
             a.f_MobileNumber AS Mobile, a.f_EmailAdd AS Email, ISNULL(pm.f_Branch, N'') AS Branch
         FROM dbo.t_Unotp_Application_Mst m
@@ -33,6 +33,8 @@ internal sealed class SubmittedRow
     public DateTime? CancelledOn { get; set; }
     public string? AppType { get; set; }
     public long? Amount { get; set; }
+    /// <summary>Whether the application renews a deposit: its links are kept in the re-payment link table.</summary>
+    public bool Renewal { get; set; }
     public string? PayMode { get; set; }
     public string? ChequeNo { get; set; }
     public string? BankName { get; set; }
@@ -100,8 +102,29 @@ public sealed class SqlPayInSlips(Db db, IPartner partner, SqlReference referenc
 }
 
 /// <summary>
-/// The links sent to investors (t_Unotp_Payment_Link), and the submitted applications
-/// waiting on one: to pay online, or to accept a digital application paid on paper.
+/// Where a link sent to an investor is kept: a purchase's in the payment link
+/// table, a renewal's in the re-payment link table. The two have the same columns.
+/// </summary>
+internal static class LinkTables
+{
+    public const string Payment = "dbo.t_Unotp_Payment_Link";
+    public const string RePayment = "dbo.t_Unotp_RePayment_Link";
+
+    /// <summary>The table an application's links go in.</summary>
+    public static string For(bool renewal) => renewal ? RePayment : Payment;
+
+    /// <summary>Both tables as one, for a list that runs across purchases and renewals.</summary>
+    public const string Both = $"""
+        (SELECT f_Id, f_App_No, f_Purpose, f_Mobile, f_Email, f_Sent_On, f_Expires_On, f_Active FROM {Payment}
+         UNION ALL
+         SELECT f_Id, f_App_No, f_Purpose, f_Mobile, f_Email, f_Sent_On, f_Expires_On, f_Active FROM {RePayment})
+        """;
+}
+
+/// <summary>
+/// The links sent to investors (the payment link table for a purchase, the
+/// re-payment link table for a renewal), and the submitted applications waiting on
+/// one: to pay online, or to accept a digital application paid on paper.
 /// </summary>
 public sealed class SqlLinks(Db db, IPartner partner, SqlReference reference, ILogger<SqlLinks> log) : ILinkApi
 {
@@ -124,15 +147,17 @@ public sealed class SqlLinks(Db db, IPartner partner, SqlReference reference, IL
     public async Task<IReadOnlyList<SentLinkRecord>> SentAsync(CancellationToken ct = default)
     {
         await using var connection = await db.OpenAsync(ct);
-        var rows = await connection.QueryAsync<LinkRow>("""
+        var rows = await connection.QueryAsync<LinkRow>($"""
             SELECT l.f_App_No AS AppNo, COALESCE(NULLIF(k.f_Kyc_FullName, N''), m.f_Name) AS Name,
                 l.f_Purpose AS Purpose, l.f_Mobile AS Mobile, l.f_Email AS Email, l.f_Sent_On AS SentOn, l.f_Expires_On AS ExpiresOn,
                 m.f_Submitted_On AS SubmittedOn, m.f_Accepted_On AS AcceptedOn, m.f_Paid_On AS PaidOn
-            FROM dbo.t_Unotp_Payment_Link l
+            FROM {LinkTables.Both} l
             JOIN dbo.t_Unotp_Application_Mst m ON m.f_App_No = l.f_App_No
             LEFT JOIN dbo.t_FD_BT_Kyc_Data_Dtl k ON k.f_Appl_No = m.f_App_No AND k.f_Holder_Type = '01' AND k.f_Active = 1
             WHERE m.f_Partner_Id = @Partner AND m.f_Active = 1 AND m.f_Submitted_On IS NOT NULL
-              AND l.f_Id IN (SELECT MAX(f_Id) FROM dbo.t_Unotp_Payment_Link WHERE f_Active = 1 GROUP BY f_App_No, f_Purpose)
+              AND l.f_Active = 1
+              AND l.f_Id = (SELECT MAX(latest.f_Id) FROM {LinkTables.Both} latest
+                            WHERE latest.f_App_No = l.f_App_No AND latest.f_Purpose = l.f_Purpose AND latest.f_Active = 1)
             ORDER BY l.f_Sent_On DESC
             """, new { Partner = partner.Id });
 
@@ -176,11 +201,12 @@ public sealed class SqlLinks(Db db, IPartner partner, SqlReference reference, IL
         var hours = (await reference.ConfigAsync(ct)).LinkValidityHours.GetValueOrDefault(purpose);
         if (hours <= 0) return null;
         await using var connection = await db.OpenAsync(ct);
-        await connection.ExecuteAsync("""
-            INSERT dbo.t_Unotp_Payment_Link (f_App_No, f_Purpose, f_Url, f_Short_Url, f_Mobile, f_Email, f_Expires_On, f_Sent_By)
+        var links = LinkTables.For(waiting.Row.Renewal);
+        await connection.ExecuteAsync($"""
+            INSERT {links} (f_App_No, f_Purpose, f_Url, f_Short_Url, f_Mobile, f_Email, f_Expires_On, f_Sent_By)
             SELECT @AppNo, @Purpose, ISNULL(last.f_Url, ''), ISNULL(last.f_Short_Url, ''), @Mobile, @Email, DATEADD(HOUR, @Hours, SYSDATETIME()), @Partner
             FROM (SELECT 1 AS x) one
-            OUTER APPLY (SELECT TOP 1 f_Url, f_Short_Url FROM dbo.t_Unotp_Payment_Link WHERE f_App_No = @AppNo AND f_Purpose = @Purpose AND f_Active = 1 ORDER BY f_Id DESC) last
+            OUTER APPLY (SELECT TOP 1 f_Url, f_Short_Url FROM {links} WHERE f_App_No = @AppNo AND f_Purpose = @Purpose AND f_Active = 1 ORDER BY f_Id DESC) last
             """, new { AppNo = appNo, Purpose = purpose, waiting.Record.Mobile, waiting.Record.Email, Hours = hours, Partner = partner.Id });
         // No SMS or e-mail gateway is wired in yet: the send is logged for now.
         log.LogInformation("{Purpose} link for {AppNo} sent to {Mobile} and {Email}", purpose, appNo, waiting.Record.Mobile, waiting.Record.Email);

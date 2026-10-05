@@ -8,12 +8,12 @@
     var sub = Model.App.Submitted!;
     var d = Model.Deposit;
     var q = Model.Quote;
-    var hours = Model.PaymentLinkHours;
+    var validFor = Model.PaymentLinkValidFor;
     var payout = Model.Payout;
     var appNo = Model.Docs.AppNo;
     var nextSteps = new[]
     {
-        (Lead: "Investor pays the link", Detail: $" — from any account in a holder’s name. Within {hours} hours."),
+        (Lead: "Investor pays the link", Detail: $" — from any account in a holder’s name. Within {validFor} of the link being sent."),
         (Lead: "Rate locks on realisation", Detail: " and the FD is booked from that date — not from today."),
         (Lead: "Operations verifies the documents", Detail: " — the e-receipt is e-mailed to the investor once booked."),
     };
@@ -43,6 +43,19 @@
             </div>
         }
 
+        @* Submitted with Try later: the application is saved, and no link has been made yet. *@
+        @if (!sub.LinkSent)
+        {
+            <div class="submitted-pending">
+                <div class="submitted-pending__head">
+                    <div class="submitted-pending__title">No payment link sent yet</div>
+                    <div class="submitted-pending__tag">Link not generated</div>
+                </div>
+                <div class="submitted-pending__text">The application is submitted, but <strong>nothing has been sent to the investor</strong>. Generate the payment link below: it goes by SMS and e-mail, and stays open for <strong>@validFor</strong>. Submitted is not booked &mdash; the deposit and its rate are held only while the application stands.</div>
+            </div>
+        }
+        else
+        {
         <div class="submitted-pending">
             <div class="submitted-pending__head">
                 <div class="submitted-pending__title">Waiting on the investor&rsquo;s payment</div>
@@ -50,6 +63,7 @@
             </div>
             <div class="submitted-pending__text">The link was sent by SMS to <strong>@sub.LinkSentTo</strong>@if (sub.LinkEmailedTo.Length > 0) {<text> and by e-mail to <strong>@sub.LinkEmailedTo</strong></text>}, and expires <strong>@Money.Day(sub.LinkValidUntil)</strong>. Submitted is not booked &mdash; the deposit and its rate are held only until then.</div>
         </div>
+        }
 
         <div class="submitted-box">
             <div class="submitted-box__label">What happens next</div>
@@ -66,14 +80,19 @@
 
         @{
             var canRegenerate = sub.CanRegenerate(DateTime.Now);
-            var regenerateNote = sub.RegenerateUntil is { } until
-                ? (canRegenerate
-                    ? $"A new link can be sent till {Money.Day(until)}; after that the application cancels itself."
-                    : $"The window for a new link closed on {Money.Day(until)}: the application has cancelled itself.")
-                : "";
+            var linkWord = sub.LinkSent ? "A new link" : "The link";
+            var regenerateNote = "";
+            if (sub.RegenerateUntil is { } until)
+            {
+                regenerateNote = canRegenerate
+                    ? $"{linkWord} can be sent till {Money.Day(until)}; after that the application cancels itself."
+                    : $"The window for a link closed on {Money.Day(until)}: the application has cancelled itself.";
+            }
+            var sendLabel = sub.LinkSent ? "Regenerate payment link" : "Generate payment link";
+            var sendLoader = sub.LinkSent ? "Sending a new link…" : "Generating the payment link…";
         }
         <form method="post" asp-action="Resend" class="submitted-actions">
-            <button type="submit" class="btn btn-primary submitted-actions__primary" disabled="@(!canRegenerate)" data-loader="Sending a new link&hellip;">Regenerate payment link</button>
+            <button type="submit" class="btn btn-primary submitted-actions__primary" disabled="@(!canRegenerate)" data-loader="@sendLoader">@sendLabel</button>
             <a class="submitted-actions__link submitted-actions__link--plain" asp-controller="Dashboard" asp-action="Index">Back to dashboard</a>
         </form>
         <div class="submitted-note">@regenerateNote</div>

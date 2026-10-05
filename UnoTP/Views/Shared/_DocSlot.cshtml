@@ -28,13 +28,13 @@
 }
 <div class="@cardClass" id="@cardId" tabindex="-1">
     @* The header: the label at the left and, at the right, always in this order, the
-       (i) mark, View, and the action (Upload, Replace, Newer proof, or a lock). What cannot
+       (i) mark, View, and the action (Upload, Replace, or a lock). What cannot
        be done now is shown disabled with its reason, so the toolbar keeps its shape. *@
     <div class="doc-slot__bar">
     @if (Model.Label is not null)
     {
         <div class="doc-slot__head">
-            <span class="field-label">@Model.Label @if (Model.LabelOptional) { <span class="doc-optional">(Non-mandatory)</span> }@if (Model.ShowsProofType) { <partial name="_ProofType" model="@Model.ProofType" /> }</span>
+            <span class="field-label">@Model.Label @if (Model.ShowsProofType) { <partial name="_ProofType" model="@Model.ProofType" /> }</span>
         </div>
     }
     <div class="doc-slot__tools">
@@ -72,9 +72,9 @@
         }
         else if (filed || held is not null)
         {
-            @* Replace a filed copy, or file a newer proof over the address on record. The picker
-               is up here because the box below shows what is filed. *@
-            var titleVerb = filed ? "Replace" : "File a newer";
+            @* Replace a filed copy, or upload the proof of an address the folio holds without
+               one. The picker is up here because the box below shows what is there. *@
+            var titleVerb = filed ? "Replace" : "Upload";
             <label class="doc-tool" for="file-@key" title="@titleVerb @slot.Def.Label">
                 @if (filed)
                 {
@@ -102,17 +102,21 @@
     <div class="doc-slot__frame">
         @if (held is not null)
         {
-            @* An address the folio already holds, standing where its proof would be: on record,
-               so ticked, but nothing on this step confirmed it. *@
+            @* An address the folio already holds, standing where its proof would be. With its
+               proof on record it is ticked and nothing is asked; without one it says a proof is needed. *@
+            var heldOnRecord = held.Kind == "is-done";
             var (heldBody, heldPin) = DocumentsViewModel.SplitPin(held.Lines);
             var heldPinClass = heldPin.Length == 0 ? "is-missing" : null;
             var heldPinText = heldPin.Length > 0 ? "PIN " + heldPin : "PIN not on record";
             <div class="doc-drop is-filled is-held">
                 <span class="doc-drop__done">
-                    <span class="doc-drop__check" aria-hidden="true">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
-                    </span>
-                    <span class="doc-on-file__tag">@held.State</span>
+                    @if (heldOnRecord)
+                    {
+                        <span class="doc-drop__check" aria-hidden="true">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+                        </span>
+                    }
+                    <span class="doc-on-file__tag @(heldOnRecord ? null : "is-failed")">@held.State</span>
                     <span class="doc-on-file__lines" title="@held.Lines">@heldBody</span>
                     <span class="doc-on-file__pin @heldPinClass">@heldPinText</span>
                     <span class="doc-on-file__from" title="@held.From">@held.From</span>
@@ -166,7 +170,9 @@
                             var expired = DocumentsViewModel.Expired(addressRead.Expiry);
                             var expiredClass = expired ? "doc-on-file__expired" : null;
                             var expiryWord = expired ? "expired" : "valid till";
-                            <span class="doc-on-file__id">
+                            var numberAndExpiry = addressRead.Number;
+                            if (addressRead.Expiry.Length > 0) numberAndExpiry += $" · {expiryWord} {Dates.Show(addressRead.Expiry)}";
+                            <span class="doc-on-file__id" title="@numberAndExpiry">
                                 @addressRead.Number@if (addressRead.Expiry.Length > 0) { <span class="@expiredClass"> &middot; @expiryWord @Dates.Show(addressRead.Expiry)</span> }
                             </span>
                         }
@@ -215,10 +221,6 @@
                         </span>
                         <span class="doc-drop__title">Click to upload @slot.Title</span>
                         <span class="doc-drop__hint">Supported format: @slot.Def.Accepts.Label (max. @(slot.Def.Accepts.MaxMb) MB)</span>
-                        @if (slot.Must is not null)
-                        {
-                            <span class="doc-drop__must">@slot.Must</span>
-                        }
                         @if (slot.With is not null)
                         {
                             <span class="doc-drop__with">@slot.With</span>

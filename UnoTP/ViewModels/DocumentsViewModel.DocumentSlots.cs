@@ -114,15 +114,14 @@ public partial class DocumentsViewModel
 
     /// <summary>What a slot shows: whether it is asked for at all, and what is in it.</summary>
     /// <param name="Key">The slot's key for its holder, which its markup and posts carry.</param>
-    /// <param name="Optional">Asked for, but not needed to proceed.</param>
     public sealed record SlotView(
         SlotDef Def, string Key, bool Used, string? NotApplicable, string? Locked, StoredDoc? Doc,
-        string? Must, string? With, int Attempts, string? Error, string? ErrorLog, bool Optional = false,
+        string? With, int Attempts, string? Error, string? ErrorLog,
         ReadCard? Read = null, string? LockedHint = null, int MaxAttempts = int.MaxValue, string? Final = null,
         DateTime? RetryAt = null)
     {
-        /// <summary>Wanted before the step can go on: asked for, not optional, and not in yet.</summary>
-        public bool Missing => Used && !Optional && Doc is null;
+        /// <summary>Wanted before the step can go on: asked for, and not in yet.</summary>
+        public bool Missing => Used && Doc is null;
 
         /// <summary>Refused the most times in a row the rules allow: no more tries until the wait is over.</summary>
         public bool Spent => Attempts >= MaxAttempts;
@@ -216,17 +215,15 @@ public partial class DocumentsViewModel
         var key = h.Key(def.Key);
         var proofType = TypeOf(def, h);
         var held = FolioDocsOf(h);
-        string heldWhy = "Already on record and verified, so it is not filed again.";
-        string heldPhotoWhy = "Already on record, so it is not filed again.";
+        string heldWhy = "Already on record, so it is not filed again.";
         var (used, na) = def.Key switch
         {
             "form" => (s.AppType == Physical, "A digital application is accepted through the investor’s own link, so there is no signed form to file."),
             "pan" => held?.Pan == true ? (false, heldWhy) : (true, null),
             // CKYC is fetched for the investor only: a joint holder files their own.
-            "photo" => held?.Photo == true ? (false, heldPhotoWhy) : s.Ckyc && !h.Joint ? (false, CkycWhy) : (true, null),
-            // A proof on record need not be filed again - but a newer one is
-            // taken, should the address have changed (optional, below).
-            "poa" => s.Ckyc && !h.Joint ? (false, CkycWhy) : (true, null),
+            "photo" => held?.Photo == true ? (false, heldWhy) : s.Ckyc && !h.Joint ? (false, CkycWhy) : (true, null),
+            // A proof on record, with the address it proves, is not asked for again.
+            "poa" => held?.Poa == true ? (false, heldWhy) : s.Ckyc && !h.Joint ? (false, CkycWhy) : (true, null),
             "mail" => !MailCanDiffer(h) ? (false, MailWhy(h))
                 : MailTyped(h) ? (false, MailTypedWhy)
                 : MailDifferentOf(h) ? (true, null) : (false, "Post goes to the permanent address, so there is no other address to prove."),
@@ -269,14 +266,9 @@ public partial class DocumentsViewModel
             _ => null,
         };
 
-        // Only a document already verified on record is not required. A PAN copy is
-        // then not asked for at all (above); a proof of address is still taken, but
-        // not needed. Anything not verified on record is required, folio or no folio.
-        var optional = used && def.Key == "poa" && held?.Poa == true;
-
         // What the copy was read to say stands in its own box once it is filed. An
-        // address the folio holds is shown where its proof would be, as it stands:
-        // nothing here checked it.
+        // address the folio holds is shown where its proof would be: on record with
+        // its proof, or still to be proved.
         var doc = used ? s.Docs.GetValueOrDefault(key) : null;
         var folioAddress = held is not null && h.Who.Address.Length > 0;
         ReadCard? read = def.Key switch
@@ -285,28 +277,18 @@ public partial class DocumentsViewModel
             "mail" when doc is not null => MailReadOf(h),
             "payment" when doc is not null => s.Reads.GetValueOrDefault("payment"),
             "pan" when doc is not null => PanReadOf(h, doc),
-            "poa" when doc is null && folioAddress => FolioAddress(h, PoaOnRecordNext(used, optional)),
-            "mail" when !used && folioAddress && !MailCanDiffer(h) => FolioAddress(h, "post goes there."),
+            "poa" when doc is null && folioAddress => FolioAddress(h),
+            "mail" when !used && folioAddress && !MailCanDiffer(h) => FolioMailAddress(h),
             _ => null,
         };
 
         var flash = Shown;
         return new SlotView(def, key, used, used ? null : na, locked, doc,
-            optional ? "Not mandatory: a proof is on record, and its address stands unless a newer proof is filed." : null,
             with, AttemptsNow(key),
-            flash?.Errors.GetValueOrDefault(key), flash?.ErrorLog.GetValueOrDefault(key), optional, read,
+            flash?.Errors.GetValueOrDefault(key), flash?.ErrorLog.GetValueOrDefault(key), read,
             // Waiting on the PAN, the box still names the proofs it will take.
             waitsOnPan ? $"Accepted: {OneOf(ProofsFor(def.Key))}. Checked against the holder the PAN copy establishes." : null, MaxAttempts,
             FinalWhy(def, h, doc), RetryAt(key));
-    }
-
-    // What the address on record says of its proof: not asked for, taken but not
-    // needed, or needed because no proof on record is verified.
-    private static string PoaOnRecordNext(bool used, bool optional)
-    {
-        if (!used) return "not checked here.";
-        if (optional) return "file a newer proof only if the address has changed.";
-        return "a proof of it is needed: none on record is verified.";
     }
 
     // A PAN copy NSDL has verified - the PAN, the date of birth and the name read off
@@ -327,13 +309,13 @@ public partial class DocumentsViewModel
     {
         List<ReadItem> cards =
         [
-            ("Permanent address", State.Reads[h.Key("poa")]),
+            ("Permanent address", PermanentAddressOf(h)),
             ("Communication address", MailTyped(h) ? TypedMailOf(h) is { } typed
                     ? new ReadCard("Typed", Lines(typed), "Typed on Investor Information; the district and state are the PIN code's.")
                     : NotRead("To be typed", "Different from permanent: typed on Investor Information.",
                         "No proof of it is uploaded in this release; it is entered with the holder's details.")
                 : MailDifferentOf(h) ? MailReadOf(h)
-                : !MailCanDiffer(h) && h.Who.Folio.Length > 0 && h.Who.Address.Length > 0 ? FolioAddress(h, "post goes there.")
+                : !MailCanDiffer(h) && h.Who.Folio.Length > 0 && h.Who.Address.Length > 0 ? FolioMailAddress(h)
                 : !MailCanDiffer(h) && h.Who.Folio.Length > 0 ? NotRead("Same as permanent", "Post goes to the address on the folio.",
                     "The system holds the address, and it is the mailing address too.")
                 : !MailCanDiffer(h) ? NotRead("From CKYC", "The communication address comes with the CKYC record.",

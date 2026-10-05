@@ -85,11 +85,14 @@
     </div>
 </footer>
 
-@* The submit dialog: what is sent to the investor once the application is submitted. *@
+@* The submit dialog: what is sent to the investor once the application is submitted.
+   Both of its buttons submit - the application is saved either way. Submit & send
+   link then makes and sends the link; Try later leaves the link for later. *@
 <div class="modal-overlay pay-link-overlay" id="paymentLinkModal" hidden>
     <div class="app-dialog pay-link-dialog" role="dialog" aria-modal="true" aria-labelledby="paymentLinkTitle" aria-describedby="paymentLinkIntro">
         <div class="pay-link-head">
             <h2 class="pay-link-head__title" id="paymentLinkTitle">Send the payment link</h2>
+            <button type="button" class="btn-close app-dialog__close pay-link-head__close" id="closePaymentLinkModal" aria-label="Close without submitting"></button>
         </div>
         <div class="pay-link-body">
             <p class="pay-link-intro pay-link-intro--long" id="paymentLinkIntro">On Submit the application is submitted and a payment link is sent to the investor: <strong>the deposit is not booked until the investor pays it</strong>.</p>
@@ -97,14 +100,14 @@
                 <div><dt>SMS to</dt><dd>@Or(Model.InvestorMobile)</dd><dd class="pay-link-terms__note">the primary holder&rsquo;s mobile, from Investor Information</dd></div>
                 <div><dt>E-mail to</dt><dd class="pay-link-terms__email">@Or(Model.InvestorEmail.ToLowerInvariant())</dd><dd class="pay-link-terms__note">the primary holder&rsquo;s e-mail, from Investor Information</dd></div>
                 <div><dt>Amount</dt><dd>@(d is null ? "—" : Money.Rupees(d.Amount))</dd><dd class="pay-link-terms__note">fixed &mdash; the investor cannot change it</dd></div>
-                <div><dt>Valid for</dt><dd>@Model.PaymentLinkHours hours</dd><dd class="pay-link-terms__note">from when it is sent</dd></div>
+                <div><dt>Valid for</dt><dd>@Model.PaymentLinkValidFor</dd><dd class="pay-link-terms__note">from when it is sent</dd></div>
             </dl>
-            <div class="pay-link-lapse pay-link-lapse--long"><strong>If the link is not paid in @Model.PaymentLinkHours hours the application lapses</strong> and the rate is no longer held.</div>
-            <p class="pay-link-foot">Try later keeps everything saved and leaves the application unsubmitted &mdash; nothing is sent to the investor.</p>
+            <div class="pay-link-lapse pay-link-lapse--long"><strong>A link stays open for @Model.PaymentLinkValidFor; the application stands for @Model.ApplicationDays days.</strong> A new link can be sent until then; unpaid after that, the application lapses and the rate is no longer held.</div>
+            <p class="pay-link-foot">Try later submits the application as well, but makes no link &mdash; nothing is sent to the investor until a link is generated, from Application Submitted.</p>
         </div>
         <div class="pay-link-actions">
-            <button type="button" class="pay-link-actions__later" id="closePaymentLinkModal">Try later</button>
-            <button type="submit" form="reviewForm" class="btn btn-primary pay-link-actions__send" data-loader="Submitting&hellip;">Submit &amp; send link</button>
+            <button type="submit" form="reviewForm" name="link" value="@UnoTP.Controllers.ReviewController.LinkLater" class="pay-link-actions__later" data-loader="Submitting&hellip;" data-loader-hint="No link is made: generate it later">Try later</button>
+            <button type="submit" form="reviewForm" name="link" value="send" class="btn btn-primary pay-link-actions__send" data-loader="Submitting&hellip;" data-loader-hint="The application is saved, then its link is made">Submit &amp; send link</button>
         </div>
     </div>
 </div>

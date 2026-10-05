@@ -85,9 +85,9 @@ The joint holders' documents on Investor Information go through the same calls.
 
 | Call | Used for |
 |---|---|
-| `IApplicationApi.FindAsync`, `SubmitAsync`, `ResendLinkAsync` | The application; submit with the link; a new link. |
+| `IApplicationApi.FindAsync`, `SubmitAsync`, `RecordPaymentLinkAsync`, `ResendLinkAsync` | The application; saved as submitted; then - on Submit & send link, or later for one submitted with Try later - its link put on record (the payment link table for a purchase, the re-payment link table for a renewal); a new link. |
 | `IDepositApi.QuoteAsync`, `BranchAsync` | The quote and the branches shown. |
-| `IShortLinkService.ShortenAsync` | The payment link shortened. |
+| `IShortLinkService.ShortenAsync` | The payment link shortened, once the application is saved. |
 | `IRenewalApi.DepositsByFolioAsync`, `DepositsByPanAsync` | The source-of-funds rule, checked once more before submit. |
 
 ## View Application (`ApplicationsController`, `ApplicationDetailsController`)

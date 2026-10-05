@@ -233,13 +233,15 @@
   line-height: 16px;
   color: var(--muted);
 }
-/* What a senior citizen or women's rate includes: the foot of the card */
+/* What a senior citizen or women's rate includes: the foot of the card. It is good
+   news for the investor - a higher rate - so it is said in green, not as a warning. */
 .deposit-summary__banner {
   margin-top: 16px;
   padding: 8px 12px;
+  border: 1px solid var(--green-border);
   border-radius: 6px;
-  background: var(--pink-bg);
-  color: var(--red-dark);
+  background: var(--green-bg);
+  color: var(--green);
   font-size: 12px;
   line-height: 16px;
   font-weight: 500;

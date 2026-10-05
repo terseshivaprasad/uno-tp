@@ -135,11 +135,13 @@ public class InvestorController(
         // model is given as it loads. It is set, not chosen, so there is nothing to
         // put right by hand; it is saved with the application below.
 
-        // Every holder is screened by name before the application goes on. One not
-        // allowed to invest online invests offline, at a branch: the page says so and
-        // stops. What screening said is saved with the application either way.
-        // Screening is charged for, so it keeps to the limit a document's checks do.
-        if (!docs.WithinLimit(docs.Investor, "screening"))
+        // Every holder with no folio yet is screened by name before the application
+        // goes on; a holder on a folio is not screened again. One not allowed to invest
+        // online invests offline, at a branch: the page says so and stops. What
+        // screening said is saved with the application either way. Screening is charged
+        // for, so it keeps to the limit a document's checks do.
+        var toScreen = docs.JointHolders.Prepend(docs.Investor).Where(DocumentsViewModel.ScreeningApplies).ToList();
+        if (toScreen.Count > 0 && !docs.WithinLimit(docs.Investor, "screening"))
         {
             await SaveAsync(docs);
             return Back("holder-1");
@@ -147,7 +149,7 @@ public class InvestorController(
         var notAllowed = new List<string>();
         try
         {
-            foreach (var h in docs.JointHolders.Prepend(docs.Investor))
+            foreach (var h in toScreen)
             {
                 // The mobile number typed for the holder on this page: Holder1.Mobile for holder 01.
                 var mobile = state.Fields.GetValueOrDefault($"Holder{int.Parse(h.Code)}.Mobile") ?? "";
@@ -163,8 +165,8 @@ public class InvestorController(
             await SaveAsync(docs);
             return Back(BannerId);
         }
-        // Every holder has an answer from name screening now, and their rows are
-        // written afresh to carry it (see OnActionExecutionAsync).
+        // Every holder screened has an answer now, and the holders' rows are written
+        // afresh to carry it (see OnActionExecutionAsync).
         holderRowsDue = true;
         if (notAllowed.Count > 0)
         {

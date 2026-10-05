@@ -102,6 +102,10 @@ internal sealed class AddressRow
     public string State { get; set; } = "";
     public string Mobile { get; set; } = "";
     public string Email { get; set; } = "";
+
+    /// <summary>Whether another row holds the same address: its lines, city, district, state and PIN code.</summary>
+    public bool SameAddressAs(AddressRow other) =>
+        (Line1, Line2, Line3, City, District, State, PinCode) == (other.Line1, other.Line2, other.Line3, other.City, other.District, other.State, other.PinCode);
 }
 
 internal sealed class NomineeRow

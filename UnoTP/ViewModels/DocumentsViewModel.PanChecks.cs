@@ -209,7 +209,7 @@ public partial class DocumentsViewModel
 
     // A PAN copy the holder needs and has not filed yet: not one the folio holds,
     // nor one a holder on a folio may leave out.
-    private bool PanWanted(DocHolder h) => !PanOnApplication(h) && View(PanSlot, h) is { Used: true, Optional: false };
+    private bool PanWanted(DocHolder h) => !PanOnApplication(h) && View(PanSlot, h) is { Used: true };
 
     // The Aadhaar arrived after the PAN: the link is asked now, and the PAN's card
     // and what its copy says both follow the answer.

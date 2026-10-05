@@ -230,7 +230,7 @@
         </div>
         <div class="doc-grid doc-grid--docs">
             <div class="doc-column">
-                <partial name="_DocSlot" model="@(new DocSlotBlock(pan, upload, Label: "PAN", LabelOptional: pan.Optional))" />
+                <partial name="_DocSlot" model="@(new DocSlotBlock(pan, upload, Label: "PAN"))" />
             </div>
             @* NSDL asked again about the PAN copy filed: a row straight under the PAN's card. *@
             @if (panReads.AsksNsdl)

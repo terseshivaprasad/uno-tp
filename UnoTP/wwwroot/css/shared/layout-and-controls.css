@@ -38,10 +38,15 @@
      enough for a filed proof's four lines; its View and Replace sit under it. A
      phone's is taller, as its boxes stack the mark over the text. */
   --doc-card-h: 184px;
+  /* How many lines of an address a document box shows before it is cut with an
+     ellipsis: as many as its height takes beside the state, the PIN code and the
+     document's number. The whole address shows on hover. */
+  --doc-address-lines: 4;
 }
 @media (min-width: 761px) {
   :root {
     --doc-card-h: 136px;
+    --doc-address-lines: 2;
   }
 }
 /* One box to a row on a phone: nothing beside it to line up with, so each is as
@@ -49,6 +54,7 @@
 @media (max-width: 700px) {
   :root {
     --doc-card-h: 0px;
+    --doc-address-lines: 6;
   }
 }
 * , *::before, *::after {
@@ -882,13 +888,17 @@ html.is-saving::before {
 .loader[hidden] {
   display: none;
 }
+/* One size whatever it says: the words differ from one document to the next, and
+   the line under them changes as an upload moves on, so the box is not sized by them. */
 .loader__box {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 12px;
-  min-width: 232px;
-  max-width: 360px;
+  width: 400px;
+  max-width: 100%;
+  min-height: 158px;
   padding: 28px 32px;
   border-radius: 8px;
   background: #fff;
@@ -904,11 +914,16 @@ html.is-saving::before {
   animation: doc-spin .7s linear infinite;
 }
 .loader__what {
+  margin: 0;
   font-size: 14px;
+  line-height: 20px;
   font-weight: 600;
   color: var(--ink);
 }
+/* Room for two lines, so a short line and a long one leave the box alone. */
 .loader__hint {
+  margin: 0;
+  min-height: 32px;
   font-size: 12px;
   line-height: 16px;
   color: var(--muted);
