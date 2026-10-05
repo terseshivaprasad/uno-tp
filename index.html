@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Uno TP screens</title>
+<style>
+  :root { --bg: #f3f5f8; --card: #fff; --ink: #1b2330; --muted: #5d6878; --line: #dfe4ec; --accent: #c8102e; --accent-bg: #fdecef; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { background: var(--bg); color: var(--ink); font: 14px/1.45 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: grid; grid-template-columns: 300px 1fr; }
+  nav { background: var(--card); border-right: 1px solid var(--line); overflow-y: auto; height: 100vh; position: sticky; top: 0; }
+  nav h1 { font-size: 15px; margin: 0; padding: 16px 16px 4px; }
+  nav p { margin: 0; padding: 0 16px 12px; color: var(--muted); font-size: 12px; }
+  nav h2 { font-size: 11px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); margin: 0; padding: 14px 16px 6px; border-top: 1px solid var(--line); }
+  nav button { display: flex; gap: 8px; width: 100%; text-align: left; border: 0; background: none; font: inherit; color: inherit; padding: 7px 16px; cursor: pointer; }
+  nav button:hover { background: var(--bg); }
+  nav button[aria-current="true"] { background: var(--accent-bg); color: var(--accent); font-weight: 600; }
+  nav button span:first-child { color: var(--muted); font-variant-numeric: tabular-nums; min-width: 20px; }
+  main { min-width: 0; display: flex; flex-direction: column; height: 100vh; }
+  header { background: var(--card); border-bottom: 1px solid var(--line); padding: 12px 20px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  header .where { flex: 1; min-width: 240px; }
+  header .where small { display: block; color: var(--muted); font-size: 12px; }
+  header .where strong { font-size: 15px; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .seg button, .nav-btn { border: 0; background: var(--card); font: inherit; padding: 8px 14px; cursor: pointer; color: inherit; }
+  .seg button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+  .nav-btn { border: 1px solid var(--line); border-radius: 8px; }
+  .nav-btn:disabled { opacity: .4; cursor: default; }
+  .stage { flex: 1; overflow: auto; padding: 20px; text-align: center; }
+  .stage img { max-width: 100%; height: auto; border: 1px solid var(--line); border-radius: 8px; background: #fff; box-shadow: 0 6px 20px rgba(16, 24, 40, .08); }
+  .stage.is-mobile img { max-width: 390px; }
+  .stage .none { color: var(--muted); padding: 60px 0; }
+  .menu { display: none; }
+  @media (max-width: 800px) {
+    body { grid-template-columns: 1fr; }
+    nav { position: fixed; inset: 0 auto 0 0; width: 86vw; max-width: 320px; z-index: 5; transform: translateX(-100%); transition: transform .2s; box-shadow: 0 0 40px rgba(0, 0, 0, .25); }
+    nav.is-open { transform: none; }
+    .menu { display: inline-block; }
+    header { padding: 10px 12px; }
+    .stage { padding: 12px; }
+  }
+</style>
+</head>
+<body>
+<nav id="list" aria-label="Steps">
+  <h1>Uno TP screens</h1>
+  <p>Every page and case, in order. Dev data only.</p>
+</nav>
+<main>
+  <header>
+    <button class="nav-btn menu" id="menu" type="button">Steps</button>
+    <div class="where"><small id="count"></small><strong id="note"></strong></div>
+    <div class="seg" role="group" aria-label="View">
+      <button type="button" id="asDesktop" aria-pressed="true">Desktop</button>
+      <button type="button" id="asMobile" aria-pressed="false">Mobile</button>
+    </div>
+    <button class="nav-btn" id="prev" type="button">&larr; Previous</button>
+    <button class="nav-btn" id="next" type="button">Next &rarr;</button>
+  </header>
+  <div class="stage" id="stage"></div>
+</main>
+<script>
+var steps = [{"step": 1, "group": "Dashboard", "note": "Dashboard, with the incomplete applications", "desktop": "desktop/01-dashboard.png", "mobile": "mobile/01-dashboard.png"}, {"step": 2, "group": "Investor Identification", "note": "Investor Identification as it opens", "desktop": "desktop/02-search-empty.png", "mobile": "mobile/02-search-empty.png"}, {"step": 3, "group": "Investor Identification", "note": "PAN and date of birth not filled in properly", "desktop": "desktop/03-search-invalid.png", "mobile": "mobile/03-search-invalid.png"}, {"step": 4, "group": "Investor Identification", "note": "A PAN with no folio: new investor", "desktop": "desktop/04-search-new-investor.png", "mobile": "mobile/04-search-new-investor.png"}, {"step": 5, "group": "Investor Identification", "note": "A PAN on a folio: the record and the deposits held", "desktop": "desktop/05-search-folio-holder.png", "mobile": "mobile/05-search-folio-holder.png"}, {"step": 6, "group": "Upload Documents - fresh investor", "note": "Upload Documents as a new application opens", "desktop": "desktop/06-upload-opened.png", "mobile": "mobile/06-upload-opened.png"}, {"step": 7, "group": "Upload Documents - fresh investor", "note": "Proceed with nothing filed: what is missing", "desktop": "desktop/07-upload-proceed-nothing-filed.png", "mobile": "mobile/07-upload-proceed-nothing-filed.png"}, {"step": 8, "group": "Upload Documents - fresh investor", "note": "PAN copy filed: read by OCR and verified with NSDL", "desktop": "desktop/08-upload-pan-verified.png", "mobile": "mobile/08-upload-pan-verified.png"}, {"step": 9, "group": "Upload Documents - fresh investor", "note": "Proof of address filed: a passport, address read off it", "desktop": "desktop/09-upload-poa-passport.png", "mobile": "mobile/09-upload-poa-passport.png"}, {"step": 10, "group": "Upload Documents - fresh investor", "note": "Photograph filed", "desktop": "desktop/10-upload-photo.png", "mobile": "mobile/10-upload-photo.png"}, {"step": 11, "group": "Upload Documents - fresh investor", "note": "Payment mode Cheque, with the cheque copy", "desktop": "desktop/11-upload-payment-cheque.png", "mobile": "mobile/11-upload-payment-cheque.png"}, {"step": 12, "group": "Upload Documents - fresh investor", "note": "Sourcing chosen; the category is set by the app", "desktop": "desktop/12-upload-sourcing-and-category.png", "mobile": "mobile/12-upload-sourcing-and-category.png"}, {"step": 13, "group": "Upload Documents - fresh investor", "note": "Upload Documents with everything on it", "desktop": "desktop/13-upload-complete.png", "mobile": "mobile/13-upload-complete.png"}, {"step": 14, "group": "Upload Documents - cases", "note": "NSDL holds the PAN and date of birth under another name: the name is typed", "desktop": "desktop/14-upload-nsdl-name-differs.png", "mobile": "mobile/14-upload-nsdl-name-differs.png"}, {"step": 15, "group": "Upload Documents - cases", "note": "NSDL does not hold the PAN and date of birth: upload again", "desktop": "desktop/15-upload-nsdl-failed.png", "mobile": "mobile/15-upload-nsdl-failed.png"}, {"step": 16, "group": "Upload Documents - cases", "note": "NSDL not answering", "desktop": "desktop/16-upload-nsdl-not-answering.png", "mobile": "mobile/16-upload-nsdl-not-answering.png"}, {"step": 17, "group": "Upload Documents - cases", "note": "Aadhaar as proof of address: last 4 digits read, the first 8 are typed", "desktop": "desktop/17-upload-aadhaar-last-four.png", "mobile": "mobile/17-upload-aadhaar-last-four.png"}, {"step": 18, "group": "Upload Documents - cases", "note": "Aadhaar number completed: PAN-Aadhaar link checked", "desktop": "desktop/18-upload-aadhaar-number-entered.png", "mobile": "mobile/18-upload-aadhaar-number-entered.png"}, {"step": 19, "group": "Upload Documents - cases", "note": "Aadhaar masking failed: nothing is filed", "desktop": "desktop/19-upload-aadhaar-masking-failed.png", "mobile": "mobile/19-upload-aadhaar-masking-failed.png"}, {"step": 20, "group": "Upload Documents - cases", "note": "Fetch from CKYC: the question before it is fetched", "desktop": "desktop/20-upload-fetch-from-ckyc.png", "mobile": "mobile/20-upload-fetch-from-ckyc.png"}, {"step": 21, "group": "Folio holder", "note": "Upload Documents for a holder on a folio: documents on record are not asked again", "desktop": "desktop/21-upload-folio-holder.png", "mobile": "mobile/21-upload-folio-holder.png"}, {"step": 22, "group": "Folio holder", "note": "Investor Information for a holder on a folio: details from the record", "desktop": "desktop/22-investor-folio-holder.png", "mobile": "mobile/22-investor-folio-holder.png"}, {"step": 23, "group": "Investor Information", "note": "Investor Information as it opens for a new investor", "desktop": "desktop/23-investor-opened.png", "mobile": "mobile/23-investor-opened.png"}, {"step": 24, "group": "Investor Information", "note": "Proceed with nothing entered: each field says what it needs", "desktop": "desktop/24-investor-proceed-nothing-entered.png", "mobile": "mobile/24-investor-proceed-nothing-entered.png"}, {"step": 25, "group": "Investor Information", "note": "Investor Information filled in", "desktop": "desktop/25-investor-filled.png", "mobile": "mobile/25-investor-filled.png"}, {"step": 26, "group": "Investor Information", "note": "Proceed with no nominee: the question before going on", "desktop": "desktop/26-investor-nominee-question.png", "mobile": "mobile/26-investor-nominee-question.png"}, {"step": 27, "group": "Investor Information", "note": "Investor Information with a joint holder on the application", "desktop": "desktop/27-investor-with-joint-holder.png", "mobile": "mobile/27-investor-with-joint-holder.png"}, {"step": 28, "group": "Bank Details & Payment", "note": "Bank Details & Payment as it opens (payment by cheque)", "desktop": "desktop/28-bank-opened.png", "mobile": "mobile/28-bank-opened.png"}, {"step": 29, "group": "Bank Details & Payment", "note": "Proceed with no bank chosen", "desktop": "desktop/29-bank-proceed-nothing-entered.png", "mobile": "mobile/29-bank-proceed-nothing-entered.png"}, {"step": 30, "group": "Bank Details & Payment", "note": "Bank search as it is typed", "desktop": "desktop/30-bank-search-as-typed.png", "mobile": "mobile/30-bank-search-as-typed.png"}, {"step": 31, "group": "Bank Details & Payment", "note": "Payment and repayment accounts and the cheque details filled in", "desktop": "desktop/31-bank-filled.png", "mobile": "mobile/31-bank-filled.png"}, {"step": 32, "group": "FD Configuration", "note": "FD Configuration as it opens", "desktop": "desktop/32-deposit-opened.png", "mobile": "mobile/32-deposit-opened.png"}, {"step": 33, "group": "FD Configuration", "note": "Proceed with no amount", "desktop": "desktop/33-deposit-proceed-no-amount.png", "mobile": "mobile/33-deposit-proceed-no-amount.png"}, {"step": 34, "group": "FD Configuration", "note": "An amount entered: the rate and the quote", "desktop": "desktop/34-deposit-quote.png", "mobile": "mobile/34-deposit-quote.png"}, {"step": 35, "group": "FD Configuration", "note": "Deposits with us pass 1 crore and income is up to 5 lakh: source of funds asked", "desktop": "desktop/35-deposit-source-of-funds-asked.png", "mobile": "mobile/35-deposit-source-of-funds-asked.png"}, {"step": 36, "group": "Review Summary", "note": "Review Summary: nothing missing", "desktop": "desktop/36-review-ready.png", "mobile": "mobile/36-review-ready.png"}, {"step": 37, "group": "Review Summary", "note": "Review Summary with things still missing, by step", "desktop": "desktop/37-review-things-missing-folio.png", "mobile": "mobile/37-review-things-missing-folio.png"}, {"step": 38, "group": "Review Summary", "note": "Review Summary with nothing missing", "desktop": "desktop/38-review-ready-to-submit.png", "mobile": "mobile/38-review-ready-to-submit.png"}, {"step": 39, "group": "Review Summary", "note": "Submit Application: Try later, or Submit & send link", "desktop": "desktop/39-review-submit-popup.png", "mobile": "mobile/39-review-submit-popup.png"}, {"step": 40, "group": "Review Summary", "note": "Application Submitted after Try later: no link sent yet", "desktop": "desktop/40-submitted-no-link-yet.png", "mobile": "mobile/40-submitted-no-link-yet.png"}, {"step": 41, "group": "Review Summary", "note": "Application Submitted with the payment link sent", "desktop": "desktop/41-submitted-link-sent.png", "mobile": "mobile/41-submitted-link-sent.png"}, {"step": 42, "group": "Lists", "note": "View Application: the list (switched off in settings; shown with its switch on)", "desktop": "desktop/42-view-application-list.png", "mobile": "mobile/42-view-application-list.png"}, {"step": 43, "group": "Lists", "note": "View Application: found by application number", "desktop": "desktop/43-view-application-by-number.png", "mobile": "mobile/43-view-application-by-number.png"}, {"step": 44, "group": "Lists", "note": "View Application: the details sheet", "desktop": "desktop/44-view-application-details.png", "mobile": "mobile/44-view-application-details.png"}, {"step": 45, "group": "Lists", "note": "PIS Generation - Axis (switched off in settings; shown with its switch on)", "desktop": "desktop/45-pay-in-slips.png", "mobile": "mobile/45-pay-in-slips.png"}, {"step": 46, "group": "Lists", "note": "Short URL (switched off in settings; shown with its switch on)", "desktop": "desktop/46-short-url.png", "mobile": "mobile/46-short-url.png"}, {"step": 47, "group": "Lists", "note": "Renew FD opens Investor Identification, where a holder's deposits are listed (switched off in settings; shown with its switch on)", "desktop": "desktop/47-renew-fd.png", "mobile": "mobile/47-renew-fd.png"}, {"step": 48, "group": "Lists", "note": "Console Admin (switched off in settings; shown with its switch on)", "desktop": "desktop/48-console-admin.png", "mobile": "mobile/48-console-admin.png"}, {"step": 49, "group": "Other pages", "note": "Session expired", "desktop": "desktop/49-session-expired.png", "mobile": "mobile/49-session-expired.png"}, {"step": 50, "group": "Other pages", "note": "Not authorised", "desktop": "desktop/50-unauthorized.png", "mobile": "mobile/50-unauthorized.png"}, {"step": 51, "group": "Other pages", "note": "Too many requests", "desktop": "desktop/51-too-many-requests.png", "mobile": "mobile/51-too-many-requests.png"}, {"step": 52, "group": "Other pages", "note": "Something went wrong", "desktop": "desktop/52-error.png", "mobile": "mobile/52-error.png"}, {"step": 53, "group": "Other pages", "note": "Page expired", "desktop": "desktop/53-page-expired.png", "mobile": "mobile/53-page-expired.png"}];
+var at = 0, view = 'desktop';
+var list = document.getElementById('list'), stage = document.getElementById('stage');
+var buttons = [];
+var lastGroup = '';
+steps.forEach(function (s, i) {
+  if (s.group !== lastGroup) { var h = document.createElement('h2'); h.textContent = s.group; list.appendChild(h); lastGroup = s.group; }
+  var b = document.createElement('button'); b.type = 'button';
+  var num = document.createElement('span'); num.textContent = s.step;
+  var text = document.createElement('span'); text.textContent = s.note;
+  b.appendChild(num); b.appendChild(text);
+  b.addEventListener('click', function () { show(i); list.classList.remove('is-open'); });
+  list.appendChild(b); buttons.push(b);
+});
+function show(i) {
+  at = Math.max(0, Math.min(steps.length - 1, i));
+  var s = steps[at];
+  document.getElementById('count').textContent = 'Step ' + s.step + ' of ' + steps.length + ' · ' + s.group;
+  document.getElementById('note').textContent = s.note;
+  stage.className = 'stage' + (view === 'mobile' ? ' is-mobile' : '');
+  stage.textContent = '';
+  var src = s[view];
+  if (src) {
+    var a = document.createElement('a'); a.href = src; a.target = '_blank'; a.title = 'Open the picture at full size';
+    var img = document.createElement('img'); img.src = src; img.alt = s.note;
+    a.appendChild(img); stage.appendChild(a);
+  } else { var none = document.createElement('p'); none.className = 'none'; none.textContent = 'No picture of this step in this view.'; stage.appendChild(none); }
+  stage.scrollTop = 0;
+  buttons.forEach(function (b, n) { b.setAttribute('aria-current', n === at ? 'true' : 'false'); });
+  buttons[at].scrollIntoView({ block: 'nearest' });
+  document.getElementById('prev').disabled = at === 0;
+  document.getElementById('next').disabled = at === steps.length - 1;
+  try { history.replaceState(null, '', '#' + s.step + (view === 'mobile' ? '-mobile' : '')); } catch (e) {}
+}
+function setView(v) {
+  view = v;
+  document.getElementById('asDesktop').setAttribute('aria-pressed', v === 'desktop');
+  document.getElementById('asMobile').setAttribute('aria-pressed', v === 'mobile');
+  show(at);
+}
+document.getElementById('prev').addEventListener('click', function () { show(at - 1); });
+document.getElementById('next').addEventListener('click', function () { show(at + 1); });
+document.getElementById('asDesktop').addEventListener('click', function () { setView('desktop'); });
+document.getElementById('asMobile').addEventListener('click', function () { setView('mobile'); });
+document.getElementById('menu').addEventListener('click', function () { list.classList.toggle('is-open'); });
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'ArrowRight') show(at + 1);
+  if (e.key === 'ArrowLeft') show(at - 1);
+  if (e.key === 'd') setView('desktop');
+  if (e.key === 'm') setView('mobile');
+});
+var start = (location.hash || '').replace('#', '').split('-');
+if (start[1] === 'mobile') view = 'mobile';
+setView(view);
+show(Math.max(0, (parseInt(start[0], 10) || 1) - 1));
+</script>
+</body>
+</html>
