@@ -42,8 +42,9 @@ internal static partial class Sections
 
     /// <param name="codes">How each document is coded in the FD system's document master (SqlReference.DocumentCodesAsync).</param>
     /// <param name="dmsRoot">The document store's root (DmsPaths.Root), which each copy's path is recorded under.</param>
+    /// <param name="onRecord">The copies the holders on a folio have on record, the newest first (SqlMasters.CopiesOnRecordAsync).</param>
     public static async Task WriteUploadAsync(IDbConnection db, IDbTransaction tx, Stamp at, UploadState upload,
-        IReadOnlyDictionary<string, DocumentCode> codes, string dmsRoot)
+        IReadOnlyDictionary<string, DocumentCode> codes, string dmsRoot, IReadOnlyList<HolderCopyOnRecord> onRecord)
     {
         await db.ExecuteAsync("""
             INSERT dbo.t_Unotp_Upload_State (f_App_No, f_App_Version, f_Status, f_Upload, f_Created_By)
@@ -52,8 +53,10 @@ internal static partial class Sections
 
         // One row per document uploaded on the application, coded as the FD system's document
         // master codes it, with what the outside checks made of it (SaveStep.DocumentCheckFlags.cs).
-        // A document that was not uploaded here - the PAN copy of a holder on a folio,
-        // who is not asked for it - has no row: there is no copy of it on this application.
+        // The PAN copy of a holder on a folio, who is not asked for it, has no row. Their
+        // photograph and proof of address, where none is uploaded here, are written from
+        // the copies on their record (RowsOnRecord), so the application's documents are
+        // whole, as its KYC and address rows are.
         // Its size and the words of its check stay on the upload step's JSON:
         // t_FD_BT_KYC_document has no column for them.
         //
@@ -82,12 +85,21 @@ internal static partial class Sections
                 Status = at.Status,
             };
 
-            // The row already there says the same: it stands.
+            await KeepOrInsertAsync(row);
+        }
+        foreach (var row in RowsOnRecord(onRecord, upload, codes, at, sequences))
+        {
+            await KeepOrInsertAsync(row);
+        }
+
+        // The row already there says the same: it stands. Otherwise the row is new.
+        async Task KeepOrInsertAsync(DocumentRow row)
+        {
             var same = active.FirstOrDefault(there => there with { Id = 0 } == row);
             if (same is not null)
             {
                 active.Remove(same);
-                continue;
+                return;
             }
             await InsertDocumentAsync(db, tx, at, row);
         }
@@ -101,6 +113,57 @@ internal static partial class Sections
                 WHERE f_Pk_t_FD_BT_KYC_document_ID IN @Ids
                 """, new { Ids = active.Select(row => row.Id).ToList(), UpdatedBy = at.UserClusterId, at.UserName, at.Ip }, tx);
         }
+    }
+
+    // The two documents a holder on a folio is not asked for when they are on record.
+    private static readonly string[] KindsOnRecord = ["photo", "poa"];
+
+    // A row for each photograph and proof of address a holder on a folio has on
+    // record and did not upload here: the newest copy of each, under the file name
+    // and path the record keeps it at. f_Document_Source says which source it came
+    // from (KycSources), where an uploaded row says UNO_TP.
+    private static IEnumerable<DocumentRow> RowsOnRecord(IReadOnlyList<HolderCopyOnRecord> onRecord, UploadState upload,
+        IReadOnlyDictionary<string, DocumentCode> codes, Stamp at, Dictionary<(string, string), int> sequences)
+    {
+        foreach (var holder in onRecord.GroupBy(copy => copy.HolderType).OrderBy(group => group.Key, StringComparer.Ordinal))
+        {
+            foreach (var kind in KindsOnRecord)
+            {
+                if (UploadedHere(upload, holder.Key, kind)) continue;
+                var held = holder.FirstOrDefault(copy => CodeOf(codes, kind, copy.Copy.SubTypeCode) is not null);
+                if (held is null) continue;
+
+                var code = CodeOf(codes, kind, held.Copy.SubTypeCode)!;
+                yield return new DocumentRow
+                {
+                    HolderType = holder.Key, TypeCode = code.TypeCode, SubTypeCode = code.SubTypeCode, TypeName = code.TypeName, SubTypeName = code.SubTypeName,
+                    FileName = held.Copy.FileName, FilePath = held.Copy.FilePath,
+                    Folio = FolioOf(holder.Key, at, upload),
+                    Sequence = NextSequence(sequences, holder.Key, code.TypeCode),
+                    UploadedFrom = held.Source,
+                    Status = at.Status,
+                };
+            }
+        }
+    }
+
+    // Whether the holder uploaded the document on this application: then that copy is the one on it.
+    private static bool UploadedHere(UploadState upload, string holderType, string kind)
+    {
+        var key = holderType == HolderType.Investor ? kind : $"h{holderType}-{kind}";
+        return upload.Docs.GetValueOrDefault(key) is { Before: false };
+    }
+
+    // How the document master codes a copy on record, when it is of the kind asked
+    // after: the photograph, or any of the proofs of address. Null when it is neither.
+    private static DocumentCode? CodeOf(IReadOnlyDictionary<string, DocumentCode> codes, string kind, string subTypeCode)
+    {
+        foreach (var (document, code) in codes)
+        {
+            var ofKind = kind == "poa" ? document.StartsWith("poa:", StringComparison.Ordinal) : document == kind;
+            if (ofKind && string.Equals(code.SubTypeCode, subTypeCode, StringComparison.OrdinalIgnoreCase)) return code;
+        }
+        return null;
     }
 
     private static Task InsertDocumentAsync(IDbConnection db, IDbTransaction tx, Stamp at, DocumentRow row) =>

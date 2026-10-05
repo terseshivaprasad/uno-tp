@@ -84,3 +84,10 @@ public static class KycSources
 public sealed record FolioRecord(
     string Pan, string Dob, string Folio, string Name, string Gender,
     string Address, DocsOnRecord Docs, string Note, string Source = "");
+
+/// <summary>A document a holder of a folio has on record at their source: which it is, and the file kept for it.</summary>
+/// <param name="SubTypeCode">The document's sub-type, as the FD system's document master codes it.</param>
+public sealed record CopyOnRecord(string SubTypeCode, string FileName, string FilePath);
+
+/// <summary>A copy on record, for one holder of an application: whose it is, and the source it is kept at (KycSources).</summary>
+public sealed record HolderCopyOnRecord(string HolderType, string Source, CopyOnRecord Copy);

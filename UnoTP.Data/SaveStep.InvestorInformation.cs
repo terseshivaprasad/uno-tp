@@ -50,8 +50,9 @@ internal static partial class Sections
 {
     /// <param name="minorUnder">The age under which a nominee is a minor (the minimum age).</param>
     /// <param name="masters">The FD system's masters, for the code it gives a marital status and a nominee's relation.</param>
+    /// <param name="onRecord">The permanent address each holder on a folio has on record, by holder (SqlMasters.PermanentAddressOnRecordAsync).</param>
     public static async Task WriteDetailsAsync(IDbConnection db, IDbTransaction tx, Stamp at, Holder investor, UploadState? upload,
-        ApplicationDetails details, int minorUnder, MasterLists masters)
+        ApplicationDetails details, int minorUnder, MasterLists masters, IReadOnlyDictionary<string, TypedAddress> onRecord)
     {
         await RetireAsync(db, tx, at, "t_FD_BT_Kyc_Data_Dtl");
         await RetireAsync(db, tx, at, "t_FD_BT_Address_Dtl");
@@ -68,7 +69,7 @@ internal static partial class Sections
 
             // The permanent address is written even when blank: its row carries the
             // holder's mobile and e-mail. Its PIN code goes in a column of its own.
-            var permanent = PermanentAddress(h.Holder, who, upload);
+            var permanent = PermanentAddress(h.Holder, who, upload, onRecord);
             await InsertAddressAsync(db, tx, at, h, who.Folio, AddressType.Permanent, "Permanent", permanent);
             // The mailing address has a row of its own either way: the one the holder
             // gave, or - post going to the permanent address - that same address again.
@@ -214,17 +215,19 @@ internal static partial class Sections
     // A holder's permanent address: the one read off the proof of address filed on
     // this application, or the one on record for a holder on a folio who filed
     // none. Its lines go in f_Add1 to f_Add3 and its PIN code in f_AddPin.
-    private static TypedAddress PermanentAddress(string code, Holder who, UploadState? upload)
+    private static TypedAddress PermanentAddress(string code, Holder who, UploadState? upload, IReadOnlyDictionary<string, TypedAddress> onRecord)
     {
         // The address read off the proof filed here, with its district and state; else
-        // the one on record, which is held as one line.
+        // the one on the holder's record, part for part as the record keeps it; else
+        // the one the application was opened with, which is held as one line.
         var (read, district, state) = code == HolderType.Investor
             ? (upload?.Address, upload?.District, upload?.State)
             : (upload?.Joint.GetValueOrDefault(code)?.Address, upload?.Joint.GetValueOrDefault(code)?.District, upload?.Joint.GetValueOrDefault(code)?.State);
         if (string.IsNullOrEmpty(read))
         {
-            var (onRecord, pinOnRecord) = Addresses.SplitPin(who.Address);
-            return InThreeLines(onRecord, 100) with { PinCode = pinOnRecord };
+            if (onRecord.TryGetValue(code, out var kept)) return kept;
+            var (oneLine, pinOnRecord) = Addresses.SplitPin(who.Address);
+            return InThreeLines(oneLine, 100) with { PinCode = pinOnRecord };
         }
 
         var (lines, pin) = Addresses.SplitPin(read);

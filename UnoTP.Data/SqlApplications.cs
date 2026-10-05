@@ -26,7 +26,8 @@ public enum SaveOutcome
 /// application as it was submitted - and locks the rate. A detail row is never
 /// updated or deleted, so every earlier save stays on record.
 /// </summary>
-public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposits, SqlReference reference, IConfiguration config, ILogger<SqlApplications> log)
+public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposits, SqlMasters masters, SqlReference reference, IConfiguration config,
+    ILogger<SqlApplications> log)
     : IApplicationApi, IRenewalOpener
 {
     // The document store's root, recorded with each copy's path (f_Doc_Filepath).
@@ -67,6 +68,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
     {
         var branches = payment is null ? new Dictionary<string, BankBranch>() : await BranchesAsync(payment, ct);
         var documentCodes = await reference.DocumentCodesAsync(ct);
+        var onRecord = await CopiesOnRecordAsync(holder, upload, ct);
         var lists = await reference.ReferenceAsync(ct);
 
         // Not numbered yet: only whose rate card the deposit takes is read off this.
@@ -100,7 +102,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
         }, tx);
 
         var at = StampAt(appNo, version, RowStatus.Pending, holder.Folio);
-        if (upload is not null) await Sections.WriteUploadAsync(connection, tx, at, upload, documentCodes, dmsRoot);
+        if (upload is not null) await Sections.WriteUploadAsync(connection, tx, at, upload, documentCodes, dmsRoot, onRecord);
         if (payment is not null) await Sections.WritePaymentAsync(connection, tx, at, upload, payment, branches);
         if (deposit is not null) await Sections.WriteDepositAsync(connection, tx, at, upload, deposit, renewal?.DepositNumber, line, lists);
         await tx.CommitAsync(ct);
@@ -208,7 +210,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
             // Information, so one that has gone on answered no to both.
             holders.Add(new HolderDetails(k.HolderType, gender, k.NameType, k.ParentName, k.AnnualIncome, k.Occupation,
                 k.SubOccupation, MasterLists.NameOf(masters.MaritalStatuses, k.MaritalStatus), permanent.Mobile, permanent.Email,
-                FatcaTaxResident: false, FatcaPermanentResident: false, k.Pep, k.PepRelated, communication));
+                FatcaTaxResident: false, FatcaPermanentResident: false, k.Pep, k.PepRelated, communication, permanent.City));
         }
 
         NomineeDetails? nominee = null;
@@ -245,7 +247,9 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
     {
         var minorUnder = await MinorUnderAsync(ct);
         var masters = (await reference.ReferenceAsync(ct)).Masters ?? MasterLists.None;
-        return Version(await SaveAsync(appNo, version, (c, tx, h, at, u) => Sections.WriteDetailsAsync(c, tx, at, HolderOf(h), u, details, minorUnder, masters), "f_Details_Ver", ct));
+        var asSaved = await FindAsync(appNo, ct);
+        var addresses = await AddressesOnRecordAsync(asSaved?.Holder, asSaved?.Upload, ct);
+        return Version(await SaveAsync(appNo, version, (c, tx, h, at, u) => Sections.WriteDetailsAsync(c, tx, at, HolderOf(h), u, details, minorUnder, masters, addresses), "f_Details_Ver", ct));
     }
 
     public async Task<int?> SavePaymentAsync(string appNo, int version, PaymentDetails payment, CancellationToken ct = default) =>
@@ -269,7 +273,53 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
     public async Task<(SaveOutcome, int?)> SaveUploadOutcomeAsync(string appNo, int version, UploadState upload, CancellationToken ct)
     {
         var documentCodes = await reference.DocumentCodesAsync(ct);
-        return await SaveAsync(appNo, version, (c, tx, _, at, _) => Sections.WriteUploadAsync(c, tx, at, upload, documentCodes, dmsRoot), "f_Upload_Ver", ct);
+        var onRecord = await CopiesOnRecordAsync(await InvestorOfAsync(appNo, ct), upload, ct);
+        return await SaveAsync(appNo, version, (c, tx, _, at, _) => Sections.WriteUploadAsync(c, tx, at, upload, documentCodes, dmsRoot, onRecord), "f_Upload_Ver", ct);
+    }
+
+    // Who the application is for, as its row has them; null when it is not the partner's.
+    private async Task<Holder?> InvestorOfAsync(string appNo, CancellationToken ct)
+    {
+        await using var connection = await db.OpenAsync(ct);
+        var header = await HeaderAsync(connection, null, appNo, locked: false);
+        return header is null ? null : HolderOf(header);
+    }
+
+    // The copies on record for the application's holders who are on a folio - the
+    // investor and each joint holder. Read before the save's transaction opens: where
+    // such a holder uploads no photograph or proof of address, the copy on record is
+    // written against the application in its place (Sections.WriteUploadAsync).
+    private async Task<IReadOnlyList<HolderCopyOnRecord>> CopiesOnRecordAsync(Holder? investor, UploadState? upload, CancellationToken ct)
+    {
+        var found = new List<HolderCopyOnRecord>();
+        foreach (var (type, who) in HoldersOf(investor, upload))
+        {
+            foreach (var copy in await masters.CopiesOnRecordAsync(who, ct))
+                found.Add(new HolderCopyOnRecord(type, who.Source, copy));
+        }
+        return found;
+    }
+
+    // The permanent address on record for each of the application's holders who is on
+    // a folio, by holder: written against the application, part for part, where the
+    // holder files no proof of address on it (Sections.WriteDetailsAsync).
+    private async Task<IReadOnlyDictionary<string, TypedAddress>> AddressesOnRecordAsync(Holder? investor, UploadState? upload, CancellationToken ct)
+    {
+        var found = new Dictionary<string, TypedAddress>();
+        foreach (var (type, who) in HoldersOf(investor, upload))
+        {
+            if (await masters.PermanentAddressOnRecordAsync(who, ct) is { } address) found[type] = address;
+        }
+        return found;
+    }
+
+    // The application's holders: the investor, and each joint holder on the upload step.
+    private static List<(string Type, Holder Who)> HoldersOf(Holder? investor, UploadState? upload)
+    {
+        var holders = new List<(string Type, Holder Who)>();
+        if (investor is not null) holders.Add((HolderType.Investor, investor));
+        if (upload is not null) holders.AddRange(upload.Joint.Select(j => (j.Key, j.Value.Holder)));
+        return holders;
     }
 
     public async Task<(SaveOutcome, int?)> SavePaymentOutcomeAsync(string appNo, int version, PaymentDetails payment, CancellationToken ct)
@@ -384,6 +434,8 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
         var resends = await reference.NumberAsync("linkResends", ct);
         var branches = seen.Payment is null ? [] : await BranchesAsync(seen.Payment, ct);
         var documentCodes = await reference.DocumentCodesAsync(ct);
+        var onRecord = await CopiesOnRecordAsync(seen.Holder, seen.Upload, ct);
+        var addresses = await AddressesOnRecordAsync(seen.Holder, seen.Upload, ct);
         var lists = await reference.ReferenceAsync(ct);
         var minorUnder = await MinorUnderAsync(ct);
 
@@ -400,10 +452,12 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
         // its rows in the FD system's tables as PEN_E, not APR.
         var submittedAs = app.Upload?.Ckyc == true ? RowStatus.PendingCkyc : RowStatus.Approved;
         var at = StampAt(appNo, next, submittedAs, header.Folio);
-        if (app.Upload is { } upload) await Sections.WriteUploadAsync(connection, tx, at, upload, documentCodes, dmsRoot);
-        if (app.Details is { } details) await Sections.WriteDetailsAsync(connection, tx, at, app.Holder, app.Upload, details, minorUnder, lists.Masters ?? MasterLists.None);
+        if (app.Upload is { } upload) await Sections.WriteUploadAsync(connection, tx, at, upload, documentCodes, dmsRoot, onRecord);
+        if (app.Details is { } details) await Sections.WriteDetailsAsync(connection, tx, at, app.Holder, app.Upload, details, minorUnder, lists.Masters ?? MasterLists.None, addresses);
         if (app.Payment is { } payment) await Sections.WritePaymentAsync(connection, tx, at, app.Upload, payment, branches);
         if (app.Deposit is { } deposit) await Sections.WriteDepositAsync(connection, tx, at, app.Upload, deposit, header.RenewDepNo, line, lists);
+        // Paid by cheque: staged for its pay-in slip, whichever way it was submitted.
+        if (PaidByInstrument(app.Upload, lists)) await Sections.StageForPayInSlipAsync(connection, tx, at);
 
         // Submitted on the database's clock, as every row on the application is dated.
         var submitted = await connection.QuerySingleAsync<HeaderRow>($"""
@@ -431,6 +485,11 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
         app.Submitted = submission;
         return (SaveOutcome.Saved, app);
     }
+
+    // Whether the application is paid by an instrument - a cheque - rather than
+    // electronically: the payment mode chosen is one a copy of the instrument is filed for.
+    private static bool PaidByInstrument(UploadState? upload, ReferenceData lists) =>
+        upload is not null && lists.PaymentModes.Any(mode => mode.Document is not null && mode.Name == upload.PayMode);
 
     /// <summary>
     /// The link a submitted application's investor is sent, put on record once the
@@ -588,7 +647,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
                 m.f_Upload_Ver AS UploadVer, m.f_Details_Ver AS DetailsVer, m.f_Payment_Ver AS PaymentVer, m.f_Deposit_Ver AS DepositVer,
                 m.f_Created_On AS CreatedOn, m.f_Submitted_On AS SubmittedOn,
                 m.f_Accepted_On AS AcceptedOn, m.f_Paid_On AS PaidOn, m.f_Booked_On AS BookedOn, m.f_Fdr_No AS FdrNo,
-                m.f_Cancelled_On AS CancelledOn, ISNULL(pm.f_Branch, N'') AS Branch,
+                m.f_Cancelled_On AS CancelledOn,
                 (SELECT MIN(f.f_Created_On) FROM dbo.t_Unotp_Upload_State f WHERE f.f_App_No = m.f_App_No AND f.f_Active = 1) AS UploadedOn,
                 (SELECT MIN(p.f_Generated_On) FROM dbo.t_Unotp_Pay_In_Slip p WHERE p.f_App_No = m.f_App_No AND p.f_Active = 1) AS SlipOn,
                 (SELECT MIN(l.f_Sent_On) FROM {LinkTables.Both} l WHERE l.f_App_No = m.f_App_No AND l.f_Active = 1) AS LinkSentOn,
@@ -597,7 +656,6 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
             FROM dbo.t_Unotp_Application_Mst m
             {InvestmentRow.CurrentOf}
             LEFT JOIN dbo.t_Unotp_Upload_State u ON u.f_App_No = m.f_App_No AND u.f_App_Version = m.f_Upload_Ver AND u.f_Active = 1
-            LEFT JOIN dbo.t_Unotp_Partner_Mst pm ON pm.f_User_Id = m.f_Partner_Id
             WHERE m.f_Partner_Id = @Partner AND m.f_Active = 1
             ORDER BY m.f_Created_On DESC
             """, new { Partner = partner.Id })).ToList();
@@ -609,7 +667,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
             return new ApplicationRecord(
                 r.AppNo, r.Folio.Length > 0 ? r.Folio : null, Masks.Name(r.Name), Masks.Pan(r.Pan),
                 r.Amount ?? 0, payout?.PerYear == 0, r.TenureMonths ?? 0, payout?.Name ?? r.Payout ?? "",
-                1 + r.JointHolders, r.SubmittedOn ?? r.CreatedOn, digital, r.PayMode ?? "", r.Branch,
+                1 + r.JointHolders, r.SubmittedOn ?? r.CreatedOn, digital, r.PayMode ?? "",
                 StateOf(r), r.FdrNo, StepOf(r), "",
                 ApplicationStages.Of(digital, r.PayMode ?? "", r.CreatedOn, r.SubmittedOn, r.LinkSentOn, r.AcceptedOn,
                     r.SlipOn, r.PennyDropOn, r.PennyDropStatus, r.PaidOn, r.KycVerifiedOn, r.KycStatus,

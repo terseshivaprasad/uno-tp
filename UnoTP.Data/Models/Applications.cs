@@ -159,6 +159,7 @@ public sealed class ApplicationDetails
 /// <param name="Pep">"yes", "no", or "" unanswered; the same for <paramref name="PepRelated"/>. Asked only of a holder with no folio.</param>
 /// <param name="FatcaTaxResident">A tax resident of another country: such a holder invests offline.</param>
 /// <param name="Communication">Where post goes, typed by hand, when it is not the permanent address and no proof of it is uploaded; null otherwise.</param>
+/// <param name="PermanentCity">The city the holder's permanent address was last saved with; read back, never typed.</param>
 public sealed record HolderDetails(
     string Holder,
     string Gender = "",
@@ -174,7 +175,8 @@ public sealed record HolderDetails(
     bool FatcaPermanentResident = false,
     string Pep = "",
     string PepRelated = "",
-    TypedAddress? Communication = null);
+    TypedAddress? Communication = null,
+    string PermanentCity = "");
 
 /// <summary>An address typed by hand. The district and state are the backend's for the PIN code, not typed.</summary>
 public sealed record TypedAddress(
@@ -560,7 +562,6 @@ public sealed record ApplicationRecord(
     DateTime Applied,
     bool Digital,
     string Instrument,
-    string Branch,
     string State,
     string? Fdr,
     string Step,
@@ -617,7 +618,7 @@ public static class ApplicationStages
             new("KYC verification", kycOn, kyc == "REJECTED" ? "rejected by Operations" : null, Failed: kyc == "REJECTED"),
             new("FDR created", bookedOn, fdr is null ? null : $"FDR {fdr}"),
         ];
-        if (cancelledOn is { } cancelled) stages.Add(new("Cancelled", cancelled, "unpaid within the window", Failed: true));
+        if (cancelledOn is { } cancelled) stages.Add(new("Cancelled", cancelled, Failed: true));
         return stages;
     }
 }

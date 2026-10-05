@@ -73,7 +73,10 @@ var outsideSwitches = new OutsideSwitches(builder.Configuration);
 if (outsideSwitches.IsOn(OutsideSwitches.PanCheck)) apiSections.Add(PanApiOptions.Section);
 if (outsideSwitches.IsOn(OutsideSwitches.FetchCkyc)) apiSections.Add(CkycOptions.Section);
 if (outsideSwitches.IsOn(OutsideSwitches.NameMatch)) apiSections.Add(NameMatchOptions.Section);
-if (ShortenerOptions.Configured(builder.Configuration)) apiSections.Add(ShortenerOptions.Section);
+// The payment link is shortened when the short link is switched on (Backend:Switches:ShortLink)
+// and the shortener has a path; otherwise it is kept and sent in full.
+var shortensLinks = outsideSwitches.IsOn(OutsideSwitches.ShortLink) && ShortenerOptions.Configured(builder.Configuration);
+if (shortensLinks) apiSections.Add(ShortenerOptions.Section);
 var unaddressed = BackendHttpClients.Unaddressed(builder.Configuration, [.. apiSections]);
 if (unaddressed.Count > 0)
     throw new InvalidOperationException($"No address is set for {string.Join(", ", unaddressed)}. Set Backend:BaseUrl to the gateway they are behind (appsettings.json carries it with a <gateway-host> placeholder), or BaseUrl in each one's own section.");
@@ -88,9 +91,7 @@ builder.Services.AddUidMasking();
 // switched off (Backend:Switches:FetchCkyc): its button is then disabled.
 builder.Services.AddCkyc();
 builder.Services.AddDocumentChecks(builder.Configuration);
-// The payment link is shortened on submit when the shortener has a path; otherwise
-// it goes in full.
-if (ShortenerOptions.Configured(builder.Configuration)) builder.Services.AddShortener();
+if (shortensLinks) builder.Services.AddShortener();
 else builder.Services.AddUnshortenedLinks();
 // The backend's slow-changing answers kept in memory, around whichever answers (see CachedBackend).
 builder.Services.AddBackendCaching();

@@ -7,7 +7,8 @@ namespace UnoTP.Infrastructure;
 /// <summary>
 /// Makes a submitted application's payment link and puts it on record. The
 /// application is saved first, always; then the page the investor pays on is built
-/// (PaymentLink:Template), shortened when the shortener answers, and saved against
+/// (PaymentLink:Template for a purchase, PaymentLink:RenewalTemplate for a renewal),
+/// shortened when the shortener answers, and saved against
 /// the application - in the payment link table for a purchase, in the re-payment
 /// link table for a renewal. Called on Submit &amp; send link, and later for an
 /// application submitted with Try later.
@@ -24,16 +25,17 @@ public sealed class PaymentLinkSender(
     /// </summary>
     public async Task<(Submission? Sent, bool Shortened)> SendAsync(string appNo, CancellationToken ct)
     {
-        var (link, shortened) = await LinkAsync(appNo, ct);
+        var renewal = (await applications.FindAsync(appNo, ct))?.Renewal is not null;
+        var (link, shortened) = await LinkAsync(appNo, renewal, ct);
         return (await applications.RecordPaymentLinkAsync(appNo, link, ct), shortened);
     }
 
-    // The payment link for the application, shortened when it can be. Whatever
-    // stops the shortening is logged, and the long link goes instead; with no
-    // template configured there is no link, and the backend makes its own.
-    private async Task<(PaymentLink? Link, bool Shortened)> LinkAsync(string appNo, CancellationToken ct)
+    // The link for the application - a purchase's or a renewal's, each from its own
+    // template - shortened when it can be. Whatever stops the shortening is logged,
+    // and the long link goes instead; with no template set there is no link.
+    private async Task<(PaymentLink? Link, bool Shortened)> LinkAsync(string appNo, bool renewal, CancellationToken ct)
     {
-        if (paymentLink.Value.For(appNo) is not { } url) return (null, true);
+        if (paymentLink.Value.For(appNo, renewal) is not { } url) return (null, true);
         try
         {
             return (new PaymentLink(url, await shortLinks.ShortenAsync(url, ct)), true);

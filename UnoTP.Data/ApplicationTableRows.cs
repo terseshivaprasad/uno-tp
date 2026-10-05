@@ -221,7 +221,6 @@ internal sealed class ListRow
     public DateTime? BookedOn { get; set; }
     public string? FdrNo { get; set; }
     public DateTime? CancelledOn { get; set; }
-    public string Branch { get; set; } = "";
     public DateTime? LinkSentOn { get; set; }
     public DateTime? SlipOn { get; set; }
     public DateTime? PennyDropOn { get; set; }

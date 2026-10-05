@@ -310,6 +310,37 @@ public partial class DocumentsViewModel
         return State.Reads[h.Key("poa")];
     }
 
+    /// <summary>
+    /// A holder's permanent address as the application will save it - read off the
+    /// proof filed here, else the one on their record - as its lines and its PIN code.
+    /// Either is empty when the address has none.
+    /// </summary>
+    public (string Lines, string PinCode) PermanentAddressTextOf(DocHolder h)
+    {
+        var read = h.Joint ? State.Joint.GetValueOrDefault(h.Code)?.Address : State.Address;
+        if (string.IsNullOrEmpty(read)) return Addresses.SplitPin(h.Who.Address);
+        return Addresses.SplitPin(read);
+    }
+
+    /// <summary>
+    /// The city a holder's permanent address is saved with. A proof filed here is read
+    /// to give a district and no city, so its district stands for the city; a holder
+    /// on a folio who files none keeps the city on their record, as Investor
+    /// Information saved it.
+    /// </summary>
+    public string PermanentCityOf(DocHolder h, HolderDetails details)
+    {
+        if (!AddressReadHere(h)) return details.PermanentCity;
+        return (h.Joint ? State.Joint.GetValueOrDefault(h.Code)?.District : State.District) ?? "";
+    }
+
+    /// <summary>Whether the holder's permanent address was read off a proof filed on this application, rather than kept from their record.</summary>
+    public bool AddressReadHere(DocHolder h)
+    {
+        var read = h.Joint ? State.Joint.GetValueOrDefault(h.Code)?.Address : State.Address;
+        return !string.IsNullOrEmpty(read);
+    }
+
     // A card for something there is nothing to read off, saying why. Not kept.
     private static ReadCard NotRead(string state, string lines, string from) => new(state, lines, from, "is-na");
 

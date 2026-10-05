@@ -51,6 +51,20 @@ internal static partial class Sections
         }, tx);
     }
 
+    // ----- Final submit of a cheque application: t_FD_BT_Payinslip_Staging_Hdr -----
+
+    /// <summary>
+    /// An application paid by cheque is put in the pay-in slip staging table on its
+    /// final submit, from where its slip is made: one row, saying where it came
+    /// from (UNO_TP) and which application it is. This table stands in place of the
+    /// app's own t_Unotp_Pay_In_Slip.
+    /// </summary>
+    public static Task StageForPayInSlipAsync(IDbConnection db, IDbTransaction tx, Stamp at) =>
+        db.ExecuteAsync("""
+            INSERT dbo.t_FD_BT_Payinslip_Staging_Hdr (f_Source, f_Appl_No)
+            VALUES (@Source, @AppNo)
+            """, new { Source, at.AppNo }, tx);
+
     private static BankBranch? Branch(BankAccount? account, IReadOnlyDictionary<string, BankBranch> branches) =>
         account is null ? null : branches.GetValueOrDefault(account.Ifsc.Trim().ToUpperInvariant());
 

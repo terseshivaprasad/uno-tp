@@ -26,6 +26,11 @@ public sealed partial class SqlMasters(Db db, SqlReference reference) : IInvesto
         public string Gender { get; set; } = "";
         public string Address { get; set; } = "";
         public string? Line1 { get; set; }
+        public string? Line2 { get; set; }
+        public string? Line3 { get; set; }
+        public string? City { get; set; }
+        public string? District { get; set; }
+        public string? State { get; set; }
         public string? PinCode { get; set; }
         public bool DocPhoto { get; set; }
         public bool DocPoa { get; set; }
@@ -33,25 +38,33 @@ public sealed partial class SqlMasters(Db db, SqlReference reference) : IInvesto
         public string? Source { get; set; }
 
         // The address the folio master holds for the holder.
-        public AddressOnRecord AddressOnRecord => new(Address, Line1 ?? "", PinCode ?? "");
+        public AddressOnRecord AddressOnRecord => new(Address, PartsOf(Line1, Line2, Line3, City, District, State, PinCode));
 
         public FolioRecord Record() =>
             new(Pan, Dates.FromDb(Dob), Folio, Name, Gender, Address, OnRecord(DocPhoto, DocPoa, AddressOnRecord), Note, Source ?? "");
     }
 
-    // An address on record for a holder, with its first line and PIN code apart.
-    private sealed record AddressOnRecord(string Address, string Line1, string PinCode);
+    // An address on record for a holder: as one line, and in its own parts.
+    private sealed record AddressOnRecord(string Address, TypedAddress Parts);
+
+    // The parts of an address as a source keeps them; one it does not hold is empty.
+    private static TypedAddress PartsOf(string? line1, string? line2, string? line3, string? city, string? district, string? state, string? pinCode) =>
+        new((line1 ?? "").Trim(), (line2 ?? "").Trim(), (line3 ?? "").Trim(), (city ?? "").Trim(), (pinCode ?? "").Trim(),
+            (district ?? "").Trim(), (state ?? "").Trim());
 
     // What a holder on a folio need not upload again.
     //   - The PAN copy is never asked of them: the folio was opened on it.
     //   - The photograph counts when its document is on record.
     //   - The proof of address counts when its document is on record, verified or
-    //     not, and the address on record gives its first line and its PIN code.
-    //     Without those the address has to be read off a proof filed here, so the
-    //     proof is asked for.
+    //     not, and the address on record gives its first line, its city and its PIN
+    //     code. Without those the address has to be read off a proof filed here, so
+    //     the proof is asked for. A record with a district and no city has its
+    //     district saved as the city, so the district counts for it.
     private static DocsOnRecord OnRecord(bool photo, bool poa, AddressOnRecord address)
     {
-        var addressComplete = address.Line1.Trim().Length > 0 && address.PinCode.Trim().Length > 0;
+        var parts = address.Parts;
+        var hasCity = parts.City.Length > 0 || parts.District.Length > 0;
+        var addressComplete = parts.Line1.Length > 0 && hasCity && parts.PinCode.Length > 0;
         return new DocsOnRecord(Pan: true, Photo: photo, Poa: poa && addressComplete);
     }
 
@@ -233,13 +246,40 @@ public sealed partial class SqlMasters(Db db, SqlReference reference) : IInvesto
         if (query is null) return null;
 
         await using var connection = await db.OpenAsync(ct);
-        var row = await connection.QueryFirstOrDefaultAsync<(string? Address, string? Line1, string? PinCode)>(
-            $"SELECT TOP (1) a.Address, a.Line1, a.PinCode FROM ({query}) a ORDER BY a.SavedOn DESC",
+        var row = await connection.QueryFirstOrDefaultAsync<AddressRowOnRecord>(
+            $"SELECT TOP (1) a.Address, a.Line1, a.Line2, a.Line3, a.City, a.District, a.State, a.PinCode FROM ({query}) a ORDER BY a.SavedOn DESC",
             holder);
         // The last part may be missing, which leaves the comma before it.
-        var address = (row.Address ?? "").Trim().TrimEnd(',').Trim();
-        if (address.Length == 0) return null;
-        return new AddressOnRecord(address, row.Line1 ?? "", row.PinCode ?? "");
+        var address = (row?.Address ?? "").Trim().TrimEnd(',').Trim();
+        if (row is null || address.Length == 0) return null;
+        return new AddressOnRecord(address, PartsOf(row.Line1, row.Line2, row.Line3, row.City, row.District, row.State, row.PinCode));
+    }
+
+    // A source's permanent address row, under the names its query gives.
+    private sealed class AddressRowOnRecord
+    {
+        public string? Address { get; set; }
+        public string? Line1 { get; set; }
+        public string? Line2 { get; set; }
+        public string? Line3 { get; set; }
+        public string? City { get; set; }
+        public string? District { get; set; }
+        public string? State { get; set; }
+        public string? PinCode { get; set; }
+    }
+
+    /// <summary>
+    /// The permanent address a holder of a folio has on record, in its own parts as the
+    /// record keeps them: their source's, else the folio master's. It is what is
+    /// written against a new application of theirs when no proof of address is filed
+    /// on it. Null for a holder with no folio, or with no address on record.
+    /// </summary>
+    public async Task<TypedAddress?> PermanentAddressOnRecordAsync(Holder holder, CancellationToken ct = default)
+    {
+        if (holder.Folio.Length == 0) return null;
+        var atSource = await AddressOnFolioAsync(holder.Source, HolderOf(holder.Folio, holder.Pan, holder.Dob), ct);
+        if (atSource is not null) return atSource.Parts;
+        return (await HolderRowAsync(holder.Folio, holder.Pan, ct))?.AddressOnRecord.Parts;
     }
 
     // The query that reads a source's permanent address; null for the folio master.
@@ -267,6 +307,23 @@ public sealed partial class SqlMasters(Db db, SqlReference reference) : IInvesto
         bool Filed(string document) => codes.TryGetValue(document, out var code) && filed.Contains(code.SubTypeCode);
         var proofs = codes.Keys.Where(document => document.StartsWith("poa:", StringComparison.Ordinal));
         return (Filed("photo"), proofs.Any(Filed));
+    }
+
+    /// <summary>
+    /// The copies a holder of a folio has on record at their source, the newest first:
+    /// the rows the check above counts, with the file each names. None for the folio
+    /// master, which keeps no copies.
+    /// </summary>
+    public async Task<IReadOnlyList<CopyOnRecord>> CopiesOnRecordAsync(Holder holder, CancellationToken ct = default)
+    {
+        var query = DocumentsQuery(holder.Source);
+        if (query is null || holder.Folio.Length == 0) return [];
+
+        await using var connection = await db.OpenAsync(ct);
+        var rows = await connection.QueryAsync<(string SubTypeCode, string FileName, string FilePath)>(
+            $"SELECT d.SubTypeCode, d.FileName, d.FilePath FROM ({query}) d ORDER BY d.SavedOn DESC",
+            HolderOf(holder.Folio, holder.Pan, holder.Dob));
+        return rows.Select(r => new CopyOnRecord((r.SubTypeCode ?? "").Trim(), r.FileName, r.FilePath)).ToList();
     }
 
     // The query that reads a source's documents; null for the folio master.

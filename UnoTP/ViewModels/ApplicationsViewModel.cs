@@ -54,7 +54,6 @@ public class ApplicationsViewModel(IReadOnlyList<ApplicationRecord> applications
         // a physical one arrives on paper already signed.
         bool Digital,
         string Instrument,
-        string Branch,
         string State,
         string? Fdr,
         // The wizard step an unfinished application stopped on.
@@ -89,7 +88,9 @@ public class ApplicationsViewModel(IReadOnlyList<ApplicationRecord> applications
             "awaiting" => Digital ? "acceptance and payment" : "payment",
             "review" => "documents with Operations",
             "booked" => Fdr is null ? "booked" : $"FDR {Fdr}",
-            _ => $"unpaid after {WindowDays} days",
+            // Cancelled by the user as a draft, or by the cancelling process as unpaid:
+            // the row does not say which, so neither is claimed.
+            _ => "no longer open",
         };
 
         // The line under the application number: how long is left before the
@@ -97,7 +98,7 @@ public class ApplicationsViewModel(IReadOnlyList<ApplicationRecord> applications
         public string Countdown => State switch
         {
             "booked" => "booked · no longer at risk",
-            "cancelled" => $"cancelled {Applied.AddDays(WindowDays):dd/MM/yyyy}",
+            "cancelled" => "cancelled",
             _ when DaysLeft <= 1 => "cancels today",
             _ => $"cancels in {DaysLeft} days",
         };
@@ -122,7 +123,7 @@ public class ApplicationsViewModel(IReadOnlyList<ApplicationRecord> applications
     // The backend dates each application; the page counts its days against the window.
     private ApplicationRow ToRow(ApplicationRecord r) => new(
         r.AppNo, r.Folio, r.Investor, r.Pan, r.Amount, r.Cumulative, r.Months, r.Payout, r.Holders,
-        (Today - r.Applied.Date).Days, r.Digital, r.Instrument, r.Branch, r.State, r.Fdr, r.Step,
+        (Today - r.Applied.Date).Days, r.Digital, r.Instrument, r.State, r.Fdr, r.Step,
         WindowDays, r.Scheme, r.Milestones ?? []);
 
     // The list the page opens on: everything raised inside the window, newest

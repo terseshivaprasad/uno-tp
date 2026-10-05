@@ -105,9 +105,7 @@ public sealed class ReviewViewModel(DocumentsViewModel docs, DepositQuote? quote
             foreach (var h in Holders)
             {
                 var who = h.Holder.Joint ? $"holder {int.Parse(h.Holder.Code)}" : "the investor";
-                if (h.Details.Mobile.Length == 0) list.Add(("Investor Information", $"the mobile number of {who}"));
-                if (h.Details.Email.Length == 0) list.Add(("Investor Information", $"the e-mail of {who}"));
-                if (h.Details.ParentName.Length == 0) list.Add(("Investor Information", $"the father, mother or spouse name of {who}"));
+                foreach (var (step, what) in MandatoryMissing(h)) list.Add((step, $"{what} of {who}"));
                 if (Docs.MailTyped(h.Holder) && Docs.TypedMailOf(h.Holder) is null) list.Add(("Investor Information", $"the communication address of {who}"));
             }
             // Saved is not enough: a draft kept half-filled has no bank picked.
@@ -126,6 +124,49 @@ public sealed class ReviewViewModel(DocumentsViewModel docs, DepositQuote? quote
     }
 
     public bool Ready => Blockers.Count == 0;
+
+    // What every holder must have before the application goes, fresh or on a folio
+    // alike: name, PAN, date of birth, gender, marital status, the father's, mother's
+    // or spouse's name, mobile, e-mail, the first line, the city and the PIN code of
+    // the permanent address, the photograph and the proof of address. Each comes with the
+    // step that sets it. A document on the holder's record counts as there.
+    private IEnumerable<(string Step, string What)> MandatoryMissing(ReviewHolder h)
+    {
+        const string information = "Investor Information";
+        var joint = h.Holder.Joint;
+        var who = h.Holder.Who;
+        // The investor is identified on the first step and files on Upload Documents;
+        // a joint holder is added, and files, on Investor Information.
+        var identifiedOn = joint ? information : "Investor Identification";
+        var filedOn = joint ? information : "Upload Documents";
+
+        if (who.Name.Length == 0) yield return (filedOn, "the name");
+        if (who.Pan.Length == 0) yield return (identifiedOn, "the PAN");
+        if (who.Dob.Length == 0) yield return (identifiedOn, "the date of birth");
+        if (h.Gender.Length == 0) yield return (information, "the gender");
+        if (h.Details.MaritalStatus.Length == 0) yield return (information, "the marital status");
+        if (h.Details.ParentName.Length == 0) yield return (information, "the father, mother or spouse name");
+        if (h.Details.Mobile.Length == 0) yield return (information, "the mobile number");
+        if (h.Details.Email.Length == 0) yield return (information, "the e-mail");
+
+        // An investor whose KYC was fetched from CKYC files no proof and no photograph:
+        // the address and both documents are the CKYC record's.
+        if (Docs.State.Ckyc && !joint) yield break;
+
+        var (lines, pinCode) = Docs.PermanentAddressTextOf(h.Holder);
+        if (lines.Length == 0) yield return (filedOn, "the first line of the permanent address");
+        // A proof filed here sets the city where it is filed; a holder who files none
+        // has their record's, which Investor Information saves with their details.
+        var citySetOn = Docs.AddressReadHere(h.Holder) ? filedOn : information;
+        if (Docs.PermanentCityOf(h.Holder, h.Details).Length == 0) yield return (citySetOn, "the city of the permanent address");
+        if (pinCode.Length == 0) yield return (filedOn, "the PIN code of the permanent address");
+
+        // The investor's two documents are among what Upload Documents still lacks
+        // (Docs.Outstanding), listed above; a joint holder's are checked here.
+        if (!joint) yield break;
+        if (Docs.View(DocumentsViewModel.PhotoSlot, h.Holder).Missing) yield return (filedOn, "the photograph");
+        if (Docs.View(DocumentsViewModel.PoaSlot, h.Holder).Missing) yield return (filedOn, "the proof of address");
+    }
 
     public string Option(IEnumerable<Option> list, string code) => list.FirstOrDefault(o => o.Code == code)?.Name ?? code;
 

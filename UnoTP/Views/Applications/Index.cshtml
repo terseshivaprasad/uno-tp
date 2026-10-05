@@ -218,7 +218,7 @@
                 <div class="view-app-key-value"><div class="view-app-key-value__key">Amount</div><div class="view-app-key-value__value view-app-key-value__value--lg">@ApplicationsViewModel.Rupees(r.Amount)</div></div>
                 <div class="view-app-key-value"><div class="view-app-key-value__key">Scheme</div><div class="view-app-key-value__value">@r.Scheme</div><div class="view-app-key-value__note">interest @r.Payout.ToLowerInvariant()</div></div>
                 <div class="view-app-key-value"><div class="view-app-key-value__key">Tenure</div><div class="view-app-key-value__value">@r.Tenure</div><div class="view-app-key-value__note">@(r.State == "booked" ? $"matures {r.Maturity:dd/MM/yyyy}" : $"would mature {r.Maturity:dd/MM/yyyy}")</div></div>
-                <div class="view-app-key-value"><div class="view-app-key-value__key">Payment</div><div class="view-app-key-value__value">@r.Instrument</div><div class="view-app-key-value__note">@(r.Instrument == "Net banking" ? "paid online" : r.Branch)</div></div>
+                <div class="view-app-key-value"><div class="view-app-key-value__key">Payment</div><div class="view-app-key-value__value">@r.Instrument</div><div class="view-app-key-value__note">@(r.Instrument == "Net banking" ? "paid online" : "")</div></div>
                 <div class="view-app-key-value"><div class="view-app-key-value__key">FDR</div><div class="view-app-key-value__value">@(r.Fdr ?? "—")</div><div class="view-app-key-value__note">@(r.Fdr is null ? "issued once the deposit books" : "issued")</div></div>
             </div>
 

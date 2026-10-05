@@ -34,9 +34,12 @@ internal static class MasterQueries
     /// holder - all under the same folio number, so a folio number alone is not one
     /// row. This reads the row of the holder whose PAN is given (@Folio, @Pan); with
     /// no PAN given (@Pan empty), the first holder's. Must give back: Pan, Dob,
-    /// Folio, Name, Gender, Address, Line1, PinCode, DocPhoto, DocPoa, Note, Source.
+    /// Folio, Name, Gender, Address, Line1, Line2, Line3, City, District, State, PinCode,
+    /// DocPhoto, DocPoa, Note, Source.
     /// The address is its parts with a comma between them; a part the folio does not
-    /// hold is left out. Line1 and PinCode are its first line and PIN code, apart.
+    /// hold is left out. The parts are given apart as well: they are what is written
+    /// against a new application of the holder's, and the first line, the city and
+    /// the PIN code are what an address on record must have.
     /// DocPhoto and DocPoa say whether the master itself holds the holder's
     /// photograph and proof of address (1 or 0). There is no DocPan: a holder on a
     /// folio is never asked for the PAN copy again.
@@ -45,7 +48,8 @@ internal static class MasterQueries
         SELECT f.PAN_NO AS Pan, f.f_DOB AS Dob, f.FOLIO_NO AS Folio, f.NAME AS Name, f.F_Gender AS Gender,
                CONCAT(f.f_Address1 + ', ', f.f_Address2 + ', ', f.f_Address3 + ', ', f.F_City + ', ',
                       f.f_stateName + ', ', f.F_District + ', ', f.f_Pincode) AS Address,
-               f.f_Address1 AS Line1, f.f_Pincode AS PinCode,
+               f.f_Address1 AS Line1, f.f_Address2 AS Line2, f.f_Address3 AS Line3,
+               f.F_City AS City, f.F_District AS District, f.f_stateName AS State, f.f_Pincode AS PinCode,
                0 AS DocPhoto, 0 AS DocPoa, '' AS Note, 'FHLD' AS Source
         FROM FD.dbo.t_Fd_Folio_holding f
         WHERE f.f_Active = 1 AND f.FOLIO_NO = @Folio
@@ -216,14 +220,15 @@ internal static class MasterQueries
     /// @Pan, @Dob; the PAN and date of birth are on the KYC row of the same application
     /// and holder type). Must give back: SavedOn (the latest row is the one used),
     /// Address: its parts with a comma between them, a part the row does not hold left
-    /// out; and Line1 and PinCode, its first line and PIN code, apart.
+    /// out; and the parts apart - Line1, Line2, Line3, City, District, State, PinCode.
     /// </summary>
     public const string AddressOnCommon = """
         SELECT a.f_CreatedOn AS SavedOn,
                CONCAT(NULLIF(a.f_Add1, '') + ', ', NULLIF(a.f_Add2, '') + ', ', NULLIF(a.f_Add3, '') + ', ',
                       NULLIF(a.f_AddCity_Desc, '') + ', ', NULLIF(a.f_AddState_Desc, '') + ', ',
                       NULLIF(a.f_AddDistrict_Desc, '') + ', ', a.f_AddPin) AS Address,
-               a.f_Add1 AS Line1, a.f_AddPin AS PinCode
+               a.f_Add1 AS Line1, a.f_Add2 AS Line2, a.f_Add3 AS Line3,
+               a.f_AddCity_Desc AS City, a.f_AddDistrict_Desc AS District, a.f_AddState_Desc AS State, a.f_AddPin AS PinCode
         FROM FD.dbo.t_FD_common_Address_Dtl_ORA a WITH (NOLOCK)
         JOIN FD.dbo.t_FD_common_Kyc_Data_Dtl_ORA k WITH (NOLOCK)
             ON k.f_Appl_No = a.f_Appl_No AND k.f_Holder_Type = a.f_Holder_Type AND k.f_Active = 1
@@ -241,7 +246,8 @@ internal static class MasterQueries
                CONCAT(NULLIF(a.f_Add1, '') + ' ', NULLIF(a.f_Add2, '') + ' ', NULLIF(a.f_Add3, '') + ', ',
                       NULLIF(a.f_AddCity_Desc, '') + ', ', NULLIF(a.f_AddState_Desc, '') + ', ',
                       NULLIF(a.f_AddDistrict_Desc, '') + ', ', a.f_AddPin) AS Address,
-               a.f_Add1 AS Line1, a.f_AddPin AS PinCode
+               a.f_Add1 AS Line1, a.f_Add2 AS Line2, a.f_Add3 AS Line3,
+               a.f_AddCity_Desc AS City, a.f_AddDistrict_Desc AS District, a.f_AddState_Desc AS State, a.f_AddPin AS PinCode
         FROM dbo.t_FD_BT_Address_Dtl a
         JOIN dbo.t_FD_BT_Kyc_Data_Dtl k
             ON k.f_Appl_No = a.f_Appl_No AND k.f_Holder_Type = a.f_Holder_Type AND k.f_Status = 'APR' AND k.f_Active = 1
@@ -253,14 +259,16 @@ internal static class MasterQueries
     /// The documents the common tables hold for one holder of a folio (@Folio, @Pan,
     /// @Dob; the PAN and date of birth are on the KYC row of the same application and
     /// holder type), one row each. Must give back: SubTypeCode (the document's sub-type, as
-    /// 'documentSubTypes' codes it). There the type is in f_Category and the sub-type in
-    /// f_Doc_Type. Only the photograph and the proofs of address are looked for among
+    /// 'documentSubTypes' codes it), FileName and FilePath (the copy on record, written
+    /// against a new application of the holder's where they upload none), SavedOn (the
+    /// newest row of a kind is the one used; here the KYC row's date). There the type is
+    /// in f_Category and the sub-type in f_Doc_Type. Only the photograph and the proofs of address are looked for among
     /// them, and one that is there counts whether it was verified or not. A row with
     /// no file name or no file path is not a document on record: there is no copy to
     /// show for it, so the holder is asked to upload it.
     /// </summary>
     public const string DocumentsOnCommon = """
-        SELECT d.f_Doc_Type AS SubTypeCode
+        SELECT d.f_Doc_Type AS SubTypeCode, d.f_Doc_FileName AS FileName, d.f_Doc_Filepath AS FilePath, k.f_CreatedOn AS SavedOn
         FROM FD.dbo.t_FD_common_KYC_document_ORA d WITH (NOLOCK)
         JOIN FD.dbo.t_FD_common_Kyc_Data_Dtl_ORA k WITH (NOLOCK)
             ON k.f_Appl_No = d.f_Appl_No AND k.f_Holder_Type = d.f_Holder_Type_Code AND k.f_Active = 1
@@ -272,9 +280,10 @@ internal static class MasterQueries
     /// <summary>
     /// The same, from the applications submitted through this app: the copies filed
     /// with them. A row with no file name or no file path is left out here too.
+    /// Must give back the same names.
     /// </summary>
     public const string DocumentsOnBt = """
-        SELECT d.f_Doc_Sub_Type_Code AS SubTypeCode
+        SELECT d.f_Doc_Sub_Type_Code AS SubTypeCode, d.f_Doc_FileName AS FileName, d.f_Doc_Filepath AS FilePath, d.f_CreatedDate AS SavedOn
         FROM dbo.t_FD_BT_KYC_document d
         JOIN dbo.t_FD_BT_Kyc_Data_Dtl k
             ON k.f_Appl_No = d.f_Appl_No AND k.f_Holder_Type = d.f_Holder_Type_Code AND k.f_Status = 'APR' AND k.f_Active = 1

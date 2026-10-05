@@ -7,7 +7,9 @@ namespace UnoTP.Services;
 /// check off, NSDL is not asked about a PAN copy and the application goes on
 /// without it. With Fetch from CKYC off, its button stays on the page, disabled,
 /// and says the service is unavailable. With the cheque check off, a payment
-/// instrument's copy is filed as handed over and nothing is read off it. Aadhaar masking and the way in cannot be
+/// instrument's copy is filed as handed over and nothing is read off it. With the
+/// short link off, the link shortener is not called and the payment link is kept and
+/// sent in full. Aadhaar masking and the way in cannot be
 /// switched off; name screening has a switch of its own (NameScreening:ApiCall).
 /// </summary>
 public sealed class OutsideSwitches(IConfiguration config)
@@ -22,11 +24,12 @@ public sealed class OutsideSwitches(IConfiguration config)
     public const string NameMatch = "NameMatch";
     public const string FetchCkyc = "FetchCkyc";
     public const string Cheque = "Cheque";
+    public const string ShortLink = "ShortLink";
 
     /// <summary>The services a switch may turn off.</summary>
     public static readonly string[] Switchable =
     [
-        PanCheck, Identify, Ocr, Verification, PanAadhaarLink, FaceMatch, NameMatch, FetchCkyc, Cheque,
+        PanCheck, Identify, Ocr, Verification, PanAadhaarLink, FaceMatch, NameMatch, FetchCkyc, Cheque, ShortLink,
     ];
 
     public bool IsOn(string name)

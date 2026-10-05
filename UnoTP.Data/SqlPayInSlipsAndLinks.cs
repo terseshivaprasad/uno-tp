@@ -14,13 +14,12 @@ internal sealed class SubmittedRow
             m.f_Accepted_On AS AcceptedOn, m.f_Paid_On AS PaidOn, m.f_Booked_On AS BookedOn, m.f_Cancelled_On AS CancelledOn,
             i.AppType, i.Amount, CAST(CASE WHEN m.f_Renew_Dep_No IS NULL THEN 0 ELSE 1 END AS BIT) AS Renewal,
             p.f_Payment_Mode AS PayMode, p.f_Cheque_DD_No AS ChequeNo, p.f_Drawn_Bank_Name AS BankName,
-            a.f_MobileNumber AS Mobile, a.f_EmailAdd AS Email, ISNULL(pm.f_Branch, N'') AS Branch
+            a.f_MobileNumber AS Mobile, a.f_EmailAdd AS Email, ISNULL(p.f_CMS_Loc_Desc, N'') AS Branch
         FROM dbo.t_Unotp_Application_Mst m
         {InvestmentRow.CurrentOf}
         LEFT JOIN dbo.t_FD_BT_Payment_Dtl p ON p.f_Appl_No = m.f_App_No AND p.f_Active = 1
         LEFT JOIN dbo.t_FD_BT_Kyc_Data_Dtl k ON k.f_Appl_No = m.f_App_No AND k.f_Holder_Type = '01' AND k.f_Active = 1
         LEFT JOIN dbo.t_FD_BT_Address_Dtl a ON a.f_Appl_No = m.f_App_No AND a.f_Holder_Type = '01' AND a.f_AddType_Code = 'PER' AND a.f_Active = 1
-        LEFT JOIN dbo.t_Unotp_Partner_Mst pm ON pm.f_User_Id = m.f_Partner_Id
         WHERE m.f_Partner_Id = @Partner AND m.f_Status = 'APR' AND m.f_Active = 1
         """;
 
@@ -40,6 +39,7 @@ internal sealed class SubmittedRow
     public string? BankName { get; set; }
     public string? Mobile { get; set; }
     public string? Email { get; set; }
+    /// <summary>The Axis CMS branch the cheque is presented at, as Bank Details &amp; Payment saved it; empty for a payment with no cheque.</summary>
     public string Branch { get; set; } = "";
 
     public bool Digital => AppType != "PHYSICAL";
