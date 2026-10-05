@@ -86,6 +86,7 @@ public partial class DocumentsViewModel
         catch (ExternalServiceException e)
         {
             FlashMessages().Banner = $"{e.Message} The KYC was not fetched; upload the proof of address and the photograph, or try again.";
+            FlashMessages().BannerIsError = true;
             return "docsRoute";
         }
 

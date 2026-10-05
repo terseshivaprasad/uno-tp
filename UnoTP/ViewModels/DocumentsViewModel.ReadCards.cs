@@ -76,11 +76,21 @@ public partial class DocumentsViewModel
     // address once both are filed. For now it is only said: a proof is filed
     // whatever the answer.
 
-    /// <summary>What the face match said, or that it waits on the copies.</summary>
-    public ReadCard FaceOf(DocHolder h) =>
-        State.Docs.ContainsKey(h.Key("poa")) && State.Reads.TryGetValue(h.Key("face"), out var card) ? card
-        : new ReadCard("Not yet compared", "Compared once the PAN copy and the proof of address are both filed.",
+    /// <summary>
+    /// What the face match said, or that it waits on the copies. Switched off
+    /// (Backend:Switches:FaceMatch) it is not asked: said plainly and not as a
+    /// failure, since nothing is wrong and the application goes on.
+    /// </summary>
+    public ReadCard FaceOf(DocHolder h)
+    {
+        if (!switches.IsOn(OutsideSwitches.FaceMatch)) return FaceNotAsked;
+        if (State.Docs.ContainsKey(h.Key("poa")) && State.Reads.TryGetValue(h.Key("face"), out var card)) return card;
+        return new ReadCard("Not yet compared", "Compared once the PAN copy and the proof of address are both filed.",
             "The photograph on the PAN copy is matched with the one on the proof of address.", "is-na");
+    }
+
+    private static ReadCard FaceNotAsked => NotRead("Not asked", $"The face match is {OutsideSwitches.Off}.",
+        "Nothing is wrong: the faces are not compared here while the face match is switched off. The application goes on; Operations compare them.");
 
     /// <summary>
     /// What a filed PAN copy was read to say - the name, the PAN and the date of
@@ -154,6 +164,13 @@ public partial class DocumentsViewModel
         // A comparison made before, with a copy since replaced, no longer stands.
         KeepFace(h, "pan", null);
         KeepFace(h, "poa", null);
+        // Switched off: not asked, and no copy is fetched to send.
+        if (!switches.IsOn(OutsideSwitches.FaceMatch))
+        {
+            State.Reads[key] = FaceNotAsked;
+            entry.Add($"Face match not asked: {OutsideSwitches.Off}.");
+            return;
+        }
         if (!HasPhoto(type))
         {
             FlashMessages("Not applicable", $"A {type.ToLowerInvariant()} carries no photograph.", "There is no face on the proof to compare with the PAN copy.", "is-na");
@@ -184,11 +201,8 @@ public partial class DocumentsViewModel
             entry.Add($"Face match could not answer: {e.Message}", "warn");
             return;
         }
-        if (switches.IsOn(OutsideSwitches.FaceMatch))
-        {
-            KeepFace(h, "pan", new FaceCheck(answer.PanFace, answer.Score));
-            KeepFace(h, "poa", new FaceCheck(answer.ProofFace, answer.Score));
-        }
+        KeepFace(h, "pan", new FaceCheck(answer.PanFace, answer.Score));
+        KeepFace(h, "poa", new FaceCheck(answer.ProofFace, answer.Score));
         var named = Printed(type);
         if (answer.Unsure is { } why)
         {

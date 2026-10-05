@@ -148,7 +148,7 @@ public class DocumentsController(
         var at = await work(model);
         if (await applications.SaveUploadAsync(model.AppNo, model.App.Version, model.State) is null)
         {
-            model.Said = new Flash { Banner = "This application changed somewhere else while that was being sent, so it was not kept. The page shows it as it stands now — do it again." };
+            model.Said = new Flash { Banner = "This application changed somewhere else while that was being sent, so it was not kept. The page shows it as it stands now — do it again.", BannerIsError = true };
             at = null;
         }
         if (model.Said is not null) TempData[FlashKey(model)] = JsonSerializer.Serialize(model.Said);

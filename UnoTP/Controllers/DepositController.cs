@@ -79,7 +79,7 @@ public class DepositController(IApplicationApi applications, IDepositApi deposit
         var at = await docs.UploadAsync(DocumentsViewModel.TdsFormSlot.Key, Request.Form.Files);
         if (await Applications.SaveUploadAsync(docs.AppNo, docs.App.Version, docs.State) is null)
         {
-            docs.Said = new Flash { Banner = Changed };
+            docs.Said = new Flash { Banner = Changed, BannerIsError = true };
             at = null;
         }
         if (docs.Said is not null) TempData[FlashKey(docs)] = JsonSerializer.Serialize(docs.Said);

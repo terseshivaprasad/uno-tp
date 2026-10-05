@@ -7,6 +7,8 @@
     var relations = reference.NomineeRelations;
     var appNo = Model.Docs.AppNo;
     var banner = Model.Docs.Shown?.Banner;
+    // Good news is said in green; something that went wrong, as an error.
+    var bannerIsError = Model.Docs.Shown?.BannerIsError == true;
 
     var investor = Model.Docs.Investor;
     // The gender as read off the folio or a proof; with none, the page asks for it.
@@ -712,7 +714,8 @@
 
         @if (banner is not null)
         {
-            <div class="alert alert-success doc-banner" role="status">
+            @* The page is brought back here (#investorBanner) when the banner says what stopped Proceed. *@
+            <div class="alert @(bannerIsError ? "alert-danger" : "alert-success") doc-banner" role="@(bannerIsError ? "alert" : "status")" id="investorBanner" tabindex="-1">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 7v6"></path><circle cx="12" cy="16.8" r=".8" fill="currentColor"></circle></svg>
                 <span>@banner</span>
             </div>

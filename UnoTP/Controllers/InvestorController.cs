@@ -39,6 +39,9 @@ public class InvestorController(
     // The page's working state is the application's, kept with it in the
     // application store: read before every action, saved back after it.
     private const string Page = "investor-info";
+
+    // The banner at the top of the page, by the id the page gives it.
+    private const string BannerId = "investorBanner";
     private InvestorInfoState? state;
 
     private InvestorInfoState State
@@ -147,9 +150,11 @@ public class InvestorController(
         }
         catch (ExternalServiceException e)
         {
-            docs.Said = new Flash { Banner = e.Message };
+            // Name screening could not answer: said as an error at the top of the page,
+            // which is where the page comes back to.
+            docs.Said = new Flash { Banner = e.Message, BannerIsError = true };
             await SaveAsync(docs);
-            return Back("holder-1");
+            return Back(BannerId);
         }
         if (notAllowed.Count > 0)
         {
@@ -494,7 +499,7 @@ public class InvestorController(
     private async Task<bool> SaveAsync(DocumentsViewModel docs)
     {
         var saved = await applications.SaveUploadAsync(docs.AppNo, docs.App.Version, docs.State) is not null;
-        if (!saved) docs.Said = new Flash { Banner = Changed };
+        if (!saved) docs.Said = new Flash { Banner = Changed, BannerIsError = true };
         if (docs.Said is not null) TempData[FlashKey(docs)] = JsonSerializer.Serialize(docs.Said);
         return saved;
     }

@@ -91,7 +91,7 @@ public class EntryController(
             {
                 return Refused("The portal did not start a session for you on Uno TP. Ask your administrator for access.");
             }
-            menu = await sessions.MenuAsync(user, code);
+            menu = await sessions.MenuAsync(started.User.Agency_Usr_Clustered_ID, code);
         }
         catch (ExternalServiceException e)
         {

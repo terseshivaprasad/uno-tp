@@ -14,6 +14,9 @@ public sealed class Flash
 
     public string? Banner { get; set; }
 
+    /// <summary>Whether the banner says something went wrong: shown as an error, not as good news.</summary>
+    public bool BannerIsError { get; set; }
+
     /// <summary>A line said in a popup over the page: a try turned back by the limit on documents.</summary>
     public string? Popup { get; set; }
 
