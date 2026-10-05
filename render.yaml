@@ -1,0 +1,10 @@
+# The screenshot viewer as a website on Render, from this branch.
+services:
+  - type: web
+    name: uno-tp-screens
+    runtime: docker
+    branch: screenshots
+    dockerContext: .
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /health

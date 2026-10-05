@@ -9,3 +9,11 @@ between the desktop and the mobile picture of the same step.
 
 The pictures were taken from the app running locally on a development database
 with test data. This branch holds only the pictures and the viewer: no app code.
+
+## On Render
+
+The branch deploys as a Docker web service: `Dockerfile` serves these files with
+nginx on the port Render gives it, and `render.yaml` describes the service. In
+Render, create a Web Service from this repository, pick the `screenshots` branch
+and the Docker runtime; nothing else needs setting.
+

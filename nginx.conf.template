@@ -1,0 +1,15 @@
+server {
+    listen ${PORT};
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # For the host to check the site is up.
+    location = /health {
+        default_type text/plain;
+        return 200 'ok';
+    }
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+}
