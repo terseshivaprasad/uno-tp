@@ -23,10 +23,15 @@ public abstract class ApplicationStepController(IApplicationApi applications, ID
     protected IDepositApi Deposits => deposits;
 
     // The backend only ever finds the partner's own application.
+    /// <summary>Whether the page shows a cancelled application - read-only - rather than turning it away as the steps do.</summary>
+    protected virtual bool ShowsCancelled => false;
+
     protected async Task<DocumentsViewModel?> LoadAsync()
     {
         var appNo = HttpContext.CurrentApplication();
         var app = appNo is null ? null : await applications.FindAsync(appNo);
+        // A cancelled application's steps no longer open; only a page that just shows it does.
+        if (app is { Cancelled: true } && !ShowsCancelled) return null;
         return app is null ? null : await ActivatorUtilities.CreateInstance<DocumentsViewModel>(services, app, HttpContext.Session).ReadyAsync();
     }
 

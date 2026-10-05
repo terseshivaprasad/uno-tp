@@ -10,6 +10,8 @@ namespace UnoTP.Controllers;
 public class SubmittedController(IApplicationApi applications, IDepositApi deposits, IServiceProvider services, PaymentLinkSender paymentLinks)
     : ApplicationStepController(applications, deposits, services)
 {
+    protected override bool ShowsCancelled => true;
+
     private const string NoLink = "A link could not be sent: the application is paid, cancelled, or past its window.";
 
     [HttpGet("")]

@@ -134,6 +134,8 @@ public class DocumentsController(
     {
         var appNo = HttpContext.CurrentApplication();
         var app = appNo is null ? null : await applications.FindAsync(appNo);
+        // A cancelled application's steps no longer open.
+        if (app is { Cancelled: true }) return null;
         return app is null ? null : await ActivatorUtilities.CreateInstance<DocumentsViewModel>(services, app, HttpContext.Session).ReadyAsync();
     }
 

@@ -36,6 +36,7 @@ the ones kept in SQL Server, and the outside services have an HTTP client each i
 |---|---|
 | `IInvestorApi.FolioDepositsByPanAsync`, `FolioDepositsByFolioAsync`, `FolioAsync` | The search by PAN and date of birth, or by folio: the deposits the folio check (`FolioCheck`) looks at, then the details of the folio it finds. |
 | `IApplicationApi.OpenAsync`, `DraftsAsync` | Opening the application; the drafts offered instead. |
+| `IApplicationApi.CancelDraftAsync` | Cancel on a row of the incomplete applications (here and on the dashboard): the draft is marked cancelled, leaves the list, and its steps no longer open or save. |
 
 ## Upload Documents (`DocumentsController`, `DocumentsViewModel`)
 

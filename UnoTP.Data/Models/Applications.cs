@@ -60,6 +60,13 @@ public interface IApplicationApi
     /// </summary>
     Task<Submission?> ResendLinkAsync(string appNo, CancellationToken ct = default);
 
+    /// <summary>
+    /// A draft cancelled by the partner who opened it: the application is marked
+    /// cancelled, leaves the list to continue, and takes no more saves. False when
+    /// there is no such draft - it is not the partner's, is submitted, or is cancelled already.
+    /// </summary>
+    Task<bool> CancelDraftAsync(string appNo, CancellationToken ct = default);
+
     /// <summary>The partner's applications that are theirs to finish - opened, not yet submitted - newest first.</summary>
     Task<IReadOnlyList<DraftSummary>> DraftsAsync(CancellationToken ct = default);
 
@@ -104,6 +111,9 @@ public sealed class Application
 
     /// <summary>Set once the application is submitted.</summary>
     public Submission? Submitted { get; set; }
+
+    /// <summary>Whether the application is cancelled: nothing more is saved on it, and its steps no longer open.</summary>
+    public bool Cancelled { get; init; }
 
     /// <summary>
     /// The deposit this application renews; null for a new deposit. Set by the

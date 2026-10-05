@@ -1277,6 +1277,35 @@ body.is-waiting {
 .draft-list form {
   margin: 0;
 }
+/* A row: Continue across it, Cancel at its end. */
+.draft-list > li {
+  display: flex;
+  align-items: stretch;
+}
+.draft-list > li > form:first-child {
+  flex: 1;
+  min-width: 0;
+}
+.draft-cancel {
+  display: flex;
+  align-items: center;
+  padding: 0 16px 0 0;
+}
+.draft-cancel__button {
+  padding: 6px 12px;
+  border: 1px solid var(--border-3);
+  border-radius: 6px;
+  background: none;
+  font: inherit;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  color: var(--red);
+  cursor: pointer;
+}
+.draft-cancel__button:hover {
+  background: var(--pink-bg);
+}
 .draft {
   display: grid;
   grid-template-columns: 40px minmax(0, 1fr) minmax(170px, 210px) minmax(104px, auto) 16px;

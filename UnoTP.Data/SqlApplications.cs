@@ -172,6 +172,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
                 deposit.AutoRenewal, deposit.RenewInstruction, deposit.NoTds, deposit.DeliveryType,
                 deposit.SourceOfFunds, deposit.SourceOfFundsRemark, deposit.SourceOfFundsReason, deposit.RenewalFor),
             Submitted = SubmissionOf(h, cancellationDays),
+            Cancelled = h.Cancelled,
             Renewal = h.RenewDepNo is null ? null : new RenewalOf(h.RenewDepNo, h.RenewAmount ?? 0,
                 DateOnly.FromDateTime(h.RenewMaturesOn ?? DateTime.MinValue), h.RenewRate ?? 0, h.RenewTenure ?? 0, h.RenewPayout ?? "",
                 h.RenewPrincipal ?? 0),
@@ -316,7 +317,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
         await using var tx = await connection.BeginTransactionAsync(ct);
         var header = await HeaderAsync(connection, tx, appNo, locked: true);
         if (header is null) return (SaveOutcome.NotFound, null);
-        if (header.Version != version || header.Submitted) return (SaveOutcome.Conflict, null);
+        if (header.Version != version || header.Submitted || header.Cancelled) return (SaveOutcome.Conflict, null);
 
         var next = header.Version + 1;
         var upload = await UploadAsync(connection, tx, header);
@@ -375,7 +376,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
         // The quote is asked before the lock.
         var seen = await FindAsync(appNo, ct);
         if (seen is null) return (SaveOutcome.NotFound, null);
-        if (seen.Version != version || seen.Submitted is not null) return (SaveOutcome.Conflict, null);
+        if (seen.Version != version || seen.Submitted is not null || seen.Cancelled) return (SaveOutcome.Conflict, null);
         var quote = seen.Deposit is { } d
             ? await deposits.QuoteAsync(new QuoteRequest(d.Amount, d.TenureMonths, d.Payout, seen.RateCardRequest(seen.Upload?.Category ?? "", await BranchUserAsync(ct))), ct)
             : null;
@@ -390,7 +391,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
         await using var tx = await connection.BeginTransactionAsync(ct);
         var header = await HeaderAsync(connection, tx, appNo, locked: true);
         if (header is null) return (SaveOutcome.NotFound, null);
-        if (header.Version != version || header.Submitted) return (SaveOutcome.Conflict, null);
+        if (header.Version != version || header.Submitted || header.Cancelled) return (SaveOutcome.Conflict, null);
 
         // Read again under the lock, so what is written as submitted is what stands.
         var app = await AssembleAsync(connection, tx, header, await CancellationDaysAsync(), lists);
@@ -533,6 +534,20 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
     private const string KnownName = """
         COALESCE(NULLIF(JSON_VALUE(u.f_Upload, '$.name'), ''), NULLIF(JSON_VALUE(u.f_Upload, '$.nsdlName'), ''), m.f_Name)
         """;
+
+    // Only a draft - not submitted, not cancelled already - and only the partner's own.
+    public async Task<bool> CancelDraftAsync(string appNo, CancellationToken ct = default)
+    {
+        await using var connection = await db.OpenAsync(ct);
+        var rows = await connection.ExecuteAsync("""
+            UPDATE dbo.t_Unotp_Application_Mst
+            SET f_Cancelled_On = SYSDATETIME(), f_Sub_Status = 'cancelled', f_Updated_By = @Partner, f_Updated_On = SYSDATETIME()
+            WHERE f_App_No = @AppNo AND f_Partner_Id = @Partner AND f_Active = 1
+              AND f_Status = 'PEN' AND f_Submitted_On IS NULL AND f_Cancelled_On IS NULL
+            """, new { AppNo = appNo, Partner = partner.Id });
+        if (rows > 0) log.LogInformation("Draft {AppNo} cancelled by {Partner}", appNo, partner.Id);
+        return rows > 0;
+    }
 
     // Kept for draftDays from the last save.
     public async Task<IReadOnlyList<DraftSummary>> DraftsAsync(CancellationToken ct = default)

@@ -495,7 +495,8 @@ public class InvestorController(
     {
         var appNo = HttpContext.CurrentApplication();
         var app = appNo is null ? null : await applications.FindAsync(appNo);
-        if (app is null) return null;
+        // A cancelled application's steps no longer open.
+        if (app is null || app.Cancelled) return null;
         categoryAsSaved = app.Upload?.Category ?? "";
         var docs = ActivatorUtilities.CreateInstance<DocumentsViewModel>(services, app, HttpContext.Session);
         // The gender this page's form holds, for an investor nothing read one for:

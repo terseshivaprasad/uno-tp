@@ -1,8 +1,9 @@
 @model DraftsBlock
 @* The partner's applications opened and not yet submitted, the latest first. The same
    list is on the dashboard and on Investor Identification. Each row is a Continue button
-   that opens the application on Upload Documents. Only the application number is posted;
-   the server checks it belongs to this partner. A long list keeps the rest behind "Show more". *@
+   that opens the application on Upload Documents, with a Cancel beside it that asks first
+   and then drops the draft. Only the application number is posted; the server checks it
+   belongs to this partner. A long list keeps the rest behind "Show more". *@
 @{
     var keptForDays = (await Lookups.ConfigAsync()).DraftDays;
     var openRows = Model.Shown.Take(DraftsBlock.Open).ToList();
@@ -16,6 +17,8 @@
     async Task Row(UnoTP.Models.DraftSummary draft)
     {
         var totalSteps = UnoTP.Models.DraftSummary.Steps.Length;
+        // Where a cancel goes back to: the page this list is on.
+        var cancelFrom = Model.Partial ? "search" : UnoTP.Controllers.NewApplicationController.FromDashboard;
         var hasName = draft.Name.Length > 0;
         var unknownClass = hasName ? null : "is-unknown";
 
@@ -64,6 +67,13 @@
                     </span>
                     <svg class="draft__go" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg>
                 </button>
+            </form>
+            <form method="post" asp-controller="NewApplication" asp-action="CancelDraft" class="draft-cancel">
+                <input type="hidden" name="draft" value="@draft.AppNo">
+                <input type="hidden" name="from" value="@cancelFrom">
+                <button type="submit" class="draft-cancel__button" aria-label="Cancel application @draft.AppNo"
+                        data-confirm="Cancel application @draft.AppNo? It is dropped and cannot be continued again."
+                        data-loader="Cancelling the application&hellip;" data-loader-hint="Application @draft.AppNo">Cancel</button>
             </form>
         </li>
     }

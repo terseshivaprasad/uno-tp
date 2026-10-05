@@ -15,6 +15,8 @@ namespace UnoTP.Controllers;
 public class ApplicationDetailsController(IApplicationApi applications, IDepositApi deposits, IServiceProvider services)
     : ApplicationStepController(applications, deposits, services)
 {
+    protected override bool ShowsCancelled => true;
+
     [HttpGet("")]
     [RequiresFeature("view-app")]
     public async Task<IActionResult> Index()

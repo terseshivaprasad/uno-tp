@@ -123,6 +123,25 @@ public class NewApplicationController(
         return Opened(await applications.FindAsync(d.AppNo));
     }
 
+    /// <summary>
+    /// A draft cancelled from the list of incomplete applications: it leaves the list
+    /// and is not opened again. Only one of this partner's own drafts - the backend
+    /// checks. Goes back to the page the list was on.
+    /// </summary>
+    [HttpPost("cancel-draft")]
+    public async Task<IActionResult> CancelDraft(string? draft, string? from)
+    {
+        var cancelled = draft is { Length: > 0 } && await applications.CancelDraftAsync(draft);
+        if (from == FromDashboard) return RedirectToAction(nameof(DashboardController.Index), "Dashboard");
+        TempData[RenewController.SaidKey] = cancelled
+            ? $"Application {draft} is cancelled."
+            : "There is no such incomplete application to cancel.";
+        return Back();
+    }
+
+    /// <summary>What the dashboard's list posts as "from", so a cancel goes back to it.</summary>
+    public const string FromDashboard = "dashboard";
+
     // The upload step finds the application by the number in its address.
     private IActionResult Opened(Application? app)
     {

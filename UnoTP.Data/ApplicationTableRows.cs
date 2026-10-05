@@ -14,7 +14,7 @@ internal sealed class HeaderRow
         f_Renew_Rate AS RenewRate, f_Renew_Tenure AS RenewTenure, f_Renew_Payout AS RenewPayout, f_Renew_Principal AS RenewPrincipal,
         f_Submitted_On AS SubmittedOn, f_Sub_Status AS SubStatus, f_Link_Sent_To AS LinkSentTo,
         f_Link_Emailed_To AS LinkEmailedTo, f_Link_Valid_Until AS LinkValidUntil, f_Resends_Left AS ResendsLeft,
-        f_Short_Url AS ShortUrl, f_Created_On AS CreatedOn
+        f_Short_Url AS ShortUrl, f_Created_On AS CreatedOn, f_Cancelled_On AS CancelledOn
         """;
 
     public string AppNo { get; set; } = "";
@@ -50,8 +50,10 @@ internal sealed class HeaderRow
     public int? ResendsLeft { get; set; }
     public string? ShortUrl { get; set; }
     public DateTime CreatedOn { get; set; }
+    public DateTime? CancelledOn { get; set; }
 
     public bool Submitted => Status == RowStatus.Approved;
+    public bool Cancelled => CancelledOn is not null;
 }
 
 internal sealed class KycRow
