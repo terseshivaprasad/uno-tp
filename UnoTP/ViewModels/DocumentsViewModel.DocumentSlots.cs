@@ -48,7 +48,7 @@ public partial class DocumentsViewModel
     // aside. The masking API is told which application and holder it is for.
     private async Task<UploadFile> MaskedAsync(DocHolder h, UploadFile copy)
     {
-        var aadhaar = new AadhaarToMask(AppNo, h.Who.Folio, State.FormNo, h.Code, h.Who.Pan, h.Who.Dob, copy, AadhaarConsent);
+        var aadhaar = new AadhaarToMask(AppNo, h.Code, copy, AadhaarConsent);
         Doing("Masking the Aadhaar number\u2026");
         return (await masking.MaskAsync(aadhaar)).Copy;
     }

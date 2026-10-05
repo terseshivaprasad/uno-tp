@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using System.Text.Json;
 using Microsoft.Extensions.Options;
 using UnoTP.Models;
@@ -6,8 +7,8 @@ namespace UnoTP.Services.UidMasking;
 
 /// <summary>
 /// The UID masking API, from the "UidMasking" section of appsettings: the path of
-/// the call under the gateway (<see cref="BackendOptions.BaseUrl"/>), how the
-/// masked copy is to come back, and the codes every request carries.
+/// the call under the gateway (<see cref="BackendOptions.BaseUrl"/>), and the codes
+/// every request carries.
 /// </summary>
 public sealed class UidMaskingOptions : IApiAddress
 {
@@ -25,26 +26,28 @@ public sealed class UidMaskingOptions : IApiAddress
     /// <summary>How many digits of the Aadhaar number are masked.</summary>
     public int MaskLength { get; set; } = 8;
 
-    /// <summary>How good the masked JPEG comes back, 1 to 100.</summary>
-    public int OutputJpegQuality { get; set; } = 80;
-
-    /// <summary>Whether the API checks the copy is an Aadhaar before it masks it.</summary>
-    public bool CheckDocumentType { get; set; } = true;
+    /// <summary>The name the API knows this app by.</summary>
+    public string Source { get; set; } = "UNO_TP";
 }
 
 /// <summary>
-/// Aadhaar masking: the copy goes as Base64 and comes back masked, with the digits
-/// of the number it still shows. Nothing is retried - a repeated call may be
-/// charged twice.
+/// Aadhaar masking: the copy goes as Base64 and comes back masked. The request and
+/// the answer are the API's own, field for field. Nothing is retried - a repeated
+/// call may be charged twice.
 /// </summary>
-public sealed class UidMaskingClient(HttpClient http, IPartner partner, IPartnerApi partners, IOptions<UidMaskingOptions> options)
+public sealed class UidMaskingClient(HttpClient http, IPartner partner, IOptions<UidMaskingOptions> options)
     : IMaskingService
 {
     private const string Service = "Aadhaar masking";
 
-    // camelCase in both directions, and names read whatever their case: the same as
-    // the API is called with elsewhere.
-    private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
+    /// <summary>What the API's Status says when the copy came back masked.</summary>
+    private const string Succeeded = "SUCCESS";
+
+    // The request goes under the API's own names, exactly as they are spelt below.
+    private static readonly JsonSerializerOptions AsNamed = new();
+
+    // The answer's names are read whatever their case.
+    private static readonly JsonSerializerOptions AnyCase = new() { PropertyNameCaseInsensitive = true };
 
     public async Task<MaskedAadhaar> MaskAsync(AadhaarToMask aadhaar, CancellationToken ct = default)
     {
@@ -53,33 +56,28 @@ public sealed class UidMaskingClient(HttpClient http, IPartner partner, IPartner
             throw new ExternalServiceException(Service, "An Aadhaar is only masked with the investor's consent, and none has been given.");
 
         var settings = options.Value;
-        var me = await partners.MeAsync(ct);
         var request = new MaskRequest
         {
+            MaskLength = settings.MaskLength.ToString(),
+            // Which application and holder the copy is for: 123456_01.
+            Trans_Ref_No = $"{aadhaar.AppNo}_{aadhaar.HolderType}",
+            Source = settings.Source,
+            CreatedIP = partner.IpAddress,
             FileType = FileTypeOf(aadhaar.Copy),
             FileData = Convert.ToBase64String(aadhaar.Copy.Bytes),
-            MaskLength = settings.MaskLength,
-            OutputJpegQuality = settings.OutputJpegQuality,
-            CreatedIP = partner.IpAddress,
-            CreatedBy = partner.Id,
-            CreatedByUName = me.UserName,
-            SessionID = partner.SessionId ?? "",
-            Form_Code = aadhaar.FormCode,
-            Source = me.SysCode,
-            ApplNo = aadhaar.AppNo,
-            FolioNo = aadhaar.Folio,
-            HolderType = aadhaar.HolderType,
-            PAN = aadhaar.Pan,
-            DOB = aadhaar.Dob,
-            CheckDocumentType = settings.CheckDocumentType,
         };
 
         var answer = await SendAsync(settings.MaskPath, request, ct);
-        if (answer.Result?.FileData is not { Length: > 0 } masked)
-            throw new ExternalServiceException(Service,
-                answer.Error is { Length: > 0 } error
-                    ? $"The Aadhaar could not be masked: {error}"
-                    : "The Aadhaar could not be masked. Upload a clearer copy.");
+        var succeeded = (answer.Status ?? "").Trim().ToUpperInvariant() == Succeeded;
+        if (!succeeded || answer.Result?.FileData is not { Length: > 0 } masked)
+        {
+            // Why not, in the API's own words: its error, else what its status says.
+            var why = (answer.Error ?? "").Trim();
+            if (why.Length == 0) why = (answer.IntStatusDesc ?? "").Trim();
+            throw new ExternalServiceException(Service, why.Length > 0
+                ? $"The Aadhaar could not be masked: {why}"
+                : "The Aadhaar could not be masked. Upload a clearer copy.");
+        }
 
         var copy = new UploadFile(aadhaar.Copy.FileName, aadhaar.Copy.ContentType, Convert.FromBase64String(masked));
         return new MaskedAadhaar(copy, answer.Result.AadhaarSuffix ?? "");
@@ -89,15 +87,18 @@ public sealed class UidMaskingClient(HttpClient http, IPartner partner, IPartner
     {
         try
         {
-            using var body = JsonContent.Create(request, options: Json);
+            // Sent whole, with its length: a streamed body is one more thing for a
+            // proxy in the way to refuse.
+            using var body = new ByteArrayContent(JsonSerializer.SerializeToUtf8Bytes(request, AsNamed));
+            body.Headers.ContentType = new MediaTypeHeaderValue("application/json") { CharSet = "utf-8" };
             using var response = await http.PostAsync(path, body, ct);
             if (!response.IsSuccessStatusCode)
             {
                 var said = await response.Content.ReadAsStringAsync(ct);
-                throw new ExternalServiceException(Service, $"{Service} could not mask the copy. Try again in a while.", TraceOf(said));
+                throw new ExternalServiceException(Service, $"{Service} could not mask the copy ({(int)response.StatusCode}). Try again in a while.", TraceOf(said));
             }
 
-            var answer = await response.Content.ReadFromJsonAsync<MaskResponse>(Json, ct);
+            var answer = await response.Content.ReadFromJsonAsync<MaskResponse>(AnyCase, ct);
             if (answer is null)
                 throw new ExternalServiceException(Service, $"{Service} answered with nothing. Try again in a while.");
             return answer;
@@ -116,47 +117,35 @@ public sealed class UidMaskingClient(HttpClient http, IPartner partner, IPartner
         }
     }
 
-    /// <summary>The kind of file the copy is, as the API names it: the extension, without its dot.</summary>
+    /// <summary>The kind of file the copy is, as the API names it: IMAGE, or PDF for a PDF.</summary>
     private static string FileTypeOf(UploadFile file)
     {
-        var extension = Path.GetExtension(file.FileName);
-        if (extension.Length < 2) return "";
-        return extension[1..].ToLowerInvariant();
+        if (Path.GetExtension(file.FileName).Equals(".pdf", StringComparison.OrdinalIgnoreCase)) return "PDF";
+        return "IMAGE";
     }
 
     // What the API said, cut to a length worth logging beside the error.
     private static string TraceOf(string said) => said.Length <= 200 ? said : said[..200];
 
-    // The request's fields are the API's own names, in its own spelling, so the
-    // call goes exactly as every other app makes it.
+    // The request, as the API takes it: these fields, under these names, the mask
+    // length as text.
     private sealed class MaskRequest
     {
+        public string MaskLength { get; set; } = "";
+        public string Trans_Ref_No { get; set; } = "";
+        public string Source { get; set; } = "";
+        public string CreatedIP { get; set; } = "";
         public string FileType { get; set; } = "";
         public string FileData { get; set; } = "";
-        public int MaskLength { get; set; }
-        public int OutputJpegQuality { get; set; }
-        public string Trans_Ref_No { get; set; } = "";
-        public string CreatedIP { get; set; } = "";
-        public string CreatedBy { get; set; } = "";
-        public string CreatedByUName { get; set; } = "";
-        public string CreatedType { get; set; } = "";
-        public string SessionID { get; set; } = "";
-        public string Form_Code { get; set; } = "";
-        public string Source { get; set; } = "";
-        public string API_Response_File_Path { get; set; } = "";
-        public string ApplNo { get; set; } = "";
-        public string FolioNo { get; set; } = "";
-        public string HolderType { get; set; } = "";
-        public string PAN { get; set; } = "";
-        public string DOB { get; set; } = "";
-        public bool CheckDocumentType { get; set; } = true;
-        public string AadharSuffix { get; set; } = "";
     }
 
-    // The part of the answer the app reads. Its status fields are not used, so they
-    // are left out: the answer is then read whether they come as text or as a number.
+    // The part of the answer the app reads:
+    // { "IntStatusCode": "MF-SYS-200", "IntStatusDesc": "Success with masking", "Status": "Success",
+    //   "Result": { "FileData": "...", "AadhaarSuffix": null, ... }, "Error": "" }
     private sealed class MaskResponse
     {
+        public string? Status { get; set; }
+        public string? IntStatusDesc { get; set; }
         public MaskedFile? Result { get; set; }
         public string? Error { get; set; }
     }
