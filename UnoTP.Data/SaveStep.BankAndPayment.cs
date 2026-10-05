@@ -9,9 +9,8 @@ namespace UnoTP.Data;
 internal static partial class Sections
 {
     /// <param name="branches">The branch each IFSC names, as looked up before the save.</param>
-    /// <param name="cmsLocationCode">The code of the cheque's Axis CMS location; null with no cheque, or a location not on the list.</param>
     public static async Task WritePaymentAsync(IDbConnection db, IDbTransaction tx, Stamp at, UploadState? upload,
-        PaymentDetails payment, IReadOnlyDictionary<string, BankBranch> branches, string? cmsLocationCode)
+        PaymentDetails payment, IReadOnlyDictionary<string, BankBranch> branches)
     {
         await RetireAsync(db, tx, at, "t_FD_BT_Payment_Dtl");
         var pay = Branch(payment.Payment, branches);
@@ -28,7 +27,8 @@ internal static partial class Sections
             ChequeNo = payment.Cheque?.Number, ChequeDate = Dates.ParseDdMmYyyy(payment.Cheque?.Date),
             Bank = CutOrNull(pay?.Bank, 50), BranchName = CutOrNull(pay?.Branch, 50), pay?.Micr,
             payment.Payment?.Ifsc, AccountNo = payment.Payment?.AccountNumber,
-            CmsLocationCode = cmsLocationCode, payment.Cheque?.CmsLocation,
+            // The Axis CMS branch as it was picked: its code and its name.
+            CmsLocationCode = EmptyAsNull(payment.Cheque?.CmsLocationCode ?? ""), payment.Cheque?.CmsLocation,
             // A cheque is presented at an Axis Bank CMS location.
             CmsBank = payment.Cheque is null ? null : "Axis Bank", at.Folio,
             Source, at.Status, CreatedBy = at.UserClusterId, at.UserName, at.Ip, at.SessionId,

@@ -47,7 +47,7 @@ public interface IRenewalApi
 public sealed record HeldDeposit(
     string Number, string Folio, string Investor, string Category,
     long Amount, decimal Rate, int TenureMonths, string Payout,
-    DateOnly StartedOn, DateOnly MaturesOn, long MaturityAmount,
+    DateOnly MaturesOn, long MaturityAmount,
     string Status, bool Renewable, string Why = "",
     IReadOnlyList<DepositHolder>? JointHolders = null, BankAccount? Repayment = null, bool AutoRenewal = false, RenewalApp? Renewal = null);
 

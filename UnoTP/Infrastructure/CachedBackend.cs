@@ -1,7 +1,5 @@
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Options;
 using UnoTP.Models;
-using UnoTP.Services;
 
 namespace UnoTP.Infrastructure;
 
@@ -29,10 +27,6 @@ public static class CachedBackend
     }
 
     private static IMemoryCache Cache(IServiceProvider sp) => sp.GetRequiredService<IMemoryCache>();
-
-    // Backend:ReferenceCacheMinutes, as the lists and rules are kept (see Lookups).
-    private static TimeSpan Minutes(IServiceProvider sp) =>
-        TimeSpan.FromMinutes(Math.Max(0, sp.GetRequiredService<IOptions<BackendOptions>>().Value.ReferenceCacheMinutes));
 
     /// <summary>What is kept under <paramref name="key"/>, or the answer asked for and kept - unless it is null.</summary>
     public static async Task<T> KeptAsync<T>(this IMemoryCache cache, object key, TimeSpan keptFor, Func<Task<T>> ask)
@@ -134,6 +128,11 @@ internal sealed class CachedDepositApi(IDepositApi inner, IMemoryCache cache) : 
             cache.Set(key, found, new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = BankKeptFor, Size = 1 });
         return found;
     }
+
+    // The Axis CMS master is asked each time: its searches are small and quick.
+    public Task<IReadOnlyList<CmsLocation>> SearchCmsLocationsAsync(string query, CancellationToken ct = default) => inner.SearchCmsLocationsAsync(query, ct);
+
+    public Task<CmsLocation?> CmsLocationAsync(string code, CancellationToken ct = default) => inner.CmsLocationAsync(code, ct);
 }
 
 /// <summary>Where a PIN code is: a place found is kept a day, and a PIN not found is never kept.</summary>

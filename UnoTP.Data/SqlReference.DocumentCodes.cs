@@ -43,16 +43,4 @@ public sealed partial class SqlReference
             }
             return codes;
         })!;
-
-    /// <summary>
-    /// The code of an Axis CMS location, by the name the page offers it under
-    /// (MasterQueries.CmsLocations); null for a name the Axis CMS master does not hold.
-    /// </summary>
-    public async Task<string?> CmsLocationCodeAsync(string name, CancellationToken ct = default)
-    {
-        await using var connection = await db.OpenAsync(ct);
-        return await connection.QueryFirstOrDefaultAsync<string>(
-            $"SELECT c.Code FROM ({MasterQueries.CmsLocations}) c WHERE c.Name = @Name",
-            new { Name = name });
-    }
 }

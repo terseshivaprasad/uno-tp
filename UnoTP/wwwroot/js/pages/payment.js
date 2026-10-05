@@ -4,6 +4,13 @@
 // IFSC in the field and presses the step's Find, so the page comes back with the
 // branch; the server still decides everything.
 //
+// The Axis CMS branch is searched the same way (data-cms-search), by its label -
+// name, location and PIN code: the branches found drop down under the field, each
+// shown by that label, and picking one puts its name in the field and its code in
+// the hidden field beside it (data-cms-code). Typing over the name empties the
+// code, so only a branch picked from the search is taken. Neither master is ever
+// sent to the page whole.
+//
 // The page's <main> is redrawn after every post, so everything here listens on the
 // document rather than on the fields themselves.
 (function () {
@@ -18,6 +25,16 @@
   var underWay = null;
   // What each search found, by its address, so typing back over the same text asks nothing.
   var found = {};
+
+  // The fields that search as they are typed: a bank, and the Axis CMS branch.
+  var SEARCHES = '[data-bank-search], [data-cms-search]';
+  // Whether a field searches the Axis CMS locations rather than the banks.
+  function isCmsSearch(input) { return input.hasAttribute('data-cms-search'); }
+  // Where a field's search is asked.
+  function searchAddress(input) { return input.getAttribute(isCmsSearch(input) ? 'data-cms-search' : 'data-bank-search'); }
+
+  // The hidden field that carries the code of the Axis CMS branch picked.
+  function cmsCodeFieldFor(input) { return document.getElementById(input.getAttribute('data-cms-code')); }
 
   // The fewest characters a search is run on (data-search-from; the server keeps the same rule).
   function searchFrom(input) { return parseInt(input.getAttribute('data-search-from'), 10) || 3; }
@@ -43,8 +60,16 @@
     if (button && button.form) button.form.requestSubmit(button);
   }
 
-  // Puts the picked branch's IFSC in the input and looks it up.
+  // Puts the picked branch's IFSC in the input and looks it up; an Axis CMS
+  // location picked is put in the input by its name, and nothing is posted.
   function pickBranch(input, option) {
+    if (isCmsSearch(input)) {
+      input.value = option.getAttribute('data-name');
+      cmsCodeFieldFor(input).value = option.getAttribute('data-code');
+      closeSuggestions(input);
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+      return;
+    }
     input.value = option.getAttribute('data-ifsc');
     closeSuggestions(input);
     findBankByIfsc(input);
@@ -65,7 +90,8 @@
     input.removeAttribute('aria-activedescendant');
   }
 
-  // Draws the found branches as options under the input.
+  // Draws what was found as options under the input: bank branches, each by its
+  // label of MICR, IFSC, branch and bank, or Axis CMS branches, each by its own label.
   function showBranchSuggestions(input, branches) {
     var list = suggestionListFor(input);
     if (!list) return;
@@ -79,16 +105,20 @@
       li.id = list.id + '-' + i;
       li.setAttribute('role', 'option');
       li.setAttribute('aria-selected', 'false');
-      li.setAttribute('data-ifsc', b.ifsc);
       li.className = 'bank-suggest__option';
       var name = document.createElement('span');
       name.className = 'bank-suggest__name';
-      name.textContent = b.bank + ' · ' + b.branch;
-      var codes = document.createElement('span');
-      codes.className = 'bank-suggest__codes';
-      codes.textContent = 'IFSC ' + b.ifsc + ' · MICR ' + b.micr;
       li.appendChild(name);
-      li.appendChild(codes);
+      if (isCmsSearch(input)) {
+        // An Axis CMS branch, shown by its label: its name, location and PIN code.
+        li.setAttribute('data-name', b.name);
+        li.setAttribute('data-code', b.code);
+        name.textContent = b.label || b.name;
+      } else {
+        // A bank branch, labelled as the FD system labels it: (MICR >> IFSC >> branch >> bank).
+        li.setAttribute('data-ifsc', b.ifsc);
+        name.textContent = '(' + b.micr + ' >> ' + b.ifsc + ' >> ' + b.branch + ' >> ' + b.bank + ')';
+      }
       list.appendChild(li);
     });
     list.hidden = false;
@@ -109,7 +139,7 @@
       showNote(input, 'Type ' + searchFrom(input) + ' or more characters to search');
       return;
     }
-    var url = input.getAttribute('data-bank-search') + '?q=' + encodeURIComponent(q);
+    var url = searchAddress(input) + '?q=' + encodeURIComponent(q);
     if (found[url]) { showBranchSuggestions(input, found[url]); return; }
 
     // The list keeps what it shows while the answer is awaited; an empty one says a search is on.
@@ -156,14 +186,16 @@
   }
 
   document.addEventListener('input', function (e) {
-    var input = e.target.closest && e.target.closest('[data-bank-search]');
+    var input = e.target.closest && e.target.closest(SEARCHES);
     if (!input) return;
+    // A name typed over is no longer the branch that was picked.
+    if (isCmsSearch(input)) cmsCodeFieldFor(input).value = '';
     clearTimeout(timer);
     timer = setTimeout(function () { searchBanks(input); }, PAUSE);
   });
 
   document.addEventListener('keydown', function (e) {
-    var input = e.target.closest && e.target.closest('[data-bank-search]');
+    var input = e.target.closest && e.target.closest(SEARCHES);
     if (!input) return;
     var list = suggestionListFor(input);
     if (e.key === 'ArrowDown') { e.preventDefault(); moveSuggestionHighlight(input, 1); }
@@ -177,7 +209,7 @@
       var chosen = all.find(function (o) { return o.getAttribute('aria-selected') === 'true'; });
       if (!chosen && all.length === 1) chosen = all[0];
       if (chosen) pickBranch(input, chosen);
-      else if (IFSC.test(input.value.trim())) { closeSuggestions(input); findBankByIfsc(input); }
+      else if (!isCmsSearch(input) && IFSC.test(input.value.trim())) { closeSuggestions(input); findBankByIfsc(input); }
     }
   });
 
@@ -197,9 +229,10 @@
   // Leaving the field shuts the list; an IFSC typed in full is looked up - unless
   // the caret went to a button, whose own post looks it up anyway.
   document.addEventListener('focusout', function (e) {
-    var input = e.target.closest && e.target.closest('[data-bank-search]');
+    var input = e.target.closest && e.target.closest(SEARCHES);
     if (!input) return;
     closeSuggestions(input);
+    if (isCmsSearch(input)) return;
     var to = e.relatedTarget;
     if (to && (to.type === 'submit' || to.tagName === 'A')) return;
     if (IFSC.test(input.value.trim()) && input.value !== input.defaultValue) findBankByIfsc(input);

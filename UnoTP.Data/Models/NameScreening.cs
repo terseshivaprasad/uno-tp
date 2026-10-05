@@ -20,6 +20,6 @@ public sealed record NameScreeningRequest(string AppNo, string HolderType, strin
 /// <param name="Reference">The service's reference for the check, kept on the application's KYC row.</param>
 public sealed record NameScreeningResult(bool Allowed, string Reference = "")
 {
-    /// <summary>The reference of a screening that was switched off: nobody was asked, and the KYC row says it was skipped.</summary>
+    /// <summary>The reference of a screening that was switched off: nobody was asked, and the KYC row is left without an answer.</summary>
     public const string Skipped = "switched off";
 }

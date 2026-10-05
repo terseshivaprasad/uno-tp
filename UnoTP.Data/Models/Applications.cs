@@ -190,8 +190,9 @@ public sealed record PaymentDetails(BankAccount? Payment, BankAccount? Repayment
 public sealed record BankAccount(string Ifsc, string AccountNumber);
 
 /// <param name="Date">dd-MM-yyyy.</param>
-/// <param name="CmsLocation">The Axis CMS location it is presented at.</param>
-public sealed record ChequeDetails(string Number, string Date, string CmsLocation);
+/// <param name="CmsLocation">The Axis CMS branch it is presented at, by name.</param>
+/// <param name="CmsLocationCode">That branch's code in the Axis CMS master; empty until one is picked from its search.</param>
+public sealed record ChequeDetails(string Number, string Date, string CmsLocation, string CmsLocationCode = "");
 
 /// <summary>The deposit an application renews: what runs on into the new one.</summary>
 /// <param name="Amount">The deposit's maturity amount: what is renewed when principal and interest are.</param>

@@ -68,7 +68,6 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
         var branches = payment is null ? new Dictionary<string, BankBranch>() : await BranchesAsync(payment, ct);
         var documentCodes = await reference.DocumentCodesAsync(ct);
         var lists = await reference.ReferenceAsync(ct);
-        var cmsLocationCode = await CmsLocationCodeAsync(payment, ct);
 
         // Not numbered yet: only whose rate card the deposit takes is read off this.
         var unnumbered = new Application { AppNo = "", Holder = holder, Renewal = renewal, Upload = upload };
@@ -102,7 +101,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
 
         var at = StampAt(appNo, version, RowStatus.Pending, holder.Folio);
         if (upload is not null) await Sections.WriteUploadAsync(connection, tx, at, upload, documentCodes, dmsRoot);
-        if (payment is not null) await Sections.WritePaymentAsync(connection, tx, at, upload, payment, branches, cmsLocationCode);
+        if (payment is not null) await Sections.WritePaymentAsync(connection, tx, at, upload, payment, branches);
         if (deposit is not null) await Sections.WriteDepositAsync(connection, tx, at, upload, deposit, renewal?.DepositNumber, line, lists);
         await tx.CommitAsync(ct);
 
@@ -223,7 +222,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
         pay.Ifsc is null && pay.AccountNo is null ? null : new BankAccount(pay.Ifsc ?? "", pay.AccountNo ?? ""),
         repay.Ifsc is null && repay.AccountNo is null ? null : new BankAccount(repay.Ifsc ?? "", repay.AccountNo ?? ""),
         repay.SameAsPayment,
-        pay.ChequeNo is null ? null : new ChequeDetails(pay.ChequeNo, Dates.FromDb(pay.ChequeDate), pay.CmsLocation ?? ""));
+        pay.ChequeNo is null ? null : new ChequeDetails(pay.ChequeNo, Dates.FromDb(pay.ChequeDate), pay.CmsLocation ?? "", pay.CmsLocationCode ?? ""));
 
     private static Submission? SubmissionOf(HeaderRow h, int cancellationDays) => h.SubmittedOn is not { } at ? null
         : new Submission(at, h.SubStatus ?? "", h.LinkSentTo ?? "", h.LinkValidUntil ?? at, h.ResendsLeft ?? 0,
@@ -271,8 +270,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
     public async Task<(SaveOutcome, int?)> SavePaymentOutcomeAsync(string appNo, int version, PaymentDetails payment, CancellationToken ct)
     {
         var branches = await BranchesAsync(payment, ct);
-        var cmsLocationCode = await CmsLocationCodeAsync(payment, ct);
-        return await SaveAsync(appNo, version, (c, tx, _, at, u) => Sections.WritePaymentAsync(c, tx, at, u, payment, branches, cmsLocationCode), "f_Payment_Ver", ct);
+        return await SaveAsync(appNo, version, (c, tx, _, at, u) => Sections.WritePaymentAsync(c, tx, at, u, payment, branches), "f_Payment_Ver", ct);
     }
 
     // Whether the signed-in user is a branch user: one of the sourcing agency's (the
@@ -301,12 +299,6 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
     }
 
     private async Task<int> MinorUnderAsync(CancellationToken ct) => (await reference.ConfigAsync(ct)).MinAge;
-
-    private async Task<string?> CmsLocationCodeAsync(PaymentDetails? payment, CancellationToken ct)
-    {
-        if (payment?.Cheque is not { } cheque) return null;
-        return await reference.CmsLocationCodeAsync(cheque.CmsLocation, ct);
-    }
 
     private static int? Version((SaveOutcome Outcome, int? Version) saved) => saved.Outcome == SaveOutcome.Saved ? saved.Version : null;
 
@@ -389,7 +381,6 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
         var documentCodes = await reference.DocumentCodesAsync(ct);
         var lists = await reference.ReferenceAsync(ct);
         var minorUnder = await MinorUnderAsync(ct);
-        var cmsLocationCode = await CmsLocationCodeAsync(seen.Payment, ct);
 
         await using var connection = await db.OpenAsync(ct);
         await using var tx = await connection.BeginTransactionAsync(ct);
@@ -406,7 +397,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
         var at = StampAt(appNo, next, submittedAs, header.Folio);
         if (app.Upload is { } upload) await Sections.WriteUploadAsync(connection, tx, at, upload, documentCodes, dmsRoot);
         if (app.Details is { } details) await Sections.WriteDetailsAsync(connection, tx, at, app.Holder, app.Upload, details, minorUnder, lists.Masters ?? MasterLists.None);
-        if (app.Payment is { } payment) await Sections.WritePaymentAsync(connection, tx, at, app.Upload, payment, branches, cmsLocationCode);
+        if (app.Payment is { } payment) await Sections.WritePaymentAsync(connection, tx, at, app.Upload, payment, branches);
         if (app.Deposit is { } deposit) await Sections.WriteDepositAsync(connection, tx, at, app.Upload, deposit, header.RenewDepNo, line, lists);
 
         // Submitted on the database's clock, as every row on the application is dated.

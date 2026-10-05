@@ -47,13 +47,19 @@ public sealed class ChequeForm
 
     public string CmsLocation { get => cmsLocationValue; set => cmsLocationValue = value ?? ""; }
     private string cmsLocationValue = "";
+
+    /// <summary>The code of the Axis CMS branch picked from the search; empty while the name is only typed.</summary>
+    public string CmsCode { get => cmsCodeValue; set => cmsCodeValue = (value ?? "").Trim(); }
+    private string cmsCodeValue = "";
 }
 
 /// <summary>What Bank Details &amp; Payment posts. <c>Find</c> names the IFSC to look up without moving on.</summary>
 public sealed class BankForm
 {
     public AccountForm Payment { get; set; } = new();
-    public AccountForm Repayment { get; set; } = new() { SameAsPayment = true };
+    // "Same as the payment account" starts off: the repayment bank is picked, unless
+    // the partner says it is the account the cheque is drawn on.
+    public AccountForm Repayment { get; set; } = new();
     public ChequeForm Cheque { get; set; } = new();
     public string? Find { get; set; }
 
@@ -67,7 +73,7 @@ public sealed class BankForm
         AccountForm Of(BankAccount? a) => new() { Ifsc = a?.Ifsc ?? "", AccountNumber = a?.AccountNumber ?? "", AccountNumberConfirm = a?.AccountNumber ?? "" };
         var form = new BankForm { Payment = Of(saved.Payment), Repayment = Of(saved.Repayment) };
         form.Repayment.SameAsPayment = saved.RepaymentSameAsPayment;
-        if (saved.Cheque is { } c) form.Cheque = new ChequeForm { Number = c.Number, Date = c.Date.Replace("-", " / "), CmsLocation = c.CmsLocation };
+        if (saved.Cheque is { } c) form.Cheque = new ChequeForm { Number = c.Number, Date = c.Date.Replace("-", " / "), CmsLocation = c.CmsLocation, CmsCode = c.CmsLocationCode };
         return form;
     }
 
@@ -108,7 +114,7 @@ public sealed class BankForm
         var payment = byCheque ? new BankAccount(Payment.CleanIfsc, Payment.CleanAccount) : null;
         var same = RepaysToPayment(byCheque);
         var repayment = same ? payment : new BankAccount(Repayment.CleanIfsc, Repayment.CleanAccount);
-        var cheque = byCheque ? new ChequeDetails(Cheque.Number.Trim(), ChequeDay ?? Cheque.Date.Trim(), Cheque.CmsLocation) : null;
+        var cheque = byCheque ? new ChequeDetails(Cheque.Number.Trim(), ChequeDay ?? Cheque.Date.Trim(), Cheque.CmsLocation, Cheque.CmsCode) : null;
         return new PaymentDetails(payment, repayment, same, cheque);
     }
 
@@ -118,7 +124,8 @@ public sealed class BankForm
             ? d.ToString("dd-MM-yyyy", CultureInfo.InvariantCulture) : null;
 
     /// <summary>What stops the step, by field; empty when nothing does.</summary>
-    public Dictionary<string, string> Problems(bool byCheque, BankBranch? paymentBranch, BankBranch? repaymentBranch, IReadOnlyList<string> cmsLocations)
+    /// <param name="cmsLocationOnMaster">Whether the Axis CMS master holds the branch picked for the cheque, by its code.</param>
+    public Dictionary<string, string> Problems(bool byCheque, BankBranch? paymentBranch, BankBranch? repaymentBranch, bool cmsLocationOnMaster)
     {
         var problems = new Dictionary<string, string>();
         void Account(AccountForm a, string key, BankBranch? branch)
@@ -134,7 +141,7 @@ public sealed class BankForm
         {
             if (Cheque.Number.Trim() is not { Length: 6 } n || !n.All(char.IsAsciiDigit)) problems["Cheque.Number"] = "Enter the six-digit cheque number";
             if (ChequeDay is null) problems["Cheque.Date"] = "Enter the cheque date";
-            if (!cmsLocations.Contains(Cheque.CmsLocation)) problems["Cheque.CmsLocation"] = Cheque.CmsLocation.Trim().Length == 0 ? "Enter the Axis CMS branch" : "Choose an Axis CMS branch from the list";
+            if (!cmsLocationOnMaster) problems["Cheque.CmsLocation"] = Cheque.CmsLocation.Trim().Length == 0 ? "Search for the Axis CMS branch and pick it" : "Pick an Axis CMS branch from the search";
         }
         return problems;
     }
@@ -202,8 +209,6 @@ public sealed class PaymentViewModel(DocumentsViewModel docs, BankForm form, Ban
 
     /// <summary>What the cheque filed on Upload Documents was read to say, if one is filed.</summary>
     public ReadCard? ChequeRead => Docs.State.Docs.ContainsKey("payment") ? Docs.State.Reads.GetValueOrDefault("payment") : null;
-
-    public IReadOnlyList<string> CmsLocations => Docs.Ref.CmsLocations;
 }
 
 // ===== FD Configuration ======================================================

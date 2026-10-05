@@ -61,7 +61,7 @@ The joint holders' documents on Investor Information go through the same calls.
 | Call | Used for |
 |---|---|
 | `IApplicationApi.FindAsync`, `SaveDetailsAsync`, `SavePageAsync`, `SaveUploadAsync` | The application; the details saved after every post; the page's working state; the category moved to a women's one, or a joint holder's documents. |
-| `IInvestorApi.FolioDepositsByPanAsync`, `FolioDepositsByFolioAsync`, `FolioAsync`, `KycOnFolioAsync`, `NomineesOnDepositAsync` | A joint holder's search; the KYC details held for a folio where its latest KYC is kept (its data source), filled in so they are not typed again and validated like anything typed; in a renewal, the nominees on the deposit being renewed. |
+| `IInvestorApi.FolioDepositsByPanAsync`, `FolioDepositsByFolioAsync`, `FolioAsync`, `KycOnFolioAsync`, `NomineesOnDepositAsync` | A joint holder's search; the KYC details held for a holder of a folio (by folio, PAN and date of birth) where their latest KYC is kept (their data source), filled in so they are not typed again and validated like anything typed; in a renewal, the nominees on the deposit being renewed. |
 | `IPlaceApi.PinCodeAsync` | The district and state of a PIN code. |
 | `INameScreeningService.ScreenAsync` | Every holder, before Proceed. |
 
@@ -70,7 +70,7 @@ The joint holders' documents on Investor Information go through the same calls.
 | Call | Used for |
 |---|---|
 | `IApplicationApi.FindAsync`, `SavePaymentAsync` | The application; the step saved. |
-| `IDepositApi.BranchAsync`, `SearchBranchesAsync` | The branch an IFSC names; the bank search. |
+| `IDepositApi.BranchAsync`, `SearchBranchesAsync`, `SearchCmsLocationsAsync`, `CmsLocationAsync` | The branch an IFSC names; the bank search; the Axis CMS branch search, and the location picked checked against the master. |
 | `IInvestorApi.AccountsOnDepositAsync` | In a renewal, the repayment accounts on the deposit being renewed. |
 
 ## FD Configuration (`DepositController`)

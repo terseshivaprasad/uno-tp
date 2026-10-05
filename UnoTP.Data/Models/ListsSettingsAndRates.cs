@@ -118,7 +118,6 @@ public sealed record ReferenceData(
     IReadOnlyList<PayoutOption> Payouts,
     IReadOnlyList<Option> RenewInstructions,
     IReadOnlyList<Option> DeliveryTypes,
-    IReadOnlyList<string> CmsLocations,
     IReadOnlyList<RequiredDocumentGroup> RequiredDocuments,
     IReadOnlyList<string> IdentificationNotes,
     IReadOnlyList<string> DashboardNotes,
@@ -256,9 +255,18 @@ public interface IDepositApi
     /// <summary>GET ifsc/{code}: the branch an IFSC names, or null (404) for none.</summary>
     Task<BankBranch?> BranchAsync(string ifsc, CancellationToken ct = default);
 
-    /// <summary>GET ifsc?q=: the branches whose bank name, branch, IFSC or MICR holds the text, best first; at most 20.</summary>
+    /// <summary>GET ifsc?q=: the branches whose search key - MICR, IFSC, branch and bank name - holds every word of the text, by MICR code; at most 15.</summary>
     Task<IReadOnlyList<BankBranch>> SearchBranchesAsync(string query, CancellationToken ct = default);
+
+    /// <summary>The Axis CMS branches whose label - name, location and PIN code - holds the text, by state and district; at most 20. The master is searched, never listed whole.</summary>
+    Task<IReadOnlyList<CmsLocation>> SearchCmsLocationsAsync(string query, CancellationToken ct = default);
+
+    /// <summary>An Axis CMS branch by its code; null for a code the master does not hold.</summary>
+    Task<CmsLocation?> CmsLocationAsync(string code, CancellationToken ct = default);
 }
+
+/// <summary>An Axis CMS branch: its code and name, which are what is kept, and its label - the name, location and PIN code its search looks in and shows.</summary>
+public sealed record CmsLocation(string Code, string Name, string Label);
 
 /// <summary>Whose rate card: the deposit's category, and whether the application is a fresh one or a renewal.</summary>
 /// <param name="Category">A <see cref="CategoryOption.Code"/>: from the holder's date of birth and gender, or the sourcing agency's choice.</param>

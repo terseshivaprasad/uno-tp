@@ -11,7 +11,8 @@ public sealed partial class SqlMasters
     // and MasterQueries.RateCardForPartners (a partner's). A row is one scheme code:
     // a category, mode (MODE_STATUS: a fresh application or a renewal), scheme, tenure
     // and interest frequency, for deposits from MINIMUM_AMOUNT to MAXIMUM_AMOUNT, in
-    // effect from FROM_DATE to TO_DATE (no TO_DATE: still in effect).
+    // effect from FROM_DATE while its TO_DATE is empty. The queries give back only the
+    // rows with no TO_DATE; a row dated to start later is left out here.
 
     // One row of MasterQueries.RateCard, as this reads it.
     private sealed class SchemeRow
@@ -44,7 +45,7 @@ public sealed partial class SqlMasters
         var rows = await connection.QueryAsync<SchemeRow>($"""
             SELECT * FROM ({RateCardOf(request.BranchUser)}) r
             WHERE r.Category IN (@Category, @Fallback) AND r.Mode = @Mode
-              AND r.FromDate <= @Today AND (r.ToDate IS NULL OR r.ToDate >= @Today)
+              AND r.FromDate <= @Today
             ORDER BY CASE WHEN r.Category = @Category THEN 0 ELSE 1 END, r.FromDate DESC, r.SchemeId DESC
             """, new { request.Category, Fallback = fallback, Mode = request.ApplicationType, DateTime.Today });
 
@@ -94,7 +95,7 @@ public sealed partial class SqlMasters
               AND r.Scheme = @Scheme AND r.InterestFreq = @InterestFreq
               AND r.TenureMonths = @TenureMonths AND r.Rate = @Rate
               AND r.MinAmount <= @Amount AND (r.MaxAmount IS NULL OR r.MaxAmount >= @Amount)
-              AND r.FromDate <= @Today AND (r.ToDate IS NULL OR r.ToDate >= @Today)
+              AND r.FromDate <= @Today
             """, new
         {
             check.Category, check.Mode, check.Scheme, check.InterestFreq, check.TenureMonths, check.Rate, check.Amount, DateTime.Today,

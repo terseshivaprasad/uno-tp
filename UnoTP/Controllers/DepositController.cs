@@ -14,6 +14,8 @@ public class DepositController(IApplicationApi applications, IDepositApi deposit
     public async Task<IActionResult> Index()
     {
         if (await LoadAsync() is not { } docs) return Start();
+        // FD Configuration comes after the banks are picked.
+        if (await BackToBankIfNotDoneAsync(docs) is { } toBank) return toBank;
         var rates = await RateTableAsync(docs, docs.App.Deposit?.Amount ?? 0);
         var form = DepositForm.From(docs.App.Deposit, rates);
         if (docs.App.Renewal is { } renewal) form.TakeRenewalAmount(renewal);
@@ -36,6 +38,7 @@ public class DepositController(IApplicationApi applications, IDepositApi deposit
     public async Task<IActionResult> Save(DepositForm form, string? refresh, string? draft)
     {
         if (await LoadAsync() is not { } docs) return Start();
+        if (await BackToBankIfNotDoneAsync(docs) is { } toBank) return toBank;
         // A renewal's amount is the deposit's, whatever was posted.
         if (docs.App.Renewal is { } renewal) form.TakeRenewalAmount(renewal);
         // The source of funds is kept only where it is asked.

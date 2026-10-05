@@ -39,6 +39,9 @@ public sealed class ReviewViewModel(DocumentsViewModel docs, DepositQuote? quote
     /// <summary>Set when a submit was refused, with why.</summary>
     public string? Refused { get; init; }
 
+    /// <summary>What Bank Details &amp; Payment still lacks as saved, by field; empty when nothing, or where the page does not check it.</summary>
+    public IReadOnlyDictionary<string, string> BankProblems { get; init; } = new Dictionary<string, string>();
+
     public HolderDetails DetailsOf(DocumentsViewModel.DocHolder h) =>
         App.Details?.Holders.FirstOrDefault(d => d.Holder == h.Code) ?? new HolderDetails(h.Code);
 
@@ -98,7 +101,14 @@ public sealed class ReviewViewModel(DocumentsViewModel docs, DepositQuote? quote
                 if (h.Details.ParentName.Length == 0) list.Add(("Investor Information", $"the father, mother or spouse name of {who}"));
                 if (Docs.MailTyped(h.Holder) && Docs.TypedMailOf(h.Holder) is null) list.Add(("Investor Information", $"the communication address of {who}"));
             }
+            // Saved is not enough: a draft kept half-filled has no bank picked.
             if (Payment is null) list.Add(("Bank Details & Payment", "the payment and repayment accounts"));
+            else
+            {
+                if (BankProblems.Keys.Any(k => k.StartsWith("Payment."))) list.Add(("Bank Details & Payment", "the payment bank and its account number"));
+                if (BankProblems.Keys.Any(k => k.StartsWith("Repayment."))) list.Add(("Bank Details & Payment", "the repayment bank and its account number"));
+                if (BankProblems.Keys.Any(k => k.StartsWith("Cheque."))) list.Add(("Bank Details & Payment", "the cheque details"));
+            }
             if (Deposit?.NoTds == true && Docs.View(DocumentsViewModel.TdsFormSlot).Doc is null) list.Add(("FD Configuration", "the Form 121"));
             if (Deposit is null || Deposit.Amount == 0) list.Add(("FD Configuration", "the deposit"));
             if (SourceOfFunds is { Asked: true } && (Deposit?.SourceOfFunds ?? "").Length == 0) list.Add(("FD Configuration", "the source of funds"));

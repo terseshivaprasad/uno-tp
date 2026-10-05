@@ -224,7 +224,7 @@ public partial class DocumentsViewModel
             "pan" => held?.Pan == true ? (false, heldWhy) : (true, null),
             // CKYC is fetched for the investor only: a joint holder files their own.
             "photo" => held?.Photo == true ? (false, heldPhotoWhy) : s.Ckyc && !h.Joint ? (false, CkycWhy) : (true, null),
-            // A verified proof on record need not be filed again - but a newer one is
+            // A proof on record need not be filed again - but a newer one is
             // taken, should the address have changed (optional, below).
             "poa" => s.Ckyc && !h.Joint ? (false, CkycWhy) : (true, null),
             "mail" => !MailCanDiffer(h) ? (false, MailWhy(h))
@@ -292,7 +292,7 @@ public partial class DocumentsViewModel
 
         var flash = Shown;
         return new SlotView(def, key, used, used ? null : na, locked, doc,
-            optional ? "Not mandatory: a verified proof is on record, and its address stands unless a newer proof is filed." : null,
+            optional ? "Not mandatory: a proof is on record, and its address stands unless a newer proof is filed." : null,
             with, AttemptsNow(key),
             flash?.Errors.GetValueOrDefault(key), flash?.ErrorLog.GetValueOrDefault(key), optional, read,
             // Waiting on the PAN, the box still names the proofs it will take.

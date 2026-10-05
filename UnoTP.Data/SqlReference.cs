@@ -87,18 +87,15 @@ public sealed partial class SqlReference(Db db, IMemoryCache cache) : IReference
                 SELECT f_Feature_Key AS Code, f_Name AS Name, f_Group AS [Group], f_Detail AS Detail, f_Off_Reason AS OffReason, f_Tile AS Tile
                 FROM dbo.t_Unotp_Feature_Mst WHERE f_Active = 1 ORDER BY f_Seq
                 """)).ToList();
-            await using var cmsMaster = await db.OpenAsync(ct);
-            var cmsLocations = (await cmsMaster.QueryAsync<string>(
-                $"SELECT c.Name FROM ({MasterQueries.CmsLocations}) c ORDER BY c.Name")).ToList();
             await using var gatewayMaster = await db.OpenAsync(ct);
             var gatewayBanks = (await gatewayMaster.QueryAsync<Option>(
                 $"SELECT g.Code, g.Name FROM ({MasterQueries.GatewayBanks}) g ORDER BY g.Name")).ToList();
             var settings = await SettingsAsync(ct);
-            return Build(entries, features, settings, cmsLocations, gatewayBanks);
+            return Build(entries, features, settings, gatewayBanks);
         })!;
 
     private static ReferenceData Build(ILookup<string, Entry> lists, IReadOnlyList<FeatureOption> features, IReadOnlyDictionary<string, string> settings,
-        IReadOnlyList<string> cmsLocations, IReadOnlyList<Option> gatewayBanks)
+        IReadOnlyList<Option> gatewayBanks)
     {
         var masters = MasterListsOf(lists);
 
@@ -132,7 +129,6 @@ public sealed partial class SqlReference(Db db, IMemoryCache cache) : IReference
             Payouts: Of("payouts").Select(e => Attrs(e, a => new PayoutOption(e.Code, e.Name, ReadInt(a, "perYear"), ReadString(a, "each") ?? "", ReadString(a, "scheme") ?? ""))).ToList(),
             RenewInstructions: Options("renewInstructions"),
             DeliveryTypes: Options("deliveryTypes"),
-            CmsLocations: cmsLocations,
             RequiredDocuments: Of("requiredDocuments").Select(e => Attrs(e, a => new RequiredDocumentGroup(e.Name, ReadStrings(a, "items"), ReadStrings(a, "notes")))).ToList(),
             IdentificationNotes: Names("identificationNotes"),
             DashboardNotes: Names("dashboardNotes"),
@@ -156,15 +152,6 @@ public sealed partial class SqlReference(Db db, IMemoryCache cache) : IReference
 
     /// <summary>A true/false attribute of a JSON entry (false when missing).</summary>
     private static bool ReadBool(JsonElement a, string name) => a.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.True;
-
-    // A list of names in the attributes, or none when it is not there.
-    // A number in the attributes, or 0 when it is not there.
-    private static decimal ReadDecimal(JsonElement a, string name)
-    {
-        if (!a.TryGetProperty(name, out var v)) return 0;
-        if (v.ValueKind != JsonValueKind.Number) return 0;
-        return v.GetDecimal();
-    }
 
     /// <summary>A whole-number attribute of a JSON entry (0 when missing).</summary>
     private static int ReadInt(JsonElement a, string name) => a.TryGetProperty(name, out var v) && v.TryGetInt32(out var n) ? n : 0;

@@ -30,6 +30,7 @@ public class ReviewController(
         return View(new ReviewViewModel(docs, await QuoteAsync(docs, docs.App.Deposit), pay, repay, sourceOfFunds)
         {
             Refused = Said().GetValueOrDefault("banner"),
+            BankProblems = await BankProblemsAsync(docs, BankForm.From(payment)),
         });
     }
 
@@ -43,7 +44,10 @@ public class ReviewController(
         if (await LoadAsync() is not { } docs) return Start();
         // Submitted already - from another tab, or by a second press: where it went is on its own page.
         if (docs.App.Submitted is not null) return RedirectToAction(nameof(SubmittedController.Index), "Submitted");
-        var review = new ReviewViewModel(docs, null, null, null, await SourceOfFundsAsync(docs, docs.App.Deposit?.Amount ?? 0));
+        var review = new ReviewViewModel(docs, null, null, null, await SourceOfFundsAsync(docs, docs.App.Deposit?.Amount ?? 0))
+        {
+            BankProblems = await BankProblemsAsync(docs, BankForm.From(docs.App.Payment)),
+        };
         if (!review.Ready) return Back(nameof(Index), new() { ["banner"] = "Something is still missing, so the application was not submitted." });
 
         var (link, said) = await PaymentLinkAsync(docs.AppNo);

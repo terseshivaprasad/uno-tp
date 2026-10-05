@@ -168,7 +168,7 @@ public sealed class SqlRenewals(Db db, IPartner partner, IRenewalOpener applicat
         // The maturity amount as quoted when it was submitted; the deposit's own amount where none was.
         var maturityAmount = (long)(row.MaturityAmount ?? row.Amount);
         return new HeldDeposit(row.Number, row.Folio, row.Investor, row.Category ?? "", row.Amount, row.Rate ?? 0, tenure, row.InterestFreq ?? "",
-            started, matures, maturityAmount, status, status == "due", why, jointHolders, repayment, row.AutoRenewal, renewal);
+            matures, maturityAmount, status, status == "due", why, jointHolders, repayment, row.AutoRenewal, renewal);
     }
 
     // The application that renews the deposit, and whether its request can be cancelled now.

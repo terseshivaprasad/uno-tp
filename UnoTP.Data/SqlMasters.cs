@@ -1,4 +1,3 @@
-using System.Globalization;
 using Dapper;
 using UnoTP.Models;
 
@@ -13,6 +12,9 @@ public sealed partial class SqlMasters(Db db, SqlReference reference) : IInvesto
 {
     private const int Found = 20;
 
+    // How many branches the bank search gives back, as the FD system's own does.
+    private const int BanksFound = 15;
+
     // ----- Investors ---------------------------------------------------------------
 
     private sealed class FolioRow
@@ -23,14 +25,34 @@ public sealed partial class SqlMasters(Db db, SqlReference reference) : IInvesto
         public string Name { get; set; } = "";
         public string Gender { get; set; } = "";
         public string Address { get; set; } = "";
-        public bool DocPan { get; set; }
+        public string? Line1 { get; set; }
+        public string? PinCode { get; set; }
         public bool DocPhoto { get; set; }
         public bool DocPoa { get; set; }
         public string Note { get; set; } = "";
         public string? Source { get; set; }
 
+        // The address the folio master holds for the holder.
+        public AddressOnRecord AddressOnRecord => new(Address, Line1 ?? "", PinCode ?? "");
+
         public FolioRecord Record() =>
-            new(Pan, Dates.FromDb(Dob), Folio, Name, Gender, Address, new DocsOnRecord(DocPan, DocPhoto, DocPoa), Note, Source ?? "");
+            new(Pan, Dates.FromDb(Dob), Folio, Name, Gender, Address, OnRecord(DocPhoto, DocPoa, AddressOnRecord), Note, Source ?? "");
+    }
+
+    // An address on record for a holder, with its first line and PIN code apart.
+    private sealed record AddressOnRecord(string Address, string Line1, string PinCode);
+
+    // What a holder on a folio need not upload again.
+    //   - The PAN copy is never asked of them: the folio was opened on it.
+    //   - The photograph counts when its document is on record.
+    //   - The proof of address counts when its document is on record, verified or
+    //     not, and the address on record gives its first line and its PIN code.
+    //     Without those the address has to be read off a proof filed here, so the
+    //     proof is asked for.
+    private static DocsOnRecord OnRecord(bool photo, bool poa, AddressOnRecord address)
+    {
+        var addressComplete = address.Line1.Trim().Length > 0 && address.PinCode.Trim().Length > 0;
+        return new DocsOnRecord(Pan: true, Photo: photo, Poa: poa && addressComplete);
     }
 
     // One row of MasterQueries.KycOnCommon or KycOnBt, as this reads it.
@@ -60,76 +82,95 @@ public sealed partial class SqlMasters(Db db, SqlReference reference) : IInvesto
         }
     }
 
+    // A PAN, a folio number or a code a row is looked up by, sent as plain (VARCHAR)
+    // text. The FD system's tables are big and the lookup has to use their index:
+    // text sent the usual way (NVARCHAR) against a VARCHAR column makes SQL Server
+    // convert the column and read the whole index instead. Plain text is found by
+    // the index whichever of the two the column is. These keys are letters and
+    // digits only, so nothing is lost.
+    private static DbString Key(string value) => Plain(value.Trim().ToUpperInvariant());
+
+    // Text sent as plain (VARCHAR) text, as it stands: a name looked up, or what a search matches.
+    private static DbString Plain(string value) => new() { Value = value, IsAnsi = true };
+
     // Every folio held against the PAN: more than one is a record Operations has to merge.
     public Task<IReadOnlyList<FolioDeposit>> FolioDepositsByPanAsync(string pan, CancellationToken ct = default) =>
-        FolioDepositsAsync("d.Pan = @Value", pan, ct);
+        FolioDepositsAsync(MasterQueries.FolioDepositsByPan, new { Pan = Key(pan) }, ct);
 
     public Task<IReadOnlyList<FolioDeposit>> FolioDepositsByFolioAsync(string folio, CancellationToken ct = default) =>
-        FolioDepositsAsync("d.Folio = @Value", folio, ct);
+        FolioDepositsAsync(MasterQueries.FolioDepositsByFolio, new { Folio = Key(folio) }, ct);
 
     public async Task<string> FolioOfFirstHolderAsync(string pan, CancellationToken ct = default)
     {
         await using var connection = await db.OpenAsync(ct);
         var folio = await connection.QueryFirstOrDefaultAsync<string>(
-            $"SELECT TOP (1) h.Folio FROM ({MasterQueries.FirstHolders}) h WHERE h.Pan = @Pan ORDER BY h.Folio",
-            new { Pan = pan.Trim().ToUpperInvariant() });
+            $"SELECT TOP (1) h.Folio FROM ({MasterQueries.FirstHolders}) h ORDER BY h.Folio",
+            new { Pan = Key(pan) });
         return (folio ?? "").Trim();
     }
 
-    // The deposits the folio check looks at, for one PAN or one folio.
-    private async Task<IReadOnlyList<FolioDeposit>> FolioDepositsAsync(string where, string value, CancellationToken ct)
+    // The deposits the folio check looks at, for one PAN or one folio: the query
+    // carries the key it reads by.
+    private async Task<IReadOnlyList<FolioDeposit>> FolioDepositsAsync(string deposits, object key, CancellationToken ct)
     {
         await using var connection = await db.OpenAsync(ct);
         var rows = await connection.QueryAsync<(string Folio, string Pan, DateTime? Dob)>(
-            $"SELECT d.Folio, d.Pan, d.Dob FROM ({MasterQueries.FolioDeposits}) d WHERE {where} ORDER BY d.Folio",
-            new { Value = value.Trim().ToUpperInvariant() });
+            $"SELECT d.Folio, d.Pan, d.Dob FROM ({deposits}) d ORDER BY d.Folio", key);
         return rows.Select(r => new FolioDeposit((r.Folio ?? "").Trim(), (r.Pan ?? "").Trim(), Dates.FromDb(r.Dob))).ToList();
-    }
-
-    // One row of MasterQueries.KycSource. The id is a number in most sources and blank for the folio master.
-    private sealed class KycSourceRow
-    {
-        public string Source { get; set; } = "";
-        public object? Id { get; set; }
     }
 
     public async Task<FolioRecord?> FolioOnRecordAsync(string folio, string pan, string dob, CancellationToken ct = default)
     {
-        var f = await FolioAsync(folio, ct);
-        if (f is null) return null;
+        // The holder's own row: the folio master holds one for every holder of the folio.
+        var row = await HolderRowAsync(folio, pan, ct);
+        if (row is null) return null;
+        var f = row.Record();
 
         // The folio master's own source, address and documents stand where no
         // source holds a row for the holder, or holds none of that kind.
-        var kyc = await KycSourceAsync(pan, dob, f.Folio, ct);
-        var source = kyc?.Source ?? f.Source;
-        var address = await AddressOnFolioAsync(source, f.Folio, ct);
-        if (address.Length == 0) address = f.Address;
-        var docs = await DocumentsOnFolioAsync(source, f.Folio, ct) ?? f.Docs;
-        return f with { Source = source, Address = address, Docs = docs };
+        var source = await KycSourceAsync(pan, dob, f.Folio, ct) ?? f.Source;
+        var holder = HolderOf(f.Folio, pan, dob);
+        var address = await AddressOnFolioAsync(source, holder, ct) ?? row.AddressOnRecord;
+        var documents = await DocumentsOnFolioAsync(source, holder, ct) ?? (row.DocPhoto, row.DocPoa);
+        var docs = OnRecord(documents.Photo, documents.Poa, address);
+        return f with { Source = source, Address = address.Address, Docs = docs };
     }
 
-    // Where a holder's latest KYC data, address and documents are kept; null when no source holds them.
-    private async Task<KycSource?> KycSourceAsync(string pan, string dob, string folio, CancellationToken ct)
+    // A holder of a folio, as the sources are asked for them: a folio can have more
+    // than one holder, so a row is theirs only by folio, PAN and date of birth together.
+    private sealed record FolioHolder(DbString Folio, DbString Pan, DateTime? Dob);
+
+    private static FolioHolder HolderOf(string folio, string pan, string dob) =>
+        new(Key(folio), Key(pan), Dates.ParseDdMmYyyy(dob));
+
+    // Where a holder's latest KYC data, address and documents are kept (KycSources);
+    // null when no source holds them. Only the query's first column, source, is read.
+    private async Task<string?> KycSourceAsync(string pan, string dob, string folio, CancellationToken ct)
     {
         await using var connection = await db.OpenAsync(ct);
-        var row = await connection.QueryFirstOrDefaultAsync<KycSourceRow>(MasterQueries.KycSource,
-            new { pan = pan.Trim().ToUpperInvariant(), dob = Dates.ParseDdMmYyyy(dob), folio = folio.Trim().ToUpperInvariant() });
-        if (row is null) return null;
-        return new KycSource(row.Source.Trim(), Convert.ToString(row.Id, CultureInfo.InvariantCulture) ?? "");
+        var source = await connection.QueryFirstOrDefaultAsync<string>(MasterQueries.KycSource,
+            new { pan = Key(pan), dob = Dates.ParseDdMmYyyy(dob), folio = Key(folio) });
+        return source?.Trim();
     }
 
-    public async Task<FolioRecord?> FolioAsync(string folio, CancellationToken ct = default)
+    // The folio by its number alone is its first holder's row.
+    public async Task<FolioRecord?> FolioAsync(string folio, CancellationToken ct = default) =>
+        (await HolderRowAsync(folio, "", ct))?.Record();
+
+    // One holder's row of a folio in the folio master: the holder with this PAN, or
+    // with no PAN the first holder. The first row found is taken, so a holder the
+    // master happens to hold twice does not stop the search.
+    private async Task<FolioRow?> HolderRowAsync(string folio, string pan, CancellationToken ct)
     {
         await using var connection = await db.OpenAsync(ct);
-        return (await connection.QuerySingleOrDefaultAsync<FolioRow>(
-            $"SELECT * FROM ({MasterQueries.Folios}) f WHERE f.Folio = @Folio",
-            new { Folio = folio.Trim().ToUpperInvariant() }))?.Record();
+        return await connection.QueryFirstOrDefaultAsync<FolioRow>(
+            MasterQueries.Folios, new { Folio = Key(folio), Pan = Key(pan) });
     }
 
-    // The details held for a folio, read from where its latest KYC is kept: the latest
-    // row that source's query gives for the folio. The marital status is kept as its
-    // code, and given as the name the page offers.
-    public async Task<HolderDetails?> KycOnFolioAsync(string source, string folio, CancellationToken ct = default)
+    // The details held for a holder of a folio, read from where their latest KYC is
+    // kept: the latest row that source's query gives for the folio, PAN and date of
+    // birth. The marital status is kept as its code, and given as the name the page offers.
+    public async Task<HolderDetails?> KycOnFolioAsync(string source, string folio, string pan, string dob, CancellationToken ct = default)
     {
         var query = KycDetailsQuery(source);
         if (query is null || folio.Trim().Length == 0) return null;
@@ -137,8 +178,8 @@ public sealed partial class SqlMasters(Db db, SqlReference reference) : IInvesto
         var maritalStatuses = ((await reference.ReferenceAsync(ct)).Masters ?? MasterLists.None).MaritalStatuses;
         await using var connection = await db.OpenAsync(ct);
         var row = await connection.QueryFirstOrDefaultAsync<FolioKycRow>(
-            $"SELECT TOP (1) * FROM ({query}) k WHERE k.Folio = @Folio ORDER BY k.SavedOn DESC",
-            new { Folio = folio.Trim() });
+            $"SELECT TOP (1) * FROM ({query}) k ORDER BY k.SavedOn DESC",
+            HolderOf(folio, pan, dob));
         if (row is null) return null;
 
         return new HolderDetails(
@@ -156,8 +197,8 @@ public sealed partial class SqlMasters(Db db, SqlReference reference) : IInvesto
             Communication: row.Mail());
     }
 
-    // The query that reads KYC details from a source, by folio; null for the folio
-    // master, which holds none.
+    // The query that reads KYC details from a source; null for the folio master,
+    // which holds none.
     private static string? KycDetailsQuery(string source)
     {
         if (source == KycSources.Common) return MasterQueries.KycOnCommon;
@@ -165,22 +206,25 @@ public sealed partial class SqlMasters(Db db, SqlReference reference) : IInvesto
         return null;
     }
 
-    // The address the source holds for the folio: its latest permanent address row.
-    // Empty for the folio master, whose address comes with the folio itself.
-    private async Task<string> AddressOnFolioAsync(string source, string folio, CancellationToken ct)
+    // The address the source holds for the holder: their latest permanent address row.
+    // Null for the folio master, whose address comes with the folio itself, and where
+    // the source holds none.
+    private async Task<AddressOnRecord?> AddressOnFolioAsync(string source, FolioHolder holder, CancellationToken ct)
     {
         var query = AddressQuery(source);
-        if (query is null || folio.Trim().Length == 0) return "";
+        if (query is null) return null;
 
         await using var connection = await db.OpenAsync(ct);
-        var address = await connection.QueryFirstOrDefaultAsync<string>(
-            $"SELECT TOP (1) a.Address FROM ({query}) a WHERE a.Folio = @Folio ORDER BY a.SavedOn DESC",
-            new { Folio = folio.Trim() });
+        var row = await connection.QueryFirstOrDefaultAsync<(string? Address, string? Line1, string? PinCode)>(
+            $"SELECT TOP (1) a.Address, a.Line1, a.PinCode FROM ({query}) a ORDER BY a.SavedOn DESC",
+            holder);
         // The last part may be missing, which leaves the comma before it.
-        return (address ?? "").Trim().TrimEnd(',').Trim();
+        var address = (row.Address ?? "").Trim().TrimEnd(',').Trim();
+        if (address.Length == 0) return null;
+        return new AddressOnRecord(address, row.Line1 ?? "", row.PinCode ?? "");
     }
 
-    // The query that reads a source's permanent address, by folio; null for the folio master.
+    // The query that reads a source's permanent address; null for the folio master.
     private static string? AddressQuery(string source)
     {
         if (source == KycSources.Common) return MasterQueries.AddressOnCommon;
@@ -188,35 +232,26 @@ public sealed partial class SqlMasters(Db db, SqlReference reference) : IInvesto
         return null;
     }
 
-    // Which of the PAN copy, the photograph and a proof of address are on record at
-    // the source for the folio, told by the sub-type each is filed under. A PAN copy
-    // or a proof counts only once it is verified there; a photograph, which nothing
-    // verifies, counts when it is there. No other document is looked for.
-    private async Task<DocsOnRecord?> DocumentsOnFolioAsync(string source, string folio, CancellationToken ct)
+    // Whether the photograph and a proof of address are on record at the source for
+    // the holder, told by the sub-type each is filed under. A document that is there
+    // counts, verified or not. Null for the folio master, which says so itself. No
+    // other document is looked for: the PAN copy is never asked of a holder on a folio.
+    private async Task<(bool Photo, bool Poa)?> DocumentsOnFolioAsync(string source, FolioHolder holder, CancellationToken ct)
     {
         var query = DocumentsQuery(source);
-        if (query is null || folio.Trim().Length == 0) return null;
+        if (query is null) return null;
 
         await using var connection = await db.OpenAsync(ct);
-        var rows = await connection.QueryAsync<(string SubTypeCode, int Verified)>(
-            $"SELECT d.SubTypeCode, MAX(d.Verified) FROM ({query}) d WHERE d.Folio = @Folio GROUP BY d.SubTypeCode",
-            new { Folio = folio.Trim() });
-        var filed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var verified = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var row in rows)
-        {
-            var subType = (row.SubTypeCode ?? "").Trim();
-            filed.Add(subType);
-            if (row.Verified == 1) verified.Add(subType);
-        }
+        var subTypes = await connection.QueryAsync<string>($"SELECT DISTINCT d.SubTypeCode FROM ({query}) d", holder);
+        var filed = new HashSet<string>(subTypes.Select(subType => (subType ?? "").Trim()), StringComparer.OrdinalIgnoreCase);
 
         var codes = await reference.DocumentCodesAsync(ct);
-        bool In(HashSet<string> held, string document) => codes.TryGetValue(document, out var code) && held.Contains(code.SubTypeCode);
+        bool Filed(string document) => codes.TryGetValue(document, out var code) && filed.Contains(code.SubTypeCode);
         var proofs = codes.Keys.Where(document => document.StartsWith("poa:", StringComparison.Ordinal));
-        return new DocsOnRecord(In(verified, "pan"), In(filed, "photo"), proofs.Any(proof => In(verified, proof)));
+        return (Filed("photo"), proofs.Any(Filed));
     }
 
-    // The query that reads a source's documents, by folio; null for the folio master.
+    // The query that reads a source's documents; null for the folio master.
     private static string? DocumentsQuery(string source)
     {
         if (source == KycSources.Common) return MasterQueries.DocumentsOnCommon;
@@ -302,23 +337,22 @@ public sealed partial class SqlMasters(Db db, SqlReference reference) : IInvesto
         if (code.Length == 0) return null;
         await using var connection = await db.OpenAsync(ct);
         return await connection.QueryFirstOrDefaultAsync<Party>(
-            $"SELECT TOP (1) p.Code, p.Name FROM ({parties}) p WHERE p.Code = @Code", new { Code = code });
+            $"SELECT TOP (1) p.Code, p.Name FROM ({parties}) p {ForThisCall}", OneRow("Code", Key(code)));
     }
 
-    // Every word typed must be in the code or the name; a code that starts with the text comes first.
-    // Nothing is asked until enough is typed (TypedSearch.FromLength).
+    // The parties whose code and name hold what was typed, in the order typed; a code that
+    // starts with the first word comes first. Nothing is asked until enough is typed (TypedSearch.FromLength).
     private async Task<IReadOnlyList<Party>> SearchPartiesAsync(string parties, string query, CancellationToken ct)
     {
         if (!TypedSearch.LongEnough(query)) return [];
         var words = Words(query, ' ');
         if (words.Length == 0) return [];
-        var (where, args) = AllWords(words, "p.Code + ' ' + p.Name");
-        args.Add("First", EscapeLikePattern(words[0]) + "%");
+        var args = Typed("Code", words);
+        args.Add("First", Plain(words[0] + "%"));
         await using var connection = await db.OpenAsync(ct);
         return (await connection.QueryAsync<Party>($"""
             SELECT TOP ({Found}) p.Code, p.Name FROM ({parties}) p
-            WHERE {where}
-            ORDER BY CASE WHEN p.Code LIKE @First ESCAPE '\' THEN 0 ELSE 1 END, p.Name
+            ORDER BY CASE WHEN p.Code LIKE @First THEN 0 ELSE 1 END, p.Name {ForThisCall}
             """, args)).ToList();
     }
 
@@ -327,27 +361,55 @@ public sealed partial class SqlMasters(Db db, SqlReference reference) : IInvesto
     public async Task<BankBranch?> BranchAsync(string ifsc, CancellationToken ct = default)
     {
         await using var connection = await db.OpenAsync(ct);
-        return await connection.QuerySingleOrDefaultAsync<BankBranch>(
-            $"SELECT b.Ifsc, b.Bank, b.Branch, b.Micr FROM ({MasterQueries.BankBranches}) b WHERE b.Ifsc = @Ifsc",
-            new { Ifsc = ifsc.Trim().ToUpperInvariant() });
+        return await connection.QueryFirstOrDefaultAsync<BankBranch>(
+            $"SELECT TOP (1) b.Ifsc, b.Bank, b.Branch, b.Micr FROM ({MasterQueries.BankBranches}) b {ForThisCall}", OneRow("Ifsc", Key(ifsc), searchName: "Words"));
     }
 
-    // Every word typed must be in the bank, the branch, the IFSC or the MICR; a
-    // branch whose IFSC or MICR starts with what was typed comes first. The bank master
-    // is big, so nothing is asked until enough is typed (TypedSearch.FromLength).
+    // Searched as it is typed, by the rule the FD system's own bank search goes by:
+    // every word typed must be in the branch's search key, in any order; the
+    // branches found are listed by MICR code, and at most BanksFound of them come
+    // back. Nothing is asked until enough is typed (TypedSearch.FromLength). The
+    // master is never sent to the page.
     public async Task<IReadOnlyList<BankBranch>> SearchBranchesAsync(string query, CancellationToken ct = default)
+    {
+        if (!TypedSearch.LongEnough(query)) return [];
+        var words = Words(query, ' ', ',', '—', '-', '>', '(', ')');
+        if (words.Length == 0) return [];
+        var args = new DynamicParameters();
+        args.Add("Ifsc", null, System.Data.DbType.AnsiString);
+        args.Add("Words", Plain(string.Join(" ", words)));
+        await using var connection = await db.OpenAsync(ct);
+        return (await connection.QueryAsync<BankBranch>($"""
+            SELECT TOP ({BanksFound}) b.Ifsc, b.Bank, b.Branch, b.Micr FROM ({MasterQueries.BankBranches}) b
+            ORDER BY b.Micr {ForThisCall}
+            """, args)).ToList();
+    }
+
+    // ----- Axis CMS branches -----------------------------------------------------------
+    // The Axis CMS master is not read whole either: a branch is searched as it is
+    // typed, by its label - name, location and PIN code - and the one picked is kept
+    // and looked up by its code.
+
+    public async Task<IReadOnlyList<CmsLocation>> SearchCmsLocationsAsync(string query, CancellationToken ct = default)
     {
         if (!TypedSearch.LongEnough(query)) return [];
         var words = Words(query, ' ', ',', '—', '-');
         if (words.Length == 0) return [];
-        var (where, args) = AllWords(words, "b.Bank + ' ' + b.Branch + ' ' + b.Ifsc + ' ' + b.Micr");
-        args.Add("Start", EscapeLikePattern(query.Trim()) + "%");
         await using var connection = await db.OpenAsync(ct);
-        return (await connection.QueryAsync<BankBranch>($"""
-            SELECT TOP ({Found}) b.Ifsc, b.Bank, b.Branch, b.Micr FROM ({MasterQueries.BankBranches}) b
-            WHERE {where}
-            ORDER BY CASE WHEN b.Ifsc LIKE @Start ESCAPE '\' OR b.Micr LIKE @Start ESCAPE '\' THEN 0 ELSE 1 END, b.Bank, b.Branch
-            """, args)).ToList();
+        return (await connection.QueryAsync<CmsLocation>($"""
+            SELECT TOP ({Found}) c.Code, c.Name, c.Label FROM ({MasterQueries.CmsLocations}) c
+            ORDER BY c.State, c.District {ForThisCall}
+            """, Typed("Code", words))).ToList();
+    }
+
+    public async Task<CmsLocation?> CmsLocationAsync(string code, CancellationToken ct = default)
+    {
+        code = code.Trim();
+        // A code is letters and digits: anything else was not picked from the search.
+        if (code.Length == 0 || !code.All(char.IsAsciiLetterOrDigit)) return null;
+        await using var connection = await db.OpenAsync(ct);
+        return await connection.QueryFirstOrDefaultAsync<CmsLocation>(
+            $"SELECT TOP (1) c.Code, c.Name, c.Label FROM ({MasterQueries.CmsLocations}) c {ForThisCall}", OneRow("Code", Key(code)));
     }
 
     // ----- PIN codes ------------------------------------------------------------------
@@ -358,28 +420,41 @@ public sealed partial class SqlMasters(Db db, SqlReference reference) : IInvesto
         if (pin.Length != 6 || !pin.All(char.IsAsciiDigit)) return null;
         await using var connection = await db.OpenAsync(ct);
         return await connection.QuerySingleOrDefaultAsync<PinPlace>(
-            $"SELECT p.PinCode, p.District, p.State FROM ({MasterQueries.PinCodes}) p WHERE p.PinCode = @Pin",
-            new { Pin = pin });
+            MasterQueries.PinCodes, new { Pin = Key(pin) });
     }
 
-    // ----- Searching ---------------------------------------------------------------------
+    // ----- Reading a register: one row by its key, or a search ------------------------
+    // A register's query takes both its key and @Search (MasterQueries). The app gives
+    // one and leaves the other empty.
 
-    private static string[] Words(string query, params char[] separators) =>
-        query.Split(separators, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+    // SQL Server is told to plan the read for this call's own values. With one of
+    // the two parameters empty the query is really one of two different reads - a
+    // row by its key, found by the index, or a search - and a plan kept from the
+    // other kind would read the whole register to find one row.
+    private const string ForThisCall = "OPTION (RECOMPILE)";
 
-    // Each word, anywhere in the text: "text LIKE @w0 AND text LIKE @w1 ...".
-    private static (string Where, DynamicParameters Args) AllWords(string[] words, string text)
+    // One row by its key: no search. The bank's query calls what was typed @Words.
+    private static DynamicParameters OneRow(string keyName, object key, string searchName = "Search")
     {
         var args = new DynamicParameters();
-        var where = string.Join(" AND ", words.Select((w, i) =>
-        {
-            args.Add("w" + i.ToString(CultureInfo.InvariantCulture), "%" + EscapeLikePattern(w) + "%");
-            return $"{text} LIKE @w{i} ESCAPE '\\'";
-        }));
-        return (where, args);
+        args.Add(keyName, key);
+        args.Add(searchName, null, System.Data.DbType.AnsiString);
+        return args;
     }
 
-    // What was typed, taken as it is: LIKE's own characters are escaped.
-    private static string EscapeLikePattern(string value) =>
-        value.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_").Replace("[", "\\[");
+    // A search for what was typed: no key. The words are looked for in the order
+    // typed, with anything between them: %word%word%.
+    private static DynamicParameters Typed(string keyName, string[] words)
+    {
+        var args = new DynamicParameters();
+        args.Add(keyName, null, System.Data.DbType.AnsiString);
+        args.Add("Search", Plain("%" + string.Join("%", words) + "%"));
+        return args;
+    }
+
+    // What was typed, as words. LIKE's own characters are left out of them, so a
+    // word is only ever looked for as it reads.
+    private static string[] Words(string query, params char[] separators) =>
+        query.Replace("%", "").Replace("_", "").Replace("[", "")
+            .Split(separators, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 }

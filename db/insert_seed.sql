@@ -58,8 +58,6 @@ INSERT dbo.t_Unotp_App_Config (f_Key, f_Value, f_Description, f_Active, f_Create
     (N'renewFromDays', N'61', N'Days before maturity renewal entry opens', 1, 'SEED'),
     (N'renewUntilDays', N'7', N'Days before maturity renewal entry closes', 1, 'SEED'),
     (N'renewUntilDaysAutoRenewal', N'10', N'The same, for a deposit tagged for auto renewal', 1, 'SEED'),
-    (N'sessionHours', N'8', N'Hours a session lasts after entry', 1, 'SEED'),
-    (N'sysCode', N'UNOTP', N'The system code the portal enters Uno TP with', 1, 'SEED'),
     (N'slipNoPrefix', N'AXPIS', N'Pay-in slip numbers: {prefix}{running number}', 1, 'SEED'),
     (N'defaultRateCategory', N'PUBLIC', N'The category (a code of the ''categories'' list) whose rates a deposit takes when its own category has none', 1, 'SEED'),
     (N'compoundingPerYear', N'1', N'Times a year a cumulative deposit compounds; the months after the last whole period earn simple interest', 1, 'SEED'),

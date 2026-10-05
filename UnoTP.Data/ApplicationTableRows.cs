@@ -127,7 +127,7 @@ internal sealed class PaymentBankRow
 {
     public const string Columns = """
         f_Bank_NEFT AS Ifsc, f_BankAccountNo AS AccountNo, f_Cheque_DD_No AS ChequeNo, f_Cheque_DD_Date AS ChequeDate,
-        f_CMS_Loc_Desc AS CmsLocation
+        f_CMS_Loc_Desc AS CmsLocation, f_CMS_Loc_CD AS CmsLocationCode
         """;
 
     public string? Ifsc { get; set; }
@@ -135,6 +135,7 @@ internal sealed class PaymentBankRow
     public string? ChequeNo { get; set; }
     public DateTime? ChequeDate { get; set; }
     public string? CmsLocation { get; set; }
+    public string? CmsLocationCode { get; set; }
 }
 
 internal sealed class RepaymentBankRow

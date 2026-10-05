@@ -211,16 +211,18 @@
                         </div>
                         @{ await FieldError("Cheque.Date", "cheque-date"); }
                     </div>
-                    <div class="doc-column">
+                    <div class="doc-column bank-search">
                         <label class="field-label" for="cms-location">Axis @Glossary.Term("CMS") Branch</label>
-                        @* Typed, with the backend's branches offered as the browser's own suggestions. *@
-                        <input class="field-input @Invalid("Cheque.CmsLocation")" id="cms-location" name="Cheque.CmsLocation" maxlength="50" data-chars="text" value="@form.Cheque.CmsLocation" list="cms-locations" placeholder="Start typing a branch" autocomplete="off" spellcheck="false" data-required="Enter the Axis CMS branch" aria-invalid="@AriaInvalid("Cheque.CmsLocation")" aria-describedby="@(DescribedBy("Cheque.CmsLocation", "cms-location") ?? "cms-location-hint")">
-                        <datalist id="cms-locations">
-                            @foreach (var location in Model.CmsLocations)
-                            {
-                                <option value="@location"></option>
-                            }
-                        </datalist>
+                        @* Searched as it is typed, like the bank (payment.js): the Axis CMS master is
+                           never listed whole. The branch picked is what is kept. *@
+                        <input class="field-input @Invalid("Cheque.CmsLocation")" id="cms-location" name="Cheque.CmsLocation" maxlength="50" data-chars="search" value="@form.Cheque.CmsLocation" placeholder="Start typing a branch" autocomplete="off" spellcheck="false"
+                               data-required="Search for the Axis CMS branch and pick it"
+                               role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="cms-suggest"
+                               data-cms-search="@Url.Action("CmsLocations")" data-cms-code="cms-code" data-search-from="@TypedSearch.FromLength"
+                               aria-invalid="@AriaInvalid("Cheque.CmsLocation")" aria-describedby="@(DescribedBy("Cheque.CmsLocation", "cms-location") ?? "cms-location-hint")">
+                        <ul class="bank-suggest" id="cms-suggest" role="listbox" aria-label="Axis CMS branches found" hidden></ul>
+                        @* The code of the branch picked: set by the pick, emptied when the name is typed over. *@
+                        <input type="hidden" id="cms-code" name="Cheque.CmsCode" value="@form.Cheque.CmsCode">
                         @{ await FieldError("Cheque.CmsLocation", "cms-location"); }
                         <p class="field-hint" id="cms-location-hint">The Axis branch the cheque is presented at &mdash; the one nearest the investor</p>
                     </div>

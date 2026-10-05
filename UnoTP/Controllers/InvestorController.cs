@@ -40,6 +40,13 @@ public class InvestorController(
     // application store: read before every action, saved back after it.
     private const string Page = "investor-info";
 
+    // Set when the holders' rows have to be written again though nothing typed on
+    // this page changed. A holder's KYC row carries more than the page holds - what
+    // name screening said and when, and what Upload Documents has settled - and it
+    // was last written when the form last changed, which is before Proceed asks
+    // name screening. So Proceed, once screening has answered, has them written afresh.
+    private bool holderRowsDue;
+
     // The banner at the top of the page, by the id the page gives it.
     private const string BannerId = "investorBanner";
     private InvestorInfoState? state;
@@ -156,6 +163,9 @@ public class InvestorController(
             await SaveAsync(docs);
             return Back(BannerId);
         }
+        // Every holder has an answer from name screening now, and their rows are
+        // written afresh to carry it (see OnActionExecutionAsync).
+        holderRowsDue = true;
         if (notAllowed.Count > 0)
         {
             await SaveAsync(docs);
@@ -379,7 +389,7 @@ public class InvestorController(
             if (folio.Length == 0) continue;
             if (state.FolioLookedAt.Contains(number)) continue;
             state.FolioLookedAt.Add(number);
-            var onFolio = await investors.KycOnFolioAsync(source, folio);
+            var onFolio = await investors.KycOnFolioAsync(source, folio, holder.Who.Pan, holder.Who.Dob);
             if (onFolio is null) continue;
             var filled = InvestorDetailsForm.FillHolder(state, number, onFolio, docs.MailTyped(holder));
             if (filled > 0) state.FilledFromFolio.Add(number);
@@ -406,6 +416,8 @@ public class InvestorController(
     /// now holds is also saved as the application's details, so the page always
     /// opens on what the backend has. The details are a part of their own, so a
     /// save that meets a newer version reads the application again and saves over it.
+    /// Details that have not changed are not written again - unless the holders'
+    /// rows are due all the same (<see cref="holderRowsDue"/>).
     /// </summary>
     public override async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
@@ -423,7 +435,8 @@ public class InvestorController(
         for (var tries = 0; tries < 2; tries++)
         {
             if (await applications.FindAsync(appNo) is not { } app) return;
-            if (JsonSerializer.Serialize(app.Details ?? new()) == JsonSerializer.Serialize(details)) return;
+            var unchanged = JsonSerializer.Serialize(app.Details ?? new()) == JsonSerializer.Serialize(details);
+            if (unchanged && !holderRowsDue) return;
             if (await applications.SaveDetailsAsync(appNo, app.Version, details) is not null) return;
         }
     }

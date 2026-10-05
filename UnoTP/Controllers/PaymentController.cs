@@ -45,6 +45,21 @@ public class PaymentController(IApplicationApi applications, IDepositApi deposit
     }
 
     /// <summary>
+    /// The Axis CMS branch search's suggestions: the branches whose label - name, location
+    /// and PIN code - holds what was typed, each shown by that label. Like the bank master,
+    /// the Axis CMS master is searched and never listed whole.
+    /// </summary>
+    [HttpGet("cms-locations")]
+    [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Client)]
+    public async Task<IActionResult> CmsLocations(string? q)
+    {
+        if (HttpContext.CurrentApplication() is null) return NotFound();
+        var text = (q ?? "").Trim();
+        if (!TypedSearch.LongEnough(text)) return Json(Array.Empty<CmsLocation>());
+        return Json(await Deposits.SearchCmsLocationsAsync(text[..Math.Min(text.Length, 60)]));
+    }
+
+    /// <summary>
     /// Saves what was typed, finished or not. Find looks an IFSC up and comes back;
     /// Proceed moves on once nothing is missing.
     /// </summary>
@@ -69,28 +84,22 @@ public class PaymentController(IApplicationApi applications, IDepositApi deposit
             form.Find = "repayment";
         }
 
-        // The CMS branch is typed: kept as the backend spells it, whatever the case typed.
-        var cms = form.Cheque.CmsLocation.Trim();
-        form.Cheque.CmsLocation = docs.Ref.CmsLocations.FirstOrDefault(l => string.Equals(l, cms, StringComparison.OrdinalIgnoreCase)) ?? cms;
+        // The Axis CMS branch is picked from its search, which gives its code: the name
+        // kept is the master's own for that code. A name typed without a pick has no
+        // code, and a code the master does not hold is not kept.
+        var cms = byCheque ? await Deposits.CmsLocationAsync(form.Cheque.CmsCode) : null;
+        if (cms is null) form.Cheque.CmsCode = "";
+        else form.Cheque.CmsLocation = cms.Name;
         if (await Applications.SavePaymentAsync(docs.AppNo, docs.App.Version, form.ToDetails(byCheque)) is null)
             return Back(nameof(Index), new() { ["banner"] = Changed });
         if (form.Find is not null) return RedirectToAction(nameof(Index), null, null, form.Find == "repayment" ? "repay-ifsc" : "pay-ifsc");
         // Save draft: kept as it stands, checked only on Proceed.
         if (draft is not null) return Back(nameof(Index), new());
 
-        var (pay, repay) = await BranchesAsync(byCheque ? form.Payment.CleanIfsc : "", form.Repayment.CleanIfsc);
-        var problems = form.Problems(byCheque, pay, form.RepaysToPayment(byCheque) ? pay : repay, docs.Ref.CmsLocations);
-        // Paid online, the repayment bank has to be one the payment gateway takes.
-        if (docs.State.PayMode == "Online" && form.Repayment.CleanIfsc.Length >= 4 && !docs.Ref.OnPaymentGateway(form.Repayment.CleanIfsc))
-        {
-            problems["Repayment.Ifsc"] = PaymentViewModel.GatewayProblemFor(repay?.Bank ?? "This bank");
-        }
+        // Without a payment bank (for a cheque) and a repayment bank picked, it does not go on.
+        var problems = await BankProblemsAsync(docs, form);
         return problems.Count > 0 ? Back(nameof(Index), problems) : RedirectToAction(nameof(DepositController.Index), "Deposit");
     }
-
-    // Paid by an instrument - a cheque - rather than electronically: only then is
-    // there an account the deposit is paid from to ask for.
-    private static bool ByCheque(DocumentsViewModel docs) => docs.State.PayMode.Length > 0 && docs.DocumentOf(docs.State.PayMode) is not null;
 
     // The repayment accounts on the deposit being renewed. None for a fresh purchase:
     // an account is carried over only in a renewal, from the folio's selected deposit.

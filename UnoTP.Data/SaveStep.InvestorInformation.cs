@@ -248,12 +248,14 @@ internal static partial class Sections
     {
         if (u is null) return new Kyc("", false, "", null);
 
+        // What name screening said, as the KYC row keeps it (f_NSA_Response, f_NSA_Date):
+        // Y for a holder who may invest online, N for one who may not, with when it
+        // was asked. Screening switched off asked nobody, so both are left empty.
         var screeningStatus = "";
         DateTime? screenedOn = null;
-        if (u.Screening.TryGetValue(code, out var screening))
+        if (u.Screening.TryGetValue(code, out var screening) && screening.Reference != NameScreeningResult.Skipped)
         {
-            screeningStatus = screening.Allowed ? "allowed" : "blocked";
-            if (screening.Reference == NameScreeningResult.Skipped) screeningStatus = "skipped";
+            screeningStatus = screening.Allowed ? "Y" : "N";
             screenedOn = screening.At;
         }
 

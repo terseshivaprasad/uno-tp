@@ -35,6 +35,43 @@ public abstract class ApplicationStepController(IApplicationApi applications, ID
         (payment.Length == 11 ? await deposits.BranchAsync(payment) : null,
          repayment.Length == 11 ? await deposits.BranchAsync(repayment) : null);
 
+    // Paid by an instrument - a cheque - rather than electronically: only then is
+    // there an account the deposit is paid from to ask for.
+    protected static bool ByCheque(DocumentsViewModel docs) => docs.State.PayMode.Length > 0 && docs.DocumentOf(docs.State.PayMode) is not null;
+
+    /// <summary>
+    /// What Bank Details &amp; Payment still lacks, by field, for a form as posted or as
+    /// last saved; empty when nothing does. A payment bank (for a cheque) and a
+    /// repayment bank have to be picked, with their account numbers.
+    /// </summary>
+    protected async Task<Dictionary<string, string>> BankProblemsAsync(DocumentsViewModel docs, BankForm form)
+    {
+        var byCheque = ByCheque(docs);
+        var (pay, repay) = await BranchesAsync(byCheque ? form.Payment.CleanIfsc : "", form.Repayment.CleanIfsc);
+        var cmsLocationOnMaster = byCheque && await deposits.CmsLocationAsync(form.Cheque.CmsCode) is not null;
+        var problems = form.Problems(byCheque, pay, form.RepaysToPayment(byCheque) ? pay : repay, cmsLocationOnMaster);
+        // Paid online, the repayment bank has to be one the payment gateway takes.
+        if (docs.State.PayMode == "Online" && form.Repayment.CleanIfsc.Length >= 4 && !docs.Ref.OnPaymentGateway(form.Repayment.CleanIfsc))
+        {
+            problems["Repayment.Ifsc"] = PaymentViewModel.GatewayProblemFor(repay?.Bank ?? "This bank");
+        }
+        return problems;
+    }
+
+    /// <summary>
+    /// Where the page goes when Bank Details &amp; Payment is not complete as saved: back
+    /// to it, with what is missing marked. Null when it is complete. The steps after
+    /// it neither open nor go on without it, however they were reached - a draft
+    /// saved half-filled, or the address typed.
+    /// </summary>
+    protected async Task<IActionResult?> BackToBankIfNotDoneAsync(DocumentsViewModel docs)
+    {
+        var problems = await BankProblemsAsync(docs, BankForm.From(docs.App.Payment));
+        if (problems.Count == 0) return null;
+        TempData["said"] = JsonSerializer.Serialize(problems);
+        return RedirectToAction(nameof(PaymentController.Index), "Payment");
+    }
+
     /// <summary>
     /// The rate card as FD Configuration offers it: at the amount given, or at the
     /// standing quoteAmount before one is entered. Whose card - the category, the

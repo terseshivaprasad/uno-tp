@@ -738,7 +738,7 @@ GO
      SCHEME, INTEREST_FREQ   what a payout is (a code of the 'payouts' list, and its scheme)
      PERIOD          the tenure, months
      MINIMUM_AMOUNT, MAXIMUM_AMOUNT   the deposits the row is for, rupees, both ends included
-     FROM_DATE, TO_DATE      when the row is in effect; no TO_DATE, it still is
+     FROM_DATE, TO_DATE      a row is in effect from FROM_DATE while it has no TO_DATE; one with a TO_DATE is closed and not read
    ----------------------------------------------------------------------------- */
 IF OBJECT_ID(N'dbo.t_FD_BOTC_SCHEME', N'U') IS NULL
 BEGIN

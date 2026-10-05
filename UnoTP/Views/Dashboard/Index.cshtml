@@ -126,7 +126,7 @@
                         <a class="drafts__all" asp-controller="NewApplication" asp-action="Index">View all <span aria-hidden="true">&rsaquo;</span></a>
                     }
                 </div>
-                <partial name="_Drafts" model="@(new DraftsBlock(draftsShown, Model.Drafts.Count, Partial: false))" />
+                <partial name="_Drafts" model="@(new DraftsBlock(draftsShown, Partial: false))" />
             </section>
         }
 

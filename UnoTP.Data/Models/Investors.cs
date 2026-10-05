@@ -19,28 +19,30 @@ public interface IInvestorApi
     /// <summary>The deposits on a folio, with their first holder, for the folio check; empty for a folio that is not held.</summary>
     Task<IReadOnlyList<FolioDeposit>> FolioDepositsByFolioAsync(string folio, CancellationToken ct = default);
 
-    /// <summary>The folio under this number, or null.</summary>
+    /// <summary>The folio under this number, as its first holder's row in the folio master has it, or null.</summary>
     Task<FolioRecord?> FolioAsync(string folio, CancellationToken ct = default);
 
     /// <summary>
-    /// The folio as its data source has it: the folio master's record, with where the
+    /// The folio as its data source has it: the folio master's record for the holder
+    /// with this PAN (the master has a row for every holder of a folio), with where the
     /// holder's latest KYC is kept (found for the PAN and date of birth), and the
-    /// address and the documents that source holds for the folio. A document counts as
-    /// on record only once it is verified there; a photograph, which nothing verifies,
-    /// counts when it is there. Null for a folio the master does not hold.
+    /// address and the documents that source holds for the holder (see
+    /// <see cref="DocsOnRecord"/>). Null for a folio the master does not hold.
     /// </summary>
     /// <param name="dob">dd-MM-yyyy.</param>
     Task<FolioRecord?> FolioOnRecordAsync(string folio, string pan, string dob, CancellationToken ct = default);
 
     /// <summary>
-    /// The KYC details held for a folio where its latest KYC is kept, to open Investor
-    /// Information with so they are not typed again. Null where the source holds none,
-    /// or is one the details are not read from yet. The holder type is left empty:
-    /// whoever asks knows which holder it is for. A mailing address the source holds
-    /// comes with them, as the communication address.
+    /// The KYC details held for a holder of a folio where their latest KYC is kept, to
+    /// open Investor Information with so they are not typed again. A folio can have
+    /// more than one holder, so they are read by folio, PAN and date of birth together.
+    /// Null where the source holds none, or is one the details are not read from yet.
+    /// The holder type is left empty: whoever asks knows which holder it is for. A
+    /// mailing address the source holds comes with them, as the communication address.
     /// </summary>
     /// <param name="source">Where the folio's latest KYC is kept (<see cref="KycSources"/>).</param>
-    Task<HolderDetails?> KycOnFolioAsync(string source, string folio, CancellationToken ct = default);
+    /// <param name="dob">dd-MM-yyyy.</param>
+    Task<HolderDetails?> KycOnFolioAsync(string source, string folio, string pan, string dob, CancellationToken ct = default);
 
     /// <summary>The nominees named on a deposit of the folio, for its renewal; empty where it names none.</summary>
     Task<IReadOnlyList<NomineeOnRecord>> NomineesOnDepositAsync(string folio, string depositNumber, CancellationToken ct = default);
@@ -49,7 +51,11 @@ public interface IInvestorApi
     Task<IReadOnlyList<AccountOnRecord>> AccountsOnDepositAsync(string folio, string depositNumber, CancellationToken ct = default);
 }
 
-/// <summary>What is on record for a folio, document by document: verified copies, and a photograph.</summary>
+/// <summary>
+/// What a holder on a folio need not upload again. The PAN copy never is. The
+/// photograph is not when it is on record; the proof of address is not when one is
+/// on record, verified or not, and the address on record has its first line and PIN code.
+/// </summary>
 public sealed record DocsOnRecord(bool Pan, bool Photo, bool Poa);
 
 /// <summary>A nominee named on the deposit a renewal renews: picked on Investor Information to fill the nominee's fields.</summary>
@@ -70,15 +76,7 @@ public static class KycSources
 
     /// <summary>An application submitted through this app.</summary>
     public const string Bt = "BT";
-
-    /// <summary>The folio master.</summary>
-    public const string FolioMaster = "FHLD";
 }
-
-/// <summary>Where a holder's latest KYC is kept.</summary>
-/// <param name="Source">ORA the common KYC table, BT an application submitted through this app, FHLD the folio master.</param>
-/// <param name="Id">The row's id in that table; empty or 0 for the folio master, which is found by its folio.</param>
-public sealed record KycSource(string Source, string Id);
 
 /// <summary>A folio the register holds.</summary>
 /// <param name="Dob">dd-MM-yyyy, or empty when the register holds no date of birth.</param>
