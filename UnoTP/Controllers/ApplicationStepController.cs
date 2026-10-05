@@ -105,23 +105,18 @@ public abstract class ApplicationStepController(IApplicationApi applications, ID
 
     /// <summary>
     /// Whether the source of funds is asked for a deposit of this amount: the investor's
-    /// active deposits with us come from the deposits register, by folio or, for an
-    /// investor without one, by PAN and date of birth. A renewal leaves out the deposit
-    /// it renews, which the new one replaces.
+    /// active deposits with us are added up from the FD system's deposit register, by
+    /// their PAN (MasterQueries.ActiveDeposits). A renewal leaves out the deposit it
+    /// renews, which the new one replaces.
     /// </summary>
     protected async Task<SourceOfFundsCheck> SourceOfFundsAsync(DocumentsViewModel docs, long amount)
     {
-        var renewals = services.GetRequiredService<IRenewalApi>();
-        var holder = docs.App.Holder;
-
-        IReadOnlyList<HeldDeposit>? held;
-        if (holder.Folio.Length > 0) held = await renewals.DepositsByFolioAsync(holder.Folio);
-        else held = await renewals.DepositsByPanAsync(holder.Pan, holder.Dob);
+        var investors = services.GetRequiredService<IInvestorApi>();
+        var held = await investors.ActiveDepositsAsync(docs.App.Holder.Pan);
 
         long heldTotal = 0;
-        foreach (var deposit in held ?? [])
+        foreach (var deposit in held)
         {
-            if (deposit.Status is "matured" or "renewed") continue;
             if (docs.Renewal is not null && deposit.Number == docs.Renewal.DepositNumber) continue;
             heldTotal += deposit.Amount;
         }

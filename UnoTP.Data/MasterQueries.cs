@@ -90,6 +90,19 @@ internal static class MasterQueries
         """;
 
     /// <summary>
+    /// The deposits a PAN (@Pan) holds with us that are active, for the source-of-funds
+    /// rule: their amounts are added to the new deposit's. Must give back: Number (the
+    /// FDR number, so a renewal can leave out the deposit it renews) and Amount.
+    /// DEP_STATUS 'L' is an active deposit. PRINC_AMT is kept as text: one that is not a
+    /// number counts as nothing.
+    /// </summary>
+    public const string ActiveDeposits = """
+        SELECT a.FDR_NO AS Number, TRY_CAST(a.PRINC_AMT AS DECIMAL(18, 2)) AS Amount
+        FROM FD.dbo.FDR_MST a WITH (NOLOCK)
+        WHERE a.DEP_STATUS = 'L' AND a.PAN1 = @Pan
+        """;
+
+    /// <summary>
     /// Where a holder's latest KYC data, address and documents are kept, once their
     /// folio is found: the newest row for the PAN, date of birth and folio among the
     /// common KYC table (ORA), the applications submitted through this app (BT) and

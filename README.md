@@ -198,7 +198,7 @@ in the code. The lists, and what each uses beyond code and name:
 | `employeeProofs` | The proofs of employment taken | | |
 | `documentTypes` | The types a document can be | | |
 | `documentSubTypes` | The sub-types under each document type | The document type's code | |
-| `filedDocuments` | Each document the app files. The code is the document as the app knows it (`pan`, `poa:Passport`, `empproof:Employee ID card`) | The code of the sub-type it is filed under | |
+| `filedDocuments` | Each document the app files. The code is the document as the app knows it (`pan`, `poa:Passport`, `empproof:Employee ID Card`) | The code of the sub-type it is filed under | |
 | `genders`, `maritalStatuses`, `nameTypes`, `incomeBands`, `nomineeRelations` | Drop-downs on Investor Information | | |
 | `occupations` | The occupations offered | | |
 | `subOccupations` | The sub occupations offered under an occupation | The occupation's code | |

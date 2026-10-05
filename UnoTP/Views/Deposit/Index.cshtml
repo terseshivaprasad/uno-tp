@@ -45,8 +45,9 @@
     var amountHint = Model.Config.AmountStep > 1 ? $"in multiples of {Money.Rupees(Model.Config.AmountStep)}" : "";
     if (form.AmountValue > 0 && amountProblem is null) amountHint = Model.AmountHint;
 
-    var receiptHint = "The receipt is e-mailed to the investor's e-mail on Investor Information";
-    if (Model.Email.Length > 0) receiptHint = $"The receipt is e-mailed to {Model.Email}";
+    // True whichever way the receipt is sent: only an E Receipt goes by e-mail.
+    var receiptHint = "An E Receipt is e-mailed to the investor's e-mail on Investor Information";
+    if (Model.Email.Length > 0) receiptHint = $"An E Receipt is e-mailed to {Model.Email}";
 }
 @* FD Configuration: the deposit's choices on the left and, beside them, what the backend
    quotes for them. The quote is redrawn on its own as a choice changes (deposit.js);

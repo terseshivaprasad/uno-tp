@@ -13,7 +13,7 @@ public sealed partial class SqlReference
     /// How each document the app files is coded, from three lists in t_Unotp_Ref_List:
     ///
     ///   'filedDocuments'    the document as the app knows it - "pan", "poa:Passport",
-    ///                       "empproof:Employee ID card" - under the sub-type it is filed as
+    ///                       "empproof:Employee ID Card" - under the sub-type it is filed as
     ///   'documentSubTypes'  the sub-type's code and name, under its document type
     ///   'documentTypes'     the type's code and name
     ///

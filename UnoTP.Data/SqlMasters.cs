@@ -123,6 +123,14 @@ public sealed partial class SqlMasters(Db db, SqlReference reference) : IInvesto
         return (folio ?? "").Trim();
     }
 
+    public async Task<IReadOnlyList<ActiveDeposit>> ActiveDepositsAsync(string pan, CancellationToken ct = default)
+    {
+        await using var connection = await db.OpenAsync(ct);
+        var rows = await connection.QueryAsync<(string Number, decimal? Amount)>(
+            $"SELECT d.Number, d.Amount FROM ({MasterQueries.ActiveDeposits}) d", new { Pan = Key(pan) });
+        return rows.Select(r => new ActiveDeposit((r.Number ?? "").Trim(), (long)Math.Round(r.Amount ?? 0))).ToList();
+    }
+
     // The deposits the folio check looks at, for one PAN or one folio: the query
     // carries the key it reads by.
     private async Task<IReadOnlyList<FolioDeposit>> FolioDepositsAsync(string deposits, object key, CancellationToken ct)

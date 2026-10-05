@@ -80,7 +80,7 @@ The joint holders' documents on Investor Information go through the same calls.
 |---|---|
 | `IApplicationApi.FindAsync`, `SaveDepositAsync`, `SaveUploadAsync` | The application; the step saved; the Form 121 filed. |
 | `IDepositApi.RatesAsync`, `QuoteAsync` | The rate card for the category, gender and purchase or renewal; the quote for the deposit as it stands. |
-| `IRenewalApi.DepositsByFolioAsync`, `DepositsByPanAsync` | The investor's active deposits, for the source-of-funds rule. |
+| `IInvestorApi.ActiveDepositsAsync` | The investor's active deposits in the FD system's register (`FDR_MST`, `DEP_STATUS = 'L'`, by `PAN1`), added up for the source-of-funds rule. |
 
 ## Review Summary and Application Submitted (`ReviewController`, `SubmittedController`)
 
@@ -89,7 +89,7 @@ The joint holders' documents on Investor Information go through the same calls.
 | `IApplicationApi.FindAsync`, `SubmitAsync`, `RecordPaymentLinkAsync`, `ResendLinkAsync` | The application; saved as submitted; then - on Submit & send link, or later for one submitted with Try later - its link put on record (the payment link table for a purchase, the re-payment link table for a renewal); a new link. |
 | `IDepositApi.QuoteAsync`, `BranchAsync` | The quote and the branches shown. |
 | `IShortLinkService.ShortenAsync` | The payment link shortened, once the application is saved. |
-| `IRenewalApi.DepositsByFolioAsync`, `DepositsByPanAsync` | The source-of-funds rule, checked once more before submit. |
+| `IInvestorApi.ActiveDepositsAsync` | The source-of-funds rule, checked once more before submit. |
 
 ## View Application (`ApplicationsController`, `ApplicationDetailsController`)
 

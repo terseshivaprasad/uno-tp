@@ -19,6 +19,12 @@ public interface IInvestorApi
     /// <summary>The deposits on a folio, with their first holder, for the folio check; empty for a folio that is not held.</summary>
     Task<IReadOnlyList<FolioDeposit>> FolioDepositsByFolioAsync(string folio, CancellationToken ct = default);
 
+    /// <summary>
+    /// The active deposits a PAN holds with us, as the FD system's deposit register has
+    /// them: what the source-of-funds rule adds to the new deposit. Empty for a PAN with none.
+    /// </summary>
+    Task<IReadOnlyList<ActiveDeposit>> ActiveDepositsAsync(string pan, CancellationToken ct = default);
+
     /// <summary>The folio under this number, as its first holder's row in the folio master has it, or null.</summary>
     Task<FolioRecord?> FolioAsync(string folio, CancellationToken ct = default);
 
@@ -91,3 +97,6 @@ public sealed record CopyOnRecord(string SubTypeCode, string FileName, string Fi
 
 /// <summary>A copy on record, for one holder of an application: whose it is, and the source it is kept at (KycSources).</summary>
 public sealed record HolderCopyOnRecord(string HolderType, string Source, CopyOnRecord Copy);
+
+/// <summary>A deposit a PAN holds with us that is active: its FDR number and its principal, in rupees.</summary>
+public sealed record ActiveDeposit(string Number, long Amount);
