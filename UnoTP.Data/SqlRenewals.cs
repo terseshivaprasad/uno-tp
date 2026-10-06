@@ -182,9 +182,9 @@ public sealed class SqlRenewals(Db db, IPartner partner, IRenewalOpener applicat
             row.RenewalPaymentVer is not null, row.RenewalDepositVer is not null);
 
         var cancelWhy = "";
-        if (!mine) cancelWhy = "Entered by another partner: only they can cancel it.";
-        else if (submitted && row.RenewalAppType != ApplicationType.Digital) cancelWhy = "Not applicable to a physical application once it is submitted.";
-        else if (submitted && row.RenewalAcceptedOn is not null) cancelWhy = "The investor has accepted it, so it can no longer be cancelled here.";
+        if (!mine) cancelWhy = Messages.RenewFd.CancelOnlyByWhoEntered;
+        else if (submitted && row.RenewalAppType != ApplicationType.Digital) cancelWhy = Messages.RenewFd.CancelNotForPhysical;
+        else if (submitted && row.RenewalAcceptedOn is not null) cancelWhy = Messages.RenewFd.CancelNotAfterAcceptance;
 
         return new RenewalApp(row.RenewalAppNo, submitted, submitted ? "" : next, mine, cancelWhy.Length == 0, cancelWhy);
     }

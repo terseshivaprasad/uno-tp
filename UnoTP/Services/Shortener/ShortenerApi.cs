@@ -37,7 +37,7 @@ public sealed class ShortenerClient(HttpClient http, IPartner partner, IOptions<
         var answer = await Ask(() => Get<Answer>(path, ct), ct);
         return answer?.ShortUrl is { Length: > 0 } shortUrl
             ? shortUrl
-            : throw new ExternalServiceException("The link shortener", "The link shortener answered with no short link. Try again in a while.");
+            : throw new ExternalServiceException("The link shortener", Messages.OutsideServices.NoShortLink);
     }
 
     private sealed record Answer(string ShortUrl, string LongUrl);

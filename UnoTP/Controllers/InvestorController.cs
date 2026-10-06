@@ -31,10 +31,10 @@ public class InvestorController(
     IInvestorApi investors,
     IServiceProvider services) : Controller
 {
-    private const string AlreadyOn = "This PAN is already on the application";
+    private const string AlreadyOn = Messages.InvestorInformation.PanAlreadyOn;
 
     private const string Changed =
-        "This application changed somewhere else while that was being sent, so it was not kept. The page shows it as it stands now — do it again.";
+        Messages.Shared.ChangedElsewhere;
 
     // The page's working state is the application's, kept with it in the
     // application store: read before every action, saved back after it.

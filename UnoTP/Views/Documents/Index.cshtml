@@ -634,12 +634,16 @@
                 </div>
             }
 
-            @* A paper application carries its form number; a digital one is filed as 0000. *@
+            @* A paper application carries its form number; a digital one is filed as 0000.
+               Why it is 0000 is said under the box, not in the label: a label that runs
+               onto a second line pushes its box below the others in the row. *@
             <div class="doc-column">
-                <label class="field-label" for="docsFormNo">Physical Application Form No.
-                    @if (!isPhysical) { <span class="doc-optional">(No paper form &mdash; filed as 0000)</span> }
-                </label>
+                <label class="field-label" for="docsFormNo">Physical Application Form No.</label>
                 <input class="field-input @Invalid("docsFormNo")" id="docsFormNo" name="formNo" data-chars="code" form="docsForm" value="@state.FormNo" maxlength="20" autocomplete="off" spellcheck="false" readonly="@(!isPhysical)" autofocus="@Focus("docsFormNo")">
+                @if (!isPhysical)
+                {
+                    <p class="field-hint">No paper form &mdash; filed as 0000</p>
+                }
                 @{ await FieldError("docsFormNo"); }
             </div>
 

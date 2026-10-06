@@ -83,7 +83,7 @@
                 <label class="field-label" for="@(idPrefix)Pan">Enter PAN</label>
                 <input class="field-input field-input--caps @panInvalid" id="@(idPrefix)Pan" maxlength="10" name="@Model.Name("Pan")" value="@search.Pan"
                        maxlength="10" autocomplete="off" spellcheck="false" aria-describedby="@(idPrefix)PanError"
-                       data-required="Enter the PAN" data-check="pan"
+                       data-required="@Messages.InvestorIdentification.PanRequired" data-check="pan"
                        aria-invalid="@(search.PanError is not null ? "true" : null)" autofocus="@(focus == idPrefix + "Pan")">
                 <p class="field-error" id="@(idPrefix)PanError" hidden="@(search.PanError is null)">@search.PanError</p>
             </div>
@@ -91,7 +91,7 @@
             <div class="form-field" data-for="pan">
                 <span class="field-label" id="@(idPrefix)DobLabel">Date Of Birth</span>
                 <div class="date-input @dobInvalid" role="group" aria-labelledby="@(idPrefix)DobLabel" aria-describedby="@(idPrefix)DobError"
-                     data-required="Enter the date of birth" data-check="date" data-error-id="@(idPrefix)DobError">
+                     data-required="@Messages.InvestorIdentification.DobRequired" data-check="date" data-error-id="@(idPrefix)DobError">
                     <input class="date-input__part" id="@(idPrefix)Dd" name="@Model.Name("Dd")" value="@search.Dd" inputmode="numeric" maxlength="2" placeholder="DD" aria-label="Day" autocomplete="off" autofocus="@(focus == idPrefix + "Dd")">
                     <span class="date-input__sep">/</span>
                     <input class="date-input__part" name="@Model.Name("Mm")" value="@search.Mm" inputmode="numeric" maxlength="2" placeholder="MM" aria-label="Month" autocomplete="off">
@@ -107,7 +107,7 @@
                     <label class="field-label" for="@(idPrefix)Folio">Enter Folio Number</label>
                     <input class="field-input field-input--caps @folioInvalid" id="@(idPrefix)Folio" maxlength="20" name="@Model.Name("Folio")" data-chars="code" value="@search.Folio"
                            maxlength="16" autocomplete="off" spellcheck="false" aria-describedby="@(idPrefix)FolioError"
-                           data-required="Enter the folio number"
+                           data-required="@Messages.InvestorIdentification.FolioRequired"
                            aria-invalid="@(search.FolioError is not null ? "true" : null)" autofocus="@(focus == idPrefix + "Folio")">
                     <p class="field-error" id="@(idPrefix)FolioError" hidden="@(search.FolioError is null)">@search.FolioError</p>
                 </div>

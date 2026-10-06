@@ -103,7 +103,7 @@ public sealed class DocumentLimiter(IOptions<RateLimitOptions> options) : IDispo
 
     /// <summary>What the page says when a try is over the limit.</summary>
     public string Said =>
-        $"That is more than {perMinute} tries in a minute. Wait a minute, then do it again. Nothing was sent this time, and no attempt was used.";
+        Messages.Shared.TooManyTries(perMinute);
 
     public void Dispose() => limiter.Dispose();
 }

@@ -89,17 +89,17 @@
 
     if (mode === 'appno') {
       var q = appNo.value.trim();
-      if (q.length < 4) return showSearchError('Enter at least the last four characters of the application number.', appNo);
+      if (q.length < 4) return showSearchError(message('Lists.AppNoTooShort'), appNo);
       filter = { mode: 'appno', appNo: q.toLowerCase() };
       scope.textContent = 'Showing every application matching “' + q + '”, inside the window or cancelled.';
     } else {
       var f = readDateBoxes(from), t = readDateBoxes(to);
-      if (!f) return showSearchError('Enter a complete From Date as DD / MM / YYYY.', from);
-      if (!t) return showSearchError('Enter a complete To Date as DD / MM / YYYY.', to);
-      if (f > t) return showSearchError('The From Date cannot be after the To Date.', from);
-      if (t > WINDOW.to) return showSearchError('The To Date cannot be in the future.', to);
+      if (!f) return showSearchError(message('Lists.FromDateIncomplete'), from);
+      if (!t) return showSearchError(message('Lists.ToDateIncomplete'), to);
+      if (f > t) return showSearchError(message('Lists.FromAfterTo'), from);
+      if (t > WINDOW.to) return showSearchError(message('Lists.ToInFuture'), to);
       if (f < WINDOW.from) {
-        return showSearchError('An application older than that has cancelled itself, so no slip can be made for it. The earliest date you can search from is ' + isoToDisplayDate(WINDOW.from) + '.', from);
+        return showSearchError(message('Lists.TooOldForSlip', { earliest: isoToDisplayDate(WINDOW.from) }), from);
       }
       filter = { mode: 'dates', from: f, to: t };
       scope.textContent = f === WINDOW.from && t === WINDOW.to
@@ -157,8 +157,8 @@
     empty.hidden = kept.length > 0;
     if (!kept.length) {
       empty.textContent = filter.mode === 'appno'
-        ? 'No application matches that number. Check it, or search by date instead.'
-        : 'No application was raised between those two dates.';
+        ? message('Lists.NoApplicationByNumberTryDate')
+        : message('Lists.NoApplicationBetweenDates');
     }
 
     count.textContent = kept.length

@@ -52,8 +52,8 @@ public sealed class NameMatchClient(HttpClient http, IOptions<NameMatchOptions> 
 
         // A status that is neither: nothing was compared.
         throw new ExternalServiceException(Service, errorMessage.Length > 0
-            ? $"{Service} could not compare the names: {errorMessage}"
-            : $"{Service} could not compare the names just now. Try again in a while.");
+            ? Messages.OutsideServices.NamesNotComparedWith(Service, errorMessage)
+            : Messages.OutsideServices.NamesNotCompared(Service));
     }
 
     private async Task<Answer> PostAsync(string path, MatchRequest body, CancellationToken ct)
@@ -72,26 +72,26 @@ public sealed class NameMatchClient(HttpClient http, IOptions<NameMatchOptions> 
                 var said = await response.Content.ReadAsStringAsync(ct);
                 log.LogWarning("Name match {Path} failed with {Status}: {Body}", path, (int)response.StatusCode, said.Length > 300 ? said[..300] : said);
                 throw new ExternalServiceException(Service, response.StatusCode == HttpStatusCode.Forbidden
-                    ? $"{Service} was refused by the gateway (403). Operations have to look at its access."
-                    : $"{Service} is not answering. Try again in a while.");
+                    ? Messages.OutsideServices.RefusedByGateway(Service)
+                    : Messages.OutsideServices.NotAnswering(Service));
             }
 
             var answer = await response.Content.ReadFromJsonAsync<Answer>(Json, ct);
             if (answer is null)
-                throw new ExternalServiceException(Service, $"{Service} answered with nothing. Try again in a while.");
+                throw new ExternalServiceException(Service, Messages.OutsideServices.AnsweredNothing(Service));
             return answer;
         }
         catch (HttpRequestException e)
         {
-            throw new ExternalServiceException(Service, $"{Service} is not answering. Try again in a while.", inner: e);
+            throw new ExternalServiceException(Service, Messages.OutsideServices.NotAnswering(Service), inner: e);
         }
         catch (TaskCanceledException e) when (!ct.IsCancellationRequested)
         {
-            throw new ExternalServiceException(Service, $"{Service} took too long to answer. Try again in a while.", inner: e);
+            throw new ExternalServiceException(Service, Messages.OutsideServices.TookTooLong(Service), inner: e);
         }
         catch (JsonException e)
         {
-            throw new ExternalServiceException(Service, $"{Service} answered with something that could not be read. Try again in a while.", inner: e);
+            throw new ExternalServiceException(Service, Messages.OutsideServices.NotReadable(Service), inner: e);
         }
     }
 

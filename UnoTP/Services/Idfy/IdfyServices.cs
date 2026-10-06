@@ -56,7 +56,7 @@ internal static class IdfyDocTypes
 /// </summary>
 public sealed class IdfyDocumentIdentifier(IdfyClient idfy) : IDocumentIdentifier
 {
-    public const string NotAProof = "It reads as a PAN card, which is not a proof of address. Upload an Aadhaar, passport, driving licence or voter ID.";
+    public const string NotAProof = Messages.UploadDocuments.NotAProofOfAddress;
 
     public async Task<Identification> IdentifyAsync(DocumentKind expected, string type, UploadFile file, CancellationToken ct = default)
     {
@@ -70,7 +70,7 @@ public sealed class IdfyDocumentIdentifier(IdfyClient idfy) : IDocumentIdentifie
             if (IdfyDocTypes.ProofOf(found.DetectedDocType) is not { } proof) return new Identification(true);
             return found.IsReadable == true
                 ? new Identification(true, Type: proof)
-                : new Identification(false, $"It reads as {IdfyDocTypes.Named(found.DetectedDocType!)}, but could not be read. Upload a sharper scan, with the whole card in view.");
+                : new Identification(false, Messages.UploadDocuments.ReadsAsButUnreadable(IdfyDocTypes.Named(found.DetectedDocType!)));
         }
 
         // A document IDfy has no type for is taken as what it was handed in as.
@@ -79,10 +79,10 @@ public sealed class IdfyDocumentIdentifier(IdfyClient idfy) : IDocumentIdentifie
 
         var result = (await idfy.ValidateAsync(file, docType, ct)).Result!;
         if (result.IsReadable != true)
-            return new Identification(false, "The copy could not be read. Upload a sharper scan, with the whole card in view.");
+            return new Identification(false, Messages.UploadDocuments.CopyUnreadable);
         if (!string.Equals(result.DetectedDocType, docType, StringComparison.OrdinalIgnoreCase))
             return new Identification(false, result.DetectedDocType is { Length: > 0 } detected
-                ? $"It reads as {IdfyDocTypes.Named(detected)}. Upload {IdfyDocTypes.Named(docType)} itself."
+                ? Messages.UploadDocuments.ReadsAsAnother(IdfyDocTypes.Named(detected), IdfyDocTypes.Named(docType))
                 : null);
         return new Identification(true);
     }

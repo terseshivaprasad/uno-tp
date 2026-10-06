@@ -16,9 +16,9 @@ public static class InputRules
     public const int MaxAddressLine = 40;
     public const int MaxRemark = 200;
 
-    public const string OnlyAllowed = "Only letters, digits, spaces and - , & / . are allowed";
+    public const string OnlyAllowed = Messages.Shared.OnlyAllowedCharacters;
 
-    public static string TooLong(int max) => $"At most {max} characters";
+    public static string TooLong(int max) => Messages.Shared.TooLong(max);
 
     /// <summary>Whether every character of the text is allowed.</summary>
     public static bool IsClean(string text)
@@ -47,5 +47,5 @@ public static class InputRules
         return true;
     }
 
-    public const string LettersOnly = "Enter letters only";
+    public const string LettersOnly = Messages.Shared.LettersOnly;
 }

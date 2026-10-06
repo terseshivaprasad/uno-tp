@@ -16,11 +16,11 @@ public sealed record FolioDeposit(string Folio, string Pan, string Dob);
 /// </summary>
 public static class FolioCheck
 {
-    public const string NonIndividual = "Deposits from non-individual entities are prohibited.";
-    public const string NoDob = "DOB is not updated for Existing Folio.";
-    public const string DobMismatch = "The DOB for the existing folio does not match the DOB provided for the search.";
-    public const string ManyFolios = "Multiple folios found against the provided PAN. Please check with Mahindra Finance Fixed Deposit Team.";
-    public const string ExistingHolder = "A folio is already held against the provided PAN, so the investor cannot go on as new. Please check with Mahindra Finance Fixed Deposit Team.";
+    public const string NonIndividual = Messages.InvestorIdentification.NonIndividual;
+    public const string NoDob = Messages.InvestorIdentification.NoDobOnFolio;
+    public const string DobMismatch = Messages.InvestorIdentification.DobDoesNotMatchFolio;
+    public const string ManyFolios = Messages.InvestorIdentification.ManyFolios;
+    public const string ExistingHolder = Messages.InvestorIdentification.ExistingHolder;
 
     /// <summary>What a check found.</summary>
     /// <param name="Folio">The folio found; empty when the investor has none.</param>

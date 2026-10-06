@@ -130,18 +130,18 @@ public sealed class BankForm
         var problems = new Dictionary<string, string>();
         void Account(AccountForm a, string key, BankBranch? branch)
         {
-            if (a.CleanIfsc.Length == 0) problems[key + ".Ifsc"] = "Search for the bank and pick its branch";
-            else if (branch is null) problems[key + ".Ifsc"] = "No branch has this IFSC — pick one from the search, or check it against the cheque";
-            if (a.CleanAccount.Length is < 6 or > 18) problems[key + ".AccountNumber"] = "Enter the account number, 6 to 18 digits";
-            else if (new string(a.AccountNumberConfirm.Where(char.IsAsciiDigit).ToArray()) != a.CleanAccount) problems[key + ".AccountNumberConfirm"] = "Does not match the account number";
+            if (a.CleanIfsc.Length == 0) problems[key + ".Ifsc"] = Messages.BankDetails.BankRequired;
+            else if (branch is null) problems[key + ".Ifsc"] = Messages.BankDetails.IfscNotFound;
+            if (a.CleanAccount.Length is < 6 or > 18) problems[key + ".AccountNumber"] = Messages.BankDetails.AccountInvalid;
+            else if (new string(a.AccountNumberConfirm.Where(char.IsAsciiDigit).ToArray()) != a.CleanAccount) problems[key + ".AccountNumberConfirm"] = Messages.BankDetails.AccountMismatch;
         }
         if (byCheque) Account(Payment, "Payment", paymentBranch);
         if (!RepaysToPayment(byCheque)) Account(Repayment, "Repayment", repaymentBranch);
         if (byCheque)
         {
-            if (Cheque.Number.Trim() is not { Length: 6 } n || !n.All(char.IsAsciiDigit)) problems["Cheque.Number"] = "Enter the six-digit cheque number";
-            if (ChequeDay is null) problems["Cheque.Date"] = "Enter the cheque date";
-            if (!cmsLocationOnMaster) problems["Cheque.CmsLocation"] = Cheque.CmsLocation.Trim().Length == 0 ? "Search for the Axis CMS branch and pick it" : "Pick an Axis CMS branch from the search";
+            if (Cheque.Number.Trim() is not { Length: 6 } n || !n.All(char.IsAsciiDigit)) problems["Cheque.Number"] = Messages.BankDetails.ChequeNumberInvalid;
+            if (ChequeDay is null) problems["Cheque.Date"] = Messages.BankDetails.ChequeDateRequired;
+            if (!cmsLocationOnMaster) problems["Cheque.CmsLocation"] = Cheque.CmsLocation.Trim().Length == 0 ? Messages.BankDetails.CmsBranchRequired : Messages.BankDetails.CmsBranchNotPicked;
         }
         return problems;
     }
@@ -172,14 +172,14 @@ public sealed class PaymentViewModel(DocumentsViewModel docs, BankForm form, Ban
             var ifsc = Form.Repayment.CleanIfsc;
             if (ifsc.Length < 4) return null;
             if (Ref.OnPaymentGateway(ifsc)) return null;
-            var bank = RepaymentBranch?.Bank ?? "This bank";
+            var bank = RepaymentBranch?.Bank ?? Messages.BankDetails.ThisBank;
             return GatewayProblemFor(bank);
         }
     }
 
     /// <summary>The error for a bank the gateway does not take, and what to do about it.</summary>
     public static string GatewayProblemFor(string bank) =>
-        $"{bank} is not available on our payment gateway for online payment. What to do: choose a repayment account with a bank that is, or change the payment mode to RTGS or Cheque on Upload Documents.";
+        Messages.BankDetails.BankNotOnGateway(bank);
 
     /// <summary>Whether an account on the folio can be used for online payment.</summary>
     public bool OnGateway(AccountOnRecord account) => PayMode != "Online" || Ref.OnPaymentGateway(account.Ifsc);

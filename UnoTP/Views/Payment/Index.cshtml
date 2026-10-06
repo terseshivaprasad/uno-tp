@@ -105,7 +105,7 @@
             <div class="doc-column bank-search">
                 <label class="field-label" for="@(id)-ifsc">Bank &mdash; search by name, branch, @Glossary.Term("IFSC") or @Glossary.Term("MICR")</label>
                 <input class="field-input @Invalid(ifscKey)" id="@(id)-ifsc" name="@(key).Ifsc" value="@account.Ifsc" maxlength="50" autocomplete="off" spellcheck="false" placeholder="e.g. HDFC Andheri or HDFC0000521"
-                       data-required="Search for the bank and pick its branch"
+                       data-required="@Messages.BankDetails.BankRequired"
                        role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="@(id)-suggest"
                        data-chars="search" data-bank-search="@Url.Action("Branches")" data-search-from="@TypedSearch.FromLength" data-find="bank-find-@(key.ToLowerInvariant())"
                        aria-invalid="@AriaInvalid(ifscKey)" aria-describedby="@DescribedBy(ifscKey, id + "-ifsc")">
@@ -114,13 +114,13 @@
             </div>
             <div class="doc-column">
                 <label class="field-label" for="@(id)-account">Account Number</label>
-                <input class="field-input @Invalid(numberKey)" id="@(id)-account" name="@(key).AccountNumber" value="@account.AccountNumber" inputmode="numeric" maxlength="18" autocomplete="off" data-required="Enter the account number, 6 to 18 digits" data-check="account" aria-invalid="@AriaInvalid(numberKey)" aria-describedby="@DescribedBy(numberKey, id + "-account")">
+                <input class="field-input @Invalid(numberKey)" id="@(id)-account" name="@(key).AccountNumber" value="@account.AccountNumber" inputmode="numeric" maxlength="18" autocomplete="off" data-required="@Messages.BankDetails.AccountInvalid" data-check="account" aria-invalid="@AriaInvalid(numberKey)" aria-describedby="@DescribedBy(numberKey, id + "-account")">
                 @{ await FieldError(numberKey, id + "-account"); }
             </div>
             <div class="doc-column">
                 <label class="field-label" for="@(id)-account-confirm">Re-enter Account Number</label>
                 @* Masked as it is typed, so the number is typed again rather than copied from the first box. *@
-                <input class="field-input field-input--masked @Invalid(confirmKey)" id="@(id)-account-confirm" name="@(key).AccountNumberConfirm" value="@account.AccountNumberConfirm" inputmode="numeric" maxlength="18" autocomplete="off" spellcheck="false" data-required="Enter the account number again" data-check="match:@(id)-account" aria-invalid="@AriaInvalid(confirmKey)" aria-describedby="@DescribedBy(confirmKey, id + "-account-confirm")">
+                <input class="field-input field-input--masked @Invalid(confirmKey)" id="@(id)-account-confirm" name="@(key).AccountNumberConfirm" value="@account.AccountNumberConfirm" inputmode="numeric" maxlength="18" autocomplete="off" spellcheck="false" data-required="@Messages.BankDetails.AccountAgainRequired" data-check="match:@(id)-account" aria-invalid="@AriaInvalid(confirmKey)" aria-describedby="@DescribedBy(confirmKey, id + "-account-confirm")">
                 @{ await FieldError(confirmKey, id + "-account-confirm"); }
             </div>
         </div>
@@ -129,7 +129,7 @@
     // The bank and branch an IFSC names, read-only.
     private async Task BranchPanel(BankBranch? branch, string ifsc, string id)
     {
-        var notFoundText = "No branch has this IFSC — pick one from the search, or check it against the cheque";
+        var notFoundText = Messages.BankDetails.IfscNotFound;
         if (ifsc.Length == 0) notFoundText = "Found once a branch is picked from the search";
         <div class="investor-panel bank-branch" id="@id">
             <div class="investor-panel__label" style="padding-bottom:10px">Bank and branch &middot; from the IFSC</div>
@@ -197,12 +197,12 @@
                 <div class="doc-grid">
                     <div class="doc-column">
                         <label class="field-label" for="cheque-number">Cheque Number</label>
-                        <input class="field-input @Invalid("Cheque.Number")" id="cheque-number" name="Cheque.Number" value="@form.Cheque.Number" inputmode="numeric" maxlength="6" autocomplete="off" data-required="Enter the six-digit cheque number" data-check="digits:6" data-message="Enter the six-digit cheque number" aria-invalid="@AriaInvalid("Cheque.Number")" aria-describedby="@DescribedBy("Cheque.Number", "cheque-number")">
+                        <input class="field-input @Invalid("Cheque.Number")" id="cheque-number" name="Cheque.Number" value="@form.Cheque.Number" inputmode="numeric" maxlength="6" autocomplete="off" data-required="@Messages.BankDetails.ChequeNumberInvalid" data-check="digits:6" data-message="@Messages.BankDetails.ChequeNumberInvalid" aria-invalid="@AriaInvalid("Cheque.Number")" aria-describedby="@DescribedBy("Cheque.Number", "cheque-number")">
                         @{ await FieldError("Cheque.Number", "cheque-number"); }
                     </div>
                     <div class="doc-column">
                         <label class="field-label" id="cheque-date-label" for="cheque-date">Cheque Date</label>
-                        <div class="date-input @Invalid("Cheque.Date")" role="group" data-required="Enter the cheque date" data-check="dmy" data-message="Enter the cheque date as a real date, DD/MM/YYYY" data-error-id="cheque-dateError" aria-labelledby="cheque-date-label" aria-describedby="@DescribedBy("Cheque.Date", "cheque-date")">
+                        <div class="date-input @Invalid("Cheque.Date")" role="group" data-required="@Messages.BankDetails.ChequeDateRequired" data-check="dmy" data-message="@Messages.BankDetails.ChequeDateNotReal" data-error-id="cheque-dateError" aria-labelledby="cheque-date-label" aria-describedby="@DescribedBy("Cheque.Date", "cheque-date")">
                             <input class="date-input__part" id="cheque-date" name="Cheque.Dd" value="@form.Cheque.Dd" inputmode="numeric" maxlength="2" placeholder="DD" aria-label="Day" autocomplete="off" aria-invalid="@AriaInvalid("Cheque.Date")">
                             <span class="date-input__sep">/</span>
                             <input class="date-input__part" name="Cheque.Mm" value="@form.Cheque.Mm" inputmode="numeric" maxlength="2" placeholder="MM" aria-label="Month" autocomplete="off">
@@ -216,7 +216,7 @@
                         @* Searched as it is typed, like the bank (payment.js): the Axis CMS master is
                            never listed whole. The branch picked is what is kept. *@
                         <input class="field-input @Invalid("Cheque.CmsLocation")" id="cms-location" name="Cheque.CmsLocation" maxlength="50" data-chars="search" value="@form.Cheque.CmsLocation" placeholder="Start typing a branch" autocomplete="off" spellcheck="false"
-                               data-required="Search for the Axis CMS branch and pick it"
+                               data-required="@Messages.BankDetails.CmsBranchRequired"
                                role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="cms-suggest"
                                data-cms-search="@Url.Action("CmsLocations")" data-cms-code="cms-code" data-search-from="@TypedSearch.FromLength"
                                aria-invalid="@AriaInvalid("Cheque.CmsLocation")" aria-describedby="@(DescribedBy("Cheque.CmsLocation", "cms-location") ?? "cms-location-hint")">

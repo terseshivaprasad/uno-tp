@@ -100,24 +100,24 @@ public sealed class NameScreeningClient(HttpClient http, IPartner partner, IOpti
 
             var body = await response.Content.ReadAsStringAsync(ct);
             if (string.IsNullOrWhiteSpace(body))
-                throw new ExternalServiceException(Service, $"{Service} answered with nothing. Try again in a while.");
+                throw new ExternalServiceException(Service, Messages.OutsideServices.AnsweredNothing(Service));
 
             var answer = JsonSerializer.Deserialize<ScreeningResponse>(body, AnyCase);
             if (answer is null)
-                throw new ExternalServiceException(Service, $"{Service} answered with nothing. Try again in a while.");
+                throw new ExternalServiceException(Service, Messages.OutsideServices.AnsweredNothing(Service));
             return answer;
         }
         catch (HttpRequestException e)
         {
-            throw new ExternalServiceException(Service, $"{Service} is not answering. Try again in a while.", inner: e);
+            throw new ExternalServiceException(Service, Messages.OutsideServices.NotAnswering(Service), inner: e);
         }
         catch (TaskCanceledException e) when (!ct.IsCancellationRequested)
         {
-            throw new ExternalServiceException(Service, $"{Service} took too long to answer. Try again in a while.", inner: e);
+            throw new ExternalServiceException(Service, Messages.OutsideServices.TookTooLong(Service), inner: e);
         }
         catch (JsonException e)
         {
-            throw new ExternalServiceException(Service, $"{Service} answered with something that could not be read. Try again in a while.", inner: e);
+            throw new ExternalServiceException(Service, Messages.OutsideServices.NotReadable(Service), inner: e);
         }
     }
 

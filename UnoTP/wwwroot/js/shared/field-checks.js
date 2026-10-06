@@ -19,14 +19,14 @@
 // one data-error-id names), made if the page has none.
 (function () {
   var shapes = {
-    pan: [/^[A-Z]{5}[0-9]{4}[A-Z]$/, 'Enter a valid PAN, like ABCDE1234F'],
-    mobile: [/^[6-9]\d{9}$/, 'Enter a 10-digit mobile number'],
-    email: [/^[^@\s]+@[^@\s]+\.[^@\s]+$/, 'Enter a valid e-mail'],
-    pin: [/^[1-9]\d{5}$/, 'Enter a 6-digit PIN code'],
-    account: [/^\d{6,18}$/, 'Enter the account number, 6 to 18 digits'],
-    name: [/^[A-Za-z][A-Za-z .'\-]*$/, 'Enter letters only'],
-    text: [/^[A-Za-z0-9 ,.\-\/#&()']+$/, 'No special characters'],
-    code: [/^[A-Z0-9\-\/]+$/, 'Letters and digits only']
+    pan: [/^[A-Z]{5}[0-9]{4}[A-Z]$/, message('InvestorIdentification.PanInvalid')],
+    mobile: [/^[6-9]\d{9}$/, message('InvestorInformation.MobileInvalid')],
+    email: [/^[^@\s]+@[^@\s]+\.[^@\s]+$/, message('InvestorInformation.EmailInvalid')],
+    pin: [/^[1-9]\d{5}$/, message('InvestorInformation.PinInvalid')],
+    account: [/^\d{6,18}$/, message('BankDetails.AccountInvalid')],
+    name: [/^[A-Za-z][A-Za-z .'\-]*$/, message('Shared.LettersOnly')],
+    text: [/^[A-Za-z0-9 ,.\-\/#&()']+$/, message('Shared.NoSpecialCharacters')],
+    code: [/^[A-Z0-9\-\/]+$/, message('Shared.LettersAndDigitsOnly')]
   };
 
   // What a field takes as it is typed, by its kind - data-chars, or the data-check
@@ -91,14 +91,14 @@
     if (name === 'digits') return new RegExp('^\\d{' + arg + '}$').test(value) ? null : 'Enter the ' + arg + '-digit number';
     if (name === 'match') {
       var other = document.getElementById(arg);
-      return other && value.replace(/\D/g, '') !== other.value.replace(/\D/g, '') ? 'Does not match the account number' : null;
+      return other && value.replace(/\D/g, '') !== other.value.replace(/\D/g, '') ? message('BankDetails.AccountMismatch') : null;
     }
     if (name === 'date' || name === 'dmy') {
       var parts = value.replace(/\s/g, '').split('/');
       if (name === 'dmy' && parts.length !== 3) parts = [value.replace(/\D/g, '').slice(0, 2), value.replace(/\D/g, '').slice(2, 4), value.replace(/\D/g, '').slice(4)];
       var date = toRealDate(parts[0], parts[1], parts[2]);
-      if (!date) return 'Enter a real date, DD/MM/YYYY';
-      if (name === 'date' && date > new Date()) return 'Enter a date that is not in the future';
+      if (!date) return message('Shared.DateNotReal');
+      if (name === 'date' && date > new Date()) return message('Shared.DateInFuture');
       return null;
     }
     if (name === 'amount') {
@@ -106,7 +106,7 @@
       var min = +el.getAttribute('data-min'), max = +el.getAttribute('data-max'), step = +el.getAttribute('data-step');
       if (min && n < min) return 'Below the ₹ ' + min.toLocaleString('en-IN') + ' minimum';
       if (max && n > max) return el.getAttribute('data-over-max') || ('Above the ₹ ' + max.toLocaleString('en-IN') + ' maximum');
-      if (step && n % step !== 0) return 'Not a multiple of ₹ ' + step.toLocaleString('en-IN');
+      if (step && n % step !== 0) return message('FdConfiguration.NotAMultipleOf', { step: step.toLocaleString('en-IN') });
       return null;
     }
     return null;

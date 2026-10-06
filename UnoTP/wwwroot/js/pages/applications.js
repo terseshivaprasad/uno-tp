@@ -96,22 +96,22 @@
 
     if (mode === 'appno') {
       var q = appNo.value.trim();
-      if (q.length < 4) return showSearchError('Enter at least the last four characters of the application number.', appNo);
+      if (q.length < 4) return showSearchError(message('Lists.AppNoTooShort'), appNo);
       search = { mode: 'appno', appNo: q.toLowerCase() };
       scope.textContent = 'Showing every application matching “' + q + '”, inside the window or older.';
     } else if (mode === 'folio') {
       var f = folio.value.trim();
-      if (f.length < 4) return showSearchError('Enter at least the last four characters of the folio number.', folio);
+      if (f.length < 4) return showSearchError(message('Lists.FolioTooShort'), folio);
       search = { mode: 'folio', folio: f.toLowerCase() };
       scope.textContent = 'Showing every application under folio “' + f + '”, however old.';
     } else {
       var a = readDateBoxes(from), b = readDateBoxes(to);
-      if (!a) return showSearchError('Enter a complete From Date as DD / MM / YYYY.', from);
-      if (!b) return showSearchError('Enter a complete To Date as DD / MM / YYYY.', to);
-      if (a > b) return showSearchError('The From Date cannot be after the To Date.', from);
-      if (b > WINDOW.to) return showSearchError('The To Date cannot be in the future.', to);
+      if (!a) return showSearchError(message('Lists.FromDateIncomplete'), from);
+      if (!b) return showSearchError(message('Lists.ToDateIncomplete'), to);
+      if (a > b) return showSearchError(message('Lists.FromAfterTo'), from);
+      if (b > WINDOW.to) return showSearchError(message('Lists.ToInFuture'), to);
       if (a < WINDOW.from) {
-        return showSearchError('A date search reaches back ' + daysBetweenInclusive(WINDOW.from, WINDOW.to) + ' days, to ' + isoToDisplayDate(WINDOW.from) + '. For anything older, search by application number or folio.', from);
+        return showSearchError(message('Lists.DateSearchReach', { days: daysBetweenInclusive(WINDOW.from, WINDOW.to), earliest: isoToDisplayDate(WINDOW.from) }), from);
       }
       search = { mode: 'dates', from: a, to: b };
       scope.textContent = a === WINDOW.from && b === WINDOW.to
@@ -207,10 +207,10 @@
     empty.hidden = kept.length > 0;
     if (!kept.length) {
       empty.textContent = search.mode === 'appno'
-        ? 'No application matches that number. Check it, or search by folio instead.'
+        ? message('Lists.NoApplicationByNumberTryFolio')
         : search.mode === 'folio'
-          ? 'No application under that folio. A new customer has no folio until their first deposit books — search by application number instead.'
-          : 'No application was raised between those two dates.';
+          ? message('Lists.NoApplicationUnderFolio')
+          : message('Lists.NoApplicationBetweenDates');
     }
 
     count.textContent = kept.length

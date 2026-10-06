@@ -85,15 +85,15 @@ public partial class DocumentsViewModel
         var number = digits + lastFour;
         if (lastFour.Length > 0 && digits.Length != 8)
         {
-            FlashMessages().Errors[key] = "Enter the first 8 digits of the Aadhaar number";
+            FlashMessages().Errors[key] = Messages.UploadDocuments.AadhaarFirst8Required;
             return "row-" + key;
         }
         if (!AadhaarNumbers.IsValid(number))
         {
             // With no last 4 read (OCR switched off) the whole number is typed.
-            FlashMessages().Errors[key] = number.Length != 12 ? "Enter the 12-digit Aadhaar number"
-                : lastFour.Length > 0 ? $"That is not a valid Aadhaar number — check the first 8 digits against the card. If its last 4 are not {lastFour}, upload the Aadhaar again"
-                : "That is not a valid Aadhaar number — check it against the card";
+            FlashMessages().Errors[key] = number.Length != 12 ? Messages.UploadDocuments.Aadhaar12Required
+                : lastFour.Length > 0 ? Messages.UploadDocuments.AadhaarInvalidCheckFirst8(lastFour)
+                : Messages.UploadDocuments.AadhaarInvalid;
             return "row-" + key;
         }
         var entry = new LogEntry(Guid.NewGuid().ToString("n")[..8], "PAN–Aadhaar link · number typed", 1,
@@ -114,7 +114,7 @@ public partial class DocumentsViewModel
         var panName = h.Who.Name.Length > 0 ? h.Who.Name
             : State.Reads.TryGetValue(h.Key("panocr"), out var panRead) ? panRead.Lines : "";
         var name = reading.Name.Trim();
-        if (panName.Length == 0) return "The PAN's name is not known yet, so the Aadhaar cannot be matched with it — file the PAN copy first";
+        if (panName.Length == 0) return Messages.UploadDocuments.PanNameNotKnown;
         // The name match switched off is not a mismatch: the Aadhaar is taken, and Operations compare.
         Doing("Matching the name\u2026");
         var nameOk = name.Length > 0 && !(await names.MatchAsync(name, panName)).IsMismatch;
@@ -122,9 +122,9 @@ public partial class DocumentsViewModel
         return (nameOk, dobOk) switch
         {
             (true, true) => null,
-            (false, false) => "The name and date of birth on the Aadhaar do not match the PAN's",
-            (false, _) => name.Length == 0 ? "The name on the Aadhaar could not be read" : "The name on the Aadhaar does not match the PAN's",
-            _ => reading.Dob.Length == 0 ? "The date of birth on the Aadhaar could not be read" : "The date of birth on the Aadhaar does not match the PAN's",
+            (false, false) => Messages.UploadDocuments.AadhaarNameAndDobMismatch,
+            (false, _) => name.Length == 0 ? Messages.UploadDocuments.AadhaarNameNotRead : Messages.UploadDocuments.AadhaarNameMismatch,
+            _ => reading.Dob.Length == 0 ? Messages.UploadDocuments.AadhaarDobNotRead : Messages.UploadDocuments.AadhaarDobMismatch,
         };
     }
 
@@ -167,7 +167,7 @@ public partial class DocumentsViewModel
         var name = NewApplicationViewModel.NormaliseName(typed);
         if (name.Length < 3 || !InvestorViewModel.IsName(name))
         {
-            FlashMessages().Errors[key] = name.Length < 3 ? "Enter the name as printed on the PAN" : "Enter the name as printed on the PAN: letters only";
+            FlashMessages().Errors[key] = name.Length < 3 ? Messages.UploadDocuments.PanNameRequired : Messages.UploadDocuments.PanNameLettersOnly;
             return "read-" + key;
         }
         var entry = new LogEntry(Guid.NewGuid().ToString("n")[..8], $"{PanSlot.Label} · NSDL again", 1,
@@ -193,8 +193,8 @@ public partial class DocumentsViewModel
             LinkWaitsOnNsdl(h);
             entry.End("Not verified", "warn");
             FlashMessages().Errors[key] = NsdlOf(h) == "failed"
-                ? $"NSDL holds no record of PAN {MaskPan(h.Who.Pan)} against the date of birth searched"
-                : $"NSDL does not hold PAN {MaskPan(h.Who.Pan)} against that name";
+                ? Messages.UploadDocuments.NsdlNoRecord(MaskPan(h.Who.Pan))
+                : Messages.UploadDocuments.NsdlNameNotHeld(MaskPan(h.Who.Pan));
             return "read-" + key;
         }
         // Verified: the link can be asked now, and the copy says what came of it.
@@ -239,7 +239,7 @@ public partial class DocumentsViewModel
         {
             card.Lines = pan + " · link with Aadhaar not checked";
             (card.State, card.Kind) = ("Link not checked", "");
-            card.From = $"The PAN-Aadhaar link could not be asked just now: {e.Message}";
+            card.From = Messages.UploadDocuments.LinkNotAskedNow(e.Message);
             entry.Add($"{e.Service} could not answer the PAN-Aadhaar link: {e.Message}", "warn");
             return null;
         }

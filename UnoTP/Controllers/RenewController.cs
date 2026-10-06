@@ -33,7 +33,7 @@ public class RenewController(IRenewalApi renewals) : Controller
             TempData.Remove(NewApplicationController.SearchKey);
             return RedirectToAction(nameof(DocumentsController.Index), "Documents", new { appNo = app.AppNo });
         }
-        TempData[SaidKey] = $"Deposit {number} cannot be renewed now. The list shows it as it stands.";
+        TempData[SaidKey] = Messages.RenewFd.CannotRenewNow(number);
         return ToSearch();
     }
 
@@ -44,7 +44,7 @@ public class RenewController(IRenewalApi renewals) : Controller
         if (await renewals.CancelAsync(number))
             TempData[SaidKey] = $"The renewal request for deposit {number} is cancelled. It is due for renewal again.";
         else
-            TempData[SaidKey] = $"There is no renewal request for deposit {number} to cancel.";
+            TempData[SaidKey] = Messages.RenewFd.NoRenewalToCancel(number);
         return ToSearch();
     }
 

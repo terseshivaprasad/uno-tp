@@ -20,15 +20,15 @@ public abstract class ExternalClient(HttpClient http, IPartner partner, string s
         }
         catch (HttpRequestException e)
         {
-            throw new ExternalServiceException(service, $"{service} is not answering. Try again in a while.", inner: e);
+            throw new ExternalServiceException(service, Messages.OutsideServices.NotAnswering(service), inner: e);
         }
         catch (TaskCanceledException e) when (!ct.IsCancellationRequested)
         {
-            throw new ExternalServiceException(service, $"{service} took too long to answer. Try again in a while.", inner: e);
+            throw new ExternalServiceException(service, Messages.OutsideServices.TookTooLong(service), inner: e);
         }
         catch (JsonException e)
         {
-            throw new ExternalServiceException(service, $"{service} answered with something that could not be read. Try again in a while.", inner: e);
+            throw new ExternalServiceException(service, Messages.OutsideServices.NotReadable(service), inner: e);
         }
     }
 }

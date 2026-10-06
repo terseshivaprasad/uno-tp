@@ -97,7 +97,7 @@
         <div class="doc-column">
             <label class="field-label" for="@id">Sub Occupation</label>
             <div class="doc-select">
-                <select class="field-input @Invalid(name)" id="@id" name="@name" data-sub-occupation-of="@occupationId" data-lists="@lists" data-every="@every" aria-invalid="@AriaInvalid(name)" aria-describedby="@DescribedBy(name, id)" data-required="@(asksNothing ? null : "Select the sub occupation")">
+                <select class="field-input @Invalid(name)" id="@id" name="@name" data-sub-occupation-of="@occupationId" data-lists="@lists" data-every="@every" aria-invalid="@AriaInvalid(name)" aria-describedby="@DescribedBy(name, id)" data-required="@(asksNothing ? null : Messages.InvestorInformation.SubOccupationRequired)">
                     <option value="" selected="@(selected.Length == 0)">@(asksNothing ? "Not applicable" : "Select")</option>
                     @foreach (var sub in offered)
                     {
@@ -122,18 +122,18 @@
             <p class="page-note">This folio is KYC compliant, so these details are filled in from its record. Check them and change anything that is no longer right.</p>
         }
         <div class="doc-grid">
-            @{ await Select($"{id}Income", $"{prefix}.AnnualIncome", "Annual Income", lists.Incomes, required: "Select the annual income"); }
-            @{ await Select($"{id}Occupation", $"{prefix}.Occupation", "Occupation", lists.Occupations, required: "Select the occupation"); }
+            @{ await Select($"{id}Income", $"{prefix}.AnnualIncome", "Annual Income", lists.Incomes, required: Messages.InvestorInformation.IncomeRequired); }
+            @{ await Select($"{id}Occupation", $"{prefix}.Occupation", "Occupation", lists.Occupations, required: Messages.InvestorInformation.OccupationRequired); }
             @{ await SubOccupationSelect($"{id}SubOccupation", $"{prefix}.SubOccupation", $"{id}Occupation", Model.Value($"{prefix}.Occupation")); }
-            @{ await Select($"{id}Marital", $"{prefix}.MaritalStatus", "Marital Status", lists.MaritalStatuses, required: "Select the marital status"); }
+            @{ await Select($"{id}Marital", $"{prefix}.MaritalStatus", "Marital Status", lists.MaritalStatuses, required: Messages.InvestorInformation.MaritalStatusRequired); }
             <div class="doc-column">
                 <label class="field-label" for="@(id)Mobile">Mobile Number</label>
-                <input class="field-input @Invalid($"{prefix}.Mobile")" id="@(id)Mobile" name="@(prefix).Mobile" value="@Model.Value($"{prefix}.Mobile")" inputmode="numeric" maxlength="10" autocomplete="off" data-required="Enter the mobile number" data-check="mobile" aria-invalid="@AriaInvalid($"{prefix}.Mobile")" aria-describedby="@DescribedBy($"{prefix}.Mobile", id + "Mobile")">
+                <input class="field-input @Invalid($"{prefix}.Mobile")" id="@(id)Mobile" name="@(prefix).Mobile" value="@Model.Value($"{prefix}.Mobile")" inputmode="numeric" maxlength="10" autocomplete="off" data-required="@Messages.InvestorInformation.MobileRequired" data-check="mobile" aria-invalid="@AriaInvalid($"{prefix}.Mobile")" aria-describedby="@DescribedBy($"{prefix}.Mobile", id + "Mobile")">
                 @{ await FieldError($"{prefix}.Mobile", id + "Mobile"); }
             </div>
             <div class="doc-column">
                 <label class="field-label" for="@(id)Email">E-Mail</label>
-                <input class="field-input field-input--caps @Invalid($"{prefix}.Email")" id="@(id)Email" name="@(prefix).Email" maxlength="50" value="@Model.Value($"{prefix}.Email")" type="email" autocomplete="off" data-required="Enter the e-mail" data-check="email" aria-invalid="@AriaInvalid($"{prefix}.Email")" aria-describedby="@DescribedBy($"{prefix}.Email", id + "Email")">
+                <input class="field-input field-input--caps @Invalid($"{prefix}.Email")" id="@(id)Email" name="@(prefix).Email" maxlength="50" value="@Model.Value($"{prefix}.Email")" type="email" autocomplete="off" data-required="@Messages.InvestorInformation.EmailRequired" data-check="email" aria-invalid="@AriaInvalid($"{prefix}.Email")" aria-describedby="@DescribedBy($"{prefix}.Email", id + "Email")">
                 @{ await FieldError($"{prefix}.Email", id + "Email"); }
             </div>
         </div>
@@ -500,7 +500,7 @@
                 {
                     <div class="investor-field investor-field--sm">
                         <label for="h@(holder)-gender">Gender</label>
-                        <select id="h@(holder)-gender" name="@(prefix).Gender" class="investor-control @InvalidControl($"{prefix}.Gender")" required data-required="Select the gender" aria-invalid="@AriaInvalid($"{prefix}.Gender")" aria-describedby="@DescribedBy($"{prefix}.Gender", $"h{holder}-gender")">
+                        <select id="h@(holder)-gender" name="@(prefix).Gender" class="investor-control @InvalidControl($"{prefix}.Gender")" required data-required="@Messages.InvestorInformation.GenderRequired" aria-invalid="@AriaInvalid($"{prefix}.Gender")" aria-describedby="@DescribedBy($"{prefix}.Gender", $"h{holder}-gender")">
                             <option value="">Select</option>
                             @foreach (var option in Model.Docs.Ref.Genders)
                             {
@@ -536,7 +536,7 @@
                 </div>
                 <div class="investor-field investor-field--sm">
                     <label for="h@(holder)-parent">Father / Mother / Spouse name</label>
-                    <input id="h@(holder)-parent" name="@(prefix).ParentName" maxlength="50" class="investor-control @InvalidControl($"{prefix}.ParentName")" value="@Model.Value($"{prefix}.ParentName")" required data-required="Enter the father's, mother's or spouse's name" data-check="name" aria-invalid="@AriaInvalid($"{prefix}.ParentName")" aria-describedby="@DescribedBy($"{prefix}.ParentName", $"h{holder}-parent")" />
+                    <input id="h@(holder)-parent" name="@(prefix).ParentName" maxlength="50" class="investor-control @InvalidControl($"{prefix}.ParentName")" value="@Model.Value($"{prefix}.ParentName")" required data-required="@Messages.InvestorInformation.ParentNameRequired" data-check="name" aria-invalid="@AriaInvalid($"{prefix}.ParentName")" aria-describedby="@DescribedBy($"{prefix}.ParentName", $"h{holder}-parent")" />
                     @{ await FieldError($"{prefix}.ParentName", $"h{holder}-parent"); }
                 </div>
             </div>
@@ -565,16 +565,16 @@
         }
         else if (InvestorViewModel.IsPin(pin))
         {
-            district = "Not found for this PIN code";
+            district = Messages.InvestorInformation.PinNotFound;
         }
         string? placedPin = place is not null ? pin : null;
 
         (string Field, string Suffix, string Label, string? Required)[] lines =
         [
-            ("Line1", "1", "Address Line 1", "Enter the first line of the address"),
+            ("Line1", "1", "Address Line 1", Messages.InvestorInformation.AddressLine1Required),
             ("Line2", "2", "Address Line 2", null),
             ("Line3", "3", "Address Line 3", null),
-            ("City", "city", "City", "Enter the city"),
+            ("City", "city", "City", Messages.InvestorInformation.CityRequired),
         ];
 
         <div class="investor-manual__part" id="@id">
@@ -594,7 +594,7 @@
                     }
                     <div class="investor-field investor-field--sm">
                         <label for="@(id)pin">PIN Code</label>
-                        <input class="investor-control @InvalidControl(pinField)" id="@(id)pin" name="@pinField" value="@pin" inputmode="numeric" maxlength="6" autocomplete="off" data-required="Enter the PIN code" data-check="pin"
+                        <input class="investor-control @InvalidControl(pinField)" id="@(id)pin" name="@pinField" value="@pin" inputmode="numeric" maxlength="6" autocomplete="off" data-required="@Messages.InvestorInformation.PinRequired" data-check="pin"
                                data-pin-url="@Url.Action("PinCode", new { pin = "PIN" })" data-placed="@placedPin" aria-invalid="@AriaInvalid(pinField)" aria-describedby="@DescribedBy(pinField, id + "pin")">
                         @{ await FieldError(pinField, id + "pin"); }
                     </div>
@@ -626,7 +626,7 @@
                     </div>
                     @if (missing)
                     {
-                        <p class="field-error investor-pep__error" role="alert">Choose Yes or No</p>
+                        <p class="field-error investor-pep__error" role="alert">@Messages.InvestorInformation.YesOrNoRequired</p>
                     }
                 </div>
             }
@@ -755,7 +755,7 @@
                 <h1 class="page-title">Investor Details</h1>
                 @* Clear All asks first: it takes the joint holders and the nominee off too. *@
                 <button type="submit" form="investorInfoForm" class="link-button link-button--muted investor-clear" formaction="@Url.Action("Clear")" formnovalidate
-                        data-confirm="Clear everything typed on this step, and remove the joint holders and the nominee?">Clear All</button>
+                        data-confirm="@Messages.InvestorInformation.ConfirmClearAll">Clear All</button>
                 <span class="page-app-number">Application No: <strong>@appNo</strong>
                     <button type="button" class="doc-copy" data-copy="@appNo" title="Copy the application number" aria-label="Copy the application number">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">@Html.Raw(CopyIcon)</svg>
@@ -835,13 +835,13 @@
                 <div class="doc-grid">
                     <div class="doc-column">
                         <label class="field-label" for="investorNomineeName">Name</label>
-                        <input class="field-input @Invalid("Nominee.Name")" id="investorNomineeName" name="Nominee.Name" maxlength="50" value="@Model.Value("Nominee.Name")" autocomplete="off" data-required="Enter the nominee's name" data-check="name" aria-invalid="@AriaInvalid("Nominee.Name")" aria-describedby="@DescribedBy("Nominee.Name", "investorNomineeName")">
+                        <input class="field-input @Invalid("Nominee.Name")" id="investorNomineeName" name="Nominee.Name" maxlength="50" value="@Model.Value("Nominee.Name")" autocomplete="off" data-required="@Messages.InvestorInformation.NomineeNameRequired" data-check="name" aria-invalid="@AriaInvalid("Nominee.Name")" aria-describedby="@DescribedBy("Nominee.Name", "investorNomineeName")">
                         @{ await FieldError("Nominee.Name", "investorNomineeName"); }
                     </div>
                     <div class="doc-column">
                         <span class="field-label" id="investorNomineeDobLabel">Date Of Birth</span>
                         <div class="date-input @Invalid("Nominee.Dob")" role="group" aria-labelledby="investorNomineeDobLabel" aria-describedby="@DescribedBy("Nominee.Dob", "investorNomineeDd")"
-                             data-required="Enter the nominee's date of birth" data-check="date" data-error-id="investorNomineeDdError">
+                             data-required="@Messages.InvestorInformation.NomineeDobRequired" data-check="date" data-error-id="investorNomineeDdError">
                             <input class="date-input__part" id="investorNomineeDd" name="Nominee.Dd" value="@Model.Value("Nominee.Dd")" inputmode="numeric" maxlength="2" placeholder="DD" aria-label="Day" autocomplete="off">
                             <span class="date-input__sep">/</span>
                             <input class="date-input__part" name="Nominee.Mm" value="@Model.Value("Nominee.Mm")" inputmode="numeric" maxlength="2" placeholder="MM" aria-label="Month" autocomplete="off">
@@ -850,7 +850,7 @@
                         </div>
                         @{ await FieldError("Nominee.Dob", "investorNomineeDd"); }
                     </div>
-                    @{ await Select("investorNomineeRelation", "Nominee.Relation", "Relation with primary holder", relations, required: "Select the relation with the primary holder"); }
+                    @{ await Select("investorNomineeRelation", "Nominee.Relation", "Relation with primary holder", relations, required: Messages.InvestorInformation.NomineeRelationRequired); }
                 </div>
 
                 @* Only a minor nominee has a guardian. The section always stands, disabled until
@@ -863,14 +863,14 @@
                 <div class="doc-grid">
                     <div class="doc-column">
                         <label class="field-label" for="investorNomineeGuardian">Guardian Name</label>
-                        <input class="field-input @Invalid("Nominee.GuardianName")" id="investorNomineeGuardian" name="Nominee.GuardianName" maxlength="50" value="@Model.Value("Nominee.GuardianName")" autocomplete="off" data-required="Enter the guardian's name" data-check="name" aria-invalid="@AriaInvalid("Nominee.GuardianName")" aria-describedby="@DescribedBy("Nominee.GuardianName", "investorNomineeGuardian")">
+                        <input class="field-input @Invalid("Nominee.GuardianName")" id="investorNomineeGuardian" name="Nominee.GuardianName" maxlength="50" value="@Model.Value("Nominee.GuardianName")" autocomplete="off" data-required="@Messages.InvestorInformation.GuardianNameRequired" data-check="name" aria-invalid="@AriaInvalid("Nominee.GuardianName")" aria-describedby="@DescribedBy("Nominee.GuardianName", "investorNomineeGuardian")">
                         @{ await FieldError("Nominee.GuardianName", "investorNomineeGuardian"); }
                     </div>
                 </div>
                 <div class="doc-grid">
                     <div class="doc-column">
                         <label class="field-label" for="investorGuardian1">Address Line 1</label>
-                        <input class="field-input @Invalid("Nominee.GuardianAddress.Line1")" id="investorGuardian1" name="Nominee.GuardianAddress.Line1" maxlength="40" value="@Model.Value("Nominee.GuardianAddress.Line1")" data-required="Enter the first line of the address" data-check="text" aria-invalid="@AriaInvalid("Nominee.GuardianAddress.Line1")" aria-describedby="@DescribedBy("Nominee.GuardianAddress.Line1", "investorGuardian1")">
+                        <input class="field-input @Invalid("Nominee.GuardianAddress.Line1")" id="investorGuardian1" name="Nominee.GuardianAddress.Line1" maxlength="40" value="@Model.Value("Nominee.GuardianAddress.Line1")" data-required="@Messages.InvestorInformation.AddressLine1Required" data-check="text" aria-invalid="@AriaInvalid("Nominee.GuardianAddress.Line1")" aria-describedby="@DescribedBy("Nominee.GuardianAddress.Line1", "investorGuardian1")">
                         @{ await FieldError("Nominee.GuardianAddress.Line1", "investorGuardian1"); }
                     </div>
                     <div class="doc-column">
@@ -883,12 +883,12 @@
                     </div>
                     <div class="doc-column">
                         <label class="field-label" for="investorGuardianPin">Pin Code</label>
-                        <input class="field-input @Invalid("Nominee.GuardianAddress.PinCode")" id="investorGuardianPin" name="Nominee.GuardianAddress.PinCode" value="@Model.Value("Nominee.GuardianAddress.PinCode")" inputmode="numeric" maxlength="6" data-required="Enter the PIN code" data-check="pin" aria-invalid="@AriaInvalid("Nominee.GuardianAddress.PinCode")" aria-describedby="@DescribedBy("Nominee.GuardianAddress.PinCode", "investorGuardianPin")">
+                        <input class="field-input @Invalid("Nominee.GuardianAddress.PinCode")" id="investorGuardianPin" name="Nominee.GuardianAddress.PinCode" value="@Model.Value("Nominee.GuardianAddress.PinCode")" inputmode="numeric" maxlength="6" data-required="@Messages.InvestorInformation.PinRequired" data-check="pin" aria-invalid="@AriaInvalid("Nominee.GuardianAddress.PinCode")" aria-describedby="@DescribedBy("Nominee.GuardianAddress.PinCode", "investorGuardianPin")">
                         @{ await FieldError("Nominee.GuardianAddress.PinCode", "investorGuardianPin"); }
                     </div>
                     <div class="doc-column">
                         <label class="field-label" for="investorGuardianCity">City</label>
-                        <input class="field-input @Invalid("Nominee.GuardianAddress.City")" id="investorGuardianCity" name="Nominee.GuardianAddress.City" maxlength="50" value="@Model.Value("Nominee.GuardianAddress.City")" data-required="Enter the city" data-check="name" aria-invalid="@AriaInvalid("Nominee.GuardianAddress.City")" aria-describedby="@DescribedBy("Nominee.GuardianAddress.City", "investorGuardianCity")">
+                        <input class="field-input @Invalid("Nominee.GuardianAddress.City")" id="investorGuardianCity" name="Nominee.GuardianAddress.City" maxlength="50" value="@Model.Value("Nominee.GuardianAddress.City")" data-required="@Messages.InvestorInformation.CityRequired" data-check="name" aria-invalid="@AriaInvalid("Nominee.GuardianAddress.City")" aria-describedby="@DescribedBy("Nominee.GuardianAddress.City", "investorGuardianCity")">
                         @{ await FieldError("Nominee.GuardianAddress.City", "investorGuardianCity"); }
                     </div>
                 </div>

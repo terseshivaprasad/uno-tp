@@ -32,7 +32,7 @@
 
     // The amount: what stands beside its label, what its field requires, and the line under it.
     var amountAside = $"{Money.Rupees(Model.Config.MinAmount)} minimum · {Money.Rupees(Model.Config.MaxAmount)} maximum";
-    string? amountRequired = "Required — enter the deposit amount";
+    string? amountRequired = Messages.FdConfiguration.AmountRequired;
     string? amountCheck = "amount";
     if (Model.AmountFixed)
     {
@@ -253,7 +253,7 @@
                             <div class="doc-column">
                                 <label class="field-label" for="deposit-renew">@(Model.AmountFixed ? "Future renewal for" : "Renew")</label>
                                 <div class="doc-select">
-                                    <select class="field-input @Invalid("RenewInstruction")" id="deposit-renew" name="RenewInstruction" data-quote data-required="Required — choose what auto renewal renews" aria-invalid="@AriaInvalid("RenewInstruction")">
+                                    <select class="field-input @Invalid("RenewInstruction")" id="deposit-renew" name="RenewInstruction" data-quote data-required="@Messages.FdConfiguration.AutoRenewalOfRequired" aria-invalid="@AriaInvalid("RenewInstruction")">
                                         <option value="" selected="@(form.RenewInstruction.Length == 0)">Select</option>
                                         @foreach (var instruction in Model.Ref.RenewInstructions)
                                         {

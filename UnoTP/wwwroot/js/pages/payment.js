@@ -96,7 +96,7 @@
     var list = suggestionListFor(input);
     if (!list) return;
     if (branches.length === 0) {
-      showNote(input, 'No branch matches “' + input.value.trim() + '”');
+      showNote(input, message('BankDetails.NoBranchMatches', { typed: input.value.trim() }));
       return;
     }
     list.innerHTML = '';
@@ -162,7 +162,7 @@
       .catch(function (error) {
         // Called off for newer text: that search draws the list.
         if (error && error.name === 'AbortError') return;
-        if (mine === asked && document.activeElement === input) showNote(input, 'Could not search just now. Check the connection and type again.');
+        if (mine === asked && document.activeElement === input) showNote(input, message('Shared.SearchFailed'));
       })
       .then(waitOver);
   }

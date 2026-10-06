@@ -47,7 +47,7 @@ public class ReviewController(IApplicationApi applications, IDepositApi deposits
         {
             BankProblems = await BankProblemsAsync(docs, BankForm.From(docs.App.Payment)),
         };
-        if (!review.Ready) return Back(nameof(Index), new() { ["banner"] = "Something is still missing, so the application was not submitted." });
+        if (!review.Ready) return Back(nameof(Index), new() { ["banner"] = Messages.ReviewSummary.StillMissing });
 
         if (await Applications.SubmitAsync(docs.AppNo, docs.App.Version) is null)
         {

@@ -49,7 +49,7 @@
         // The PIN code changed while the lookup was running: this answer is stale.
         if (input.value.trim() !== pin) return;
         if (place) showDistrictAndState(box, place.district, place.state);
-        else showDistrictAndState(box, 'Not found for this PIN code', '—');
+        else showDistrictAndState(box, message('InvestorInformation.PinNotFound'), '—');
       })
       .catch(function () {
         if (input.value.trim() !== pin) return;
@@ -164,7 +164,7 @@
       sub.add(option);
     }
     if (asksNothing) sub.removeAttribute('data-required');
-    else sub.setAttribute('data-required', 'Select the sub occupation');
+    else sub.setAttribute('data-required', message('InvestorInformation.SubOccupationRequired'));
   }
 
   document.addEventListener('change', function (e) {

@@ -72,7 +72,7 @@
                 <input type="hidden" name="draft" value="@draft.AppNo">
                 <input type="hidden" name="from" value="@cancelFrom">
                 <button type="submit" class="draft-cancel__button" aria-label="Cancel application @draft.AppNo"
-                        data-confirm="Cancel application @draft.AppNo? It is dropped and cannot be continued again."
+                        data-confirm="@Messages.InvestorIdentification.ConfirmCancelDraft(draft.AppNo)"
                         data-loader="Cancelling the application&hellip;" data-loader-hint="Application @draft.AppNo">Cancel</button>
             </form>
         </li>

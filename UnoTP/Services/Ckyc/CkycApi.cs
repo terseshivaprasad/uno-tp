@@ -87,20 +87,20 @@ public sealed class CkycApiClient(HttpClient http, IPartner partner, IOptions<Ck
             var said = await response.Content.ReadAsStringAsync(ct);
             var answer = string.IsNullOrWhiteSpace(said) ? null : JsonSerializer.Deserialize<SearchResponse>(said, AnyCase);
             if (answer is null)
-                throw new ExternalServiceException(Service, $"{Service} answered with nothing. Try again in a while.");
+                throw new ExternalServiceException(Service, Messages.OutsideServices.AnsweredNothing(Service));
             return answer;
         }
         catch (HttpRequestException e)
         {
-            throw new ExternalServiceException(Service, $"{Service} is not answering. Try again in a while.", inner: e);
+            throw new ExternalServiceException(Service, Messages.OutsideServices.NotAnswering(Service), inner: e);
         }
         catch (TaskCanceledException e) when (!ct.IsCancellationRequested)
         {
-            throw new ExternalServiceException(Service, $"{Service} took too long to answer. Try again in a while.", inner: e);
+            throw new ExternalServiceException(Service, Messages.OutsideServices.TookTooLong(Service), inner: e);
         }
         catch (JsonException e)
         {
-            throw new ExternalServiceException(Service, $"{Service} answered with something that could not be read. Try again in a while.", inner: e);
+            throw new ExternalServiceException(Service, Messages.OutsideServices.NotReadable(Service), inner: e);
         }
     }
 

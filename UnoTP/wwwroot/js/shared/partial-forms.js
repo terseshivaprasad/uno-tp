@@ -93,7 +93,7 @@
   document.addEventListener('click', function (e) {
     var link = e.target.closest && e.target.closest('a[href]');
     if (!unsaved || !link || link.target === '_blank' || link.getAttribute('href').charAt(0) === '#' || e.defaultPrevented) return;
-    if (!window.confirm('This step has changes that are not saved yet. Leave it without saving them?')) {
+    if (!window.confirm(message('Shared.UnsavedChanges'))) {
       e.preventDefault();
       e.stopImmediatePropagation();
     } else {

@@ -107,13 +107,13 @@
     markDateTimeInvalid('adminTo', false);
 
     var chosen = Array.prototype.slice.call(picks.querySelectorAll('input:checked')).map(function (i) { return i.value; });
-    if (!chosen.length) return showFormError(windowError, 'Pick at least one tile to disable.');
+    if (!chosen.length) return showFormError(windowError, message('Admin.PickATile'));
 
     var from = readDateTimeBoxes('adminFrom');
-    if (!from) { markDateTimeInvalid('adminFrom', true); return showFormError(windowError, 'Enter a complete From as DD / MM / YYYY and HH : MM.'); }
+    if (!from) { markDateTimeInvalid('adminFrom', true); return showFormError(windowError, message('Admin.FromIncomplete')); }
     var to = readDateTimeBoxes('adminTo');
-    if (!to) { markDateTimeInvalid('adminTo', true); return showFormError(windowError, 'Enter a complete To as DD / MM / YYYY and HH : MM.'); }
-    if (to <= from) { markDateTimeInvalid('adminTo', true); return showFormError(windowError, 'The window has to end after it starts.'); }
+    if (!to) { markDateTimeInvalid('adminTo', true); return showFormError(windowError, message('Admin.ToIncomplete')); }
+    if (to <= from) { markDateTimeInvalid('adminTo', true); return showFormError(windowError, message('Admin.EndsBeforeItStarts')); }
     if (from < new Date()) { markDateTimeInvalid('adminFrom', true); return showFormError(windowError, 'A window cannot start in the past. To take a tile off right now, set From to the next minute.'); }
 
     document.getElementById('adminFromValue').value = toServerDateTime(from);
@@ -137,11 +137,11 @@
     noticeHead.classList.remove('is-invalid');
 
     var at = readDateTimeBoxes('adminAt');
-    if (!at) { markDateTimeInvalid('adminAt', true); return showFormError(noticeError, 'Enter a complete date and time as DD / MM / YYYY and HH : MM.'); }
+    if (!at) { markDateTimeInvalid('adminAt', true); return showFormError(noticeError, message('Admin.NoticeTimeIncomplete')); }
     if (at < new Date()) { markDateTimeInvalid('adminAt', true); return showFormError(noticeError, 'A notice about something already past tells nobody anything.'); }
     if (!noticeHead.value.trim()) {
       noticeHead.classList.add('is-invalid');
-      return showFormError(noticeError, 'Write the notice partners will see.', noticeHead);
+      return showFormError(noticeError, message('Admin.NoticeHeadingMissing'), noticeHead);
     }
 
     document.getElementById('adminAtValue').value = toServerDateTime(at);

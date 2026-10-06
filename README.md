@@ -31,7 +31,10 @@ rules the strict build holds the code to are in `.editorconfig`; what makes a bu
 strict is in `Directory.Build.props`. The tests (`UnoTP.Tests/`) check each backend
 API client against a stand-in for the network - what it sends, how it reads the
 answer, and that an outage is told apart from a refusal - the limit on documents,
-and the deposit maths.
+the deposit maths, the design's UI guidelines (`UiGuidelineTests`: the page
+frame, the type, text sizes, no styles inside a view), and the master of
+validation and error messages (`ValidationListTests`: `docs/VALIDATIONS.md` is in
+step with `UnoTP.Data/Messages.cs`, and no message is written anywhere else).
 
 ## Waiting, and slow connections
 
@@ -62,7 +65,8 @@ on the screen waits where it need not, and where it must wait it says so:
 | `UnoTP.Tests/` | The tests of the code alone: the API clients, the limit on documents, the deposit maths |
 | `db/` | The two SQL Server scripts: `create_tables.sql` (every table) and `insert_seed.sql` (the settings, features and lists) |
 | `docs/backend-api.md` | What the pages ask of the data layer, interface by interface |
-| `docs/BRAND_GUIDELINES.md` | The visual rules every page keeps |
+| `docs/VALIDATIONS.md` | Every validation and error message, page by page: written from `UnoTP.Data/Messages.cs`, where the words are changed |
+| `docs/BRAND_GUIDELINES.md` | The UI guidelines from the design: spacing, type, buttons, colours, and the checklist for a page |
 
 Inside `UnoTP`: `Controllers/` one per page, the application steps sharing
 `ApplicationStepController`; `ViewModels/` one per page, `DocumentsViewModel` holding

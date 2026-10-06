@@ -80,11 +80,11 @@ public sealed class DepositForm
     public string? AmountProblem(AppConfig config)
     {
         var n = AmountValue;
-        if (n == 0) return "Required — enter the deposit amount";
-        if (n < config.MinAmount) return $"Below the {Money.Rupees(config.MinAmount)} minimum";
-        if (n > config.MaxAmount) return config.OverMaxAmountMessage.Length > 0 ? config.OverMaxAmountMessage : $"Above the {Money.Rupees(config.MaxAmount)} maximum";
+        if (n == 0) return Messages.FdConfiguration.AmountRequired;
+        if (n < config.MinAmount) return Messages.FdConfiguration.BelowMinimum(Money.Rupees(config.MinAmount));
+        if (n > config.MaxAmount) return config.OverMaxAmountMessage.Length > 0 ? config.OverMaxAmountMessage : Messages.FdConfiguration.AboveMaximum(Money.Rupees(config.MaxAmount));
         // A step of 1 (or none) means any amount; a larger one, multiples of it.
-        if (config.AmountStep > 1 && n % config.AmountStep != 0) return $"Not a multiple of {Money.Rupees(config.AmountStep)} — {Money.InWords(n).ToLowerInvariant()}";
+        if (config.AmountStep > 1 && n % config.AmountStep != 0) return Messages.FdConfiguration.NotAMultiple(Money.Rupees(config.AmountStep), Money.InWords(n).ToLowerInvariant());
         return null;
     }
 
@@ -100,37 +100,37 @@ public sealed class DepositForm
 
         if (renewal is not null)
         {
-            if (reference.RenewInstructions.All(r => r.Code != RenewalFor)) problems["RenewalFor"] = "Required — choose what of the deposit is renewed";
-            else if (RenewalFor == RenewalChoice.Principal && !renewal.PrincipalKnown) problems["RenewalFor"] = "The deposit's principal is not known — renew principal and interest";
+            if (reference.RenewInstructions.All(r => r.Code != RenewalFor)) problems["RenewalFor"] = Messages.FdConfiguration.RenewalOfRequired;
+            else if (RenewalFor == RenewalChoice.Principal && !renewal.PrincipalKnown) problems["RenewalFor"] = Messages.FdConfiguration.PrincipalNotKnown;
         }
 
         if (!rates.Tenures.Contains(TenureMonths))
         {
-            problems["TenureMonths"] = "Choose the tenure";
+            problems["TenureMonths"] = Messages.FdConfiguration.TenureRequired;
         }
         else if (!rates.OffersTenure(TenureMonths))
         {
-            problems["TenureMonths"] = $"A {TenureMonths}-month deposit is not offered for this amount";
+            problems["TenureMonths"] = Messages.FdConfiguration.TenureNotOffered(TenureMonths);
         }
 
         var payout = rates.Payouts.FirstOrDefault(p => p.Code == InterestPayout);
         if (payout is null)
         {
-            problems["InterestPayout"] = "Choose the interest payout";
+            problems["InterestPayout"] = Messages.FdConfiguration.PayoutRequired;
         }
         else if (!rates.OffersPayout(InterestPayout))
         {
-            problems["InterestPayout"] = $"A {payout.Name.ToLowerInvariant()} payout is not offered for this amount";
+            problems["InterestPayout"] = Messages.FdConfiguration.PayoutNotOffered(payout.Name.ToLowerInvariant());
         }
 
-        if (AutoRenewal && reference.RenewInstructions.All(r => r.Code != RenewInstruction)) problems["RenewInstruction"] = "Required — choose what auto renewal renews";
-        if (reference.DeliveryTypes.All(d => d.Code != DeliveryType)) problems["DeliveryType"] = "Choose the delivery type";
+        if (AutoRenewal && reference.RenewInstructions.All(r => r.Code != RenewInstruction)) problems["RenewInstruction"] = Messages.FdConfiguration.AutoRenewalOfRequired;
+        if (reference.DeliveryTypes.All(d => d.Code != DeliveryType)) problems["DeliveryType"] = Messages.FdConfiguration.DeliveryTypeRequired;
 
         if (sourceOfFunds.Asked)
         {
             var sources = reference.SourcesOfFunds ?? [];
-            if (sources.All(s => s.Code != SourceOfFunds)) problems["SourceOfFunds"] = "Required — choose the source of funds";
-            else if (sourceOfFunds.TakesRemark(SourceOfFunds) && SourceOfFundsRemark.Length == 0) problems["SourceOfFundsRemark"] = "Required — say what the source of funds is";
+            if (sources.All(s => s.Code != SourceOfFunds)) problems["SourceOfFunds"] = Messages.FdConfiguration.SourceOfFundsRequired;
+            else if (sourceOfFunds.TakesRemark(SourceOfFunds) && SourceOfFundsRemark.Length == 0) problems["SourceOfFundsRemark"] = Messages.FdConfiguration.SourceOfFundsRemarkRequired;
             else if (sourceOfFunds.TakesRemark(SourceOfFunds) && SourceOfFundsRemark.Length > InputRules.MaxRemark) problems["SourceOfFundsRemark"] = InputRules.TooLong(InputRules.MaxRemark);
             else if (sourceOfFunds.TakesRemark(SourceOfFunds) && !InputRules.IsClean(SourceOfFundsRemark)) problems["SourceOfFundsRemark"] = InputRules.OnlyAllowed;
         }
@@ -224,11 +224,11 @@ public sealed class DepositViewModel(DocumentsViewModel docs, DepositForm form, 
             if (Row is null && Form.AmountProblem(Docs.Config) is not null) return "The rate is quoted once a valid amount is entered.";
             if (Row is null && Payout is not null && !Rates.OffersPayout(Form.InterestPayout))
             {
-                return $"A {Payout.Name.ToLowerInvariant()} payout is not offered for this amount. Choose another payout, or change the amount.";
+                return Messages.FdConfiguration.PayoutNotOfferedChooseAnother(Payout.Name.ToLowerInvariant());
             }
             if (Row is null && !Rates.OffersTenure(Form.TenureMonths))
             {
-                return $"A {Form.TenureMonths}-month deposit is not offered for this amount. Choose another tenure, or change the amount.";
+                return Messages.FdConfiguration.TenureNotOfferedChooseAnother(Form.TenureMonths);
             }
             if (Row is null) return "The rate is quoted once a valid amount is entered.";
             return $"Rate is the card rate for a {Form.TenureMonths}-month deposit of {Money.Rupees(Rates.Amount)} as on {Money.Day(Row.AsOn)}.";

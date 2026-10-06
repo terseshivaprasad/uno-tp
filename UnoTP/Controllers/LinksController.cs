@@ -31,13 +31,13 @@ public class LinksController(ILinkApi links, Lookups lookups, IApplicationApi ap
         {
             var (sent, _) = await paymentLinks.SendAsync(appNo, HttpContext.RequestAborted);
             TempData["toast"] = sent is null
-                ? "No link could be sent for this application."
+                ? Messages.ShortUrl.NoLinkSent
                 : $"Link sent to {SentTo.Both(sent.LinkSentTo, sent.LinkEmailedTo)}.";
             return RedirectToAction(nameof(Index));
         }
         TempData["toast"] = await links.SendAsync(appNo, purpose) is { } link
             ? $"Link sent to {SentTo.Both(link.Mobile, link.Email)} — any link sent before stops working."
-            : "No link could be sent for this application.";
+            : Messages.ShortUrl.NoLinkSent;
         return RedirectToAction(nameof(Index));
     }
 }

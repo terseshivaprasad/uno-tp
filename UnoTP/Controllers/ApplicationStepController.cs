@@ -17,7 +17,7 @@ namespace UnoTP.Controllers;
 public abstract class ApplicationStepController(IApplicationApi applications, IDepositApi deposits, IServiceProvider services) : Controller
 {
     protected const string Changed =
-        "This application changed somewhere else while that was being sent, so it was not kept. The page shows it as it stands now — do it again.";
+        Messages.Shared.ChangedElsewhere;
 
     protected IApplicationApi Applications => applications;
     protected IDepositApi Deposits => deposits;
@@ -58,7 +58,7 @@ public abstract class ApplicationStepController(IApplicationApi applications, ID
         // Paid online, the repayment bank has to be one the payment gateway takes.
         if (docs.State.PayMode == "Online" && form.Repayment.CleanIfsc.Length >= 4 && !docs.Ref.OnPaymentGateway(form.Repayment.CleanIfsc))
         {
-            problems["Repayment.Ifsc"] = PaymentViewModel.GatewayProblemFor(repay?.Bank ?? "This bank");
+            problems["Repayment.Ifsc"] = PaymentViewModel.GatewayProblemFor(repay?.Bank ?? Messages.BankDetails.ThisBank);
         }
         return problems;
     }

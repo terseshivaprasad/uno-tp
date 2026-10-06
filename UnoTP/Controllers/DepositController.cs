@@ -52,7 +52,7 @@ public class DepositController(IApplicationApi applications, IDepositApi deposit
         var problems = form.Problems(docs.Config, rates, sourceOfFunds, docs.App.Renewal);
         // No TDS is a claim the investor signs: the form is filed here before Proceed.
         docs.TdsFormWanted = form.NoTds;
-        if (form.NoTds && docs.View(DocumentsViewModel.TdsFormSlot).Doc is null) problems["TdsForm"] = "Upload the Form 121 before proceeding, or turn the switch off";
+        if (form.NoTds && docs.View(DocumentsViewModel.TdsFormSlot).Doc is null) problems["TdsForm"] = Messages.FdConfiguration.TdsFormRequired;
         // Nothing else wanting, the deposit as it stands is put to the rate card itself.
         if (refresh is null && problems.Count == 0 && await NotOnRateCardAsync(docs, form, rates) is { } notOnCard) problems["Scheme"] = notOnCard;
         if (refresh is not null)
@@ -118,15 +118,13 @@ public class DepositController(IApplicationApi applications, IDepositApi deposit
         var payout = rates.Payouts.FirstOrDefault(p => p.Code == form.InterestPayout)?.Name ?? form.InterestPayout;
         var line = rates.Row(form.TenureMonths, form.InterestPayout);
         if (line is null)
-            return $"The rate card offers no {payout} payout for {form.TenureMonths} months on {Money.Rupees(form.AmountValue)}. Change the tenure, the payout or the amount.";
+            return Messages.FdConfiguration.NoSuchPayoutOnCard(payout, form.TenureMonths, Money.Rupees(form.AmountValue));
 
         var check = new SchemeCheck(card.Category, card.ApplicationType, line.Scheme, line.Payout, line.TenureMonths, line.Rate, form.AmountValue, card.BranchUser);
         if (await Deposits.OnRateCardAsync(check)) return null;
 
         var mode = card.ApplicationType == RateCard.Renew ? "a renewal" : "a fresh application";
-        return $"This deposit is not on the rate card: no {line.Scheme} scheme is in effect for category {card.Category} and {mode} "
-            + $"that pays {payout} for {line.TenureMonths} months at {line.Rate:0.##}% on {Money.Rupees(form.AmountValue)}. "
-            + "Check the category on Upload Documents, and the amount, tenure and payout here.";
+        return Messages.FdConfiguration.NotOnRateCard(line.Scheme, card.Category, mode, payout, line.TenureMonths, $"{line.Rate:0.##}", Money.Rupees(form.AmountValue));
     }
 
     // The returns are worked out once the amount passes its own checks; a renewal's amount always does.

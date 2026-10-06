@@ -16,7 +16,7 @@ namespace UnoTP.Infrastructure;
 public sealed class PaymentLinkSender(
     IApplicationApi applications, IShortLinkService shortLinks, IOptions<PaymentLinkOptions> paymentLink, ILogger<PaymentLinkSender> log)
 {
-    public const string NotShortened = "The payment link could not be shortened, so the investor gets it in full.";
+    public const string NotShortened = Messages.ReviewSummary.LinkNotShortened;
 
     /// <summary>
     /// The submission with its link on record, or null when no link may go any more

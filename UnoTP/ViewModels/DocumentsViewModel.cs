@@ -76,12 +76,12 @@ public partial class DocumentsViewModel(
     /// </summary>
     public bool CkycPanVerified => !HasFolio && (PanFiled || View(PanSlot).Doc is null || NsdlSettled(Investor));
 
-    public const string CkycWaitsOnPan = "Available once NSDL verifies the uploaded PAN copy.";
+    public const string CkycWaitsOnPan = Messages.UploadDocuments.CkycWaitsOnPan;
 
     /// <summary>Whether Fetch from CKYC is switched on (Backend:Switches:FetchCkyc). Off, its button stays, disabled, and says why.</summary>
     public bool CkycOn => switches.IsOn(OutsideSwitches.FetchCkyc);
 
-    public const string CkycOffWhy = "Unavailable: the CKYC service is switched off for now. Upload the proof of address and the photograph instead.";
+    public const string CkycOffWhy = Messages.UploadDocuments.CkycSwitchedOff;
 
     /// <summary>The deposit this application renews, when it was opened from Renew FD; null for a new deposit.</summary>
     public RenewalOf? Renewal => App.Renewal;
@@ -233,8 +233,8 @@ public partial class DocumentsViewModel(
     // What NSDL failing means for the holder: a joint holder is removed, and an
     // investor the application was opened on is searched for again.
     private static string NsdlFailedNext(DocHolder h) => h.Joint
-        ? "Remove this holder and search again."
-        : "Start again from Investor Identification with the right PAN and date of birth.";
+        ? Messages.UploadDocuments.RemoveHolderSearchAgain
+        : Messages.UploadDocuments.StartAgainWithRightPan;
 
     /// <summary>
     /// Whether the PAN-Aadhaar link is asked for a holder: only one with no folio
@@ -287,11 +287,11 @@ public partial class DocumentsViewModel(
     public static string? PanCopyMismatch(OcrReading reading, string pan, string dob)
     {
         var read = reading.Pan.Replace(" ", "").ToUpperInvariant();
-        if (read.Length == 0) return "OCR could not read the PAN number on it";
-        if (read != pan.ToUpperInvariant()) return $"The PAN on it reads as {MaskPan(read)}, not {MaskPan(pan)}";
+        if (read.Length == 0) return Messages.UploadDocuments.PanNotReadOnCopy;
+        if (read != pan.ToUpperInvariant()) return Messages.UploadDocuments.PanReadsAsAnother(MaskPan(read), MaskPan(pan));
         if (dob.Length == 0) return null;
-        if (reading.Dob.Length == 0) return "OCR could not read the date of birth on it";
-        if (reading.Dob != dob) return $"The date of birth on it does not match the one entered ({MaskDate(dob)})";
+        if (reading.Dob.Length == 0) return Messages.UploadDocuments.DobNotReadOnCopy;
+        if (reading.Dob != dob) return Messages.UploadDocuments.DobNotTheOneEntered(MaskDate(dob));
         return null;
     }
 

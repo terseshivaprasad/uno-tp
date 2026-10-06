@@ -117,7 +117,7 @@ public sealed class SlotToolbar
         else if (slot.Spent)
         {
             toolbar.ActionLabel = "Try again later";
-            toolbar.ActionBlockedReason = slot.Tries ?? "Refused too many times in a row: try again after some time.";
+            toolbar.ActionBlockedReason = slot.Tries ?? Messages.UploadDocuments.RefusedTooOften;
         }
         else if (filed)
         {

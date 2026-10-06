@@ -12,7 +12,7 @@ public class SubmittedController(IApplicationApi applications, IDepositApi depos
 {
     protected override bool ShowsCancelled => true;
 
-    private const string NoLink = "A link could not be sent: the application is paid, cancelled, or past its window.";
+    private const string NoLink = Messages.ReviewSummary.LinkNotSent;
 
     [HttpGet("")]
     public async Task<IActionResult> Index()

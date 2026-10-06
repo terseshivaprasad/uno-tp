@@ -66,8 +66,8 @@ public sealed class PanApiClient(HttpClient http, IPartner partner, IPartnerApi 
         {
             var why = Text(answer.ErrorMessage);
             throw new ExternalServiceException(Service, why.Length > 0
-                ? $"{Service} could not be made: {why}"
-                : $"{Service} could not be made just now. Try again in a while.");
+                ? Messages.OutsideServices.PanCheckFailedWith(Service, why)
+                : Messages.OutsideServices.PanCheckFailed(Service));
         }
         // A PAN the API does not hold, or holds against another date of birth, is not
         // this holder's: the name is not asked about at all.
@@ -100,25 +100,25 @@ public sealed class PanApiClient(HttpClient http, IPartner partner, IPartnerApi 
             using var response = await http.PostAsync(path, body, ct);
 
             if (response.StatusCode == HttpStatusCode.ServiceUnavailable)
-                throw new ExternalServiceException(Service, $"{Service} is not available just now. Try again in a while.");
+                throw new ExternalServiceException(Service, Messages.OutsideServices.NotAvailable(Service));
             response.EnsureSuccessStatusCode();
 
             var answer = await response.Content.ReadFromJsonAsync<PanResponse>(Json, ct);
             if (answer is null)
-                throw new ExternalServiceException(Service, $"{Service} answered with nothing. Try again in a while.");
+                throw new ExternalServiceException(Service, Messages.OutsideServices.AnsweredNothing(Service));
             return answer;
         }
         catch (HttpRequestException e)
         {
-            throw new ExternalServiceException(Service, $"{Service} is not answering. Try again in a while.", inner: e);
+            throw new ExternalServiceException(Service, Messages.OutsideServices.NotAnswering(Service), inner: e);
         }
         catch (TaskCanceledException e) when (!ct.IsCancellationRequested)
         {
-            throw new ExternalServiceException(Service, $"{Service} took too long to answer. Try again in a while.", inner: e);
+            throw new ExternalServiceException(Service, Messages.OutsideServices.TookTooLong(Service), inner: e);
         }
         catch (JsonException e)
         {
-            throw new ExternalServiceException(Service, $"{Service} answered with something that could not be read. Try again in a while.", inner: e);
+            throw new ExternalServiceException(Service, Messages.OutsideServices.NotReadable(Service), inner: e);
         }
     }
 

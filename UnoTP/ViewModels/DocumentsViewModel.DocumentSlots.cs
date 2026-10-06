@@ -243,10 +243,10 @@ public partial class DocumentsViewModel
         var waitsOnPan = used && def.Key is "poa" or "mail" && PanWanted(h);
         string? locked = !used ? null : waitsOnPan ? "Upload the PAN copy first" : def.Key switch
         {
-            "poa" when !AutoProofType && proofType.Length == 0 => "Choose the proof of address first",
-            "mail" when !AutoProofType && proofType.Length == 0 => "Choose the communication address proof first",
-            "empproof" when s.EmpProofType.Length == 0 => "Choose the employee proof first",
-            "payment" when s.PayMode.Length == 0 => "Choose the payment mode first",
+            "poa" when !AutoProofType && proofType.Length == 0 => Messages.UploadDocuments.ChoosePoaTypeFirst,
+            "mail" when !AutoProofType && proofType.Length == 0 => Messages.UploadDocuments.ChooseMailTypeFirst,
+            "empproof" when s.EmpProofType.Length == 0 => Messages.UploadDocuments.ChooseEmployeeProofFirst,
+            "payment" when s.PayMode.Length == 0 => Messages.UploadDocuments.ChoosePayModeFirst,
             _ => null,
         };
 

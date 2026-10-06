@@ -130,7 +130,7 @@ public partial class NewApplicationViewModel(IInvestorApi investors, UnoTP.Infra
         if (By == "folio")
         {
             Folio = Clean(Folio);
-            if (Folio.Length == 0) { FolioError = "Enter the folio number"; return false; }
+            if (Folio.Length == 0) { FolioError = Messages.InvestorIdentification.FolioRequired; return false; }
             var onFolio = await investors.FolioDepositsByFolioAsync(Folio);
             // The folio's PAN is looked up too: it must not be on another folio as well.
             IReadOnlyList<FolioDeposit> ofPan = [];
@@ -138,7 +138,7 @@ public partial class NewApplicationViewModel(IInvestorApi investors, UnoTP.Infra
             var byFolio = FolioCheck.ByFolio(onFolio, ofPan, today);
             if (byFolio.Folio.Length == 0)
             {
-                FolioError = "No record against that folio number — check it, or search by PAN instead";
+                FolioError = Messages.InvestorIdentification.FolioNotFound;
                 return false;
             }
             if (byFolio.Problem is not null)
@@ -155,8 +155,8 @@ public partial class NewApplicationViewModel(IInvestorApi investors, UnoTP.Infra
         }
 
         Pan = Clean(Pan);
-        PanError = Pan.Length == 0 ? "Enter the PAN"
-            : PanPattern().IsMatch(Pan) ? null : "Enter a valid PAN, like ABCDE1234F";
+        PanError = Pan.Length == 0 ? Messages.InvestorIdentification.PanRequired
+            : PanPattern().IsMatch(Pan) ? null : Messages.InvestorIdentification.PanInvalid;
         DobError = DobProblem((await lookups.ConfigAsync()).MinAge);
         if (PanError is not null || DobError is not null) return false;
 
@@ -175,8 +175,7 @@ public partial class NewApplicationViewModel(IInvestorApi investors, UnoTP.Infra
             if (byPan.Problem == FolioCheck.NoDob) OpsError = NoDob(Pan, byPan.Folio);
             if (byPan.Folios is { } folios) OpsError = ManyFolios(Pan, folios);
             if (byPan.Problem == FolioCheck.ExistingHolder)
-                OpsError = $"The folio master holds PAN {Pan} as the first holder of folio {byPan.Folio}, but no deposit of theirs was found on it. "
-                    + "Operations has to look at the record before a deposit can be booked.";
+                OpsError = Messages.InvestorIdentification.FolioWithoutDeposit(Pan, byPan.Folio);
             return false;
         }
 
@@ -193,12 +192,10 @@ public partial class NewApplicationViewModel(IInvestorApi investors, UnoTP.Infra
     // a search by PAN nor one by folio number can say which of them the deposit is
     // booked against.
     private static string ManyFolios(string pan, IReadOnlyList<string> folios) =>
-        $"Folios {string.Join(", ", folios.Take(folios.Count - 1))} and {folios[^1]} are all held against PAN {pan}. "
-        + "Operations has to merge them before a deposit can be booked against the PAN.";
+        Messages.InvestorIdentification.ManyFoliosToMerge(string.Join(", ", folios.Take(folios.Count - 1)), folios[^1], pan);
 
     private static string NoDob(string pan, string folio) =>
-        $"The register holds PAN {pan} (folio {folio}) without a date of birth, so the investor's age cannot be checked. "
-        + "Operations has to add it to the record before a deposit can be booked.";
+        Messages.InvestorIdentification.NoDobOnRegister(pan, folio);
 
     // The folio the check found, shown with the details the register holds for it.
     // The PAN and date of birth are the ones the check went by.
@@ -211,8 +208,7 @@ public partial class NewApplicationViewModel(IInvestorApi investors, UnoTP.Infra
         {
             var why = $"Folio {folio} is held, but the register has no details for it";
             if (By == "folio") FolioError = why; else PanError = why;
-            OpsError = $"Folio {folio} has a deposit against PAN {pan}, but the folio's own record (name and address) could not be found. "
-                + "Operations has to look at the record before a deposit can be booked.";
+            OpsError = Messages.InvestorIdentification.FolioRecordMissing(folio, pan);
             return false;
         }
         Record = new Holder(pan, dob, f.Folio, f.Name, f.Gender, f.Address, f.Docs, f.Note, f.Source);
@@ -225,13 +221,13 @@ public partial class NewApplicationViewModel(IInvestorApi investors, UnoTP.Infra
     private string? DobProblem(int minAge)
     {
         Dd = Digits(Dd); Mm = Digits(Mm); Yyyy = Digits(Yyyy);
-        if (Dd.Length == 0 || Mm.Length == 0 || Yyyy.Length == 0) return "Enter the date of birth";
-        if (Yyyy.Length < 4) return "Enter the year in full";
+        if (Dd.Length == 0 || Mm.Length == 0 || Yyyy.Length == 0) return Messages.InvestorIdentification.DobRequired;
+        if (Yyyy.Length < 4) return Messages.InvestorIdentification.YearInFull;
         if (!DateTime.TryParseExact(Dob, "dd-MM-yyyy", null, System.Globalization.DateTimeStyles.None, out var when))
-            return "Enter a valid date";
-        if (when > DateTime.Today) return "The date of birth cannot be in the future";
+            return Messages.InvestorIdentification.DateInvalid;
+        if (when > DateTime.Today) return Messages.InvestorIdentification.DobInFuture;
         // The note on this page: an investor under the minimum age cannot hold a deposit.
-        if (when.AddYears(minAge) > DateTime.Today) return $"The depositor must be {minAge} years or above";
+        if (when.AddYears(minAge) > DateTime.Today) return Messages.InvestorIdentification.UnderAge(minAge);
         return null;
     }
 

@@ -50,7 +50,7 @@ public class EntryController(
         {
             if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(sysCode))
             {
-                return Refused("The link from the portal is missing its user or system code.");
+                return Refused(Messages.SignIn.LinkIncomplete);
             }
 
             // The values are base64. A '+' in them arrives as a space when the link is not
@@ -68,11 +68,11 @@ public class EntryController(
             catch (ExternalServiceException e)
             {
                 log.LogWarning(e, "Entry: the decryption service failed.");
-                return Refused("The portal's details could not be read just now. Try opening Uno TP from the portal again in a while.");
+                return Refused(Messages.SignIn.PortalNotReadNow);
             }
             if (decryptedUser is null || decryptedCode is null)
             {
-                return Refused("The link from the portal could not be read. Open Uno TP from the portal again.");
+                return Refused(Messages.SignIn.LinkNotRead);
             }
             user = decryptedUser;
             code = decryptedCode;
@@ -89,21 +89,21 @@ public class EntryController(
             started = await sessions.StartAsync(SessionStarts.For(HttpContext, user, code));
             if (started is null)
             {
-                return Refused("The portal did not start a session for you on Uno TP. Ask your administrator for access.");
+                return Refused(Messages.SignIn.NoSessionFromPortal);
             }
             menu = await sessions.MenuAsync(started.User.Agency_Usr_Clustered_ID, code);
         }
         catch (ExternalServiceException e)
         {
             log.LogWarning(e, "Entry: the auth API did not start a session or give a menu.");
-            return Refused("Uno TP could not start your session just now. Try again in a while.");
+            return Refused(Messages.SignIn.SessionNotStarted);
         }
 
         // A user the portal gives no Uno TP menu to has no way in. Which features are on
         // is not the menu's to say: that is the "Features" section of appsettings.
         if (menu.Count == 0)
         {
-            return Refused("Your menu does not include Uno TP. Ask your administrator for access.");
+            return Refused(Messages.SignIn.NotOnMenu);
         }
 
         HttpContext.Session.SignIn(started);
@@ -155,7 +155,7 @@ public class EntryController(
 
     /// <summary>A page that is not the user's to open.</summary>
     [HttpGet("Home/Unauthorized")]
-    public IActionResult NoAccess() => Refused("You do not have access to this page.");
+    public IActionResult NoAccess() => Refused(Messages.SignIn.NoAccess);
 
     /// <summary>Where a request over its limit is sent (see <see cref="RateLimits"/>).</summary>
     [HttpGet("Home/TooManyRequests")]

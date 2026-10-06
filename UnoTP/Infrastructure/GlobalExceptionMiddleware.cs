@@ -34,7 +34,7 @@ public sealed class GlobalExceptionMiddleware(RequestDelegate next, ILogger<Glob
             if (ctx.Request.Headers.Accept.ToString().Contains("application/json", StringComparison.OrdinalIgnoreCase))
             {
                 await ctx.Response.WriteAsJsonAsync(
-                    new { title = "Something went wrong.", status = 500, traceId = reference },
+                    new { title = Messages.Shared.SomethingWentWrong, status = 500, traceId = reference },
                     options: null, contentType: "application/problem+json");
                 return;
             }
@@ -59,7 +59,7 @@ public sealed class GlobalExceptionMiddleware(RequestDelegate next, ILogger<Glob
                     ctx.Response.Clear();
                     ctx.Response.StatusCode = StatusCodes.Status500InternalServerError;
                     ctx.Response.ContentType = "text/plain; charset=utf-8";
-                    await ctx.Response.WriteAsync($"Uno TP could not finish that. Reference: {reference}");
+                    await ctx.Response.WriteAsync(Messages.Shared.CouldNotFinish(reference));
                 }
             }
             finally

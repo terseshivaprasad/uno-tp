@@ -32,7 +32,7 @@ public class AdminController(FeatureSet features, ConsoleState console, IConsole
         var picked = (features ?? []).Where(known.Contains).Distinct().ToList();
         if (picked.Count == 0 || ParseLocalDateTime(from) is not { } start || ParseLocalDateTime(to) is not { } end || end <= start || start < DateTime.Now.AddMinutes(-1))
         {
-            TempData["toast"] = "The window was not set: pick a tile, and a From in the future before the To.";
+            TempData["toast"] = Messages.Admin.WindowNotSet;
             return RedirectToAction(nameof(Index));
         }
         var text = (notice ?? "").Trim();
@@ -50,7 +50,7 @@ public class AdminController(FeatureSet features, ConsoleState console, IConsole
         var head = (title ?? "").Trim();
         if (ParseLocalDateTime(at) is not { } moment || moment < DateTime.Now.AddMinutes(-1) || head.Length == 0 || string.IsNullOrWhiteSpace(kind))
         {
-            TempData["toast"] = "The notice was not published: give it a heading and a moment still to come.";
+            TempData["toast"] = Messages.Admin.NoticeNotPublished;
             return RedirectToAction(nameof(Index));
         }
         await consoleApi.AddAnnouncementAsync(new NewAnnouncement(kind.Trim(), head, moment, (detail ?? "").Trim()));
@@ -64,7 +64,7 @@ public class AdminController(FeatureSet features, ConsoleState console, IConsole
     {
         TempData["toast"] = await consoleApi.EndWindowAsync(id)
             ? live ? "Window ended. The tiles it took off are back on for every partner." : "Window cancelled. Nothing goes off, and its notice is out of the bell."
-            : "That window has already ended.";
+            : Messages.Admin.WindowAlreadyEnded;
         return RedirectToAction(nameof(Index));
     }
 
@@ -74,7 +74,7 @@ public class AdminController(FeatureSet features, ConsoleState console, IConsole
     {
         TempData["toast"] = await consoleApi.RemoveAnnouncementAsync(id)
             ? "Notice removed. Partners no longer see it in the bell."
-            : "That notice is no longer in the bell.";
+            : Messages.Admin.NoticeAlreadyGone;
         return RedirectToAction(nameof(Index));
     }
 

@@ -156,6 +156,10 @@
        js/pages/{page}.js, in its Scripts section, after these. *@
     @* Bootstrap's components (modal, tooltip, collapse, dropdown), with Popper. Vanilla JS: no jQuery. *@
     <script src="~/lib/bootstrap/js/bootstrap.bundle.min.js" asp-append-version="true"></script>
+    @* The validation and error messages the scripts show, from the one master
+       (UnoTP.Data/Messages.cs). Data, not code: messages.js reads it. *@
+    <script type="application/json" id="appMessages">@Html.Raw(MessageList.BrowserJson)</script>
+    <script src="~/js/shared/messages.js" asp-append-version="true"></script>
     <script src="~/js/shared/loader.js" asp-append-version="true"></script>
     @* Before the pages' own scripts, so a field found wrong stops a post before it goes. *@
     <script src="~/js/shared/field-checks.js" asp-append-version="true"></script>

@@ -49,7 +49,7 @@
         if (mine !== asked) return;
         var panel = document.getElementById('deposit-quote');
         var note = panel && panel.querySelector('.deposit-summary__note, .page-note');
-        if (note) note.textContent = 'The quote could not be fetched just now — it is asked for again with the next change.';
+        if (note) note.textContent = message('FdConfiguration.QuoteNotFetched');
       })
       .then(function () {
         if (waitOver) waitOver();
@@ -194,7 +194,7 @@
     // Over the maximum is said on the keystroke itself, from the limit on the field.
     var digits = Number(e.target.value.replace(/\D/g, '') || 0);
     var max = Number(e.target.getAttribute('data-max') || 0);
-    if (max > 0 && digits > max) showAmountMessage(true, e.target.getAttribute('data-over-max') || 'Above the maximum');
+    if (max > 0 && digits > max) showAmountMessage(true, e.target.getAttribute('data-over-max') || message('FdConfiguration.AboveMaximumShort'));
     clearTimeout(timer);
     timer = setTimeout(function () { refreshQuote(false); }, 600);
   });

@@ -32,7 +32,7 @@ public sealed class InputScreening(RequestDelegate next, ILogger<InputScreening>
         log.LogWarning("Request refused, {Method} {Path}: {Why}", context.Request.Method, context.Request.Path, refused);
         context.Response.StatusCode = StatusCodes.Status400BadRequest;
         context.Response.ContentType = "text/plain; charset=utf-8";
-        await context.Response.WriteAsync("The request carried input this page does not take.");
+        await context.Response.WriteAsync(Messages.Shared.InputRefused);
     }
 
     private static string? ScreenQuery(HttpContext context)

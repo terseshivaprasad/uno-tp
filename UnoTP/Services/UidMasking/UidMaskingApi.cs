@@ -53,7 +53,7 @@ public sealed class UidMaskingClient(HttpClient http, IPartner partner, IOptions
     {
         // Nothing about an Aadhaar - not even its image - is sent without the holder's consent.
         if (!aadhaar.Consent)
-            throw new ExternalServiceException(Service, "An Aadhaar is only masked with the investor's consent, and none has been given.");
+            throw new ExternalServiceException(Service, Messages.OutsideServices.NoConsentToMask);
 
         var settings = options.Value;
         var request = new MaskRequest
@@ -75,8 +75,8 @@ public sealed class UidMaskingClient(HttpClient http, IPartner partner, IOptions
             var why = (answer.Error ?? "").Trim();
             if (why.Length == 0) why = (answer.IntStatusDesc ?? "").Trim();
             throw new ExternalServiceException(Service, why.Length > 0
-                ? $"The Aadhaar could not be masked: {why}"
-                : "The Aadhaar could not be masked. Upload a clearer copy.");
+                ? Messages.OutsideServices.NotMaskedBecause(why)
+                : Messages.OutsideServices.NotMasked);
         }
 
         var copy = new UploadFile(aadhaar.Copy.FileName, aadhaar.Copy.ContentType, Convert.FromBase64String(masked));
@@ -95,25 +95,25 @@ public sealed class UidMaskingClient(HttpClient http, IPartner partner, IOptions
             if (!response.IsSuccessStatusCode)
             {
                 var said = await response.Content.ReadAsStringAsync(ct);
-                throw new ExternalServiceException(Service, $"{Service} could not mask the copy ({(int)response.StatusCode}). Try again in a while.", TraceOf(said));
+                throw new ExternalServiceException(Service, Messages.OutsideServices.MaskingFailed(Service, (int)response.StatusCode), TraceOf(said));
             }
 
             var answer = await response.Content.ReadFromJsonAsync<MaskResponse>(AnyCase, ct);
             if (answer is null)
-                throw new ExternalServiceException(Service, $"{Service} answered with nothing. Try again in a while.");
+                throw new ExternalServiceException(Service, Messages.OutsideServices.AnsweredNothing(Service));
             return answer;
         }
         catch (HttpRequestException e)
         {
-            throw new ExternalServiceException(Service, $"{Service} is not answering. Try again in a while.", inner: e);
+            throw new ExternalServiceException(Service, Messages.OutsideServices.NotAnswering(Service), inner: e);
         }
         catch (TaskCanceledException e) when (!ct.IsCancellationRequested)
         {
-            throw new ExternalServiceException(Service, $"{Service} took too long to answer. Try again in a while.", inner: e);
+            throw new ExternalServiceException(Service, Messages.OutsideServices.TookTooLong(Service), inner: e);
         }
         catch (JsonException e)
         {
-            throw new ExternalServiceException(Service, $"{Service} answered with something that could not be read. Try again in a while.", inner: e);
+            throw new ExternalServiceException(Service, Messages.OutsideServices.NotReadable(Service), inner: e);
         }
     }
 

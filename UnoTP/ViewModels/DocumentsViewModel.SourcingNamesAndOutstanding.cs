@@ -32,17 +32,17 @@ public partial class DocumentsViewModel
 
     private string NsdlNeed(DocHolder h) => NsdlOf(h) switch
     {
-        "failed" => $"NSDL holds no such PAN and date of birth. Upload the PAN copy again if both are right. If not: {NsdlFailedNext(h)}",
-        Unanswered => "NSDL could not be asked about the PAN. Upload the PAN copy again",
-        _ => "Type the name as printed on the PAN, and ask NSDL again",
+        "failed" => Messages.UploadDocuments.NsdlFailedUploadAgain(NsdlFailedNext(h)),
+        Unanswered => Messages.UploadDocuments.NsdlNotAsked,
+        _ => Messages.UploadDocuments.TypeNameAskAgain,
     };
 
     // The bar's words for a missing document, and the card that holds it.
     private static readonly Dictionary<string, string> SlotOfNeed = new()
     {
-        ["the application form"] = "form", ["the PAN copy"] = "pan", ["the proof of address"] = "poa",
-        ["the photograph"] = "photo", ["the communication address proof"] = "mail",
-        ["the instrument copy"] = "payment", ["the employee proof"] = "empproof",
+        [Messages.UploadDocuments.MissingForm] = "form", [Messages.UploadDocuments.MissingPan] = "pan", [Messages.UploadDocuments.MissingPoa] = "poa",
+        [Messages.UploadDocuments.MissingPhoto] = "photo", [Messages.UploadDocuments.MissingMail] = "mail",
+        [Messages.UploadDocuments.MissingInstrument] = "payment", [Messages.UploadDocuments.MissingEmployeeProof] = "empproof",
     };
 
     /// <summary>The card that holds the next thing to do, when that is a document; null otherwise.</summary>
@@ -55,33 +55,33 @@ public partial class DocumentsViewModel
         var mode = ModeOf(s.Sourcing);
         bool Missing(SlotDef d) => View(d).Missing;
 
-        if (Missing(FormSlot)) left.Add("the application form");
-        if (Missing(PanSlot)) left.Add("the PAN copy");
-        if (NsdlUnsettled(Investor)) left.Add("the PAN verified with NSDL");
-        if (!AutoProofType && View(PoaSlot).Used && s.PoaType.Length == 0) left.Add("the proof of address type");
-        if (Missing(PoaSlot)) left.Add("the proof of address");
-        if (Missing(PhotoSlot)) left.Add("the photograph");
-        if (!AutoProofType && View(MailSlot).Used && s.MailPoaType.Length == 0) left.Add("the communication address proof type");
-        if (Missing(MailSlot)) left.Add("the communication address proof");
-        if (!IsRenewal && s.PayMode.Length == 0) left.Add("the payment mode");
-        if (Missing(PaymentSlot)) left.Add("the instrument copy");
-        if (mode is null) left.Add("the sourcing mode");
+        if (Missing(FormSlot)) left.Add(Messages.UploadDocuments.MissingForm);
+        if (Missing(PanSlot)) left.Add(Messages.UploadDocuments.MissingPan);
+        if (NsdlUnsettled(Investor)) left.Add(Messages.UploadDocuments.MissingNsdl);
+        if (!AutoProofType && View(PoaSlot).Used && s.PoaType.Length == 0) left.Add(Messages.UploadDocuments.MissingPoaType);
+        if (Missing(PoaSlot)) left.Add(Messages.UploadDocuments.MissingPoa);
+        if (Missing(PhotoSlot)) left.Add(Messages.UploadDocuments.MissingPhoto);
+        if (!AutoProofType && View(MailSlot).Used && s.MailPoaType.Length == 0) left.Add(Messages.UploadDocuments.MissingMailType);
+        if (Missing(MailSlot)) left.Add(Messages.UploadDocuments.MissingMail);
+        if (!IsRenewal && s.PayMode.Length == 0) left.Add(Messages.UploadDocuments.MissingPayMode);
+        if (Missing(PaymentSlot)) left.Add(Messages.UploadDocuments.MissingInstrument);
+        if (mode is null) left.Add(Messages.UploadDocuments.MissingSourcing);
         else
         {
             if (s.SourceCode.Length == 0) left.Add("the " + mode.CodeLabel.ToLowerInvariant());
-            if (SubRequired(mode) && s.SubBroker.Length == 0) left.Add("the sub broker code");
+            if (SubRequired(mode) && s.SubBroker.Length == 0) left.Add(Messages.UploadDocuments.MissingSubBroker);
         }
-        if (s.Category.Length == 0) left.Add("the deposit category");
+        if (s.Category.Length == 0) left.Add(Messages.UploadDocuments.MissingCategory);
         if (IsEmployee(s.Category))
         {
-            if (s.EmpCode.Length == 0) left.Add("the employee code");
-            if (s.EmpCompany.Length == 0) left.Add("the employee company");
-            if (s.EmpHolder.Length == 0) left.Add("the employee holder");
-            if (s.EmpRelation.Length == 0) left.Add("the relation with the holder");
-            if (s.EmpProofType.Length == 0) left.Add("the employee proof type");
-            if (Missing(EmpProofSlot)) left.Add("the employee proof");
+            if (s.EmpCode.Length == 0) left.Add(Messages.UploadDocuments.MissingEmployeeCode);
+            if (s.EmpCompany.Length == 0) left.Add(Messages.UploadDocuments.MissingEmployeeCompany);
+            if (s.EmpHolder.Length == 0) left.Add(Messages.UploadDocuments.MissingEmployeeHolder);
+            if (s.EmpRelation.Length == 0) left.Add(Messages.UploadDocuments.MissingEmployeeRelation);
+            if (s.EmpProofType.Length == 0) left.Add(Messages.UploadDocuments.MissingEmployeeProofType);
+            if (Missing(EmpProofSlot)) left.Add(Messages.UploadDocuments.MissingEmployeeProof);
         }
-        if (s.AppType == Physical && s.TypedFormNo.Length == 0) left.Add("the form number");
+        if (s.AppType == Physical && s.TypedFormNo.Length == 0) left.Add(Messages.UploadDocuments.MissingFormNo);
         return left;
     }
 }

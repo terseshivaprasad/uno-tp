@@ -112,12 +112,12 @@ public sealed class IdfyClient(HttpClient http, IOptions<IdfyOptions> options, I
         }
         catch (HttpRequestException e)
         {
-            throw new ExternalServiceException(Service, "The document check is not answering. Try again in a while.", inner: e);
+            throw new ExternalServiceException(Service, Messages.OutsideServices.DocumentCheckNotAnswering, inner: e);
         }
         catch (TaskCanceledException e) when (!ct.IsCancellationRequested)
         {
             // IDfy may still finish the task and charge for it, so it is not sent again.
-            throw new ExternalServiceException(Service, "The document check took too long to answer. Try again in a while.", inner: e);
+            throw new ExternalServiceException(Service, Messages.OutsideServices.DocumentCheckTookTooLong, inner: e);
         }
 
         using (response)
@@ -132,12 +132,12 @@ public sealed class IdfyClient(HttpClient http, IOptions<IdfyOptions> options, I
             {
                 // A 200 that is not IDfy's task - a proxy's page, say - says nothing about the copy.
                 log.LogWarning(e, "IDfy {Path} answered 200 with something that is not a task.", path);
-                throw new ExternalServiceException(Service, "The document check answered with something that could not be read. Try again in a while.", inner: e);
+                throw new ExternalServiceException(Service, Messages.OutsideServices.DocumentCheckNotReadable, inner: e);
             }
             if (task is null || !string.Equals(task.Status, "completed", StringComparison.OrdinalIgnoreCase) || task.Result is null)
             {
                 log.LogWarning("IDfy {Path} returned task {TaskId} as {Status}.", path, task?.TaskId, task?.Status);
-                throw new ExternalServiceException(Service, "The document check could not complete on this copy. Upload a clearer copy.");
+                throw new ExternalServiceException(Service, Messages.OutsideServices.DocumentCheckIncomplete);
             }
             return task;
         }
@@ -162,12 +162,12 @@ public sealed class IdfyClient(HttpClient http, IOptions<IdfyOptions> options, I
 
         var message = response.StatusCode switch
         {
-            HttpStatusCode.RequestEntityTooLarge => "The copy is too large for the document check. Keep it under about 2 MB.",
-            HttpStatusCode.UnsupportedMediaType => "The document check does not take this kind of file. Upload a JPEG.",
-            HttpStatusCode.UnprocessableEntity => problem?.Detail ?? "The copy's resolution is outside what the document check takes.",
-            HttpStatusCode.BadRequest => $"The document check could not use this copy{(problem?.Detail is { Length: > 0 } d ? $": {d}" : ".")}",
-            HttpStatusCode.TooManyRequests => "The document check is busy. Try again in a minute.",
-            _ => "The document check is not answering. Try again in a while.",
+            HttpStatusCode.RequestEntityTooLarge => Messages.OutsideServices.CopyTooLarge,
+            HttpStatusCode.UnsupportedMediaType => Messages.OutsideServices.WrongKindOfFile,
+            HttpStatusCode.UnprocessableEntity => problem?.Detail ?? Messages.OutsideServices.ResolutionOutside,
+            HttpStatusCode.BadRequest => problem?.Detail is { Length: > 0 } detail ? Messages.OutsideServices.CopyNotUsableBecause(detail) : Messages.OutsideServices.CopyNotUsable,
+            HttpStatusCode.TooManyRequests => Messages.OutsideServices.DocumentCheckBusy,
+            _ => Messages.OutsideServices.DocumentCheckNotAnswering,
         };
         return new ExternalServiceException(Service, message, problem?.TraceId);
     }
@@ -176,7 +176,7 @@ public sealed class IdfyClient(HttpClient http, IOptions<IdfyOptions> options, I
     {
         var base64 = Convert.ToBase64String(file.Bytes);
         if (base64.Length > MaxBase64)
-            throw new ExternalServiceException(Service, "The copy is too large for the document check. Keep it under about 2 MB.");
+            throw new ExternalServiceException(Service, Messages.OutsideServices.CopyTooLarge);
         return base64;
     }
 
@@ -185,7 +185,7 @@ public sealed class IdfyClient(HttpClient http, IOptions<IdfyOptions> options, I
     private static void Consented(bool consent)
     {
         if (!consent)
-            throw new ExternalServiceException(Service, "An Aadhaar is only read or checked with the investor's consent, and none has been given.");
+            throw new ExternalServiceException(Service, Messages.OutsideServices.NoConsentToRead);
     }
 
     /// <summary>A date as yyyy-MM-dd, the way IDfy takes it.</summary>

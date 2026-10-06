@@ -135,7 +135,7 @@ public class NewApplicationController(
         if (from == FromDashboard) return RedirectToAction(nameof(DashboardController.Index), "Dashboard");
         TempData[RenewController.SaidKey] = cancelled
             ? $"Application {draft} is cancelled."
-            : "There is no such incomplete application to cancel.";
+            : Messages.InvestorIdentification.NoDraftToCancel;
         return Back();
     }
 

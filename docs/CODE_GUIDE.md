@@ -35,10 +35,11 @@ Paths are under `UnoTP/`; stylesheets and scripts under `UnoTP/wwwroot/css/` and
 |---|---|
 | `css/shared/bootstrap-theme.css` | Bootstrap 5.3 pointed at the brand: buttons, badges, alerts, form controls. Change a Bootstrap component's look here. |
 | `css/shared/fonts.css` | Georama, served locally. |
-| `css/shared/layout-and-controls.css` | The design tokens (`:root` colours, `--doc-card-h`), the page shell, the two-column journey grid (`page-layout`, `page-rail`, `page-card`), form fields (`field-label`, `field-input`, `field-hint`, `field-error`, `date-input`), the dialog frame (`app-dialog__*`), tables, drafts list, hover hints. |
+| `css/shared/layout-and-controls.css` | The design tokens (`:root`: colours, the page frame, the type roles, `--doc-card-h`), the page shell, the two-column journey grid (`page-layout`, `page-rail`, `page-card`), form fields (`field-label`, `field-input`, `field-hint`, `field-error`, `date-input`), the dialog frame (`app-dialog__*`), tables, drafts list, hover hints. |
 | `css/shared/journey-steps.css` | What the journey steps share: the step rail (`page-rail__step`), the action bar at the foot (`page-action-bar`), the choice toggle, and the document cards of Upload Documents and Investor Information (`doc-slot`, `doc-drop`, `doc-on-file`, `doc-read-result`, `doc-history`…). |
 | `css/shared/register-pages.css` | What the list pages share: filters, search box, status pills, pager, table (`register-*`). |
-| `css/shared/topbar.css` | The 44px header and the phone menu. |
+| `css/shared/topbar.css` | The header and the phone menu. |
+| `js/shared/messages.js` | Hands the scripts their validation and error messages from the master: `message('Lists.FromAfterTo')`. Loaded first. |
 | `js/shared/partial-forms.js` | Forms marked `data-partial` post with fetch and swap in the answer's `<main>` without a reload, keeping scroll, focus and typed values. Also `data-show-when` (a choice shows or hides a part at once) and `data-guard` (warn before leaving with unsaved changes). |
 | `js/shared/field-checks.js` | Client-side checks: `data-required`, `data-check`, `data-chars` on a field. |
 | `js/shared/date-input.js` | The DD / MM / YYYY boxes: digits only, roll on to the next box. |
@@ -86,12 +87,38 @@ its elements by `data-*` and ids, almost never by class. Before renaming one, se
 shortener); `UnoTP.Data` is the SQL layer over the `t_Unotp_` tables, with the models both share. `Infrastructure/` holds the cross-cutting parts: feature gate, security headers,
 partner session, URL building. Every method has a `///` summary or a comment above it.
 
+## Validation and error messages
+
+Every validation and error message is written once, in `UnoTP.Data/Messages.cs`,
+grouped by page. `docs/VALIDATIONS.md` is the same list as a table (field, when it
+is shown, the words, its name), written from that file.
+
+- **To change a message's words**, change them in `Messages.cs` and nowhere else,
+  then write the list again:
+  `UPDATE_VALIDATIONS=1 dotnet test UnoTP.sln --filter ValidationListTests`.
+  Build, and replace `UnoTP.dll` and `UnoTP.Data.dll`.
+- **To add a message**, add it to its page in `Messages.cs` with a `[Shown("field",
+  "when")]` line over it, and use it by name: `Messages.BankDetails.AccountInvalid`
+  in C# and in a view (`data-required="@Messages.BankDetails.AccountInvalid"`).
+- **A message a script shows** also takes `InBrowser = true` on its `[Shown]` line;
+  the script asks for it with `message('BankDetails.AccountInvalid')`. A value goes
+  in by name: `message('BankDetails.NoBranchMatches', { typed: text })`.
+- **A message with a value in it** is a small method: `Messages.Shared.TooLong(40)`.
+- Never write an error's words in a controller, a view model, a view or a script.
+  `ValidationListTests` fails when the list is out of step, when a script asks for
+  a message the master does not give it, or when a message is spelt out again.
+
+Not in the master: labels, hints, loader texts, success notes, status words and
+the history of a document. They stay where they are shown.
+
 ## Rules to keep
 
 - **No inline `style=` or `<script>` in a view.** The Content-Security-Policy blocks
   them; put styles in the page's stylesheet and behaviour in its script.
-- **Sizes are on the scale** in BRAND_GUIDELINES.md: text 12 / 14 / 16 / 20px, fields
-  and buttons 36px, spacing in multiples of 4. `--doc-card-h` keeps every document
+- **Sizes come from the design** (BRAND_GUIDELINES.md). The page frame and the type
+  are tokens: `var(--field-gap)`, `font: var(--font-label)`. Text is 12 / 14 / 16px
+  (20px for a dashboard's or a dialog's lead), fields and buttons 36px, spacing
+  between parts a multiple of 8. `--doc-card-h` keeps every document
   card in a row the same height.
 - **Disable, don't hide.** Something the partner cannot use yet is shown disabled with
   its reason (a `hover-hint` or an `alert`), not removed.
@@ -106,5 +133,7 @@ dotnet run --project UnoTP --launch-profile http      # port 5102; PORT=5103 for
 ```
 
 Stylesheets and scripts are linked with `asp-append-version`, so a change shows on
-the next reload. There are no automated tests: after a UI change, open the page
-at desktop and phone width and check it by eye against BRAND_GUIDELINES.md.
+the next reload. After a UI change, run `dotnet test` (`UiGuidelineTests` holds the
+design's numbers, the text sizes and the no-inline-styles rule), then open the page
+at 1360px and at a phone's width and go down the checklist at the end of
+BRAND_GUIDELINES.md.

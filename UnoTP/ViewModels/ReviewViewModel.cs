@@ -73,7 +73,7 @@ public sealed class ReviewViewModel(DocumentsViewModel docs, DepositQuote? quote
             var list = new List<ReviewDocument>();
             foreach (var h in Docs.JointHolders.Prepend(Docs.Investor))
             {
-                var who = h.Joint ? $"holder {int.Parse(h.Code)}" : "investor";
+                var who = h.Joint ? Messages.ReviewSummary.HolderNumber(int.Parse(h.Code)) : "investor";
                 foreach (var def in DocumentsViewModel.HolderSlots)
                 {
                     // No proof of a communication address while its upload is off.
@@ -104,21 +104,21 @@ public sealed class ReviewViewModel(DocumentsViewModel docs, DepositQuote? quote
             foreach (var left in Docs.Outstanding()) list.Add(("Upload Documents", left));
             foreach (var h in Holders)
             {
-                var who = h.Holder.Joint ? $"holder {int.Parse(h.Holder.Code)}" : "the investor";
-                foreach (var (step, what) in MandatoryMissing(h)) list.Add((step, $"{what} of {who}"));
-                if (Docs.MailTyped(h.Holder) && Docs.TypedMailOf(h.Holder) is null) list.Add(("Investor Information", $"the communication address of {who}"));
+                var who = h.Holder.Joint ? Messages.ReviewSummary.HolderNumber(int.Parse(h.Holder.Code)) : Messages.ReviewSummary.TheInvestor;
+                foreach (var (step, what) in MandatoryMissing(h)) list.Add((step, Messages.ReviewSummary.MissingOf(what, who)));
+                if (Docs.MailTyped(h.Holder) && Docs.TypedMailOf(h.Holder) is null) list.Add(("Investor Information", Messages.ReviewSummary.MissingMailAddress(who)));
             }
             // Saved is not enough: a draft kept half-filled has no bank picked.
-            if (Payment is null) list.Add(("Bank Details & Payment", "the payment and repayment accounts"));
+            if (Payment is null) list.Add(("Bank Details & Payment", Messages.ReviewSummary.MissingAccounts));
             else
             {
-                if (BankProblems.Keys.Any(k => k.StartsWith("Payment."))) list.Add(("Bank Details & Payment", "the payment bank and its account number"));
-                if (BankProblems.Keys.Any(k => k.StartsWith("Repayment."))) list.Add(("Bank Details & Payment", "the repayment bank and its account number"));
-                if (BankProblems.Keys.Any(k => k.StartsWith("Cheque."))) list.Add(("Bank Details & Payment", "the cheque details"));
+                if (BankProblems.Keys.Any(k => k.StartsWith("Payment."))) list.Add(("Bank Details & Payment", Messages.ReviewSummary.MissingPaymentBank));
+                if (BankProblems.Keys.Any(k => k.StartsWith("Repayment."))) list.Add(("Bank Details & Payment", Messages.ReviewSummary.MissingRepaymentBank));
+                if (BankProblems.Keys.Any(k => k.StartsWith("Cheque."))) list.Add(("Bank Details & Payment", Messages.ReviewSummary.MissingCheque));
             }
-            if (Deposit?.NoTds == true && Docs.View(DocumentsViewModel.TdsFormSlot).Doc is null) list.Add(("FD Configuration", "the Form 121"));
-            if (Deposit is null || Deposit.Amount == 0) list.Add(("FD Configuration", "the deposit"));
-            if (SourceOfFunds is { Asked: true } && (Deposit?.SourceOfFunds ?? "").Length == 0) list.Add(("FD Configuration", "the source of funds"));
+            if (Deposit?.NoTds == true && Docs.View(DocumentsViewModel.TdsFormSlot).Doc is null) list.Add(("FD Configuration", Messages.ReviewSummary.MissingTdsForm));
+            if (Deposit is null || Deposit.Amount == 0) list.Add(("FD Configuration", Messages.ReviewSummary.MissingDeposit));
+            if (SourceOfFunds is { Asked: true } && (Deposit?.SourceOfFunds ?? "").Length == 0) list.Add(("FD Configuration", Messages.ReviewSummary.MissingSourceOfFunds));
             return list;
         }
     }
@@ -140,32 +140,32 @@ public sealed class ReviewViewModel(DocumentsViewModel docs, DepositQuote? quote
         var identifiedOn = joint ? information : "Investor Identification";
         var filedOn = joint ? information : "Upload Documents";
 
-        if (who.Name.Length == 0) yield return (filedOn, "the name");
-        if (who.Pan.Length == 0) yield return (identifiedOn, "the PAN");
-        if (who.Dob.Length == 0) yield return (identifiedOn, "the date of birth");
-        if (h.Gender.Length == 0) yield return (information, "the gender");
-        if (h.Details.MaritalStatus.Length == 0) yield return (information, "the marital status");
-        if (h.Details.ParentName.Length == 0) yield return (information, "the father, mother or spouse name");
-        if (h.Details.Mobile.Length == 0) yield return (information, "the mobile number");
-        if (h.Details.Email.Length == 0) yield return (information, "the e-mail");
+        if (who.Name.Length == 0) yield return (filedOn, Messages.ReviewSummary.MissingName);
+        if (who.Pan.Length == 0) yield return (identifiedOn, Messages.ReviewSummary.MissingPan);
+        if (who.Dob.Length == 0) yield return (identifiedOn, Messages.ReviewSummary.MissingDob);
+        if (h.Gender.Length == 0) yield return (information, Messages.ReviewSummary.MissingGender);
+        if (h.Details.MaritalStatus.Length == 0) yield return (information, Messages.ReviewSummary.MissingMaritalStatus);
+        if (h.Details.ParentName.Length == 0) yield return (information, Messages.ReviewSummary.MissingParentName);
+        if (h.Details.Mobile.Length == 0) yield return (information, Messages.ReviewSummary.MissingMobile);
+        if (h.Details.Email.Length == 0) yield return (information, Messages.ReviewSummary.MissingEmail);
 
         // An investor whose KYC was fetched from CKYC files no proof and no photograph:
         // the address and both documents are the CKYC record's.
         if (Docs.State.Ckyc && !joint) yield break;
 
         var (lines, pinCode) = Docs.PermanentAddressTextOf(h.Holder);
-        if (lines.Length == 0) yield return (filedOn, "the first line of the permanent address");
+        if (lines.Length == 0) yield return (filedOn, Messages.ReviewSummary.MissingAddressLine1);
         // A proof filed here sets the city where it is filed; a holder who files none
         // has their record's, which Investor Information saves with their details.
         var citySetOn = Docs.AddressReadHere(h.Holder) ? filedOn : information;
-        if (Docs.PermanentCityOf(h.Holder, h.Details).Length == 0) yield return (citySetOn, "the city of the permanent address");
-        if (pinCode.Length == 0) yield return (filedOn, "the PIN code of the permanent address");
+        if (Docs.PermanentCityOf(h.Holder, h.Details).Length == 0) yield return (citySetOn, Messages.ReviewSummary.MissingCity);
+        if (pinCode.Length == 0) yield return (filedOn, Messages.ReviewSummary.MissingPinCode);
 
         // The investor's two documents are among what Upload Documents still lacks
         // (Docs.Outstanding), listed above; a joint holder's are checked here.
         if (!joint) yield break;
-        if (Docs.View(DocumentsViewModel.PhotoSlot, h.Holder).Missing) yield return (filedOn, "the photograph");
-        if (Docs.View(DocumentsViewModel.PoaSlot, h.Holder).Missing) yield return (filedOn, "the proof of address");
+        if (Docs.View(DocumentsViewModel.PhotoSlot, h.Holder).Missing) yield return (filedOn, Messages.ReviewSummary.MissingPhoto);
+        if (Docs.View(DocumentsViewModel.PoaSlot, h.Holder).Missing) yield return (filedOn, Messages.ReviewSummary.MissingPoa);
     }
 
     public string Option(IEnumerable<Option> list, string code) => list.FirstOrDefault(o => o.Code == code)?.Name ?? code;

@@ -18,12 +18,12 @@ public partial class DocumentsViewModel
         var view = View(def, h);
         if (!view.Used) return;
         string? refuse =
-            file is null || file.Length == 0 ? "Choose a file to upload"
+            file is null || file.Length == 0 ? Messages.UploadDocuments.NoFileChosen
             : view.Locked is not null ? view.Locked
             : view.Final is not null ? view.Final
             : view.Spent ? $"{MaxAttempts} copies of this document were refused one after another, so it cannot be uploaded just now — {TryAgainIn(view.RetryAt)}."
-            : !Accepted(def, file) ? "That file type is not accepted here"
-            : file.Length > def.Accepts.MaxMb * Mb ? $"The file is over {def.Accepts.MaxMb} MB — {SizeOf(file.Length)}"
+            : !Accepted(def, file) ? Messages.UploadDocuments.FileTypeNotAccepted
+            : file.Length > def.Accepts.MaxMb * Mb ? Messages.UploadDocuments.FileTooLarge(def.Accepts.MaxMb, SizeOf(file.Length))
             : null;
 
         byte[] bytes = [];
@@ -32,7 +32,7 @@ public partial class DocumentsViewModel
             bytes = await ReadAllAsync(file!);
             // The name and the type the browser gives are only claims: the first
             // bytes say what the file is. Costs no attempt, like any other file problem.
-            if (!LooksLike(bytes, file!)) refuse = "That file is not a readable PDF or JPEG";
+            if (!LooksLike(bytes, file!)) refuse = Messages.UploadDocuments.FileNotReadable;
             else if (def.Key == "photo") refuse = PhotoProblem(bytes);
         }
         if (refuse is not null)
@@ -91,11 +91,11 @@ public partial class DocumentsViewModel
     private static string? PhotoProblem(byte[] bytes)
     {
         var kb = bytes.Length / 1024.0;
-        if (kb < MinKb) return $"That photograph is {Math.Round(kb)} KB. A face cannot be compared against anything under {MinKb} KB.";
-        if (kb > MaxKb) return $"That photograph is {Math.Round(kb)} KB, over the {MaxKb} KB a photograph may be.";
-        if (JpegSize(bytes) is not var (w, h)) return "That file could not be read as a photograph.";
-        if (w < MinPx || h < MinPx) return $"That photograph is {w}×{h} pixels. It must be at least {MinPx} pixels on both sides.";
-        if (w > MaxPx || h > MaxPx) return $"That photograph is {w}×{h} pixels, over the {MaxPx} a side that can be handled.";
+        if (kb < MinKb) return Messages.UploadDocuments.PhotoTooSmall(Math.Round(kb), MinKb);
+        if (kb > MaxKb) return Messages.UploadDocuments.PhotoTooLarge(Math.Round(kb), MaxKb);
+        if (JpegSize(bytes) is not var (w, h)) return Messages.UploadDocuments.PhotoNotReadable;
+        if (w < MinPx || h < MinPx) return Messages.UploadDocuments.PhotoTooFewPixels(w, h, MinPx);
+        if (w > MaxPx || h > MaxPx) return Messages.UploadDocuments.PhotoTooManyPixels(w, h, MaxPx);
         return null;
     }
 
@@ -197,7 +197,7 @@ public partial class DocumentsViewModel
             entry.Add($"{e.Service} could not answer: {e.Message}", "bad");
             if (e.TraceId is not null) entry.Add("Trace " + e.TraceId);
             entry.End("Not checked", "bad");
-            FlashMessages().Errors[key] = $"{e.Message} Nothing was filed, and it does not count as a refusal.";
+            FlashMessages().Errors[key] = Messages.UploadDocuments.NothingFiled(e.Message);
             FlashMessages().ErrorLog[key] = entry.Id;
         }
     }
@@ -216,7 +216,7 @@ public partial class DocumentsViewModel
         Doing("Identifying the document\u2026");
         var identified = await identifier.IdentifyAsync(rule.Kind, detect ? "" : TypeOf(def, h), copy);
         if (detect && identified.Matches && !ProofsOfAddress.Contains(identified.Type))
-            identified = new Identification(false, $"It could not be told which proof of address it is. Upload a clearer copy of {OneOf(ProofsFor(def.Key)).ToLowerInvariant().Replace("aadhaar", "an Aadhaar")}.");
+            identified = new Identification(false, Messages.UploadDocuments.ProofNotIdentified(OneOf(ProofsFor(def.Key)).ToLowerInvariant().Replace("aadhaar", "an Aadhaar")));
         var type = detect ? identified.Type ?? "" : TypeOf(def, h);
 
         async Task RefuseAsync(string why, string whatNext, params (string Text, string Kind)[] stages)
@@ -242,14 +242,14 @@ public partial class DocumentsViewModel
 
         if (!identified.Matches)
         {
-            await RefuseAsync($"That does not read as {rule.What}", identified.Hint ?? "Upload a clearer copy.", ($"Not identified as {rule.What}.", "bad"));
+            await RefuseAsync(Messages.UploadDocuments.NotReadAs(rule.What), identified.Hint ?? Messages.UploadDocuments.UploadClearerCopy, ($"Not identified as {rule.What}.", "bad"));
             return;
         }
         // A proof the box does not take - one without a photograph, for the permanent address.
         if (proof && !ProofsFor(def.Key).Contains(type))
         {
-            await RefuseAsync($"A {type.ToLowerInvariant()} is not taken as proof of the permanent address",
-                $"Upload {(h.Joint ? "this holder's" : "the investor's")} {OneOf(ProofsFor(def.Key))} — a {type.ToLowerInvariant()} proves only a communication address.",
+            await RefuseAsync(Messages.UploadDocuments.NotProofOfPermanentAddress(type.ToLowerInvariant()),
+                Messages.UploadDocuments.UploadProofOfPermanentAddress((h.Joint ? Messages.UploadDocuments.ThisHolders : Messages.UploadDocuments.TheInvestors), OneOf(ProofsFor(def.Key)), type.ToLowerInvariant()),
                 ($"Identified as a {type.ToLowerInvariant()}, which proves only a communication address.", "bad"));
             return;
         }
@@ -265,7 +265,7 @@ public partial class DocumentsViewModel
         // as are the ones already on the application, which cannot be changed here.
         if (def.Key == "pan" && PanCopyMismatch(reading, h.Who.Pan, h.Who.Dob) is { } notTheirs)
         {
-            await RefuseAsync(notTheirs, $"Upload {(h.Joint ? "this holder's" : "the investor's")} own PAN card, clear enough to read.",
+            await RefuseAsync(notTheirs, Messages.UploadDocuments.UploadOwnPan((h.Joint ? Messages.UploadDocuments.ThisHolders : Messages.UploadDocuments.TheInvestors)),
                 ($"OCR read: PAN {(reading.Pan.Length > 0 ? MaskPan(reading.Pan) : "none")}, date of birth {(reading.Dob.Length > 0 ? MaskDate(reading.Dob) : "none")}.", ""),
                 ("It does not match the PAN and date of birth on the application.", "bad"));
             return;
@@ -276,7 +276,7 @@ public partial class DocumentsViewModel
                 { Number = reading.Pan.Replace(" ", "").ToUpperInvariant(), Dob = reading.Dob };
         if (proof && type == "Aadhaar" && await AadhaarMismatchAsync(h, reading) is { } notTheirs2)
         {
-            await RefuseAsync(notTheirs2, $"Upload {(h.Joint ? "this holder's" : "the investor's")} own Aadhaar, clear enough to read the name and date of birth.",
+            await RefuseAsync(notTheirs2, Messages.UploadDocuments.UploadOwnAadhaar((h.Joint ? Messages.UploadDocuments.ThisHolders : Messages.UploadDocuments.TheInvestors)),
                 ($"OCR read: name {(reading.Name.Trim().Length > 0 ? reading.Name.Trim() : "none")}, date of birth {(reading.Dob.Length > 0 ? MaskDate(reading.Dob) : "none")}.", ""),
                 ("An Aadhaar is taken only when its name and date of birth match the PAN's.", "bad"));
             return;
@@ -288,8 +288,8 @@ public partial class DocumentsViewModel
         // number read at all there is nothing to hold what is typed to.
         if (proof && type == "Aadhaar" && switches.IsOn(OutsideSwitches.Ocr) && AadhaarNumbers.LastFour(reading.IdNumber).Length == 0)
         {
-            await RefuseAsync("The Aadhaar number could not be read off it",
-                "Upload a copy of the Aadhaar that shows its number — all 12 digits, or the last 4 of a masked one — clear enough to read.",
+            await RefuseAsync(Messages.UploadDocuments.AadhaarNumberNotRead,
+                Messages.UploadDocuments.UploadAadhaarWithNumber,
                 ("OCR read neither the whole Aadhaar number nor its last 4 digits.", "bad"),
                 ("An Aadhaar is taken only when its number, or the last 4 digits of it, can be read.", "bad"));
             return;
@@ -300,7 +300,7 @@ public partial class DocumentsViewModel
         // off nothing is read, so nothing can be asked of it.
         if (proof && switches.IsOn(OutsideSwitches.Ocr) && AddressNotRead(reading.Address) is { } notRead)
         {
-            await RefuseAsync(notRead, $"Upload a copy of the {type.ToLowerInvariant()} that shows the address with its PIN code, clear enough to read.",
+            await RefuseAsync(notRead, Messages.UploadDocuments.UploadProofWithAddress(type.ToLowerInvariant()),
                 ($"OCR read: address {(reading.Address.Trim().Length > 0 ? reading.Address.Trim() : "none")}.", ""),
                 ("A proof of address is taken only when its address and PIN code can be read.", "bad"));
             return;
@@ -380,8 +380,8 @@ public partial class DocumentsViewModel
     private static string? AddressNotRead(string address)
     {
         var (lines, pin) = SplitPin(address.Trim());
-        if (lines.Length == 0) return "The address could not be read off it";
-        if (pin.Length == 0) return "The PIN code could not be read off it";
+        if (lines.Length == 0) return Messages.UploadDocuments.AddressNotRead;
+        if (pin.Length == 0) return Messages.UploadDocuments.PinNotRead;
         return null;
     }
 

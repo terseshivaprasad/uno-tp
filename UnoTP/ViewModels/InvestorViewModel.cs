@@ -181,7 +181,7 @@ public sealed class InvestorViewModel(InvestorInfoState state, DocumentsViewMode
 
     /// <summary>What the old screen says when a FATCA question - the investor's card asks them for every holder - is answered Yes.</summary>
     public const string FatcaOffline =
-        "This investments needs to be done through offline mode. Kindly reach out to the nearest Mahindra branch. A list of all our branches is available on our website.";
+        Messages.InvestorInformation.FatcaOffline;
 
     public static string Ordinal(int holder) => holder == 2 ? "Second" : "Third";
 
@@ -249,16 +249,16 @@ public sealed class InvestorViewModel(InvestorInfoState state, DocumentsViewMode
         {
             if (ScreeningNotAllowed is not null)
             {
-                return new StopNotice("Cannot proceed: not allowed to invest online",
-                    $"Name screening does not allow {ScreeningNotAllowed} to invest online.",
-                    "This investment cannot be made here. Kindly ask the investor to visit the nearest Mahindra Finance branch to invest offline; a list of all branches is on our website.",
+                return new StopNotice(Messages.InvestorInformation.StopScreeningTitle,
+                    Messages.InvestorInformation.StopScreeningWho(ScreeningNotAllowed),
+                    Messages.InvestorInformation.StopScreeningWhatNext,
                     null, null);
             }
             if (Offline)
             {
-                return new StopNotice("Cannot proceed: the investment has to be made offline",
-                    "A holder is a tax or permanent resident of a country other than India.",
-                    "Kindly ask the investor to visit the nearest Mahindra Finance branch to invest offline; a list of all branches is on our website.",
+                return new StopNotice(Messages.InvestorInformation.StopOfflineTitle,
+                    Messages.InvestorInformation.StopOfflineWho,
+                    Messages.InvestorInformation.StopOfflineWhatNext,
                     null, null);
             }
             return null;
@@ -294,15 +294,15 @@ public sealed class InvestorViewModel(InvestorInfoState state, DocumentsViewMode
     /// </summary>
     private static readonly (string Field, string Id, string Empty)[] HolderFields =
     [
-        ("Gender", "h{0}-gender", "Select the gender"),
-        ("NameType", "h{0}-nametype", "Select the name type"),
-        ("ParentName", "h{0}-parent", "Enter the father's, mother's or spouse's name"),
-        ("AnnualIncome", "investor{0}Income", "Select the annual income"),
-        ("Occupation", "investor{0}Occupation", "Select the occupation"),
-        ("SubOccupation", "investor{0}SubOccupation", "Select the sub occupation"),
-        ("MaritalStatus", "investor{0}Marital", "Select the marital status"),
-        ("Mobile", "investor{0}Mobile", "Enter the mobile number"),
-        ("Email", "investor{0}Email", "Enter the e-mail"),
+        ("Gender", "h{0}-gender", Messages.InvestorInformation.GenderRequired),
+        ("NameType", "h{0}-nametype", Messages.InvestorInformation.NameTypeRequired),
+        ("ParentName", "h{0}-parent", Messages.InvestorInformation.ParentNameRequired),
+        ("AnnualIncome", "investor{0}Income", Messages.InvestorInformation.IncomeRequired),
+        ("Occupation", "investor{0}Occupation", Messages.InvestorInformation.OccupationRequired),
+        ("SubOccupation", "investor{0}SubOccupation", Messages.InvestorInformation.SubOccupationRequired),
+        ("MaritalStatus", "investor{0}Marital", Messages.InvestorInformation.MaritalStatusRequired),
+        ("Mobile", "investor{0}Mobile", Messages.InvestorInformation.MobileRequired),
+        ("Email", "investor{0}Email", Messages.InvestorInformation.EmailRequired),
     ];
 
     /// <summary>
@@ -319,20 +319,20 @@ public sealed class InvestorViewModel(InvestorInfoState state, DocumentsViewMode
         if (!state.Nominee) return found;
 
         var need = new Needs(state.Fields, found);
-        need.Need("Nominee.Name", "investorNomineeName", "Enter the nominee's name", LettersOnly, IsName);
+        need.Need("Nominee.Name", "investorNomineeName", Messages.InvestorInformation.NomineeNameRequired, LettersOnly, IsName);
         need.AtMost("Nominee.Name", "investorNomineeName", InputRules.MaxField);
         var (dd, mm, yyyy) = (need.Of("Nominee.Dd"), need.Of("Nominee.Mm"), need.Of("Nominee.Yyyy"));
-        if (dd.Length == 0 || mm.Length == 0 || yyyy.Length == 0) found.Add(("Nominee.Dob", "investorNomineeDd", "Enter the nominee's date of birth"));
-        else if (!IsDate(dd, mm, yyyy, DateTime.Today)) found.Add(("Nominee.Dob", "investorNomineeDd", "Enter a real date of birth, not a future one"));
-        need.Need("Nominee.Relation", "investorNomineeRelation", "Select the relation with the primary holder");
+        if (dd.Length == 0 || mm.Length == 0 || yyyy.Length == 0) found.Add(("Nominee.Dob", "investorNomineeDd", Messages.InvestorInformation.NomineeDobRequired));
+        else if (!IsDate(dd, mm, yyyy, DateTime.Today)) found.Add(("Nominee.Dob", "investorNomineeDd", Messages.InvestorInformation.NomineeDobNotReal));
+        need.Need("Nominee.Relation", "investorNomineeRelation", Messages.InvestorInformation.NomineeRelationRequired);
         if (IsMinor(dd, mm, yyyy, DateTime.Today, minorUnder))
         {
-            need.Need("Nominee.GuardianName", "investorNomineeGuardian", "Enter the guardian's name", LettersOnly, IsName);
-            need.Need("Nominee.GuardianAddress.Line1", "investorGuardian1", "Enter the first line of the address", NoSpecialCharacters, IsText);
+            need.Need("Nominee.GuardianName", "investorNomineeGuardian", Messages.InvestorInformation.GuardianNameRequired, LettersOnly, IsName);
+            need.Need("Nominee.GuardianAddress.Line1", "investorGuardian1", Messages.InvestorInformation.AddressLine1Required, NoSpecialCharacters, IsText);
             need.Shape("Nominee.GuardianAddress.Line2", "investorGuardian2", NoSpecialCharacters, IsText);
             need.Shape("Nominee.GuardianAddress.Line3", "investorGuardian3", NoSpecialCharacters, IsText);
-            need.Need("Nominee.GuardianAddress.PinCode", "investorGuardianPin", "Enter the PIN code", "Enter a 6-digit PIN code", IsPin);
-            need.Need("Nominee.GuardianAddress.City", "investorGuardianCity", "Enter the city", LettersOnly, IsName);
+            need.Need("Nominee.GuardianAddress.PinCode", "investorGuardianPin", Messages.InvestorInformation.PinRequired, Messages.InvestorInformation.PinInvalid, IsPin);
+            need.Need("Nominee.GuardianAddress.City", "investorGuardianCity", Messages.InvestorInformation.CityRequired, LettersOnly, IsName);
             need.AtMost("Nominee.GuardianName", "investorNomineeGuardian", InputRules.MaxField);
             need.AtMost("Nominee.GuardianAddress.Line1", "investorGuardian1", InputRules.MaxAddressLine);
             need.AtMost("Nominee.GuardianAddress.Line2", "investorGuardian2", InputRules.MaxAddressLine);
@@ -357,17 +357,17 @@ public sealed class InvestorViewModel(InvestorInfoState state, DocumentsViewMode
         if (typesMail?.Invoke(who) == true)
         {
             var c = $"Holder{holder}.{InvestorDetailsForm.Comm}";
-            need.Need(c + "Line1", $"h{holder}-comm1", "Enter the first line of the address", NoSpecialCharacters, IsText);
+            need.Need(c + "Line1", $"h{holder}-comm1", Messages.InvestorInformation.AddressLine1Required, NoSpecialCharacters, IsText);
             need.Shape(c + "Line2", $"h{holder}-comm2", NoSpecialCharacters, IsText);
             need.Shape(c + "Line3", $"h{holder}-comm3", NoSpecialCharacters, IsText);
-            need.Need(c + "City", $"h{holder}-commcity", "Enter the city", LettersOnly, IsName);
+            need.Need(c + "City", $"h{holder}-commcity", Messages.InvestorInformation.CityRequired, LettersOnly, IsName);
             need.AtMost(c + "Line1", $"h{holder}-comm1", InputRules.MaxAddressLine);
             need.AtMost(c + "Line2", $"h{holder}-comm2", InputRules.MaxAddressLine);
             need.AtMost(c + "Line3", $"h{holder}-comm3", InputRules.MaxAddressLine);
             need.AtMost(c + "City", $"h{holder}-commcity", InputRules.MaxField);
-            need.Need(c + "PinCode", $"h{holder}-commpin", "Enter the PIN code", "Enter a 6-digit PIN code", IsPin);
+            need.Need(c + "PinCode", $"h{holder}-commpin", Messages.InvestorInformation.PinRequired, Messages.InvestorInformation.PinInvalid, IsPin);
             if (IsPin(need.Of(c + "PinCode")) && places?.ContainsKey(need.Of(c + "PinCode")) == false)
-                found.Add((c + "PinCode", $"h{holder}-commpin", "No district is found for this PIN code; check it"));
+                found.Add((c + "PinCode", $"h{holder}-commpin", Messages.InvestorInformation.PinHasNoDistrict));
         }
         foreach (var (field, id, empty) in HolderFields)
         {
@@ -379,11 +379,11 @@ public sealed class InvestorViewModel(InvestorInfoState state, DocumentsViewMode
             {
                 var offered = subOccupationsFor(need.Of($"Holder{holder}.Occupation"));
                 if (offered.Count == 0) continue;
-                need.Need(name, at, empty, "Select a sub occupation that goes with the occupation", v => offered.Contains(v));
+                need.Need(name, at, empty, Messages.InvestorInformation.SubOccupationMismatch, v => offered.Contains(v));
                 continue;
             }
-            if (field == "Mobile") need.Need(name, at, empty, "Enter a 10-digit mobile number", v => Regex.IsMatch(v, @"^[6-9]\d{9}$"));
-            else if (field == "Email") need.Need(name, at, empty, "Enter a valid e-mail", v => Regex.IsMatch(v, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"));
+            if (field == "Mobile") need.Need(name, at, empty, Messages.InvestorInformation.MobileInvalid, v => Regex.IsMatch(v, @"^[6-9]\d{9}$"));
+            else if (field == "Email") need.Need(name, at, empty, Messages.InvestorInformation.EmailInvalid, v => Regex.IsMatch(v, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"));
             else if (field == "ParentName") need.Need(name, at, empty, LettersOnly, IsName);
             else need.Need(name, at, empty);
             if (field is "ParentName" or "Email") need.AtMost(name, at, InputRules.MaxField);
@@ -392,7 +392,7 @@ public sealed class InvestorViewModel(InvestorInfoState state, DocumentsViewMode
         foreach (var (field, _) in PepQuestions)
         {
             var name = $"Holder{holder}.{field}";
-            if (need.Of(name) is not ("yes" or "no")) found.Add((name, "pep-" + name, "Choose Yes or No"));
+            if (need.Of(name) is not ("yes" or "no")) found.Add((name, "pep-" + name, Messages.InvestorInformation.YesOrNoRequired));
         }
         return found;
     }

@@ -27,7 +27,7 @@ public class PayInSlipsController(IPayInSlipApi slips, ILinkApi links, Lookups l
     {
         TempData["toast"] = await slips.GenerateAsync(appNo) is { } slip
             ? $"Pay-in slip {slip.SlipNo} generated for {slip.Branch}."
-            : "No slip could be generated for this application.";
+            : Messages.Lists.NoSlip;
         return RedirectToAction(nameof(Index));
     }
 
@@ -37,7 +37,7 @@ public class PayInSlipsController(IPayInSlipApi slips, ILinkApi links, Lookups l
     {
         TempData["toast"] = await links.SendAsync(appNo, "acceptance") is { } link
             ? $"Acceptance link sent to {SentTo.Both(link.Mobile, link.Email)}. The slip can be generated once the investor accepts."
-            : "The acceptance link could not be sent for this application.";
+            : Messages.Lists.AcceptanceLinkNotSent;
         return RedirectToAction(nameof(Index));
     }
 }

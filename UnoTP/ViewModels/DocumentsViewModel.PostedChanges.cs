@@ -85,7 +85,7 @@ public partial class DocumentsViewModel
         }
         catch (ExternalServiceException e)
         {
-            FlashMessages().Banner = $"{e.Message} The KYC was not fetched; upload the proof of address and the photograph, or try again.";
+            FlashMessages().Banner = Messages.UploadDocuments.CkycNotFetched(e.Message);
             FlashMessages().BannerIsError = true;
             return "docsRoute";
         }
@@ -93,7 +93,7 @@ public partial class DocumentsViewModel
         if (!found.Available)
         {
             var why = found.Why.Length > 0 ? $" ({found.Why})" : "";
-            FlashMessages().Banner = $"CERSAI holds no CKYC record for this PAN and date of birth{why}. Upload the proof of address and the photograph instead.";
+            FlashMessages().Banner = Messages.UploadDocuments.CkycNoRecord(why);
             return "docsRoute";
         }
 
@@ -130,31 +130,31 @@ public partial class DocumentsViewModel
 
         var mode = ModeOf(s.Sourcing);
         // A type chosen from the drop-down, when it is not set from the upload.
-        if (!AutoProofType && View(PoaSlot).Used) Need(s.PoaType.Length > 0, "docsPoaType", "Choose the proof of address");
-        if (!AutoProofType && View(MailSlot).Used) Need(s.MailPoaType.Length > 0, "docsMailType", "Choose the communication address proof");
-        if (!IsRenewal) Need(s.PayMode.Length > 0, "docsPayMode", "Choose the payment mode");
-        Need(s.Sourcing.Length > 0, "docsSourcing", "Choose the sourcing mode");
+        if (!AutoProofType && View(PoaSlot).Used) Need(s.PoaType.Length > 0, "docsPoaType", Messages.UploadDocuments.PoaTypeRequired);
+        if (!AutoProofType && View(MailSlot).Used) Need(s.MailPoaType.Length > 0, "docsMailType", Messages.UploadDocuments.MailTypeRequired);
+        if (!IsRenewal) Need(s.PayMode.Length > 0, "docsPayMode", Messages.UploadDocuments.PayModeRequired);
+        Need(s.Sourcing.Length > 0, "docsSourcing", Messages.UploadDocuments.SourcingRequired);
         if (mode is not null)
         {
-            Need(s.SourceCode.Length > 0, "docsSourceCode", $"Enter the {mode.CodeLabel.ToLowerInvariant()}");
-            if (SubRequired(mode)) Need(s.SubBroker.Length > 0, "docsSubBroker", "Enter the sub broker code");
+            Need(s.SourceCode.Length > 0, "docsSourceCode", Messages.UploadDocuments.SourceCodeRequired(mode.CodeLabel.ToLowerInvariant()));
+            if (SubRequired(mode)) Need(s.SubBroker.Length > 0, "docsSubBroker", Messages.UploadDocuments.SubBrokerRequired);
         }
-        Need(s.Category.Length > 0, "docsCategory", "No deposit category is set: choose the sourcing mode");
+        Need(s.Category.Length > 0, "docsCategory", Messages.UploadDocuments.CategoryNotSet);
         if (IsEmployee(s.Category))
         {
             // A code this screen cannot put a name to is not a reason to stop:
             // the staff register is Operations' to check.
-            Need(s.EmpCode.Length > 0, "docsEmployeeCode", "Enter the employee code");
-            Need(s.EmpCompany.Length > 0, "docsEmployeeCompany", "Enter the employee company name");
-            Need(s.EmpHolder.Length > 0, "docsEmployeeHolder", "Choose which holder is the employee");
-            Need(s.EmpRelation.Length > 0, "docsEmployeeRelation", "Choose the relation with the holder");
-            Need(s.EmpProofType.Length > 0, "docsEmployeeProofType", "Choose the employee proof");
+            Need(s.EmpCode.Length > 0, "docsEmployeeCode", Messages.UploadDocuments.EmployeeCodeRequired);
+            Need(s.EmpCompany.Length > 0, "docsEmployeeCompany", Messages.UploadDocuments.EmployeeCompanyRequired);
+            Need(s.EmpHolder.Length > 0, "docsEmployeeHolder", Messages.UploadDocuments.EmployeeHolderRequired);
+            Need(s.EmpRelation.Length > 0, "docsEmployeeRelation", Messages.UploadDocuments.EmployeeRelationRequired);
+            Need(s.EmpProofType.Length > 0, "docsEmployeeProofType", Messages.UploadDocuments.EmployeeProofRequired);
         }
-        if (s.AppType == Physical) Need(s.TypedFormNo.Length > 0, "docsFormNo", "Enter the physical form number");
+        if (s.AppType == Physical) Need(s.TypedFormNo.Length > 0, "docsFormNo", Messages.UploadDocuments.FormNoRequired);
 
         foreach (var slot in Slots.Select(View).Where(v => v.Missing))
         {
-            flash.Errors[slot.Key] = "This document is required";
+            flash.Errors[slot.Key] = Messages.UploadDocuments.DocumentRequired;
             flash.Focus ??= "slot-" + slot.Key;
         }
         // An investor with no folio goes on only once NSDL has verified their PAN.
@@ -191,15 +191,15 @@ public partial class DocumentsViewModel
     private string? LinkNeed(DocHolder h)
     {
         var card = State.Reads.GetValueOrDefault(h.Key("pan"));
-        if (card is null) return "The PAN-Aadhaar link must be confirmed before proceeding.";
+        if (card is null) return Messages.UploadDocuments.LinkMustBeConfirmed;
         return card.State switch
         {
             "Linked with Aadhaar" => null,
             "Not asked" => null,
-            "Not linked" => "The PAN is not linked with Aadhaar. The investor links it with the Income Tax department; the application cannot proceed until it is.",
-            "Aadhaar number needed" => "Type the Aadhaar number in the row under the proofs of address, so the PAN-Aadhaar link can be asked.",
-            "Link not checked" => "The PAN-Aadhaar link could not be checked. Upload the Aadhaar again, or type its number, to ask again.",
-            _ => "The PAN-Aadhaar link must be confirmed before proceeding.",
+            "Not linked" => Messages.UploadDocuments.PanNotLinked,
+            "Aadhaar number needed" => Messages.UploadDocuments.TypeAadhaarNumber,
+            "Link not checked" => Messages.UploadDocuments.LinkNotChecked,
+            _ => Messages.UploadDocuments.LinkMustBeConfirmed,
         };
     }
 
@@ -207,10 +207,10 @@ public partial class DocumentsViewModel
     private string? DetailsNeed(DocHolder h)
     {
         var card = State.Reads.GetValueOrDefault(h.Key("details"));
-        if (card is null) return "The name on the proof of address must be matched with the PAN's before proceeding.";
+        if (card is null) return Messages.UploadDocuments.NameMustBeMatched;
         if (card.Kind == "is-done") return null;
         if (card.Kind == "is-na") return null;
-        return "The name and date of birth on the proof of address must match the PAN's before proceeding. Upload a clearer copy of the holder's own proof.";
+        return Messages.UploadDocuments.NameAndDobMustMatch;
     }
 
     /// <summary>
@@ -229,10 +229,10 @@ public partial class DocumentsViewModel
 
         foreach (var h in JointHolders)
         {
-            if (!AutoProofType && View(PoaSlot, h).Used && PoaTypeOf(h).Length == 0) Need(h.Key("poaType"), "Choose the proof of address");
-            if (!AutoProofType && View(MailSlot, h).Used && MailTypeOf(h).Length == 0) Need(h.Key("mailType"), "Choose the communication address proof");
+            if (!AutoProofType && View(PoaSlot, h).Used && PoaTypeOf(h).Length == 0) Need(h.Key("poaType"), Messages.UploadDocuments.PoaTypeRequired);
+            if (!AutoProofType && View(MailSlot, h).Used && MailTypeOf(h).Length == 0) Need(h.Key("mailType"), Messages.UploadDocuments.MailTypeRequired);
             foreach (var v in HolderSlots.Select(d => View(d, h)).Where(v => v.Missing))
-                Need(v.Key, "This document is required", "slot-" + v.Key);
+                Need(v.Key, Messages.UploadDocuments.DocumentRequired, "slot-" + v.Key);
             if (NsdlUnsettled(h)) Need(h.Key("nsdl"), NsdlNeed(h), "read-" + h.Key("nsdl"));
         }
         if (flash.Errors.Count == 0 && flash.Banner is null) Said = null;
@@ -260,7 +260,7 @@ public partial class DocumentsViewModel
 
     // Asked before post goes back to the permanent address, when a copy is filed.
     public const string MailDropAsk =
-        "Post will go to the permanent address, and the communication address proof uploaded will be removed. Switch to Same as Permanent?";
+        Messages.UploadDocuments.ConfirmDropMailProof;
 
     // The proof of another address, and what it was read to say, taken off.
     private void ForgetMail(DocHolder h)
