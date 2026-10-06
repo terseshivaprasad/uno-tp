@@ -1,15 +1,17 @@
 /* ===== Top bar =====
-   The fixed 44px header every page shares (Pages/Shared/_Layout.cshtml): the
+   The fixed header every page shares (Views/Shared/_Layout.cshtml): the
    Mahindra Finance logo, the welcome line, and the first-nav / Home / Logout
-   links, each with its icon. Colour tokens come from site.css, loaded first. */
+   links, each with its icon. Its height and side margins are the page frame's,
+   so the logo starts where the rail does and Logout ends where the card does.
+   The tokens are in layout-and-controls.css. */
 .app-header {
-  height: 44px;
+  height: var(--header-height);
   background: #fff;
   border-bottom: 1px solid var(--divider);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 16px;
+  padding: 0 var(--page-gap-side);
   position: sticky;
   top: 0;
   z-index: 50;
@@ -210,11 +212,11 @@
   /* On a phone the panel is a sheet across the width of the screen. */
   .notices__panel {
     position: fixed;
-    top: 44px;
+    top: var(--header-height);
     left: 8px;
     right: 8px;
     width: auto;
-    max-height: calc(100vh - 60px);
+    max-height: calc(100vh - var(--header-height) - 16px);
   }
 }
 
@@ -229,7 +231,7 @@
 }
 
 /* ===== The phone menu =====
-   A bar 44px tall cannot hold a welcome line and three links at a phone's width,
+   A bar this tall cannot hold a welcome line and three links at a phone's width,
    so below 760px they go behind the hamburger on the right and the bar keeps the
    brand and the bell. Above it the button is not there at all. */
 .app-menu {

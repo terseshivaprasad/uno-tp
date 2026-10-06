@@ -33,6 +33,29 @@
   --amber-tint: #FFFBF0;
   --amber-border: #F0D98A;
   --amber-accent: #E8A700;
+  /* The page frame, as the design's Spacing board draws it. Every page takes
+     these from here: change a number once and the header, the rail, the cards and
+     the action bar all follow. docs/BRAND_GUIDELINES.md says what each one is. */
+  --header-height: 46px;
+  --page-gap-top: 32px;
+  --page-gap-side: 47px;
+  --page-gap-bottom: 24px;
+  --page-max-width: 1536px;
+  --rail-width: 242px;
+  --rail-gap: 24px;
+  --card-gap: 18px;
+  --card-padding: 24px;
+  --field-gap: 32px;
+  --action-bar-height: 64px;
+  /* Type, as the design's Typography board names it. "500 16px/19px" reads:
+     medium weight, 16px text on a 19px line. A rule takes one of these with
+     `font: var(--font-title);` rather than a size and weight of its own. */
+  --font-family: 'Georama', system-ui, sans-serif;
+  --font-title: 500 16px/19px var(--font-family);
+  --font-label: 500 12px/24px var(--font-family);
+  --font-value: 500 14px/24px var(--font-family);
+  --font-question: 500 14px/20px var(--font-family);
+  --font-option: 400 14px/17px var(--font-family);
   /* One height for every document box and every check card on Upload Documents
      and Investor Information, whatever each says, so all of them line up. Tall
      enough for a filed proof's four lines; its View and Replace sit under it. A
@@ -55,6 +78,23 @@
   :root {
     --doc-card-h: 0px;
     --doc-address-lines: 6;
+  }
+}
+/* The design's frame is drawn for a laptop. Where the rail no longer fits beside
+   the card (a tablet, a phone) the margins give the width back to the content. */
+@media (max-width: 900px) {
+  :root {
+    --page-gap-top: 16px;
+    --page-gap-side: 16px;
+    --page-gap-bottom: 16px;
+    --card-gap: 16px;
+    --field-gap: 24px;
+  }
+}
+@media (max-width: 560px) {
+  :root {
+    --card-padding: 16px;
+    --field-gap: 16px;
   }
 }
 * , *::before, *::after {
@@ -90,10 +130,10 @@ body {
   flex-direction: column;
 }
 .app-shell {
-  max-width: 1536px;
+  max-width: var(--page-max-width);
   width: 100%;
   margin: 0 auto;
-  padding: 16px;
+  padding: var(--page-gap-top) var(--page-gap-side) var(--page-gap-bottom);
   flex: 1;
 }
 /* The thin legal strip that closes Board 00 - Laptop. Sits outside .app-shell so
@@ -115,7 +155,7 @@ body {
   padding: 20px 20px;
 }
 .card + .card {
-  margin-top: 16px;
+  margin-top: var(--card-gap);
 }
 .card__title {
   font-size: 16px;
@@ -411,9 +451,7 @@ tbody tr[hidden] {
   border-radius: 6px;
   background: #fff;
   padding: 0 12px;
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 500;
+  font: var(--font-value);
   color: var(--ink);
   letter-spacing: inherit;
 }
@@ -444,7 +482,7 @@ select.investor-control:has(option[value=""]:checked) {
 .investor-field--sm .investor-control {
   border-color: var(--red);
 }
-/* A page's or a card's title: 20px semibold in ink, the one thing that leads it. */
+/* A page's or a card's title (the design's Display 1), the one thing that leads it. */
 .page-head {
   display: flex;
   align-items: center;
@@ -455,16 +493,8 @@ select.investor-control:has(option[value=""]:checked) {
   flex: 1;
   min-width: 0;
   margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-  line-height: 24px;
+  font: var(--font-title);
   color: var(--ink);
-}
-/* A second list on a page under its title (the drafts on Investor Identification),
-   or a card that is one section of a page led by another (Review Summary), is a section. */
-.page-title.drafts__title, .page-title--section {
-  font-size: 16px;
-  line-height: 24px;
 }
 .page-note {
   margin: 16px 0 0;
@@ -554,16 +584,17 @@ select.investor-control:has(option[value=""]:checked) {
    foot of the window. Sizes follow the live page at 1470px. */
 .page-layout {
   display: grid;
-  grid-template-columns: 224px minmax(0,1fr);
-  gap: 16px;
+  grid-template-columns: var(--rail-width) minmax(0,1fr);
+  gap: var(--rail-gap);
   align-items: start;
 }
-/* The rail stays put under the 44px header while the card beside it scrolls;
-   if the window is too short for it, the rail scrolls inside itself. */
+/* The rail stays put under the header while the card beside it scrolls, where the
+   page first drew it; if the window is too short for it between the header and
+   the action bar, the rail scrolls inside itself. */
 .page-rail {
   position: sticky;
-  top: 60px;
-  max-height: calc(100vh - 128px);
+  top: calc(var(--header-height) + var(--page-gap-top));
+  max-height: calc(100vh - var(--header-height) - var(--page-gap-top) - var(--action-bar-height) - var(--page-gap-bottom));
   overflow-y: auto;
   background: #fff;
   border-radius: 8px;
@@ -572,17 +603,18 @@ select.investor-control:has(option[value=""]:checked) {
   flex-direction: column;
   gap: 8px;
 }
+/* A card clears the action bar fixed to the foot of the window; the shell's own
+   foot is the gap the design leaves between the last card and that bar. */
 .page-card {
   background: #fff;
   border-radius: 8px;
-  padding: 20px 24px 28px;
-  margin-bottom: 72px;
+  padding: var(--card-padding);
+  margin-bottom: var(--action-bar-height);
 }
+/* The label over a field (the design's Display 2-3). */
 .field-label {
   display: block;
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 16px;
+  font: var(--font-label);
   color: var(--ink);
   padding: 0 0 4px;
 }
@@ -594,12 +626,13 @@ select.investor-control:has(option[value=""]:checked) {
 .search-by .field-label {
   padding-bottom: 8px;
 }
+/* An answer to choose - Yes, No, PAN, Folio (the design's Display 2). */
 .radio-option {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   margin-right: 24px;
-  font-size: 14px;
+  font: var(--font-option);
   color: var(--text);
   cursor: pointer;
 }
@@ -626,6 +659,7 @@ select.investor-control:has(option[value=""]:checked) {
 .form-field[hidden] {
   display: none;
 }
+/* A field, and what is typed in it (the design's Display 2-3). */
 .field-input, .date-input {
   width: 100%;
   height: 36px;
@@ -633,8 +667,7 @@ select.investor-control:has(option[value=""]:checked) {
   border: 1px solid var(--border-3);
   border-radius: 6px;
   background: #fff;
-  font-family: inherit;
-  font-size: 14px;
+  font: var(--font-value);
   color: var(--ink);
 }
 .field-input:focus, .date-input:focus-within {
@@ -739,9 +772,6 @@ select.investor-control:has(option[value=""]:checked) {
   }
 }
 @media (max-width: 560px) {
-  .page-card {
-    padding: 16px;
-  }
   .radio-option {
     margin-right: 16px;
   }
@@ -749,7 +779,10 @@ select.investor-control:has(option[value=""]:checked) {
     --bs-btn-padding-x: 16px;
   }
 }
+/* The button beside the fields has no label over it: it starts one label lower
+   (the label's 24px line and the 4px under it), level with the inputs. */
 .form-field--check {
+  padding-top: 28px;
   padding-bottom: 0;
 }
 .field-hint {
@@ -798,9 +831,11 @@ html.is-saving::before {
     opacity: .6;
   }
 }
+/* Narrower, the investor search's button takes a row of its own under the fields. */
 @media (max-width: 1100px) {
-  .form-field--check {
+  .field-grid > .form-field--check {
     grid-column: 1 / -1;
+    padding-top: 0;
   }
 }
 /* Text only a screen reader needs, such as the header of an action column. */

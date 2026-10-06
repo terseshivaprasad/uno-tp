@@ -8,7 +8,7 @@
   border-radius: 8px;
   padding: 32px 32px 56px;
   display: grid;
-  grid-template-columns: minmax(0,448px) minmax(0,1fr);
+  grid-template-columns: minmax(0,400px) minmax(0,1fr);
 }
 /* Narrower screens: the steps take a third of the width; below 992px the two columns stack. */
 @media (max-width: 1180px) {

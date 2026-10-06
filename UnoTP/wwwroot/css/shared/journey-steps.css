@@ -141,38 +141,34 @@
   line-height: 16px;
   color: var(--muted);
 }
-/* A fact: its label a 12px caption, its value 14px in ink under it. */
+/* A fact: its label in the label type, its value in the value type under it,
+   as far from the next fact as one field is from the next. */
 .investor-key-value-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0,1fr));
-  gap: 16px 24px;
+  gap: var(--field-gap);
 }
 .investor-key-value--wide {
   grid-column: span 2;
 }
 .investor-key-value__key {
-  font-size: 12px;
-  font-weight: 400;
-  line-height: 16px;
+  font: var(--font-label);
   color: var(--muted);
 }
 .investor-key-value__value {
-  font-size: 14px;
-  font-weight: 500;
+  font: var(--font-value);
   color: var(--ink);
-  padding-top: 4px;
-  line-height: 20px;
   overflow-wrap: anywhere;
 }
 .investor-key-value__value--unread {
   color: var(--muted);
 }
+/* A question put to the partner (the design's Display 2). */
 .investor-switch-row {
   display: flex;
   align-items: center;
   gap: 24px;
-  font-size: 14px;
-  line-height: 20px;
+  font: var(--font-question);
   color: var(--text);
   cursor: pointer;
 }
@@ -243,13 +239,11 @@
   gap: 16px;
   padding-top: 16px;
 }
-/* A section of a card: 16px semibold in ink, a step under the card's title. */
+/* A section of a card: the title type again, a step under the card's title. */
 .section-title {
   margin: 32px 0 0;
   padding-bottom: 12px;
-  font-size: 16px;
-  font-weight: 600;
-  line-height: 24px;
+  font: var(--font-title);
   letter-spacing: -.01em;
   color: var(--ink);
 }
@@ -417,12 +411,15 @@
   color: var(--text);
   font-weight: 600;
 }
+/* The fields start level. Each has a one-line label over it, so the inputs sit
+   on one line; an error under one of them grows downward and does not lift its
+   input above the others. */
 .field-grid {
   display: grid;
   grid-template-columns: minmax(0,300px) minmax(0,230px) auto;
-  gap: 24px;
+  gap: var(--field-gap);
   padding-top: 16px;
-  align-items: end;
+  align-items: start;
   justify-content: start;
 }
 .page-warning-note {
@@ -449,7 +446,8 @@
   margin-top: 4px;
 }
 /* The actions sit on a bar across the foot of the window, as they do on every
-   old wizard step. */
+   old wizard step. The bar is as tall as the design draws it, its hairline
+   included, and its buttons line up with the rail and the card above. */
 .page-action-bar {
   position: fixed;
   left: 0;
@@ -460,9 +458,10 @@
   border-top: 1px solid var(--divider);
 }
 .page-action-bar__inner {
-  max-width: 1440px;
+  max-width: var(--page-max-width);
+  min-height: calc(var(--action-bar-height) - 1px);
   margin: 0 auto;
-  padding: 12px 16px;
+  padding: 8px var(--page-gap-side);
   display: flex;
   align-items: center;
   gap: 16px;
@@ -1803,11 +1802,11 @@ label.doc-tool {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  margin-bottom: 72px;
+  gap: var(--card-gap);
+  margin-bottom: var(--action-bar-height);
 }
 /* A banner or an error block at the top of the column starts level with the rail
-   and keeps the column's own 16px gap under it: no margin of its own. */
+   and keeps the column's own gap under it: no margin of its own. */
 .page-main > .page-missing-items {
   margin-top: 0;
 }
@@ -1817,13 +1816,11 @@ label.doc-tool {
 .page-main .page-card {
   margin-bottom: 0;
 }
-/* A section of the step: a heading, 16px semibold in ink, a step below the
-   page's title and a step above the labels under it. */
+/* A section of the step: a heading in the title type, a step above the labels
+   under it. */
 .doc-section__title {
   margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-  line-height: 24px;
+  font: var(--font-title);
   letter-spacing: -.01em;
   color: var(--ink);
   padding-bottom: 8px;
@@ -1845,7 +1842,7 @@ label.doc-tool {
    number on it cannot be placed by whoever picks it up. */
 .app-sticky-strip {
   position: fixed;
-  top: 45px;
+  top: calc(var(--header-height) + 1px);
   left: 0;
   right: 0;
   z-index: 35;
@@ -1856,15 +1853,16 @@ label.doc-tool {
 .app-sticky-strip[hidden] {
   display: none;
 }
-/* While the strip is pinned, the rail sits under it rather than behind it. */
+/* While the strip is pinned, the rail sits 56px lower: under the strip rather
+   than behind it. */
 body:has(.app-sticky-strip:not([hidden])) .page-rail {
-  top: 100px;
-  max-height: calc(100vh - 168px);
+  top: calc(var(--header-height) + 56px);
+  max-height: calc(100vh - var(--header-height) - 56px - var(--action-bar-height) - var(--page-gap-bottom));
 }
 .app-sticky-strip__inner {
-  max-width: 1440px;
+  max-width: var(--page-max-width);
   margin: 0 auto;
-  padding: 8px 16px;
+  padding: 8px var(--page-gap-side);
   display: flex;
   align-items: center;
   gap: 20px;

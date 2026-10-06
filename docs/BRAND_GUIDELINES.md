@@ -1,213 +1,216 @@
-# Uno TP / E-Sarathi — Brand & UI Guidelines
+# Uno TP: UI guidelines
 
-Source of truth for visual consistency across all pages. Every value here is taken
-directly from `wwwroot/css/site.css` and cross-checked against the prototype boards
-in `prototype/` (Board 00, 01, 02, 02A, 02B, 03, 04, 05, 06 — laptop and mobile).
-When building a new page or fixing an existing one, match these values rather than
-introducing new ones. If a prototype board shows a value that conflicts with this
-doc, the prototype wins — update this doc to match and note which board you checked.
+The one place that says how a page should look. Read it before changing a view or a
+stylesheet, and before adding a page.
 
-## Foundation: Bootstrap 5.3, themed to the brand
+## Where the rules come from
 
-Pages are built on **Bootstrap 5.3** (`wwwroot/lib/bootstrap`, MIT, served locally,
-never from a CDN) with **vanilla JavaScript** - Bootstrap 5 needs no jQuery, and the
-app uses none. `css/shared/bootstrap-theme.css` points Bootstrap's variables at the brand
-tokens below, so a Bootstrap button, form control, card, badge, table or list group
-comes out in the brand: Mahindra red for the main action and for what is wrong,
-Georama, ink text, 8px cards, 6px buttons and controls, 3px chips, a blue focus ring.
+The design is the Figma file "FD Broker portal". Its guideline boards were received
+on 6 Oct 2026 as photos of the screen: Spacing, Common Building Block, Typography,
+Buttons and Icons. Every number below marked **design** was read off those boards.
 
-Page by page, a page's hand-made styles give way to Bootstrap's components and
-utilities, keeping its layout: use `.btn .btn-primary`, `.form-control`,
-`.form-select`, `.card`, `.badge`, `.table`, `.list-group`, the spacing utilities
-(`p-3`, `gap-2`, `mb-4` - Bootstrap's 4/8px steps) rather than a new rule. Name a
-class of our own with a prefix of its own (`doc-`, `investor-`, `app-`): never a
-Bootstrap name (`modal-dialog`, `toast`, `card` ...) for something that is not that
-Bootstrap component - `app-dialog` and `app-toast` are ours for exactly that reason.
+- The design wins. If a board and this file disagree, change this file, the token
+  and the test together, and say which board you read.
+- Where the boards say nothing (colours as values, button sizes, phone layouts),
+  the app keeps what it had. Those are listed under "Not settled yet".
 
-The rules the research behind this settled on (NN/g, GOV.UK, IBM Carbon, Material,
-Apple HIG, WCAG 2.2):
+## How the rules are kept
 
-- **Type:** a few sizes with clear roles - 12px captions, helper text, chips,
-  field labels, step-rail labels and the small labels over a fact; 14px body,
-  controls and buttons; 16px section and step titles (the investor's name on a
-  step); 20px only for the dashboard's title - never below 12px; line heights on a 4px grid (16/20/24/28); headings semibold, body
-  regular. No uppercase eyebrows: a caption is sentence case in `--muted`.
-- **Hierarchy:** one thing leads each block. A step's head is caption (the step),
-  title (the name), then the facts; a document card's head is its label at the
-  left and its toolbar at the right, on one line.
-- **Spacing:** Bootstrap's 4/8px scale for padding, margins and gaps; related
-  things close together, groups apart (proximity).
-- **Contrast:** text at least 4.5:1 - `--muted` (#6B7280) is the lightest text
-  colour; `--muted-2` is for placeholders and disabled controls only (2.6:1).
-- **Targets and focus:** anything pressed at least 24px square; focus always shows
-  the 2px blue ring.
-- **Text is never cut off** with an ellipsis: it wraps, so enlarged or re-spaced
-  text stays readable.
-- **Edges:** anything drawn as a box - a card, a panel, a highlighted row, a table
-  row's hover, a button - keeps its content at least 8px from its sides (6px in a
-  chip or small tool) and 4px from top and bottom. A highlight is never added to a
-  row that has no inset of its own.
-- **Supporting content steps back:** help beside a page sits on the page, not on a
-  card, in muted text; navigation marks out only where you are.
+1. **One value, one place.** The frame and the type are named values (`:root` in
+   `UnoTP/wwwroot/css/shared/layout-and-controls.css`). A rule uses the name, never
+   the number: `gap: var(--field-gap)`, `font: var(--font-label)`.
+2. **A test holds them.** `UnoTP.Tests/UiGuidelineTests.cs` runs with `dotnet test`.
+   It fails when a design value is changed, when text is given a size off the scale,
+   or when a view gets a `style=` attribute or a `<style>` block.
+3. **A checklist for what a test cannot judge** (at the end of this file), and
+   before-and-after screenshots of the page at 1360px and at a phone's width.
 
-## Colors
+## Spacing
 
-All colors are CSS custom properties on `:root` in `site.css`. Always reference the
-variable, never hardcode the hex, so a future palette change is a one-line edit.
+### The building block (design: Common Building Block)
 
-| Token | Hex | Use |
+Spacing between parts of a page is a multiple of 8px:
+
+`8  16  24  32  40  48  56  64  72  80`
+
+### The page frame (design: Spacing, drawn at a 1360px window)
+
+| What | Value | Token |
 |---|---|---|
-| `--red` | `#E31837` | Primary brand red — CTAs, links, active states, primary accents |
-| `--red-dark` | `#B3132B` | Hover state for red buttons; "danger" emphasis text |
-| `--ink` | `#231F20` | Primary text, headings |
-| `--text` | `#4D4D4F` | Secondary body text |
-| `--muted` | `#6B7280` | Tertiary text, hints, captions |
-| `--muted-2` | `#9AA1AB` | Quietest text — placeholders, uppercase eyebrow labels |
-| `--border` | `#E7EAEE` | Default hairline border |
-| `--border-2` | `#D9DEE5` | Slightly darker hairline (card outlines) |
-| `--border-3` | `#ced4da` | Form input / button-secondary border |
-| `--page-bg` | `#E9EDF2` | `<body>` background — not `--tint` |
-| `--card-bg` | `#fff` | Cards, wizard content, modals |
-| `--tint` | `#F5F8FB` | Lighter inline highlight panels *inside* a card (e.g. "record found" box) — distinct from page background |
-| `--divider` | `#EDEFF3` | Light row/section divider |
-| `--divider-2` | `#DCDCDC` | Slightly stronger divider (card headers, action bars) |
-| `--amber` / `--amber-bg` | `#664d03` / `#FFF3CD` | Warning text / warning chip background |
-| `--green` / `--green-2` | `#146C34` / `#1E9E52` | Success text / success icon-fill (e.g. done badges) |
-| `--blue` | `#1063A8` | Informational accent (info callouts, "primary holder" chip) |
-| `--pink-bg` | `#FDECEF` | Danger chip background |
-| `--green-bg` / `--green-border` | `#E8F5EC` / `#CBE7D5` | Success panels and "verified" tags |
-| `--blue-bg` / `--blue-border` | `#E8F1FB` / `#CBDFF3` | Info panels and chips |
-| `--pink-tint` / `--pink-border` | `#FFF8F9` / `#F3C9D1` | A row or card being pointed at; refused copies |
-| `--amber-tint` / `--amber-border` / `--amber-accent` | `#FFFBF0` / `#F0D98A` / `#E8A700` | Warning panels, their outline, and their left rule |
+| Header height | 46px | `--header-height` |
+| Header to the first card | 32px | `--page-gap-top` |
+| Window edge to the rail, and to the card on the right | 47px | `--page-gap-side` |
+| Step rail width | 242px | `--rail-width` |
+| Rail to the card beside it | 24px | `--rail-gap` |
+| Card width | 1000px at a 1360px window; it takes what is left on a wider or narrower one | none |
+| One card to the next under it | 18px | `--card-gap` |
+| Last card to the action bar | 24px | `--page-gap-bottom` |
+| Action bar height | 64px | `--action-bar-height` |
+| Card edge to what is in it | 24px | `--card-padding` |
+| One field to the next, across and down | 32px | `--field-gap` |
 
-The tints were added when every raw hex in `site.css` and `topbar.css` was
-replaced by a token: near-duplicates (a dozen greys, five greens, six pinks) were
-folded into the nearest token. There is no raw hex left outside `:root`; keep it
-that way.
+46, 47 and 18 are not multiples of 8. They are what the board says, so they are kept
+as written.
 
-**`--page-bg` vs `--tint`:** these look similar but are not interchangeable.
-`--page-bg` (`#E9EDF2`) is the body background behind every card. `--tint`
-(`#F5F8FB`) is a lighter panel used *inside* white cards to highlight a block of
-content without a border (confirmed via Board 02A's "record found" panel). Getting
-this backwards was a real bug caught in this project — don't reintroduce it.
-The classic pages (dashboard, Investor Identification, Upload Documents, Investor
-Information and the list pages) once set their own `#F5F7FA`; every page now sits
-on `--page-bg`.
+The frame is for a laptop. Below 900px the rail no longer fits beside the card, so
+the margins drop to 16px and the field gap to 24px; below 560px the card padding and
+the field gap are 16px. These are the app's own, not the design's: no phone board
+has been received.
 
-## Typography
+The header's side margin is the page's, so the logo starts where the rail does and
+Logout ends where the card does. The action bar's buttons line up the same way.
 
-Font: **Georama** (Google Fonts, weights 300–700), loaded in `_Layout.cshtml` with
-`system-ui, sans-serif` fallback. Base body: `letter-spacing: 0`, color `--ink`; headings `-.01em`.
+## Type (design: Typography)
 
-| Role | Size / line | Weight | Color | Example |
+Georama throughout, served from `wwwroot/fonts`. "500 16px/19px" reads: medium
+weight, 16px text on a 19px line.
+
+| Design name | Used for | Value | Token |
+|---|---|---|---|
+| Display 1 | A card's or a section's title | 500 16px/19px | `--font-title` |
+| Display 2-3 | The label over a field or over a fact | 500 12px/24px | `--font-label` |
+| Display 2-3 | What a field or a fact holds | 500 14px/24px | `--font-value` |
+| Display 2 | A question put to the partner | 500 14px/20px | `--font-question` |
+| Display 2 | An answer to choose (Yes, No) | 400 14px/17px | `--font-option` |
+
+A rule takes a role in one line:
+
+```css
+.my-page__title {
+  font: var(--font-title);
+  color: var(--ink);
+}
+```
+
+`font:` sets the size, weight, line height and family together. Write it before any
+other `font-` line in the rule, or it undoes that line.
+
+Text is 12, 14 or 16px. 20px is kept for the one lead of the dashboard and of a
+dialog. Nothing is below 12px and nothing is uppercase. Text is never cut off with
+an ellipsis: it wraps.
+
+Fields and buttons are 36px high.
+
+## A row of fields
+
+The boxes in a row sit on one line, always: as the page opens, with an error under
+one of them, with a hint under another.
+
+- The row lines its fields up from the top (`align-items: start`, a grid's and a
+  flex row's default). Never from the bottom: an error under one field would then
+  lift its box above the others.
+- A label is one line. A note about the field ("No paper form - filed as 0000")
+  goes under the box as a `field-hint`, not inside the label: a label that runs
+  onto a second line pushes its box below the others.
+- Errors and hints go under the box and grow downward.
+- A button beside the fields has no label, so its cell takes `form-field--check`,
+  which starts it one label lower, level with the boxes.
+- If a row gets too narrow for its labels, give it fewer columns sooner.
+
+## Buttons (design: Buttons)
+
+| Design name | Looks like | Class |
+|---|---|---|
+| Primary | Solid red, white words. The one main action of a screen. | `btn btn-primary` |
+| Secondary | White, red outline, red words. Back, Save draft. | `btn btn-outline-primary` |
+| Tertiary | Words only, no box. Clear All, Edit, Add nominee. | `link-button` |
+
+The action bar of a journey step has Back at the left, the tertiary action and the
+primary action at the right.
+
+`btn btn-secondary` (white, grey outline) is not on the board. Do not use it on a
+new page; its two uses on Upload Documents go when that page is moved.
+
+## Icons (design: Icons)
+
+Filled document icons in slate for the dashboard tiles; outlined icons for the step
+rail and the four steps. One family: do not mix in another icon set. An icon is an
+inline `<svg>` that takes its colour from the text (`currentColor`).
+
+## Colours
+
+Named values on `:root` in `layout-and-controls.css`. Use the name, never the code.
+
+| Token | Code | Use |
+|---|---|---|
+| `--red` | `#E31837` | The main action, links, what is wrong |
+| `--red-dark` | `#B3132B` | Red on hover; error text |
+| `--ink` | `#231F20` | Headings, labels, values |
+| `--text` | `#4D4D4F` | Body text |
+| `--muted` | `#6B7280` | Captions and hints: the lightest text that is read |
+| `--muted-2` | `#9AA1AB` | Placeholders and disabled controls only |
+| `--border`, `--border-2`, `--border-3` | `#E7EAEE`, `#D9DEE5`, `#ced4da` | Hairline, card outline, field outline |
+| `--page-bg` | `#E9EDF2` | Behind every card |
+| `--card-bg` | `#fff` | Cards and dialogs |
+| `--tint` | `#F5F8FB` | A highlighted panel inside a card. Not the page background. |
+| `--divider`, `--divider-2` | `#EDEFF3`, `#DCDCDC` | Lines between rows and sections |
+| `--green`, `--green-bg`, `--green-border` | `#146C34`, `#E8F5EC`, `#CBE7D5` | Done, verified |
+| `--amber`, `--amber-bg`, `--amber-border`, `--amber-accent` | `#664d03`, `#FFF3CD`, `#F0D98A`, `#E8A700` | Waiting, warning |
+| `--blue`, `--blue-bg`, `--blue-border` | `#1063A8`, `#E8F1FB`, `#CBDFF3` | Information, focus, the next thing to do |
+| `--pink-bg`, `--pink-tint`, `--pink-border` | `#FDECEF`, `#FFF8F9`, `#F3C9D1` | A selected option; a refused copy |
+
+Colour carries meaning. Solid red is the one main action and what is wrong. A
+selected option is pink with a red outline, so selection never reads as an error.
+Status is a chip tinted by what it means: green done, amber waiting, red refused,
+grey neutral. Focus always shows the 2px blue ring.
+
+Still to do: about 70 places write `#fff` and four write another code directly. They
+move to the names when the design's colour values are received.
+
+## Corners
+
+8px for cards, panels and dialogs. 6px for buttons and fields. 3px for chips. A full
+capsule (999px) for toggles and filter pills. 50% for round badges.
+
+## Not settled yet
+
+These were seen on the boards but could not be read from a photo, or were not on
+the boards at all. Nothing was changed for them.
+
+- **Colour values.** The toggle on the Buttons board is blue when on; the app's is
+  red. The second tertiary button is blue. The exact colours are needed.
+- **Button size and type.** The app's are 36px high, 14px semibold.
+- **Field height.** The app's is 36px.
+- **18px between cards** and **46 / 47px** in the frame are off the 8px block. Kept
+  as the board says.
+- **Inside a component** (a chip's padding, an icon beside its word) the app still
+  uses 4, 6, 12 and 20px steps. Whether these must move to the 8px block is not
+  decided.
+- **Phone and tablet layouts.**
+- **Pages other than a journey step** (dashboard, the lists). They take the frame's
+  header, margins and gaps; the design's own boards for them have not been received.
+
+## Pages moved onto the guidelines
+
+| Layer | Frame | Type roles | Field spacing | Own stylesheet checked |
 |---|---|---|---|---|
-| Dashboard title | 20 / 28px | 400 | `--text` | `.dashboard-steps__title` |
-| Step / page title | 16 / 24px | 600 | `--ink` | `.doc-head__name`, `.page-title` |
-| Section title | 16 / 24px | 600 (400 on the dashboard) | `--ink` | `.doc-section__title`, `.dashboard-actions__title` |
-| Body, field text, controls | 14 / 20px | 400–500 | `--ink` / `--text` | `.field-input`, `.choice-toggle__option` |
-| Field label, rail label | 12 / 16px | 600 | `--ink` | `.field-label`, `.form-label`, `.page-rail__label` |
-| Button | 14px | 500–600 | — | `.btn` (36px high, as tall as a field) |
-| Caption, helper, meta | 12 / 16px | 400–500 | `--muted` | `.field-hint`, `.doc-head__step` |
-| Chip / status tag | 12 / 16px | 600 | varies | `.badge`, `.doc-on-file__tag` |
+| Shared (header, rail, cards, action bar, fields, facts) | done | done | done | 6 Oct 2026 |
+| Dashboard | done | – | – | to do |
+| Upload Documents | done | shared parts | to do (`doc-payment__grid`) | to do |
+| Investor Information | done | shared parts | done | to do |
+| Bank Details & Payment | done | shared parts | to do | to do |
+| FD Configuration | done | shared parts | to do (`deposit-grid-2`) | to do |
+| Review Summary, Submitted | done | shared parts | – | to do |
+| View Application, Pay-in Slips, Short URL, Admin | done | shared parts | – | to do |
 
-Sizes follow the old eSarathi screens' scale (measured at 1470px): fields and
-buttons 36px, the step rail 224px with 16px icons, document boxes 136px, dashboard
-tiles 128px with 48px icons.
-| Small tool | 12 / 16px | 600 | `--red` | `.doc-tool` (26px high) |
+"Own stylesheet checked" means every title, label and value in `css/pages/{page}.css`
+takes a `--font-` token, its gaps are on the 8px block, and its entries are gone
+from the two "still to move" lists in `UiGuidelineTests.cs`.
 
-Nothing is set below 12px and nothing is uppercase. Icon glyphs (the "i" of an info
-mark) are drawings, not text, and are exempt.
+## Checklist for a new or changed page
 
-### Chips vs. tags — don't mix these up
-
-Two different small-label components exist and they are **not** interchangeable:
-
-- **`.tag`** — uppercase, pill-shaped (`border-radius: 9px`), letter-spaced. Used for
-  the app-tile badges and a few legacy spots.
-- **`.chip`** — normal case, tighter rectangle (`border-radius: 3px`), no letter
-  spacing. This is what the prototype actually uses for inline status labels like
-  "Primary", "Optional", "Identified", "Consent complete". **Use `.chip`, not
-  `.tag`, for any small inline status label next to a name or heading** — using
-  `.tag` here was a real bug (it rendered "PRIMARY" in caps when the design shows
-  "Primary").
-
-Both come in the same semantic variants: `--primary`/`--muted` (or `--optional`),
-`--success`, `--warn`, `--danger`.
-
-## Colour carries meaning
-
-Solid `--red` is for the one main action on a screen (Proceed, Search) and for what
-is wrong (errors, refusals). A *selected* option - a chip, a toggle - is drawn with
-`--pink-bg`, a `--red` outline and `--red-dark` text, so selection never reads as an
-error. The card that holds the next thing to do is outlined in `--blue` with a
-`--blue-bg` ring. A card with nothing to do (not applicable, done) takes the lighter
-`--border`. Status is a chip tinted by what it means: green done, amber waiting,
-red refused or cancelled, grey neutral.
-
-Explain less in words: a check that passed says so behind an "How it was checked"
-info tip; warnings and failures stay written out. Trade terms (CKYC, NSDL, POA, CMS,
-IFSC, MICR, TDS, 15G/15H, FATCA, OCR) go through `Glossary.Term`, which explains them
-on hover and focus.
-
-## Spacing & radius
-
-- Card padding: `18px 20px` (`.card`) or `24px` (`.wizard__content`); `14px 16px` on
-  mobile (`<560px`).
-- Card-to-card gap: `16px` vertical.
-- Grid gaps: `16px` (form grids, wizard body), `11px` (app tile grid), `12px 20px`
-  (key-value-grid).
-- Border radius: **8px** for cards/panels/dialogs/sheets, **6px** for buttons and
-  icon buttons, **3px** for chips (the agency badge, a card's status tag), **9px**
-  for tag pills, **999px** for a full capsule (toggles, filter pills), **50%** for
-  avatars/circular badges. Nothing else: 10px, 12px and 14px cards were folded into 8px.
-  There is no 4px radius anywhere in the current design — if you see one, it's a
-  leftover bug (this project had one on `.btn` that's since been fixed).
-- Buttons: `padding: 12px 22px` (default), `8px 14px` (`.btn-sm`). A `<button>`
-  inherits Georama from `.btn`; without it a browser draws the button in Arial.
-
-## Layout chrome
-
-- `.app-header`: fixed 44px top bar, white background, sticky.
-- `.app-shell`: `max-width: 1536px`, centered, `16px` padding — everything below the
-  header lives inside this.
-- Wizard pages: `.wizard__body` is a `240px` rail + fluid content two-column grid,
-  `16px` gap. The rail and content are both white rounded (`8px`) panels sitting on
-  the page background.
-- **No "Application No / Step X of 5" topbar** above the wizard rail+content grid —
-  no prototype board has this. If you see one, remove it (this was a real
-  discrepancy fixed in this project).
-- **CTA / action bar on multi-step pages**: the prototype fixes the Back/Clear
-  All/Proceed bar to the *bottom of the browser window*, as its own bar separate
-  from the content card (not nested inside it, not just "sticky within the card").
-  Implement this as `position: fixed; left:0; right:0; bottom:0` on a bar that is a
-  **sibling of the wizard card**, with its own inner wrapper capped to
-  `.app-shell`'s `max-width` so its buttons line up with the content above. See
-  `.hid-footer` / `.hid-footer__inner` in `site.css` and the `Footer` `@section` in
-  `_WizardLayout.cshtml` for the reference implementation. Do **not** use
-  `position: sticky` nested inside the card for this — it let the bar escape the
-  page's width constraint in a real regression during this project.
-
-## Components quick-reference
-
-| Component | Class | Notes |
-|---|---|---|
-| Primary/secondary button | `.btn .btn-primary` / `.btn .btn-secondary` | Small variant: add `.btn-sm` |
-| Status chip | `.chip .chip--{primary,muted,success,warn,danger}` | Inline status next to a name/heading |
-| Uppercase pill tag | `.tag .tag--{primary,optional,success,warn,danger}` | App-tile badges, not inline status |
-| Card | `.card` | General content card |
-| Data table | `.data-table` | Zebra/attention row via `.attention` class |
-| Callout | `.callout` (red) / `.callout .callout--info` (blue) | Left-border accent box |
-| Numbered holder badge | `.holder-num .holder-num--{current,done,todo,warn}` | Circular step/holder indicator |
-| Segmented toggle | `.choice-toggle .choice-toggle__option .choice-toggle__option--active` | e.g. Offline/Digital consent choice |
-| Radio-style toggle | `.radio-toggle .radio-toggle__dot .radio-toggle__dot--checked` | Custom radio look |
-
-## Verification status
-
-Confirmed against decompressed prototype boards (colors, spacing, type, components):
-Board 00, 01 (dashboard/console — desktop + mobile), Board 02, 02A, 02B, 03, 04, 05,
-06 (holder identification submitted-steps, desktop). **Not yet checked**: Board 07–11
-(later wizard steps — upload documents, bank details, FD configuration, review,
-submitted) and the mobile variants of Board 02–06. Before styling those pages,
-decompress their prototype exports the same way (see git history around commit
-`ca8b130` for the extraction method) rather than guessing — that's what caused the
-mismatches this doc exists to prevent.
+- The page sits in `page-layout` with `page-rail` and `page-main` / `page-card`; it
+  sets no margins, rail width or card padding of its own.
+- Titles, labels, values, questions and options take a `--font-` token.
+- Fields sit in a grid with `gap: var(--field-gap)`.
+- In every row of fields the boxes sit on one line. Look at it with an error
+  showing, and at 1360, 1000 and 390px.
+- Other gaps are multiples of 8px.
+- One primary button to a screen; Back and Save draft are secondary; the rest are
+  tertiary.
+- Colours are tokens.
+- No `style=` and no `<style>` in the view.
+- Something the partner cannot use yet is shown disabled with its reason, not hidden.
+- `dotnet test` passes.
+- Looked at in the running app at 1360px and at 390px, beside a screenshot from
+  before the change.

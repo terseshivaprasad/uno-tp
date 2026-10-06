@@ -277,9 +277,10 @@ a.app-tile:hover {
   flex-wrap: wrap;
   align-items: flex-start;
 }
+/* The search row's fields start level, like every row of fields: the boxes sit
+   on one line, and the buttons beside them start one label lower (form-field--check). */
 .payin-slip-form__row--search {
   padding-top: 24px;
-  align-items: flex-end;
 }
 .payin-slip-field--appno {
   width: 100%;
@@ -299,17 +300,14 @@ a.app-tile:hover {
 }
 /* How the application came in. Digital is called out in blue because it is the
    one that can be held back; physical is the quiet default. */
-@media (max-width: 900px) {
-  .payin-slip-form__row--search {
-    align-items: flex-start;
-  }
-}
+/* On a phone the buttons take a line of their own under the fields. */
 @media (max-width: 640px) {
   .payin-slip-field--appno {
     max-width: none;
   }
   .payin-slip-field--actions {
     width: 100%;
+    padding-top: 0;
   }
   .payin-slip-btn--search, .payin-slip-field--actions .btn {
     flex: 1;

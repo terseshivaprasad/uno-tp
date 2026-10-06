@@ -28,14 +28,14 @@
 .admin-stack {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--card-gap);
   min-width: 0;
 }
 .admin-stack .page-card {
   margin-bottom: 0;
 }
 .admin-stack .page-card:last-child {
-  margin-bottom: 72px;
+  margin-bottom: var(--action-bar-height);
 }
 .admin-table {
   margin-top: 12px;

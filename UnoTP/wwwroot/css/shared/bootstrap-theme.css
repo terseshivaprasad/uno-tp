@@ -151,11 +151,14 @@
   --bs-btn-font-weight: 600;
 }
 
-/* Form controls: 44px high, the brand's input border, blue focus. */
+/* Form controls: 36px high (a 24px line, 5px over and under it, the hairlines),
+   the value type, the brand's input border, blue focus. */
 .form-control,
 .form-select {
   min-height: 36px;
-  font-size: 14px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  font: var(--font-value);
   color: var(--ink);
   border-color: var(--border-3);
   border-radius: 6px;
@@ -167,9 +170,7 @@
 }
 .form-label {
   margin-bottom: 4px;
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 16px;
+  font: var(--font-label);
   color: var(--ink);
 }
 .form-text {
