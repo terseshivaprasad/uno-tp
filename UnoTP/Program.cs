@@ -195,8 +195,16 @@ app.UseResponseCompression();
 // directory over by itself; any other host sets PathBase in appsettings or as an
 // environment variable. Links in the pages all go through ~/ or asp-action, and
 // the redirects below through ~/, so none of them skips it.
-var pathBase = app.Configuration["PathBase"];
-if (!string.IsNullOrWhiteSpace(pathBase))
+// First the address is tidied: a doubled slash in the directory or the path is made
+// one, whoever handed it over (see RequestPaths), so no redirect can begin "//".
+app.Use((context, next) =>
+{
+    context.Request.PathBase = RequestPaths.SingleSlashes(context.Request.PathBase);
+    context.Request.Path = RequestPaths.SingleSlashes(context.Request.Path);
+    return next();
+});
+var pathBase = RequestPaths.Directory(app.Configuration["PathBase"]);
+if (pathBase.Length > 0)
 {
     app.UsePathBase(pathBase);
 }
