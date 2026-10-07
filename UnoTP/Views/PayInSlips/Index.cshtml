@@ -149,13 +149,13 @@
                             <div class="register-table__sub">@r.DrawnOn</div>
                         </td>
                         <td data-label="Type">
-                            <span class="badge @(r.Digital ? "bg-info-subtle text-info-emphasis" : "bg-secondary-subtle text-secondary-emphasis")">@r.Tag</span>
+                            <span class="status-word @(r.Digital ? "text-info-emphasis" : "text-secondary-emphasis")">@r.Tag</span>
                             <div class="register-table__sub@(r.Blocked ? " register-table__sub--urgent" : "")">@r.TagNote</div>
                         </td>
                         <td data-label="CMS branch">@r.Branch</td>
                         <td data-label="Applied">@r.Applied.ToString("dd/MM/yyyy")</td>
                         <td data-label="Slip" class="payin-slip-table__slip">
-                            <span class="@Tones.Badge(r.SlipTone)" data-status>@r.SlipLabel</span>
+                            <span class="@Tones.Word(r.SlipTone)" data-status>@r.SlipLabel</span>
                             <div class="register-table__sub" data-slip-detail>@r.SlipNote</div>
                         </td>
                         <td class="register-table__actions">

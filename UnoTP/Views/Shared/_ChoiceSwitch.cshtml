@@ -1,0 +1,32 @@
+@model ChoiceSwitchBlock
+@* A choice between two, drawn as the FATCA switch is: the first option's name, the
+   switch, the second option's name. Off is the first option, on the second.
+
+   The two options are still radio buttons, so the form posts what it always did and
+   the arrow keys move between them. Each sits in a label laid over the switch; the
+   one already chosen steps back (journey-steps.css), so a press on the switch always
+   lands on the other one and the switch flips. A press on a name chooses that name.
+
+   An option that cannot be chosen stays, disabled, and its title says why. *@
+<div class="choice-switch" role="radiogroup" aria-labelledby="@Model.LabelledBy">
+    <label class="choice-switch__name choice-switch__name--off" for="@Model.Off.Id" title="@Model.Off.WhyDisabled">@Model.Off.Label</label>
+    <span class="choice-switch__track">
+        @foreach (var (option, side) in new[] { (Model.Off, "off"), (Model.On, "on") })
+        {
+            <label class="choice-switch__option choice-switch__option--@side" title="@option.WhyDisabled">
+                @* Razor writes a data- attribute even when its value is null, and an empty
+                   data-submit stops the page following the choice at once. So an option that
+                   posts nothing on change carries neither attribute. *@
+                @if (option.SubmitVia is null)
+                {
+                    <input class="visually-hidden" type="radio" name="@Model.Name" id="@option.Id" value="@option.Value" checked="@option.Chosen" disabled="@option.Disabled">
+                }
+                else
+                {
+                    <input class="visually-hidden" type="radio" name="@Model.Name" id="@option.Id" value="@option.Value" checked="@option.Chosen" disabled="@option.Disabled" data-submit="@option.SubmitVia" data-confirm="@option.Confirm">
+                }
+            </label>
+        }
+    </span>
+    <label class="choice-switch__name choice-switch__name--on" for="@Model.On.Id" title="@Model.On.WhyDisabled">@Model.On.Label</label>
+</div>

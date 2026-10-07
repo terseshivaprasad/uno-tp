@@ -104,21 +104,6 @@
   --bs-btn-padding-x: 12px;
   --bs-btn-padding-y: 6px;
 }
-/* The quiet action beside a main one: white, the input border, ink text. */
-.btn-secondary {
-  --bs-btn-color: var(--text);
-  --bs-btn-bg: #fff;
-  --bs-btn-border-color: var(--border-3);
-  --bs-btn-hover-color: var(--ink);
-  --bs-btn-hover-bg: var(--tint);
-  --bs-btn-hover-border-color: var(--border-3);
-  --bs-btn-active-color: var(--ink);
-  --bs-btn-active-bg: var(--tint);
-  --bs-btn-active-border-color: var(--muted);
-  --bs-btn-disabled-color: var(--muted);
-  --bs-btn-disabled-bg: #fff;
-  --bs-btn-disabled-border-color: var(--border);
-}
 .btn-primary {
   --bs-btn-color: #fff;
   --bs-btn-bg: var(--red);

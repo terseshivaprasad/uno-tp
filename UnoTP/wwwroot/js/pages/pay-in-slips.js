@@ -165,18 +165,7 @@
       ? 'Showing ' + (start + 1) + '–' + (start + shown.length) + ' of ' + kept.length + (kept.length === 1 ? ' application' : ' applications')
       : '';
 
-    pages.textContent = '';
-    for (var i = 1; i <= total; i++) {
-      (function (n) {
-        var b = document.createElement('button');
-        b.type = 'button';
-        b.className = 'register-page' + (n === page ? ' register-page--on' : '');
-        b.textContent = n;
-        if (n === page) b.setAttribute('aria-current', 'page');
-        b.addEventListener('click', function () { page = n; renderTablePage(); });
-        pages.appendChild(b);
-      })(i);
-    }
+    pages.textContent = 'Page ' + page + ' of ' + total;
     prev.disabled = page === 1;
     next.disabled = page === total;
     document.querySelector('.register-pager').hidden = kept.length === 0;

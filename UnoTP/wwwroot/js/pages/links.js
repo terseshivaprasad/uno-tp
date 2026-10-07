@@ -58,19 +58,8 @@
       ? 'Showing ' + (from + 1) + '–' + Math.min(from + PER_PAGE, kept.length) + ' of ' + kept.length
       : '';
 
-    // One button per page, and the arrows stop at the ends.
-    pages.textContent = '';
-    for (var i = 1; i <= total; i++) {
-      (function (n) {
-        var b = document.createElement('button');
-        b.type = 'button';
-        b.className = 'register-page' + (n === page ? ' register-page--on' : '');
-        b.textContent = n;
-        if (n === page) b.setAttribute('aria-current', 'page');
-        b.addEventListener('click', function () { page = n; renderTablePage(); });
-        pages.appendChild(b);
-      })(i);
-    }
+    // Which page of how many; the arrows stop at the ends.
+    pages.textContent = 'Page ' + page + ' of ' + total;
     prev.disabled = page === 1;
     next.disabled = page === total;
     document.querySelector('.register-pager').hidden = kept.length === 0;

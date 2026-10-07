@@ -3,9 +3,7 @@
 /* A card's title leads it: 16px semibold in ink, as every step's title does. */
 .page-card__title {
   margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-  line-height: 24px;
+  font: var(--font-title);
   color: var(--ink);
   padding-bottom: 8px;
 }
@@ -67,14 +65,12 @@
 }
 /* The form under each table. It is the wizard's own field furniture - field-label,
    field-input, date-input - set out in rows. */
-/* A form within the card is a section of it: 16px semibold, over a rule. */
+/* A form within the card is a section of it: the title type, over a rule. */
 .admin-form__title {
   margin: 32px 0 0;
   padding-top: 24px;
   border-top: 1px solid var(--divider);
-  font-size: 16px;
-  font-weight: 600;
-  line-height: 24px;
+  font: var(--font-title);
   color: var(--ink);
 }
 .admin-form {

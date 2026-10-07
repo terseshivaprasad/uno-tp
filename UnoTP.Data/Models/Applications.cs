@@ -286,7 +286,8 @@ public sealed record PaymentLink(string Url, string? ShortUrl);
 public sealed class UploadState
 {
     // ----- What was typed or chosen
-    public string AppType { get; set; } = "DIGITAL";
+    /// <summary>How the application arrives. A new one opens as a physical application; the partner switches it to digital.</summary>
+    public string AppType { get; set; } = "PHYSICAL";
     public string PoaType { get; set; } = "";
     public string PayMode { get; set; } = "";
     public string Sourcing { get; set; } = "";
@@ -324,7 +325,9 @@ public sealed class UploadState
     public string EmpHolder { get; set; } = "";
     public string EmpRelation { get; set; } = "";
     public string EmpProofType { get; set; } = "";
-    public string FormNo { get; set; } = "0000";
+    /// <summary>The form number the application is filed under: a paper form's own number,
+    /// empty until it is typed; "0000" for a digital application, which has no paper form.</summary>
+    public string FormNo { get; set; } = "";
 
     /// <summary>A paper form's number, kept through a switch to digital and back.</summary>
     public string TypedFormNo { get; set; } = "";

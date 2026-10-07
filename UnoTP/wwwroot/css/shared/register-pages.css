@@ -113,28 +113,37 @@ a.app-tile:hover {
   gap: 8px;
   flex-wrap: wrap;
 }
+/* A filter over a list is drawn as the tenure and payout tiles on FD Configuration
+   are: the same corners, the same outline, and blue when it is the one chosen.
+   It is as tall as the search box beside it. */
 .register-pill {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 12px;
-  border: 1px solid var(--border-2);
-  border-radius: 999px;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--border-3);
+  border-radius: 6px;
   background: #fff;
   font-family: inherit;
   font-size: 14px;
+  font-weight: 500;
   color: var(--text);
+  white-space: nowrap;
   cursor: pointer;
 }
 .register-pill:hover {
-  border-color: var(--muted);
-  color: var(--ink);
+  border-color: var(--text);
 }
 .register-pill--on, .register-pill--on:hover {
-  border-color: var(--red);
-  background: var(--pink-bg);
-  color: var(--red-dark);
-  font-weight: 600;
+  border-color: var(--selected);
+  background: var(--blue-bg);
+  color: var(--blue);
+  font-weight: 700;
+}
+.register-pill:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
 }
 .register-pill__number {
   font-size: 12px;
@@ -142,7 +151,7 @@ a.app-tile:hover {
   color: var(--muted);
 }
 .register-pill--on .register-pill__number {
-  color: var(--red-dark);
+  color: var(--blue);
 }
 .register-search {
   display: flex;
@@ -207,35 +216,33 @@ a.app-tile:hover {
   font-size: 12px;
   color: var(--muted);
 }
-/* The page numbers wrap onto a second line rather than running off a phone. */
-.register-pager__nav, .register-pager__pages {
+/* Which page of how many, between the two arrows. */
+.register-pager__nav {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  justify-content: center;
   gap: 8px;
 }
+.register-pager__pages {
+  font-size: 12px;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+/* An arrow: the mark alone, tinted behind on hover. */
 .register-page {
   min-width: 32px;
   height: 32px;
   padding: 0 8px;
-  border: 1px solid var(--border-2);
+  border: 0;
   border-radius: 6px;
-  background: #fff;
+  background: transparent;
   font-family: inherit;
   font-size: 14px;
   color: var(--text);
   cursor: pointer;
 }
 .register-page:hover:not(:disabled) {
-  border-color: var(--muted);
+  background: var(--tint);
   color: var(--ink);
-}
-.register-page--on, .register-page--on:hover {
-  border-color: var(--red);
-  background: var(--red);
-  color: #fff;
-  font-weight: 600;
 }
 .register-page:disabled {
   color: var(--muted-2);
@@ -273,7 +280,7 @@ a.app-tile:hover {
 }
 .payin-slip-form__row {
   display: flex;
-  gap: 24px;
+  gap: var(--field-gap);
   flex-wrap: wrap;
   align-items: flex-start;
 }
@@ -317,10 +324,13 @@ a.app-tile:hover {
    pay-in slip page's flag in a neutral tone: this one warns of nothing. */
 .view-app-scope-note {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
   margin-top: 16px;
   margin-bottom: 0;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--muted);
 }
 .view-app-scope-note svg {
   flex: none;
@@ -328,4 +338,11 @@ a.app-tile:hover {
 }
 .view-app-scope-note strong {
   font-weight: 600;
+  color: var(--text);
+}
+/* A status in a list: the word in its tone's colour, no box round it. */
+.status-word {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
 }

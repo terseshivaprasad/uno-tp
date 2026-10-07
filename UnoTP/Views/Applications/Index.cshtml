@@ -113,7 +113,7 @@
             <p class="field-hint" id="viewAppScope">Showing the last @Model.WindowDays days &mdash; @earliest.ToString("dd/MM/yyyy") to @today.ToString("dd/MM/yyyy").</p>
         </form>
 
-        <p class="alert alert-secondary view-app-scope-note">
+        <p class="view-app-scope-note">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 11v6"></path><circle cx="12" cy="7.5" r=".7" fill="currentColor"></circle></svg>
             <span><strong>A date search reaches back @Model.WindowDays days</strong> &mdash; an older application has booked or cancelled itself. Search by number to reach one, or by folio for everything an investor has. A new customer has no folio until their first deposit books.</span>
         </p>
@@ -178,7 +178,7 @@
                         </td>
                         <td data-label="Applied">@r.Applied.ToString("dd/MM/yyyy")</td>
                         <td data-label="Status">
-                            <span class="@Tones.Badge(r.Status.Tone)">@r.Status.Text</span>
+                            <span class="@Tones.Word(r.Status.Tone)">@r.Status.Text</span>
                             <div class="register-table__sub">@r.Waiting</div>
                         </td>
                         <td class="register-table__actions">
@@ -210,7 +210,7 @@
         <section data-sheet="@r.AppNo" data-title="@r.AppNo" data-sub="@r.Investor &middot; @r.Status.Text &middot; raised @r.Applied.ToString("dd/MM/yyyy")">
             <div class="view-app-sheet__grid">
                 <div class="view-app-key-value"><div class="view-app-key-value__key">Status</div><div class="view-app-key-value__value @r.Status.Tone">@r.Status.Text</div><div class="view-app-key-value__note">@r.Waiting</div></div>
-                <div class="view-app-key-value"><div class="view-app-key-value__key">Came in as</div><div class="view-app-key-value__value"><span class="badge @(r.Digital ? "bg-info-subtle text-info-emphasis" : "bg-secondary-subtle text-secondary-emphasis")">@r.Tag</span></div><div class="view-app-key-value__note">@(r.Digital ? "accepted online by the investor" : "signed form on file")</div></div>
+                <div class="view-app-key-value"><div class="view-app-key-value__key">Came in as</div><div class="view-app-key-value__value"><span class="status-word @(r.Digital ? "text-info-emphasis" : "text-secondary-emphasis")">@r.Tag</span></div><div class="view-app-key-value__note">@(r.Digital ? "accepted online by the investor" : "signed form on file")</div></div>
                 <div class="view-app-key-value"><div class="view-app-key-value__key">Folio</div><div class="view-app-key-value__value">@r.FolioLabel</div><div class="view-app-key-value__note">@r.FolioNote</div></div>
                 <div class="view-app-key-value"><div class="view-app-key-value__key">Investor</div><div class="view-app-key-value__value">@r.Investor</div><div class="view-app-key-value__note">@(r.Holders == 1 ? "single holder" : $"{r.Holders} holders")</div></div>
                 <div class="view-app-key-value"><div class="view-app-key-value__key">PAN</div><div class="view-app-key-value__value">@r.Pan</div><div class="view-app-key-value__note">first holder &middot; masked</div></div>

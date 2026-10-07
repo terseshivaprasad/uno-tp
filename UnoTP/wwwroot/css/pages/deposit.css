@@ -98,10 +98,12 @@
 .deposit-option:hover .deposit-option__face {
   border-color: var(--text);
 }
+/* The tenure or payout chosen: outlined in the blue a switch is when it is on,
+   on the blue tint, its words in the darker blue so they stay easy to read. */
 .deposit-option input:checked + .deposit-option__face {
-  border-color: var(--red);
-  background: var(--pink-bg);
-  color: var(--red-dark);
+  border-color: var(--selected);
+  background: var(--blue-bg);
+  color: var(--blue);
   font-weight: 700;
 }
 .deposit-option input:focus-visible + .deposit-option__face {
@@ -157,7 +159,7 @@
 .deposit-grid-2 {
   display: grid;
   grid-template-columns: repeat(2, minmax(0,1fr));
-  gap: 20px;
+  gap: var(--field-gap);
 }
 .deposit-grid-2[hidden] {
   display: none;
@@ -184,9 +186,8 @@
   font-weight: 600;
 }
 .deposit-summary {
-  background: var(--tint);
-  border-radius: 8px;
-  padding: 20px;
+  border-left: 2px solid var(--border-2);
+  padding: 0 0 0 20px;
   position: sticky;
   top: 16px;
   display: flex;
@@ -194,8 +195,7 @@
   gap: 20px;
 }
 .deposit-summary__label {
-  font-size: 12px;
-  font-weight: 600;
+  font: var(--font-label);
   color: var(--muted);
 }
 .deposit-summary__amount {
@@ -247,16 +247,12 @@
   font-weight: 500;
 }
 .deposit-key-value__key {
-  font-size: 12px;
-  font-weight: 500;
+  font: var(--font-label);
   color: var(--muted);
 }
 .deposit-key-value__value {
-  font-size: 16px;
-  font-weight: 600;
-  padding-top: 4px;
+  font: var(--font-value);
   color: var(--ink);
-  line-height: 24px;
 }
 .deposit-key-value__value--rate {
   color: var(--green);
@@ -289,7 +285,7 @@
     gap: 6px;
   }
   .deposit-summary {
-    padding: 16px;
+    padding-left: 16px;
     gap: 16px;
   }
   .deposit-summary__amount {

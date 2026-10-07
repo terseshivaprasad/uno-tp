@@ -36,7 +36,7 @@ Paths are under `UnoTP/`; stylesheets and scripts under `UnoTP/wwwroot/css/` and
 | `css/shared/bootstrap-theme.css` | Bootstrap 5.3 pointed at the brand: buttons, badges, alerts, form controls. Change a Bootstrap component's look here. |
 | `css/shared/fonts.css` | Georama, served locally. |
 | `css/shared/layout-and-controls.css` | The design tokens (`:root`: colours, the page frame, the type roles, `--doc-card-h`), the page shell, the two-column journey grid (`page-layout`, `page-rail`, `page-card`), form fields (`field-label`, `field-input`, `field-hint`, `field-error`, `date-input`), the dialog frame (`app-dialog__*`), tables, drafts list, hover hints. |
-| `css/shared/journey-steps.css` | What the journey steps share: the step rail (`page-rail__step`), the action bar at the foot (`page-action-bar`), the choice toggle, and the document cards of Upload Documents and Investor Information (`doc-slot`, `doc-drop`, `doc-on-file`, `doc-read-result`, `doc-history`…). |
+| `css/shared/journey-steps.css` | What the journey steps share: the step rail (`page-rail__step`), the action bar at the foot (`page-action-bar`), the two-option switch (`choice-switch`), and the document cards of Upload Documents and Investor Information (`doc-slot`, `doc-drop`, `doc-on-file`, `doc-read-result`, `doc-history`…). |
 | `css/shared/register-pages.css` | What the list pages share: filters, search box, status pills, pager, table (`register-*`). |
 | `css/shared/topbar.css` | The header and the phone menu. |
 | `js/shared/messages.js` | Hands the scripts their validation and error messages from the master: `message('Lists.FromAfterTo')`. Loaded first. |
@@ -49,7 +49,7 @@ Paths are under `UnoTP/`; stylesheets and scripts under `UnoTP/wwwroot/css/` and
 | `js/shared/notices-bell.js`, `js/shared/topbar.js` | The bell panel and the phone menu. |
 | `js/shared/console.js` | Toast and list search carried over from the console. |
 
-Shared partials in `Views/Shared/`: `_DocSlot` (one document card), `_DocLog` (a document's history), `_HolderIdentification` (the PAN / date of birth / folio search block), `_Drafts` (applications to pick up again), `_ApplicationSummary` (the six review sections, editable or read-only), `_RequiredDocs` (the dashboard's document-list dialog), `_ReadCard(s)`, `_ProofType`, `_NsdlRetry`, `_AadhaarNumber`, `_Notices`, `_ClassicSteps`.
+Shared partials in `Views/Shared/`: `_DocSlot` (one document card), `_DocLog` (a document's history), `_HolderIdentification` (the PAN / date of birth / folio search block), `_Drafts` (applications to pick up again), `_ApplicationSummary` (the six review sections, editable or read-only), `_RequiredDocs` (the dashboard's document-list dialog), `_ReadCard(s)`, `_ProofType`, `_ChoiceSwitch` (a choice between two, drawn as a switch), `_NsdlRetry`, `_AadhaarNumber`, `_Notices`, `_ClassicSteps`.
 
 ## Naming
 
@@ -59,7 +59,7 @@ page or the thing it is:
 | Prefix | Used for |
 |---|---|
 | `page-` | the journey shell shared by every step: `page-layout`, `page-rail`, `page-card`, `page-title`, `page-head`, `page-note`, `page-action-bar` |
-| `field-`, `date-input`, `choice-toggle`, `radio-option` | form controls |
+| `field-`, `date-input`, `choice-switch`, `radio-option` | form controls |
 | `identify-` | the PAN / folio search and its result |
 | `doc-` | Upload Documents' cards: `doc-slot`, `doc-drop` (the picker), `doc-on-file`, `doc-read-result`, `doc-history`, `doc-tool` |
 | `investor-` | Investor Information |

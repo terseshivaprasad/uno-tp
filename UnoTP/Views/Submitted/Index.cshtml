@@ -106,8 +106,8 @@
             @if (d is not null)
             {
                 <div class="submitted-key-value-grid">
-                    <div><div class="submitted-key-value__key">Invested amount</div><div class="submitted-key-value__value submitted-key-value__value--lg">@Money.Rupees(d.Amount)</div></div>
-                    <div><div class="submitted-key-value__key">Rate of interest</div><div class="submitted-key-value__value submitted-key-value__value--lg submitted-key-value__value--green">@(q is null ? "—" : $"{q.Rate:0.00}% p.a.")</div></div>
+                    <div><div class="submitted-key-value__key">Invested amount</div><div class="submitted-key-value__value">@Money.Rupees(d.Amount)</div></div>
+                    <div><div class="submitted-key-value__key">Rate of interest</div><div class="submitted-key-value__value submitted-key-value__value--green">@(q is null ? "—" : $"{q.Rate:0.00}% p.a.")</div></div>
                     <div><div class="submitted-key-value__key">Tenure</div><div class="submitted-key-value__value">@d.TenureMonths months</div></div>
                     <div><div class="submitted-key-value__key">Scheme</div><div class="submitted-key-value__value">@(payout?.PerYear == 0 ? "Cumulative" : "Non-cumulative") &middot; @Model.Docs.CategoryName(Model.Docs.State.Category)</div></div>
                     <div><div class="submitted-key-value__key">Interest payout</div><div class="submitted-key-value__value">@(payout?.Name ?? d.Payout)</div></div>

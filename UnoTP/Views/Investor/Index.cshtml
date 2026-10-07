@@ -187,10 +187,7 @@
         var poa = docs.View(DocumentsViewModel.PoaSlot, h);
         var mail = docs.View(DocumentsViewModel.MailSlot, h);
         var panReads = new ReadCardsBlock(docs.PanReadsOf(h), Url.Action("JointNsdl", new { n = holder }));
-        var mailDifferent = docs.MailDifferentOf(h);
-        var mailCanDiffer = docs.MailCanDiffer(h);
         var mailingLabelId = $"investor{holder}MailingLabel";
-        (string Value, string Label)[] mailingOptions = [("same", "Same as Permanent"), ("different", "Different from Permanent")];
 
         // The card's label heads it; where the proof's type is chosen first, the label and its
         // picker stand above the card instead (no Label).
@@ -211,21 +208,7 @@
             <h3 class="investor-docs-head__title">Documents</h3>
             <div class="doc-app-type__group">
                 <span class="field-label" id="@mailingLabelId">Communication Address</span>
-                <div class="choice-toggle" role="radiogroup" aria-labelledby="@mailingLabelId">
-                    @foreach (var option in mailingOptions)
-                    {
-                        var isDifferent = option.Value == "different";
-                        var isOn = mailDifferent == isDifferent;
-                        var disabled = isDifferent && !mailCanDiffer;
-                        string? title = disabled ? mail.NotApplicable : null;
-                        // Going back to "same" with a proof filed asks first, because the proof is taken off.
-                        var asksBeforeDroppingProof = option.Value == "same" && !isOn && mail.Doc is not null;
-                        string? confirm = asksBeforeDroppingProof ? DocumentsViewModel.MailDropAsk : null;
-                        <label class="choice-toggle__option" title="@title">
-                            <input class="visually-hidden" type="radio" name="@h.Key("mailing")" id="@h.Key("mailing")-@option.Value" value="@option.Value" checked="@isOn" disabled="@disabled" data-submit="refresh-@h.Code" data-confirm="@confirm">@option.Label
-                        </label>
-                    }
-                </div>
+                <partial name="_ChoiceSwitch" model="@(docs.MailingSwitch(h, h.Key("mailing"), h.Key("mailing") + "-", mailingLabelId, "refresh-" + h.Code))" />
             </div>
         </div>
         <div class="doc-grid doc-grid--docs">
@@ -519,7 +502,7 @@
                 }
                 <div class="investor-field investor-field--sm">
                     <label for="h@(holder)-nametype">Name type</label>
-                    <select id="h@(holder)-nametype" name="@(prefix).NameType" class="investor-control investor-control--strong @InvalidControl($"{prefix}.NameType")" required aria-describedby="@DescribedBy($"{prefix}.NameType", $"h{holder}-nametype")">
+                    <select id="h@(holder)-nametype" name="@(prefix).NameType" class="investor-control @InvalidControl($"{prefix}.NameType")" required aria-describedby="@DescribedBy($"{prefix}.NameType", $"h{holder}-nametype")">
                         @foreach (var option in nameTypes)
                         {
                             if (option == nameTypeSelected)
@@ -754,7 +737,7 @@
             <div class="page-head" data-pin-head>
                 <h1 class="page-title">Investor Details</h1>
                 @* Clear All asks first: it takes the joint holders and the nominee off too. *@
-                <button type="submit" form="investorInfoForm" class="link-button link-button--muted investor-clear" formaction="@Url.Action("Clear")" formnovalidate
+                <button type="submit" form="investorInfoForm" class="link-button investor-clear" formaction="@Url.Action("Clear")" formnovalidate
                         data-confirm="@Messages.InvestorInformation.ConfirmClearAll">Clear All</button>
                 <span class="page-app-number">Application No: <strong>@appNo</strong>
                     <button type="button" class="doc-copy" data-copy="@appNo" title="Copy the application number" aria-label="Copy the application number">

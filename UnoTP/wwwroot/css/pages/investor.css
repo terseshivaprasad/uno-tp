@@ -56,10 +56,6 @@
   font-weight: 600;
   line-height: 16px;
   color: var(--amber);
-  background: var(--amber-bg);
-  border: 1px solid var(--amber-border);
-  border-radius: 3px;
-  padding: 2px 6px;
   white-space: nowrap;
 }
 .investor-manual__text {
@@ -107,10 +103,6 @@
   font: var(--font-label);
   padding-bottom: 4px;
   color: var(--ink);
-}
-/* Inside a manual-entry box every field has to be typed, so the set is outlined red. */
-.investor-control--strong {
-  font-weight: 600;
 }
 /* The FATCA "invests offline" alert, laid over the top of the investor's card. */
 /* The guardian section of a minor nominee: a plain block, no fieldset border. */
@@ -235,9 +227,7 @@
 }
 .investor-docs-head__title {
   margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-  line-height: 24px;
+  font: var(--font-title);
   letter-spacing: -.01em;
   color: var(--ink);
 }
@@ -263,8 +253,7 @@
 .investor-pep__question {
   flex: 1;
   min-width: 0;
-  font-size: 14px;
-  line-height: 20px;
+  font: var(--font-question);
   color: var(--text);
 }
 .investor-pep__answers {
@@ -305,8 +294,7 @@
   flex: 1;
   min-width: 0;
   margin: 0;
-  font-size: 16px;
-  line-height: 24px;
+  font: var(--font-question);
   color: var(--text);
 }
 /* The Add Joint Holder and Add Nominee buttons, styled like Remove. */
@@ -342,10 +330,6 @@
   .investor-docs-head {
     gap: 12px;
   }
-}
-.link-button--muted {
-  font-weight: 500;
-  color: var(--text);
 }
 /* The district and state of a typed address, from its PIN code: shown beside it, never typed. */
 .investor-district-state {

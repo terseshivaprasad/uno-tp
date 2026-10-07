@@ -67,7 +67,7 @@
             @{ await Head("Fixed Deposit", "Deposit", "Index", first: true); }
             <p class="page-note">@(q is null ? "Quoted once the deposit is configured" : $"Card rate as on {Money.Day(q.RateAsOn)} · locked when the application is submitted")</p>
             <div class="investor-record">
-                <div class="investor-panel">
+                <div class="investor-panel investor-panel--plain">
                     @if (d is null || d.Amount == 0)
                     {
                         <div class="investor-key-value__value investor-key-value__value--unread">Not configured yet</div>
@@ -118,7 +118,7 @@
                     var who = h.Holder.Who;
                     var det = h.Details;
                     var gender = h.Gender;
-                    <div class="investor-panel investor-panel--stack">
+                    <div class="investor-panel investor-panel--plain investor-panel--stack">
                         <div class="investor-panel__label">@(h.Holder.Joint ? "Joint holder" : "Primary holder") &middot; @Or(who.Name, "name not verified yet")</div>
                         <div class="investor-key-value-grid">
                             @{
@@ -170,7 +170,7 @@
             @{ await Head("Nominee", "Investor", "Index"); }
             <p class="page-note">Asked once for the application, not per holder</p>
             <div class="investor-record">
-                <div class="investor-panel">
+                <div class="investor-panel investor-panel--plain">
                     @if (review.Nominee is { } n)
                     {
                         <div class="investor-key-value-grid">
@@ -195,7 +195,7 @@
             @{ await Head("Bank Details & Payment", "Payment", "Index"); }
             <p class="page-note">Paid by @Or(docs.State.PayMode, "a mode not chosen yet")</p>
             <div class="investor-record">
-                <div class="investor-panel">
+                <div class="investor-panel investor-panel--plain">
                     <div class="investor-key-value-grid">
                         @{
                             // Only a cheque is drawn on an account the deposit is paid from.
@@ -235,7 +235,7 @@
             @{ await Head("Other Details", "Documents", "Index"); }
             <p class="page-note">How the application is sourced, from Upload Documents</p>
             <div class="investor-record">
-                <div class="investor-panel">
+                <div class="investor-panel investor-panel--plain">
                     <div class="investor-key-value-grid">
                         @{
                             await Kv("Sourcing mode", mode?.Name ?? "Not chosen");

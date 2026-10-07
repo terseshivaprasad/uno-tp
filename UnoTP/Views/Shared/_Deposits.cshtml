@@ -6,7 +6,7 @@
     <div class="identify-holder__head">
         <span class="identify-holder__no">2</span>
         <span class="identify-holder__name">Deposits</span>
-        <span class="badge @(Model.Due > 0 ? "bg-success-subtle text-success-emphasis" : "bg-secondary-subtle text-secondary-emphasis")">@Model.Due due for renewal</span>
+        <span class="status-word @(Model.Due > 0 ? "text-success-emphasis" : "text-secondary-emphasis")">@Model.Due due for renewal</span>
     </div>
     @if (Model.Off is not null)
     {

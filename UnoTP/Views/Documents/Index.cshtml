@@ -48,7 +48,6 @@
     var isEmployeeCategory = Model.IsEmployee(state.Category);
     var employeeName = Model.EmployeeName;
 
-    (string Value, string Label)[] mailingOptions = [("same", "Same as Permanent"), ("different", "Different from Permanent")];
 }
 @* Upload Documents: the documents across the top, the payment's instrument under them,
    and the details the application is sourced under. Every change posts the form and the
@@ -81,7 +80,7 @@
     // A note under a field: a compact informational alert.
     async Task Note(string text)
     {
-        <p class="alert alert-info doc-note">
+        <p class="doc-note">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 11v6"></path><circle cx="12" cy="7.5" r=".7" fill="currentColor"></circle></svg>
             <span>@text</span>
         </p>
@@ -176,17 +175,7 @@
         <div class="doc-app-type">
             <div class="doc-app-type__group">
                 <span class="field-label" id="docsAppTypeLabel">Application Type</span>
-                <div class="choice-toggle" role="radiogroup" aria-labelledby="docsAppTypeLabel">
-                    @foreach (var type in Model.ApplicationTypes)
-                    {
-                        // A CKYC application is completed online, so it cannot be filed on paper.
-                        var disabledForCkyc = state.Ckyc && type.Code == DocumentsViewModel.Physical;
-                        string? title = disabledForCkyc ? "A CKYC application is completed online, so it cannot be filed on paper." : null;
-                        <label class="choice-toggle__option" title="@title">
-                            <input class="visually-hidden" type="radio" name="appType" id="docsAppType@(type.Code)" value="@type.Code" checked="@(state.AppType == type.Code)" disabled="@disabledForCkyc">@type.Name
-                        </label>
-                    }
-                </div>
+                <partial name="_ChoiceSwitch" model="Model.AppTypeSwitch()" />
             </div>
 
             @* Post going anywhere but the permanent address is proved with a copy of its own, in
@@ -194,26 +183,9 @@
                (CommProofUpload), the address is typed on Investor Information instead. *@
             <div class="doc-app-type__group">
                 <span class="field-label" id="docsMailingLabel">Communication Address</span>
-                <div class="choice-toggle" role="radiogroup" aria-labelledby="docsMailingLabel">
-                    @foreach (var option in mailingOptions)
-                    {
-                        var isDifferent = option.Value == "different";
-                        var isOn = mailDifferent == isDifferent;
-                        var disabled = isDifferent && !mailCanDiffer;
-                        string? title = disabled ? mailSlot.NotApplicable : null;
-
-                        // Without a script this choice posts through Update; when the card can be
-                        // switched in place no post is needed. Going back to "same" with a proof filed
-                        // asks first, because the proof is taken off.
-                        string? submitVia = mailSwitchesInPlace ? null : "docsRefresh";
-                        var asksBeforeDroppingProof = option.Value == "same" && !isOn && mailSlot.Doc is not null;
-                        string? confirm = asksBeforeDroppingProof ? DocumentsViewModel.MailDropAsk : null;
-
-                        <label class="choice-toggle__option" title="@title">
-                            <input class="visually-hidden" type="radio" name="mailing" id="docsMailing-@option.Value" value="@option.Value" checked="@isOn" disabled="@disabled" data-submit="@submitVia" data-confirm="@confirm">@option.Label
-                        </label>
-                    }
-                </div>
+                @* Without a script this choice posts through Update; when the card can be
+                   switched in place no post is needed. *@
+                <partial name="_ChoiceSwitch" model="@(Model.MailingSwitch(Model.Investor, "mailing", "docsMailing-", "docsMailingLabel", mailSwitchesInPlace ? null : "docsRefresh"))" />
                 @if (!Model.CommProofUpload)
                 {
                     <span class="doc-app-type__note" data-show-when="mailing=different" hidden="@(!mailDifferent)">Typed on Investor Information</span>
@@ -267,14 +239,14 @@
                            follows the application type is a separate element from the plain disabled one. *@
                         if (canFetchCkyc)
                         {
-                            <button type="button" class="btn btn-secondary btn-sm doc-ckyc-btn" popovertarget="docsCkycAsk" disabled="@isPhysical" data-enable-when="appType=@DocumentsViewModel.Digital">
+                            <button type="button" class="btn btn-outline-primary doc-ckyc-btn" popovertarget="docsCkycAsk" disabled="@isPhysical" data-enable-when="appType=@DocumentsViewModel.Digital">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5v11"></path><path d="M7.5 10L12 14.5 16.5 10"></path><path d="M4.5 15.5v3a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5v-3"></path></svg>
                                 Fetch from CKYC
                             </button>
                         }
                         else
                         {
-                            <button type="button" class="btn btn-secondary btn-sm doc-ckyc-btn" disabled>
+                            <button type="button" class="btn btn-outline-primary doc-ckyc-btn" disabled>
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5v11"></path><path d="M7.5 10L12 14.5 16.5 10"></path><path d="M4.5 15.5v3a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5v-3"></path></svg>
                                 Fetch from CKYC
                             </button>

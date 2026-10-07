@@ -118,14 +118,69 @@ one of them, with a hint under another.
 The action bar of a journey step has Back at the left, the tertiary action and the
 primary action at the right.
 
-`btn btn-secondary` (white, grey outline) is not on the board. Do not use it on a
-new page; its two uses on Upload Documents go when that page is moved.
+There is no grey button: the board has only these three.
+
+## A choice between two
+
+A choice with two answers (Digital or Physical, Same as Permanent or Different from
+Permanent) is drawn as a switch, the way the FATCA questions are: the first
+option's name, the switch, the second option's name. Off is the first option, on
+the second; the chosen option's name is in ink, the other's muted.
+
+Every switch is the design's toggle (design: Buttons, Icons): grey when off, blue
+when on (`--selected`), a white knob. Red is not used for a switch: on is a
+choice, not the main action and not an error.
+
+The same blue marks the tenure and the interest payout chosen on FD Configuration:
+the tile is outlined in `--selected`, on `--blue-bg`, with its words in `--blue`. Use the shared
+partial `Views/Shared/_ChoiceSwitch.cshtml`. An option that cannot be chosen stays,
+faded, and says why on hover.
 
 ## Icons (design: Icons)
 
 Filled document icons in slate for the dashboard tiles; outlined icons for the step
 rail and the four steps. One family: do not mix in another icon set. An icon is an
 inline `<svg>` that takes its colour from the text (`currentColor`).
+
+An icon that is pressed (View, Upload, Replace over a document card: `doc-tool`)
+has no box of its own. The card under it is the only box; the icon is red when it
+can be pressed, grey with its reason on hover when it cannot, and tinted behind on
+hover. Its padding keeps it 24px to press.
+
+## Boxes
+
+Keep the boxes on a page few. A box (a border or a filled panel) is for three
+things only: the card, something that is typed in or picked, and a notice that
+asks the user to do something. Everything else stands on the card as plain text.
+
+- **What was read or found and cannot be typed over** (`investor-panel`, FD
+  Configuration's `deposit-summary`): no fill, a line down its left.
+- **A summary** (Review Summary, View Application's details:
+  `investor-panel--plain`): the values straight on the card, a rule between holders.
+- **The tenures and the payouts on FD Configuration stay a tile each**
+  (`deposit-options`): the user asked for that design to be kept (8 Oct 2026).
+- **A state or a type** ("Filed", "Manual entry", the proof type): the word in its
+  colour, no box round it.
+- **Why a field stands as it does** (`doc-note`), or what was read (`bank-verified`):
+  hint text, not a notice.
+- **A list of rows** (`doc-checks`): a line between the rows, no frame round them.
+- **A small action beside a card or a value** (`doc-tool`, `doc-copy`): the icon alone.
+- **A status in a list** (`status-word`, from `Tones.Word`): the word in its tone's
+  colour. Not a Bootstrap `badge`.
+- **A list of applications** (`draft-list`): a line between the rows; Cancel is the
+  tertiary button, its word alone.
+- **Pages of a list** (`register-pager`): "Page 2 of 30" between two arrows, not a
+  box for every page.
+- **A section inside a card** (Application Submitted's `submitted-card`): its title
+  over a rule; where to go next is a link with a line under it.
+
+Kept as boxes: the dashboard's tiles (they are on the board), the filters over a
+list, and a notice that warns (the yellow notes, the amber and red banners).
+
+A filter over a list (`register-pill`) is drawn as the tenure and payout tiles are:
+6px corners, the same outline, and when chosen outlined in `--selected` on
+`--blue-bg` with its words in `--blue`. No rounded pill, and no red: red is the
+main action and an error.
 
 ## Colours
 
@@ -146,6 +201,7 @@ Named values on `:root` in `layout-and-controls.css`. Use the name, never the co
 | `--divider`, `--divider-2` | `#EDEFF3`, `#DCDCDC` | Lines between rows and sections |
 | `--green`, `--green-bg`, `--green-border` | `#146C34`, `#E8F5EC`, `#CBE7D5` | Done, verified |
 | `--amber`, `--amber-bg`, `--amber-border`, `--amber-accent` | `#664d03`, `#FFF3CD`, `#F0D98A`, `#E8A700` | Waiting, warning |
+| `--selected` | `#0078D4` | What is chosen or switched on: a switch that is on, the tenure and payout chosen. Read off a photo of the design's toggle: to be confirmed. |
 | `--blue`, `--blue-bg`, `--blue-border` | `#1063A8`, `#E8F1FB`, `#CBDFF3` | Information, focus, the next thing to do |
 | `--pink-bg`, `--pink-tint`, `--pink-border` | `#FDECEF`, `#FFF8F9`, `#F3C9D1` | A selected option; a refused copy |
 
@@ -167,8 +223,9 @@ capsule (999px) for toggles and filter pills. 50% for round badges.
 These were seen on the boards but could not be read from a photo, or were not on
 the boards at all. Nothing was changed for them.
 
-- **Colour values.** The toggle on the Buttons board is blue when on; the app's is
-  red. The second tertiary button is blue. The exact colours are needed.
+- **Colour values.** The toggle is blue when on, as on the Buttons board, but its
+  exact code is not known: `--selected` is the nearest reading of a photo. The
+  second tertiary button is blue too. The design's own colour codes are needed.
 - **Button size and type.** The app's are 36px high, 14px semibold.
 - **Field height.** The app's is 36px.
 - **18px between cards** and **46 / 47px** in the frame are off the 8px block. Kept
@@ -185,13 +242,20 @@ the boards at all. Nothing was changed for them.
 | Layer | Frame | Type roles | Field spacing | Own stylesheet checked |
 |---|---|---|---|---|
 | Shared (header, rail, cards, action bar, fields, facts) | done | done | done | 6 Oct 2026 |
-| Dashboard | done | – | – | to do |
-| Upload Documents | done | shared parts | to do (`doc-payment__grid`) | to do |
-| Investor Information | done | shared parts | done | to do |
-| Bank Details & Payment | done | shared parts | to do | to do |
-| FD Configuration | done | shared parts | to do (`deposit-grid-2`) | to do |
-| Review Summary, Submitted | done | shared parts | – | to do |
-| View Application, Pay-in Slips, Short URL, Admin | done | shared parts | – | to do |
+| Dashboard | done | titles done | – | to do |
+| Upload Documents | done | done | done | to do |
+| Investor Information | done | done | done | to do |
+| Bank Details & Payment | done | done | done | to do |
+| FD Configuration | done | done | done | to do |
+| Review Summary, Submitted | done | done | – | to do |
+| View Application, Pay-in Slips, Short URL, Admin | done | done | done | to do |
+
+On 7 Oct 2026 every page was measured in the running app against the boards, and
+what did not match was fixed: card and section titles, labels, values and questions
+take the `--font-` tokens; fields are `--field-gap` apart; the dashboard's and the
+submitted page's cards are padded `--card-padding`; the grey button is gone.
+Sub-headings of 12 and 14px inside a card (a note's title, a document box's title)
+are not on the boards and are as they were.
 
 "Own stylesheet checked" means every title, label and value in `css/pages/{page}.css`
 takes a `--font-` token, its gaps are on the 8px block, and its entries are gone

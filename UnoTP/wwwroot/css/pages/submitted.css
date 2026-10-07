@@ -6,7 +6,7 @@
 .submitted-page {
   background: #fff;
   border-radius: 8px;
-  padding: 24px 20px;
+  padding: var(--card-padding);
   display: grid;
   grid-template-columns: minmax(0,.85fr) minmax(0,1fr);
   gap: 28px;
@@ -37,9 +37,7 @@
 }
 .submitted-title {
   margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-  line-height: 24px;
+  font: var(--font-title);
   color: var(--ink);
 }
 .submitted-meta {
@@ -73,10 +71,6 @@
   font-size: 12px;
   font-weight: 700;
   color: var(--amber);
-  background: var(--amber-bg);
-  border: 1px solid var(--amber-border);
-  border-radius: 3px;
-  padding: 2px 8px;
   white-space: nowrap;
 }
 .submitted-pending__text {
@@ -87,23 +81,15 @@
 .submitted-pending__text strong {
   font-weight: 700;
 }
-.submitted-box {
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  overflow: hidden;
-}
+/* What happens next: a label and its steps, a line between one step and the next. */
 .submitted-box__label {
-  background: var(--tint);
-  border-bottom: 1px solid var(--divider);
-  padding: 8px 12px;
-  font-size: 12px;
-  font-weight: 600;
+  font: var(--font-label);
   color: var(--muted);
 }
 .submitted-steps {
   list-style: none;
   margin: 0;
-  padding: 0 12px;
+  padding: 0;
 }
 .submitted-step {
   display: flex;
@@ -173,14 +159,10 @@
   line-height: 16px;
   margin-top: -4px;
 }
-.submitted-card {
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  overflow: hidden;
-  background: #fff;
-}
+/* A section of the page: its title over a rule, no box round it. */
 .submitted-card--padded {
-  padding: 16px 16px 16px;
+  padding-top: 20px;
+  border-top: 1px solid var(--divider);
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -189,55 +171,42 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  background: var(--tint);
   border-bottom: 1px solid var(--divider);
-  padding: 12px 16px;
+  padding-bottom: 12px;
 }
 .submitted-card__title {
   flex: 1;
   min-width: 0;
   margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-  line-height: 24px;
+  font: var(--font-title);
   color: var(--ink);
 }
 .submitted-key-value-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0,1fr));
   gap: 24px 20px;
-  padding: 16px 16px 20px;
+  padding: 16px 0 20px;
 }
 .submitted-key-value__key {
-  font-size: 12px;
-  font-weight: 500;
+  font: var(--font-label);
   color: var(--muted);
 }
 .submitted-key-value__value {
-  font-size: 14px;
-  font-weight: 500;
+  font: var(--font-value);
   color: var(--ink);
-  padding-top: 6px;
-  line-height: 20px;
-}
-.submitted-key-value__value--lg {
-  font-size: 16px;
-  font-weight: 600;
-  line-height: 24px;
 }
 .submitted-key-value__value--green {
   color: var(--green);
 }
 .submitted-holders {
   border-top: 1px solid var(--divider);
-  padding: 16px 16px 16px;
+  padding: 16px 0 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 .submitted-holders__label {
-  font-size: 12px;
-  font-weight: 600;
+  font: var(--font-label);
   color: var(--muted);
 }
 .submitted-holders__names {
@@ -255,24 +224,25 @@
   grid-template-columns: repeat(3, minmax(0,1fr));
   gap: 12px;
 }
+/* Where to go next: a link with a line under it saying what it is, no box. */
 .submitted-tile {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 12px 12px 16px;
-  min-height: 96px;
-  border: 1px solid var(--border-3);
-  border-radius: 6px;
+  gap: 4px;
   color: var(--ink);
 }
 .submitted-tile:hover {
-  border-color: var(--text);
   text-decoration: none;
 }
 .submitted-tile__title {
   font-size: 14px;
   font-weight: 600;
   line-height: 20px;
+  color: var(--red);
+}
+.submitted-tile:hover .submitted-tile__title {
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 .submitted-tile__text {
   font-size: 12px;
@@ -341,8 +311,5 @@
   }
   .submitted-tiles {
     grid-template-columns: 1fr;
-  }
-  .submitted-tile {
-    min-height: 0;
   }
 }

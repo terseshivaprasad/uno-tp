@@ -33,6 +33,11 @@
   --amber-tint: #FFFBF0;
   --amber-border: #F0D98A;
   --amber-accent: #E8A700;
+  /* What is chosen or switched on: the blue of the design's toggle (its Buttons
+     and Icons boards). A switch that is on is filled with it; a chosen tenure or
+     interest payout is outlined in it. The value was read off a photo of the board,
+     so it is the nearest reading until the design's own code is given. */
+  --selected: #0078D4;
   /* The page frame, as the design's Spacing board draws it. Every page takes
      these from here: change a number once and the header, the rail, the cards and
      the action bar all follow. docs/BRAND_GUIDELINES.md says what each one is. */
@@ -495,6 +500,16 @@ select.investor-control:has(option[value=""]:checked) {
   margin: 0;
   font: var(--font-title);
   color: var(--ink);
+}
+/* On a phone the title keeps a line to itself when what follows it (Clear All, the
+   application number) leaves it no room; they wrap under it. */
+@media (max-width: 560px) {
+  .page-head {
+    flex-wrap: wrap;
+  }
+  .page-title {
+    flex: 1 0 auto;
+  }
 }
 .page-note {
   margin: 16px 0 0;
@@ -1025,6 +1040,7 @@ body.is-waiting {
 }
 .register-table__actions {
   text-align: right;
+  white-space: nowrap;
 }
 .register-table tbody tr:hover td {
   background: var(--tint);
@@ -1301,10 +1317,7 @@ body.is-waiting {
   list-style: none;
   margin: 0;
   padding: 0;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--card-bg);
-  overflow: hidden;
+  border-top: 1px solid var(--divider);
 }
 .draft-list > li + li {
   border-top: 1px solid var(--divider);
@@ -1324,11 +1337,12 @@ body.is-waiting {
 .draft-cancel {
   display: flex;
   align-items: center;
-  padding: 0 16px 0 0;
 }
+/* Cancel is the tertiary button: its word alone, tinted behind on hover. */
 .draft-cancel__button {
-  padding: 6px 12px;
-  border: 1px solid var(--border-3);
+  padding: 6px 8px;
+  margin-right: -8px;
+  border: 0;
   border-radius: 6px;
   background: none;
   font: inherit;
@@ -1347,7 +1361,7 @@ body.is-waiting {
   align-items: center;
   column-gap: 16px;
   width: 100%;
-  padding: 16px 20px;
+  padding: 16px 0;
   border: 0;
   background: none;
   color: inherit;
@@ -1356,8 +1370,10 @@ body.is-waiting {
   cursor: pointer;
   transition: background-color .15s ease;
 }
+/* The tint runs a little past the row's start, so the avatar does not touch its edge. */
 .draft:hover {
   background: var(--tint);
+  box-shadow: -12px 0 0 var(--tint);
 }
 .draft:hover .draft__go {
   color: var(--red);
@@ -1508,7 +1524,7 @@ body.is-waiting {
   .draft {
     grid-template-columns: 40px minmax(0, 1fr) auto 16px;
     row-gap: 12px;
-    padding: 12px 16px;
+    padding: 12px 0;
   }
   .draft__avatar {
     grid-row: 1;
