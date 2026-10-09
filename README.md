@@ -7,8 +7,8 @@ Open `index.html` in a browser to go through them step by step. Previous and
 Next, or the arrow keys, move between steps; the switch at the top changes
 between the desktop and the mobile picture of the same step.
 
-The pictures were taken on 8 October 2026 from the app running locally on a
-development database with test data, at commit 9b4e82e of main. This branch holds only the pictures and the viewer: no app code.
+The pictures were taken on 9 October 2026 from the app running locally on a
+development database with test data, at commit 059fb73 of main. This branch holds only the pictures and the viewer: no app code.
 
 ## On Render
 

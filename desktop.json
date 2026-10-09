@@ -45,7 +45,7 @@
     "file": "06-upload-opened.png",
     "group": "Upload Documents - fresh investor",
     "note": "Upload Documents as a new application opens",
-    "at": "/UploadInvestorDocuments/DEVBB26F10371"
+    "at": "/UploadInvestorDocuments/DEVBB26F10403"
   },
   {
     "step": 7,
@@ -53,7 +53,7 @@
     "file": "07-upload-proceed-nothing-filed.png",
     "group": "Upload Documents - fresh investor",
     "note": "Proceed with nothing filed: what is missing",
-    "at": "/UploadInvestorDocuments/DEVBB26F10371"
+    "at": "/UploadInvestorDocuments/DEVBB26F10403"
   },
   {
     "step": 8,
@@ -61,7 +61,7 @@
     "file": "08-upload-pan-verified.png",
     "group": "Upload Documents - fresh investor",
     "note": "PAN copy filed: read by OCR and verified with NSDL",
-    "at": "/UploadInvestorDocuments/DEVBB26F10371"
+    "at": "/UploadInvestorDocuments/DEVBB26F10403"
   },
   {
     "step": 9,
@@ -69,7 +69,7 @@
     "file": "09-upload-poa-passport.png",
     "group": "Upload Documents - fresh investor",
     "note": "Proof of address filed: a passport, address read off it",
-    "at": "/UploadInvestorDocuments/DEVBB26F10371"
+    "at": "/UploadInvestorDocuments/DEVBB26F10403"
   },
   {
     "step": 10,
@@ -77,7 +77,7 @@
     "file": "10-upload-photo.png",
     "group": "Upload Documents - fresh investor",
     "note": "Photograph filed",
-    "at": "/UploadInvestorDocuments/DEVBB26F10371"
+    "at": "/UploadInvestorDocuments/DEVBB26F10403"
   },
   {
     "step": 11,
@@ -85,7 +85,7 @@
     "file": "11-upload-application-form.png",
     "group": "Upload Documents - fresh investor",
     "note": "A physical application, as a new one starts: the signed application form filed",
-    "at": "/UploadInvestorDocuments/DEVBB26F10371"
+    "at": "/UploadInvestorDocuments/DEVBB26F10403"
   },
   {
     "step": 12,
@@ -93,7 +93,7 @@
     "file": "12-upload-payment-cheque.png",
     "group": "Upload Documents - fresh investor",
     "note": "Payment mode Cheque, with the cheque copy",
-    "at": "/UploadInvestorDocuments/DEVBB26F10371"
+    "at": "/UploadInvestorDocuments/DEVBB26F10403"
   },
   {
     "step": 13,
@@ -101,7 +101,7 @@
     "file": "13-upload-sourcing-and-category.png",
     "group": "Upload Documents - fresh investor",
     "note": "Sourcing chosen and the form number typed; the category is set by the app",
-    "at": "/UploadInvestorDocuments/DEVBB26F10371"
+    "at": "/UploadInvestorDocuments/DEVBB26F10403"
   },
   {
     "step": 14,
@@ -109,7 +109,7 @@
     "file": "14-upload-complete.png",
     "group": "Upload Documents - fresh investor",
     "note": "Upload Documents with everything on it",
-    "at": "/UploadInvestorDocuments/DEVBB26F10371"
+    "at": "/UploadInvestorDocuments/DEVBB26F10403"
   },
   {
     "step": 15,
@@ -117,7 +117,7 @@
     "file": "15-upload-nsdl-name-differs.png",
     "group": "Upload Documents - cases",
     "note": "NSDL holds the PAN and date of birth under another name: the name is typed",
-    "at": "/UploadInvestorDocuments/DEVBB26F10372"
+    "at": "/UploadInvestorDocuments/DEVBB26F10404"
   },
   {
     "step": 16,
@@ -125,7 +125,7 @@
     "file": "16-upload-nsdl-failed.png",
     "group": "Upload Documents - cases",
     "note": "NSDL does not hold the PAN and date of birth: upload again",
-    "at": "/UploadInvestorDocuments/DEVBB26F10373"
+    "at": "/UploadInvestorDocuments/DEVBB26F10405"
   },
   {
     "step": 17,
@@ -133,7 +133,7 @@
     "file": "17-upload-nsdl-not-answering.png",
     "group": "Upload Documents - cases",
     "note": "NSDL not answering",
-    "at": "/UploadInvestorDocuments/DEVBB26F10374"
+    "at": "/UploadInvestorDocuments/DEVBB26F10406"
   },
   {
     "step": 18,
@@ -141,7 +141,7 @@
     "file": "18-upload-aadhaar-last-four.png",
     "group": "Upload Documents - cases",
     "note": "Aadhaar as proof of address: last 4 digits read, the first 8 are typed",
-    "at": "/UploadInvestorDocuments/DEVBB26F10375"
+    "at": "/UploadInvestorDocuments/DEVBB26F10407"
   },
   {
     "step": 19,
@@ -149,7 +149,7 @@
     "file": "19-upload-aadhaar-number-entered.png",
     "group": "Upload Documents - cases",
     "note": "Aadhaar number completed: PAN-Aadhaar link checked",
-    "at": "/UploadInvestorDocuments/DEVBB26F10375"
+    "at": "/UploadInvestorDocuments/DEVBB26F10407"
   },
   {
     "step": 20,
@@ -157,7 +157,7 @@
     "file": "20-upload-aadhaar-masking-failed.png",
     "group": "Upload Documents - cases",
     "note": "Aadhaar masking failed: nothing is filed",
-    "at": "/UploadInvestorDocuments/DEVBB26F10376"
+    "at": "/UploadInvestorDocuments/DEVBB26F10408"
   },
   {
     "step": 21,
@@ -165,7 +165,7 @@
     "file": "21-upload-fetch-from-ckyc.png",
     "group": "Upload Documents - cases",
     "note": "Fetch from CKYC: the question before it is fetched",
-    "at": "/UploadInvestorDocuments/DEVBB26F10377"
+    "at": "/UploadInvestorDocuments/DEVBB26F10409"
   },
   {
     "step": 22,
@@ -173,7 +173,7 @@
     "file": "22-upload-folio-holder.png",
     "group": "Folio holder",
     "note": "Upload Documents for a holder on a folio: documents on record are not asked again",
-    "at": "/UploadInvestorDocuments/DEVBB26F10378"
+    "at": "/UploadInvestorDocuments/DEVBB26F10410"
   },
   {
     "step": 23,
@@ -181,7 +181,7 @@
     "file": "23-investor-folio-holder.png",
     "group": "Folio holder",
     "note": "Investor Information for a holder on a folio: details from the record",
-    "at": "/InvestorInformation/DEVBB26F10378"
+    "at": "/InvestorInformation/DEVBB26F10410"
   },
   {
     "step": 24,
@@ -189,15 +189,15 @@
     "file": "24-investor-opened.png",
     "group": "Investor Information",
     "note": "Investor Information as it opens for a new investor",
-    "at": "/InvestorInformation/DEVBB26F10371"
+    "at": "/InvestorInformation/DEVBB26F10403"
   },
   {
     "step": 25,
     "name": "investor-proceed-nothing-entered",
     "file": "25-investor-proceed-nothing-entered.png",
     "group": "Investor Information",
-    "note": "Proceed with nothing entered: each field says what it needs",
-    "at": "/InvestorInformation/DEVBB26F10371"
+    "note": "Proceed with nothing entered, the nominee question skipped: each field says what it needs",
+    "at": "/InvestorInformation/DEVBB26F10403"
   },
   {
     "step": 26,
@@ -205,7 +205,7 @@
     "file": "26-investor-filled.png",
     "group": "Investor Information",
     "note": "Investor Information filled in",
-    "at": "/InvestorInformation/DEVBB26F10371"
+    "at": "/InvestorInformation/DEVBB26F10403"
   },
   {
     "step": 27,
@@ -213,7 +213,7 @@
     "file": "27-investor-nominee-question.png",
     "group": "Investor Information",
     "note": "Proceed with no nominee: the question before going on",
-    "at": "/InvestorInformation/DEVBB26F10371"
+    "at": "/InvestorInformation/DEVBB26F10403"
   },
   {
     "step": 28,
@@ -229,7 +229,7 @@
     "file": "29-bank-opened.png",
     "group": "Bank Details & Payment",
     "note": "Bank Details & Payment as it opens (payment by cheque)",
-    "at": "/BankDetails/DEVBB26F10371"
+    "at": "/BankDetails/DEVBB26F10403"
   },
   {
     "step": 30,
@@ -237,7 +237,7 @@
     "file": "30-bank-proceed-nothing-entered.png",
     "group": "Bank Details & Payment",
     "note": "Proceed with no bank chosen",
-    "at": "/BankDetails/DEVBB26F10371"
+    "at": "/BankDetails/DEVBB26F10403"
   },
   {
     "step": 31,
@@ -245,7 +245,7 @@
     "file": "31-bank-search-as-typed.png",
     "group": "Bank Details & Payment",
     "note": "Bank search as it is typed",
-    "at": "/BankDetails/DEVBB26F10371"
+    "at": "/BankDetails/DEVBB26F10403"
   },
   {
     "step": 32,
@@ -253,7 +253,7 @@
     "file": "32-bank-filled.png",
     "group": "Bank Details & Payment",
     "note": "Payment and repayment accounts and the cheque details filled in",
-    "at": "/BankDetails/DEVBB26F10371"
+    "at": "/BankDetails/DEVBB26F10403"
   },
   {
     "step": 33,
@@ -261,7 +261,7 @@
     "file": "33-deposit-opened.png",
     "group": "FD Configuration",
     "note": "FD Configuration as it opens",
-    "at": "/FDConfiguration/DEVBB26F10371"
+    "at": "/FDConfiguration/DEVBB26F10403"
   },
   {
     "step": 34,
@@ -269,7 +269,7 @@
     "file": "34-deposit-proceed-no-amount.png",
     "group": "FD Configuration",
     "note": "Proceed with no amount",
-    "at": "/FDConfiguration/DEVBB26F10371"
+    "at": "/FDConfiguration/DEVBB26F10403"
   },
   {
     "step": 35,
@@ -277,7 +277,7 @@
     "file": "35-deposit-quote.png",
     "group": "FD Configuration",
     "note": "An amount entered: the rate and the quote",
-    "at": "/FDConfiguration/DEVBB26F10371"
+    "at": "/FDConfiguration/DEVBB26F10403"
   },
   {
     "step": 36,
@@ -285,7 +285,7 @@
     "file": "36-deposit-source-of-funds-asked.png",
     "group": "FD Configuration",
     "note": "Deposits with us pass 1 crore and income is up to 5 lakh: source of funds asked",
-    "at": "/FDConfiguration/DEVBB26F10371"
+    "at": "/FDConfiguration/DEVBB26F10403"
   },
   {
     "step": 37,
@@ -293,7 +293,7 @@
     "file": "37-review-ready.png",
     "group": "Review Summary",
     "note": "Review Summary: nothing missing",
-    "at": "/ReviewSummary/DEVBB26F10371"
+    "at": "/ReviewSummary/DEVBB26F10403"
   },
   {
     "step": 38,
@@ -301,7 +301,7 @@
     "file": "38-review-things-missing-folio.png",
     "group": "Review Summary",
     "note": "Review Summary with things still missing, by step",
-    "at": "/ReviewSummary/DEVBB26F10378"
+    "at": "/ReviewSummary/DEVBB26F10410"
   },
   {
     "step": 39,
