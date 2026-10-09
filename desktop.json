@@ -572,7 +572,7 @@
     "name": "dms-completed-applications",
     "file": "72-dms-completed-applications.png",
     "group": "DMS Explorer",
-    "note": "View documents: the completed applications (status APR), newest first",
+    "note": "View documents: the completed applications (status APR), newest first, eight to a page",
     "at": "/Apps/DmsExplorer"
   },
   {
@@ -629,7 +629,7 @@
     "file": "79-dms-not-completed.png",
     "group": "DMS Explorer",
     "note": "A draft looked up by its number: only a completed application is shown",
-    "at": "/Apps/DmsExplorer?no=DEVBB26F10493"
+    "at": "/Apps/DmsExplorer?no=FBBMFL26F10001"
   },
   {
     "step": 80,
