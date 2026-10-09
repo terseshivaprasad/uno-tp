@@ -1,7 +1,7 @@
 # Uno TP screens
 
 Every page of Uno TP and each case on it, as full-page screenshots in desktop
-(1366 wide) and mobile (390 wide) view: 54 steps, 108 pictures.
+(1366 wide) and mobile (390 wide) view: 64 steps, 128 pictures.
 
 Open `index.html` in a browser to go through them step by step. Previous and
 Next, or the arrow keys, move between steps; the switch at the top changes

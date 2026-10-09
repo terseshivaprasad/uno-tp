@@ -45,7 +45,7 @@
     "file": "06-upload-opened.png",
     "group": "Upload Documents - fresh investor",
     "note": "Upload Documents as a new application opens",
-    "at": "/UploadInvestorDocuments/DEVBB26F10411"
+    "at": "/UploadInvestorDocuments/DEVBB26F10478"
   },
   {
     "step": 7,
@@ -53,7 +53,7 @@
     "file": "07-upload-proceed-nothing-filed.png",
     "group": "Upload Documents - fresh investor",
     "note": "Proceed with nothing filed: what is missing",
-    "at": "/UploadInvestorDocuments/DEVBB26F10411"
+    "at": "/UploadInvestorDocuments/DEVBB26F10478"
   },
   {
     "step": 8,
@@ -61,7 +61,7 @@
     "file": "08-upload-pan-verified.png",
     "group": "Upload Documents - fresh investor",
     "note": "PAN copy filed: read by OCR and verified with NSDL",
-    "at": "/UploadInvestorDocuments/DEVBB26F10411"
+    "at": "/UploadInvestorDocuments/DEVBB26F10478"
   },
   {
     "step": 9,
@@ -69,7 +69,7 @@
     "file": "09-upload-poa-passport.png",
     "group": "Upload Documents - fresh investor",
     "note": "Proof of address filed: a passport, address read off it",
-    "at": "/UploadInvestorDocuments/DEVBB26F10411"
+    "at": "/UploadInvestorDocuments/DEVBB26F10478"
   },
   {
     "step": 10,
@@ -77,7 +77,7 @@
     "file": "10-upload-photo.png",
     "group": "Upload Documents - fresh investor",
     "note": "Photograph filed",
-    "at": "/UploadInvestorDocuments/DEVBB26F10411"
+    "at": "/UploadInvestorDocuments/DEVBB26F10478"
   },
   {
     "step": 11,
@@ -85,7 +85,7 @@
     "file": "11-upload-application-form.png",
     "group": "Upload Documents - fresh investor",
     "note": "A physical application, as a new one starts: the signed application form filed",
-    "at": "/UploadInvestorDocuments/DEVBB26F10411"
+    "at": "/UploadInvestorDocuments/DEVBB26F10478"
   },
   {
     "step": 12,
@@ -93,7 +93,7 @@
     "file": "12-upload-payment-cheque.png",
     "group": "Upload Documents - fresh investor",
     "note": "Payment mode Cheque, with the cheque copy",
-    "at": "/UploadInvestorDocuments/DEVBB26F10411"
+    "at": "/UploadInvestorDocuments/DEVBB26F10478"
   },
   {
     "step": 13,
@@ -101,7 +101,7 @@
     "file": "13-upload-sourcing-and-category.png",
     "group": "Upload Documents - fresh investor",
     "note": "Sourcing chosen and the form number typed; the category is set by the app",
-    "at": "/UploadInvestorDocuments/DEVBB26F10411"
+    "at": "/UploadInvestorDocuments/DEVBB26F10478"
   },
   {
     "step": 14,
@@ -109,7 +109,7 @@
     "file": "14-upload-complete.png",
     "group": "Upload Documents - fresh investor",
     "note": "Upload Documents with everything on it",
-    "at": "/UploadInvestorDocuments/DEVBB26F10411"
+    "at": "/UploadInvestorDocuments/DEVBB26F10478"
   },
   {
     "step": 15,
@@ -117,7 +117,7 @@
     "file": "15-upload-nsdl-name-differs.png",
     "group": "Upload Documents - cases",
     "note": "NSDL holds the PAN and date of birth under another name: the name is typed",
-    "at": "/UploadInvestorDocuments/DEVBB26F10412"
+    "at": "/UploadInvestorDocuments/DEVBB26F10479"
   },
   {
     "step": 16,
@@ -125,7 +125,7 @@
     "file": "16-upload-nsdl-failed.png",
     "group": "Upload Documents - cases",
     "note": "NSDL does not hold the PAN and date of birth: upload again",
-    "at": "/UploadInvestorDocuments/DEVBB26F10413"
+    "at": "/UploadInvestorDocuments/DEVBB26F10480"
   },
   {
     "step": 17,
@@ -133,7 +133,7 @@
     "file": "17-upload-nsdl-not-answering.png",
     "group": "Upload Documents - cases",
     "note": "NSDL not answering",
-    "at": "/UploadInvestorDocuments/DEVBB26F10414"
+    "at": "/UploadInvestorDocuments/DEVBB26F10481"
   },
   {
     "step": 18,
@@ -141,7 +141,7 @@
     "file": "18-upload-aadhaar-last-four.png",
     "group": "Upload Documents - cases",
     "note": "Aadhaar as proof of address: last 4 digits read, the first 8 are typed",
-    "at": "/UploadInvestorDocuments/DEVBB26F10415"
+    "at": "/UploadInvestorDocuments/DEVBB26F10482"
   },
   {
     "step": 19,
@@ -149,7 +149,7 @@
     "file": "19-upload-aadhaar-number-entered.png",
     "group": "Upload Documents - cases",
     "note": "Aadhaar number completed: PAN-Aadhaar link checked",
-    "at": "/UploadInvestorDocuments/DEVBB26F10415"
+    "at": "/UploadInvestorDocuments/DEVBB26F10482"
   },
   {
     "step": 20,
@@ -157,7 +157,7 @@
     "file": "20-upload-aadhaar-masking-failed.png",
     "group": "Upload Documents - cases",
     "note": "Aadhaar masking failed: nothing is filed",
-    "at": "/UploadInvestorDocuments/DEVBB26F10416"
+    "at": "/UploadInvestorDocuments/DEVBB26F10483"
   },
   {
     "step": 21,
@@ -165,7 +165,7 @@
     "file": "21-upload-fetch-from-ckyc.png",
     "group": "Upload Documents - cases",
     "note": "Fetch from CKYC: the question before it is fetched",
-    "at": "/UploadInvestorDocuments/DEVBB26F10417"
+    "at": "/UploadInvestorDocuments/DEVBB26F10484"
   },
   {
     "step": 22,
@@ -173,7 +173,7 @@
     "file": "22-upload-folio-holder.png",
     "group": "Folio holder",
     "note": "Upload Documents for a holder on a folio: documents on record are not asked again",
-    "at": "/UploadInvestorDocuments/DEVBB26F10418"
+    "at": "/UploadInvestorDocuments/DEVBB26F10485"
   },
   {
     "step": 23,
@@ -181,7 +181,7 @@
     "file": "23-investor-folio-holder.png",
     "group": "Folio holder",
     "note": "Investor Information for a holder on a folio: details from the record",
-    "at": "/InvestorInformation/DEVBB26F10418"
+    "at": "/InvestorInformation/DEVBB26F10485"
   },
   {
     "step": 24,
@@ -189,7 +189,7 @@
     "file": "24-investor-opened.png",
     "group": "Investor Information",
     "note": "Investor Information as it opens for a new investor",
-    "at": "/InvestorInformation/DEVBB26F10411"
+    "at": "/InvestorInformation/DEVBB26F10478"
   },
   {
     "step": 25,
@@ -197,7 +197,7 @@
     "file": "25-investor-proceed-nothing-entered.png",
     "group": "Investor Information",
     "note": "Proceed with nothing entered, the nominee question skipped: each field says what it needs",
-    "at": "/InvestorInformation/DEVBB26F10411"
+    "at": "/InvestorInformation/DEVBB26F10478"
   },
   {
     "step": 26,
@@ -205,7 +205,7 @@
     "file": "26-investor-filled.png",
     "group": "Investor Information",
     "note": "Investor Information filled in",
-    "at": "/InvestorInformation/DEVBB26F10411"
+    "at": "/InvestorInformation/DEVBB26F10478"
   },
   {
     "step": 27,
@@ -213,7 +213,7 @@
     "file": "27-investor-nominee-question.png",
     "group": "Investor Information",
     "note": "Proceed with no nominee: the question before going on",
-    "at": "/InvestorInformation/DEVBB26F10411"
+    "at": "/InvestorInformation/DEVBB26F10478"
   },
   {
     "step": 28,
@@ -229,7 +229,7 @@
     "file": "29-bank-opened.png",
     "group": "Bank Details & Payment",
     "note": "Bank Details & Payment as it opens (payment by cheque)",
-    "at": "/BankDetails/DEVBB26F10411"
+    "at": "/BankDetails/DEVBB26F10478"
   },
   {
     "step": 30,
@@ -237,7 +237,7 @@
     "file": "30-bank-proceed-nothing-entered.png",
     "group": "Bank Details & Payment",
     "note": "Proceed with no bank chosen",
-    "at": "/BankDetails/DEVBB26F10411"
+    "at": "/BankDetails/DEVBB26F10478"
   },
   {
     "step": 31,
@@ -245,7 +245,7 @@
     "file": "31-bank-search-as-typed.png",
     "group": "Bank Details & Payment",
     "note": "Bank search as it is typed",
-    "at": "/BankDetails/DEVBB26F10411"
+    "at": "/BankDetails/DEVBB26F10478"
   },
   {
     "step": 32,
@@ -253,7 +253,7 @@
     "file": "32-bank-filled.png",
     "group": "Bank Details & Payment",
     "note": "Payment and repayment accounts and the cheque details filled in",
-    "at": "/BankDetails/DEVBB26F10411"
+    "at": "/BankDetails/DEVBB26F10478"
   },
   {
     "step": 33,
@@ -261,7 +261,7 @@
     "file": "33-deposit-opened.png",
     "group": "FD Configuration",
     "note": "FD Configuration as it opens",
-    "at": "/FDConfiguration/DEVBB26F10411"
+    "at": "/FDConfiguration/DEVBB26F10478"
   },
   {
     "step": 34,
@@ -269,7 +269,7 @@
     "file": "34-deposit-proceed-no-amount.png",
     "group": "FD Configuration",
     "note": "Proceed with no amount",
-    "at": "/FDConfiguration/DEVBB26F10411"
+    "at": "/FDConfiguration/DEVBB26F10478"
   },
   {
     "step": 35,
@@ -277,7 +277,7 @@
     "file": "35-deposit-quote.png",
     "group": "FD Configuration",
     "note": "An amount entered: the rate and the quote",
-    "at": "/FDConfiguration/DEVBB26F10411"
+    "at": "/FDConfiguration/DEVBB26F10478"
   },
   {
     "step": 36,
@@ -285,7 +285,7 @@
     "file": "36-deposit-source-of-funds-asked.png",
     "group": "FD Configuration",
     "note": "Deposits with us pass 1 crore and income is up to 5 lakh: source of funds asked",
-    "at": "/FDConfiguration/DEVBB26F10411"
+    "at": "/FDConfiguration/DEVBB26F10478"
   },
   {
     "step": 37,
@@ -293,7 +293,7 @@
     "file": "37-review-ready.png",
     "group": "Review Summary",
     "note": "Review Summary: nothing missing",
-    "at": "/ReviewSummary/DEVBB26F10411"
+    "at": "/ReviewSummary/DEVBB26F10478"
   },
   {
     "step": 38,
@@ -301,7 +301,7 @@
     "file": "38-review-things-missing-folio.png",
     "group": "Review Summary",
     "note": "Review Summary with things still missing, by step",
-    "at": "/ReviewSummary/DEVBB26F10418"
+    "at": "/ReviewSummary/DEVBB26F10485"
   },
   {
     "step": 39,
@@ -337,96 +337,176 @@
   },
   {
     "step": 43,
+    "name": "renew-search-opened",
+    "file": "43-renew-search-opened.png",
+    "group": "Renew FD",
+    "note": "Renew FD opens Investor Identification, where the investor is searched (switched off in settings; shown with its switch on)",
+    "at": "/SearchInvestor"
+  },
+  {
+    "step": 44,
+    "name": "renew-search-by-folio",
+    "file": "44-renew-search-by-folio.png",
+    "group": "Renew FD",
+    "note": "The investor searched by folio number",
+    "at": "/SearchInvestor"
+  },
+  {
+    "step": 45,
+    "name": "renew-deposits-listed",
+    "file": "45-renew-deposits-listed.png",
+    "group": "Renew FD",
+    "note": "After the search: the investor's record, and under it their deposits, each with where it stands. Renew is on the one that is due",
+    "at": "/SearchInvestor"
+  },
+  {
+    "step": 46,
+    "name": "renew-notes-opened",
+    "file": "46-renew-notes-opened.png",
+    "group": "Renew FD",
+    "note": "The deposits, with the renewal notes opened",
+    "at": "/SearchInvestor"
+  },
+  {
+    "step": 47,
+    "name": "renew-upload-opened",
+    "file": "47-renew-upload-opened.png",
+    "group": "Renew FD",
+    "note": "Renew pressed: the renewal opens at Upload Documents, naming the deposit it renews. No payment: the maturing deposit pays for the new one",
+    "at": "/UploadInvestorDocuments/DEVBR26F10486"
+  },
+  {
+    "step": 48,
+    "name": "renew-investor",
+    "file": "48-renew-investor.png",
+    "group": "Renew FD",
+    "note": "Investor Information of the renewal: the holder from the folio record",
+    "at": "/InvestorInformation/DEVBR26F10486"
+  },
+  {
+    "step": 49,
+    "name": "renew-bank",
+    "file": "49-renew-bank.png",
+    "group": "Renew FD",
+    "note": "Bank Details of the renewal: only the repayment account, filled in from the deposit being renewed",
+    "at": "/BankDetails/DEVBR26F10486"
+  },
+  {
+    "step": 50,
+    "name": "renew-deposit",
+    "file": "50-renew-deposit.png",
+    "group": "Renew FD",
+    "note": "FD Configuration of the renewal: the amount is the maturity amount of the deposit, with Renewal for",
+    "at": "/FDConfiguration/DEVBR26F10486"
+  },
+  {
+    "step": 51,
+    "name": "renew-review",
+    "file": "51-renew-review.png",
+    "group": "Renew FD",
+    "note": "Review Summary of the renewal, with what is still missing",
+    "at": "/ReviewSummary/DEVBR26F10486"
+  },
+  {
+    "step": 52,
+    "name": "renew-in-progress",
+    "file": "52-renew-in-progress.png",
+    "group": "Renew FD",
+    "note": "Back on Investor Identification: the deposit now says Renewal in progress, with Continue and Cancel request",
+    "at": "/SearchInvestor"
+  },
+  {
+    "step": 53,
+    "name": "renew-cancelled",
+    "file": "53-renew-cancelled.png",
+    "group": "Renew FD",
+    "note": "Cancel request, once confirmed: the renewal is cancelled and the deposit is due for renewal again",
+    "at": "/SearchInvestor"
+  },
+  {
+    "step": 54,
     "name": "view-application-list",
-    "file": "43-view-application-list.png",
+    "file": "54-view-application-list.png",
     "group": "Lists",
     "note": "View Application: the list (switched off in settings; shown with its switch on)",
     "at": "/ViewApplication"
   },
   {
-    "step": 44,
+    "step": 55,
     "name": "view-application-by-number",
-    "file": "44-view-application-by-number.png",
+    "file": "55-view-application-by-number.png",
     "group": "Lists",
     "note": "View Application: found by application number",
     "at": "/ViewApplication"
   },
   {
-    "step": 45,
+    "step": 56,
     "name": "view-application-details",
-    "file": "45-view-application-details.png",
+    "file": "56-view-application-details.png",
     "group": "Lists",
     "note": "View Application: the details sheet",
     "at": "/ViewApplication"
   },
   {
-    "step": 46,
+    "step": 57,
     "name": "pay-in-slips",
-    "file": "46-pay-in-slips.png",
+    "file": "57-pay-in-slips.png",
     "group": "Lists",
     "note": "PIS Generation - Axis (switched off in settings; shown with its switch on)",
     "at": "/PayInSlip"
   },
   {
-    "step": 47,
+    "step": 58,
     "name": "short-url",
-    "file": "47-short-url.png",
+    "file": "58-short-url.png",
     "group": "Lists",
     "note": "Short URL (switched off in settings; shown with its switch on)",
     "at": "/ShortUrl"
   },
   {
-    "step": 48,
-    "name": "renew-fd",
-    "file": "48-renew-fd.png",
-    "group": "Lists",
-    "note": "Renew FD opens Investor Identification, where a holder's deposits are listed (switched off in settings; shown with its switch on)",
-    "at": "/SearchInvestor"
-  },
-  {
-    "step": 49,
+    "step": 59,
     "name": "console-admin",
-    "file": "49-console-admin.png",
+    "file": "59-console-admin.png",
     "group": "Lists",
     "note": "Console Admin (switched off in settings; shown with its switch on)",
     "at": "/Admin"
   },
   {
-    "step": 50,
+    "step": 60,
     "name": "session-expired",
-    "file": "50-session-expired.png",
+    "file": "60-session-expired.png",
     "group": "Other pages",
     "note": "Session expired",
     "at": "/Home/SessionExpired"
   },
   {
-    "step": 51,
+    "step": 61,
     "name": "unauthorized",
-    "file": "51-unauthorized.png",
+    "file": "61-unauthorized.png",
     "group": "Other pages",
     "note": "Not authorised",
     "at": "/Home/Unauthorized"
   },
   {
-    "step": 52,
+    "step": 62,
     "name": "too-many-requests",
-    "file": "52-too-many-requests.png",
+    "file": "62-too-many-requests.png",
     "group": "Other pages",
     "note": "Too many requests",
     "at": "/Home/TooManyRequests"
   },
   {
-    "step": 53,
+    "step": 63,
     "name": "error",
-    "file": "53-error.png",
+    "file": "63-error.png",
     "group": "Other pages",
     "note": "Something went wrong",
     "at": "/Home/Error"
   },
   {
-    "step": 54,
+    "step": 64,
     "name": "page-expired",
-    "file": "54-page-expired.png",
+    "file": "64-page-expired.png",
     "group": "Other pages",
     "note": "Page expired",
     "at": "/Error/Expired"
