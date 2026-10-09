@@ -566,5 +566,101 @@
     "group": "OVD Explorer",
     "note": "A draft application is not shown: only completed ones are",
     "at": "/Apps/OvdExplorer?by=application&no=DEVBB26F10280"
+  },
+  {
+    "step": 72,
+    "name": "dms-completed-applications",
+    "file": "72-dms-completed-applications.png",
+    "group": "DMS Explorer",
+    "note": "View documents: the completed applications (status APR), newest first",
+    "at": "/Apps/DmsExplorer"
+  },
+  {
+    "step": 73,
+    "name": "dms-application-documents",
+    "file": "73-dms-application-documents.png",
+    "group": "DMS Explorer",
+    "note": "An application opened: the documents in use on it",
+    "at": "/Apps/DmsExplorer?by=application&no=DEVBB26F10487"
+  },
+  {
+    "step": 74,
+    "name": "dms-document-viewed",
+    "file": "74-dms-document-viewed.png",
+    "group": "DMS Explorer",
+    "note": "Another document opened in the viewer",
+    "at": "/Apps/DmsExplorer?by=application&no=DEVBB26F10487"
+  },
+  {
+    "step": 75,
+    "name": "dms-class-filter",
+    "file": "75-dms-class-filter.png",
+    "group": "DMS Explorer",
+    "note": "Filtered to the FD class: the application's own documents",
+    "at": "/Apps/DmsExplorer?by=application&no=DEVBB26F10487"
+  },
+  {
+    "step": 76,
+    "name": "dms-history",
+    "file": "76-dms-history.png",
+    "group": "DMS Explorer",
+    "note": "History: every copy filed on the application, newest first",
+    "at": "/Apps/DmsExplorer?by=application&no=DEVBB26F10487&view=history"
+  },
+  {
+    "step": 77,
+    "name": "dms-lookup-by-pan",
+    "file": "77-dms-lookup-by-pan.png",
+    "group": "DMS Explorer",
+    "note": "Looked up by PAN: every completed application it belongs to",
+    "at": "/Apps/DmsExplorer?by=pan&no=ABCPA1001A"
+  },
+  {
+    "step": 78,
+    "name": "dms-no-documents",
+    "file": "78-dms-no-documents.png",
+    "group": "DMS Explorer",
+    "note": "Looked up by FDR number: a completed application with no documents recorded",
+    "at": "/Apps/DmsExplorer?by=fdr&no=FD2626F10250"
+  },
+  {
+    "step": 79,
+    "name": "dms-not-completed",
+    "file": "79-dms-not-completed.png",
+    "group": "DMS Explorer",
+    "note": "A draft looked up by its number: only a completed application is shown",
+    "at": "/Apps/DmsExplorer?no=DEVBB26F10493"
+  },
+  {
+    "step": 80,
+    "name": "dms-upload-opened",
+    "file": "80-dms-upload-opened.png",
+    "group": "DMS Explorer",
+    "note": "Upload documents as it opens (prototype)",
+    "at": "/Apps/DmsExplorer/Upload"
+  },
+  {
+    "step": 81,
+    "name": "dms-upload-nothing-entered",
+    "file": "81-dms-upload-nothing-entered.png",
+    "group": "DMS Explorer",
+    "note": "Upload pressed with nothing entered",
+    "at": "/Apps/DmsExplorer/Upload"
+  },
+  {
+    "step": 82,
+    "name": "dms-upload-filled",
+    "file": "82-dms-upload-filled.png",
+    "group": "DMS Explorer",
+    "note": "Upload documents filled in: the name the file will be filed as",
+    "at": "/Apps/DmsExplorer/Upload"
+  },
+  {
+    "step": 83,
+    "name": "dms-upload-done",
+    "file": "83-dms-upload-done.png",
+    "group": "DMS Explorer",
+    "note": "Uploaded (prototype: nothing is sent or stored)",
+    "at": "/Apps/DmsExplorer/Upload"
   }
 ]
