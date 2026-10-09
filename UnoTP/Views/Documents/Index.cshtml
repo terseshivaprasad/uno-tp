@@ -412,9 +412,14 @@
         @* What the PAN was checked with. An investor on a folio is not checked again, so has no section. *@
         @if (Model.PanChecksShown(Model.Investor))
         {
-            <section class="doc-read-result">
-                <h2 class="doc-read-result__title">What the PAN was checked with</h2>
-                <partial name="_ReadCards" model="@panReads" />
+            @* On a phone the checks fold to their heading and how many are done (phone.css). *@
+            <section class="doc-read-result phone-fold">
+                <h2 class="doc-read-result__title">
+                    <label class="phone-fold__head"><input type="checkbox" class="phone-fold__toggle visually-hidden" aria-label="Show what the PAN was checked with"><span class="phone-fold__title">What the PAN was checked with</span><span class="phone-fold__brief">@panReads.DoneCount</span><svg class="phone-fold__chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></label>
+                </h2>
+                <div class="phone-fold__body">
+                    <partial name="_ReadCards" model="@panReads" />
+                </div>
             </section>
         }
 
@@ -640,17 +645,21 @@
     </section>
 
     @* Every upload attempt this session, newest first, with the checks it went through. *@
-    <section class="page-card doc-history">
-        <h2 class="doc-section__title">Upload, @Glossary.Term("OCR") and verification history</h2>
-        <p class="doc-history__sub">Every attempt, newest first. Three refusals in a row send a document to Operations.</p>
-        @if (state.Log.Count == 0)
-        {
-            <p class="doc-history__none">Nothing uploaded against this application yet.</p>
-        }
-        else
-        {
-            <partial name="_DocLog" model="@state.Log" />
-        }
+    <section class="page-card doc-history phone-fold">
+        <h2 class="doc-section__title">
+            <label class="phone-fold__head"><input type="checkbox" class="phone-fold__toggle visually-hidden" aria-label="Show the history"><span class="phone-fold__title">Upload, @Glossary.Term("OCR") and verification history</span><span class="phone-fold__brief">@state.Log.Count @(state.Log.Count == 1 ? "attempt" : "attempts")</span><svg class="phone-fold__chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></label>
+        </h2>
+        <div class="phone-fold__body">
+            <p class="doc-history__sub">Every attempt, newest first. Three refusals in a row send a document to Operations.</p>
+            @if (state.Log.Count == 0)
+            {
+                <p class="doc-history__none">Nothing uploaded against this application yet.</p>
+            }
+            else
+            {
+                <partial name="_DocLog" model="@state.Log" />
+            }
+        </div>
     </section>
     </div>
 </div>

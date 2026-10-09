@@ -16,6 +16,9 @@ public sealed record RailStep(
 public sealed class StepRail
 {
     private const string InvestorGlyph = "<circle cx=\"12\" cy=\"7.5\" r=\"4\"></circle><path d=\"M4.5 20.5a7.5 7.5 0 0 1 15 0\"></path>";
+    /// <summary>The controller behind each step, in the order of NewApplicationViewModel.Steps.</summary>
+    private static readonly string[] StepControllers = ["NewApplication", "Documents", "Investor", "Payment", "Deposit", "Review"];
+
     private const string ReviewGlyph = "<circle cx=\"12\" cy=\"12\" r=\"9.5\"></circle><path d=\"M8 12.5l2.8 2.8L16.5 9.5\"></path>";
 
     /// <summary>The phone's one-line summary: "Step 2 of 4", "Before the steps" or "All 4 steps done".</summary>
@@ -26,6 +29,16 @@ public sealed class StepRail
 
     /// <summary>How far along the rail the page is, for the phone's progress bar.</summary>
     public int PercentDone { get; }
+
+    /// <summary>
+    /// The controller of the step before this one, for the phone's back arrow. None on
+    /// Investor Identification, which has its own link back to the dashboard, and none
+    /// once the application is submitted.
+    /// </summary>
+    public string? BackController { get; }
+
+    /// <summary>The name of the step before this one: what the back arrow goes to.</summary>
+    public string BackName { get; } = "";
 
     public IReadOnlyList<RailStep> Steps { get; }
 
@@ -53,6 +66,12 @@ public sealed class StepRail
         }
 
         Now = submitted ? "Submitted" : names[current];
+
+        if (current >= 1 && !submitted)
+        {
+            BackController = StepControllers[current - 1];
+            BackName = names[current - 1];
+        }
         PercentDone = Math.Min(100, current * 100 / last);
 
         var glyphs = new List<string> { InvestorGlyph };

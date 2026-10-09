@@ -9,6 +9,11 @@
   border-top: 1px solid var(--divider);
   padding-top: 16px;
 }
+/* Where the facts above are not already held apart from it, the rule keeps its
+   distance: a note under the last fact must not sit on the line. */
+.investor-panel:not(.investor-panel--stack) > .investor-key-value-grid--divided {
+  margin-top: 16px;
+}
 .review-edit {
   margin-left: 8px;
 }

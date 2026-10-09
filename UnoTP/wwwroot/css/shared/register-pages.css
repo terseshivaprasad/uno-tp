@@ -66,6 +66,14 @@ a.app-tile:hover {
   padding: 8px 8px 8px 4px;
   background: transparent;
 }
+/* On a phone the list comes first and the notes about it after: read once, they
+   should not stand between the partner and the work every time. */
+@media (max-width: 900px) {
+  .page-rail--steps {
+    order: 1;
+    padding: 0 4px;
+  }
+}
 .page-rail__title {
   margin: 0;
   font-size: 12px;

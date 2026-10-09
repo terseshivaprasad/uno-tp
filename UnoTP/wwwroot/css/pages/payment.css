@@ -6,6 +6,7 @@
 .bank-after {
   margin-top: 20px;
 }
+/* The bank and branch found from the IFSC, under the fields it answers. */
 .bank-branch {
   margin-bottom: 0;
 }

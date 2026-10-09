@@ -60,6 +60,36 @@ has been received.
 The header's side margin is the page's, so the logo starts where the rail does and
 Logout ends where the card does. The action bar's buttons line up the same way.
 
+### On a phone
+
+No phone board has been given, so these are the app's own rules. A phone is 560px
+wide and under. What it gets differently is in one file,
+`wwwroot/css/shared/phone.css`, inside one width rule, so a laptop never sees it.
+
+- **Sized for a finger.** A field, a button and anything else pressed is 44px.
+  Text in a field is 16px: under that an iPhone zooms the page in on every tap.
+- **Back is an arrow in the step bar** (`page-rail__back`), not a button at the
+  foot. The foot has one main action across it; Save draft is words beside it.
+- **The foot bar says only what counts.** A line that counts what is still to do,
+  or says what stopped the step, stays. A line that only says where Proceed goes
+  (`page-action-bar__hint--guide`) is left out.
+- **What is read, not filled, folds away** (`phone-fold`): a holder's record, the
+  checks, the history. It shows as a heading and a short line saying what is
+  inside, and opens on a tap. One that holds an error, a failed check or the place
+  a link points to is open already. Sections with fields to fill are never folded.
+- **The deposit as it stands** is one line over the foot bar on FD Configuration
+  (amount, rate, tenure) and opens to the whole card.
+- **Popups come up from the foot** as sheets; a document's preview, the required
+  documents and an application's details take the whole screen.
+- **The dashboard leads with what to do:** the tiles, then the applications to
+  continue. The four steps and the note come last.
+- **Facts stay two across** (`investor-key-value-grid`), 16px apart.
+- **A list's row is a block** (`register-table`): what it is at the top left, its
+  action at the top right, its facts two across. On View Application a tap
+  anywhere on the row opens it. Filters are on one line, pulled across by finger.
+- **The work comes first:** a list page's side notes follow the list.
+- Nothing scrolls sideways at 390, 360 or 320px.
+
 ## Type (design: Typography)
 
 Georama throughout, served from `wwwroot/fonts`. "500 16px/19px" reads: medium
@@ -90,6 +120,33 @@ dialog. Nothing is below 12px and nothing is uppercase. Text is never cut off wi
 an ellipsis: it wraps.
 
 Fields and buttons are 36px high.
+
+### The space between pieces of text
+
+The boards give the type and the field gap, not the space under a title, so these
+are the app's own (9 Oct 2026). They are measured from the letters, not the line box.
+
+| From | To | Space |
+|---|---|---|
+| A card's title | the note under it | 8px |
+| The note | what follows | 16px |
+| A card's title, with no note | what follows | 24px |
+| A section title | what is above it, what follows it | 34px, 14px |
+| A label | its field | 10px |
+| A field | its hint | 10px |
+| A fact's name | its value | 11px |
+
+- A card's head (`page-head`) is 28px high whatever stands beside the title. The
+  space under it is the head's own (`margin-bottom`), so the block that follows
+  brings no top padding or margin of its own.
+- A note (`page-note`) belongs to the title above it: it sits close under the
+  title and the space comes after it, never the other way round.
+- One line of a label or a value is 24px high, as the design draws it. A second
+  line follows at the type's own leading (16px for a name, 20px for a value), with
+  the difference made up above and below.
+- On a phone a small action in a line of text (Edit, Clear All, the copy button)
+  keeps the line's height. Its 44px to press is an unseen area round it, so a
+  card's head is no taller for holding one.
 
 ## A row of fields
 
@@ -153,8 +210,11 @@ Keep the boxes on a page few. A box (a border or a filled panel) is for three
 things only: the card, something that is typed in or picked, and a notice that
 asks the user to do something. Everything else stands on the card as plain text.
 
-- **What was read or found and cannot be typed over** (`investor-panel`, FD
-  Configuration's `deposit-summary`): no fill, a line down its left.
+- **What was read or found and cannot be typed over** (`investor-panel`: the
+  holder's record, the bank and branch, the record found by a search) is a grey
+  card, and so is the deposit read-out on FD Configuration (`deposit-summary`).
+  A line down the left in place of the fill was tried and taken back at the user's
+  word (9 Oct 2026): keep the cards.
 - **A summary** (Review Summary, View Application's details:
   `investor-panel--plain`): the values straight on the card, a rule between holders.
 - **The tenures and the payouts on FD Configuration stay a tile each**
@@ -167,8 +227,10 @@ asks the user to do something. Everything else stands on the card as plain text.
 - **A small action beside a card or a value** (`doc-tool`, `doc-copy`): the icon alone.
 - **A status in a list** (`status-word`, from `Tones.Word`): the word in its tone's
   colour. Not a Bootstrap `badge`.
-- **A list of applications** (`draft-list`): a line between the rows; Cancel is the
-  tertiary button, its word alone.
+- **A list of applications** (`draft-list`): a line between the rows. Each row says
+  what pressing it does, "Continue", in red at its end; Cancel beside it is the
+  lesser action, so it is grey and turns red only under the pointer. A row never
+  shows Cancel as its only word.
 - **Pages of a list** (`register-pager`): "Page 2 of 30" between two arrows, not a
   box for every page.
 - **A section inside a card** (Application Submitted's `submitted-card`): its title
@@ -181,6 +243,27 @@ A filter over a list (`register-pill`) is drawn as the tenure and payout tiles a
 6px corners, the same outline, and when chosen outlined in `--selected` on
 `--blue-bg` with its words in `--blue`. No rounded pill, and no red: red is the
 main action and an error.
+
+## Motion
+
+The boards say nothing about motion, so these are the app's own rules (9 Oct 2026).
+Everything that moves is in one file, `wwwroot/css/shared/motion.css`, loaded last.
+
+- **Nothing waits for it.** A press acts at once and the motion plays beside it.
+  No loader, delay or script is added for the sake of an effect.
+- **One length for everything:** `--motion-time` (0.16s), with `--motion` for a
+  transition. Nothing runs longer.
+- **One page to the next:** the browser fades the old page into the new one after
+  the new one has arrived. The header, the step rail and the bar at the foot hold
+  still. Chrome, Edge and Safari do this; Firefox shows the page as before.
+- **What opens** (a popup, a sheet, the bell's panel, a list of suggestions, a line
+  that unfolds) fades in and settles. It closes at once.
+- **What changes state** (a tile, a filter, a document card, a small action, a
+  field's outline) eases its fill, outline and words.
+- **Less motion asked for, none given:** every rule is inside
+  `prefers-reduced-motion: no-preference`.
+- Not done, on purpose: sliding whole pages, animating the height of a form, and
+  fading content that a save or an upload has just redrawn (it would flicker).
 
 ## Colours
 

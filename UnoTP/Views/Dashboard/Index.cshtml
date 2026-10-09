@@ -75,29 +75,33 @@
         </div>
     </section>
 
+    @* Each group is a block of its own, with a rule over every one but the first. A
+       phone shows them in another order: the applications to continue come second. *@
     <section class="dashboard-actions">
-        <h2 class="dashboard-actions__title">Apply for a new FD</h2>
-        <div class="dashboard-tiles">
-            @foreach (var tile in Model.NewFd)
-            {
-                await Tile(tile);
-            }
+        <div class="dashboard-group">
+            <h2 class="dashboard-actions__title">Apply for a new FD</h2>
+            <div class="dashboard-tiles">
+                @foreach (var tile in Model.NewFd)
+                {
+                    await Tile(tile);
+                }
+            </div>
         </div>
 
-        <hr class="dashboard-actions__rule">
-        <h2 class="dashboard-actions__title">FD Services</h2>
-        <div class="dashboard-tiles">
-            @foreach (var tile in Model.Services)
-            {
-                await Tile(tile);
-            }
+        <div class="dashboard-group dashboard-group--services">
+            <h2 class="dashboard-actions__title">FD Services</h2>
+            <div class="dashboard-tiles">
+                @foreach (var tile in Model.Services)
+                {
+                    await Tile(tile);
+                }
+            </div>
         </div>
 
         @* Work waiting on the partner, one count per kind, each a link to the page that handles it. *@
         @if (Model.Work.Count > 0)
         {
-            <hr class="dashboard-actions__rule">
-            <nav class="work-counts" aria-labelledby="workTitle">
+            <nav class="dashboard-group dashboard-group--work work-counts" aria-labelledby="workTitle">
                 <h2 class="dashboard-actions__title" id="workTitle">Waiting on you</h2>
                 <ul class="work-counts__list">
                     @foreach (var work in Model.WorkByUrgency)
@@ -117,8 +121,7 @@
            the full list on Investor Identification. *@
         @if (Model.Drafts.Count > 0)
         {
-            <hr class="dashboard-actions__rule">
-            <section class="drafts" aria-labelledby="draftsTitle">
+            <section class="dashboard-group dashboard-group--drafts drafts" aria-labelledby="draftsTitle">
                 <div class="drafts__head">
                     <h2 class="dashboard-actions__title drafts__title" id="draftsTitle">Continue an application <span class="drafts__count">@Model.Drafts.Count</span></h2>
                     @if (hasMoreDrafts)
@@ -132,13 +135,14 @@
 
         @if (Model.Admin.Count > 0)
         {
-            <hr class="dashboard-actions__rule">
-            <h2 class="dashboard-actions__title">Administration</h2>
-            <div class="dashboard-tiles">
-                @foreach (var tile in Model.Admin)
-                {
-                    await Tile(tile);
-                }
+            <div class="dashboard-group dashboard-group--admin">
+                <h2 class="dashboard-actions__title">Administration</h2>
+                <div class="dashboard-tiles">
+                    @foreach (var tile in Model.Admin)
+                    {
+                        await Tile(tile);
+                    }
+                </div>
             </div>
         }
     </section>

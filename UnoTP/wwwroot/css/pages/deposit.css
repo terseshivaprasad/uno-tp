@@ -185,9 +185,11 @@
   color: var(--blue);
   font-weight: 600;
 }
+/* The deposit as it stands, in a card of its own beside the fields. */
 .deposit-summary {
-  border-left: 2px solid var(--border-2);
-  padding: 0 0 0 20px;
+  background: var(--tint);
+  border-radius: 8px;
+  padding: 20px;
   position: sticky;
   top: 16px;
   display: flex;
@@ -246,20 +248,22 @@
   line-height: 16px;
   font-weight: 500;
 }
+/* One line of a name or a value is 24px high, as the design draws it. A second line
+   follows at the type's own leading, the difference made up above and below. */
 .deposit-key-value__key {
   font: var(--font-label);
+  line-height: 16px;
+  padding: 4px 0;
   color: var(--muted);
 }
 .deposit-key-value__value {
   font: var(--font-value);
+  line-height: 20px;
+  padding: 2px 0;
   color: var(--ink);
 }
 .deposit-key-value__value--rate {
   color: var(--green);
-}
-/* Under the card's head, as the fields on the steps before it sit. */
-.section-card .deposit-layout {
-  margin-top: 20px;
 }
 @media (max-width: 560px) {
   /* A note beside a label goes under it, where there is no room beside it. */
@@ -285,7 +289,7 @@
     gap: 6px;
   }
   .deposit-summary {
-    padding-left: 16px;
+    padding: 16px;
     gap: 16px;
   }
   .deposit-summary__amount {

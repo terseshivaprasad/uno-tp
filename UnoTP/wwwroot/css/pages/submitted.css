@@ -189,10 +189,14 @@
 }
 .submitted-key-value__key {
   font: var(--font-label);
+  line-height: 16px;
+  padding: 4px 0;
   color: var(--muted);
 }
 .submitted-key-value__value {
   font: var(--font-value);
+  line-height: 20px;
+  padding: 2px 0;
   color: var(--ink);
 }
 .submitted-key-value__value--green {

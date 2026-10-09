@@ -39,6 +39,8 @@ Paths are under `UnoTP/`; stylesheets and scripts under `UnoTP/wwwroot/css/` and
 | `css/shared/journey-steps.css` | What the journey steps share: the step rail (`page-rail__step`), the action bar at the foot (`page-action-bar`), the two-option switch (`choice-switch`), and the document cards of Upload Documents and Investor Information (`doc-slot`, `doc-drop`, `doc-on-file`, `doc-read-result`, `doc-history`…). |
 | `css/shared/register-pages.css` | What the list pages share: filters, search box, status pills, pager, table (`register-*`). |
 | `css/shared/topbar.css` | The header and the phone menu. |
+| `css/shared/phone.css` | What a phone (560px and under) gets differently: sizes, the back arrow, the foot bar, folds, sheets. Loaded after the page's own stylesheet. |
+| `css/shared/motion.css` | Everything that moves: the fade between pages, what opens, what changes state. Loaded last. |
 | `js/shared/messages.js` | Hands the scripts their validation and error messages from the master: `message('Lists.FromAfterTo')`. Loaded first. |
 | `js/shared/partial-forms.js` | Forms marked `data-partial` post with fetch and swap in the answer's `<main>` without a reload, keeping scroll, focus and typed values. Also `data-show-when` (a choice shows or hides a part at once) and `data-guard` (warn before leaving with unsaved changes). |
 | `js/shared/field-checks.js` | Client-side checks: `data-required`, `data-check`, `data-chars` on a field. |

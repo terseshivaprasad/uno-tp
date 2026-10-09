@@ -6,6 +6,13 @@
     var rail = StepRail.For(Model);
 }
 <aside class="page-rail">
+    @* On a phone, Back is an arrow at the start of this bar (phone.css); a laptop has it in the bar at the foot. *@
+    @if (rail.BackController is not null)
+    {
+        <a class="page-rail__back" asp-controller="@rail.BackController" asp-action="Index" aria-label="Back to @rail.BackName" data-loader="Going back to @rail.BackName">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>
+        </a>
+    }
     @* On a phone there is no room for the steps: a count, the step's name and a bar stand in for them. *@
     <p class="page-rail__where">
         <span class="page-rail__count">@rail.Count</span>

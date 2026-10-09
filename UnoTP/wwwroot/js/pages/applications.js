@@ -295,6 +295,15 @@
     });
   });
 
+  // On a phone the whole row opens the application, not only its View.
+  document.getElementById('viewAppRows').addEventListener('click', function (e) {
+    if (!window.matchMedia('(max-width: 560px)').matches) return;
+    if (e.target.closest('button, a')) return;
+    var row = e.target.closest('tr');
+    var view = row && row.querySelector('[data-view]');
+    if (view) view.click();
+  });
+
   closeBtn.addEventListener('click', closeApplicationSheet);
   modal.addEventListener('click', function (e) { if (e.target === modal) closeApplicationSheet(); });
   document.addEventListener('keydown', function (e) {

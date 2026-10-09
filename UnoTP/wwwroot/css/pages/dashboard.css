@@ -122,10 +122,11 @@
   font: var(--font-title);
   color: var(--text);
 }
-.dashboard-actions__rule {
-  border: 0;
+/* A rule over every group but the first, as far from the group above as below. */
+.dashboard-group + .dashboard-group {
+  margin-top: 32px;
+  padding-top: 32px;
   border-top: 1px solid var(--border-2);
-  margin: 32px 0;
 }
 .dashboard-tiles {
   display: flex;

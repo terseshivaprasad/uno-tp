@@ -1,0 +1,344 @@
+/* What a phone gets that a laptop does not. Loaded after the shared and the page
+   stylesheets, before motion.css.
+
+   Everything under "On a phone" is inside one width rule, 560px and under, so a
+   laptop never sees it. The few rules above it only keep a phone's extras (the
+   back arrow, a fold's short line and chevron) out of sight on a laptop.
+   The rules are in docs/BRAND_GUIDELINES.md, "On a phone". */
+
+/* ----- Kept out of sight on a laptop -------------------------------------------- */
+.page-rail__back,
+.phone-fold__brief,
+.phone-fold__chevron {
+  display: none;
+}
+/* A fold: a block a phone shows as its heading until it is tapped. Its heading is
+   a label over a tick box. On a laptop the box does nothing, the label is only a
+   heading, and the body stands open as if it were not wrapped at all. A heading a
+   laptop has no use for (--phone) is left out there. */
+.phone-fold__head {
+  display: block;
+  cursor: inherit;
+}
+.phone-fold__head--phone {
+  display: none;
+}
+.phone-fold__body {
+  display: contents;
+}
+
+/* ===== On a phone ================================================================ */
+@media (max-width: 560px) {
+
+  /* ----- 1. Sized for a finger ---------------------------------------------------
+     44px to press, and 16px in a field: under that an iPhone zooms the whole page
+     in whenever a field is tapped. */
+  .field-input, .date-input, .form-select, .form-control, .investor-control {
+    min-height: 44px;
+    font-size: 16px;
+  }
+  .date-input__part, .register-search input {
+    font-size: 16px;
+  }
+  .btn {
+    --bs-btn-padding-y: 11px;
+  }
+  .radio-option, .investor-switch-row, .dashboard-docs, .doc-more-info > summary, .drafts__more > summary {
+    min-height: 44px;
+  }
+  .dashboard-docs {
+    display: inline-flex;
+    align-items: center;
+  }
+  /* A small action in a line of text keeps the line's height: the 44px to press is
+     an unseen area round it, so a card's head is no taller for holding one. */
+  .link-button, .investor-remove, .drafts__all, .app-back__link, .doc-copy {
+    position: relative;
+  }
+  .link-button::after, .investor-remove::after, .drafts__all::after, .app-back__link::after, .doc-copy::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: max(100%, 44px);
+    height: 44px;
+    transform: translate(-50%, -50%);
+  }
+  /* A switch's names are pressed too: their press area reaches above and below
+     them, without making the row taller. */
+  .choice-switch__name {
+    position: relative;
+  }
+  .choice-switch__name::after {
+    content: "";
+    position: absolute;
+    inset: -14px 0;
+  }
+  .notices__bell, .app-menu__btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .register-search, .register-pill {
+    height: 44px;
+  }
+  .register-page {
+    min-width: 44px;
+    height: 44px;
+  }
+  .doc-tool {
+    padding: 14px;
+  }
+  .draft-cancel__button {
+    padding: 14px 8px;
+  }
+  /* In a card's head the step's Edit goes to the far end of its line. */
+  .page-head .review-edit {
+    margin-left: auto;
+  }
+  .draft-cancel {
+    bottom: -2px;
+  }
+
+  /* ----- 2. The step bar and the bar at the foot ----------------------------------
+     Back is an arrow at the start of the step bar, where a phone keeps it. The
+     foot has one main action across it, with Save draft as words beside it. */
+  .page-rail:has(.page-rail__back) {
+    position: relative;
+    top: auto;
+    padding-left: 56px;
+  }
+  .page-rail__back {
+    position: absolute;
+    left: 6px;
+    top: 50%;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    margin-top: -22px;
+    border-radius: 6px;
+    color: var(--ink);
+  }
+  .page-rail__back:active {
+    background: var(--tint);
+  }
+  /* The foot's own Back gives way to the arrow, on the steps that have one. */
+  body:has(.page-rail__back) .page-action-bar__inner > .btn:first-child {
+    display: none;
+  }
+  .page-action-bar__inner {
+    padding: 8px 16px calc(8px + env(safe-area-inset-bottom));
+    gap: 4px 8px;
+  }
+  .page-action-bar__right {
+    gap: 4px;
+  }
+  .page-action-bar__right .btn-outline-primary {
+    --bs-btn-padding-x: 8px;
+    --bs-btn-border-color: transparent;
+    --bs-btn-disabled-border-color: transparent;
+  }
+  .page-action-bar__right .btn-primary {
+    max-width: none;
+  }
+  /* A line that only says where Proceed goes is left out; one that counts what is
+     still to do, or says what stopped the step, stays. When the draft was last
+     saved is said by the "Draft saved" note as it is saved. */
+  .page-action-bar__hint--guide, .page-action-bar__saved {
+    display: none;
+  }
+
+  /* ----- 3, 4. What is read, not filled, folds away ----------------------------------
+     A holder's record, the checks and the history show as a heading and a short
+     line saying what is inside. A tap opens one. One that holds an error, a failed
+     check, or the place a link on the page points to is open already. */
+  .phone-fold__head, .phone-fold__head--phone {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    cursor: pointer;
+  }
+  .phone-fold__title {
+    flex: 1;
+    min-width: 0;
+  }
+  .phone-fold__brief {
+    display: block;
+    margin-left: auto;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 16px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .phone-fold__chevron {
+    display: block;
+    flex: none;
+    color: var(--muted);
+  }
+  .phone-fold__head:has(:focus-visible) {
+    outline: 2px solid var(--blue);
+    outline-offset: 2px;
+  }
+  .phone-fold__body {
+    display: none;
+  }
+  .phone-fold:has(.phone-fold__toggle:checked) > .phone-fold__body,
+  .phone-fold:has(.phone-fold__body :is(.field-error, .is-invalid, .doc-check.is-failed, :target)) > .phone-fold__body {
+    display: contents;
+  }
+  .phone-fold:has(.phone-fold__toggle:checked) .phone-fold__chevron {
+    transform: rotate(180deg);
+  }
+  /* A holder's record: who it is over the PAN, on the grey of the card it opens. */
+  .phone-fold__head--phone {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 12px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    background: var(--tint);
+  }
+  .phone-fold__who {
+    font: var(--font-value);
+    line-height: 20px;
+    color: var(--ink);
+    overflow-wrap: anywhere;
+  }
+  .phone-fold__head--phone .phone-fold__brief {
+    grid-row: 2;
+    margin-left: 0;
+  }
+  .phone-fold__head--phone .phone-fold__chevron {
+    grid-column: 2;
+    grid-row: 1 / 3;
+  }
+
+  /* ----- 9. The deposit as it stands, over the foot bar ---------------------------
+     One line - the amount, the rate, the tenure - that stays in sight while the
+     fields above are filled, and opens to the whole card on a tap. */
+  .deposit-summary {
+    order: 1;
+    position: sticky;
+    bottom: 69px;
+    z-index: 5;
+    padding: 4px 16px;
+    gap: 12px;
+    border: 1px solid var(--border-2);
+    box-shadow: 0 -4px 16px rgba(31, 41, 55, .1);
+  }
+  /* Higher where the foot bar carries a line over its buttons. */
+  body:has(.page-action-bar__hint:not(.page-action-bar__hint--guide)) .deposit-summary {
+    bottom: 93px;
+  }
+  .deposit-summary:has(.phone-fold__toggle:checked) {
+    padding-bottom: 16px;
+  }
+  .deposit-summary .phone-fold__head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 12px;
+  }
+  .deposit-summary .phone-fold__brief {
+    grid-row: 2;
+    margin-left: 0;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 20px;
+    color: var(--ink);
+  }
+  .deposit-summary .phone-fold__chevron {
+    grid-column: 2;
+    grid-row: 1 / 3;
+  }
+
+  /* ----- 6. Popups come up from the foot -------------------------------------------
+     A sheet across the width, its top corners rounded; a preview and a details
+     sheet take the whole screen. */
+  .modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+  .app-dialog {
+    max-width: none;
+    max-height: 92dvh;
+    border-radius: 12px 12px 0 0;
+    padding: 20px 16px calc(20px + env(safe-area-inset-bottom));
+  }
+  .doc-sheet[popover] {
+    inset: auto 0 0;
+    margin: 0;
+    width: 100%;
+    max-width: none;
+  }
+  .doc-sheet .doc-preview__sheet, .doc-sheet .doc-ckyc__sheet {
+    max-height: 92dvh;
+    border-radius: 12px 12px 0 0;
+  }
+  .doc-preview-pop .doc-preview__sheet {
+    height: 100dvh;
+    max-height: none;
+    border-radius: 0;
+  }
+  .required-docs, .view-app-sheet {
+    inset: 0;
+    width: 100%;
+    max-width: none;
+    height: 100dvh;
+    max-height: none;
+    border-radius: 0;
+  }
+
+  /* ----- 7. The dashboard: what to do first, what to read last ---------------------
+     The tiles and the applications to continue lead; the four steps and the note
+     follow them. */
+  .dashboard-panel {
+    display: flex;
+    flex-direction: column;
+  }
+  .dashboard-actions {
+    order: -1;
+    display: flex;
+    flex-direction: column;
+    padding: 0 0 24px;
+  }
+  .dashboard-steps {
+    padding: 24px 0 0;
+    border-bottom: 0;
+    border-top: 1px solid var(--border-2);
+  }
+  .dashboard-group--drafts {
+    order: 1;
+  }
+  .dashboard-group--work {
+    order: 2;
+  }
+  .dashboard-group--services {
+    order: 3;
+  }
+  .dashboard-group--admin {
+    order: 4;
+  }
+  .dashboard-group + .dashboard-group {
+    margin-top: 24px;
+    padding-top: 24px;
+  }
+
+  /* ----- 8. A list's filters on one line -------------------------------------------
+     They run off the right edge and are pulled across with a finger, rather than
+     wrapping onto three lines. */
+  .register-pills {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    margin: 0 -16px;
+    padding: 0 16px 4px;
+    scrollbar-width: none;
+  }
+  .register-pills::-webkit-scrollbar {
+    display: none;
+  }
+  .register-pill {
+    flex: none;
+  }
+}

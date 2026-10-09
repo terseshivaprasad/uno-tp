@@ -26,6 +26,12 @@
 .choice-switch__name--off {
   text-align: right;
 }
+/* On a phone the names drop to the small size, so both fit beside the switch. */
+@media (max-width: 560px) {
+  .choice-switch__name {
+    font-size: 12px;
+  }
+}
 .choice-switch:has(.choice-switch__option--off input:checked) .choice-switch__name--off,
 .choice-switch:has(.choice-switch__option--on input:checked) .choice-switch__name--on {
   color: var(--ink);
@@ -154,18 +160,22 @@
   margin-bottom: 4px;
 }
 
-/* What was read or found, and cannot be typed over: no box of its own, a line down
-   its left to set it apart from the fields. */
+/* What was read or found, and cannot be typed over: a grey card of its own, which
+   sets it apart from the fields round it. */
 .investor-panel {
-  border-left: 2px solid var(--border-2);
-  padding: 0 0 0 16px;
+  background: var(--tint);
+  border: 1px solid var(--tint);
+  border-radius: 6px;
+  padding: 16px;
   margin-bottom: 16px;
 }
 /* A summary's section (Review Summary, View Application's details): nothing on the
    page is typed, so the values stand straight on the card; a rule parts one holder
    from the next. */
 .investor-panel--plain {
-  border-left: 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
   padding: 0;
 }
 .investor-panel--plain + .investor-panel--plain {
@@ -174,6 +184,9 @@
 }
 .investor-panel__label {
   font: var(--font-label);
+  line-height: 16px;
+  padding-top: 4px;
+  margin-bottom: 4px;
   color: var(--muted);
 }
 /* A fact: its label in the label type, its value in the value type under it,
@@ -186,12 +199,19 @@
 .investor-key-value--wide {
   grid-column: span 2;
 }
+/* One line of a name or a value is 24px high, as the design draws it. A second line
+   follows at the type's own leading (16px, 20px), the difference made up above and
+   below, so a wrapped address or caption does not read as double-spaced. */
 .investor-key-value__key {
   font: var(--font-label);
+  line-height: 16px;
+  padding: 4px 0;
   color: var(--muted);
 }
 .investor-key-value__value {
   font: var(--font-value);
+  line-height: 20px;
+  padding: 2px 0;
   color: var(--ink);
   overflow-wrap: anywhere;
 }
@@ -293,12 +313,11 @@
     grid-template-columns: repeat(2, minmax(0,1fr));
   }
 }
+/* A phone keeps the facts two across (a wide one still takes the line), so a
+   summary is half as long as it would be one fact to a line. */
 @media (max-width: 560px) {
   .investor-key-value-grid {
-    grid-template-columns: 1fr;
-  }
-  .investor-key-value--wide {
-    grid-column: auto;
+    gap: 16px;
   }
 }
 /* A part a choice shows or hides in place (data-show-when): no fieldset frame. */
@@ -804,6 +823,7 @@
 }
 .identify-holder .identify-result {
   margin-top: 16px;
+  padding: 16px 20px 20px;
 }
 .identify-holder .identify-result__head {
   padding-bottom: 12px;
@@ -811,6 +831,9 @@
 /* A record that is its head alone needs no room under it. */
 .identify-holder .identify-result__head:last-child {
   padding-bottom: 0;
+}
+.identify-holder .identify-result:has(> .identify-result__head:last-child) {
+  padding-bottom: 16px;
 }
 .identify-holder .identify-result .investor-key-value-grid {
   gap: 16px 24px;
@@ -1094,6 +1117,15 @@
 .doc-tool:disabled {
   color: var(--muted-2);
   cursor: not-allowed;
+}
+/* A finger needs more than a pointer: 32px to press on a phone. */
+@media (max-width: 560px) {
+  .doc-tool {
+    padding: 8px;
+  }
+  .doc-slot__tools {
+    gap: 0;
+  }
 }
 .doc-tool:not(:disabled):hover {
   background: var(--pink-bg);
@@ -2216,7 +2248,7 @@ body:has(.app-sticky-strip:not([hidden])) .page-rail {
 /* A joint holder's address panel and manual entry, under their documents. */
 /* A holder's read-only panel: the record, then the address under a divider. The
    panel's own margin is dropped inside a card, where the record's padding spaces it. */
-.investor-record > .investor-panel {
+.investor-record > .investor-panel, .investor-record > .phone-fold__body > .investor-panel {
   margin-bottom: 0;
 }
 .investor-panel__part {

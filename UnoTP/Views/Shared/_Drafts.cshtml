@@ -1,8 +1,8 @@
 @model DraftsBlock
 @* The partner's applications opened and not yet submitted, the latest first. The same
    list is on the dashboard and on Investor Identification. Each row is a Continue button
-   that opens the application on Upload Documents, with a Cancel beside it that asks first
-   and then drops the draft. Only the application number is posted; the server checks it
+   that opens the application on Upload Documents and says Continue at its end, with a
+   quieter Cancel beside it that asks first and then drops the draft. Only the application number is posted; the server checks it
    belongs to this partner. A long list keeps the rest behind "Show more". *@
 @{
     var keptForDays = (await Lookups.ConfigAsync()).DraftDays;
@@ -65,7 +65,8 @@
                             <span class="draft__when">Edited @Dates.Ago(draft.TouchedAt.Value)</span>
                         }
                     </span>
-                    <svg class="draft__go" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg>
+                    @* What pressing the row does, in words: the list is headed Continue, so the row says it too. *@
+                    <span class="draft__go" aria-hidden="true">Continue <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg></span>
                 </button>
             </form>
             <form method="post" asp-controller="NewApplication" asp-action="CancelDraft" class="draft-cancel">

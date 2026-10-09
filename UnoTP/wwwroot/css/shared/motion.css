@@ -1,0 +1,86 @@
+/* Everything that moves, in one file. Loaded last, on every page.
+
+   The rules (docs/BRAND_GUIDELINES.md, "Motion"):
+   - Nothing waits for it. A press acts at once; the motion plays beside it.
+   - Nothing runs longer than --motion-time (layout-and-controls.css).
+   - Whoever has asked their device for less motion gets none: every rule here is
+     inside "no-preference".
+   - CSS only. A browser that does not know a rule here shows the page as before. */
+
+@media (prefers-reduced-motion: no-preference) {
+
+  /* ----- One page to the next -------------------------------------------------
+     The browser fades the old page into the new one once the new one has arrived,
+     so going on to the next step costs no time. The header, the step rail and the
+     bar at the foot are on both pages, so they hold still while the card changes. */
+  @view-transition {
+    navigation: auto;
+  }
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) {
+    animation-duration: var(--motion-time);
+  }
+  .app-header {
+    view-transition-name: app-header;
+  }
+  .page-rail {
+    view-transition-name: page-rail;
+  }
+  .page-action-bar {
+    view-transition-name: page-action-bar;
+  }
+
+  /* ----- What opens ------------------------------------------------------------
+     A popup, a sheet or a list of suggestions fades in and settles into place.
+     It closes at once: nobody waits to be rid of one. */
+  .modal-overlay {
+    transition: opacity var(--motion);
+  }
+  .app-dialog, .doc-sheet[popover], .required-docs,
+  .notices__panel, .app-menu__panel, .bank-suggest {
+    transition: opacity var(--motion), transform var(--motion);
+  }
+  .doc-sheet::backdrop, .required-docs::backdrop {
+    transition: opacity var(--motion);
+  }
+  @starting-style {
+    .modal-overlay,
+    .doc-sheet:popover-open::backdrop, .required-docs:popover-open::backdrop {
+      opacity: 0;
+    }
+    .app-dialog, .doc-sheet[popover]:popover-open, .required-docs:popover-open {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    .notices__panel, .app-menu__panel, .bank-suggest {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+  }
+
+  /* What unfolds under a line that was closed when the page opened: an attempt in
+     the history, "How it works", the rest of a long list. */
+  .doc-history__item[open] > :not(summary),
+  .doc-more-info[open] > :not(summary),
+  .drafts__more[open] > :not(summary),
+  .on-record__more[open] > :not(summary),
+  .deposits-notes[open] > :not(summary) {
+    animation: unfold var(--motion);
+  }
+
+  /* ----- What changes state ----------------------------------------------------
+     A choice, a filter, a card or a small action eases from one look to the next
+     instead of snapping: its fill, its outline and its words. */
+  .deposit-option__face, .register-pill, .status-pill,
+  .doc-drop, .doc-tool, .doc-copy,
+  .draft-cancel__button, .register-page, .link-button,
+  .field-input, .form-select {
+    transition: background-color var(--motion), border-color var(--motion), color var(--motion), box-shadow var(--motion);
+  }
+}
+
+@keyframes unfold {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}

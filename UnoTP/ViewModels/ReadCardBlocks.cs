@@ -35,6 +35,9 @@ public sealed record ReadCardsBlock(IReadOnlyList<ReadItem> Items, string? Retry
 {
     /// <summary>Whether NSDL can be asked again about the PAN copy filed.</summary>
     public bool AsksNsdl => RetryUrl is not null && Items.Any(i => i.Retry is not null);
+
+    /// <summary>How many of the checks are done, as a phone says it on the folded section: "3 of 4 done".</summary>
+    public string DoneCount => $"{Items.Count(i => i.Card.Kind == "is-done")} of {Items.Count} done";
 }
 
 /// <summary>One read card.</summary>

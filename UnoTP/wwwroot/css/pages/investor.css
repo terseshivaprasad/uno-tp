@@ -8,6 +8,7 @@
   color: var(--red);
   flex: none;
 }
+/* The holder's record: the photo, then what was read. */
 .investor-ckyc {
   display: flex;
   gap: 16px;

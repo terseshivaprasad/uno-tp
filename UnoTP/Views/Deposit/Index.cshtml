@@ -338,7 +338,7 @@
                 </div>
 
                 @* ===== The quote ===== *@
-                <aside class="deposit-summary" id="deposit-quote" aria-live="polite">
+                <aside class="deposit-summary phone-fold" id="deposit-quote" aria-live="polite">
                     <partial name="_Quote" model="Model" />
                 </aside>
             </div>
@@ -349,7 +349,8 @@
 <footer class="page-action-bar">
     <div class="page-action-bar__inner">
         <a class="btn btn-outline-primary" asp-controller="Payment" asp-action="Index" data-loader="Going back to Bank Details &amp; Payment">Back</a>
-        <p class="page-action-bar__hint">
+        @* With nothing to fix the line only says where Proceed goes: a phone leaves that out. *@
+        <p class="page-action-bar__hint @(problemCount > 0 ? null : "page-action-bar__hint--guide")">
             @if (problemCount > 0)
             {
                 var thingOrThings = problemCount == 1 ? "thing" : "things";

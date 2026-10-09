@@ -252,9 +252,14 @@
            for a holder with no folio: one on a folio is not checked again. *@
         if (docs.PanChecksShown(h))
         {
-            <section class="doc-read-result">
-                <h2 class="doc-read-result__title">What the PAN was checked with</h2>
-                <partial name="_ReadCards" model="@panReads" />
+            @* On a phone the checks fold to their heading and how many are done (phone.css). *@
+            <section class="doc-read-result phone-fold">
+                <h2 class="doc-read-result__title">
+                    <label class="phone-fold__head"><input type="checkbox" class="phone-fold__toggle visually-hidden" aria-label="Show what the PAN was checked with"><span class="phone-fold__title">What the PAN was checked with</span><span class="phone-fold__brief">@panReads.DoneCount</span><svg class="phone-fold__chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></label>
+                </h2>
+                <div class="phone-fold__body">
+                    <partial name="_ReadCards" model="@panReads" />
+                </div>
             </section>
         }
     }
@@ -349,7 +354,10 @@
         var folioClass = onFolio ? null : "investor-key-value__value--unread";
         var folioText = onFolio ? h.Who.Folio : "Opens with this application";
 
-        <div class="investor-record">
+        <div class="investor-record phone-fold">
+            @* A phone shows who it is on one line, and the record on a tap (phone.css). *@
+            <label class="phone-fold__head phone-fold__head--phone"><input type="checkbox" class="phone-fold__toggle visually-hidden" aria-label="Show the record of @nameText"><span class="phone-fold__who">@nameText</span><span class="phone-fold__brief">PAN @DocumentsViewModel.MaskPan(h.Who.Pan) &middot; read-only</span><svg class="phone-fold__chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></label>
+            <div class="phone-fold__body">
             <div class="investor-panel investor-ckyc">
                 @if (photo is { Before: false })
                 {
@@ -371,6 +379,7 @@
                     </div>
                     @{ await AddressPanel(h); }
                 </div>
+            </div>
             </div>
         </div>
     }
@@ -756,7 +765,10 @@
                 var fromCkyc = Model.Docs.State.Ckyc;
                 if (fromCkyc) investorPhotoNote = "on the CKYC record";
             }
-            <div class="investor-record">
+            <div class="investor-record phone-fold">
+                @* A phone shows who it is on one line, and the record on a tap (phone.css). *@
+                <label class="phone-fold__head phone-fold__head--phone"><input type="checkbox" class="phone-fold__toggle visually-hidden" aria-label="Show the investor&rsquo;s record"><span class="phone-fold__who">@Model.Docs.HolderName</span><span class="phone-fold__brief">PAN @Model.Docs.HolderPan &middot; read-only</span><svg class="phone-fold__chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></label>
+                <div class="phone-fold__body">
                 <div class="investor-panel investor-ckyc">
                     @* The photograph filed on Upload Documents. *@
                     @if (investorPhoto is { Before: false })
@@ -785,6 +797,7 @@
                             await AddressPanel(investor);
                         }
                     </div>
+                </div>
                 </div>
             </div>
             @{ await ManualEntries(1, investor, investorGender); }
@@ -888,10 +901,14 @@
 
         @if (jointLog.Count > 0)
         {
-            <section class="page-card doc-history" id="investorLog">
-                <h2 class="doc-section__title">Joint holders&rsquo; upload, @Glossary.Term("OCR") and verification history</h2>
+            <section class="page-card doc-history phone-fold" id="investorLog">
+                <h2 class="doc-section__title">
+                    <label class="phone-fold__head"><input type="checkbox" class="phone-fold__toggle visually-hidden" aria-label="Show the history"><span class="phone-fold__title">Joint holders&rsquo; upload, @Glossary.Term("OCR") and verification history</span><span class="phone-fold__brief">@jointLog.Count @(jointLog.Count == 1 ? "attempt" : "attempts")</span><svg class="phone-fold__chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></label>
+                </h2>
+                <div class="phone-fold__body">
                 <p class="doc-history__sub">Every joint holder&rsquo;s attempt, newest first. Three refusals in a row send a document to Operations.</p>
                 <partial name="_DocLog" model="@jointLog" />
+                </div>
             </section>
         }
     </form>
@@ -932,7 +949,7 @@
         }
         else
         {
-            <p class="page-action-bar__hint">Add any joint holders and the nominee, then proceed to <strong>Bank Details &amp; Payment</strong></p>
+            <p class="page-action-bar__hint page-action-bar__hint--guide">Add any joint holders and the nominee, then proceed to <strong>Bank Details &amp; Payment</strong></p>
         }
         <div class="page-action-bar__right">
             <button type="submit" form="investorInfoForm" class="btn btn-outline-primary" formaction="@Url.Action("Save")" formnovalidate data-toast="Draft saved">Save draft</button>
