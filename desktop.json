@@ -581,15 +581,15 @@
     "file": "73-dms-application-documents.png",
     "group": "DMS Explorer",
     "note": "An application opened: the documents in use on it",
-    "at": "/Apps/DmsExplorer?by=application&no=DEVBB26F10487"
+    "at": "/Apps/DmsExplorer?by=application&no=DEVBB26F10487&doc=d0v1"
   },
   {
     "step": 74,
     "name": "dms-document-viewed",
     "file": "74-dms-document-viewed.png",
     "group": "DMS Explorer",
-    "note": "Another document opened in the viewer",
-    "at": "/Apps/DmsExplorer?by=application&no=DEVBB26F10487"
+    "note": "Another document opened: the file itself, its details and what the checks said",
+    "at": "/Apps/DmsExplorer?by=application&no=DEVBB26F10487&doc=d1v1"
   },
   {
     "step": 75,
@@ -597,7 +597,7 @@
     "file": "75-dms-class-filter.png",
     "group": "DMS Explorer",
     "note": "Filtered to the FD class: the application's own documents",
-    "at": "/Apps/DmsExplorer?by=application&no=DEVBB26F10487"
+    "at": "/Apps/DmsExplorer?by=application&no=DEVBB26F10487&doc=d3v1"
   },
   {
     "step": 76,
@@ -605,7 +605,7 @@
     "file": "76-dms-history.png",
     "group": "DMS Explorer",
     "note": "History: every copy filed on the application, newest first",
-    "at": "/Apps/DmsExplorer?by=application&no=DEVBB26F10487&view=history"
+    "at": "/Apps/DmsExplorer?by=application&no=DEVBB26F10487&doc=d3v1&view=history"
   },
   {
     "step": 77,
