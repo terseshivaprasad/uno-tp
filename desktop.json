@@ -510,5 +510,61 @@
     "group": "Other pages",
     "note": "Page expired",
     "at": "/Error/Expired"
+  },
+  {
+    "step": 65,
+    "name": "ovd-empty",
+    "file": "65-ovd-empty.png",
+    "group": "OVD Explorer",
+    "note": "OVD Explorer as it opens",
+    "at": "/Apps/OvdExplorer"
+  },
+  {
+    "step": 66,
+    "name": "ovd-application",
+    "file": "66-ovd-application.png",
+    "group": "OVD Explorer",
+    "note": "Looked up by application number: its officially valid documents",
+    "at": "/Apps/OvdExplorer?by=application&no=FBBMFL26F10270"
+  },
+  {
+    "step": 67,
+    "name": "ovd-second-document",
+    "file": "67-ovd-second-document.png",
+    "group": "OVD Explorer",
+    "note": "Another document opened in the details panel",
+    "at": "/Apps/OvdExplorer?by=application&no=FBBMFL26F10270"
+  },
+  {
+    "step": 68,
+    "name": "ovd-verified-only",
+    "file": "68-ovd-verified-only.png",
+    "group": "OVD Explorer",
+    "note": "Filtered to the verified documents",
+    "at": "/Apps/OvdExplorer?by=application&no=FBBMFL26F10270"
+  },
+  {
+    "step": 69,
+    "name": "ovd-pan",
+    "file": "69-ovd-pan.png",
+    "group": "OVD Explorer",
+    "note": "Looked up by PAN: every completed application of that holder",
+    "at": "/Apps/OvdExplorer?by=pan&no=XXXXB1002B"
+  },
+  {
+    "step": 70,
+    "name": "ovd-folio",
+    "file": "70-ovd-folio.png",
+    "group": "OVD Explorer",
+    "note": "Looked up by folio number",
+    "at": "/Apps/OvdExplorer?by=folio&no=MF0051187"
+  },
+  {
+    "step": 71,
+    "name": "ovd-draft-not-found",
+    "file": "71-ovd-draft-not-found.png",
+    "group": "OVD Explorer",
+    "note": "A draft application is not shown: only completed ones are",
+    "at": "/Apps/OvdExplorer?by=application&no=DEVBB26F10280"
   }
 ]
