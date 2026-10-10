@@ -662,5 +662,229 @@
     "group": "DMS Explorer",
     "note": "Uploaded (prototype: nothing is sent or stored)",
     "at": "/Apps/DmsExplorer/Upload"
+  },
+  {
+    "step": 84,
+    "name": "login",
+    "file": "84-login.png",
+    "group": "E-Sarathi Login",
+    "note": "The login as it opens",
+    "at": "/"
+  },
+  {
+    "step": 85,
+    "name": "login-nothing-typed",
+    "file": "85-login-nothing-typed.png",
+    "group": "E-Sarathi Login",
+    "note": "LOGIN pressed with nothing typed",
+    "at": "/"
+  },
+  {
+    "step": 86,
+    "name": "login-wrong-password",
+    "file": "86-login-wrong-password.png",
+    "group": "E-Sarathi Login",
+    "note": "A wrong User ID or Password: no more is said about which",
+    "at": "/"
+  },
+  {
+    "step": 87,
+    "name": "login-checking",
+    "file": "87-login-checking.png",
+    "group": "E-Sarathi Login",
+    "note": "The wait while the User ID and Password are checked",
+    "at": "/"
+  },
+  {
+    "step": 88,
+    "name": "login-otp",
+    "file": "88-login-otp.png",
+    "group": "E-Sarathi Login",
+    "note": "A right password: an OTP is sent and asked for (it is never shown on the page)",
+    "at": "/"
+  },
+  {
+    "step": 89,
+    "name": "login-otp-typed",
+    "file": "89-login-otp-typed.png",
+    "group": "E-Sarathi Login",
+    "note": "Six digits typed: Verify can be pressed",
+    "at": "/"
+  },
+  {
+    "step": 90,
+    "name": "login-otp-wrong",
+    "file": "90-login-otp-wrong.png",
+    "group": "E-Sarathi Login",
+    "note": "A wrong OTP: two tries left",
+    "at": "/"
+  },
+  {
+    "step": 91,
+    "name": "login-otp-resend",
+    "file": "91-login-otp-resend.png",
+    "group": "E-Sarathi Login",
+    "note": "After 30 seconds a fresh OTP can be asked for",
+    "at": "/"
+  },
+  {
+    "step": 92,
+    "name": "login-otp-resent",
+    "file": "92-login-otp-resent.png",
+    "group": "E-Sarathi Login",
+    "note": "A fresh OTP sent, with three tries of its own",
+    "at": "/"
+  },
+  {
+    "step": 93,
+    "name": "login-otp-three-wrong",
+    "file": "93-login-otp-three-wrong.png",
+    "group": "E-Sarathi Login",
+    "note": "Three wrong OTPs: the dialog closes and signing in starts again",
+    "at": "/"
+  },
+  {
+    "step": 94,
+    "name": "login-locked-out",
+    "file": "94-login-locked-out.png",
+    "group": "E-Sarathi Login",
+    "note": "Five wrong passwords in a row: locked out for 15 minutes",
+    "at": "/"
+  },
+  {
+    "step": 95,
+    "name": "login-not-available",
+    "file": "95-login-not-available.png",
+    "group": "E-Sarathi Login",
+    "note": "Forgot User ID and Forgot Password are not built yet",
+    "at": "/"
+  },
+  {
+    "step": 96,
+    "name": "login-error",
+    "file": "96-login-error.png",
+    "group": "E-Sarathi Login",
+    "note": "Something went wrong",
+    "at": "/Error"
+  },
+  {
+    "step": 97,
+    "name": "site-features",
+    "file": "97-site-features.png",
+    "group": "E-Sarathi Login",
+    "note": "Features",
+    "at": "/Features"
+  },
+  {
+    "step": 98,
+    "name": "site-documentation",
+    "file": "98-site-documentation.png",
+    "group": "E-Sarathi Login",
+    "note": "Documentation: the documents of the first kind of investor, from the list Uno TP uses",
+    "at": "/Documentation"
+  },
+  {
+    "step": 99,
+    "name": "site-documentation-chosen",
+    "file": "99-site-documentation-chosen.png",
+    "group": "E-Sarathi Login",
+    "note": "Another kind of investor chosen: its documents show at once",
+    "at": "/Documentation"
+  },
+  {
+    "step": 100,
+    "name": "site-interest-rates",
+    "file": "100-site-interest-rates.png",
+    "group": "E-Sarathi Login",
+    "note": "Interest Rates: the rate card in effect today, read from the database",
+    "at": "/InterestRate"
+  },
+  {
+    "step": 101,
+    "name": "site-about-us",
+    "file": "101-site-about-us.png",
+    "group": "E-Sarathi Login",
+    "note": "About us",
+    "at": "/AboutUs"
+  },
+  {
+    "step": 102,
+    "name": "site-faq",
+    "file": "102-site-faq.png",
+    "group": "E-Sarathi Login",
+    "note": "FAQ's: each question opens and closes its answer",
+    "at": "/FAQ"
+  },
+  {
+    "step": 103,
+    "name": "console",
+    "file": "103-console.png",
+    "group": "E-Sarathi Console",
+    "note": "The console after signing in: the partner, and a tile for each application",
+    "at": "/Classic"
+  },
+  {
+    "step": 104,
+    "name": "console-search",
+    "file": "104-console-search.png",
+    "group": "E-Sarathi Console",
+    "note": "Find an application: the tiles narrowed to one name",
+    "at": "/Classic"
+  },
+  {
+    "step": 105,
+    "name": "console-search-none",
+    "file": "105-console-search-none.png",
+    "group": "E-Sarathi Console",
+    "note": "Find an application: no application goes by that name",
+    "at": "/Classic"
+  },
+  {
+    "step": 106,
+    "name": "console-bell",
+    "file": "106-console-bell.png",
+    "group": "E-Sarathi Console",
+    "note": "The bell: what Uno TP has scheduled (nothing, on this database)",
+    "at": "/Classic"
+  },
+  {
+    "step": 107,
+    "name": "console-not-available",
+    "file": "107-console-not-available.png",
+    "group": "E-Sarathi Console",
+    "note": "An account row pressed: it is not built yet, and says so (on a phone the rows are in the menu)",
+    "at": "/Classic"
+  },
+  {
+    "step": 108,
+    "name": "console-documents",
+    "file": "108-console-documents.png",
+    "group": "E-Sarathi Console",
+    "note": "Required documents: the first kind of investor, from the list Uno TP uses",
+    "at": "/Classic"
+  },
+  {
+    "step": 109,
+    "name": "console-documents-chosen",
+    "file": "109-console-documents-chosen.png",
+    "group": "E-Sarathi Console",
+    "note": "Another kind of investor chosen: its documents show at once",
+    "at": "/Classic"
+  },
+  {
+    "step": 110,
+    "name": "console-error",
+    "file": "110-console-error.png",
+    "group": "E-Sarathi Console",
+    "note": "Something went wrong: the error page, with a reference for support",
+    "at": "/Error"
+  },
+  {
+    "step": 111,
+    "name": "console-session-expired",
+    "file": "111-console-session-expired.png",
+    "group": "E-Sarathi Console",
+    "note": "After Logout, or with no session: Session Expired, and the way back to the login",
+    "at": "/SessionExpired"
   }
 ]
