@@ -1,0 +1,156 @@
+@page "/ApplicationSubmitted/{appNo}/{handler?}"
+@model SubmittedModel
+@{
+    ViewData["Title"] = "Application Submitted";
+
+    // The application as the backend has it once submitted: when, where the
+    // payment link went and until when, and the deposit it carries. The steps
+    // are behind it, so the page has no rail - its own panel, as the old one.
+    var sub = Model.View.App.Submitted!;
+    var d = Model.View.Deposit;
+    var q = Model.View.Quote;
+    var validFor = Model.View.PaymentLinkValidFor;
+    var payout = Model.View.Payout;
+    var appNo = Model.View.Docs.AppNo;
+    var nextSteps = new[]
+    {
+        (Lead: "Investor pays the link", Detail: $" — from any account in a holder’s name. Within {validFor} of the link being sent."),
+        (Lead: "Rate locks on realisation", Detail: " and the FD is booked from that date — not from today."),
+        (Lead: "Operations verifies the documents", Detail: " — the e-receipt is e-mailed to the investor once booked."),
+    };
+}
+
+<div class="submitted-page">
+    <div class="submitted-main">
+        <div class="submitted-title-row">
+            <div class="submitted-tick" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"></path></svg>
+            </div>
+            <div>
+                <h1 class="submitted-title">Application submitted</h1>
+                <div class="submitted-meta">@Money.Day(sub.At) &middot; @appNo
+                    <button type="button" class="doc-copy" data-copy="@appNo" title="Copy the application number" aria-label="Copy the application number">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="1.6"></rect><path d="M15 6.5V5.4A1.4 1.4 0 0 0 13.6 4H5.4A1.4 1.4 0 0 0 4 5.4v8.2A1.4 1.4 0 0 0 5.4 15h1.1"></path></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        @if (Model.View.Refused is { } refused)
+        {
+            <div class="alert alert-danger page-missing-items" role="alert">
+                <svg class="page-missing-items__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 7v6"></path><circle cx="12" cy="16.8" r=".8" fill="currentColor"></circle></svg>
+                <div class="page-missing-items__body"><p>@refused</p></div>
+            </div>
+        }
+
+        @* Submitted with Try later: the application is saved, and no link has been made yet. *@
+        @if (!sub.LinkSent)
+        {
+            <div class="submitted-pending">
+                <div class="submitted-pending__head">
+                    <div class="submitted-pending__title">No payment link sent yet</div>
+                    <div class="submitted-pending__tag">Link not generated</div>
+                </div>
+                <div class="submitted-pending__text">The application is submitted, but <strong>nothing has been sent to the investor</strong>. Generate the payment link below: it goes by SMS and e-mail, and stays open for <strong>@validFor</strong>. Submitted is not booked &mdash; the deposit and its rate are held only while the application stands.</div>
+            </div>
+        }
+        else
+        {
+        <div class="submitted-pending">
+            <div class="submitted-pending__head">
+                <div class="submitted-pending__title">Waiting on the investor&rsquo;s payment</div>
+                <div class="submitted-pending__tag">@(sub.Status == "payment-pending" ? "Payment pending" : sub.Status)</div>
+            </div>
+            <div class="submitted-pending__text">The link was sent by SMS to <strong>@sub.LinkSentTo</strong>@if (sub.LinkEmailedTo.Length > 0) {<text> and by e-mail to <strong>@sub.LinkEmailedTo</strong></text>}, and expires <strong>@Money.Day(sub.LinkValidUntil)</strong>. Submitted is not booked &mdash; the deposit and its rate are held only until then.</div>
+        </div>
+        }
+
+        <div class="submitted-box">
+            <div class="submitted-box__label">What happens next</div>
+            <ol class="submitted-steps">
+                @for (var i = 0; i < nextSteps.Length; i++)
+                {
+                    <li class="submitted-step @(i == 0 ? "submitted-step--current" : "")">
+                        <span class="submitted-step__num">@(i + 1)</span>
+                        <span class="submitted-step__text"><strong>@nextSteps[i].Lead</strong>@nextSteps[i].Detail</span>
+                    </li>
+                }
+            </ol>
+        </div>
+
+        @{
+            var canRegenerate = sub.CanRegenerate(DateTime.Now);
+            var linkWord = sub.LinkSent ? "A new link" : "The link";
+            var regenerateNote = "";
+            if (sub.RegenerateUntil is { } until)
+            {
+                regenerateNote = canRegenerate
+                    ? $"{linkWord} can be sent till {Money.Day(until)}; after that the application cancels itself."
+                    : $"The window for a link closed on {Money.Day(until)}: the application has cancelled itself.";
+            }
+            var sendLabel = sub.LinkSent ? "Regenerate payment link" : "Generate payment link";
+            var sendLoader = sub.LinkSent ? "Sending a new link…" : "Generating the payment link…";
+        }
+        <form method="post" asp-page-handler="Resend" class="submitted-actions">
+            <button type="submit" class="btn btn-primary submitted-actions__primary" disabled="@(!canRegenerate)" data-loader="@sendLoader">@sendLabel</button>
+            <a class="submitted-actions__link submitted-actions__link--plain" asp-page="/Dashboard/Index">Back to dashboard</a>
+        </form>
+        <div class="submitted-note">@regenerateNote</div>
+    </div>
+
+    <div class="submitted-side">
+        <section class="submitted-card">
+            <div class="submitted-card__head">
+                <div class="submitted-card__title">Deposit summary</div>
+            </div>
+            @if (d is not null)
+            {
+                <div class="submitted-key-value-grid">
+                    <div><div class="submitted-key-value__key">Invested amount</div><div class="submitted-key-value__value">@Money.Rupees(d.Amount)</div></div>
+                    <div><div class="submitted-key-value__key">Rate of interest</div><div class="submitted-key-value__value submitted-key-value__value--green">@(q is null ? "—" : $"{q.Rate:0.00}% p.a.")</div></div>
+                    <div><div class="submitted-key-value__key">Tenure</div><div class="submitted-key-value__value">@d.TenureMonths months</div></div>
+                    <div><div class="submitted-key-value__key">Scheme</div><div class="submitted-key-value__value">@(payout?.PerYear == 0 ? "Cumulative" : "Non-cumulative") &middot; @Model.View.Docs.CategoryName(Model.View.Docs.State.Category)</div></div>
+                    <div><div class="submitted-key-value__key">Interest payout</div><div class="submitted-key-value__value">@(payout?.Name ?? d.Payout)</div></div>
+                    <div><div class="submitted-key-value__key">Maturity value</div><div class="submitted-key-value__value">@(q is null ? "—" : Money.Rupees(q.MaturityAmount))</div></div>
+                    @if (d.RenewalFor.Length > 0)
+                    {
+                        <div><div class="submitted-key-value__key">Renewal for</div><div class="submitted-key-value__value">@Model.View.Option(Model.View.Ref.RenewInstructions, d.RenewalFor)</div></div>
+                    }
+                    <div><div class="submitted-key-value__key">Auto renewal</div><div class="submitted-key-value__value">@(d.AutoRenewal ? $"On · {Model.View.Option(Model.View.Ref.RenewInstructions, d.RenewInstruction)}" : "Off")</div></div>
+                    <div><div class="submitted-key-value__key">TDS</div><div class="submitted-key-value__value">@(d.NoTds ? "Not deducted" : "Deducted")</div></div>
+                    <div><div class="submitted-key-value__key">Delivery</div><div class="submitted-key-value__value">@Model.View.Option(Model.View.Ref.DeliveryTypes, d.DeliveryType)</div></div>
+                </div>
+            }
+            <div class="submitted-holders">
+                <div class="submitted-holders__label">Holders</div>
+                <div class="submitted-holders__names">
+                    @for (var i = 0; i < Model.View.Holders.Count; i++)
+                    {
+                        var h = Model.View.Holders[i];
+                        @(i > 0 ? " · " : "")@h.Holder.Who.Name @if (!h.Holder.Joint) { <span class="submitted-holders__role">primary</span> }
+                    }
+                </div>
+            </div>
+        </section>
+
+        <section class="submitted-card submitted-card--padded">
+            <div class="submitted-card__title">Start another</div>
+            <div class="submitted-tiles">
+                <a class="submitted-tile" asp-page="/NewApplication/Index">
+                    <span class="submitted-tile__title">New application</span>
+                    <span class="submitted-tile__text">A different investor, from the search step.</span>
+                </a>
+                <a class="submitted-tile" asp-page="/Applications/Index">
+                    <span class="submitted-tile__title">Track this application</span>
+                    <span class="submitted-tile__text">Find it among the partner&rsquo;s applications.</span>
+                </a>
+            </div>
+        </section>
+    </div>
+</div>
+
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/pages/submitted.css" asp-append-version="true" />
+}

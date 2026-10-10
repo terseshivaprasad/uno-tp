@@ -15,7 +15,7 @@ the ones kept in SQL Server, and the outside services have an HTTP client each i
 | `IReferenceApi.ReferenceAsync`, `ConfigAsync` | The drop-down lists, notes and documents; the limits, ages and days. Kept for `Backend:ReferenceCacheMinutes`. |
 | `IConsoleApi.BoardAsync` | Which features are on, and the notices in the bell. |
 
-## The way in and out (`EntryController`)
+## The way in and out (`EntryModel`)
 
 | Call | Used for |
 |---|---|
@@ -30,7 +30,7 @@ the ones kept in SQL Server, and the outside services have an HTTP client each i
 | `ILinkApi.PendingAsync` | Applications waiting on the investor. |
 | `IPayInSlipApi.SlipsAsync` | Slips still to be presented. |
 
-## Investor Identification (`NewApplicationController`, `HolderSearch`)
+## Investor Identification (`NewApplicationModel`, `HolderSearch`)
 
 | Call | Used for |
 |---|---|
@@ -38,7 +38,7 @@ the ones kept in SQL Server, and the outside services have an HTTP client each i
 | `IApplicationApi.OpenAsync`, `DraftsAsync` | Opening the application; the drafts offered instead. |
 | `IApplicationApi.CancelDraftAsync` | Cancel on a row of the incomplete applications (here and on the dashboard): the draft is marked cancelled, leaves the list, and its steps no longer open or save. |
 
-## Upload Documents (`DocumentsController`, `DocumentsViewModel`)
+## Upload Documents (`DocumentsModel`, `DocumentsViewModel`)
 
 | Call | Used for |
 |---|---|
@@ -57,7 +57,7 @@ the ones kept in SQL Server, and the outside services have an HTTP client each i
 
 The joint holders' documents on Investor Information go through the same calls.
 
-## Investor Information (`InvestorController`)
+## Investor Information (`InvestorModel`)
 
 | Call | Used for |
 |---|---|
@@ -66,7 +66,7 @@ The joint holders' documents on Investor Information go through the same calls.
 | `IPlaceApi.PinCodeAsync` | The district and state of a PIN code. |
 | `INameScreeningService.ScreenAsync` | Every holder, before Proceed. |
 
-## Bank Details & Payment (`PaymentController`)
+## Bank Details & Payment (`PaymentModel`)
 
 | Call | Used for |
 |---|---|
@@ -74,7 +74,7 @@ The joint holders' documents on Investor Information go through the same calls.
 | `IDepositApi.BranchAsync`, `SearchBranchesAsync`, `SearchCmsLocationsAsync`, `CmsLocationAsync` | The branch an IFSC names; the bank search; the Axis CMS branch search, and the location picked checked against the master. |
 | `IInvestorApi.AccountsOnDepositAsync` | In a renewal, the repayment accounts on the deposit being renewed. |
 
-## FD Configuration (`DepositController`)
+## FD Configuration (`DepositModel`)
 
 | Call | Used for |
 |---|---|
@@ -82,7 +82,7 @@ The joint holders' documents on Investor Information go through the same calls.
 | `IDepositApi.RatesAsync`, `QuoteAsync` | The rate card for the category, gender and purchase or renewal; the quote for the deposit as it stands. |
 | `IInvestorApi.ActiveDepositsAsync` | The investor's active deposits in the FD system's register (`FDR_MST`, `DEP_STATUS = 'L'`, by `PAN1`), added up for the source-of-funds rule. |
 
-## Review Summary and Application Submitted (`ReviewController`, `SubmittedController`)
+## Review Summary and Application Submitted (`ReviewModel`, `SubmittedModel`)
 
 | Call | Used for |
 |---|---|
@@ -91,27 +91,27 @@ The joint holders' documents on Investor Information go through the same calls.
 | `IShortLinkService.ShortenAsync` | The payment link shortened, once the application is saved. |
 | `IInvestorApi.ActiveDepositsAsync` | The source-of-funds rule, checked once more before submit. |
 
-## View Application (`ApplicationsController`, `ApplicationDetailsController`)
+## View Application (`ApplicationsModel`, `ApplicationDetailsModel`)
 
 | Call | Used for |
 |---|---|
 | `IApplicationApi.ListAsync`, `FindAsync` | The list; one application's details in the pop-up. |
 | `IDepositApi.QuoteAsync`, `BranchAsync` | The details' figures. |
 
-## Short URL (`LinksController`) and Pay-in Slips (`PayInSlipsController`)
+## Short URL (`LinksModel`) and Pay-in Slips (`PayInSlipsModel`)
 
 | Call | Used for |
 |---|---|
 | `ILinkApi.SentAsync`, `PendingAsync`, `SendAsync` | Links sent; applications waiting; a link sent again. |
 | `IPayInSlipApi.SlipsAsync`, `GenerateAsync` | Slips; a slip generated or reprinted. |
 
-## Renew FD (`RenewController`)
+## Renew FD (`RenewModel`)
 
 | Call | Used for |
 |---|---|
 | `IRenewalApi.DepositsByFolioAsync`, `DepositsByPanAsync`, `StartAsync`, `CancelAsync` | The deposits a folio or PAN holds; a renewal opened; a renewal request cancelled. |
 
-## Console Admin (`AdminController`)
+## Console Admin (`AdminModel`)
 
 | Call | Used for |
 |---|---|

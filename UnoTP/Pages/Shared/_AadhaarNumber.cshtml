@@ -1,0 +1,47 @@
+@model AadhaarNumberBlock
+@* An Aadhaar is filed, and OCR read only the last 4 digits of its number - a
+   masked one. The first 8 are typed here and the PAN-Aadhaar link asked with the
+   whole number. The last 4 are the copy's own: shown, not typed and not posted, so
+   a number that is not the copy's cannot be asked with. Where they were read wrong,
+   the Aadhaar is uploaded again. With no last 4 read at all (OCR switched off) the
+   whole number is typed. The page places the row in its document grid, across the
+   row under the proofs of address. Like a number read, what is typed is kept for
+   this session only, and never put back here. *@
+@{
+    var invalid = Model.Error is null ? null : "is-invalid";
+    var lastFourRead = Model.LastFour.Length > 0;
+}
+<div class="doc-retry @invalid" id="row-@Model.Field" role="group" aria-labelledby="@(Model.Field)Label">
+    <div class="doc-retry__say">
+        <span class="doc-retry__title" id="@(Model.Field)Label">Aadhaar number needed for the @Glossary.Term("PAN–Aadhaar link")</span>
+        @if (lastFourRead)
+        {
+            <span class="doc-retry__text">The Aadhaar is filed, and its last 4 digits were read off the copy. Type the first 8 to check the link; the number is not saved with the application. If the last 4 are not the card&rsquo;s, upload the Aadhaar again.</span>
+        }
+        else
+        {
+            <span class="doc-retry__text">The Aadhaar is filed. Type its 12-digit number to check the link; it is not saved with the application.</span>
+        }
+    </div>
+    <div class="doc-retry__ask">
+        @if (lastFourRead)
+        {
+            <input class="field-input @invalid" id="@Model.Field" name="@Model.Field" data-chars="aadhaar" value=""
+                   inputmode="numeric" maxlength="9" pattern="[0-9 ]*" autocomplete="off" spellcheck="false"
+                   placeholder="First 8 digits" aria-label="First 8 digits of the Aadhaar number" aria-describedby="@(Model.Field)Error">
+            <input class="field-input doc-retry__last-four" value="@Model.LastFour" readonly tabindex="-1"
+                   aria-label="Last 4 digits, as read off the copy" title="Read off the copy. If it is wrong, upload the Aadhaar again.">
+        }
+        else
+        {
+            <input class="field-input @invalid" id="@Model.Field" name="@Model.Field" data-chars="aadhaar" value=""
+                   inputmode="numeric" maxlength="14" pattern="[0-9 ]*" autocomplete="off" spellcheck="false"
+                   placeholder="XXXX XXXX XXXX" aria-label="12-digit Aadhaar number" aria-describedby="@(Model.Field)Error">
+        }
+        <button type="submit" class="btn btn-primary" formaction="@Model.PostUrl" formnovalidate data-loader="Checking the PAN–Aadhaar link&hellip;" data-loader-progress="@Url.Page("/Documents/Index", "Progress")">Check link</button>
+    </div>
+    @if (Model.Error is not null)
+    {
+        <p class="field-error doc-retry__error" id="@(Model.Field)Error" role="alert">@Model.Error</p>
+    }
+</div>

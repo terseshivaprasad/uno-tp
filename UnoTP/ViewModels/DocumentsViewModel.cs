@@ -27,7 +27,7 @@ namespace UnoTP.ViewModels;
 ///
 /// The address carries nothing: the application is the one the session is on,
 /// opened by Investor Identification, and only ever the owner's own (see
-/// <see cref="Controllers.DocumentsController"/>), which reads it, hands it
+/// <see cref="Pages.DocumentsModel"/>), which reads it, hands it
 /// here, and saves what this leaves in it.
 /// </summary>
 public partial class DocumentsViewModel(

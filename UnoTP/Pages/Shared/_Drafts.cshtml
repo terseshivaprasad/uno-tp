@@ -1,0 +1,101 @@
+@model DraftsBlock
+@* The partner's applications opened and not yet submitted, the latest first. The same
+   list is on the dashboard and on Investor Identification. Each row is a Continue button
+   that opens the application on Upload Documents and says Continue at its end, with a
+   quieter Cancel beside it that asks first and then drops the draft. Only the application number is posted; the server checks it
+   belongs to this partner. A long list keeps the rest behind "Show more". *@
+@{
+    var keptForDays = (await Lookups.ConfigAsync()).DraftDays;
+    var openRows = Model.Shown.Take(DraftsBlock.Open).ToList();
+    var moreRows = Model.Shown.Skip(DraftsBlock.Open).ToList();
+}
+
+@functions {
+#pragma warning disable CS1998 // Razor makes these helpers async; there is nothing to await in them.
+
+    // One draft row: who it is for, how far it has got, the amount, and when it was last edited.
+    async Task Row(UnoTP.Models.DraftSummary draft)
+    {
+        var totalSteps = UnoTP.Models.DraftSummary.Steps.Length;
+        // Where a cancel goes back to: the page this list is on.
+        var cancelFrom = Model.Partial ? "search" : NewApplicationModel.FromDashboard;
+        var hasName = draft.Name.Length > 0;
+        var unknownClass = hasName ? null : "is-unknown";
+
+        var initials = "?";
+        var name = "PAN not read yet";
+        var ariaLabel = $"Continue application {draft.AppNo}";
+        if (hasName)
+        {
+            initials = DraftsBlock.Initials(draft.Name);
+            name = draft.Name;
+            ariaLabel += ", " + draft.Name;
+        }
+
+        <li>
+            <form method="post" asp-page="/NewApplication/Index" asp-page-handler="Continue" data-partial="@(Model.Partial ? "" : null)">
+                <input type="hidden" name="draft" value="@draft.AppNo">
+                <button type="submit" class="draft" data-loader="Opening Upload Documents…" data-loader-hint="Application @draft.AppNo" aria-label="@ariaLabel">
+                    <span class="draft__avatar @unknownClass" aria-hidden="true">@initials</span>
+                    <span class="draft__main">
+                        <span class="draft__name @unknownClass">@name</span>
+                        <span class="draft__meta"><span class="draft__no">@draft.AppNo</span> <span aria-hidden="true">&middot;</span> <span class="text-nowrap">PAN @draft.Pan</span>@if (draft.Renews.Length > 0) { <span aria-hidden="true">&middot;</span> <span class="draft__renews text-nowrap">Renewal of @draft.Renews</span> }</span>
+                    </span>
+                    <span class="draft__progress">
+                        <span class="draft__bar" aria-hidden="true">
+                            @for (var i = 0; i < totalSteps; i++)
+                            {
+                                var doneClass = i < draft.StepsDone ? "is-done" : null;
+                                <i class="@doneClass"></i>
+                            }
+                        </span>
+                        <span class="draft__step"><span class="visually-hidden">@draft.StepsDone of @totalSteps steps done. </span>Next: @draft.NextStep</span>
+                    </span>
+                    <span class="draft__end">
+                        @if (draft.Amount > 0)
+                        {
+                            <span class="draft__amount">@PayInSlipsViewModel.Rupees(draft.Amount)</span>
+                        }
+                        else
+                        {
+                            <span class="draft__amount is-unset">Amount not set</span>
+                        }
+                        @if (draft.TouchedAt is not null)
+                        {
+                            <span class="draft__when">Edited @Dates.Ago(draft.TouchedAt.Value)</span>
+                        }
+                    </span>
+                    @* What pressing the row does, in words: the list is headed Continue, so the row says it too. *@
+                    <span class="draft__go" aria-hidden="true">Continue <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg></span>
+                </button>
+            </form>
+            <form method="post" asp-page="/NewApplication/Index" asp-page-handler="CancelDraft" class="draft-cancel">
+                <input type="hidden" name="draft" value="@draft.AppNo">
+                <input type="hidden" name="from" value="@cancelFrom">
+                <button type="submit" class="draft-cancel__button" aria-label="Cancel application @draft.AppNo"
+                        data-confirm="@Messages.InvestorIdentification.ConfirmCancelDraft(draft.AppNo)"
+                        data-loader="Cancelling the application&hellip;" data-loader-hint="Application @draft.AppNo">Cancel</button>
+            </form>
+        </li>
+    }
+}
+
+<p class="drafts__sub">Opened and not submitted, the latest first &middot; identifiers masked &middot; kept @keptForDays days</p>
+<ul class="draft-list">
+    @foreach (var draft in openRows)
+    {
+        await Row(draft);
+    }
+</ul>
+@if (moreRows.Count > 0)
+{
+    <details class="drafts__more">
+        <summary>Show @moreRows.Count more</summary>
+        <ul class="draft-list">
+            @foreach (var draft in moreRows)
+            {
+                await Row(draft);
+            }
+        </ul>
+    </details>
+}

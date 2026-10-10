@@ -495,4 +495,4 @@ public sealed class InvestorViewModel(InvestorInfoState state, DocumentsViewMode
 }
 
 /// <summary>A stop on a page, said as an error: the title, what is wrong, what to do, and a link to where it is done (null when there is nowhere to go).</summary>
-public sealed record StopNotice(string Title, string Why, string WhatToDo, string? LinkText, string? LinkController);
+public sealed record StopNotice(string Title, string Why, string WhatToDo, string? LinkText, string? LinkPage);

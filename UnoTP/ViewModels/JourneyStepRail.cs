@@ -16,8 +16,9 @@ public sealed record RailStep(
 public sealed class StepRail
 {
     private const string InvestorGlyph = "<circle cx=\"12\" cy=\"7.5\" r=\"4\"></circle><path d=\"M4.5 20.5a7.5 7.5 0 0 1 15 0\"></path>";
-    /// <summary>The controller behind each step, in the order of NewApplicationViewModel.Steps.</summary>
-    private static readonly string[] StepControllers = ["NewApplication", "Documents", "Investor", "Payment", "Deposit", "Review"];
+    /// <summary>The page behind each step, in the order of NewApplicationViewModel.Steps.</summary>
+    private static readonly string[] StepPages =
+        ["/NewApplication/Index", "/Documents/Index", "/Investor/Index", "/Payment/Index", "/Deposit/Index", "/Review/Index"];
 
     private const string ReviewGlyph = "<circle cx=\"12\" cy=\"12\" r=\"9.5\"></circle><path d=\"M8 12.5l2.8 2.8L16.5 9.5\"></path>";
 
@@ -31,11 +32,11 @@ public sealed class StepRail
     public int PercentDone { get; }
 
     /// <summary>
-    /// The controller of the step before this one, for the phone's back arrow. None on
+    /// The page of the step before this one, for the phone's back arrow. None on
     /// Investor Identification, which has its own link back to the dashboard, and none
     /// once the application is submitted.
     /// </summary>
-    public string? BackController { get; }
+    public string? BackPage { get; }
 
     /// <summary>The name of the step before this one: what the back arrow goes to.</summary>
     public string BackName { get; } = "";
@@ -69,7 +70,7 @@ public sealed class StepRail
 
         if (current >= 1 && !submitted)
         {
-            BackController = StepControllers[current - 1];
+            BackPage = StepPages[current - 1];
             BackName = names[current - 1];
         }
         PercentDone = Math.Min(100, current * 100 / last);

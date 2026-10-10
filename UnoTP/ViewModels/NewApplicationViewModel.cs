@@ -12,7 +12,7 @@ namespace UnoTP.ViewModels;
 /// Upload Documents, as a joint holder's is.
 ///
 /// Every step is a post, and every post redirects back to the bare page address
-/// (see <see cref="Controllers.NewApplicationController"/>): what was typed
+/// (see <see cref="Pages.NewApplicationModel"/>): what was typed
 /// and what the check found are kept in the session, never in the address, so no
 /// PAN, date of birth or name reaches a log, the history or a Referer header. The
 /// page drawn after the redirect runs the check again from what the session holds.

@@ -1,0 +1,126 @@
+@page "/SearchInvestor/{handler?}"
+@model NewApplicationModel
+@using Stage = UnoTP.ViewModels.NewApplicationViewModel.Stage
+@{
+    ViewData["Title"] = "Investor Identification";
+    ViewData["BackToDashboard"] = true;
+
+    // The old WA_FD_UNOTP/searchinvestor, carrying the new Investor Identification
+    // screen's working parts. No script: every step is a form the page model
+    // answers, and what it found is written into the page. It is the start of a
+    // renewal too: the investor's deposits stand under their record, with Renew
+    // on each one that is due.
+    var due = Model.View.Deposits?.Due ?? 0;
+}
+
+@* Nothing typed travels in an address or a hidden field: every form below posts
+   to the page model, which keeps the search in the session and redirects back to
+   the bare page. *@
+
+<div class="page-layout">
+    <partial name="_ClassicSteps" model="0" />
+
+    <div class="page-main">
+    <section class="page-card section-card">
+        <div class="page-head"><h1 class="page-title">Enter Basic Information</h1></div>
+
+        @* What the partner is told before anything is searched, across the card as
+           the later steps give their notes. *@
+        <div class="alert alert-warning page-warning-note">
+            <svg class="page-warning-note__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 11v6"></path><circle cx="12" cy="7.5" r=".7" fill="currentColor"></circle></svg>
+            <div class="page-warning-note__body">
+                <div class="page-warning-note__title">Note</div>
+                <ul>
+                    @foreach (var n in (await Lookups.ReferenceAsync()).IdentificationNotes)
+                    {
+                        <li>@n</li>
+                    }
+                </ul>
+            </div>
+        </div>
+
+        @if (Model.View.Said is not null)
+        {
+            <div class="alert alert-danger page-missing-items" role="alert">
+                <svg class="page-missing-items__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 7v6"></path><circle cx="12" cy="16.5" r=".7" fill="currentColor"></circle></svg>
+                <div class="page-missing-items__body"><p>@Model.View.Said</p></div>
+            </div>
+        }
+
+        <section class="identify-holder">
+            <div class="identify-holder__head">
+                <span class="identify-holder__no">1</span>
+                <span class="identify-holder__name">Investor</span>
+                <span class="status-word text-secondary-emphasis">Primary holder</span>
+                <span class="identify-status @(Model.View.CanProceed ? "identify-status--ok" : null)">@(Model.View.Identified ? "Identified" : Model.View.CanProceed ? "New investor" : "Not identified")</span>
+            </div>
+
+            <partial name="_HolderIdentification" model="@(new HolderIdentificationBlock(Model.View, "csi", step => Url.Handler(step),
+                NewPanNote: "No folio against this PAN: a new application opens, and the PAN copy is checked with NSDL on Upload Documents."))" />
+        </section>
+
+        @if (Model.View.Deposits is { } deposits)
+        {
+            <partial name="_Deposits" model="deposits" />
+        }
+    </section>
+
+    @* Only the partner's own applications, opened here and not yet submitted. *@
+    <section class="page-card section-card">
+        <div class="drafts__head"><h2 class="page-title drafts__title">Continue an application @if (Model.View.Drafts.Count > 0) { <span class="drafts__count">@Model.View.Drafts.Count</span> }</h2></div>
+        @if (Model.View.Drafts.Count == 0)
+        {
+            <p class="page-note">No application is waiting to be finished. One opened below and left before it is submitted is listed here, kept for @((await Lookups.ConfigAsync()).DraftDays) days.</p>
+        }
+        else
+        {
+        <partial name="_Drafts" model="@(new DraftsBlock(Model.View.Drafts, Partial: true))" />
+        }
+    </section>
+    </div>
+</div>
+
+@* Proceed re-checks everything on the server and opens the application. *@
+<form id="pageProceedForm" method="post" asp-page-handler="Proceed" data-partial hidden></form>
+<form id="pageClearForm" method="post" asp-page-handler="Clear" data-partial hidden></form>
+
+<footer class="page-action-bar">
+    <div class="page-action-bar__inner">
+        <a class="btn btn-outline-primary" asp-page="/Dashboard/Index"
+           data-loader="Going back to the dashboard">Back</a>
+        <p class="page-action-bar__hint">
+            @if (Model.View.NewFdOff is not null && Model.View.CanProceed)
+            {
+                @:@Model.View.NewFdOff @(due > 0 ? "A deposit that is due can still be renewed from its row." : "Proceed is disabled until it is back.")
+            }
+            else if (due > 0)
+            {
+                @:@due @(due == 1 ? "deposit is" : "deposits are") due &mdash; <strong>Renew</strong> on its row, or <strong>Proceed</strong> for a new FD
+            }
+            else if (Model.View.Identified)
+            {
+                @:Investor identified &mdash; <strong>ready to proceed</strong>
+            }
+            else if (Model.View.CanProceed)
+            {
+                @:New investor &mdash; <strong>the PAN copy is uploaded and checked next</strong>
+            }
+            else
+            {
+                @:Identify the investor to continue &mdash; <strong>check the record once the fields are filled</strong>
+            }
+        </p>
+        <div class="page-action-bar__right">
+            <button type="submit" class="link-button btn-reset" form="pageClearForm">Clear All</button>
+            <button type="submit" class="btn btn-primary" form="pageProceedForm" disabled="@(!Model.View.CanProceed || Model.View.NewFdOff is not null)" title="@Model.View.NewFdOff"
+                    data-loader="Opening Upload Documents…">Proceed</button>
+        </div>
+    </div>
+</footer>
+
+@* Every form and link above posts or fetches without the page reloading. *@
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/pages/new.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/pages/renew.css" asp-append-version="true" />
+}

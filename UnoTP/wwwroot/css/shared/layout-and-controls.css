@@ -1638,7 +1638,12 @@ body.is-waiting {
 /* ----- Back to the dashboard ------------------------------------------------
    Over the content of a page that is not a journey step (_Layout, BackToDashboard):
    a link, not a button - it goes somewhere, it does not act - in the brand's red,
-   14px, its chevron pointing the way. */
+   14px, its chevron pointing the way. The link is a line of its own between the
+   header and the first card, so the page starts closer to the header: 16px to the
+   link, where a page without it has 32px to its card. */
+.app-shell:has(> .app-back) {
+  padding-top: 16px;
+}
 .app-back {
   margin: 0 0 12px;
 }

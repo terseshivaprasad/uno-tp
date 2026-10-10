@@ -6,30 +6,49 @@ For anyone changing the UI, CSS or JavaScript by hand. Old names are listed in
 
 ## One page, four files
 
-Every page is a controller, a Razor view, one stylesheet and (when it needs one)
-one script. The layout loads everything shared; a page adds only its own two files
-through `@section Styles` and `@section Scripts` at the foot of its view.
+Every page is a Razor page (`Index.cshtml`), its page model beside it
+(`Index.cshtml.cs`), one stylesheet and (when it needs one) one script. The layout
+loads everything shared; a page adds only its own two files through
+`@section Styles` and `@section Scripts` at the foot of its `.cshtml`.
 
-| Page | URL | Controller | View | Stylesheet | Script |
+| Page | URL | Page model | Razor page | Stylesheet | Script |
 |---|---|---|---|---|---|
-| Dashboard | `/Dashboard` | `DashboardController` | `Views/Dashboard/Index` | `pages/dashboard.css` | – |
-| Investor Identification | `/SearchInvestor` | `NewApplicationController` | `Views/NewApplication/Index` | `pages/new.css` | – |
-| Upload Documents | `/UploadInvestorDocuments/{appNo}` | `DocumentsController` | `Views/Documents/Index` | `pages/documents.css` | `pages/documents.js` |
-| Investor Information | `/InvestorInformation/{appNo}` | `InvestorController` | `Views/Investor/Index` | `pages/investor.css` | `pages/investor.js` |
-| Bank Details & Payment | `/BankDetails/{appNo}` | `PaymentController` | `Views/Payment/Index` | `pages/payment.css` | `pages/payment.js` |
-| FD Configuration | `/FDConfiguration/{appNo}` | `DepositController` | `Views/Deposit/Index` + `_Quote` | `pages/deposit.css` | `pages/deposit.js` |
-| Review Summary | `/ReviewSummary/{appNo}` | `ReviewController` | `Views/Review/Index` + `Shared/_ApplicationSummary` | `pages/review.css` | `pages/review.js` |
-| Application submitted | `/ApplicationSubmitted/{appNo}` | `SubmittedController` | `Views/Submitted/Index` | `pages/submitted.css` | – |
-| View Application | `/ViewApplication` | `ApplicationsController`, `ApplicationDetailsController` (the pop-up's details) | `Views/Applications/Index` | `pages/applications.css` | `pages/applications.js` |
-| Short URL | `/ShortUrl` | `LinksController` | `Views/Links/Index` | `pages/links.css` | `pages/links.js` |
-| Pay-in Slips | `/PayInSlip` | `PayInSlipsController` | `Views/PayInSlips/Index` | `pages/pay-in-slips.css` | `pages/pay-in-slips.js` |
-| Renew FD | `/RenewalDashboard` | `RenewController` | `Views/Renew/Index` | `pages/renew.css` | – |
-| Console Admin | `/Admin` | `AdminController` | `Views/Admin/Index` | `pages/admin.css` | `pages/admin.js` |
-| Error, Session expired, Unauthorized | `/Home/Error` … | `EntryController` | `Views/Entry/*`, `Shared/Error` (on `_StatusLayout`) | `pages/status.css` | – |
+| Dashboard | `/Dashboard` | `DashboardModel` | `Pages/Dashboard/Index` | `pages/dashboard.css` | – |
+| Investor Identification | `/SearchInvestor` | `NewApplicationModel` | `Pages/NewApplication/Index` | `pages/new.css` | – |
+| Upload Documents | `/UploadInvestorDocuments/{appNo}` | `DocumentsModel` | `Pages/Documents/Index` | `pages/documents.css` | `pages/documents.js` |
+| Investor Information | `/InvestorInformation/{appNo}` | `InvestorModel` | `Pages/Investor/Index` | `pages/investor.css` | `pages/investor.js` |
+| Bank Details & Payment | `/BankDetails/{appNo}` | `PaymentModel` | `Pages/Payment/Index` | `pages/payment.css` | `pages/payment.js` |
+| FD Configuration | `/FDConfiguration/{appNo}` | `DepositModel` | `Pages/Deposit/Index` + `_Quote` | `pages/deposit.css` | `pages/deposit.js` |
+| Review Summary | `/ReviewSummary/{appNo}` | `ReviewModel` | `Pages/Review/Index` + `Shared/_ApplicationSummary` | `pages/review.css` | `pages/review.js` |
+| Application submitted | `/ApplicationSubmitted/{appNo}` | `SubmittedModel` | `Pages/Submitted/Index` | `pages/submitted.css` | – |
+| View Application | `/ViewApplication` | `ApplicationsModel`, `ApplicationDetailsModel` (the pop-up's details) | `Pages/Applications/Index`, `Details` | `pages/applications.css` | `pages/applications.js` |
+| Short URL | `/ShortUrl` | `LinksModel` | `Pages/Links/Index` | `pages/links.css` | `pages/links.js` |
+| Pay-in Slips | `/PayInSlip` | `PayInSlipsModel` | `Pages/PayInSlips/Index` | `pages/pay-in-slips.css` | `pages/pay-in-slips.js` |
+| Renew FD | `/RenewalDashboard` | `RenewModel` | `Pages/Renew/Index` (draws nothing: it opens Investor Identification) | `pages/renew.css` | – |
+| Console Admin | `/Admin` | `AdminModel` | `Pages/Admin/Index` | `pages/admin.css` | `pages/admin.js` |
+| The way in, and back to the portal | `/Home`, `/Home/Index`, `/Home/Home`, `/Home/LogOut` | `EntryModel`, `PortalHomeModel`, `LogOutModel` | `Pages/Home/Index`, `Home`, `LogOut` | `pages/status.css` | – |
+| Error, Session expired, Unauthorized, Too many requests | `/Home/Error` … | `ErrorModel`, `SessionExpiredModel` … | `Pages/Home/*` (on `_StatusLayout`) | `pages/status.css` | – |
 
 Paths are under `UnoTP/`; stylesheets and scripts under `UnoTP/wwwroot/css/` and `wwwroot/js/`.
 
-## Shared files (loaded by `Views/Shared/_Layout.cshtml`, in this order)
+### How a page is put together
+
+- **Its address is the first line of its `.cshtml`**: `@page "/UploadInvestorDocuments/{appNo}/{handler?}"`.
+  These are the old app's addresses; the folder a page is in does not change them.
+- **What the page shows is `Model.View`**: the page model builds the page's view model
+  (`ViewModels/`), keeps it in its `View` property and returns `Page()`.
+- **Opening the page is `OnGetAsync`. Everything else the page does is a handler**
+  named after it: `OnPostUploadAsync` answers a post to `…/{appNo}/Upload`,
+  `OnGetSourcingAsync` a get of `…/{appNo}/Sourcing`. A form or button names it with
+  `asp-page-handler="Upload"`; a script is handed its address with `Url.Handler("Upload")`.
+  A handler that takes a number has it after its name: `…/JointCheck/2`.
+- **A link to another page names the page**: `asp-page="/Payment/Index"`, or
+  `RedirectToPage("/Payment/Index")` in a page model. The application number is carried
+  into it by itself (`Infrastructure/ApplicationNumberInUrls.cs`).
+- An address that names a handler the page does not have is a 404
+  (`Infrastructure/HandlerInAddress.cs`).
+
+## Shared files (loaded by `Pages/Shared/_Layout.cshtml`, in this order)
 
 | File | What is in it |
 |---|---|
@@ -51,7 +70,7 @@ Paths are under `UnoTP/`; stylesheets and scripts under `UnoTP/wwwroot/css/` and
 | `js/shared/notices-bell.js`, `js/shared/topbar.js` | The bell panel and the phone menu. |
 | `js/shared/console.js` | Toast and list search carried over from the console. |
 
-Shared partials in `Views/Shared/`: `_DocSlot` (one document card), `_DocLog` (a document's history), `_HolderIdentification` (the PAN / date of birth / folio search block), `_Drafts` (applications to pick up again), `_ApplicationSummary` (the six review sections, editable or read-only), `_RequiredDocs` (the dashboard's document-list dialog), `_ReadCard(s)`, `_ProofType`, `_ChoiceSwitch` (a choice between two, drawn as a switch), `_NsdlRetry`, `_AadhaarNumber`, `_Notices`, `_ClassicSteps`.
+Shared partials in `Pages/Shared/`: `_DocSlot` (one document card), `_DocLog` (a document's history), `_HolderIdentification` (the PAN / date of birth / folio search block), `_Drafts` (applications to pick up again), `_ApplicationSummary` (the six review sections, editable or read-only), `_RequiredDocs` (the dashboard's document-list dialog), `_ReadCard(s)`, `_ProofType`, `_ChoiceSwitch` (a choice between two, drawn as a switch), `_NsdlRetry`, `_AadhaarNumber`, `_Notices`, `_ClassicSteps`.
 
 ## Naming
 
@@ -84,7 +103,7 @@ carry the holder's number: `investor1Income`, `h2-pan`.
 its elements by `data-*` and ids, almost never by class. Before renaming one, search
 `wwwroot/js/` for it and change both sides.
 
-**C#**: controllers stay thin and hand the work to a view model in `ViewModels/`.
+**C#**: page models stay thin and hand the work to a view model in `ViewModels/`.
 `Services/` holds one folder per backend API (the way in, the PAN check, masking, IDfy, the
 shortener); `UnoTP.Data` is the SQL layer over the `t_Unotp_` tables, with the models both share. `Infrastructure/` holds the cross-cutting parts: feature gate, security headers,
 partner session, URL building. Every method has a `///` summary or a comment above it.
@@ -106,7 +125,7 @@ is shown, the words, its name), written from that file.
   the script asks for it with `message('BankDetails.AccountInvalid')`. A value goes
   in by name: `message('BankDetails.NoBranchMatches', { typed: text })`.
 - **A message with a value in it** is a small method: `Messages.Shared.TooLong(40)`.
-- Never write an error's words in a controller, a view model, a view or a script.
+- Never write an error's words in a page model, a view model, a page or a script.
   `ValidationListTests` fails when the list is out of step, when a script asks for
   a message the master does not give it, or when a message is spelt out again.
 

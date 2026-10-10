@@ -1,0 +1,47 @@
+@model int
+@* The step rail down the left of every journey page. The page passes the number of
+   the step it is on (0 = Investor Identification … 5 = Review Summary; Submitted passes 6).
+   Steps behind it carry a filled tick, steps ahead an empty one. *@
+@{
+    var rail = StepRail.For(Model);
+}
+<aside class="page-rail">
+    @* On a phone, Back is an arrow at the start of this bar (phone.css); a laptop has it in the bar at the foot. *@
+    @if (rail.BackPage is not null)
+    {
+        <a class="page-rail__back" asp-page="@rail.BackPage" aria-label="Back to @rail.BackName" data-loader="Going back to @rail.BackName">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>
+        </a>
+    }
+    @* On a phone there is no room for the steps: a count, the step's name and a bar stand in for them. *@
+    <p class="page-rail__where">
+        <span class="page-rail__count">@rail.Count</span>
+        <span class="page-rail__now">@rail.Now</span>
+    </p>
+    <span class="page-rail__bar" aria-hidden="true"><span style="width:@(rail.PercentDone)%"></span></span>
+
+    @foreach (var step in rail.Steps)
+    {
+        @if (step.RuleBefore)
+        {
+            <hr class="page-rail__rule" aria-hidden="true">
+        }
+        <div class="@step.CssClass" aria-current="@(step.IsCurrent ? "step" : null)">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">@Html.Raw(step.Glyph)</svg>
+            <span class="page-rail__label"><span class="page-rail__num">@step.Eyebrow</span>@step.Name</span>
+            @if (step.IsCurrent)
+            {
+                <span class="page-rail__dot" aria-hidden="true"></span>
+            }
+            else
+            {
+                <svg class="page-rail__check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M8 12.5l2.8 2.8L16.5 9.5"></path></svg>
+                <span class="visually-hidden">@(step.IsDone ? "Done" : "Not started")</span>
+            }
+        </div>
+        @if (step.RuleAfter)
+        {
+            <hr class="page-rail__rule" aria-hidden="true">
+        }
+    }
+</aside>

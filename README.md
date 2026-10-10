@@ -2,7 +2,7 @@
 
 The fixed-deposit application journey for E-Sarathi partners: search the investor,
 upload and check their documents, take the holders' details, the bank accounts and
-the deposit, review, submit. ASP.NET Core 10 MVC, server-rendered pages, no SPA.
+the deposit, review, submit. ASP.NET Core 10 Razor Pages, server-rendered pages, no SPA.
 
 ## Run
 
@@ -58,7 +58,7 @@ on the screen waits where it need not, and where it must wait it says so:
 
 | Folder | What it is |
 |---|---|
-| `UnoTP/` | The web app: `Controllers/`, `ViewModels/`, `Views/`, `wwwroot/`, `Infrastructure/`, and `Services/` |
+| `UnoTP/` | The web app: `Pages/`, `ViewModels/`, `wwwroot/`, `Infrastructure/`, and `Services/` |
 | `UnoTP/Services/` | One folder per backend API, each with its settings and its client: `Auth`, `Pan`, `UidMasking`, `Ckyc`, `Idfy`, `NameScreening`, `NameMatch`, `Shortener`. What they share (the gateway address, the switches) is at its top |
 | `UnoTP.Data/` | The database logic, in a project of its own: the `Sql*` classes that answer the pages from SQL Server through Dapper. A change to a query is deployed by replacing `UnoTP.Data.dll` alone |
 | `UnoTP.Data/Models/` | The interfaces the pages read and the records they pass. Both projects use them |
@@ -68,14 +68,14 @@ on the screen waits where it need not, and where it must wait it says so:
 | `docs/VALIDATIONS.md` | Every validation and error message, page by page: written from `UnoTP.Data/Messages.cs`, where the words are changed |
 | `docs/BRAND_GUIDELINES.md` | The UI guidelines from the design: spacing, type, buttons, colours, and the checklist for a page |
 
-Inside `UnoTP`: `Controllers/` one per page, the application steps sharing
-`ApplicationStepController`; `ViewModels/` one per page, `DocumentsViewModel` holding
-the document rules, in one file a concern (`DocumentsViewModel.DocumentSlots.cs`, `.Upload.cs`, `.PanChecks.cs` ...); `Views/{Page}/`; `Infrastructure/` for routing, features, caching
+Inside `UnoTP`: `Pages/{Page}/` holds each page's `Index.cshtml` and its page model
+(`Index.cshtml.cs`), the application steps sharing `ApplicationStepPage`; `ViewModels/` one per page, `DocumentsViewModel` holding
+the document rules, in one file a concern (`DocumentsViewModel.DocumentSlots.cs`, `.Upload.cs`, `.PanChecks.cs` ...); `Infrastructure/` for routing, features, caching
 and the session.
 
 ### Styles and scripts, page by page
 
-The shared layout (`Views/Shared/_Layout.cshtml`) loads everything shared; a page
+The shared layout (`Pages/Shared/_Layout.cshtml`) loads everything shared; a page
 adds only what its own body needs, in its `Styles` and `Scripts` sections.
 
 | | Shared - loaded by the layout | A page's own |

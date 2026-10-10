@@ -1,0 +1,180 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    @* A partner's page: never for a search engine (the X-Robots-Tag header says it too). *@
+    <meta name="robots" content="noindex, nofollow" />
+    @* The Latin face is on every page: fetched before the stylesheet asks for it. *@
+    <link rel="preload" href="~/fonts/georama-latin.woff2" as="font" type="font/woff2" crossorigin asp-append-version="true" />
+    <title>@ViewData["Title"] - E-Sarathi | Uno TP</title>
+    @* Fonts are served from wwwroot, so nothing on the page reaches outside the app. *@
+    @* Shared styles are the layout's: Bootstrap 5.3 (lib/bootstrap) themed to the
+       brand (css/shared/bootstrap-theme.css), then css/shared/. A page adds only its own
+       body's, css/pages/{page}.css, in its Styles section - between the shared ones
+       and the top bar's, the order the rules were written in. *@
+    <link rel="stylesheet" href="~/lib/bootstrap/css/bootstrap.min.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/shared/bootstrap-theme.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/shared/fonts.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/shared/layout-and-controls.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/shared/journey-steps.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/shared/register-pages.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
+    <link rel="stylesheet" href="~/css/shared/topbar.css" asp-append-version="true" />
+    @* What a phone gets differently: one file, inside one width rule. *@
+    <link rel="stylesheet" href="~/css/shared/phone.css" asp-append-version="true" />
+    @* Everything that moves is in this one file, last so it has the final word. *@
+    <link rel="stylesheet" href="~/css/shared/motion.css" asp-append-version="true" />
+    @await RenderSectionAsync("Head", required: false)
+</head>
+<body>
+    <header class="app-header @(ViewData["HeaderVariant"] as string == "public" ? "app-header--public" : null)">
+        <a class="app-header__brand" href="@Apps.Url("/Classic")">
+            <img src="~/images/mahindra-finance-logo.svg" asp-append-version="true" width="164" height="12" alt="Mahindra Finance">
+        </a>
+        @if (ViewData["HeaderVariant"] as string == "public")
+        {
+            @* Before a partner has signed in there is no welcome line, no bell and
+               nowhere to log out of: the bar carries the old public site's menu
+               instead, as the login page draws it. *@
+            <nav class="app-header__right public-nav" aria-label="Site">
+                <span class="public-nav__link public-nav__link--on" aria-current="page">Home</span>
+                @foreach (var item in new[] { "Features", "Documentation", "Interest Rates", "About us", "FAQ's" })
+                {
+                    <button type="button" class="public-nav__link btn-reset js-stub">@item</button>
+                }
+                <button type="button" class="public-nav__login" data-focus-login>Login</button>
+            </nav>
+        }
+        else
+        {
+        <div class="app-header__right">
+            @{
+                // Who is signed in, and as what. A sourcing agency is named by its agency type;
+                // any other partner with a broker code is named by that code.
+                var partner = await Partner.ProfileAsync();
+                var sourcingAgency = (await Lookups.ConfigAsync()).SourcingAgency;
+                var isBroker = partner.BrokerCode.Length > 0 && partner.AgencyType != sourcingAgency;
+                var asWhat = isBroker ? $"Broker {partner.BrokerCode}" : $"Agency {partner.AgencyType}";
+
+                // The first letter of the first two words of the name, for the phone menu's avatar.
+                var initials = "";
+                foreach (var word in partner.Name.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2))
+                {
+                    initials += word[0];
+                }
+            }
+            <div class="app-header__welcome"><span class="welcome-label">Welcome,</span> @partner.Name <span class="entity-code">@partner.Code</span> <span class="app-header__as">@asWhat</span></div>
+            <partial name="_Notices" />
+            <div class="app-header__nav">
+                <a class="@(ViewData["FirstNavActive"] is true ? "app-header__nav-active" : null)" asp-page="/Dashboard/Index">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="8" rx="1.2"></rect><rect x="13.5" y="3.5" width="7" height="5" rx="1.2"></rect><rect x="13.5" y="11.5" width="7" height="9" rx="1.2"></rect><rect x="3.5" y="14.5" width="7" height="6" rx="1.2"></rect></svg>
+                    @(ViewData["FirstNavLabel"] as string ?? "Dashboard")
+                </a>
+                <a asp-page="/Home/Home">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 10.5L12 3.5l8.5 7"></path><path d="M5.5 9v11h13V9"></path><path d="M10 20v-6h4v6"></path></svg>
+                    Portal
+                </a>
+                <a asp-page="/Home/LogOut">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4.5H6a1.5 1.5 0 0 0-1.5 1.5v12A1.5 1.5 0 0 0 6 19.5h8"></path><path d="M10.5 12H20.5M17 8.5l3.5 3.5-3.5 3.5"></path></svg>
+                    Logout
+                </a>
+            </div>
+
+            @* There is no room on a phone for the welcome line and three links,
+               so they go behind this and the bar keeps the brand and the bell.
+               Hidden above the breakpoint, where the bar carries them itself. *@
+            <div class="app-menu">
+                <button type="button" class="app-menu__btn" id="appMenuBtn" aria-expanded="false" aria-controls="appMenuPanel" aria-label="Menu">
+                    <svg class="app-menu__bars" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg>
+                    <svg class="app-menu__cross" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+                </button>
+                <div class="app-menu__panel" id="appMenuPanel" hidden>
+                    @* Who is signed in, since the welcome line the bar carries is
+                       not there at this width. *@
+                    <div class="app-menu__who">
+                        <span class="app-menu__avatar" aria-hidden="true">@initials</span>
+                        <span class="app-menu__whotext">
+                            <span class="app-menu__name">@partner.Name</span>
+                            <span class="app-menu__code">@asWhat &middot; @partner.Code</span>
+                        </span>
+                    </div>
+
+                    <div class="app-menu__group">
+                        <p class="app-menu__label">Go to</p>
+                        <a class="app-menu__row @(ViewData["FirstNavActive"] is true ? "app-menu__row--on" : null)" asp-page="/Dashboard/Index">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="8" rx="1.2"></rect><rect x="13.5" y="3.5" width="7" height="5" rx="1.2"></rect><rect x="13.5" y="11.5" width="7" height="9" rx="1.2"></rect><rect x="3.5" y="14.5" width="7" height="6" rx="1.2"></rect></svg>
+                            <span class="app-menu__row-label">@(ViewData["FirstNavLabel"] as string ?? "Dashboard")</span>
+                        </a>
+                        <a class="app-menu__row" asp-page="/Home/Home">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 10.5L12 3.5l8.5 7"></path><path d="M5.5 9v11h13V9"></path><path d="M10 20v-6h4v6"></path></svg>
+                            <span class="app-menu__row-label">Portal</span>
+                        </a>
+                    </div>
+
+                    @* A page with a rail of its own puts it here on a phone, where
+                       there is no room beside the content for it. *@
+                    @await RenderSectionAsync("MenuExtra", required: false)
+
+                    @* Last, and on its own: nothing else on the panel signs you out. *@
+                    <div class="app-menu__group">
+                        <a class="app-menu__row app-menu__row--out" asp-page="/Home/LogOut">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4.5H6a1.5 1.5 0 0 0-1.5 1.5v12A1.5 1.5 0 0 0 6 19.5h8"></path><path d="M10.5 12H20.5M17 8.5l3.5 3.5-3.5 3.5"></path></svg>
+                            <span class="app-menu__row-label">Logout</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        }
+    </header>
+    <main class="app-shell">
+        @* A page off the dashboard that is not a step of the journey - Investor
+           Identification, the registers, Renew FD, Admin - leads back to it from
+           above its content. A journey step goes back and forth by its own bar. *@
+        @if (ViewData["BackToDashboard"] is true)
+        {
+            <nav class="app-back" aria-label="Back">
+                <a class="app-back__link" asp-page="/Dashboard/Index" data-loader="Going back to the dashboard">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg>
+                    Back to dashboard
+                </a>
+            </nav>
+        }
+        @RenderBody()
+    </main>
+    @if (ViewData["ShowAppFooter"] is true)
+    {
+        <footer class="app-footer">&copy; @DateTime.Today.Year Mahindra Finance &middot; CIN-L65921MH1991PLC059642</footer>
+    }
+    @* Put up whenever a press is waiting on something: it covers the screen on
+       purpose, so nothing is pressed twice while the app is thinking. *@
+    <div class="loader" id="appLoader" role="alert" aria-live="assertive" hidden>
+        <div class="loader__box">
+            <span class="loader__spinner" aria-hidden="true"></span>
+            <p class="loader__what" id="appLoaderWhat">Working&hellip;</p>
+            <p class="loader__hint" id="appLoaderHint" hidden></p>
+        </div>
+    </div>
+    @* Shared scripts are the layout's: js/shared/. A page adds only its own body's,
+       js/pages/{page}.js, in its Scripts section, after these. *@
+    @* Bootstrap's components (modal, tooltip, collapse, dropdown), with Popper. Vanilla JS: no jQuery. *@
+    <script src="~/lib/bootstrap/js/bootstrap.bundle.min.js" asp-append-version="true"></script>
+    @* The validation and error messages the scripts show, from the one master
+       (UnoTP.Data/Messages.cs). Data, not code: messages.js reads it. *@
+    <script type="application/json" id="appMessages">@Html.Raw(MessageList.BrowserJson)</script>
+    <script src="~/js/shared/messages.js" asp-append-version="true"></script>
+    <script src="~/js/shared/loader.js" asp-append-version="true"></script>
+    @* Before the pages' own scripts, so a field found wrong stops a post before it goes. *@
+    <script src="~/js/shared/field-checks.js" asp-append-version="true"></script>
+    <script src="~/js/shared/notices-bell.js" asp-append-version="true"></script>
+    <script src="~/js/shared/topbar.js" asp-append-version="true"></script>
+    <script src="~/js/shared/date-input.js" asp-append-version="true"></script>
+    <script src="~/js/shared/partial-forms.js" asp-append-version="true"></script>
+    <script src="~/js/shared/popup.js" asp-append-version="true"></script>
+    <script src="~/js/shared/image-shrink.js" asp-append-version="true"></script>
+    <script src="~/js/shared/sticky-app-strip.js" asp-append-version="true"></script>
+    <script src="~/js/shared/console.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

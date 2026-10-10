@@ -1,0 +1,17 @@
+@page
+@model ErrorModel
+@{
+    Layout = "_StatusLayout";
+    ViewData["Title"] = "Something went wrong";
+}
+@section Mark {
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4l9 16H3z"></path><path d="M12 10v4.5M12 17.5v.01"></path></svg>
+}
+<p class="status-card__text">@Messages.Shared.CouldNotFinishPage</p>
+@if (Model.ShowRequestId)
+{
+    <p class="status-card__ref">Reference <code>@Model.RequestId</code></p>
+}
+@section Actions {
+    <a class="btn btn-primary" href="~/Dashboard">Back to the dashboard</a>
+}

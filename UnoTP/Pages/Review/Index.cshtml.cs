@@ -1,0 +1,65 @@
+using Microsoft.AspNetCore.Mvc;
+using UnoTP.Models;
+using UnoTP.Infrastructure;
+using UnoTP.ViewModels;
+
+namespace UnoTP.Pages;
+
+/// <summary>Review Summary: the application as a whole, and Submit.</summary>
+public class ReviewModel(IApplicationApi applications, IDepositApi deposits, IServiceProvider services, PaymentLinkSender paymentLinks)
+    : ApplicationStepPage(applications, deposits, services)
+{
+    /// <summary>What the submit dialog's Try later posts as "link": the application is submitted, its link left for later.</summary>
+    public const string LinkLater = "later";
+
+    /// <summary>What the page shows.</summary>
+    public ReviewViewModel View { get; private set; } = null!;
+
+    public async Task<IActionResult> OnGetAsync()
+    {
+        if (await LoadAsync() is not { } docs) return Start();
+        // A submitted application has nothing left to review. This page is where the
+        // browser's Back lands from Application Submitted, so it goes on to the
+        // dashboard: sending it back to Application Submitted would leave Back going nowhere.
+        if (docs.App.Submitted is not null) return RedirectToPage("/Dashboard/Index");
+        var payment = docs.App.Payment;
+        var (pay, repay) = await BranchesAsync(payment?.Payment?.Ifsc ?? "", payment?.Repayment?.Ifsc ?? "");
+        var sourceOfFunds = await SourceOfFundsAsync(docs, docs.App.Deposit?.Amount ?? 0);
+        View = new ReviewViewModel(docs, await QuoteAsync(docs, docs.App.Deposit), pay, repay, sourceOfFunds)
+        {
+            Refused = Said().GetValueOrDefault("banner"),
+            BankProblems = await BankProblemsAsync(docs, BankForm.From(payment)),
+        };
+        return Page();
+    }
+
+    /// <summary>
+    /// Submits the application once nothing blocks it: it is saved as submitted first, always. On Submit &amp; send link
+    /// its payment link is then made, shortened and put on record; a shortener that does not answer never holds up a
+    /// submission. On Try later (<paramref name="link"/> = "later") the application alone is saved: no link is made
+    /// until one is asked for, on Application Submitted.
+    /// </summary>
+    public async Task<IActionResult> OnPostSubmitAsync(string? link)
+    {
+        if (await LoadAsync() is not { } docs) return Start();
+        // Submitted already - from another tab, or by a second press: where it went is on its own page.
+        if (docs.App.Submitted is not null) return RedirectToPage("/Submitted/Index");
+        var review = new ReviewViewModel(docs, null, null, null, await SourceOfFundsAsync(docs, docs.App.Deposit?.Amount ?? 0))
+        {
+            BankProblems = await BankProblemsAsync(docs, BankForm.From(docs.App.Payment)),
+        };
+        if (!review.Ready) return Back(new() { ["banner"] = Messages.ReviewSummary.StillMissing });
+
+        if (await Applications.SubmitAsync(docs.AppNo, docs.App.Version) is null)
+        {
+            // Refused because it was submitted in the meantime: that submission's page stands.
+            if ((await Applications.FindAsync(docs.AppNo))?.Submitted is not null) return RedirectToPage("/Submitted/Index");
+            return Back(new() { ["banner"] = Changed });
+        }
+        if (link == LinkLater) return RedirectToPage("/Submitted/Index");
+
+        var (_, shortened) = await paymentLinks.SendAsync(docs.AppNo, HttpContext.RequestAborted);
+        if (!shortened) TempData["said"] = System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, string> { ["banner"] = PaymentLinkSender.NotShortened });
+        return RedirectToPage("/Submitted/Index");
+    }
+}

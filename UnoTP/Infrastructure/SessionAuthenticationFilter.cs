@@ -1,13 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Caching.Memory;
 using UnoTP.Models;
 
 namespace UnoTP.Infrastructure;
 
 /// <summary>Marks the pages that open without a session: the way in, the pages that say why not, and the error page.</summary>
-[AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
+[AttributeUsage(AttributeTargets.Class)]
 public sealed class AllowWithoutSessionAttribute : Attribute;
 
 /// <summary>
@@ -24,15 +24,13 @@ public sealed class SessionAuthenticationFilter : IAsyncAuthorizationFilter
 
     public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
     {
-        var action = context.ActionDescriptor as ControllerActionDescriptor;
-        var open = action is not null
-            && (action.MethodInfo.IsDefined(typeof(AllowWithoutSessionAttribute), true)
-                || action.ControllerTypeInfo.IsDefined(typeof(AllowWithoutSessionAttribute), true));
+        var page = context.ActionDescriptor as CompiledPageActionDescriptor;
+        var open = page is not null && page.HandlerTypeInfo.IsDefined(typeof(AllowWithoutSessionAttribute), true);
         var http = context.HttpContext;
         if (open || http.Session.SignedIn() && await StillOpenAsync(http)) return;
 
         http.Session.Clear();
-        context.Result = new RedirectToActionResult("SessionExpired", "Entry", null);
+        context.Result = new RedirectToPageResult("/Home/SessionExpired");
     }
 
     // Only an open session is remembered: one found closed is asked about again,

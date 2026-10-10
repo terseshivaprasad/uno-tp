@@ -33,11 +33,11 @@ in its address, never in the session.
 | `/unotp/admin` | Console Admin |
 | `/unotp/entry`, `/unotp/logout`, `/unotp/session-expired`, `/unotp/unauthorized`, `/unotp/error` | Entry and status pages |
 
-Each page is one controller (`UnoTP/Controllers/{Page}Controller.cs`), one view
-model (`ViewModels/{Page}ViewModel.cs`) and one folder of views (`Views/{Page}/`),
+Each page is one folder (`UnoTP/Pages/{Page}/`: the Razor page `Index.cshtml` and its
+page model `Index.cshtml.cs`) and one view model (`ViewModels/{Page}ViewModel.cs`),
 named after the page: `NewApplication`, `Documents`, `Investor`, `Payment`,
 `Deposit`, `Review`, `Submitted`, `Applications`, `PayInSlips`, `Links`, `Admin`,
-`Dashboard`, `Entry`. The plumbing (session, feature gate, errors, cache, app
+`Dashboard`, `Home` (the way in and the status pages). The plumbing (session, feature gate, errors, cache, app
 addresses) is in `Infrastructure/`.
 
 A form posts to its page's address and a verb (`.../documents/upload`,
@@ -321,7 +321,7 @@ future and before `to`, a heading), and the backend checks again.
 The dashboard asks for its lists all at once and counts the rows itself; the
 backend has no route that returns counts. A list is asked for only while the
 user's menu opens its feature. A list that fails is left out and the page still
-loads. The code is in `DashboardController.cs`.
+loads. The code is in `Pages/Dashboard/Index.cshtml.cs`.
 
 | Section | Route | Feature | What the dashboard shows |
 |---|---|---|---|

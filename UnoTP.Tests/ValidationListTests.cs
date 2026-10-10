@@ -128,7 +128,7 @@ public class ValidationListTests
     {
         var files = new List<string>();
         files.AddRange(Directory.EnumerateFiles(AppFolder(), "*.cs", SearchOption.AllDirectories));
-        files.AddRange(Directory.EnumerateFiles(Path.Combine(AppFolder(), "Views"), "*.cshtml", SearchOption.AllDirectories));
+        files.AddRange(Directory.EnumerateFiles(Path.Combine(AppFolder(), "Pages"), "*.cshtml", SearchOption.AllDirectories));
         files.AddRange(Directory.EnumerateFiles(Path.Combine(AppFolder(), "wwwroot", "js"), "*.js", SearchOption.AllDirectories));
         files.AddRange(Directory.EnumerateFiles(Path.Combine(RepoFolder(), "UnoTP.Data"), "*.cs", SearchOption.AllDirectories));
 

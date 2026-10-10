@@ -26,15 +26,21 @@ builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 // No Server header: what the app runs on is nobody's business (see SecurityHeaders).
 builder.WebHost.ConfigureKestrel(kestrel => kestrel.AddServerHeader = false);
 
-// MVC: controllers and their views. FeatureGate closes the pages of a console
-// feature that is switched off, and every post has to carry the antiforgery token
-// the form tag helper writes.
-builder.Services.AddControllersWithViews(options =>
+// Razor Pages: each page is a .cshtml under Pages/ with its page model beside it, and
+// the page's address is on its first line. FeatureGate closes the pages of a console
+// feature that is switched off. Every post has to carry the antiforgery token the form
+// tag helper writes: Razor Pages checks that by itself.
+builder.Services.AddRazorPages(options =>
+{
+    // The old app's second address for Session Expired.
+    options.Conventions.AddPageRoute("/Home/SessionExpired", "Error/Expired");
+})
+.AddMvcOptions(options =>
 {
     // Nobody reaches a page without a session from Home (see SessionAuthenticationFilter).
     options.Filters.Add(new SessionAuthenticationFilter());
+    options.Filters.Add(new HandlerInAddress());
     options.Filters.Add(new FeatureGate());
-    options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
 });
 builder.Services.AddSingleton<AppUrls>();
 // A wizard step's address carries the application's number, and every link and
@@ -193,7 +199,7 @@ app.UseResponseCompression();
 // Deployed under a virtual directory (https://server/<dir>/Dashboard), the app is
 // told the directory here and every address it writes carries it. IIS hands the
 // directory over by itself; any other host sets PathBase in appsettings or as an
-// environment variable. Links in the pages all go through ~/ or asp-action, and
+// environment variable. Links in the pages all go through ~/ or asp-page, and
 // the redirects below through ~/, so none of them skips it.
 // First the address is tidied: a doubled slash in the directory or the path is made
 // one, whoever handed it over (see RequestPaths), so no redirect can begin "//".
@@ -272,10 +278,10 @@ app.UseMiddleware<InputScreening>();
 
 app.UseRouting();
 
-// After routing, so the limit meets only the action marked with it: the way in.
+// After routing, so the limit meets only the page marked with it: the way in.
 app.UseRateLimiter();
 
-app.MapControllers();
+app.MapRazorPages();
 app.MapHealthChecks("/health");
 
 // The portal may open the app at its root: the way in is its entry, with whatever it sent.

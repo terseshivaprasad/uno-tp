@@ -1,0 +1,324 @@
+@page "/Admin/{handler?}"
+@model AdminModel
+@{
+    ViewData["Title"] = "Console Admin";
+    ViewData["BackToDashboard"] = true;
+
+    // The screen behind the classic console: which features are on, and what the
+    // bell in the top bar tells partners is coming. The two are one thing here -
+    // a window that is announced writes its own notice - so nobody has to
+    // remember to tell anyone, and nothing can be told about a window that is
+    // not set.
+    var off = Model.View.Features.Count(f => Model.View.Board.StateOf(f.Key, Model.View.Flags) == "disabled");
+    var queued = Model.View.Features.Count(f => Model.View.Board.StateOf(f.Key, Model.View.Flags) == "scheduled");
+
+}
+
+@functions {
+    // A moment, in the boxes the classic wizard writes one in: three for the day
+    // and two for the time, on the twenty-four hour clock.
+    async Task DateTimeBoxes(string id, DateTime value, string label)
+    {
+        <div class="admin-when" role="group" aria-label="@label">
+            <div class="date-input" data-date id="@(id)Date">
+                <input class="date-input__part" data-dd inputmode="numeric" maxlength="2" placeholder="DD" aria-label="@label day" autocomplete="off" value="@value.ToString("dd")">
+                <span class="date-input__sep">/</span>
+                <input class="date-input__part" data-mm inputmode="numeric" maxlength="2" placeholder="MM" aria-label="@label month" autocomplete="off" value="@value.ToString("MM")">
+                <span class="date-input__sep">/</span>
+                <input class="date-input__part date-input__part--year" data-yyyy inputmode="numeric" maxlength="4" placeholder="YYYY" aria-label="@label year" autocomplete="off" value="@value.ToString("yyyy")">
+            </div>
+            <div class="date-input admin-time" data-time id="@(id)Time">
+                <input class="date-input__part" data-hh inputmode="numeric" maxlength="2" placeholder="HH" aria-label="@label hour" autocomplete="off" value="@value.ToString("HH")">
+                <span class="date-input__sep">:</span>
+                <input class="date-input__part" data-mi inputmode="numeric" maxlength="2" placeholder="MM" aria-label="@label minute" autocomplete="off" value="@value.ToString("mm")">
+            </div>
+        </div>
+        await Task.CompletedTask;
+    }
+}
+
+<div class="page-layout page-layout--wide">
+    <aside class="page-rail page-rail--steps">
+        <h2 class="page-rail__title">Admin only</h2>
+        <div class="page-rail__note">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>
+            <div>
+                <div class="page-rail__note-title">Every partner sees this</div>
+                <p>A tile turned off here is off for everyone on the console, at once. Nothing is off for one partner alone.</p>
+            </div>
+        </div>
+        <div class="page-rail__note">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 6.5V12l3.5 2.5"></path></svg>
+            <div>
+                <div class="page-rail__note-title">A window, not a switch</div>
+                <p>A disable runs from one date and time to another. It starts and ends itself, so nothing is left off by accident.</p>
+            </div>
+        </div>
+        <div class="page-rail__note">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg>
+            <div>
+                <div class="page-rail__note-title">One window per tile</div>
+                <p>A tile already in a window has to have it ended or cancelled before another can be set over it.</p>
+            </div>
+        </div>
+    </aside>
+
+    <div class="admin-stack">
+        <div class="page-card">
+            <div class="page-drafts__head">
+                <h1 class="page-card__title page-card__title--plain">Tile availability</h1>
+                <p class="page-drafts__sub">
+                    The @Model.View.Features.Count tiles on the dashboard.
+                    <span id="adminSummary">@(off == 0 ? "All on" : $"{off} off now") &middot; @queued scheduled to go off.</span>
+                </p>
+            </div>
+
+            <table class="register-table admin-table">
+                <colgroup>
+                    <col style="width:28%"><col style="width:20%"><col style="width:38%"><col style="width:14%">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th scope="col">Tile</th>
+                        <th scope="col">Availability</th>
+                        <th scope="col">Window</th>
+                        <th scope="col" class="register-table__actions"><span class="visually-hidden">Action</span></th>
+                    </tr>
+                </thead>
+                <tbody id="adminRows">
+                    @foreach (var f in Model.View.Features)
+                    {
+                        var w = Model.View.Board.WindowFor(f.Key);
+                        var state = Model.View.Board.StateOf(f.Key, Model.View.Flags);
+                        var others = w?.Features.Where(k => k != f.Key).Select(Model.View.Board.NameOf).ToList() ?? new List<string>();
+                        <tr data-feature="@f.Key" data-state="@state" data-window="@(w?.Id ?? "")" data-name="@f.Name">
+                            <td data-label="Tile">
+                                <strong>@f.Name</strong>
+                                <div class="register-table__sub">@f.Group</div>
+                            </td>
+                            <td data-label="Availability">
+                                @switch (state)
+                                {
+                                    case "off":
+                                        <span class="text-muted" data-status>Switched off</span>
+                                        <div class="register-table__sub" data-status-sub>@f.OffReason</div>
+                                        break;
+                                    case "disabled":
+                                        <span class="text-danger" data-status>Off now</span>
+                                        <div class="register-table__sub register-table__sub--urgent" data-status-sub>back at @ConsoleAdmin.Clock(w!.To)</div>
+                                        break;
+                                    case "scheduled":
+                                        <span class="text-amber" data-status>Goes off @w!.Away</span>
+                                        <div class="register-table__sub" data-status-sub>on until then</div>
+                                        break;
+                                    default:
+                                        <span class="text-success" data-status>Available</span>
+                                        <div class="register-table__sub" data-status-sub>no window set</div>
+                                        break;
+                                }
+                            </td>
+                            <td data-label="Window">
+                                <span data-window-when>@(w is null ? "—" : w.When)</span>
+                                <div class="register-table__sub" data-window-sub>
+                                    @if (w is null)
+                                    {
+                                        @(state == "off" ? "off in appsettings" : "")
+                                    }
+                                    else
+                                    {
+                                        @(w.Length
+                                            + (others.Count > 0 ? " · with " + string.Join(" and ", others) : "")
+                                            + " · " + (w.Announced ? "in the bell" : "not announced"))
+                                    }
+                                </div>
+                            </td>
+                            <td class="register-table__actions" data-act>
+                                @switch (state)
+                                {
+                                    case "off":
+                                        <span class="register-no-link">&mdash;</span>
+                                        break;
+                                    case "disabled":
+                                        <form method="post" asp-page-handler="EndWindow"><input type="hidden" name="id" value="@w!.Id" /><input type="hidden" name="live" value="true" />
+                                            <button type="submit" class="link-button" data-loader="Ending the window&hellip;">End now</button></form>
+                                        break;
+                                    case "scheduled":
+                                        <form method="post" asp-page-handler="EndWindow"><input type="hidden" name="id" value="@w!.Id" /><input type="hidden" name="live" value="false" />
+                                            <button type="submit" class="link-button" data-loader="Cancelling the window&hellip;">Cancel</button></form>
+                                        break;
+                                    default:
+                                        <button type="button" class="link-button" data-schedule>Disable&hellip;</button>
+                                        break;
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <h2 class="admin-form__title" id="adminScheduleTitle">Disable a tile for a window</h2>
+            <form class="admin-form" id="adminWindowForm" method="post" asp-page-handler="AddWindow" novalidate aria-labelledby="adminScheduleTitle">
+                @* The two moments, as the script reads them off the boxes below. *@
+                <input type="hidden" name="from" id="adminFromValue" />
+                <input type="hidden" name="to" id="adminToValue" />
+                <div class="form-field">
+                    <span class="field-label">Tiles to disable</span>
+                    <div class="admin-picks" id="adminPicks">
+                        @foreach (var f in Model.View.Features.Where(f => Model.View.Flags.IsOn(f.Key)))
+                        {
+                            <label class="admin-pick" data-pick="@f.Key">
+                                <input type="checkbox" name="features" value="@f.Key">
+                                <span>@f.Name</span>
+                            </label>
+                        }
+                    </div>
+                    <p class="field-hint">A tile already in a window cannot be picked until that window is ended or cancelled.</p>
+                </div>
+
+                <div class="admin-form__row">
+                    <div class="form-field">
+                        <span class="field-label" id="adminFromLabel">From</span>
+                        @{ await DateTimeBoxes("adminFrom", Model.View.DefaultFrom, "From"); }
+                    </div>
+                    <div class="form-field">
+                        <span class="field-label" id="adminToLabel">To</span>
+                        @{ await DateTimeBoxes("adminTo", Model.View.DefaultTo, "To"); }
+                    </div>
+                </div>
+
+                <div class="form-field">
+                    <label class="field-label" for="adminTitle">Notice to partners</label>
+                    <input class="field-input admin-control--wide" id="adminTitle" name="notice" maxlength="90" autocomplete="off" placeholder="e.g. New FD booking is unavailable on Sunday night">
+                    <p class="field-hint">Shown in the bell until the window ends, with the tiles it affects. Leave it blank for a short window and only the greyed tile will say anything.</p>
+                </div>
+
+                <p class="field-error" id="adminWindowError" hidden></p>
+
+                <div class="admin-form__actions">
+                    <button type="submit" class="btn btn-primary">Schedule window</button>
+                    <button type="button" class="btn btn-outline-primary" id="adminWindowReset">Clear</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="page-card">
+            <div class="page-drafts__head">
+                <h2 class="page-card__title page-card__title--plain">What partners are told</h2>
+                <p class="page-drafts__sub">Everything in the bell in the top bar, soonest first. A notice against a window goes when that window does; a standalone one is removed by hand.</p>
+            </div>
+
+            <table class="register-table admin-table admin-table--notices">
+                <colgroup>
+                    <col style="width:14%"><col style="width:38%"><col style="width:20%">
+                    <col style="width:16%"><col style="width:12%">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th scope="col">Kind</th>
+                        <th scope="col">Notice</th>
+                        <th scope="col">When</th>
+                        <th scope="col">Raised by</th>
+                        <th scope="col" class="register-table__actions"><span class="visually-hidden">Action</span></th>
+                    </tr>
+                </thead>
+                <tbody id="adminNotices">
+                    @* The two sources read as one list, in the order the bell shows
+                       them: the windows that announce themselves, and the notices
+                       that stand on their own. *@
+                    @{
+                        var bell = Model.View.Upcoming.Where(w => w.Announced)
+                            .Select(w => (w.From, w.Id, Kind: "Downtime", Title: w.Notice, Detail: Model.View.Board.AffectsOf(w), w.When, w.Away, By: w.SetBy, Sub: $"with window {w.Id}", Source: "window"))
+                            .Concat(Model.View.Notices.Select(n => (From: n.At, n.Id, n.Kind, n.Title, n.Detail, When: ConsoleAdmin.Stamp(n.At), Away: ConsoleAdmin.Away(n.At), By: n.SetBy, Sub: n.SetOn.ToString("dd/MM, HH:mm"), Source: "standalone")))
+                            .OrderBy(x => x.From);
+                    }
+                    @foreach (var n in bell)
+                    {
+                        <tr data-notice="@n.Id" data-source="@n.Source" data-at="@n.From.ToString("s")">
+                            <td data-label="Kind"><span class="admin-kind-tag @ConsoleAdmin.Tone(n.Kind)">@n.Kind</span></td>
+                            <td data-label="Notice">
+                                <strong>@n.Title</strong>
+                                <div class="register-table__sub">@n.Detail</div>
+                            </td>
+                            <td data-label="When">
+                                <span>@n.When</span>
+                                <div class="register-table__sub">@n.Away</div>
+                            </td>
+                            <td data-label="Raised by">
+                                <span>@n.By</span>
+                                <div class="register-table__sub">@n.Sub</div>
+                            </td>
+                            <td class="register-table__actions">
+                                @if (n.Source == "window")
+                                {
+                                    <span class="register-no-link">&mdash;</span>
+                                }
+                                else
+                                {
+                                    <form method="post" asp-page-handler="RemoveNotice"><input type="hidden" name="id" value="@n.Id" />
+                                        <button type="submit" class="link-button" data-loader="Removing the notice&hellip;">Remove</button></form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <p class="register-empty" id="adminNoticesEmpty" hidden>Nothing in the bell. Partners see no notices at all.</p>
+
+            <h2 class="admin-form__title" id="adminNoticeTitle">Add a notification</h2>
+            <form class="admin-form" id="adminNoticeForm" method="post" asp-page-handler="AddNotice" novalidate aria-labelledby="adminNoticeTitle">
+                <input type="hidden" name="at" id="adminAtValue" />
+                <p class="view-app-scope-note">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M12 11v6"></path><circle cx="12" cy="7.5" r=".7" fill="currentColor"></circle></svg>
+                    <span><strong>This tells, it does not disable.</strong> Use it for a rate change, or for a service behind the wizard such as DMS. To take a dashboard tile off the air, set a window above.</span>
+                </p>
+
+                <div class="admin-form__row">
+                    <div class="form-field">
+                        <span class="field-label">Kind</span>
+                        <div class="admin-kind">
+                            @for (var k = 0; k < Model.View.NoticeKinds.Count; k++)
+                            {
+                                <label class="radio-option">
+                                    <input type="radio" name="kind" value="@Model.View.NoticeKinds[k]" checked="@(k == 0)">
+                                    <span>@Model.View.NoticeKinds[k]</span>
+                                </label>
+                            }
+                        </div>
+                    </div>
+                    <div class="form-field">
+                        <span class="field-label" id="adminAtLabel">Happens at</span>
+                        @{ await DateTimeBoxes("adminAt", Model.View.DefaultNoticeAt, "Happens at"); }
+                    </div>
+                </div>
+
+                <div class="form-field">
+                    <label class="field-label" for="adminNoticeHead">Notice</label>
+                    <input class="field-input admin-control--wide" id="adminNoticeHead" name="title" maxlength="90" autocomplete="off" placeholder="e.g. FD rates change from 1 October">
+                </div>
+
+                <div class="form-field">
+                    <label class="field-label" for="adminNoticeDetail">What it means for work in flight</label>
+                    <textarea class="field-input admin-textarea" id="adminNoticeDetail" name="detail" rows="2" maxlength="260" placeholder="e.g. An application booked and paid before the change keeps the old rate card."></textarea>
+                </div>
+
+                <p class="field-error" id="adminNoticeError" hidden></p>
+
+                <div class="admin-form__actions">
+                    <button type="submit" class="btn btn-primary">Publish to the bell</button>
+                    <button type="button" class="btn btn-outline-primary" id="adminNoticeReset">Clear</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="app-toast" id="toast" role="status" aria-live="polite" data-toast-now="@(ViewData["Toast"] as string)"></div>
+
+@section Scripts {
+    <script src="~/js/pages/admin.js" asp-append-version="true"></script>
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/pages/admin.css" asp-append-version="true" />
+}

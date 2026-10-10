@@ -1,9 +1,9 @@
 # Uno TP
 
-The fixed-deposit application journey for E-Sarathi partners. ASP.NET Core MVC,
+The fixed-deposit application journey for E-Sarathi partners. ASP.NET Core Razor Pages,
 server-rendered pages, Bootstrap 5.3 themed to the brand, vanilla JavaScript.
 
-## Before changing a view, a stylesheet or a script
+## Before changing a page, a stylesheet or a script
 
 Read `docs/BRAND_GUIDELINES.md` (how a page must look: the design's spacing, type,
 buttons and colours, and the checklist for a page) and `docs/CODE_GUIDE.md` (where
@@ -14,7 +14,7 @@ each page's files are and how things are named).
   (`var(--field-gap)`, `font: var(--font-label)`), never the number.
 - A number from the design changes in three places together: the token,
   `docs/BRAND_GUIDELINES.md`, and `UnoTP.Tests/UiGuidelineTests.cs`.
-- No `style=` attribute and no `<style>` block in a view.
+- No `style=` attribute and no `<style>` block in a page or a partial.
 - Do not add to the "still to move" lists in `UiGuidelineTests.cs`. When a page is
   moved onto the guidelines, take its entries out and update the table of pages in
   `docs/BRAND_GUIDELINES.md`.
@@ -27,7 +27,7 @@ Every validation and error message is in `UnoTP.Data/Messages.cs`, by page
 (`docs/CODE_GUIDE.md` says how to add and change one; `docs/VALIDATIONS.md` is the
 list, written from the master).
 
-- Never write an error's or a validation's words in a controller, view model, view
+- Never write an error's or a validation's words in a page model, view model, page
   or script. Add the message to `Messages.cs` and use it by name.
 - After changing `Messages.cs`, write the list again:
   `UPDATE_VALIDATIONS=1 dotnet test UnoTP.sln --filter ValidationListTests`.

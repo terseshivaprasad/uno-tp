@@ -31,15 +31,15 @@ public class UiGuidelineTests
     /// </summary>
     private static readonly string[] ViewsStillToMove =
     {
-        "Views/Admin/Index.cshtml",
-        "Views/Applications/Index.cshtml",
-        "Views/Investor/Index.cshtml",
-        "Views/Links/Index.cshtml",
-        "Views/PayInSlips/Index.cshtml",
-        "Views/Payment/Index.cshtml",
-        "Views/Shared/_ClassicSteps.cshtml",
-        "Views/Shared/_Deposits.cshtml",
-        "Views/Shared/_RequiredDocs.cshtml",
+        "Pages/Admin/Index.cshtml",
+        "Pages/Applications/Index.cshtml",
+        "Pages/Investor/Index.cshtml",
+        "Pages/Links/Index.cshtml",
+        "Pages/PayInSlips/Index.cshtml",
+        "Pages/Payment/Index.cshtml",
+        "Pages/Shared/_ClassicSteps.cshtml",
+        "Pages/Shared/_Deposits.cshtml",
+        "Pages/Shared/_RequiredDocs.cshtml",
     };
 
     [Theory]
@@ -152,10 +152,10 @@ public class UiGuidelineTests
         return Directory.EnumerateFiles(css, "*.css", SearchOption.AllDirectories).OrderBy(file => file);
     }
 
-    /// <summary>Every Razor view.</summary>
+    /// <summary>Every Razor page and partial.</summary>
     private static IEnumerable<string> Views()
     {
-        var views = Path.Combine(AppFolder(), "Views");
+        var views = Path.Combine(AppFolder(), "Pages");
         return Directory.EnumerateFiles(views, "*.cshtml", SearchOption.AllDirectories).OrderBy(file => file);
     }
 

@@ -24,7 +24,7 @@ public static class PartnerSession
 
     /// <summary>
     /// Whose applications this browser may open: the user the portal sent in (see
-    /// EntryController), so an application only ever opens for them. Before anyone
+    /// EntryModel), so an application only ever opens for them. Before anyone
     /// has come in, a random id nobody's applications are held under.
     /// </summary>
     public static string Owner(this ISession session)
@@ -80,7 +80,7 @@ public static class PartnerSession
 
     /// <summary>
     /// Keeps the encrypted UserId and SysCode the portal sent in, for the way back to it
-    /// (EntryController.Home). Called after SignIn, which clears the session.
+    /// (PortalHomeModel). Called after SignIn, which clears the session.
     /// </summary>
     public static void KeepPortalValues(this ISession session, string userId, string sysCode)
     {

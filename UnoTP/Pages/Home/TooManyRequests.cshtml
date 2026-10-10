@@ -1,0 +1,22 @@
+@page
+@model TooManyRequestsModel
+@{
+    Layout = "_StatusLayout";
+    ViewData["Title"] = "Too many requests";
+    ViewData["Tone"] = "amber";
+}
+@section Mark {
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3 2"></path></svg>
+}
+<p class="status-card__text">@Messages.SignIn.TooManyRequestsWhy</p>
+<p class="status-card__text">@Messages.SignIn.TooManyRequestsWhatNext</p>
+@section Actions {
+    @if (HttpContext.Session.SignedIn())
+    {
+        <a class="btn btn-primary" asp-page="/Dashboard/Index">Back to the dashboard</a>
+    }
+    else
+    {
+        <a class="btn btn-primary" href="@Apps.Url("/")">Go to the portal</a>
+    }
+}

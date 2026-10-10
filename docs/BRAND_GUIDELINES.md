@@ -52,6 +52,11 @@ Spacing between parts of a page is a multiple of 8px:
 46, 47 and 18 are not multiples of 8. They are what the board says, so they are kept
 as written.
 
+A page that leads back to the dashboard (Investor Identification, the lists, Console
+Admin) has a "Back to dashboard" link over its first card. There the link is 16px under
+the header and the card 12px under the link. These are the app's own: the board draws
+no such link.
+
 The frame is for a laptop. Below 900px the rail no longer fits beside the card, so
 the margins drop to 16px and the field gap to 24px; below 560px the card padding and
 the field gap are 16px. These are the app's own, not the design's: no phone board
@@ -190,7 +195,7 @@ choice, not the main action and not an error.
 
 The same blue marks the tenure and the interest payout chosen on FD Configuration:
 the tile is outlined in `--selected`, on `--blue-bg`, with its words in `--blue`. Use the shared
-partial `Views/Shared/_ChoiceSwitch.cshtml`. An option that cannot be chosen stays,
+partial `Pages/Shared/_ChoiceSwitch.cshtml`. An option that cannot be chosen stays,
 faded, and says why on hover.
 
 ## Icons (design: Icons)

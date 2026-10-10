@@ -4,16 +4,16 @@ using UnoTP.Infrastructure;
 namespace UnoTP.ViewModels;
 
 /// <summary>
-/// One big tile on the dashboard. Controller is where it opens, or null while there
+/// One big tile on the dashboard. Page is the page it opens, or null while there
 /// is no page behind it yet; Off is what the tile says in place of opening, or null
 /// while the feature behind it is on. Why is the same said in a sentence, for the
 /// banner an off tile opens.
 /// </summary>
-public record DashboardTile(string Key, string Title, string Glyph, string? Controller, string? Off, string? Why = null);
+public record DashboardTile(string Key, string Title, string Glyph, string? Page, string? Off, string? Why = null);
 
 /// <summary>Work waiting on the partner: how many, what the first of them is, and the page that handles it.</summary>
 /// <param name="Tone">amber, blue or red: how pressing it is.</param>
-public sealed record WorkItem(string Key, string Title, int Count, string Detail, string Controller, string Tone);
+public sealed record WorkItem(string Key, string Title, int Count, string Detail, string Page, string Tone);
 
 public class DashboardViewModel(FeatureSet features, ConsoleBoard board, string? off)
 {
@@ -65,11 +65,11 @@ public class DashboardViewModel(FeatureSet features, ConsoleBoard board, string?
         NewOrRenewTile(Sheet + $"<path d=\"M13 11.5v8M9 15.5h8\" {White} stroke-width=\"2.4\"></path>"),
         // A pay-in slip: a torn-off receipt with the rupee on it.
         Tile("pis", "<path d=\"M5 3.5a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v18l-2.3-1.5-2.4 1.5-2.3-1.5-2.3 1.5-2.4-1.5L5 21.5z\" fill=\"currentColor\"></path>"
-            + $"<path d=\"M9 7h6M9 10h6M12.3 7c2.6 0 2.6 5-.8 5H9.4l4.8 4.3\" {White} stroke-width=\"1.8\" fill=\"none\"></path>", "PayInSlips"),
+            + $"<path d=\"M9 7h6M9 10h6M12.3 7c2.6 0 2.6 5-.8 5H9.4l4.8 4.3\" {White} stroke-width=\"1.8\" fill=\"none\"></path>", "/PayInSlips/Index"),
         // Looking an application up: a page with a magnifier.
-        Tile("view-app", Sheet + $"<circle cx=\"12.5\" cy=\"14.5\" r=\"3.2\" {White} stroke-width=\"2\"></circle><path d=\"M14.9 16.9l2.6 2.6\" {White} stroke-width=\"2.2\"></path>", "Applications"),
+        Tile("view-app", Sheet + $"<circle cx=\"12.5\" cy=\"14.5\" r=\"3.2\" {White} stroke-width=\"2\"></circle><path d=\"M14.9 16.9l2.6 2.6\" {White} stroke-width=\"2.2\"></path>", "/Applications/Index"),
         // Two chain links.
-        Tile("short-url", $"<g {Slate} stroke-width=\"2.8\"><path d=\"M10 14a4.5 4.5 0 0 0 6.4 0l3.2-3.2a4.5 4.5 0 0 0-6.4-6.4L11.6 6\"></path><path d=\"M14 10a4.5 4.5 0 0 0-6.4 0l-3.2 3.2a4.5 4.5 0 0 0 6.4 6.4l1.6-1.6\"></path></g>", "Links"),
+        Tile("short-url", $"<g {Slate} stroke-width=\"2.8\"><path d=\"M10 14a4.5 4.5 0 0 0 6.4 0l3.2-3.2a4.5 4.5 0 0 0-6.4-6.4L11.6 6\"></path><path d=\"M14 10a4.5 4.5 0 0 0-6.4 0l-3.2 3.2a4.5 4.5 0 0 0 6.4 6.4l1.6-1.6\"></path></g>", "/Links/Index"),
     ]);
 
     private IReadOnlyList<DashboardTile>? services;
@@ -98,7 +98,7 @@ public class DashboardViewModel(FeatureSet features, ConsoleBoard board, string?
             Tile("admin", $"<g {Slate} stroke-width=\"2.4\"><path d=\"M3.5 7h17M3.5 12h17M3.5 17h17\"></path></g>"
                 + "<circle cx=\"9\" cy=\"7\" r=\"2.9\" fill=\"currentColor\" stroke=\"#fff\" stroke-width=\"1.6\"></circle>"
                 + "<circle cx=\"15\" cy=\"12\" r=\"2.9\" fill=\"currentColor\" stroke=\"#fff\" stroke-width=\"1.6\"></circle>"
-                + "<circle cx=\"7\" cy=\"17\" r=\"2.9\" fill=\"currentColor\" stroke=\"#fff\" stroke-width=\"1.6\"></circle>", "Admin"),
+                + "<circle cx=\"7\" cy=\"17\" r=\"2.9\" fill=\"currentColor\" stroke=\"#fff\" stroke-width=\"1.6\"></circle>", "/Admin/Index"),
         ])
         : [];
 
@@ -133,7 +133,7 @@ public class DashboardViewModel(FeatureSet features, ConsoleBoard board, string?
     // tile is named after both, and is off only while both are.
     private DashboardTile NewOrRenewTile(string glyph)
     {
-        var fresh = Tile("new-fd", glyph, "NewApplication");
+        var fresh = Tile("new-fd", glyph, "/NewApplication/Index");
         if (Board.Feature("renew") is null) return fresh;
 
         var title = $"{fresh.Title} / {Board.NameOf("renew")}";
@@ -145,11 +145,11 @@ public class DashboardViewModel(FeatureSet features, ConsoleBoard board, string?
     // A tile is named as the backend names its feature. One with no page behind it
     // yet cannot open even when its feature is on, so it says what the feature says
     // while it is off rather than being a button that does nothing.
-    private DashboardTile Tile(string key, string glyph, string? controller)
+    private DashboardTile Tile(string key, string glyph, string? page)
     {
         var title = Board.NameOf(key);
-        var off = Board.OffLabel(key, features.Flags) ?? (controller is null ? Board.Feature(key)?.OffReason ?? "Unavailable" : null);
-        return new(key, title, glyph, controller, off,
+        var off = Board.OffLabel(key, features.Flags) ?? (page is null ? Board.Feature(key)?.OffReason ?? "Unavailable" : null);
+        return new(key, title, glyph, page, off,
             off is null ? null : ClosedLine(features, Board, key) ?? $"{title} is not available yet.");
     }
 }
