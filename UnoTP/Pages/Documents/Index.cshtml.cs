@@ -121,7 +121,7 @@ public class DocumentsModel(
 
     // Proceed says what is missing where it is missing, and the page comes back to
     // the first of it; with nothing missing it goes on to Investor Information.
-    public Task<IActionResult> OnPostProceedAsync(UploadForm form) => Change(form, model => model.Proceed());
+    public Task<IActionResult> OnPostProceedAsync(UploadForm form) => ChangeAsync(form, model => model.ProceedAsync(HttpContext.RequestAborted));
 
     // The backend only ever finds the partner's own application, so a number in
     // the address that is not theirs finds nothing.

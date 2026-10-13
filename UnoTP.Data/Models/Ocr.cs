@@ -32,7 +32,14 @@ public sealed record OcrSubject(string Pan, string Dob, string Name);
 public sealed record OcrReading(
     string Pan = "", string Name = "", string Address = "",
     string IdNumber = "", string Account = "", string Bank = "", string Gender = "", string Dob = "",
-    string Number = "", string Expiry = "", ChequeFields? Cheque = null, string District = "", string State = "");
+    string Number = "", string Expiry = "", ChequeFields? Cheque = null, string District = "", string State = "")
+{
+    /// <summary>The task id of the request IDfy answered this with; empty when nothing was asked of it.</summary>
+    public string TaskId { get; init; } = "";
+
+    /// <summary>Whether anything at all was read off the copy.</summary>
+    public bool ReadAnything => this with { TaskId = "" } != new OcrReading();
+}
 
 /// <summary>A cheque's fields as OCR reads them.</summary>
 /// <param name="AccountNumber">The full account number, digits only.</param>

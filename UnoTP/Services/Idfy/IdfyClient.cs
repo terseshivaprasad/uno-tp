@@ -17,10 +17,18 @@ namespace UnoTP.Services.Idfy;
 /// A 200 only means IDfy returned a task, so every answer is checked for a
 /// completed task before its result is read. Nothing is retried: every call that
 /// reaches IDfy may be charged, and a retried one charged twice.
+///
+/// Every request carries a task id of its own, made here, and the application's group
+/// id (<see cref="IdfyGroup"/>), the same one for every request made for that
+/// application. IDfy gives both back with its answer, and the task id is kept with
+/// the document the request was about.
 /// </summary>
-public sealed class IdfyClient(HttpClient http, IOptions<IdfyOptions> options, ILogger<IdfyClient> log)
+public sealed class IdfyClient(HttpClient http, IOptions<IdfyOptions> options, ILogger<IdfyClient> log, IdfyGroup group)
 {
     private const string Service = "IDfy";
+
+    // The group id of the application this request is for; left out where there is none.
+    private Guid? GroupId => group.OfThisRequest();
 
     private readonly IdfyOptions paths = options.Value;
 
@@ -46,46 +54,46 @@ public sealed class IdfyClient(HttpClient http, IOptions<IdfyOptions> options, I
     /// ind_driving_license or ind_passport - or null to have IDfy say what it is
     /// (in <c>detected_doc_type</c>) without checking it against anything.</param>
     public Task<IdfyTask<ValidateResult>> ValidateAsync(UploadFile file, string? docType, CancellationToken ct = default) =>
-        Post<ValidateResult>(paths.ValidateDocumentPath, new { document = Image(file), docType }, ct);
+        Post<ValidateResult>(paths.ValidateDocumentPath, new { document = Image(file), docType, taskId = Guid.NewGuid(), groupId = GroupId }, ct);
 
     // ----- OCR ---------------------------------------------------------------
 
     public Task<IdfyTask<Extracted<PanCard>>> ExtractPanAsync(UploadFile file, CancellationToken ct = default) =>
-        Post<Extracted<PanCard>>(paths.ExtractPanPath, new { document = Image(file) }, ct);
+        Post<Extracted<PanCard>>(paths.ExtractPanPath, new { document = Image(file), taskId = Guid.NewGuid(), groupId = GroupId }, ct);
 
     public Task<IdfyTask<AadhaarExtraction>> ExtractAadhaarAsync(UploadFile file, bool consent, CancellationToken ct = default)
     {
         Consented(consent);
-        return Post<AadhaarExtraction>(paths.ExtractAadhaarPath, new { document = Image(file), consent }, ct);
+        return Post<AadhaarExtraction>(paths.ExtractAadhaarPath, new { document = Image(file), consent, taskId = Guid.NewGuid(), groupId = GroupId }, ct);
     }
 
     public Task<IdfyTask<Extracted<DrivingLicenceCard>>> ExtractDrivingLicenceAsync(UploadFile file, CancellationToken ct = default) =>
-        Post<Extracted<DrivingLicenceCard>>(paths.ExtractDrivingLicencePath, new { document = Image(file) }, ct);
+        Post<Extracted<DrivingLicenceCard>>(paths.ExtractDrivingLicencePath, new { document = Image(file), taskId = Guid.NewGuid(), groupId = GroupId }, ct);
 
     public Task<IdfyTask<Extracted<PassportPage>>> ExtractPassportAsync(UploadFile file, CancellationToken ct = default) =>
-        Post<Extracted<PassportPage>>(paths.ExtractPassportPath, new { document = Image(file) }, ct);
+        Post<Extracted<PassportPage>>(paths.ExtractPassportPath, new { document = Image(file), taskId = Guid.NewGuid(), groupId = GroupId }, ct);
 
     public Task<IdfyTask<Extracted<VoterIdCard>>> ExtractVoterIdAsync(UploadFile file, CancellationToken ct = default) =>
-        Post<Extracted<VoterIdCard>>(paths.ExtractVoterIdPath, new { document = Image(file) }, ct);
+        Post<Extracted<VoterIdCard>>(paths.ExtractVoterIdPath, new { document = Image(file), taskId = Guid.NewGuid(), groupId = GroupId }, ct);
 
     /// <summary>IDfy's cheque OCR (ind_cheque): the account, its IFSC and MICR, and the cheque's number.</summary>
     public Task<IdfyTask<Extracted<ChequeLeaf>>> ExtractChequeAsync(UploadFile file, CancellationToken ct = default) =>
-        Post<Extracted<ChequeLeaf>>(paths.ExtractChequePath, new { document = Image(file) }, ct);
+        Post<Extracted<ChequeLeaf>>(paths.ExtractChequePath, new { document = Image(file), taskId = Guid.NewGuid(), groupId = GroupId }, ct);
 
     // ----- Verification with the source ------------------------------------------
     // The sync forms: the partner is waiting on the page for the answer.
 
     public Task<IdfyTask<Sourced<LicenceSource>>> VerifyDrivingLicenceAsync(string idNumber, DateOnly dateOfBirth, CancellationToken ct = default) =>
-        Post<Sourced<LicenceSource>>(paths.VerifyDrivingLicencePath, new { idNumber, dateOfBirth = IsoDate(dateOfBirth) }, ct);
+        Post<Sourced<LicenceSource>>(paths.VerifyDrivingLicencePath, new { idNumber, dateOfBirth = IsoDate(dateOfBirth), taskId = Guid.NewGuid(), groupId = GroupId }, ct);
 
     public Task<IdfyTask<Sourced<SourceStatus>>> VerifyPassportAsync(string passportFileNumber, DateOnly dateOfBirth, CancellationToken ct = default) =>
-        Post<Sourced<SourceStatus>>(paths.VerifyPassportPath, new { passportFileNumber, dateOfBirth = IsoDate(dateOfBirth) }, ct);
+        Post<Sourced<SourceStatus>>(paths.VerifyPassportPath, new { passportFileNumber, dateOfBirth = IsoDate(dateOfBirth), taskId = Guid.NewGuid(), groupId = GroupId }, ct);
 
     public Task<IdfyTask<Sourced<SourceStatus>>> VerifyVoterIdAsync(string idNumber, CancellationToken ct = default) =>
-        Post<Sourced<SourceStatus>>(paths.VerifyVoterIdPath, new { idNumber }, ct);
+        Post<Sourced<SourceStatus>>(paths.VerifyVoterIdPath, new { idNumber, taskId = Guid.NewGuid(), groupId = GroupId }, ct);
 
     public Task<IdfyTask<Sourced<PanAadhaarLinkSource>>> VerifyPanAadhaarLinkAsync(string panNumber, string aadhaarNumber, CancellationToken ct = default) =>
-        Post<Sourced<PanAadhaarLinkSource>>(paths.VerifyPanAadhaarLinkPath, new { panNumber, aadhaarNumber }, ct);
+        Post<Sourced<PanAadhaarLinkSource>>(paths.VerifyPanAadhaarLinkPath, new { panNumber, aadhaarNumber, taskId = Guid.NewGuid(), groupId = GroupId }, ct);
 
     /// <summary>
     /// IDfy's face compare: whether the faces on two images are the same person.
@@ -94,7 +102,7 @@ public sealed class IdfyClient(HttpClient http, IOptions<IdfyOptions> options, I
     /// take; IDfy turns anything else back, and that is a failed check.
     /// </summary>
     public Task<IdfyTask<FaceCompare>> CompareFacesAsync(UploadFile first, UploadFile second, CancellationToken ct = default) =>
-        Post<FaceCompare>(paths.CompareFacesPath, new { document = Image(first), document2 = Image(second) }, ct);
+        Post<FaceCompare>(paths.CompareFacesPath, new { document = Image(first), document2 = Image(second), taskId = Guid.NewGuid(), groupId = GroupId }, ct);
 
     // ----- Plumbing ----------------------------------------------------------
 
@@ -198,6 +206,7 @@ public sealed class IdfyClient(HttpClient http, IOptions<IdfyOptions> options, I
 // Only the fields the app reads; the rest of each task is ignored.
 
 /// <summary>IDfy's task object. Check <see cref="Status"/> before reading <see cref="Result"/>.</summary>
+/// <param name="TaskId">The task id the request was sent with, which it can be traced by; kept with the document.</param>
 public sealed record IdfyTask<T>(string? Status, string? TaskId, T? Result);
 
 public sealed record ValidateResult(string? DetectedDocType, bool? IsReadable);

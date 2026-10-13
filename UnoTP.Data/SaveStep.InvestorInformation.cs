@@ -17,7 +17,9 @@ internal static class AddressType
 /// <summary>
 /// f_Kyc_NamePrefix: t_FD_BT_Kyc_Data_Dtl keeps a holder's gender as the prefix to
 /// their name, worked out from the gender and marital status, and it is read back
-/// off the prefix.
+/// off the prefix. The prefix is a code of the salutation master
+/// (t_FD_BT_Salutation_Mst): MR, MRS or MS. The master has none for a transgender
+/// holder, who is written as MS - and so reads back as female.
 /// </summary>
 internal static class NamePrefixes
 {
@@ -25,14 +27,17 @@ internal static class NamePrefixes
     public static string Of(string gender, string maritalStatus)
     {
         var known = Genders.Of(gender);
-        if (known == Genders.Male) return "Mr";
-        if (known == Genders.Female && maritalStatus == "Married") return "Mrs";
-        if (known == Genders.Female) return "Miss";
-        if (known == Genders.Transgender) return "Mx";
+        if (known == Genders.Male) return "MR";
+        if (known == Genders.Female && maritalStatus == "Married") return "MRS";
+        if (known == Genders.Female) return "MS";
+        if (known == Genders.Transgender) return "MS";
         return "";
     }
 
-    /// <summary>The gender a name prefix stands for, however it is written: Mr, MR., Mrs, Miss, Ms, Mx. Empty for any other.</summary>
+    /// <summary>
+    /// The gender a name prefix stands for, however it is written: MR, Mr., MRS, MS, and
+    /// the Miss and Mx of rows written before the master's codes were used. Empty for any other.
+    /// </summary>
     public static string GenderOf(string? prefix)
     {
         var known = (prefix ?? "").Trim().TrimEnd('.').ToUpperInvariant();
@@ -89,22 +94,7 @@ internal static partial class Sections
         // its codes go beside the names. One it does not hold is kept by name alone.
         var occupation = masters.OccupationOf(h.Occupation, h.SubOccupation);
         var born = Dates.ParseDdMmYyyy(who.Dob);
-        return db.ExecuteAsync("""
-            INSERT dbo.t_FD_BT_Kyc_Data_Dtl (f_Holder_Type, f_Appl_No, f_Kyc_ConstiType, f_Kyc_NamePrefix, f_Kyc_FirstName, f_Kyc_FullName,
-                f_Kyc_FatherFirstName, f_Kyc_FatherFullName, f_Kyc_SpouseFirstName, f_Kyc_SpouseFullName,
-                f_Kyc_MotherFirstName, f_Kyc_MotherFullName, f_Kyc_MaritalStatus, f_Kyc_Nationality_Code, f_Kyc_Nationality_Desc,
-                f_Kyc_DOB, f_IsMinor, f_Kyc_PAN, f_Kyc_Number, f_FolioNo, f_Kyc_AnnualIncome_Code, f_Kyc_AnnualIncome_Desc, f_CustSeg_Type_desc, f_CustSeg_Subtype_Desc,
-                f_CustSeg_Type_Code, f_CustSeg_Subtype_Code, f_Kyc_Occupation_Code, f_Kyc_Occupation_Desc,
-                f_NSA_Response, f_NSA_Date, f_IsPEP, f_IsPEP_Relative, f_IsPanVerified, f_Data_Source,
-                f_Source, f_Status, f_Active, f_CreatedBy, f_CreatedByUName, f_CreatedOn, f_CreatedIP, f_SessionID)
-            VALUES (@HolderType, @AppNo, '01', @NamePrefix, @FirstName, @Name,
-                @Father, @Father, @Spouse, @Spouse,
-                @Mother, @Mother, @MaritalStatus, 'IN', 'India',
-                @Dob, @Minor, @Pan, @CkycNumber, @Folio, @AnnualIncomeCode, @AnnualIncome, @Occupation, @SubOccupation,
-                @TypeCode, @SubTypeCode, @OccupationCode, @OccupationName,
-                @ScreeningStatus, @ScreenedOn, @Pep, @PepRelated, @PanVerified, @DataSource,
-                @Source, @Status, 1, @CreatedBy, @UserName, GETDATE(), @Ip, @SessionId)
-            """, new
+        return db.ExecuteAsync(ApplicationTableQueries.InsertKyc, new
         {
             HolderType = h.Holder, at.AppNo, NamePrefix = NamePrefixes.Of(gender, h.MaritalStatus),
             // The whole name, as the table's own note asks, in both columns.
@@ -140,14 +130,7 @@ internal static partial class Sections
     }
 
     private static Task InsertAddressAsync(IDbConnection db, IDbTransaction tx, Stamp at, HolderDetails h, string folio, string type, string typeName, TypedAddress a) =>
-        db.ExecuteAsync("""
-            INSERT dbo.t_FD_BT_Address_Dtl (f_Holder_Type, f_Appl_No, f_AddType_Code, f_AddType_Desc, f_Add1, f_Add2, f_Add3,
-                f_AddCity_Desc, f_AddDistrict_Desc, f_AddState_Desc, f_AddPin, f_MobileNumber, f_EmailAdd, f_FolioNo,
-                f_Source, f_Status, f_Active, f_CreatedBy, f_CreatedByUName, f_CreatedOn, f_CreatedIP, f_SessionID)
-            VALUES (@HolderType, @AppNo, @Type, @TypeName, @Line1, @Line2, @Line3,
-                @City, @District, @State, @PinCode, @Mobile, @Email, @Folio,
-                @Source, @Status, 1, @CreatedBy, @UserName, GETDATE(), @Ip, @SessionId)
-            """, new
+        db.ExecuteAsync(ApplicationTableQueries.InsertAddress, new
         {
             HolderType = h.Holder, at.AppNo, Type = type, TypeName = typeName,
             Line1 = Cut(a.Line1, 100), Line2 = Cut(a.Line2, 100), Line3 = Cut(a.Line3, 100),
@@ -162,14 +145,7 @@ internal static partial class Sections
     private static Task InsertNomineeAsync(IDbConnection db, IDbTransaction tx, Stamp at, NomineeDetails n, int minorUnder, string relationCode)
     {
         var born = Dates.ParseDdMmYyyy(n.Dob);
-        return db.ExecuteAsync("""
-            INSERT dbo.t_FD_BT_Nominee_Dtl (f_Appl_No, f_Nominee_Name, f_Nominee_Relations, f_Nominee_DOB, f_Is_Nominee_Minor,
-                f_GuardianName, f_Address1, f_Address2, f_Address3, f_City, f_PIN, f_FolioNo,
-                f_Source, f_Status, f_Active, f_CreatedBy, f_CreatedByUName, f_CreatedOn, f_CreatedIP, f_SessionId)
-            VALUES (@AppNo, @Name, @Relation, @Dob, @Minor,
-                @GuardianName, @GuardianLine1, @GuardianLine2, @GuardianLine3, @GuardianCity, @GuardianPinCode, @Folio,
-                @Source, @Status, 1, @CreatedBy, @UserName, GETDATE(), @Ip, @SessionId)
-            """, new
+        return db.ExecuteAsync(ApplicationTableQueries.InsertNominee, new
         {
             at.AppNo, n.Name, Relation = Cut(relationCode, 20), Dob = born, Minor = IsMinor(born, DateTime.Today, minorUnder),
             n.GuardianName, n.GuardianLine1, n.GuardianLine2, n.GuardianLine3, n.GuardianCity, n.GuardianPinCode, at.Folio,

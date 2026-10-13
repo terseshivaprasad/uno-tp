@@ -106,7 +106,7 @@ public sealed class FileDocuments(Db db, IPartner partner, SqlReference referenc
     {
         await using var connection = await db.OpenAsync(ct);
         return await connection.ExecuteScalarAsync<int>(
-            "SELECT COUNT(*) FROM dbo.t_Unotp_Application_Mst WHERE f_App_No = @AppNo AND f_Partner_Id = @Partner AND f_Active = 1",
+            ApplicationQueries.IsPartnersApplication,
             new { AppNo = appNo, Partner = partner.Id }) > 0;
     }
 }

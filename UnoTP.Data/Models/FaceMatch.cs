@@ -15,4 +15,8 @@ public interface IFaceMatchService
 /// <param name="Unsure">Set when no answer either way could be given - no face found, or too close to call - and why.</param>
 /// <param name="PanFace">Whether a face was found on the PAN copy.</param>
 /// <param name="ProofFace">Whether a face was found on the proof of address.</param>
-public sealed record FaceMatch(bool Matched, int Score, string? Unsure = null, bool PanFace = true, bool ProofFace = true);
+public sealed record FaceMatch(bool Matched, int Score, string? Unsure = null, bool PanFace = true, bool ProofFace = true)
+{
+    /// <summary>The task id of the request IDfy answered this with.</summary>
+    public string TaskId { get; init; } = "";
+}

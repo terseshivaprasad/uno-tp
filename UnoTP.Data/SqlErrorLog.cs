@@ -8,7 +8,7 @@ using Microsoft.Extensions.Hosting;
 namespace UnoTP.Data;
 
 /// <summary>
-/// Errors to dbo.t_Unotp_Logs (db/create_tables.sql): every entry an ILogger writes at
+/// Errors to dbo.t_Unotp_Logs (db/create_new_tables.sql): every entry an ILogger writes at
 /// Logging:Sql:MinLevel (Error) or above, with the request it happened in and who
 /// was signed in. The logger only queues the row; <see cref="SqlLogWriter"/> writes
 /// the queue in the background, so a request never waits on the log, and a full
@@ -89,13 +89,6 @@ internal sealed class SqlLoggerProvider(Channel<LogRow> queue, IHttpContextAcces
 /// </summary>
 internal sealed class SqlLogWriter(Channel<LogRow> queue, Db db) : BackgroundService
 {
-    private const string Insert = """
-        INSERT INTO dbo.t_Unotp_Logs (f_App_Name, f_Environment, f_Level, f_Category, f_Event_Id, f_Message, f_Exception,
-            f_Trace_Id, f_Request_Method, f_Request_Path, f_App_No, f_Client_Ip, f_Machine_Name, f_Logged_At, f_Created_By)
-        VALUES (@AppName, @Environment, @Level, @Category, @EventId, @Message, @Exception,
-            @TraceId, @RequestMethod, @RequestPath, @AppNo, @ClientIp, @MachineName, @LoggedAt, @CreatedBy)
-        """;
-
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         var batch = new List<LogRow>(50);
@@ -119,7 +112,7 @@ internal sealed class SqlLogWriter(Channel<LogRow> queue, Db db) : BackgroundSer
         try
         {
             await using var connection = await db.OpenAsync(ct);
-            await connection.ExecuteAsync(new CommandDefinition(Insert, batch, cancellationToken: ct));
+            await connection.ExecuteAsync(new CommandDefinition(ErrorLogQueries.Insert, batch, cancellationToken: ct));
         }
         catch (Exception e) when (e is not OperationCanceledException || !ct.IsCancellationRequested)
         {

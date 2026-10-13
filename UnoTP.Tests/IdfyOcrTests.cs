@@ -10,7 +10,7 @@ public class IdfyOcrTests
     private static readonly UploadFile Copy = new("passport.jpg", "image/jpeg", [1, 2, 3]);
 
     private static IdfyOcr OcrOver(StubNetwork network) =>
-        new(new IdfyClient(network.Client(), Options.Create(new IdfyOptions()), NullLogger<IdfyClient>.Instance));
+        new(new IdfyClient(network.Client(), Options.Create(new IdfyOptions()), NullLogger<IdfyClient>.Instance, new IdfyGroup(new Microsoft.AspNetCore.Http.HttpContextAccessor())));
 
     [Fact]
     public async Task A_passports_pin_code_comes_from_its_own_field_and_ends_the_address()
@@ -82,7 +82,7 @@ public class IdfyOcrTests
         {
             Answer = """{"status":"completed","task_id":"t","result":{"source_output":{"status":"id_found","dl_status":"Active","gender":"Female","nt_validity_to":"2031-07-18"}}}""",
         };
-        var verification = new IdfyVerification(new IdfyClient(issuer.Client(), Options.Create(new IdfyOptions()), NullLogger<IdfyClient>.Instance));
+        var verification = new IdfyVerification(new IdfyClient(issuer.Client(), Options.Create(new IdfyOptions()), NullLogger<IdfyClient>.Instance, new IdfyGroup(new Microsoft.AspNetCore.Http.HttpContextAccessor())));
         var answer = await verification.ConfirmProofAsync("Driving Licence", reading, "12-04-1990");
 
         Assert.True(answer.Confirmed);

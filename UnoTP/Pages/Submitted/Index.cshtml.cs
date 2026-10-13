@@ -29,7 +29,7 @@ public class SubmittedModel(IApplicationApi applications, IDepositApi deposits, 
 
     /// <summary>
     /// Sends a payment link, while the application's window is open. One submitted with Try later has none yet: its
-    /// first is made here, shortened and put on record. Otherwise the link it has is sent again, for the full validity.
+    /// first is made here, shortened and put on record. Otherwise the same short link is sent again, open for 24 hours.
     /// </summary>
     public async Task<IActionResult> OnPostResendAsync()
     {

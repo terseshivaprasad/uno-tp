@@ -26,11 +26,7 @@ public sealed partial class SqlReference
             (entry.AbsoluteExpirationRelativeToNow, entry.Size) = (KeptFor, 1);
 
             await using var connection = await db.OpenAsync(ct);
-            var lists = (await connection.QueryAsync<Entry>("""
-                SELECT f_List AS List, f_Code AS Code, f_Name AS Name, f_Parent AS Parent, f_Attrs AS Attrs
-                FROM dbo.t_Unotp_Ref_List
-                WHERE f_List IN ('filedDocuments', 'documentSubTypes', 'documentTypes') AND f_Active = 1
-                """)).ToLookup(e => e.List);
+            var lists = (await connection.QueryAsync<Entry>(ListQueries.DocumentCodeLists)).ToLookup(e => e.List);
 
             var codes = new Dictionary<string, DocumentCode>();
             foreach (var document in lists["filedDocuments"])

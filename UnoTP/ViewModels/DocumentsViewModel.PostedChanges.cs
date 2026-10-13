@@ -115,10 +115,17 @@ public partial class DocumentsViewModel
     }
 
     // Proceed says what is missing where it is missing, and the page comes back
-    // to the first of it.
-    public string? Proceed()
+    // to the first of it. The sourcing codes are looked up again first, so the ones
+    // checked against the registers are the ones just posted.
+    public async Task<string?> ProceedAsync(CancellationToken ct = default)
     {
         Keep();
+        await ReadSourcingNamesAsync(ct);
+        return WhatStopsProceed();
+    }
+
+    private string? WhatStopsProceed()
+    {
         var s = State;
         var flash = FlashMessages();
         void Need(bool ok, string key, string message)
@@ -138,6 +145,9 @@ public partial class DocumentsViewModel
         {
             Need(s.SourceCode.Length > 0, "docsSourceCode", Messages.UploadDocuments.SourceCodeRequired(mode.CodeLabel.ToLowerInvariant()));
             if (SubRequired(mode)) Need(s.SubBroker.Length > 0, "docsSubBroker", Messages.UploadDocuments.SubBrokerRequired);
+            // A code typed against a register must be on it, for the sourcing mode chosen.
+            if (CodeProblem(mode, sub: false) is { } sourceProblem) Need(false, "docsSourceCode", sourceProblem);
+            if (CodeProblem(mode, sub: true) is { } subProblem) Need(false, "docsSubBroker", subProblem);
         }
         Need(s.Category.Length > 0, "docsCategory", Messages.UploadDocuments.CategoryNotSet);
         if (IsEmployee(s.Category))
@@ -170,7 +180,10 @@ public partial class DocumentsViewModel
             flash.Focus ??= "read-" + Investor.Key("link");
         }
         // ...and once the name and date of birth on the proof of address match the PAN's.
-        if (State.Docs.ContainsKey(Investor.Key("poa")) && DetailsNeed(Investor) is { } detailsNeed)
+        // A name NSDL did not verify must match a proof, so the match is asked for
+        // even before the proof is filed.
+        var matchAsked = State.Docs.ContainsKey(Investor.Key("poa")) || NsdlOf(Investor) == NameNotVerified && View(PoaSlot).Used;
+        if (matchAsked && DetailsNeed(Investor) is { } detailsNeed)
         {
             flash.Errors[Investor.Key("details")] = detailsNeed;
             flash.Focus ??= "read-" + Investor.Key("details");
@@ -204,11 +217,14 @@ public partial class DocumentsViewModel
     }
 
     // What stops Proceed on the PAN-POA name and date of birth; null once they match.
+    // For a holder whose name NSDL did not verify the match is mandatory: nothing
+    // but a match will do, not even the name match being switched off.
     private string? DetailsNeed(DocHolder h)
     {
-        var card = State.Reads.GetValueOrDefault(h.Key("details"));
+        var card = State.Docs.ContainsKey(h.Key("poa")) ? State.Reads.GetValueOrDefault(h.Key("details")) : null;
+        if (card is { Kind: "is-done" }) return null;
+        if (NsdlOf(h) == NameNotVerified) return Messages.UploadDocuments.NameMatchMandatory;
         if (card is null) return Messages.UploadDocuments.NameMustBeMatched;
-        if (card.Kind == "is-done") return null;
         if (card.Kind == "is-na") return null;
         return Messages.UploadDocuments.NameAndDobMustMatch;
     }
@@ -234,6 +250,9 @@ public partial class DocumentsViewModel
             foreach (var v in HolderSlots.Select(d => View(d, h)).Where(v => v.Missing))
                 Need(v.Key, Messages.UploadDocuments.DocumentRequired, "slot-" + v.Key);
             if (NsdlUnsettled(h)) Need(h.Key("nsdl"), NsdlNeed(h), "read-" + h.Key("nsdl"));
+            // A name NSDL did not verify must match the name on the holder's proof of address.
+            if (NsdlOf(h) == NameNotVerified && View(PoaSlot, h).Used && DetailsNeed(h) is { } nameNeed)
+                Need(h.Key("details"), nameNeed, "read-" + h.Key("details"));
         }
         if (flash.Errors.Count == 0 && flash.Banner is null) Said = null;
         return flash.Focus;

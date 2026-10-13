@@ -1,5 +1,6 @@
 using UnoTP.Models;
 using UnoTP.Services;
+using UnoTP.Services.Idfy;
 
 namespace UnoTP.ViewModels;
 
@@ -305,6 +306,8 @@ public partial class DocumentsViewModel
                 ("A proof of address is taken only when its address and PIN code can be read.", "bad"));
             return;
         }
+        // The district and the state are the PIN code master's, by the PIN code read off the proof.
+        if (proof) reading = await WithPlaceOfPinCodeAsync(reading, entry);
 
         // A holder with no folio is put to NSDL with the name the copy reads. NSDL not
         // answering does not cost the copy: it was identified and read, so it is filed
@@ -323,6 +326,8 @@ public partial class DocumentsViewModel
                 if (e.TraceId is not null) entry.Add("Trace " + e.TraceId);
             }
             h = Again(h);
+            // A proof of address filed before this PAN copy is compared with the name now known.
+            if (NsdlSettled(h)) await DetailsAgainAsync(h, entry);
         }
 
         // 3. What may still fail is asked before the application takes anything from
@@ -361,7 +366,7 @@ public partial class DocumentsViewModel
         };
 
         copy = await FileAsync(def, h, copy);
-        s.Docs[key] = filed(copy, check, kind) with { Checks = ChecksOf(def, h, type, reading, masked) };
+        s.Docs[key] = filed(copy, check, kind) with { Checks = ChecksOf(def, h, type, reading, masked, identified.TaskId, issuerSays) };
         // Taken, so whatever was refused before it is behind the partner.
         s.Attempts[key] = 0;
         s.RefusedAt.Remove(key);
@@ -387,15 +392,30 @@ public partial class DocumentsViewModel
 
     // What the checks made of a document, kept with it for the record of it
     // (t_FD_BT_KYC_document). A service that is switched off was not asked.
-    private DocChecks ChecksOf(SlotDef def, DocHolder h, string type, OcrReading reading, bool masked)
+    // The task id of each request IDfy answered about the document goes with it,
+    // under the application's group id, so any of them can be traced.
+    private DocChecks ChecksOf(SlotDef def, DocHolder h, string type, OcrReading reading, bool masked, string identifyTaskId, Verification issuerSays)
     {
         var identifiedAs = "";
         if (switches.IsOn(OutsideSwitches.Identify)) identifiedAs = def.Key == "pan" ? "PAN card" : type;
 
         var ocrAsked = switches.IsOn(OutsideSwitches.Ocr);
-        var read = ocrAsked && reading != new OcrReading();
-        if (!read) return new DocChecks(identifiedAs, ocrAsked, Masked: masked);
-        return new DocChecks(identifiedAs, ocrAsked, true, NumberOn(def, type, reading), ExpiryOn(def, h), masked);
+        var read = ocrAsked && reading.ReadAnything;
+        var checks = read
+            ? new DocChecks(identifiedAs, ocrAsked, true, NumberOn(def, type, reading), ExpiryOn(def, h), masked)
+            : new DocChecks(identifiedAs, ocrAsked, Masked: masked);
+        // The issuer a proof was put to, and whether it confirmed it. One with no
+        // issuer, or whose issuer could not be asked, has neither.
+        if (issuerSays.Verifier.Length > 0 && issuerSays.NotAsked is null)
+            checks = checks with { Verifier = Capitalize(issuerSays.Verifier), VerifierConfirmed = issuerSays.Confirmed };
+
+        var askedOfIdfy = identifyTaskId.Length > 0 || reading.TaskId.Length > 0 || issuerSays.TaskId.Length > 0;
+        if (!askedOfIdfy) return checks;
+        return checks with
+        {
+            IdfyGroupId = IdfyGroup.Of(AppNo).ToString(),
+            IdentifyTaskId = identifyTaskId, ExtractTaskId = reading.TaskId, VerifyTaskId = issuerSays.TaskId,
+        };
     }
 
     // The number a document carries. An Aadhaar's is never kept whole, here or

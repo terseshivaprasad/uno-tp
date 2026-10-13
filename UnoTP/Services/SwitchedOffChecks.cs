@@ -32,8 +32,8 @@ public sealed class OffVerification : IVerificationService
 /// <summary>PAN-Aadhaar link off: not asked, and the application goes on.</summary>
 public sealed class OffPanAadhaarLink : IPanAadhaarLinkService
 {
-    public Task<PanAadhaarLink> CheckAsync(string pan, string aadhaarNumber, CancellationToken ct = default) =>
-        Task.FromResult(PanAadhaarLink.NotAsked);
+    public Task<PanAadhaarLinkAnswer> CheckAsync(string pan, string aadhaarNumber, CancellationToken ct = default) =>
+        Task.FromResult(new PanAadhaarLinkAnswer(PanAadhaarLink.NotAsked));
 }
 
 /// <summary>Face match off: not sure, for Operations to compare.</summary>

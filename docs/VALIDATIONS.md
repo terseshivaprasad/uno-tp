@@ -16,7 +16,7 @@ To change what a message says:
 "Browser: yes" marks a message a script shows as the partner types. It is still
 written only in the master, which hands it to the page.
 
-302 messages.
+305 messages.
 
 ## Every page
 
@@ -102,6 +102,7 @@ written only in the master, which hands it to the page.
 | Aadhaar number | not a valid number, with the last 4 read off the copy | That is not a valid Aadhaar number — check the first 8 digits against the card. If its last 4 are not {lastFour}, upload the Aadhaar again | `UploadDocuments.AadhaarInvalidCheckFirst8` |  |
 | Broker / employee code | nothing on the register matches what is typed | Nothing on the register matches “{typed}” | `UploadDocuments.NothingOnRegister` | yes |
 | Broker / employee code | left empty | Enter the {codeLabel} | `UploadDocuments.SourceCodeRequired` |  |
+| Broker code | typed, and not on the broker register | {code} is not a broker's code. Check the broker code. | `UploadDocuments.BrokerCodeNotFound` |  |
 | Communication Address | switching to Same as Permanent with a proof filed (asks first) | Post will go to the permanent address, and the communication address proof uploaded will be removed. Switch to Same as Permanent? | `UploadDocuments.ConfirmDropMailProof` |  |
 | Communication address proof (upload) | no proof type chosen yet | Choose the communication address proof first | `UploadDocuments.ChooseMailTypeFirst` |  |
 | Communication address proof type | not chosen | Choose the communication address proof | `UploadDocuments.MailTypeRequired` |  |
@@ -116,7 +117,7 @@ written only in the master, which hands it to the page.
 | Fetch from CKYC | the CKYC service is switched off | Unavailable: the CKYC service is switched off for now. Upload the proof of address and the photograph instead. | `UploadDocuments.CkycSwitchedOff` |  |
 | Fetch from CKYC | NSDL has not verified the PAN copy yet | Available once NSDL verifies the uploaded PAN copy. | `UploadDocuments.CkycWaitsOnPan` |  |
 | Instrument copy (upload) | no payment mode chosen yet | Choose the payment mode first | `UploadDocuments.ChoosePayModeFirst` |  |
-| Name as on the PAN | NSDL does not hold the PAN against the name typed | NSDL does not hold PAN {pan} against that name | `UploadDocuments.NsdlNameNotHeld` |  |
+| Name as on the PAN | NSDL does not hold the PAN against the name typed, and names may still be typed | NSDL does not hold PAN {pan} against that name. {triesLeft} left; after that the name on the PAN copy is taken, as not verified with NSDL. | `UploadDocuments.NsdlNameNotHeldTriesLeft` |  |
 | Name as on the PAN | NSDL holds no such PAN and date of birth | NSDL holds no record of PAN {pan} against the date of birth searched | `UploadDocuments.NsdlNoRecord` |  |
 | Name as on the PAN | anything but letters | Enter the name as printed on the PAN: letters only | `UploadDocuments.PanNameLettersOnly` |  |
 | Name as on the PAN | fewer than three letters typed | Enter the name as printed on the PAN | `UploadDocuments.PanNameRequired` |  |
@@ -136,10 +137,11 @@ written only in the master, which hands it to the page.
 | Proceed | the PAN-Aadhaar link is not confirmed | The PAN-Aadhaar link must be confirmed before proceeding. | `UploadDocuments.LinkMustBeConfirmed` |  |
 | Proceed | the PAN-Aadhaar link could not be checked | The PAN-Aadhaar link could not be checked. Upload the Aadhaar again, or type its number, to ask again. | `UploadDocuments.LinkNotChecked` |  |
 | Proceed | the name or date of birth on the proof of address is not the PAN's | The name and date of birth on the proof of address must match the PAN's before proceeding. Upload a clearer copy of the holder's own proof. | `UploadDocuments.NameAndDobMustMatch` |  |
+| Proceed | the holder's name was not verified with NSDL, and the name on the proof of address is not matched with the PAN's | The name was not verified with NSDL, so the name on the proof of address must match the name on the PAN before proceeding. Upload the holder's own proof of address, in the same name. | `UploadDocuments.NameMatchMandatory` |  |
 | Proceed | the name on the proof of address is not matched with the PAN's yet | The name on the proof of address must be matched with the PAN's before proceeding. | `UploadDocuments.NameMustBeMatched` |  |
 | Proceed | NSDL holds no such PAN and date of birth | NSDL holds no such PAN and date of birth. Upload the PAN copy again if both are right. If not: {whatElse} | `UploadDocuments.NsdlFailedUploadAgain` |  |
 | Proceed | NSDL could not be asked about the PAN | NSDL could not be asked about the PAN. Upload the PAN copy again | `UploadDocuments.NsdlNotAsked` |  |
-| Proceed | the PAN is not linked with Aadhaar | The PAN is not linked with Aadhaar. The investor links it with the Income Tax department; the application cannot proceed until it is. | `UploadDocuments.PanNotLinked` |  |
+| Proceed | the PAN is not linked with Aadhaar | The PAN is not linked with Aadhaar. The application cannot proceed until the investor links it. | `UploadDocuments.PanNotLinked` |  |
 | Proceed | NSDL holds no such PAN and date of birth, for a joint holder | Remove this holder and search again. | `UploadDocuments.RemoveHolderSearchAgain` |  |
 | Proceed | NSDL holds no such PAN and date of birth, for the first holder | Start again from Investor Identification with the right PAN and date of birth. | `UploadDocuments.StartAgainWithRightPan` |  |
 | Proceed | the Aadhaar number is still to be typed | Type the Aadhaar number in the row under the proofs of address, so the PAN-Aadhaar link can be asked. | `UploadDocuments.TypeAadhaarNumber` |  |
@@ -165,6 +167,7 @@ written only in the master, which hands it to the page.
 | Proof of address type | not chosen | Choose the proof of address | `UploadDocuments.PoaTypeRequired` |  |
 | Relation with the holder | not chosen | Choose the relation with the holder | `UploadDocuments.EmployeeRelationRequired` |  |
 | Sourcing Mode | not chosen | Choose the sourcing mode | `UploadDocuments.SourcingRequired` |  |
+| Sourcing employee code | typed, and not the code of an employee who can source under the sourcing mode chosen | {code} is not an employee who can source under {sourcingMode}. Check the sourcing employee code. | `UploadDocuments.SourcingEmployeeNotFound` |  |
 | Still missing | no deposit category set | the deposit category | `UploadDocuments.MissingCategory` |  |
 | Still missing | no employee code typed | the employee code | `UploadDocuments.MissingEmployeeCode` |  |
 | Still missing | no employee company typed | the employee company | `UploadDocuments.MissingEmployeeCompany` |  |

@@ -71,9 +71,10 @@ public sealed class PanApiClient(HttpClient http, IPartner partner, IPartnerApi 
         }
         // A PAN the API does not hold, or holds against another date of birth, is not
         // this holder's: the name is not asked about at all.
-        var pairOk = answer.PAN_No_Match_Status == Matched && answer.PAN_DOB_Match_Status == Matched;
-        var nameOk = pairOk && answer.PAN_Name_Match_Status == Matched;
-        return new PanVerification(pairOk, nameOk);
+        var panOk = answer.PAN_No_Match_Status == Matched;
+        var dobOk = answer.PAN_DOB_Match_Status == Matched;
+        var nameOk = panOk && dobOk && answer.PAN_Name_Match_Status == Matched;
+        return new PanVerification(panOk, dobOk, nameOk);
     }
 
     // The API takes a date of birth as dd/MM/yyyy; the app holds it as dd-MM-yyyy.

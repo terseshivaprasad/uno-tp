@@ -44,48 +44,22 @@ public sealed class SqlRenewals(Db db, IPartner partner, IRenewalOpener applicat
         public int? RenewalDepositVer { get; set; }
     }
 
-    // A booked application and its deposit as submitted, with the application that
-    // renews it - the latest one open or submitted, and not cancelled.
-    private const string Booked = """
-        SELECT m.f_Fdr_No AS Number, m.f_App_No AS AppNo, m.f_Folio AS Folio, m.f_Name AS Investor,
-               i.f_Category AS Category, CAST(i.f_Amount AS BIGINT) AS Amount, i.f_Int_Rate AS Rate, TRY_CAST(i.f_Tenure AS INT) AS TenureMonths,
-               i.f_Int_Freq AS InterestFreq, CAST(ISNULL(i.f_Is_Auto_Renewal, 0) AS BIT) AS AutoRenewal,
-               m.f_Booked_On AS BookedOn, m.f_Quote_Maturity_Amount AS MaturityAmount,
-               NULLIF(b.f_NEFTCode, N'') AS RepayIfsc, NULLIF(b.f_BankAccountNo, N'') AS RepayAccount,
-               rn.f_App_No AS RenewalAppNo, rn.f_Partner_Id AS RenewalPartner, rn.f_Submitted_On AS RenewalSubmittedOn, rn.f_Accepted_On AS RenewalAcceptedOn,
-               rn.AppType AS RenewalAppType, rn.f_Upload_Ver AS RenewalUploadVer, rn.f_Details_Ver AS RenewalDetailsVer,
-               rn.f_Payment_Ver AS RenewalPaymentVer, rn.f_Deposit_Ver AS RenewalDepositVer
-        FROM dbo.t_Unotp_Application_Mst m
-        JOIN dbo.t_FD_BT_Investment_Dtl i ON i.f_Appl_No = m.f_App_No AND i.f_Active = 1 AND i.f_Status IN ('APR', 'PEN_E')
-        OUTER APPLY (
-            SELECT TOP (1) r.f_NEFTCode, r.f_BankAccountNo FROM dbo.t_FD_BT_Investor_Bank_Dtl r
-            WHERE r.f_Appl_No = m.f_App_No AND r.f_Active = 1 ORDER BY r.f_Pk_t_FD_BT_Investor_Bank_Dtl_Id DESC) b
-        OUTER APPLY (
-            SELECT TOP (1) r.f_App_No, r.f_Partner_Id, r.f_Submitted_On, r.f_Accepted_On, r.f_Upload_Ver, r.f_Details_Ver, r.f_Payment_Ver, r.f_Deposit_Ver,
-                   (SELECT TOP (1) x.f_ApplicationDeclarationType FROM dbo.t_FD_BT_Investment_Dtl x
-                    WHERE x.f_Appl_No = r.f_App_No AND x.f_Active = 1 ORDER BY x.f_Pk_t_FD_BT_Investment_Dtl_Id DESC) AS AppType
-            FROM dbo.t_Unotp_Application_Mst r
-            WHERE r.f_Renew_Dep_No = m.f_Fdr_No AND r.f_Active = 1 AND r.f_Cancelled_On IS NULL
-            ORDER BY r.f_Created_On DESC) rn
-        WHERE m.f_Active = 1 AND m.f_Booked_On IS NOT NULL AND NULLIF(m.f_Fdr_No, '') IS NOT NULL AND m.f_Cancelled_On IS NULL
-        """;
-
     public async Task<IReadOnlyList<HeldDeposit>?> DepositsByFolioAsync(string folio, CancellationToken ct = default)
     {
         folio = folio.Trim().ToUpperInvariant();
         if (await investors.FolioAsync(folio, ct) is null) return null;
-        return await HeldAsync("m.f_Folio = @Folio", new { Folio = folio }, ct);
+        return await HeldAsync(RenewalQueries.OnFolio, new { Folio = folio }, ct);
     }
 
     public async Task<IReadOnlyList<HeldDeposit>?> DepositsByPanAsync(string pan, string dob, CancellationToken ct = default)
     {
-        var held = await HeldAsync("m.f_Pan = @Pan AND m.f_Dob = @Dob", new { Pan = pan.Trim().ToUpperInvariant(), Dob = Dates.ParseDdMmYyyy(dob) }, ct);
+        var held = await HeldAsync(RenewalQueries.OfHolder, new { Pan = pan.Trim().ToUpperInvariant(), Dob = Dates.ParseDdMmYyyy(dob) }, ct);
         if (held.Count == 0) return null;
         return held;
     }
 
     public async Task<HeldDeposit?> DepositAsync(string number, CancellationToken ct = default) =>
-        (await HeldAsync("m.f_Fdr_No = @Number", new { Number = number.Trim() }, ct)).FirstOrDefault();
+        (await HeldAsync(RenewalQueries.ByDepositNumber, new { Number = number.Trim() }, ct)).FirstOrDefault();
 
     public async Task<Application?> StartAsync(string depositNumber, CancellationToken ct = default)
     {
@@ -129,16 +103,11 @@ public sealed class SqlRenewals(Db db, IPartner partner, IRenewalOpener applicat
         var config = await reference.ConfigAsync(ct);
 
         await using var connection = await db.OpenAsync(ct);
-        var rows = (await connection.QueryAsync<BookedRow>($"{Booked} AND {filter}", args)).ToList();
+        var rows = (await connection.QueryAsync<BookedRow>(RenewalQueries.BookedWhere(filter), args)).ToList();
         if (rows.Count == 0) return [];
 
         // The joint holders on those applications: every holder but the first.
-        var joint = (await connection.QueryAsync<(string AppNo, string Pan, DateTime? Dob, string Name, string Folio)>("""
-            SELECT f_Appl_No, ISNULL(f_Kyc_PAN, N''), f_Kyc_DOB, ISNULL(f_Kyc_FullName, N''), ISNULL(f_FolioNo, N'')
-            FROM dbo.t_FD_BT_Kyc_Data_Dtl
-            WHERE f_Appl_No IN @AppNos AND f_Active = 1 AND f_Holder_Type <> @Investor
-            ORDER BY f_Appl_No, f_Holder_Type
-            """, new { AppNos = rows.Select(r => r.AppNo).ToList(), HolderType.Investor })).ToList();
+        var joint = (await connection.QueryAsync<(string AppNo, string Pan, DateTime? Dob, string Name, string Folio)>(ApplicationTableQueries.JointHoldersOf, new { AppNos = rows.Select(r => r.AppNo).ToList(), HolderType.Investor })).ToList();
 
         var held = new List<HeldDeposit>();
         foreach (var row in rows)

@@ -52,23 +52,7 @@ public static class ApplicationNumber
         });
         parameters.Add("NewApplicationNo", dbType: DbType.String, size: 50, direction: ParameterDirection.Output);
 
-        await connection.ExecuteAsync("""
-            EXEC dbo.USP_FD_BTP_GetApplicationNo
-                @f_BatchId = 1,
-                @f_Entity_Id = @CreatedBy,
-                @f_Agency_Cd = @AgencyCode,
-                @f_Entity_Type = '',
-                @f_BranchCode = '',
-                @f_BTP_Trans_ref_No = NULL,
-                @BusType = @BusType,
-                @CreatedIP = @CreatedIP,
-                @CreatedUserId = @CreatedBy,
-                @CreatedUserName = @CreatedByUName,
-                @SessionId = @SessionID,
-                @FormCode = 'Search',
-                @DSource = @DSource,
-                @App_No = @NewApplicationNo OUTPUT
-            """, parameters, tx);
+        await connection.ExecuteAsync(ApplicationQueries.NextApplicationNo, parameters, tx);
 
         var appNo = parameters.Get<string?>("NewApplicationNo")?.Trim();
         if (string.IsNullOrEmpty(appNo))

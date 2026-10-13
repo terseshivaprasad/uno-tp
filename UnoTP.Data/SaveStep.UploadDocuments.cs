@@ -46,10 +46,7 @@ internal static partial class Sections
     public static async Task WriteUploadAsync(IDbConnection db, IDbTransaction tx, Stamp at, UploadState upload,
         IReadOnlyDictionary<string, DocumentCode> codes, string dmsRoot, IReadOnlyList<HolderCopyOnRecord> onRecord)
     {
-        await db.ExecuteAsync("""
-            INSERT dbo.t_Unotp_Upload_State (f_App_No, f_App_Version, f_Status, f_Upload, f_Created_By)
-            VALUES (@AppNo, @Version, @Status, @Json, @By)
-            """, new { at.AppNo, at.Version, Status = at.OwnStatus, Json = JsonSerializer.Serialize(upload, Json), at.By }, tx);
+        await db.ExecuteAsync(ApplicationQueries.InsertUploadState, new { at.AppNo, at.Version, Status = at.OwnStatus, Json = JsonSerializer.Serialize(upload, Json), at.By }, tx);
 
         // One row per document uploaded on the application, coded as the FD system's document
         // master codes it, with what the outside checks made of it (SaveStep.DocumentCheckFlags.cs).
@@ -65,13 +62,13 @@ internal static partial class Sections
         // a check's answer, the status on submit), has its old row taken out of use and
         // a new one inserted; one no longer on the application has its row taken out
         // of use. So a row taken out of use is always an earlier state, never a copy.
-        var active = (await db.QueryAsync<DocumentRow>(DocumentRow.Select, new { at.AppNo }, tx)).ToList();
+        var active = (await db.QueryAsync<DocumentRow>(ApplicationTableQueries.ActiveDocuments, new { at.AppNo }, tx)).ToList();
         var sequences = new Dictionary<(string, string), int>();
         foreach (var d in Documents(upload))
         {
             var code = codes.GetValueOrDefault(MasterKey(d));
             var holderType = FiledUnder(d.HolderType);
-            var flags = DocumentFlags.Of(d.Doc);
+            var flags = DocumentFlags.Of(d.Doc, d.DocType, upload.PanChecks.GetValueOrDefault(d.HolderType));
             var row = new DocumentRow
             {
                 HolderType = holderType, TypeCode = code?.TypeCode, SubTypeCode = code?.SubTypeCode, TypeName = code?.TypeName, SubTypeName = code?.SubTypeName,
@@ -82,6 +79,11 @@ internal static partial class Sections
                 UploadedFrom = Source,
                 Number = flags.Number, Expiry = flags.Expiry, Masked = flags.Masked, OcrAsked = flags.OcrAsked, Read = flags.Read, Verified = flags.Verified,
                 Identified = flags.Identified, IdentifiedAs = flags.IdentifiedAs, FaceCompared = flags.FaceCompared, FaceFound = flags.FaceFound, FaceScore = flags.FaceScore,
+                IdfyGroupId = flags.IdfyGroupId, IdentifyTaskId = flags.IdentifyTaskId, ExtractTaskId = flags.ExtractTaskId,
+                VerifyTaskId = flags.VerifyTaskId, FaceCompareTaskId = flags.FaceCompareTaskId,
+                NsdlPan = flags.NsdlPan, NsdlDob = flags.NsdlDob, NsdlName = flags.NsdlName, NsdlRemark = flags.NsdlRemark,
+                ProofName = flags.ProofName, ProofDob = flags.ProofDob, SourceVerified = flags.SourceVerified, VerifiedSource = flags.Source,
+                PanAadhaarLinked = flags.PanAadhaarLinked, LinkTaskId = flags.LinkTaskId,
                 Status = at.Status,
             };
 
@@ -107,11 +109,7 @@ internal static partial class Sections
         // What is left was replaced, or is no longer on the application.
         if (active.Count > 0)
         {
-            await db.ExecuteAsync("""
-                UPDATE dbo.t_FD_BT_KYC_document
-                SET f_Active = 0, f_UpdatedBy = @UpdatedBy, f_UpdatedByUName = @UserName, f_UpdatedDate = GETDATE(), f_UpdatedIP = @Ip
-                WHERE f_Pk_t_FD_BT_KYC_document_ID IN @Ids
-                """, new { Ids = active.Select(row => row.Id).ToList(), UpdatedBy = at.UserClusterId, at.UserName, at.Ip }, tx);
+            await db.ExecuteAsync(ApplicationTableQueries.RetireDocuments, new { Ids = active.Select(row => row.Id).ToList(), UpdatedBy = at.UserClusterId, at.UserName, at.Ip }, tx);
         }
     }
 
@@ -167,25 +165,15 @@ internal static partial class Sections
     }
 
     private static Task InsertDocumentAsync(IDbConnection db, IDbTransaction tx, Stamp at, DocumentRow row) =>
-        db.ExecuteAsync("""
-            INSERT dbo.t_FD_BT_KYC_document (f_Appl_No, f_Holder_Type_Code, f_Doc_Type_Code, f_Doc_Sub_Type_Code, f_Doc_Type_Desc, f_Doc_Sub_Type_Desc,
-                f_Doc_FileName, f_Doc_Filepath, f_FolioNo, f_Doc_Sequence, f_Document_Source, f_doc_source, f_Doc_Ref_No, f_Doc_Exp_Date,
-                f_IsDocumentMasked, f_is_ocrextract, f_isocrdataextract, f_isocrdataverified,
-                f_IsidfyDocIdentified, f_IdfyIdentifiedDocument, f_IsidfyDocDataExtracted, f_IsidfyDocDataVerified,
-                f_IsidfyFaceCompared, f_IsidfyDocFaceDetected, f_IdfyFaceMatchPercentage,
-                f_Source, f_Status, f_Active, f_CreatedBy, f_CreatedByUName, f_CreatedDate, f_CreatedIP, f_Session_ID)
-            VALUES (@AppNo, @HolderType, @TypeCode, @SubTypeCode, @TypeName, @SubTypeName,
-                @FileName, @FilePath, @Folio, @Sequence, @UploadedFrom, @UploadedFrom, @Number, @Expiry,
-                @Masked, @OcrAsked, @Read, @Verified,
-                @Identified, @IdentifiedAs, @Read, @Verified,
-                @FaceCompared, @FaceFound, @FaceScore,
-                @Source, @Status, 1, @CreatedBy, @UserName, GETDATE(), @Ip, @SessionId)
-            """, new
+        db.ExecuteAsync(ApplicationTableQueries.InsertDocument, new
         {
             at.AppNo, row.HolderType, row.TypeCode, row.SubTypeCode, row.TypeName, row.SubTypeName,
             row.FileName, row.FilePath, row.Folio, row.Sequence, row.UploadedFrom, row.Number, row.Expiry,
             row.Masked, row.OcrAsked, row.Read, row.Verified,
             row.Identified, row.IdentifiedAs, row.FaceCompared, row.FaceFound, row.FaceScore,
+            row.IdfyGroupId, row.IdentifyTaskId, row.ExtractTaskId, row.VerifyTaskId, row.FaceCompareTaskId,
+            row.NsdlPan, row.NsdlDob, row.NsdlName, row.NsdlRemark, row.ProofName, row.ProofDob,
+            row.SourceVerified, row.VerifiedSource, row.PanAadhaarLinked, row.LinkTaskId,
             Source, row.Status, CreatedBy = at.UserClusterId, at.UserName, at.Ip, at.SessionId,
         }, tx);
 
@@ -196,20 +184,6 @@ internal static partial class Sections
     /// </summary>
     private sealed record DocumentRow
     {
-        /// <summary>The application's rows in use, read under the names below.</summary>
-        public const string Select = """
-            SELECT f_Pk_t_FD_BT_KYC_document_ID AS Id, f_Holder_Type_Code AS HolderType,
-                   f_Doc_Type_Code AS TypeCode, f_Doc_Sub_Type_Code AS SubTypeCode, f_Doc_Type_Desc AS TypeName, f_Doc_Sub_Type_Desc AS SubTypeName,
-                   f_Doc_FileName AS FileName, f_Doc_Filepath AS FilePath, f_FolioNo AS Folio, f_Doc_Sequence AS Sequence,
-                   f_Document_Source AS UploadedFrom, f_Doc_Ref_No AS Number, f_Doc_Exp_Date AS Expiry,
-                   f_IsDocumentMasked AS Masked, f_is_ocrextract AS OcrAsked, f_isocrdataextract AS [Read], f_isocrdataverified AS Verified,
-                   f_IsidfyDocIdentified AS Identified, f_IdfyIdentifiedDocument AS IdentifiedAs,
-                   f_IsidfyFaceCompared AS FaceCompared, f_IsidfyDocFaceDetected AS FaceFound, CAST(f_IdfyFaceMatchPercentage AS INT) AS FaceScore,
-                   f_Status AS Status
-            FROM dbo.t_FD_BT_KYC_document
-            WHERE f_Appl_No = @AppNo AND f_Active = 1
-            """;
-
         /// <summary>The row's own number in the table; 0 for one not inserted yet.</summary>
         public long Id { get; init; }
         public string? HolderType { get; init; }
@@ -233,6 +207,26 @@ internal static partial class Sections
         public bool? FaceCompared { get; init; }
         public bool? FaceFound { get; init; }
         public int? FaceScore { get; init; }
+
+        // IDfy's ids for the requests it answered about the document.
+        public string? IdfyGroupId { get; init; }
+        public string? IdentifyTaskId { get; init; }
+        public string? ExtractTaskId { get; init; }
+        public string? VerifyTaskId { get; init; }
+        public string? FaceCompareTaskId { get; init; }
+
+        // What the checks on the holder's PAN and proof of address said (DocumentFlags).
+        public bool? NsdlPan { get; init; }
+        public bool? NsdlDob { get; init; }
+        public bool? NsdlName { get; init; }
+        public string? NsdlRemark { get; init; }
+        public string? ProofName { get; init; }
+        public bool? ProofDob { get; init; }
+        public bool? SourceVerified { get; init; }
+        public string? VerifiedSource { get; init; }
+        public bool? PanAadhaarLinked { get; init; }
+        public string? LinkTaskId { get; init; }
+
         public string? Status { get; init; }
     }
 
@@ -304,11 +298,7 @@ internal static partial class Sections
     // The rows a save replaces go out of use, so the section's current rows are the
     // application's active ones. The table and column names are this file's own.
     private static Task RetireAsync(IDbConnection db, IDbTransaction tx, Stamp at, string table, string updatedOn = "f_UpdatedOn") =>
-        db.ExecuteAsync($"""
-            UPDATE dbo.{table}
-            SET f_Active = 0, f_UpdatedBy = @UpdatedBy, f_UpdatedByUName = @UserName, {updatedOn} = GETDATE(), f_UpdatedIP = @Ip
-            WHERE f_Appl_No = @AppNo AND f_Active = 1
-            """, new { at.AppNo, UpdatedBy = at.UserClusterId, at.UserName, at.Ip }, tx);
+        db.ExecuteAsync(ApplicationTableQueries.Retire(table, updatedOn), new { at.AppNo, UpdatedBy = at.UserClusterId, at.UserName, at.Ip }, tx);
 
     // A value cut to what its column holds, so a long one never fails the save.
     private static string Cut(string? value, int length)

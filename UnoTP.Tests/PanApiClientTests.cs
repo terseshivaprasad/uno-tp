@@ -59,6 +59,24 @@ public class PanApiClientTests
     }
 
     [Theory]
+    [InlineData("1", "1", true, true)]
+    [InlineData("0", "1", false, true)]
+    [InlineData("1", "0", true, false)]
+    [InlineData("0", "0", false, false)]
+    public async Task The_PAN_and_the_date_of_birth_are_answered_apart(string pan, string dob, bool panOk, bool dobOk)
+    {
+        var network = new StubNetwork
+        {
+            Answer = $$$"""{"PAN_No_Match_Status":"{{{pan}}}","PAN_DOB_Match_Status":"{{{dob}}}","PAN_Name_Match_Status":"1"}""",
+        };
+
+        var answer = await ClientOver(network).VerifyAsync(Holder);
+
+        Assert.Equal(panOk, answer.PanOk);
+        Assert.Equal(dobOk, answer.DobOk);
+    }
+
+    [Theory]
     [InlineData(HttpStatusCode.ServiceUnavailable)]
     [InlineData(HttpStatusCode.InternalServerError)]
     public async Task A_service_that_is_down_is_an_outage_not_a_mismatch(HttpStatusCode status)

@@ -10,10 +10,6 @@
 .bank-branch {
   margin-bottom: 0;
 }
-/* The bank search's suggestions, dropped under the field. */
-.bank-search {
-  position: relative;
-}
 /* What was read off the cheque: green words after a tick, no box round them. */
 .bank-verified {
   display: flex;

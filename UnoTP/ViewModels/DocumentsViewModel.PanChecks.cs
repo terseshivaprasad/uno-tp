@@ -11,6 +11,7 @@ public partial class DocumentsViewModel
     private void LinkWaitsOnNsdl(DocHolder h)
     {
         var card = State.Reads[h.Key("pan")];
+        ChecksOn(h).Link = null;
         card.Lines = MaskPan(h.Who.Pan) + " · link with Aadhaar not asked yet";
         (card.State, card.Kind, card.From) = NsdlOf(h) == "failed"
             ? ("Not asked", "is-failed", "NSDL did not verify the PAN, so the link is not asked.")
@@ -36,6 +37,7 @@ public partial class DocumentsViewModel
     private void LinkWaitsOnNumber(DocHolder h)
     {
         var card = State.Reads[h.Key("pan")];
+        ChecksOn(h).Link = null;
         card.Lines = MaskPan(h.Who.Pan) + " · link with Aadhaar not asked yet";
         (card.State, card.Kind) = ("Aadhaar number needed", "is-failed");
         card.From = AadhaarLastFour(h).Length > 0
@@ -132,6 +134,13 @@ public partial class DocumentsViewModel
     // the name is theirs from here on.
     private async Task NsdlAsync(DocHolder h, string name, LogEntry entry, bool typed)
     {
+        // A PAN copy just filed starts afresh: its typed tries are not used yet, and
+        // a name taken off the copy before it, without NSDL verifying it, is given up.
+        if (!typed)
+        {
+            SetNsdlTries(h, 0);
+            if (NsdlOf(h) == NameNotVerified) TakeName(h, "");
+        }
         // The PAN check switched off: NSDL is not asked. The PAN, date of birth and
         // name stand as the copy reads them, and the application goes on.
         if (!switches.IsOn(OutsideSwitches.PanCheck))
@@ -144,7 +153,7 @@ public partial class DocumentsViewModel
         Doing("Checking the PAN with NSDL\u2026");
         var answer = await pan.VerifyAsync(new PanToVerify(AppNo, h.Code, h.Who.Pan, h.Who.Dob, name));
         var result = !answer.PairOk ? "failed" : answer.NameOk ? "verified" : "name";
-        SetNsdl(h, name, result);
+        SetNsdl(h, name, result, new NsdlCheck(answer.PanOk, answer.DobOk, answer.NameOk));
         if (result == "verified") TakeName(h, name);
         entry.Add(answer.PairOk ? "NSDL holds the PAN against the date of birth." : "NSDL holds no such PAN and date of birth.", answer.PairOk ? "ok" : "bad");
         if (answer.PairOk)
@@ -155,6 +164,9 @@ public partial class DocumentsViewModel
     /// NSDL asked again about a PAN copy already filed, without the copy being
     /// uploaded - and identified and read - again: only where NSDL held the PAN
     /// against another name, with the name printed on the card typed and put to it.
+    /// NsdlNameTries names may be typed. When NSDL has turned the last of them down,
+    /// the name on the PAN copy is taken with the remark "Name not verified with
+    /// NSDL" and the application goes on (TakeNameNotVerifiedAsync).
     /// Where it held no such PAN and date of birth, or could not answer, there is no
     /// retry: the PAN copy is uploaded again. Returns where on the page to come back to.
     /// </summary>
@@ -185,6 +197,18 @@ public partial class DocumentsViewModel
             return "read-" + key;
         }
         h = Again(h);
+        var triesLeft = NsdlNameTries;
+        if (NsdlOf(h) == "name")
+        {
+            // One more typed name turned down. The last of them: the name on the PAN copy is taken.
+            SetNsdlTries(h, NsdlTriesOf(h) + 1);
+            triesLeft = NsdlNameTries - NsdlTriesOf(h);
+            if (triesLeft <= 0)
+            {
+                await TakeNameNotVerifiedAsync(h, doc, entry, lastTyped: name);
+                return "read-" + key;
+            }
+        }
         if (NsdlOf(h) != "verified")
         {
             // The copy says where NSDL stands now, which may not be where it stood before.
@@ -194,15 +218,48 @@ public partial class DocumentsViewModel
             entry.End("Not verified", "warn");
             FlashMessages().Errors[key] = NsdlOf(h) == "failed"
                 ? Messages.UploadDocuments.NsdlNoRecord(MaskPan(h.Who.Pan))
-                : Messages.UploadDocuments.NsdlNameNotHeld(MaskPan(h.Who.Pan));
+                : Messages.UploadDocuments.NsdlNameNotHeldTriesLeft(MaskPan(h.Who.Pan), TriesWord(triesLeft));
             return "read-" + key;
         }
         // Verified: the link can be asked now, and the copy says what came of it.
         var link = await LinkAsync(h, entry);
         var (check, kind) = PanCheck(h, link);
         State.Docs[h.Key("pan")] = doc with { Check = check, CheckKind = kind };
+        // A proof of address filed before the name was known is compared with it now.
+        await DetailsAgainAsync(h, entry);
         entry.End("Verified", "ok");
         return "read-" + key;
+    }
+
+    // "1 try", "2 tries".
+    private static string TriesWord(int tries)
+    {
+        if (tries == 1) return "1 try";
+        return tries + " tries";
+    }
+
+    // NSDL has turned down the name read off the PAN copy and every name typed from
+    // the card. The application is not held up any longer: the name on the PAN copy
+    // is taken as the holder's - as OCR read it, or the name last typed where it
+    // read none - with the remark that NSDL did not verify it. From here the holder
+    // goes on as one NSDL verified, except that the name on their proof of address
+    // must match (DetailsNeed), and the PAN copy may still be replaced.
+    private async Task TakeNameNotVerifiedAsync(DocHolder h, StoredDoc doc, LogEntry entry, string lastTyped)
+    {
+        var panName = lastTyped;
+        if (State.Reads.GetValueOrDefault(h.Key("panocr")) is { Lines.Length: > 0 } read) panName = read.Lines;
+        // NSDL held the PAN against the date of birth, and against none of the names.
+        SetNsdl(h, panName, NameNotVerified, new NsdlCheck(PanOk: true, DobOk: true, NameOk: false, Remark: NameNotVerifiedRemark));
+        TakeName(h, panName);
+        h = Again(h);
+        entry.Add($"NSDL holds the PAN against none of the {NsdlNameTries} names typed. The name on the PAN copy, {panName}, is taken. Remark: {NameNotVerifiedRemark}.", "warn");
+
+        var link = await LinkAsync(h, entry);
+        var (check, kind) = PanCheck(h, link);
+        State.Docs[h.Key("pan")] = doc with { Check = check, CheckKind = kind };
+        await DetailsAgainAsync(h, entry);
+        entry.End("Name not verified", "warn");
+        FlashMessages().Banner = $"NSDL did not hold the PAN against any of the {NsdlNameTries} names typed, so the name on the PAN copy, {panName}, is taken with the remark \u201c{NameNotVerifiedRemark}\u201d. The name on the proof of address must match it.";
     }
 
     private bool PanOnApplication(DocHolder h) => h.Who.PanFiled || State.Docs.ContainsKey(h.Key("pan"));
@@ -225,15 +282,21 @@ public partial class DocumentsViewModel
 
     // Null when the link check could not answer. The PAN or the Aadhaar that
     // prompted it is filed all the same: the link is only ever a note on the PAN.
+    // Linked or not linked is kept for the record of the PAN copy, with IDfy's task
+    // id for the request; any other answer leaves nothing kept.
     private async Task<PanAadhaarLink?> LinkAsync(DocHolder h, LogEntry entry)
     {
         var card = State.Reads[h.Key("pan")];
         var pan = MaskPan(h.Who.Pan);
+        ChecksOn(h).Link = null;
         PanAadhaarLink link;
         try
         {
             Doing("Checking the PAN\u2013Aadhaar link\u2026");
-            link = await panLink.CheckAsync(h.Who.Pan, AadhaarOf(h));
+            var answer = await panLink.CheckAsync(h.Who.Pan, AadhaarOf(h));
+            link = answer.Link;
+            if (link is PanAadhaarLink.Linked or PanAadhaarLink.NotLinked)
+                ChecksOn(h).Link = new LinkCheck(link == PanAadhaarLink.Linked, answer.TaskId);
         }
         catch (ExternalServiceException e)
         {
@@ -248,13 +311,13 @@ public partial class DocumentsViewModel
             case PanAadhaarLink.Linked:
                 card.Lines = pan + " · linked with Aadhaar";
                 (card.State, card.Kind) = ("Linked with Aadhaar", "is-done");
-                card.From = $"Confirmed with {PanAuthority} against the Aadhaar number on this application, read off the copy or typed.";
-                entry.Add($"{Capitalize(PanAuthority)} holds an Aadhaar against this PAN.", "ok");
+                card.From = "Confirmed against the Aadhaar number on this application, read off the copy or typed.";
+                entry.Add("An Aadhaar is held against this PAN.", "ok");
                 break;
             case PanAadhaarLink.NotLinked:
                 card.Lines = pan + " · not linked with Aadhaar";
                 (card.State, card.Kind) = ("Not linked", "is-failed");
-                card.From = $"{Capitalize(PanAuthority)} holds no Aadhaar against this PAN. The application cannot proceed until the investor links it.";
+                card.From = "No Aadhaar is held against this PAN. The application cannot proceed until the investor links it.";
                 entry.Add("No Aadhaar against this PAN.", "warn");
                 break;
             case PanAadhaarLink.NotAsked:
@@ -278,10 +341,19 @@ public partial class DocumentsViewModel
         return link;
     }
 
-    private static (string, string) PanCheck(DocHolder h, PanAadhaarLink? link) => (MaskPan(h.Who.Pan), link) switch
+    // What a filed PAN copy says once its link is asked. A name taken without NSDL
+    // verifying it carries its remark here too, and is never said to be all well.
+    private (string, string) PanCheck(DocHolder h, PanAadhaarLink? link)
     {
-        (var pan, PanAadhaarLink.Linked) => ($"Identified, read as PAN {pan} and confirmed with {PanAuthority}: an Aadhaar is held against it.", "ok"),
-        (var pan, PanAadhaarLink.NotLinked) => ($"Read as PAN {pan}, but {PanAuthority} holds no Aadhaar against it. The copy is filed and the deposit can be booked — TDS runs at the higher rate until the {(h.Joint ? "holder" : "investor")} links it.", "warn"),
+        var (says, kind) = PanCheckWithLink(h, link);
+        if (NsdlOf(h) != NameNotVerified) return (says, kind);
+        return ($"{says} Remark: {NameNotVerifiedRemark}.", kind == "ok" ? "warn" : kind);
+    }
+
+    private static (string, string) PanCheckWithLink(DocHolder h, PanAadhaarLink? link) => (MaskPan(h.Who.Pan), link) switch
+    {
+        (var pan, PanAadhaarLink.Linked) => ($"Identified and read as PAN {pan}, and its link is confirmed: an Aadhaar is held against it.", "ok"),
+        (var pan, PanAadhaarLink.NotLinked) => ($"Read as PAN {pan}, but no Aadhaar is held against it. The copy is filed and the deposit can be booked — TDS runs at the higher rate until the {(h.Joint ? "holder" : "investor")} links it.", "warn"),
         (var pan, PanAadhaarLink.NeedsAadhaar) => ($"Identified and read as PAN {pan}. {LinkWaits}", "warn"),
         (var pan, _) => ($"Identified and read as PAN {pan}. The PAN-Aadhaar link could not be asked just now; it is asked again when an Aadhaar is next filed.", "warn"),
     };

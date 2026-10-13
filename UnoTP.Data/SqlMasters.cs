@@ -4,7 +4,7 @@ using UnoTP.Models;
 namespace UnoTP.Data;
 
 /// <summary>
-/// The big tables the purchase journey looks rows up in (db/create_tables.sql): the
+/// The big tables the purchase journey looks rows up in (db/create_new_tables.sql): the
 /// investors on record, the sourcing registers (brokers, staff), bank branches and
 /// PIN codes. The rate card is in SqlMasters.RateCard.cs.
 /// </summary>
@@ -68,7 +68,7 @@ public sealed partial class SqlMasters(Db db, SqlReference reference) : IInvesto
         return new DocsOnRecord(Pan: true, Photo: photo, Poa: poa && addressComplete);
     }
 
-    // One row of MasterQueries.KycOnCommon or KycOnBt, as this reads it.
+    // One row of InvestorIdentificationQueries.KycOnCommon or KycOnBt, as this reads it.
     private sealed class FolioKycRow
     {
         public string? NamePrefix { get; set; }
@@ -109,16 +109,16 @@ public sealed partial class SqlMasters(Db db, SqlReference reference) : IInvesto
 
     // Every folio held against the PAN: more than one is a record Operations has to merge.
     public Task<IReadOnlyList<FolioDeposit>> FolioDepositsByPanAsync(string pan, CancellationToken ct = default) =>
-        FolioDepositsAsync(MasterQueries.FolioDepositsByPan, new { Pan = Key(pan) }, ct);
+        FolioDepositsAsync(InvestorIdentificationQueries.FolioDepositsByPan, new { Pan = Key(pan) }, ct);
 
     public Task<IReadOnlyList<FolioDeposit>> FolioDepositsByFolioAsync(string folio, CancellationToken ct = default) =>
-        FolioDepositsAsync(MasterQueries.FolioDepositsByFolio, new { Folio = Key(folio) }, ct);
+        FolioDepositsAsync(InvestorIdentificationQueries.FolioDepositsByFolio, new { Folio = Key(folio) }, ct);
 
     public async Task<string> FolioOfFirstHolderAsync(string pan, CancellationToken ct = default)
     {
         await using var connection = await db.OpenAsync(ct);
         var folio = await connection.QueryFirstOrDefaultAsync<string>(
-            $"SELECT TOP (1) h.Folio FROM ({MasterQueries.FirstHolders}) h ORDER BY h.Folio",
+            InvestorIdentificationQueries.FolioOfFirstHolder,
             new { Pan = Key(pan) });
         return (folio ?? "").Trim();
     }
@@ -127,7 +127,7 @@ public sealed partial class SqlMasters(Db db, SqlReference reference) : IInvesto
     {
         await using var connection = await db.OpenAsync(ct);
         var rows = await connection.QueryAsync<(string Number, decimal? Amount)>(
-            $"SELECT d.Number, d.Amount FROM ({MasterQueries.ActiveDeposits}) d", new { Pan = Key(pan) });
+            MasterLookupQueries.ActiveDeposits, new { Pan = Key(pan) });
         return rows.Select(r => new ActiveDeposit((r.Number ?? "").Trim(), (long)Math.Round(r.Amount ?? 0))).ToList();
     }
 
@@ -137,7 +137,7 @@ public sealed partial class SqlMasters(Db db, SqlReference reference) : IInvesto
     {
         await using var connection = await db.OpenAsync(ct);
         var rows = await connection.QueryAsync<(string Folio, string Pan, DateTime? Dob)>(
-            $"SELECT d.Folio, d.Pan, d.Dob FROM ({deposits}) d ORDER BY d.Folio", key);
+            InvestorIdentificationQueries.FolioDeposits(deposits), key);
         return rows.Select(r => new FolioDeposit((r.Folio ?? "").Trim(), (r.Pan ?? "").Trim(), Dates.FromDb(r.Dob))).ToList();
     }
 
@@ -171,7 +171,7 @@ public sealed partial class SqlMasters(Db db, SqlReference reference) : IInvesto
         if (query is null) return "";
         await using var connection = await db.OpenAsync(ct);
         var prefix = await connection.QueryFirstOrDefaultAsync<string>(
-            $"SELECT TOP (1) k.NamePrefix FROM ({query}) k ORDER BY k.SavedOn DESC", holder);
+            InvestorIdentificationQueries.LatestNamePrefix(query), holder);
         return NamePrefixes.GenderOf(prefix);
     }
 
@@ -187,7 +187,7 @@ public sealed partial class SqlMasters(Db db, SqlReference reference) : IInvesto
     private async Task<string?> KycSourceAsync(string pan, string dob, string folio, CancellationToken ct)
     {
         await using var connection = await db.OpenAsync(ct);
-        var source = await connection.QueryFirstOrDefaultAsync<string>(MasterQueries.KycSource,
+        var source = await connection.QueryFirstOrDefaultAsync<string>(InvestorIdentificationQueries.KycSource,
             new { pan = Key(pan), dob = Dates.ParseDdMmYyyy(dob), folio = Key(folio) });
         return source?.Trim();
     }
@@ -203,7 +203,7 @@ public sealed partial class SqlMasters(Db db, SqlReference reference) : IInvesto
     {
         await using var connection = await db.OpenAsync(ct);
         return await connection.QueryFirstOrDefaultAsync<FolioRow>(
-            MasterQueries.Folios, new { Folio = Key(folio), Pan = Key(pan) });
+            InvestorIdentificationQueries.Folios, new { Folio = Key(folio), Pan = Key(pan) });
     }
 
     // The details held for a holder of a folio, read from where their latest KYC is
@@ -217,7 +217,7 @@ public sealed partial class SqlMasters(Db db, SqlReference reference) : IInvesto
         var maritalStatuses = ((await reference.ReferenceAsync(ct)).Masters ?? MasterLists.None).MaritalStatuses;
         await using var connection = await db.OpenAsync(ct);
         var row = await connection.QueryFirstOrDefaultAsync<FolioKycRow>(
-            $"SELECT TOP (1) * FROM ({query}) k ORDER BY k.SavedOn DESC",
+            InvestorIdentificationQueries.LatestKyc(query),
             HolderOf(folio, pan, dob));
         if (row is null) return null;
 
@@ -240,8 +240,8 @@ public sealed partial class SqlMasters(Db db, SqlReference reference) : IInvesto
     // which holds none.
     private static string? KycDetailsQuery(string source)
     {
-        if (source == KycSources.Common) return MasterQueries.KycOnCommon;
-        if (source == KycSources.Bt) return MasterQueries.KycOnBt;
+        if (source == KycSources.Common) return InvestorIdentificationQueries.KycOnCommon;
+        if (source == KycSources.Bt) return InvestorIdentificationQueries.KycOnBt;
         return null;
     }
 
@@ -255,7 +255,7 @@ public sealed partial class SqlMasters(Db db, SqlReference reference) : IInvesto
 
         await using var connection = await db.OpenAsync(ct);
         var row = await connection.QueryFirstOrDefaultAsync<AddressRowOnRecord>(
-            $"SELECT TOP (1) a.Address, a.Line1, a.Line2, a.Line3, a.City, a.District, a.State, a.PinCode FROM ({query}) a ORDER BY a.SavedOn DESC",
+            InvestorIdentificationQueries.LatestAddress(query),
             holder);
         // The last part may be missing, which leaves the comma before it.
         var address = (row?.Address ?? "").Trim().TrimEnd(',').Trim();
@@ -293,8 +293,8 @@ public sealed partial class SqlMasters(Db db, SqlReference reference) : IInvesto
     // The query that reads a source's permanent address; null for the folio master.
     private static string? AddressQuery(string source)
     {
-        if (source == KycSources.Common) return MasterQueries.AddressOnCommon;
-        if (source == KycSources.Bt) return MasterQueries.AddressOnBt;
+        if (source == KycSources.Common) return InvestorIdentificationQueries.AddressOnCommon;
+        if (source == KycSources.Bt) return InvestorIdentificationQueries.AddressOnBt;
         return null;
     }
 
@@ -308,7 +308,7 @@ public sealed partial class SqlMasters(Db db, SqlReference reference) : IInvesto
         if (query is null) return null;
 
         await using var connection = await db.OpenAsync(ct);
-        var subTypes = await connection.QueryAsync<string>($"SELECT DISTINCT d.SubTypeCode FROM ({query}) d", holder);
+        var subTypes = await connection.QueryAsync<string>(InvestorIdentificationQueries.DocumentSubTypes(query), holder);
         var filed = new HashSet<string>(subTypes.Select(subType => (subType ?? "").Trim()), StringComparer.OrdinalIgnoreCase);
 
         var codes = await reference.DocumentCodesAsync(ct);
@@ -329,7 +329,7 @@ public sealed partial class SqlMasters(Db db, SqlReference reference) : IInvesto
 
         await using var connection = await db.OpenAsync(ct);
         var rows = await connection.QueryAsync<(string SubTypeCode, string FileName, string FilePath)>(
-            $"SELECT d.SubTypeCode, d.FileName, d.FilePath FROM ({query}) d ORDER BY d.SavedOn DESC",
+            InvestorIdentificationQueries.DocumentCopies(query),
             HolderOf(holder.Folio, holder.Pan, holder.Dob));
         return rows.Select(r => new CopyOnRecord((r.SubTypeCode ?? "").Trim(), r.FileName, r.FilePath)).ToList();
     }
@@ -337,8 +337,8 @@ public sealed partial class SqlMasters(Db db, SqlReference reference) : IInvesto
     // The query that reads a source's documents; null for the folio master.
     private static string? DocumentsQuery(string source)
     {
-        if (source == KycSources.Common) return MasterQueries.DocumentsOnCommon;
-        if (source == KycSources.Bt) return MasterQueries.DocumentsOnBt;
+        if (source == KycSources.Common) return InvestorIdentificationQueries.DocumentsOnCommon;
+        if (source == KycSources.Bt) return InvestorIdentificationQueries.DocumentsOnBt;
         return null;
     }
 
@@ -350,13 +350,7 @@ public sealed partial class SqlMasters(Db db, SqlReference reference) : IInvesto
         // The relation is kept as its code, and shown as the name the page offers.
         var relations = ((await reference.ReferenceAsync(ct)).Masters ?? MasterLists.None).NomineeRelations;
         await using var connection = await db.OpenAsync(ct);
-        var rows = await connection.QueryAsync<(string Name, DateTime? Dob, string Relation, string GuardianName, string AppNo)>("""
-            SELECT n.f_Nominee_Name, n.f_Nominee_DOB, n.f_Nominee_Relations, ISNULL(n.f_GuardianName, N''), m.f_App_No
-            FROM dbo.t_FD_BT_Nominee_Dtl n
-            JOIN dbo.t_Unotp_Application_Mst m ON m.f_App_No = n.f_Appl_No AND m.f_Active = 1
-            WHERE m.f_Folio = @Folio AND m.f_Fdr_No = @DepositNumber AND n.f_Status IN ('APR', 'PEN_E') AND n.f_Active = 1
-            ORDER BY m.f_Submitted_On DESC
-            """, new { Folio = folio.Trim(), DepositNumber = depositNumber.Trim() });
+        var rows = await connection.QueryAsync<(string Name, DateTime? Dob, string Relation, string GuardianName, string AppNo)>(ApplicationTableQueries.NomineesOnDeposit, new { Folio = folio.Trim(), DepositNumber = depositNumber.Trim() });
         foreach (var r in rows)
         {
             if (found.Any(f => f.Name == r.Name && f.Dob == Dates.FromDb(r.Dob))) continue;
@@ -369,14 +363,7 @@ public sealed partial class SqlMasters(Db db, SqlReference reference) : IInvesto
     {
         var found = new List<AccountOnRecord>();
         await using var connection = await db.OpenAsync(ct);
-        var rows = await connection.QueryAsync<(string Ifsc, string AccountNo, string Bank, string Branch, string AppNo)>("""
-            SELECT b.f_NEFTCode, b.f_BankAccountNo, b.f_BankName, b.f_BranchName, m.f_App_No
-            FROM dbo.t_FD_BT_Investor_Bank_Dtl b
-            JOIN dbo.t_Unotp_Application_Mst m ON m.f_App_No = b.f_Appl_No AND m.f_Active = 1
-            WHERE m.f_Folio = @Folio AND m.f_Fdr_No = @DepositNumber AND b.f_Status IN ('APR', 'PEN_E') AND b.f_Active = 1
-              AND b.f_NEFTCode <> '' AND b.f_BankAccountNo <> ''
-            ORDER BY m.f_Submitted_On DESC
-            """, new { Folio = folio.Trim(), DepositNumber = depositNumber.Trim() });
+        var rows = await connection.QueryAsync<(string Ifsc, string AccountNo, string Bank, string Branch, string AppNo)>(ApplicationTableQueries.AccountsOnDeposit, new { Folio = folio.Trim(), DepositNumber = depositNumber.Trim() });
         foreach (var r in rows)
         {
             if (found.Any(f => f.Ifsc == r.Ifsc && f.AccountNumber == r.AccountNo)) continue;
@@ -420,7 +407,7 @@ public sealed partial class SqlMasters(Db db, SqlReference reference) : IInvesto
         if (code.Length == 0) return null;
         await using var connection = await db.OpenAsync(ct);
         return await connection.QueryFirstOrDefaultAsync<Party>(
-            $"SELECT TOP (1) p.Code, p.Name FROM ({parties}) p {ForThisCall}", OneRow("Code", Key(code)));
+            MasterLookupQueries.Party(parties), OneRow("Code", Key(code)));
     }
 
     // The parties whose code and name hold what was typed, in the order typed; a code that
@@ -433,10 +420,7 @@ public sealed partial class SqlMasters(Db db, SqlReference reference) : IInvesto
         var args = Typed("Code", words);
         args.Add("First", Plain(words[0] + "%"));
         await using var connection = await db.OpenAsync(ct);
-        return (await connection.QueryAsync<Party>($"""
-            SELECT TOP ({Found}) p.Code, p.Name FROM ({parties}) p
-            ORDER BY CASE WHEN p.Code LIKE @First THEN 0 ELSE 1 END, p.Name {ForThisCall}
-            """, args)).ToList();
+        return (await connection.QueryAsync<Party>(MasterLookupQueries.SearchParties(Found, parties), args)).ToList();
     }
 
     // ----- Bank branches ------------------------------------------------------------
@@ -445,7 +429,7 @@ public sealed partial class SqlMasters(Db db, SqlReference reference) : IInvesto
     {
         await using var connection = await db.OpenAsync(ct);
         return await connection.QueryFirstOrDefaultAsync<BankBranch>(
-            $"SELECT TOP (1) b.Ifsc, b.Bank, b.Branch, b.Micr FROM ({MasterQueries.BankBranches}) b {ForThisCall}", OneRow("Ifsc", Key(ifsc), searchName: "Words"));
+            MasterLookupQueries.BankBranch, OneRow("Ifsc", Key(ifsc), searchName: "Words"));
     }
 
     // Searched as it is typed, by the rule the FD system's own bank search goes by:
@@ -462,10 +446,7 @@ public sealed partial class SqlMasters(Db db, SqlReference reference) : IInvesto
         args.Add("Ifsc", null, System.Data.DbType.AnsiString);
         args.Add("Words", Plain(string.Join(" ", words)));
         await using var connection = await db.OpenAsync(ct);
-        return (await connection.QueryAsync<BankBranch>($"""
-            SELECT TOP ({BanksFound}) b.Ifsc, b.Bank, b.Branch, b.Micr FROM ({MasterQueries.BankBranches}) b
-            ORDER BY b.Micr {ForThisCall}
-            """, args)).ToList();
+        return (await connection.QueryAsync<BankBranch>(MasterLookupQueries.SearchBankBranches(BanksFound), args)).ToList();
     }
 
     // ----- Axis CMS branches -----------------------------------------------------------
@@ -479,10 +460,7 @@ public sealed partial class SqlMasters(Db db, SqlReference reference) : IInvesto
         var words = Words(query, ' ', ',', '—', '-');
         if (words.Length == 0) return [];
         await using var connection = await db.OpenAsync(ct);
-        return (await connection.QueryAsync<CmsLocation>($"""
-            SELECT TOP ({Found}) c.Code, c.Name, c.Label FROM ({MasterQueries.CmsLocations}) c
-            ORDER BY c.State, c.District {ForThisCall}
-            """, Typed("Code", words))).ToList();
+        return (await connection.QueryAsync<CmsLocation>(MasterLookupQueries.SearchCmsLocations(Found), Typed("Code", words))).ToList();
     }
 
     public async Task<CmsLocation?> CmsLocationAsync(string code, CancellationToken ct = default)
@@ -492,7 +470,7 @@ public sealed partial class SqlMasters(Db db, SqlReference reference) : IInvesto
         if (code.Length == 0 || !code.All(char.IsAsciiLetterOrDigit)) return null;
         await using var connection = await db.OpenAsync(ct);
         return await connection.QueryFirstOrDefaultAsync<CmsLocation>(
-            $"SELECT TOP (1) c.Code, c.Name, c.Label FROM ({MasterQueries.CmsLocations}) c {ForThisCall}", OneRow("Code", Key(code)));
+            MasterLookupQueries.CmsLocation, OneRow("Code", Key(code)));
     }
 
     // ----- PIN codes ------------------------------------------------------------------
@@ -509,12 +487,6 @@ public sealed partial class SqlMasters(Db db, SqlReference reference) : IInvesto
     // ----- Reading a register: one row by its key, or a search ------------------------
     // A register's query takes both its key and @Search (MasterQueries). The app gives
     // one and leaves the other empty.
-
-    // SQL Server is told to plan the read for this call's own values. With one of
-    // the two parameters empty the query is really one of two different reads - a
-    // row by its key, found by the index, or a search - and a plan kept from the
-    // other kind would read the whole register to find one row.
-    private const string ForThisCall = "OPTION (RECOMPILE)";
 
     // One row by its key: no search. The bank's query calls what was typed @Words.
     private static DynamicParameters OneRow(string keyName, object key, string searchName = "Search")

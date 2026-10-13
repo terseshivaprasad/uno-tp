@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 namespace UnoTP.Models;
 
 /// <summary>
-/// The Income Tax Department's PAN-Aadhaar link: whether an Aadhaar is held
+/// The PAN-Aadhaar link: whether an Aadhaar is held
 /// against a PAN. It is asked with both numbers, so it can only be asked once an
 /// Aadhaar number has been read on the application. An unlinked PAN does not stop
 /// an application - TDS runs at the higher rate until the investor links it.
@@ -12,8 +12,11 @@ public interface IPanAadhaarLinkService
 {
     /// <param name="aadhaarNumber">12 digits, or empty when none has been read yet.
     /// Anything that is not 12 digits cannot be asked with.</param>
-    Task<PanAadhaarLink> CheckAsync(string pan, string aadhaarNumber, CancellationToken ct = default);
+    Task<PanAadhaarLinkAnswer> CheckAsync(string pan, string aadhaarNumber, CancellationToken ct = default);
 }
+
+/// <param name="TaskId">The task id of the request IDfy answered this with; empty when the link was not asked.</param>
+public sealed record PanAadhaarLinkAnswer(PanAadhaarLink Link, string TaskId = "");
 
 [JsonConverter(typeof(JsonStringEnumConverter<PanAadhaarLink>))]
 public enum PanAadhaarLink

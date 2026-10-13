@@ -16,23 +16,14 @@ internal static class SourceOfFundsLog
     {
         await using var connection = await db.OpenAsync(ct);
         await connection.ExecuteAsync(
-            "UPDATE dbo.t_FD_CMN_AML_Source_Of_Funds_Log SET f_Active = 0 WHERE f_Appl_No = @AppNo AND f_Active = 1",
+            ApplicationTableQueries.RetireSourceOfFunds,
             new { at.AppNo });
 
         var deposit = app.Deposit;
         if (deposit is null || deposit.SourceOfFunds.Length == 0) return;
 
         var investor = app.Details?.Holders.FirstOrDefault(h => h.Holder == HolderType.Investor);
-        await connection.ExecuteAsync("""
-            INSERT dbo.t_FD_CMN_AML_Source_Of_Funds_Log (f_Appl_No, f_Holder_Type, f_Investment_Amt, f_AnnualIncome_Desc,
-                f_AML_Source_Of_Funds, f_AML_Source_Of_Funds_Remarks, f_AML_Source_Of_Funds_reason,
-                f_FormCode, f_Source, f_Folio_No, f_Occupation_Desc,
-                f_Active, f_CreatedBy, f_CreatedByUName, f_CreatedOn, f_CreatedIP, f_SessionId)
-            VALUES (@AppNo, @HolderType, @Amount, @AnnualIncome,
-                @SourceOfFunds, @SourceOfFundsRemark, @SourceOfFundsReason,
-                @FormNo, 'UNO_TP', @Folio, @Occupation,
-                1, @CreatedBy, @UserName, GETDATE(), @Ip, @SessionId)
-            """, new
+        await connection.ExecuteAsync(ApplicationTableQueries.InsertSourceOfFunds, new
         {
             at.AppNo, HolderType = HolderType.Investor, deposit.Amount, investor?.AnnualIncome,
             deposit.SourceOfFunds, deposit.SourceOfFundsRemark, deposit.SourceOfFundsReason,

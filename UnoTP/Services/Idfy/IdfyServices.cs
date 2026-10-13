@@ -62,22 +62,34 @@ public sealed class IdfyDocumentIdentifier(IdfyClient idfy) : IDocumentIdentifie
     {
         if (expected == DocumentKind.ProofOfAddress && type.Length == 0)
         {
-            var found = (await idfy.ValidateAsync(file, null, ct)).Result!;
-            // A PAN card is an identity document IDfy knows, but proves no address.
-            if (string.Equals(found.DetectedDocType, IdfyDocTypes.Pan, StringComparison.OrdinalIgnoreCase))
-                return new Identification(false, NotAProof);
-            // Not a proof IDfy knows: which proof it is cannot be said.
-            if (IdfyDocTypes.ProofOf(found.DetectedDocType) is not { } proof) return new Identification(true);
-            return found.IsReadable == true
-                ? new Identification(true, Type: proof)
-                : new Identification(false, Messages.UploadDocuments.ReadsAsButUnreadable(IdfyDocTypes.Named(found.DetectedDocType!)));
+            var asked = await idfy.ValidateAsync(file, null, ct);
+            return WhichProof(asked.Result!) with { TaskId = asked.TaskId ?? "" };
         }
 
         // A document IDfy has no type for is taken as what it was handed in as.
         var docType = IdfyDocTypes.Of(expected, type);
         if (docType is null) return new Identification(true, Type: type);
 
-        var result = (await idfy.ValidateAsync(file, docType, ct)).Result!;
+        var checkedAs = await idfy.ValidateAsync(file, docType, ct);
+        return IsThat(checkedAs.Result!, docType) with { TaskId = checkedAs.TaskId ?? "" };
+    }
+
+    // Which proof of address IDfy takes a copy for, when it was not said beforehand.
+    private static Identification WhichProof(ValidateResult found)
+    {
+        // A PAN card is an identity document IDfy knows, but proves no address.
+        if (string.Equals(found.DetectedDocType, IdfyDocTypes.Pan, StringComparison.OrdinalIgnoreCase))
+            return new Identification(false, NotAProof);
+        // Not a proof IDfy knows: which proof it is cannot be said.
+        if (IdfyDocTypes.ProofOf(found.DetectedDocType) is not { } proof) return new Identification(true);
+        return found.IsReadable == true
+            ? new Identification(true, Type: proof)
+            : new Identification(false, Messages.UploadDocuments.ReadsAsButUnreadable(IdfyDocTypes.Named(found.DetectedDocType!)));
+    }
+
+    // Whether a copy is the document it was handed in as.
+    private static Identification IsThat(ValidateResult result, string docType)
+    {
         if (result.IsReadable != true)
             return new Identification(false, Messages.UploadDocuments.CopyUnreadable);
         if (!string.Equals(result.DetectedDocType, docType, StringComparison.OrdinalIgnoreCase))
@@ -93,44 +105,54 @@ public sealed class IdfyOcr(IdfyClient idfy) : IOcrService
 {
     public async Task<OcrReading> ReadAsync(DocumentKind kind, string type, UploadFile file, OcrSubject subject, bool consent, CancellationToken ct = default)
     {
-        if (kind == DocumentKind.Cheque) return Cheque((await idfy.ExtractChequeAsync(file, ct)).Result!.ExtractionOutput);
+        if (kind == DocumentKind.Cheque)
+        {
+            var chequeTask = await idfy.ExtractChequeAsync(file, ct);
+            return Cheque(chequeTask.Result!.ExtractionOutput) with { TaskId = chequeTask.TaskId ?? "" };
+        }
 
         switch (IdfyDocTypes.Of(kind, type))
         {
             case "ind_pan":
-                var pan = (await idfy.ExtractPanAsync(file, ct)).Result!.ExtractionOutput;
-                return new OcrReading(Pan: pan?.IdNumber ?? "", Name: pan?.NameOnCard ?? "", Dob: Dobs.Of(pan?.DateOfBirth));
+                var panTask = await idfy.ExtractPanAsync(file, ct);
+                var pan = panTask.Result!.ExtractionOutput;
+                return new OcrReading(Pan: pan?.IdNumber ?? "", Name: pan?.NameOnCard ?? "", Dob: Dobs.Of(pan?.DateOfBirth)) { TaskId = panTask.TaskId ?? "" };
 
             case "ind_aadhaar":
                 // What the QR code says is what UIDAI signed, so it is read first -
                 // unless it carries only part of the number, as a secure QR code does.
-                var aadhaar = (await idfy.ExtractAadhaarAsync(file, consent, ct)).Result!;
+                var aadhaarTask = await idfy.ExtractAadhaarAsync(file, consent, ct);
+                var aadhaar = aadhaarTask.Result!;
                 var card = AadhaarNumbers.IsWhole(Digits(aadhaar.QrOutput?.IdNumber)) ? aadhaar.QrOutput : aadhaar.ExtractionOutput;
                 return new OcrReading(Name: card?.NameOnCard ?? "", Address: WithPin(card?.Address, card?.Pincode),
                     IdNumber: Digits(card?.IdNumber), Gender: Genders.Of(card?.Gender ?? aadhaar.ExtractionOutput?.Gender),
                     Dob: Dobs.Of(card?.DateOfBirth ?? aadhaar.ExtractionOutput?.DateOfBirth), Number: Digits(card?.IdNumber),
-                    District: Place(card?.District ?? aadhaar.ExtractionOutput?.District), State: Place(card?.State ?? aadhaar.ExtractionOutput?.State));
+                    District: Place(card?.District ?? aadhaar.ExtractionOutput?.District), State: Place(card?.State ?? aadhaar.ExtractionOutput?.State))
+                    { TaskId = aadhaarTask.TaskId ?? "" };
 
             case "ind_driving_license":
-                var licence = (await idfy.ExtractDrivingLicenceAsync(file, ct)).Result!.ExtractionOutput;
+                var licenceTask = await idfy.ExtractDrivingLicenceAsync(file, ct);
+                var licence = licenceTask.Result!.ExtractionOutput;
                 return new OcrReading(Name: licence?.NameOnCard ?? "", Address: WithPin(licence?.Address, licence?.Pincode),
                     IdNumber: licence?.IdNumber ?? "", Dob: Dobs.Of(licence?.DateOfBirth),
                     Number: licence?.IdNumber ?? "", Expiry: LicenceExpiry(licence),
-                    District: Place(licence?.District), State: Place(licence?.State));
+                    District: Place(licence?.District), State: Place(licence?.State)) { TaskId = licenceTask.TaskId ?? "" };
 
             case "ind_passport":
                 // A passport is verified by its file number, not its passport number.
-                var passport = (await idfy.ExtractPassportAsync(file, ct)).Result!.ExtractionOutput;
+                var passportTask = await idfy.ExtractPassportAsync(file, ct);
+                var passport = passportTask.Result!.ExtractionOutput;
                 return new OcrReading(Name: passport?.NameOnCard ?? "", Address: WithPin(passport?.Address, passport?.Pincode),
                     IdNumber: passport?.FileNumber ?? "", Gender: Genders.Of(passport?.Gender), Dob: Dobs.Of(passport?.DateOfBirth),
                     Number: passport?.PassportNumber ?? "", Expiry: Dobs.Of(passport?.DateOfExpiry),
-                    District: Place(passport?.District), State: Place(passport?.State));
+                    District: Place(passport?.District), State: Place(passport?.State)) { TaskId = passportTask.TaskId ?? "" };
 
             case "ind_voter_id":
-                var voter = (await idfy.ExtractVoterIdAsync(file, ct)).Result!.ExtractionOutput;
+                var voterTask = await idfy.ExtractVoterIdAsync(file, ct);
+                var voter = voterTask.Result!.ExtractionOutput;
                 return new OcrReading(Name: voter?.NameOnCard ?? "", Address: WithPin(voter?.Address, voter?.Pincode),
                     IdNumber: voter?.IdNumber ?? "", Gender: Genders.Of(voter?.Gender), Dob: Dobs.Of(voter?.DateOfBirth), Number: voter?.IdNumber ?? "",
-                    District: Place(voter?.District), State: Place(voter?.State));
+                    District: Place(voter?.District), State: Place(voter?.State)) { TaskId = voterTask.TaskId ?? "" };
 
             default:
                 // IDfy reads no other document: nothing is read off the copy, and the
@@ -228,21 +250,24 @@ public sealed class IdfyVerification(IdfyClient idfy) : IVerificationService
                 number = number.Replace(" ", "").Replace("-", "");
                 if (number.Length == 0) return NotAsked(sarathi, "the licence number could not be read off the copy");
                 if (ParseDob(holderDob) is not { } licenceDob) return NotAsked(sarathi, "the holder's date of birth is not on record in a form it can be asked with");
-                return Licence((await idfy.VerifyDrivingLicenceAsync(number, licenceDob, ct)).Result!.SourceOutput, sarathi);
+                var licenceAnswer = await idfy.VerifyDrivingLicenceAsync(number, licenceDob, ct);
+                return Licence(licenceAnswer.Result!.SourceOutput, sarathi) with { TaskId = licenceAnswer.TaskId ?? "" };
 
             case "Passport":
                 const string seva = "Passport Seva";
                 // The file number is on the passport's last page, which a single copy may not show.
                 if (number.Length == 0) return NotAsked(seva, "the passport file number is not on the copy — it is on the last page");
                 if (ParseDob(holderDob) is not { } passportDob) return NotAsked(seva, "the holder's date of birth is not on record in a form it can be asked with");
-                return Answer((await idfy.VerifyPassportAsync(number, passportDob, ct)).Result!, seva);
+                var passportAnswer = await idfy.VerifyPassportAsync(number, passportDob, ct);
+                return Answer(passportAnswer.Result!, seva) with { TaskId = passportAnswer.TaskId ?? "" };
 
             case "Voter ID":
                 const string commission = "the Election Commission";
                 if (number.Length == 0) return NotAsked(commission, "the EPIC number could not be read off the copy");
                 // IDfy may read the EPIC number partly masked, and a masked one cannot be looked up.
                 if (number.Contains('*')) return NotAsked(commission, "the EPIC number was read partly masked");
-                return Answer((await idfy.VerifyVoterIdAsync(number, ct)).Result!, commission);
+                var voterAnswer = await idfy.VerifyVoterIdAsync(number, ct);
+                return Answer(voterAnswer.Result!, commission) with { TaskId = voterAnswer.TaskId ?? "" };
 
             default:
                 // IDfy has no source check for an Aadhaar.
@@ -279,11 +304,12 @@ public sealed class IdfyVerification(IdfyClient idfy) : IVerificationService
 /// <summary>The PAN-Aadhaar link by IDfy, asked with both numbers.</summary>
 public sealed class IdfyPanAadhaarLink(IdfyClient idfy) : IPanAadhaarLinkService
 {
-    public async Task<PanAadhaarLink> CheckAsync(string pan, string aadhaarNumber, CancellationToken ct = default)
+    public async Task<PanAadhaarLinkAnswer> CheckAsync(string pan, string aadhaarNumber, CancellationToken ct = default)
     {
-        if (!AadhaarNumbers.IsWhole(aadhaarNumber)) return PanAadhaarLink.NeedsAadhaar;
-        var source = (await idfy.VerifyPanAadhaarLinkAsync(pan, aadhaarNumber, ct)).Result!.SourceOutput;
-        return source?.IsLinked == true ? PanAadhaarLink.Linked : PanAadhaarLink.NotLinked;
+        if (!AadhaarNumbers.IsWhole(aadhaarNumber)) return new PanAadhaarLinkAnswer(PanAadhaarLink.NeedsAadhaar);
+        var task = await idfy.VerifyPanAadhaarLinkAsync(pan, aadhaarNumber, ct);
+        var link = task.Result!.SourceOutput?.IsLinked == true ? PanAadhaarLink.Linked : PanAadhaarLink.NotLinked;
+        return new PanAadhaarLinkAnswer(link, task.TaskId ?? "");
     }
 }
 
@@ -296,7 +322,12 @@ public sealed class IdfyFaceMatch(IdfyClient idfy) : IFaceMatchService
 {
     public async Task<FaceMatch> CompareAsync(UploadFile panCopy, UploadFile proof, CancellationToken ct = default)
     {
-        var result = (await idfy.CompareFacesAsync(panCopy, proof, ct)).Result!;
+        var compared = await idfy.CompareFacesAsync(panCopy, proof, ct);
+        return WhatItFound(compared.Result!) with { TaskId = compared.TaskId ?? "" };
+    }
+
+    private static FaceMatch WhatItFound(FaceCompare result)
+    {
         var score = result.MatchScore ?? 0;
         if (result.Image1?.FaceDetected == false) return new FaceMatch(false, score, "no face could be found on the PAN copy", PanFace: false);
         if (result.Image2?.FaceDetected == false) return new FaceMatch(false, score, "no face could be found on the proof of address", ProofFace: false);

@@ -103,7 +103,7 @@
                 <div><dt>Amount</dt><dd>@(d is null ? "—" : Money.Rupees(d.Amount))</dd><dd class="pay-link-terms__note">fixed &mdash; the investor cannot change it</dd></div>
                 <div><dt>Valid for</dt><dd>@Model.View.PaymentLinkValidFor</dd><dd class="pay-link-terms__note">from when it is sent</dd></div>
             </dl>
-            <div class="pay-link-lapse pay-link-lapse--long"><strong>A link stays open for @Model.View.PaymentLinkValidFor; the application stands for @Model.View.ApplicationDays days.</strong> A new link can be sent until then; unpaid after that, the application lapses and the rate is no longer held.</div>
+            <div class="pay-link-lapse pay-link-lapse--long"><strong>A link stays open for @Model.View.PaymentLinkValidFor; the application stands for @Model.View.ApplicationDays days.</strong> The same link can be sent again until then, open for @LinkRequestRow.RegeneratedForHours hours each time; unpaid after that, the application lapses and the rate is no longer held.</div>
             <p class="pay-link-foot">Try later submits the application as well, but makes no link &mdash; nothing is sent to the investor until a link is generated, from Application Submitted.</p>
         </div>
         <div class="pay-link-actions">

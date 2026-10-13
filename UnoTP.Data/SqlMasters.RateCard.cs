@@ -42,12 +42,7 @@ public sealed partial class SqlMasters
         var fallback = await reference.SettingAsync("defaultRateCategory", ct);
 
         await using var connection = await db.OpenAsync(ct);
-        var rows = await connection.QueryAsync<SchemeRow>($"""
-            SELECT * FROM ({RateCardOf(request.BranchUser)}) r
-            WHERE r.Category IN (@Category, @Fallback) AND r.Mode = @Mode
-              AND r.FromDate <= @Today
-            ORDER BY CASE WHEN r.Category = @Category THEN 0 ELSE 1 END, r.FromDate DESC, r.SchemeId DESC
-            """, new { request.Category, Fallback = fallback, Mode = request.ApplicationType, DateTime.Today });
+        var rows = await connection.QueryAsync<SchemeRow>(MasterLookupQueries.Rates(RateCardOf(request.BranchUser)), new { request.Category, Fallback = fallback, Mode = request.ApplicationType, DateTime.Today });
 
         // The rows come the category's own first and the latest first, so the first
         // row seen for a tenure, payout and minimum amount is the one that stands.
@@ -89,14 +84,7 @@ public sealed partial class SqlMasters
     public async Task<bool> OnRateCardAsync(SchemeCheck check, CancellationToken ct = default)
     {
         await using var connection = await db.OpenAsync(ct);
-        var rows = await connection.ExecuteScalarAsync<int>($"""
-            SELECT COUNT(*) FROM ({RateCardOf(check.BranchUser)}) r
-            WHERE r.Category = @Category AND r.Mode = @Mode
-              AND r.Scheme = @Scheme AND r.InterestFreq = @InterestFreq
-              AND r.TenureMonths = @TenureMonths AND r.Rate = @Rate
-              AND r.MinAmount <= @Amount AND (r.MaxAmount IS NULL OR r.MaxAmount >= @Amount)
-              AND r.FromDate <= @Today
-            """, new
+        var rows = await connection.ExecuteScalarAsync<int>(MasterLookupQueries.OnRateCard(RateCardOf(check.BranchUser)), new
         {
             check.Category, check.Mode, check.Scheme, check.InterestFreq, check.TenureMonths, check.Rate, check.Amount, DateTime.Today,
         });

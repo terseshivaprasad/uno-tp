@@ -108,6 +108,31 @@ its elements by `data-*` and ids, almost never by class. Before renaming one, se
 shortener); `UnoTP.Data` is the SQL layer over the `t_Unotp_` tables, with the models both share. `Infrastructure/` holds the cross-cutting parts: feature gate, security headers,
 partner session, URL building. Every method has a `///` summary or a comment above it.
 
+## Where the SQL is
+
+Every SQL statement is a named constant in a file that holds nothing but SQL. The code
+that runs a statement uses it by name, so a column or a table is changed in one place.
+
+| File | The SQL for |
+|---|---|
+| `UnoTP.Data/Queries/ApplicationQueries.cs` | the app's own application tables: the header, the upload state, the page state |
+| `UnoTP.Data/Queries/ApplicationTableQueries.cs` | the FD system's tables an application is written to: documents, KYC, addresses, nominee, payment, repayment account, deposit, source of funds log |
+| `UnoTP.Data/Queries/PayInSlipQueries.cs` | the pay-in slip staging, header and detail tables |
+| `UnoTP.Data/Queries/LinkQueries.cs` | the two short link tables, and acceptance |
+| `UnoTP.Data/Queries/RenewalQueries.cs` | the booked deposits Renew FD lists |
+| `UnoTP.Data/Queries/ConsoleQueries.cs` | Console Admin's windows and notices |
+| `UnoTP.Data/Queries/ListQueries.cs` | the settings, the features and the lists |
+| `UnoTP.Data/Queries/ErrorLogQueries.cs` | the error log |
+| `UnoTP.Data/Queries/InvestorIdentificationQueries.cs` | Investor Identification's Check record: the folio check, the holder's row on the folio, and the KYC details, address and documents the FD system holds for them. Renew FD and Investor Information read a holder through the same queries |
+| `UnoTP.Data/Queries/MasterQueries.cs` | each table with a master of its own: brokers, staff, bank branches, PIN codes, the rate card and the rest |
+| `UnoTP.Data/Queries/MasterLookupQueries.cs` | how the master queries are asked: one row by key, a typed search |
+
+To add a column to a table the app writes:
+
+1. Add it to the table's INSERT in the query file: the column in the list, and its `@Name` in VALUES.
+2. Give `@Name` its value in the save that runs the INSERT (`SaveStep.*.cs`, or the row in `Models/` for pay-in slips and links).
+3. If it is read back, add it to the table's column list in the query file (`f_Column AS Name`) and add the `Name` property to the row class in `ApplicationTableRows.cs`.
+
 ## Validation and error messages
 
 Every validation and error message is written once, in `UnoTP.Data/Messages.cs`,

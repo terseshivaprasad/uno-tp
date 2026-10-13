@@ -81,16 +81,16 @@
 
         @{
             var canRegenerate = sub.CanRegenerate(DateTime.Now);
-            var linkWord = sub.LinkSent ? "A new link" : "The link";
+            var linkWord = sub.LinkSent ? "The same link" : "The link";
             var regenerateNote = "";
             if (sub.RegenerateUntil is { } until)
             {
                 regenerateNote = canRegenerate
-                    ? $"{linkWord} can be sent till {Money.Day(until)}; after that the application cancels itself."
+                    ? $"{linkWord} can be sent{(sub.LinkSent ? " again" : "")} till {Money.Day(until)}; after that the application cancels itself."
                     : $"The window for a link closed on {Money.Day(until)}: the application has cancelled itself.";
             }
             var sendLabel = sub.LinkSent ? "Regenerate payment link" : "Generate payment link";
-            var sendLoader = sub.LinkSent ? "Sending a new link…" : "Generating the payment link…";
+            var sendLoader = sub.LinkSent ? "Sending the link again…" : "Generating the payment link…";
         }
         <form method="post" asp-page-handler="Resend" class="submitted-actions">
             <button type="submit" class="btn btn-primary submitted-actions__primary" disabled="@(!canRegenerate)" data-loader="@sendLoader">@sendLabel</button>

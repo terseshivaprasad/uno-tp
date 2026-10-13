@@ -77,7 +77,8 @@ public interface ILinkApi
 
     /// <summary>
     /// POST links { appNo, purpose }: sends the investor a link - payment or
-    /// acceptance - replacing any sent before, which stops working. The link as
+    /// acceptance. An application that has a link already is sent the same short
+    /// link again, open for LinkRequestRow.RegeneratedForHours. The link as
     /// sent, or null when the application cannot carry one.
     /// </summary>
     Task<SentLinkRecord?> SendAsync(string appNo, string purpose, CancellationToken ct = default);

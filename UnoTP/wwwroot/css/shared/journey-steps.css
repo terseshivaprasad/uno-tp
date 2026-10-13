@@ -331,6 +331,12 @@
   display: none;
 }
 /* Investor Identification's Note, across the card under its head. */
+/* A field searched as it is typed (a bank, an Axis CMS branch, a broker's or an
+   employee's code): its column holds the list of what was found, dropped under
+   the field. Without this the list is placed against the page and lands out of sight. */
+.bank-search {
+  position: relative;
+}
 .bank-suggest {
   position: absolute;
   z-index: 20;

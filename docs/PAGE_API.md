@@ -86,7 +86,7 @@ The joint holders' documents on Investor Information go through the same calls.
 
 | Call | Used for |
 |---|---|
-| `IApplicationApi.FindAsync`, `SubmitAsync`, `RecordPaymentLinkAsync`, `ResendLinkAsync` | The application; saved as submitted; then - on Submit & send link, or later for one submitted with Try later - its link put on record (the payment link table for a purchase, the re-payment link table for a renewal); a new link. |
+| `IApplicationApi.FindAsync`, `SubmitAsync`, `RecordPaymentLinkAsync`, `ResendLinkAsync` | The application; saved as submitted; then - on Submit & send link, or later for one submitted with Try later - its link put on record (`t_FD_PGW_PaymentUrlRequest_dtl` for a purchase, `T_FD_PGW_RW_DECLARATION_URL_REQUEST_DTL` for a renewal); the same short link sent again, open for 24 hours. |
 | `IDepositApi.QuoteAsync`, `BranchAsync` | The quote and the branches shown. |
 | `IShortLinkService.ShortenAsync` | The payment link shortened, once the application is saved. |
 | `IInvestorApi.ActiveDepositsAsync` | The source-of-funds rule, checked once more before submit. |
@@ -102,7 +102,7 @@ The joint holders' documents on Investor Information go through the same calls.
 
 | Call | Used for |
 |---|---|
-| `ILinkApi.SentAsync`, `PendingAsync`, `SendAsync` | Links sent; applications waiting; a link sent again. |
+| `ILinkApi.SentAsync`, `PendingAsync`, `SendAsync` | Links sent; applications waiting; a link sent, or the same short link sent again for 24 hours. |
 | `IPayInSlipApi.SlipsAsync`, `GenerateAsync` | Slips; a slip generated or reprinted. |
 
 ## Renew FD (`RenewModel`)

@@ -30,9 +30,6 @@ public partial class DocumentsViewModel
     /// anything is uploaded.</summary>
     public IReadOnlyDictionary<string, string> Issuers => Ref.ProofsOfAddress.ToDictionary(p => p.Type, p => p.Issuer);
 
-    /// <summary>Who answers for a PAN.</summary>
-    public const string PanAuthority = "the Income Tax Department";
-
     // The same, short enough for a card.
     private const string LinkWaitsShort = "Asked once an Aadhaar is filed as the proof of address, with its number.";
 
@@ -254,7 +251,7 @@ public partial class DocumentsViewModel
         {
             "pan" when NsdlApplies(h) && !switches.IsOn(OutsideSwitches.PanCheck) => $"Once uploaded: identified and read by OCR. The PAN check is {OutsideSwitches.Off}, so NSDL is not asked.",
             "pan" when NsdlApplies(h) => Run + "the PAN, date of birth and name are checked with NSDL.",
-            "pan" => Run + $"checked with {PanAuthority}.",
+            "pan" => Run + "the PAN and date of birth on it are matched with the holder's.",
             "payment" when !switches.IsOn(OutsideSwitches.Cheque) => $"Once uploaded: filed as handed over. The cheque check is {OutsideSwitches.Off}, so the account is entered on Bank Details & Payment.",
             "payment" => Run + "the account is confirmed with the bank it is drawn on.",
             "poa" or "mail" when Issuers.TryGetValue(proofType, out var issuer) => issuer.Length > 0

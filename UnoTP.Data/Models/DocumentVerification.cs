@@ -24,4 +24,8 @@ public interface IVerificationService
 /// <param name="Standing">The document's standing with the issuer, as Active; empty when it gives none.</param>
 /// <param name="Gender">The holder's gender as the issuer holds it (see <see cref="Genders"/>); empty when it gives none.
 /// A driving licence's comes this way, as its copy does not carry one.</param>
-public sealed record Verification(bool Confirmed, string Verifier, string? NotAsked = null, string Expiry = "", string Standing = "", string Gender = "");
+public sealed record Verification(bool Confirmed, string Verifier, string? NotAsked = null, string Expiry = "", string Standing = "", string Gender = "")
+{
+    /// <summary>The task id of the request IDfy answered this with; empty when the issuer was not asked.</summary>
+    public string TaskId { get; init; } = "";
+}

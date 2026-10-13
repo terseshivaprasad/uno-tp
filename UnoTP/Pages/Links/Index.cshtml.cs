@@ -24,7 +24,7 @@ public class LinksModel(ILinkApi links, Lookups lookups, IApplicationApi applica
         return Page();
     }
 
-    /// <summary>Sends a link, replacing any sent before, which stops working.</summary>
+    /// <summary>Sends a link. An application that has one already is sent the same short link again, open for 24 hours.</summary>
     public async Task<IActionResult> OnPostSendAsync(string appNo, string purpose)
     {
         // An application submitted with Try later has no payment link yet: its first
@@ -38,7 +38,7 @@ public class LinksModel(ILinkApi links, Lookups lookups, IApplicationApi applica
             return RedirectToPage();
         }
         TempData["toast"] = await links.SendAsync(appNo, purpose) is { } link
-            ? $"Link sent to {SentTo.Both(link.Mobile, link.Email)} — any link sent before stops working."
+            ? $"Link sent to {SentTo.Both(link.Mobile, link.Email)}."
             : Messages.ShortUrl.NoLinkSent;
         return RedirectToPage();
     }

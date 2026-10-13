@@ -18,7 +18,7 @@ public enum SaveOutcome
 }
 
 /// <summary>
-/// The partner's applications, kept in SQL Server (db/create_tables.sql).
+/// The partner's applications, kept in SQL Server (db/create_new_tables.sql, and the FD system's own tables in db/create_transaction_tables.sql).
 ///
 /// A save is checked against the version the page read, under a lock on the
 /// application's row, and inserts its section afresh at the next version with
@@ -38,7 +38,6 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
     public Task<Application> OpenAsync(Holder holder, CancellationToken ct = default) =>
         OpenAsync(holder, null, null, null, null, ct);
 
-    /// <summary>A renewal's application, with what comes over from the deposit saved on it as its first version.</summary>
     /// <summary>
     /// A renewal request cancelled: the application opened from the deposit is marked
     /// cancelled. A draft can be; a submitted one only while it is a digital
@@ -47,19 +46,11 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
     public async Task<bool> CancelRenewalAsync(string depositNumber)
     {
         await using var connection = await db.OpenAsync(CancellationToken.None);
-        var rows = await connection.ExecuteAsync("""
-            UPDATE m
-            SET f_Cancelled_On = SYSDATETIME(), f_Sub_Status = 'cancelled', f_Updated_By = @Partner, f_Updated_On = SYSDATETIME()
-            FROM dbo.t_Unotp_Application_Mst m
-            WHERE m.f_Renew_Dep_No = @Number AND m.f_Partner_Id = @Partner AND m.f_Cancelled_On IS NULL AND m.f_Active = 1
-              AND (m.f_Submitted_On IS NULL
-                   OR (m.f_Accepted_On IS NULL AND EXISTS (
-                        SELECT 1 FROM dbo.t_FD_BT_Investment_Dtl i
-                        WHERE i.f_Appl_No = m.f_App_No AND i.f_Active = 1 AND i.f_ApplicationDeclarationType = @Digital)))
-            """, new { Number = depositNumber, Partner = partner.Id, Digital = ApplicationType.Digital });
+        var rows = await connection.ExecuteAsync(ApplicationQueries.CancelRenewal, new { Number = depositNumber, Partner = partner.Id, Digital = ApplicationType.Digital });
         return rows > 0;
     }
 
+    /// <summary>A renewal's application, with what comes over from the deposit saved on it as its first version.</summary>
     public Task<Application> OpenRenewalAsync(Holder holder, RenewalOf renewal, UploadState upload, PaymentDetails payment, DepositDetails deposit) =>
         OpenAsync(holder, renewal, upload, payment, deposit, CancellationToken.None);
 
@@ -80,16 +71,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
         await using var tx = await connection.BeginTransactionAsync(ct);
         var appNo = await ApplicationNumber.NextAsync(connection, tx, asking, renewal is not null);
         const int version = 1;
-        await connection.ExecuteAsync("""
-            INSERT dbo.t_Unotp_Application_Mst (f_App_No, f_Partner_Id, f_Status, f_Version,
-                f_Upload_Ver, f_Payment_Ver, f_Deposit_Ver,
-                f_Pan, f_Dob, f_Name, f_Folio, f_Gender, f_Address, f_Data_Source, f_Pan_Filed, f_Rec_Pan, f_Rec_Photo, f_Rec_Poa,
-                f_Renew_Dep_No, f_Renew_Amount, f_Renew_Matures_On, f_Renew_Rate, f_Renew_Tenure, f_Renew_Payout, f_Renew_Principal, f_Created_By)
-            VALUES (@AppNo, @Partner, 'PEN', @Version,
-                @UploadVer, @PaymentVer, @DepositVer,
-                @Pan, @Dob, @Name, @Folio, @Gender, @Address, @Source, @PanFiled, @RecPan, @RecPhoto, @RecPoa,
-                @RenewDepNo, @RenewAmount, @RenewMaturesOn, @RenewRate, @RenewTenure, @RenewPayout, @RenewPrincipal, @Partner)
-            """, new
+        await connection.ExecuteAsync(ApplicationQueries.InsertApplication, new
         {
             AppNo = appNo, Partner = partner.Id, Version = version,
             UploadVer = upload is null ? (int?)null : version, PaymentVer = payment is null ? (int?)null : version,
@@ -132,8 +114,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
 
     private async Task<HeaderRow?> HeaderAsync(IDbConnection connection, IDbTransaction? tx, string appNo, bool locked) =>
         await connection.QuerySingleOrDefaultAsync<HeaderRow>(
-            $"SELECT {HeaderRow.Columns} FROM dbo.t_Unotp_Application_Mst {(locked ? "WITH (UPDLOCK, ROWLOCK)" : "")} " +
-            "WHERE f_App_No = @AppNo AND f_Partner_Id = @Partner AND f_Active = 1",
+            ApplicationQueries.Header(locked),
             new { AppNo = appNo, Partner = partner.Id }, tx);
 
     // The application as it stands: each section from its active rows in the FD
@@ -141,16 +122,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
     private static async Task<Application> AssembleAsync(IDbConnection connection, IDbTransaction? tx, HeaderRow h, int cancellationDays,
         ReferenceData lists)
     {
-        using var read = await connection.QueryMultipleAsync($"""
-            SELECT f_Upload FROM dbo.t_Unotp_Upload_State WHERE f_App_No = @AppNo AND f_App_Version = @UploadVer AND f_Active = 1;
-            SELECT {KycRow.Columns} FROM dbo.t_FD_BT_Kyc_Data_Dtl WHERE f_Appl_No = @AppNo AND f_Active = 1 ORDER BY f_Holder_Type;
-            SELECT {AddressRow.Columns} FROM dbo.t_FD_BT_Address_Dtl WHERE f_Appl_No = @AppNo AND f_Active = 1;
-            SELECT TOP (1) {NomineeRow.Columns} FROM dbo.t_FD_BT_Nominee_Dtl WHERE f_Appl_No = @AppNo AND f_Active = 1 ORDER BY f_Pk_t_FD_BT_Nominee_Dtl_Id DESC;
-            SELECT TOP (1) {PaymentBankRow.Columns} FROM dbo.t_FD_BT_Payment_Dtl WHERE f_Appl_No = @AppNo AND f_Active = 1 ORDER BY f_Pk_t_FD_BT_Other_Dtl_Id DESC;
-            SELECT TOP (1) {RepaymentBankRow.Columns} FROM dbo.t_FD_BT_Investor_Bank_Dtl WHERE f_Appl_No = @AppNo AND f_Active = 1 ORDER BY f_Pk_t_FD_BT_Investor_Bank_Dtl_Id DESC;
-            SELECT TOP (1) {InvestmentRow.Columns} FROM dbo.t_FD_BT_Investment_Dtl WHERE f_Appl_No = @AppNo AND f_Active = 1 ORDER BY f_Pk_t_FD_BT_Investment_Dtl_Id DESC;
-            SELECT f_Page AS Page, f_State AS State FROM dbo.t_Unotp_Page_State WHERE f_App_No = @AppNo AND f_Active = 1;
-            """, new { h.AppNo, h.UploadVer, h.DetailsVer, h.PaymentVer, h.DepositVer }, tx);
+        using var read = await connection.QueryMultipleAsync(ApplicationTableQueries.WholeApplication, new { h.AppNo, h.UploadVer, h.DetailsVer, h.PaymentVer, h.DepositVer }, tx);
 
         var uploadJson = await read.ReadSingleOrDefaultAsync<string>();
         var upload = uploadJson is null ? null : JsonSerializer.Deserialize<UploadState>(uploadJson, Sections.Json);
@@ -373,7 +345,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
         var upload = await UploadAsync(connection, tx, header);
         await write(connection, tx, header, StampAt(appNo, next, RowStatus.Pending, header.Folio), upload);
         await connection.ExecuteAsync(
-            $"UPDATE dbo.t_Unotp_Application_Mst SET f_Version = @Next, {sectionColumn} = @Next, f_Updated_By = @Partner, f_Updated_On = SYSDATETIME() WHERE f_App_No = @AppNo",
+            ApplicationQueries.NextVersion(sectionColumn),
             new { Next = next, Partner = partner.Id, AppNo = appNo }, tx);
         await tx.CommitAsync(ct);
         return (SaveOutcome.Saved, next);
@@ -382,7 +354,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
     private static async Task<UploadState?> UploadAsync(IDbConnection connection, IDbTransaction tx, HeaderRow header) =>
         header.UploadVer is null ? null
             : await connection.QuerySingleOrDefaultAsync<string>(
-                "SELECT f_Upload FROM dbo.t_Unotp_Upload_State WHERE f_App_No = @AppNo AND f_App_Version = @UploadVer AND f_Active = 1",
+                ApplicationQueries.UploadState,
                 new { header.AppNo, header.UploadVer }, tx) is { } json
                 ? JsonSerializer.Deserialize<UploadState>(json, Sections.Json)
                 : null;
@@ -401,13 +373,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
     public async Task<bool> SavePageAsync(string appNo, string page, string state, CancellationToken ct = default)
     {
         await using var connection = await db.OpenAsync(ct);
-        return await connection.ExecuteAsync("""
-            MERGE dbo.t_Unotp_Page_State WITH (HOLDLOCK) AS t
-            USING (SELECT f_App_No FROM dbo.t_Unotp_Application_Mst WHERE f_App_No = @AppNo AND f_Partner_Id = @Partner AND f_Active = 1) AS a
-                ON t.f_App_No = a.f_App_No AND t.f_Page = @Page
-            WHEN MATCHED THEN UPDATE SET f_State = @State, f_Updated_On = SYSDATETIME()
-            WHEN NOT MATCHED THEN INSERT (f_App_No, f_Page, f_State) VALUES (a.f_App_No, @Page, @State);
-            """, new { AppNo = appNo, Partner = partner.Id, Page = page, State = state }) > 0;
+        return await connection.ExecuteAsync(ApplicationQueries.SavePage, new { AppNo = appNo, Partner = partner.Id, Page = page, State = state }) > 0;
     }
 
     // ----- Submitting ------------------------------------------------------------
@@ -456,28 +422,20 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
         if (app.Details is { } details) await Sections.WriteDetailsAsync(connection, tx, at, app.Holder, app.Upload, details, minorUnder, lists.Masters ?? MasterLists.None, addresses);
         if (app.Payment is { } payment) await Sections.WritePaymentAsync(connection, tx, at, app.Upload, payment, branches);
         if (app.Deposit is { } deposit) await Sections.WriteDepositAsync(connection, tx, at, app.Upload, deposit, header.RenewDepNo, line, lists);
-        // Paid by cheque: staged for its pay-in slip, whichever way it was submitted.
-        if (PaidByInstrument(app.Upload, lists)) await Sections.StageForPayInSlipAsync(connection, tx, at);
 
         // Submitted on the database's clock, as every row on the application is dated.
-        var submitted = await connection.QuerySingleAsync<HeaderRow>($"""
-            UPDATE dbo.t_Unotp_Application_Mst SET f_Status = 'APR', f_Version = @Next,
-                f_Upload_Ver = CASE WHEN f_Upload_Ver IS NULL THEN NULL ELSE @Next END,
-                f_Details_Ver = CASE WHEN f_Details_Ver IS NULL THEN NULL ELSE @Next END,
-                f_Payment_Ver = CASE WHEN f_Payment_Ver IS NULL THEN NULL ELSE @Next END,
-                f_Deposit_Ver = CASE WHEN f_Deposit_Ver IS NULL THEN NULL ELSE @Next END,
-                f_Quote_Interest_Each = @InterestEach, f_Quote_Maturity_Amount = @MaturityAmount,
-                f_Quote_Matures_On = @MaturesOn, f_Quote_Rate_As_On = @RateAsOn,
-                f_Submitted_On = SYSDATETIME(), f_Sub_Status = 'payment-pending', f_Resends_Left = @Resends,
-                f_Updated_By = @Partner, f_Updated_On = SYSDATETIME()
-            OUTPUT {Inserted}
-            WHERE f_App_No = @AppNo
-            """, new
+        var submitted = await connection.QuerySingleAsync<HeaderRow>(ApplicationQueries.Submit, new
         {
             Next = next, quote?.InterestEach, quote?.MaturityAmount,
             MaturesOn = quote?.MaturesOn.ToDateTime(TimeOnly.MinValue), RateAsOn = quote?.RateAsOn.ToDateTime(TimeOnly.MinValue),
             Resends = resends, Partner = partner.Id, AppNo = appNo,
         }, tx);
+
+        // Paid by cheque: now that the application stands as APR, it is put in the
+        // pay-in slip staging table to wait for its slip, whichever way it was submitted.
+        if (PaidByInstrument(app.Upload, lists))
+            await PayInSlipStaging.InsertAsync(connection, tx, at, PayInSlipStagingRow.For(app, branches, partner.AgencyCode));
+
         var submission = SubmissionOf(submitted, await CancellationDaysAsync())!;
         await tx.CommitAsync(ct);
 
@@ -493,8 +451,8 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
 
     /// <summary>
     /// The link a submitted application's investor is sent, put on record once the
-    /// application itself is saved: on the application, and as a row of the payment
-    /// link table for a purchase or of the re-payment link table for a renewal. It
+    /// application itself is saved: on the application, and as a row of the link
+    /// request table for a purchase or of the one for a renewal (LinkTables). It
     /// is open for linkValidityHours["payment"] from now. Null when no link may go
     /// any more: the application is paid, cancelled, or past cancellationDays.
     /// </summary>
@@ -509,15 +467,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
         HeaderRow? header;
         await using (var connection = await db.OpenAsync(ct))
         {
-            header = await connection.QuerySingleOrDefaultAsync<HeaderRow>($"""
-                UPDATE dbo.t_Unotp_Application_Mst
-                SET f_Link_Sent_To = @LinkSentTo, f_Link_Emailed_To = @LinkEmailedTo,
-                    f_Link_Valid_Until = DATEADD(HOUR, @Hours, SYSDATETIME()), f_Short_Url = @ShortUrl,
-                    f_Updated_By = @Partner, f_Updated_On = SYSDATETIME()
-                OUTPUT {Inserted}
-                WHERE f_App_No = @AppNo AND f_Partner_Id = @Partner AND f_Status = 'APR' AND f_Active = 1
-                  AND f_Paid_On IS NULL AND f_Cancelled_On IS NULL AND f_Created_On >= DATEADD(DAY, -@Days, SYSDATETIME())
-                """, new
+            header = await connection.QuerySingleOrDefaultAsync<HeaderRow>(ApplicationQueries.RecordLink, new
             {
                 LinkSentTo = Masks.Mobile(investor?.Mobile ?? ""), LinkEmailedTo = Masks.Email(investor?.Email ?? ""),
                 Hours = hours, ShortUrl = link?.ShortUrl ?? "", Partner = partner.Id, AppNo = appNo, Days = days,
@@ -525,7 +475,11 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
         }
         if (header is null) return null;
         var sent = SubmissionOf(header, days)!;
-        await RecordLinkAsync(appNo, app.Renewal is not null, link?.Url ?? "", link?.ShortUrl ?? "", sent, ct);
+        // Written once the application's own save is committed.
+        await using (var links = await db.OpenAsync(ct))
+        {
+            await LinkTables.SendAsync(links, app.Renewal is not null, LinkRequestRow.For(app, link, hours), partner);
+        }
 
         // No SMS or e-mail gateway is wired in yet: the link is logged for now.
         log.LogInformation("Payment link for {AppNo} to {Mobile} and {Email}: {Link}", appNo, sent.LinkSentTo,
@@ -533,77 +487,31 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
         return sent;
     }
 
-    // The header's columns as an UPDATE leaves them.
-    private static readonly string Inserted = string.Join(", ", HeaderRow.Columns.Split(',').Select(c => "inserted." + c.Trim()));
-
-    // The payment link as sent, on record in the payment link table (a purchase) or
-    // the re-payment link table (a renewal): every send is a row. Written once the
-    // application's own transaction is committed.
-    private async Task RecordLinkAsync(string appNo, bool renewal, string url, string shortUrl, Submission sent, CancellationToken ct)
-    {
-        await using var links = await db.OpenAsync(ct);
-        await links.ExecuteAsync($"""
-            INSERT {LinkTables.For(renewal)} (f_App_No, f_Purpose, f_Url, f_Short_Url, f_Mobile, f_Email, f_Expires_On, f_Sent_By)
-            VALUES (@AppNo, 'payment', @Url, @ShortUrl, @Mobile, @Email, @ExpiresOn, @Partner)
-            """, new { AppNo = appNo, Url = url, ShortUrl = shortUrl, Mobile = sent.LinkSentTo, Email = sent.LinkEmailedTo,
-                ExpiresOn = sent.LinkValidUntil, Partner = partner.Id });
-    }
-
-    // The last payment link sent for an application: its addresses are sent again as they are.
-    private async Task<(string Url, string ShortUrl)> LastLinkAsync(string appNo, bool renewal, CancellationToken ct)
-    {
-        await using var links = await db.OpenAsync(ct);
-        var last = await links.QuerySingleOrDefaultAsync<(string Url, string ShortUrl)>($"""
-            SELECT TOP 1 f_Url, f_Short_Url FROM {LinkTables.For(renewal)} WHERE f_App_No = @AppNo AND f_Purpose = 'payment' AND f_Active = 1 ORDER BY f_Id DESC
-            """, new { AppNo = appNo });
-        return (last.Url ?? "", last.ShortUrl ?? "");
-    }
-
-    // A new link, allowed until cancellationDays after the application was created,
-    // while it is unpaid and not cancelled; it runs for the full validity again.
+    // Regenerate, allowed until cancellationDays after the application was created,
+    // while it is unpaid and not cancelled. No new link is made: the same short link
+    // is sent again, open for LinkRequestRow.RegeneratedForHours from now.
     public async Task<Submission?> ResendLinkAsync(string appNo, CancellationToken ct = default)
     {
         var days = await CancellationDaysAsync();
-        var hours = (await reference.ConfigAsync(ct)).LinkValidityHours.GetValueOrDefault("payment");
         await using var connection = await db.OpenAsync(ct);
-        await using var tx = await connection.BeginTransactionAsync(ct);
-        var header = await connection.QuerySingleOrDefaultAsync<HeaderRow>($"""
-            UPDATE dbo.t_Unotp_Application_Mst
-            SET f_Link_Valid_Until = DATEADD(HOUR, @Hours, SYSDATETIME()), f_Updated_By = @Partner, f_Updated_On = SYSDATETIME()
-            OUTPUT {Inserted}
-            WHERE f_App_No = @AppNo AND f_Partner_Id = @Partner AND f_Status = 'APR' AND f_Active = 1
-              AND f_Paid_On IS NULL AND f_Cancelled_On IS NULL AND f_Created_On >= DATEADD(DAY, -@Days, SYSDATETIME())
-              AND f_Link_Valid_Until IS NOT NULL
-            """, new { AppNo = appNo, Partner = partner.Id, Hours = hours, Days = days }, tx);
+        var header = await connection.QuerySingleOrDefaultAsync<HeaderRow>(ApplicationQueries.ResendLink, new { AppNo = appNo, Partner = partner.Id, Hours = LinkRequestRow.RegeneratedForHours, Days = days });
         if (header is null) return null;
         var submission = SubmissionOf(header, days)!;
-        await tx.CommitAsync(ct);
+
         var renewal = header.RenewDepNo is not null;
-        var last = await LastLinkAsync(appNo, renewal, ct);
-        await RecordLinkAsync(appNo, renewal, last.Url, last.ShortUrl, submission, ct);
+        if (!await LinkTables.SendAgainAsync(connection, renewal, appNo, partner))
+            log.LogWarning("Payment link for {AppNo} sent again, but {Table} holds no live link for it", appNo, LinkTables.For(renewal));
         log.LogInformation("Payment link for {AppNo} sent again to {Mobile} and {Email}", appNo, submission.LinkSentTo, submission.LinkEmailedTo);
         return submission;
     }
 
     // ----- Lists -----------------------------------------------------------------
 
-    // The investor's name as far as the application knows it: as NSDL verified it,
-    // else as read off the PAN copy (or typed over it), else as the folio has it.
-    // Empty for an investor with no folio whose PAN copy is not read yet.
-    private const string KnownName = """
-        COALESCE(NULLIF(JSON_VALUE(u.f_Upload, '$.name'), ''), NULLIF(JSON_VALUE(u.f_Upload, '$.nsdlName'), ''), m.f_Name)
-        """;
-
     // Only a draft - not submitted, not cancelled already - and only the partner's own.
     public async Task<bool> CancelDraftAsync(string appNo, CancellationToken ct = default)
     {
         await using var connection = await db.OpenAsync(ct);
-        var rows = await connection.ExecuteAsync("""
-            UPDATE dbo.t_Unotp_Application_Mst
-            SET f_Cancelled_On = SYSDATETIME(), f_Sub_Status = 'cancelled', f_Updated_By = @Partner, f_Updated_On = SYSDATETIME()
-            WHERE f_App_No = @AppNo AND f_Partner_Id = @Partner AND f_Active = 1
-              AND f_Status = 'PEN' AND f_Submitted_On IS NULL AND f_Cancelled_On IS NULL
-            """, new { AppNo = appNo, Partner = partner.Id });
+        var rows = await connection.ExecuteAsync(ApplicationQueries.CancelDraft, new { AppNo = appNo, Partner = partner.Id });
         if (rows > 0) log.LogInformation("Draft {AppNo} cancelled by {Partner}", appNo, partner.Id);
         return rows > 0;
     }
@@ -613,19 +521,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
     {
         var days = (await reference.ConfigAsync(ct)).DraftDays;
         await using var connection = await db.OpenAsync(ct);
-        var rows = await connection.QueryAsync<DraftRow>($"""
-            SELECT m.f_App_No AS AppNo, {KnownName} AS Name, m.f_Pan AS Pan, m.f_Dob AS Dob, ISNULL(i.Amount, 0) AS Amount,
-                m.f_Upload_Ver AS UploadVer, m.f_Details_Ver AS DetailsVer, m.f_Payment_Ver AS PaymentVer, m.f_Deposit_Ver AS DepositVer,
-                m.f_Renew_Dep_No AS Renews,
-                -- On the database's clock, where the time was written; turned into the app's below.
-                DATEDIFF(MINUTE, COALESCE(m.f_Updated_On, m.f_Created_On), SYSDATETIME()) AS MinutesAgo
-            FROM dbo.t_Unotp_Application_Mst m
-            {InvestmentRow.CurrentOf}
-            LEFT JOIN dbo.t_Unotp_Upload_State u ON u.f_App_No = m.f_App_No AND u.f_App_Version = m.f_Upload_Ver AND u.f_Active = 1
-            WHERE m.f_Partner_Id = @Partner AND m.f_Status = 'PEN' AND m.f_Active = 1 AND m.f_Cancelled_On IS NULL
-              AND COALESCE(m.f_Updated_On, m.f_Created_On) > DATEADD(DAY, -@Days, SYSDATETIME())
-            ORDER BY COALESCE(m.f_Updated_On, m.f_Created_On) DESC
-            """, new { Partner = partner.Id, Days = days });
+        var rows = await connection.QueryAsync<DraftRow>(ApplicationQueries.Drafts, new { Partner = partner.Id, Days = days });
         var now = DateTime.Now;
         return rows.Select(r =>
         {
@@ -639,26 +535,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
     {
         var payouts = (await reference.ReferenceAsync(ct)).Payouts;
         await using var connection = await db.OpenAsync(ct);
-        var rows = (await connection.QueryAsync<ListRow>($"""
-            SELECT m.f_App_No AS AppNo, m.f_Status AS Status, m.f_Folio AS Folio, {KnownName} AS Name, m.f_Pan AS Pan, m.f_Dob AS Dob,
-                i.Amount, i.TenureMonths, i.Payout,
-                JSON_VALUE(u.f_Upload, '$.appType') AS AppType, JSON_VALUE(u.f_Upload, '$.payMode') AS PayMode,
-                ISNULL((SELECT COUNT(*) FROM OPENJSON(u.f_Upload, '$.joint')), 0) AS JointHolders,
-                m.f_Upload_Ver AS UploadVer, m.f_Details_Ver AS DetailsVer, m.f_Payment_Ver AS PaymentVer, m.f_Deposit_Ver AS DepositVer,
-                m.f_Created_On AS CreatedOn, m.f_Submitted_On AS SubmittedOn,
-                m.f_Accepted_On AS AcceptedOn, m.f_Paid_On AS PaidOn, m.f_Booked_On AS BookedOn, m.f_Fdr_No AS FdrNo,
-                m.f_Cancelled_On AS CancelledOn,
-                (SELECT MIN(f.f_Created_On) FROM dbo.t_Unotp_Upload_State f WHERE f.f_App_No = m.f_App_No AND f.f_Active = 1) AS UploadedOn,
-                (SELECT MIN(p.f_Generated_On) FROM dbo.t_Unotp_Pay_In_Slip p WHERE p.f_App_No = m.f_App_No AND p.f_Active = 1) AS SlipOn,
-                (SELECT MIN(l.f_Sent_On) FROM {LinkTables.Both} l WHERE l.f_App_No = m.f_App_No AND l.f_Active = 1) AS LinkSentOn,
-                m.f_Penny_Drop_On AS PennyDropOn, m.f_Penny_Drop_Status AS PennyDropStatus,
-                m.f_Kyc_Verified_On AS KycVerifiedOn, m.f_Kyc_Status AS KycStatus
-            FROM dbo.t_Unotp_Application_Mst m
-            {InvestmentRow.CurrentOf}
-            LEFT JOIN dbo.t_Unotp_Upload_State u ON u.f_App_No = m.f_App_No AND u.f_App_Version = m.f_Upload_Ver AND u.f_Active = 1
-            WHERE m.f_Partner_Id = @Partner AND m.f_Active = 1
-            ORDER BY m.f_Created_On DESC
-            """, new { Partner = partner.Id })).ToList();
+        var rows = (await connection.QueryAsync<ListRow>(ApplicationQueries.Applications, new { Partner = partner.Id })).ToList();
 
         return rows.Select(r =>
         {

@@ -25,6 +25,8 @@ public partial class DocumentsViewModel
     private async Task DetailsAsync(DocHolder h, OcrReading reading, string type, LogEntry entry)
     {
         var named = Printed(type);
+        // Nothing is kept for the record of the proof until the two are compared.
+        ChecksOn(h).Proof = null;
         // With OCR switched off nothing was read to compare: not asked, and Operations check.
         if (!switches.IsOn(OutsideSwitches.Ocr))
         {
@@ -35,6 +37,10 @@ public partial class DocumentsViewModel
         }
         string nameSays, dobSays;
         bool nameOk, dobOk, dobNa = false;
+        // How the name and the date of birth came out, for the record of the proof:
+        // empty and null where one was not compared.
+        var nameMatch = "";
+        bool? dobMatch = null;
         var name = reading.Name.Trim();
         if (h.Who.Name.Length == 0) (nameSays, nameOk) = ("name not compared: the holder's name is not verified yet", false);
         else if (name.Length == 0) (nameSays, nameOk) = ("name could not be read", false);
@@ -45,7 +51,7 @@ public partial class DocumentsViewModel
             if (match == NameMatchOutcome.NotAsked)
             {
                 State.Reads[h.Key("details")] = new ReadCard("Not asked", $"The name match is {OutsideSwitches.Off}, so the name on the {named} was not compared.",
-                    "The proof is filed; Operations compare the name and date of birth.", "is-na");
+                    "The proof is filed; Operations compare the name and date of birth.", "is-na") { Name = name, Dob = reading.Dob };
                 entry.Add($"Name on the {named} not compared: the name match is {OutsideSwitches.Off}.", "warn");
                 return;
             }
@@ -55,11 +61,13 @@ public partial class DocumentsViewModel
                 NameMatchOutcome.Partial => ($"name partly matches ({name})", false),
                 _ => ($"name does not match ({name})", false),
             };
+            nameMatch = match;
         }
         if (!HasPhoto(type)) (dobSays, dobOk, dobNa) = ($"no date of birth on a {named}", true, true);
         else if (reading.Dob.Length == 0) (dobSays, dobOk) = ("date of birth could not be read", false);
-        else if (reading.Dob == h.Who.Dob) (dobSays, dobOk) = ("date of birth matches", true);
-        else (dobSays, dobOk) = ($"date of birth does not match ({MaskDate(reading.Dob)})", false);
+        else if (reading.Dob == h.Who.Dob) (dobSays, dobOk, dobMatch) = ("date of birth matches", true, true);
+        else (dobSays, dobOk, dobMatch) = ($"date of birth does not match ({MaskDate(reading.Dob)})", false, false);
+        ChecksOn(h).Proof = new ProofMatch(nameMatch, dobMatch);
 
         var bad = nameSays.Contains("does not match") || dobSays.Contains("does not match");
         var (state, kind) = nameOk && dobOk ? (dobNa ? "Name matches" : "Details match", "is-done")
@@ -67,8 +75,20 @@ public partial class DocumentsViewModel
             : ("Partly match", "is-failed");
         State.Reads[h.Key("details")] = new ReadCard(state, $"{Capitalize(nameSays)} · {dobSays}.",
             kind == "is-done" ? $"Read off the {named} and matched with the holder's name{(dobNa ? "" : " and date of birth")}."
-                : $"Read off the {named}. The proof is filed; Operations check the details.", kind);
+                : $"Read off the {named}. The proof is filed; Operations check the details.", kind) { Name = name, Dob = reading.Dob };
         entry.Add($"Name and date of birth on the {named}: {nameSays}; {dobSays}.", kind == "is-done" ? "ok" : bad ? "bad" : "warn");
+    }
+
+    // The proof of address already filed, compared again with the holder's name: a
+    // proof filed before the name was known - NSDL had not verified one yet - could
+    // not be compared then. It is compared by what was read off it when it was
+    // filed, so it is not uploaded again. A proof filed before the name read off it
+    // was kept has none to compare, and stands as it is.
+    private async Task DetailsAgainAsync(DocHolder h, LogEntry entry)
+    {
+        if (!State.Docs.ContainsKey(h.Key("poa"))) return;
+        if (!State.Reads.TryGetValue(h.Key("details"), out var card) || card.Name.Length == 0) return;
+        await DetailsAsync(h, new OcrReading(Name: card.Name, Dob: card.Dob), PoaTypeOf(h), entry);
     }
 
     // ----- The PAN-POA face match -------------------------------------------------
@@ -108,6 +128,7 @@ public partial class DocumentsViewModel
             : NsdlOf(h) switch
             {
                 "verified" => ("Verified with NSDL", "is-done"),
+                NameNotVerified => (NameNotVerifiedRemark, "is-unverified"),
                 "name" => ("Name not matched", "is-failed"),
                 "failed" => ("Not verified", "is-failed"),
                 Unanswered => ("NSDL not checked", "is-failed"),
@@ -201,8 +222,8 @@ public partial class DocumentsViewModel
             entry.Add($"Face match could not answer: {e.Message}", "warn");
             return;
         }
-        KeepFace(h, "pan", new FaceCheck(answer.PanFace, answer.Score));
-        KeepFace(h, "poa", new FaceCheck(answer.ProofFace, answer.Score));
+        KeepFace(h, "pan", new FaceCheck(answer.PanFace, answer.Score, answer.TaskId));
+        KeepFace(h, "poa", new FaceCheck(answer.ProofFace, answer.Score, answer.TaskId));
         var named = Printed(type);
         if (answer.Unsure is { } why)
         {
@@ -270,9 +291,11 @@ public partial class DocumentsViewModel
         {
             "verified" => new("PAN – NSDL", new ReadCard("Verified with NSDL", $"{pan} · {h.Who.Name}", "The PAN, date of birth and name read off the PAN copy all match.", "is-done"), key),
             "name" => new("PAN – NSDL", new ReadCard("Name not matched", $"Put to NSDL: {nsdlName}",
-                "NSDL holds the PAN and date of birth, but not against that name. Type the name exactly as printed on the PAN card, and NSDL is asked again.", "is-failed"), key,
+                $"NSDL holds the PAN and date of birth, but not against that name. Type the name exactly as printed on the PAN card, and NSDL is asked again. {NsdlTriesLeftNote(h)}", "is-failed"), key,
                 new NsdlRetry(h.Key("nsdlName"), nsdlName, error,
-                    "NSDL did not match the name", "Type the name exactly as printed on the PAN card, and NSDL is asked again.")),
+                    "NSDL did not match the name", $"Type the name exactly as printed on the PAN card, and NSDL is asked again. {NsdlTriesLeftNote(h)}")),
+            NameNotVerified => new("PAN – NSDL", new ReadCard("Name not verified", $"{pan} · {h.Who.Name}",
+                $"Remark: {NameNotVerifiedRemark}. NSDL holds the PAN and date of birth, but not against the name read off the PAN copy nor any of the {NsdlNameTries} names typed, so the name on the PAN copy is taken. The name on the proof of address must match it.", "is-unverified"), key),
             "failed" => new("PAN – NSDL", new ReadCard("Not verified", $"No record of {pan} against {MaskDate(h.Who.Dob)}",
                 $"NSDL holds no such PAN and date of birth, so this {(h.Joint ? "holder" : "application")} cannot go on as it stands. If both are right, upload the PAN copy again and NSDL is asked again. If not: {NsdlFailedNext(h)}", "is-failed"), key, Error: error),
             Unanswered => new("PAN – NSDL", new ReadCard("Not checked", $"{pan} · NSDL could not be asked",
@@ -284,6 +307,13 @@ public partial class DocumentsViewModel
             _ => new("PAN – NSDL", new ReadCard("Not yet checked", "Checked once the PAN copy is filed above.",
                 "OCR reads the name off the PAN copy, and NSDL is asked whether it holds the PAN, the date of birth and that name."), key),
         };
+    }
+
+    // How many names may still be typed for a holder, and what happens after the last.
+    private string NsdlTriesLeftNote(DocHolder h)
+    {
+        var left = NsdlNameTries - NsdlTriesOf(h);
+        return $"{TriesWord(left)} left of {NsdlNameTries}; after that the name on the PAN copy is taken, as not verified with NSDL.";
     }
 
     // The address a folio holds, where its proof would be. With its proof on record

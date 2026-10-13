@@ -23,24 +23,7 @@ internal static partial class Sections
     {
         var u = upload ?? new UploadState();
         await RetireAsync(db, tx, at, "t_FD_BT_Investment_Dtl");
-        await db.ExecuteAsync("""
-            INSERT dbo.t_FD_BT_Investment_Dtl (f_Appl_No, f_Status, f_Amount, f_Tenure, f_Int_Freq, f_Scheme, f_Scheme_Code,
-                f_Is_Auto_Renewal, f_Renewal_For, f_TDS_Flag, f_FDR_Dispatch_Mode,
-                f_AML_Source_Of_Funds, f_AML_Source_Of_Funds_Remarks, f_AML_Source_Of_Funds_reason,
-                f_ApplicationDeclarationType, f_Category, f_Source, f_Broker_Code,
-                f_Employee_Code, f_EmpCompanyName, f_EmpHolder, f_EmpRelation, f_ExistingFDRNo, f_ExistingFDRNoRenewalFor,
-                f_Depositor_Status_Code, f_Ind_Nind, f_HNG, f_FolioNo, f_Cms_Location_Code, f_Cms_Location_Name,
-                f_Int_Rate, f_Active, f_CreatedBy, f_CreatedByUName, f_CreatedOn, f_CreatedIP, f_SessionId)
-            VALUES (@AppNo, @Status, @Amount, @Tenure, @Payout, @Scheme, @SchemeCode,
-                @AutoRenewal, @RenewInstruction, @TdsFlag, @DeliveryType,
-                @SourceOfFunds, @SourceOfFundsRemark, @SourceOfFundsReason,
-                @AppType, @Category, @Source, @SourceCode,
-                @EmpCode, @EmpCompany, @EmpHolder, @EmpRelation, @Renews, @ExistingRenewalFor,
-                @Individual, @Individual, @Hng, @Folio,
-                (SELECT TOP (1) f_CMS_Loc_CD FROM dbo.t_FD_BT_Payment_Dtl WHERE f_Appl_No = @AppNo AND f_Active = 1 ORDER BY f_Pk_t_FD_BT_Other_Dtl_Id DESC),
-                (SELECT TOP (1) f_CMS_Loc_Desc FROM dbo.t_FD_BT_Payment_Dtl WHERE f_Appl_No = @AppNo AND f_Active = 1 ORDER BY f_Pk_t_FD_BT_Other_Dtl_Id DESC),
-                @Rate, 1, @CreatedBy, @UserName, GETDATE(), @Ip, @SessionId)
-            """, new
+        await db.ExecuteAsync(ApplicationTableQueries.InsertInvestment, new
         {
             at.AppNo, at.Status, deposit.Amount, Tenure = deposit.TenureMonths, deposit.Payout,
             line?.Scheme, line?.SchemeCode,

@@ -1,8 +1,9 @@
 /* =============================================================================
    Uno TP - the settings, the console's features and every list, from start.
-   Run once on a new database, after create_tables.sql:
+   Run once on a new database, after the two create scripts:
 
-       sqlcmd -d UnoTP -i db/create_tables.sql
+       sqlcmd -d UnoTP -i db/create_transaction_tables.sql
+       sqlcmd -d UnoTP -i db/create_new_tables.sql
        sqlcmd -d UnoTP -i db/insert_seed.sql
 
    Three tables are filled, with one INSERT each:
@@ -19,7 +20,7 @@
    each list is for and which settings it takes.
 
    Not in t_Unotp_Ref_List, because each is a table of its own, looked up where
-   it is (UnoTP.Data/MasterQueries.cs): investor folios, brokers, staff, bank
+   it is (UnoTP.Data/Queries/MasterQueries.cs): investor folios, brokers, staff, bank
    branches, PIN codes, the rate card (t_FD_BOTC_SCHEME), the Axis CMS locations
    and the payment gateway's banks.
 
@@ -109,14 +110,19 @@ INSERT dbo.t_Unotp_Ref_List (f_List, f_Seq, f_Code, f_Name, f_Parent, f_Attrs, f
     (N'categories', 5, N'EMPLOYEE', N'EMPLOYEE', NULL, N'{"employee":true,"women":false,"senior":false}', 1, 'SEED'),
     (N'categories', 6, N'EMPLOYEE-WOMEN', N'EMPLOYEE-WOMEN', NULL, N'{"employee":true,"women":true,"senior":false}', 1, 'SEED'),
 
-    -- sourcingModes: how an application is sourced, and how its two code fields behave
+    -- sourcingModes: how an application is sourced, and how its two code fields behave.
+    --   BROKER             the broker's code is typed and must be on the broker register; a sub broker may be typed
+    --   MMFSS - BRANCH     the sourcing employee's code is typed and must be an employee the 'branch' staff rule takes; no sub broker
+    --   MFL-EX             the first field is MFL-EX itself; the sourcing employee's code goes in the sub broker field
+    --                      (it opens with the user's own) and must be an employee the 'mflEx' staff rule takes
+    --   MFIS/MFIS-DFB/FD   the sourcing employee's code is typed and must be an employee the 'mfis' staff rule takes; no sub broker
     (N'sourcingModes', 1, N'2', N'BROKER', NULL, N'{"codeLabel":"Broker Code","nameLabel":"Broker Name","house":"","search":"source","register":"brokers","sub":"free"}', 1, 'SEED'),
-    (N'sourcingModes', 2, N'3', N'MMFSS - BRANCH', NULL, N'{"codeLabel":"Sourcing Employee Code","nameLabel":"Sourcing Employee Name","house":"MFL","search":"","register":"","sub":"house","staff":"branch"}', 1, 'SEED'),
+    (N'sourcingModes', 2, N'3', N'MMFSS - BRANCH', NULL, N'{"codeLabel":"Sourcing Employee Code","nameLabel":"Sourcing Employee Name","house":"","search":"source","register":"employees","sub":"shut","staff":"branch"}', 1, 'SEED'),
     (N'sourcingModes', 3, N'5', N'MFL-EX', NULL, N'{"codeLabel":"Sourcing Employee Code","nameLabel":"Sourcing Employee Name","house":"MFL-EX","search":"sub","register":"employees","sub":"employee","staff":"mflEx"}', 1, 'SEED'),
-    (N'sourcingModes', 4, N'4', N'MFIS/MFIS-DFB/FD', NULL, N'{"codeLabel":"Sourcing Employee Code","nameLabel":"Sourcing Employee Name","house":"MIBS","search":"sub","register":"employees","sub":"employeeShut","staff":"mfis"}', 1, 'SEED'),
+    (N'sourcingModes', 4, N'4', N'MFIS/MFIS-DFB/FD', NULL, N'{"codeLabel":"Sourcing Employee Code","nameLabel":"Sourcing Employee Name","house":"","search":"source","register":"employees","sub":"shut","staff":"mfis"}', 1, 'SEED'),
 
     -- sourcingModeCategories: the categories a deposit under a sourcing mode may be booked as. The parent is the sourcing mode's code, the code a category's.
-    -- (Which staff a mode takes is its 'staff' setting above: branch, mfis or mflEx, each a query in UnoTP.Data/MasterQueries.cs.)
+    -- (Which staff a mode takes is its 'staff' setting above: branch, mfis or mflEx, each a query in UnoTP.Data/Queries/MasterQueries.cs.)
     (N'sourcingModeCategories', 1, N'PUBLIC', N'PUBLIC', N'2', NULL, 1, 'SEED'),
     (N'sourcingModeCategories', 2, N'GENERAL-WOMEN', N'GENERAL-WOMEN', N'2', NULL, 1, 'SEED'),
     (N'sourcingModeCategories', 3, N'SR CITIZEN', N'SR CITIZEN', N'2', NULL, 1, 'SEED'),

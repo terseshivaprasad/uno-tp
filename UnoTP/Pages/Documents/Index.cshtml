@@ -43,7 +43,8 @@
     var sourceCodeName = Model.View.Resolved(sourcingMode, sub: false);
     var subBrokerName = Model.View.Resolved(sourcingMode, sub: true);
     var sourceCodeLabel = sourcingMode?.CodeLabel ?? "Broker Code";
-    var sourceNameLabel = sourcingMode?.NameLabel ?? "Broker Name";
+    var sourceNameLabel = DocumentsViewModel.NameLabelOf(sourcingMode, sub: false);
+    var subNameLabel = DocumentsViewModel.NameLabelOf(sourcingMode, sub: true);
 
 
     var isEmployeeCategory = Model.View.IsEmployee(state.Category);
@@ -350,17 +351,9 @@
                 }
             </div>
 
-            @* The communication address proof. *@
-            @if (!Model.View.CommProofUpload)
-            {
-                @* Its upload is switched off: the card stands, not applicable, saying the address is
-                   typed on Investor Information, so the row keeps its shape. *@
-                var mailSlotTyped = mailSlot with { Used = false, NotApplicable = mailSlot.NotApplicable ?? DocumentsViewModel.MailTypedWhy };
-            <div class="doc-column">
-                <partial name="_DocSlot" model="@(new DocSlotBlock(mailSlotTyped, uploadUrl, IsNext: mailSlotTyped.Key == nextSlotKey, Label: "Communication address proof"))" />
-            </div>
-            }
-            else
+            @* The communication address proof. While its upload is switched off (CommProofUpload)
+               the card is not drawn at all, as on a joint holder's documents. *@
+            @if (Model.View.CommProofUpload)
             {
                 // The label heads the card only when the type is identified from the upload;
                 // otherwise the label and its picker stand above the card.
@@ -489,7 +482,7 @@
             @* The two code fields stand under every mode; the mode decides what they are called,
                which is typed, and which the mode fills itself. A searched field looks its register
                up on the backend as it is typed (documents.js) and posts as it is left. *@
-            <div class="doc-column">
+            <div class="doc-column bank-search">
                 <label class="field-label" for="docsSourceCode">@sourceCodeLabel</label>
                 <input class="field-input @Invalid("docsSourceCode")" id="docsSourceCode" name="sourceCode" data-chars="code" form="docsForm" value="@state.SourceCode" maxlength="12" autocomplete="off" spellcheck="false"
                        disabled="@sourceCodeDisabled" data-submit="docsRefresh" autofocus="@Focus("docsSourceCode")"
@@ -512,13 +505,13 @@
                 @{ await FieldError("docsSourceCode"); }
             </div>
 
-            <div class="doc-column">
+            <div class="doc-column bank-search">
                 <label class="field-label" for="docsSubBroker">Sub Broker Code
                     @if (!subBrokerRequired && !subBrokerDisabled) { <span class="doc-optional">(Non-mandatory)</span> }
                 </label>
                 <input class="field-input @Invalid("docsSubBroker")" id="docsSubBroker" name="subBroker" data-chars="code" form="docsForm" value="@state.SubBroker" maxlength="12" autocomplete="off" spellcheck="false" data-submit="docsRefresh"
                        disabled="@subBrokerDisabled" autofocus="@Focus("docsSubBroker")"
-                       data-register-search="@(subRegister is null ? null : registerSearchUrl)" data-register="@subRegister" data-mode="@state.Sourcing" data-search-from="@TypedSearch.FromLength" data-name-label="Sub Broker Name"
+                       data-register-search="@(subRegister is null ? null : registerSearchUrl)" data-register="@subRegister" data-mode="@state.Sourcing" data-search-from="@TypedSearch.FromLength" data-name-label="@subNameLabel"
                        role="@(subRegister is null ? null : "combobox")" aria-autocomplete="@(subRegister is null ? null : "list")" aria-expanded="@(subRegister is null ? null : "false")" aria-controls="@(subRegister is null ? null : "docsSubBrokerSuggest")">
                 @if (subRegister is not null)
                 {
@@ -531,7 +524,7 @@
                 }
                 else
                 {
-                    <p class="doc-resolved">Sub Broker Name &mdash; <strong class="doc-resolved__none">&mdash;</strong></p>
+                    <p class="doc-resolved">@subNameLabel &mdash; <strong class="doc-resolved__none">&mdash;</strong></p>
                 }
                 @{ await FieldError("docsSubBroker"); }
             </div>
@@ -557,7 +550,7 @@
                 if (employeeName is not null) employeeNameText = employeeName;
                 else if (state.EmpCode.Length > 0) employeeNameText = "not found";
 
-                <div class="doc-column">
+                <div class="doc-column bank-search">
                     <label class="field-label" for="docsEmployeeCode">Employee Code</label>
                     <input class="field-input @Invalid("docsEmployeeCode")" id="docsEmployeeCode" name="empCode" data-chars="code" form="docsForm" value="@state.EmpCode" maxlength="10" autocomplete="off" spellcheck="false" autofocus="@Focus("docsEmployeeCode")"
                            data-register-search="@registerSearchUrl" data-register="staff" data-mode="@state.Sourcing" data-search-from="@TypedSearch.FromLength" data-name-label="Employee Name" data-submit="docsRefresh"

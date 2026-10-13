@@ -249,6 +249,14 @@ public static class Messages
         public const string SubBrokerRequired =
             "Enter the sub broker code";
 
+        [Shown("Broker code", "typed, and not on the broker register")]
+        public static string BrokerCodeNotFound(object? code) =>
+            $"{code} is not a broker's code. Check the broker code.";
+
+        [Shown("Sourcing employee code", "typed, and not the code of an employee who can source under the sourcing mode chosen")]
+        public static string SourcingEmployeeNotFound(object? code, object? sourcingMode) =>
+            $"{code} is not an employee who can source under {sourcingMode}. Check the sourcing employee code.";
+
         [Shown("Deposit Category", "none is set because no sourcing mode is chosen")]
         public const string CategoryNotSet =
             "No deposit category is set: choose the sourcing mode";
@@ -493,9 +501,9 @@ public static class Messages
         public static string NsdlNoRecord(object? pan) =>
             $"NSDL holds no record of PAN {pan} against the date of birth searched";
 
-        [Shown("Name as on the PAN", "NSDL does not hold the PAN against the name typed")]
-        public static string NsdlNameNotHeld(object? pan) =>
-            $"NSDL does not hold PAN {pan} against that name";
+        [Shown("Name as on the PAN", "NSDL does not hold the PAN against the name typed, and names may still be typed")]
+        public static string NsdlNameNotHeldTriesLeft(object? pan, object? triesLeft) =>
+            $"NSDL does not hold PAN {pan} against that name. {triesLeft} left; after that the name on the PAN copy is taken, as not verified with NSDL.";
 
         [Shown("PAN-Aadhaar link", "the link service could not answer")]
         public static string LinkNotAskedNow(object? why) =>
@@ -507,7 +515,7 @@ public static class Messages
 
         [Shown("Proceed", "the PAN is not linked with Aadhaar")]
         public const string PanNotLinked =
-            "The PAN is not linked with Aadhaar. The investor links it with the Income Tax department; the application cannot proceed until it is.";
+            "The PAN is not linked with Aadhaar. The application cannot proceed until the investor links it.";
 
         [Shown("Proceed", "the Aadhaar number is still to be typed")]
         public const string TypeAadhaarNumber =
@@ -520,6 +528,10 @@ public static class Messages
         [Shown("Proceed", "the name on the proof of address is not matched with the PAN's yet")]
         public const string NameMustBeMatched =
             "The name on the proof of address must be matched with the PAN's before proceeding.";
+
+        [Shown("Proceed", "the holder's name was not verified with NSDL, and the name on the proof of address is not matched with the PAN's")]
+        public const string NameMatchMandatory =
+            "The name was not verified with NSDL, so the name on the proof of address must match the name on the PAN before proceeding. Upload the holder's own proof of address, in the same name.";
 
         [Shown("Proceed", "the name or date of birth on the proof of address is not the PAN's")]
         public const string NameAndDobMustMatch =

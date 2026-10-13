@@ -5,18 +5,6 @@ namespace UnoTP.Data;
 
 internal sealed class HeaderRow
 {
-    public const string Columns = """
-        f_App_No AS AppNo, f_Status AS Status, f_Version AS Version,
-        f_Upload_Ver AS UploadVer, f_Details_Ver AS DetailsVer, f_Payment_Ver AS PaymentVer, f_Deposit_Ver AS DepositVer,
-        f_Pan AS Pan, f_Dob AS Dob, f_Name AS Name, f_Folio AS Folio, f_Gender AS Gender, f_Address AS Address, f_Data_Source AS DataSource,
-        f_Pan_Filed AS PanFiled, f_Rec_Pan AS RecPan, f_Rec_Photo AS RecPhoto, f_Rec_Poa AS RecPoa,
-        f_Renew_Dep_No AS RenewDepNo, f_Renew_Amount AS RenewAmount, f_Renew_Matures_On AS RenewMaturesOn,
-        f_Renew_Rate AS RenewRate, f_Renew_Tenure AS RenewTenure, f_Renew_Payout AS RenewPayout, f_Renew_Principal AS RenewPrincipal,
-        f_Submitted_On AS SubmittedOn, f_Sub_Status AS SubStatus, f_Link_Sent_To AS LinkSentTo,
-        f_Link_Emailed_To AS LinkEmailedTo, f_Link_Valid_Until AS LinkValidUntil, f_Resends_Left AS ResendsLeft,
-        f_Short_Url AS ShortUrl, f_Created_On AS CreatedOn, f_Cancelled_On AS CancelledOn
-        """;
-
     public string AppNo { get; set; } = "";
     public string Status { get; set; } = "";
     public int Version { get; set; }
@@ -58,20 +46,6 @@ internal sealed class HeaderRow
 
 internal sealed class KycRow
 {
-    // What t_FD_BT_Kyc_Data_Dtl holds of a holder. The name given is the father's,
-    // the mother's or the spouse's: whichever was filled. The gender is read off
-    // the name prefix (NamePrefixes).
-    public const string Columns = """
-        f_Holder_Type AS HolderType, f_Kyc_NamePrefix AS NamePrefix,
-        CASE WHEN f_Kyc_FatherFullName IS NOT NULL THEN 'Father' WHEN f_Kyc_MotherFullName IS NOT NULL THEN 'Mother'
-             WHEN f_Kyc_SpouseFullName IS NOT NULL THEN 'Spouse' ELSE '' END AS NameType,
-        COALESCE(f_Kyc_FatherFullName, f_Kyc_MotherFullName, f_Kyc_SpouseFullName, N'') AS ParentName,
-        f_Kyc_AnnualIncome_Desc AS AnnualIncome, f_CustSeg_Type_desc AS Occupation, f_CustSeg_Subtype_Desc AS SubOccupation,
-        f_Kyc_MaritalStatus AS MaritalStatus,
-        CASE f_IsPEP WHEN 1 THEN 'yes' WHEN 0 THEN 'no' ELSE '' END AS Pep,
-        CASE f_IsPEP_Relative WHEN 1 THEN 'yes' WHEN 0 THEN 'no' ELSE '' END AS PepRelated
-        """;
-
     public string HolderType { get; set; } = "";
     public string NamePrefix { get; set; } = "";
     public string NameType { get; set; } = "";
@@ -86,13 +60,6 @@ internal sealed class KycRow
 
 internal sealed class AddressRow
 {
-    // The permanent address's row also carries the holder's mobile and e-mail.
-    public const string Columns = """
-        f_Holder_Type AS HolderType, f_AddType_Code AS AddrType, f_Add1 AS Line1, f_Add2 AS Line2, f_Add3 AS Line3,
-        f_AddCity_Desc AS City, f_AddPin AS PinCode, f_AddDistrict_Desc AS District, f_AddState_Desc AS State,
-        f_MobileNumber AS Mobile, f_EmailAdd AS Email
-        """;
-
     public string HolderType { get; set; } = "";
     public string AddrType { get; set; } = "";
     public string Line1 { get; set; } = "";
@@ -112,12 +79,6 @@ internal sealed class AddressRow
 
 internal sealed class NomineeRow
 {
-    public const string Columns = """
-        f_Nominee_Name AS Name, f_Nominee_DOB AS Dob, f_Nominee_Relations AS Relation, f_GuardianName AS GuardianName,
-        f_Address1 AS GuardianLine1, f_Address2 AS GuardianLine2, f_Address3 AS GuardianLine3,
-        f_PIN AS GuardianPinCode, f_City AS GuardianCity
-        """;
-
     public string Name { get; set; } = "";
     public DateTime? Dob { get; set; }
     public string Relation { get; set; } = "";
@@ -131,11 +92,6 @@ internal sealed class NomineeRow
 
 internal sealed class PaymentBankRow
 {
-    public const string Columns = """
-        f_Bank_NEFT AS Ifsc, f_BankAccountNo AS AccountNo, f_Cheque_DD_No AS ChequeNo, f_Cheque_DD_Date AS ChequeDate,
-        f_CMS_Loc_Desc AS CmsLocation, f_CMS_Loc_CD AS CmsLocationCode
-        """;
-
     public string? Ifsc { get; set; }
     public string? AccountNo { get; set; }
     public string? ChequeNo { get; set; }
@@ -146,11 +102,6 @@ internal sealed class PaymentBankRow
 
 internal sealed class RepaymentBankRow
 {
-    // The account's columns take no NULL: one not given is blank there, and NULL here.
-    public const string Columns = """
-        ISNULL(f_sameAsCheque, 0) AS SameAsPayment, NULLIF(f_NEFTCode, N'') AS Ifsc, NULLIF(f_BankAccountNo, N'') AS AccountNo
-        """;
-
     public bool SameAsPayment { get; set; }
     public string? Ifsc { get; set; }
     public string? AccountNo { get; set; }
@@ -158,29 +109,6 @@ internal sealed class RepaymentBankRow
 
 internal sealed class InvestmentRow
 {
-    public const string Columns = """
-        CAST(f_Amount AS BIGINT) AS Amount, TRY_CAST(f_Tenure AS INT) AS TenureMonths, f_Int_Freq AS Payout,
-        f_Is_Auto_Renewal AS AutoRenewal,
-        CASE f_Renewal_For WHEN 'P' THEN 'principal' WHEN 'F' THEN 'principal-interest' ELSE '' END AS RenewInstruction,
-        CASE f_ExistingFDRNoRenewalFor WHEN 'P' THEN 'principal' WHEN 'F' THEN 'principal-interest' ELSE '' END AS RenewalFor,
-        CAST(CASE WHEN f_TDS_Flag = 'N' THEN 1 ELSE 0 END AS BIT) AS NoTds, f_FDR_Dispatch_Mode AS DeliveryType,
-        f_AML_Source_Of_Funds AS SourceOfFunds, f_AML_Source_Of_Funds_Remarks AS SourceOfFundsRemark,
-        f_AML_Source_Of_Funds_reason AS SourceOfFundsReason
-        """;
-
-    /// <summary>
-    /// The application's current deposit row as i, for a query over t_Unotp_Application_Mst m:
-    /// its active row. The newest is taken, should there ever be two.
-    /// </summary>
-    public const string CurrentOf = """
-        OUTER APPLY (
-            SELECT TOP (1) CAST(d.f_Amount AS BIGINT) AS Amount, TRY_CAST(d.f_Tenure AS INT) AS TenureMonths,
-                d.f_Int_Freq AS Payout, d.f_ApplicationDeclarationType AS AppType
-            FROM dbo.t_FD_BT_Investment_Dtl d
-            WHERE d.f_Appl_No = m.f_App_No AND d.f_Active = 1
-            ORDER BY d.f_Pk_t_FD_BT_Investment_Dtl_Id DESC) i
-        """;
-
     public long Amount { get; set; }
     public int TenureMonths { get; set; }
     public string Payout { get; set; } = "";

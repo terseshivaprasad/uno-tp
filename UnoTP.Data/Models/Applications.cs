@@ -46,15 +46,16 @@ public interface IApplicationApi
 
     /// <summary>
     /// The link a submitted application's investor is sent to pay and consent, put on
-    /// record: in the payment link table for a purchase, in the re-payment link table
-    /// for a renewal. <paramref name="link"/> is null when the app builds no link.
+    /// record: in the link request table for a purchase, in the one for a renewal
+    /// (LinkTables). <paramref name="link"/> is null when the app builds no link.
     /// The submission as it now stands, or null when no link may go any more.
     /// </summary>
     Task<Submission?> RecordPaymentLinkAsync(string appNo, PaymentLink? link, CancellationToken ct = default);
 
     /// <summary>
     /// POST applications/{appNo}/resend-link: sends a submitted application's payment
-    /// link again, while its window is open. The submission as it now stands, or null
+    /// link again - the same short link, open for LinkRequestRow.RegeneratedForHours -
+    /// while its window is open. The submission as it now stands, or null
     /// when there is none to resend: an application submitted with Try later has no
     /// link yet, and gets its first with <see cref="RecordPaymentLinkAsync"/>.
     /// </summary>
@@ -264,14 +265,14 @@ public sealed record DepositDetails(
 /// <param name="Status">Where the application stands once submitted: "payment-pending", then the backend's own.</param>
 /// <param name="LinkSentTo">The mobile number the link went to by SMS, masked.</param>
 /// <param name="LinkEmailedTo">The e-mail address it went to as well, masked; empty when there is none.</param>
-/// <param name="LinkValidUntil">When the payment link stops working (linkValidityHours.payment from when it was last sent).</param>
+/// <param name="LinkValidUntil">When the payment link stops working: linkValidityHours.payment from when it was first sent, LinkRequestRow.RegeneratedForHours from when it was sent again.</param>
 /// <param name="ResendsLeft">Kept for the row; the rule is <paramref name="RegenerateUntil"/>.</param>
-/// <param name="RegenerateUntil">A new link can be sent until then: cancellationDays after the application was created, when an unpaid application cancels itself.</param>
+/// <param name="RegenerateUntil">The link can be sent, or sent again, until then: cancellationDays after the application was created, when an unpaid application cancels itself.</param>
 /// <param name="LinkSent">Whether a payment link has gone out. False for an application submitted with Try later, until its link is generated.</param>
 public sealed record Submission(DateTime At, string Status, string LinkSentTo, DateTime LinkValidUntil, int ResendsLeft, string LinkEmailedTo = "", string ShortUrl = "",
     DateTime? RegenerateUntil = null, bool LinkSent = true)
 {
-    /// <summary>Whether a new link can still be sent.</summary>
+    /// <summary>Whether the link can still be sent, or sent again.</summary>
     public bool CanRegenerate(DateTime now) => RegenerateUntil is { } until && now <= until;
 }
 
@@ -306,6 +307,9 @@ public sealed class UploadState
 
     /// <summary>The name last put to NSDL: read off the PAN copy, or typed from it.</summary>
     public string NsdlName { get; set; } = "";
+
+    /// <summary>How many names typed from the PAN card NSDL has turned down for the PAN copy now filed.</summary>
+    public int NsdlTries { get; set; }
 
     /// <summary>The investor's name as NSDL verified it, for one who came with no folio.</summary>
     public string Name { get; set; } = "";
@@ -372,6 +376,13 @@ public sealed class UploadState
     public Dictionary<string, ScreeningOutcome> Screening { get; init; } = [];
 
     /// <summary>
+    /// What the checks on each holder's PAN said, by holder type (01, 02, 03): NSDL,
+    /// the proof of address against the PAN, and the PAN-Aadhaar link. They are
+    /// written on the holder's document rows (t_FD_BT_KYC_document).
+    /// </summary>
+    public Dictionary<string, HolderChecks> PanChecks { get; init; } = [];
+
+    /// <summary>
     /// The joint holders added on Investor Information, by holder type: 02 the second
     /// holder, 03 the third. Their documents are in <see cref="Docs"/>,
     /// <see cref="Attempts"/> and <see cref="Reads"/> under keys that start with it
@@ -419,6 +430,9 @@ public sealed class JointHolder
     /// <summary>The name last put to NSDL: OCR's reading, or the one typed after it.</summary>
     public string NsdlName { get; set; } = "";
 
+    /// <summary>How many names typed from the PAN card NSDL has turned down for the PAN copy now filed.</summary>
+    public int NsdlTries { get; set; }
+
     public string PoaType { get; set; } = "";
 
     /// <summary>Their permanent address as read off the proof of address filed for them here, its PIN code at the end; empty until one is filed.</summary>
@@ -455,13 +469,56 @@ public sealed record StoredDoc(string FileName, long Size, string ContentType, s
 /// <param name="Expiry">When it runs out, dd-MM-yyyy; empty for one that does not, or whose date was not read.</param>
 /// <param name="Masked">Whether it is an Aadhaar filed with its number masked.</param>
 /// <param name="Face">The comparison of the faces on the PAN copy and the proof of address; null when none was made.</param>
+/// <param name="IdfyGroupId">The group id every IDfy request for the application carried; empty when IDfy was not asked about the document.</param>
+/// <param name="IdentifyTaskId">IDfy's task id for the request that identified it; empty when it was not asked.</param>
+/// <param name="ExtractTaskId">IDfy's task id for the request that read it (OCR); empty when it was not asked.</param>
+/// <param name="VerifyTaskId">IDfy's task id for the request that confirmed it with its issuer; empty when the issuer was not asked.</param>
+/// <param name="Verifier">The issuer a proof of address was put to: Sarathi, Passport Seva, the Election Commission. Empty when none was asked.</param>
+/// <param name="VerifierConfirmed">Whether that issuer confirmed the proof; null when none was asked.</param>
 public sealed record DocChecks(
     string IdentifiedAs = "", bool OcrAsked = false, bool Read = false, string Number = "", string Expiry = "",
-    bool Masked = false, FaceCheck? Face = null);
+    bool Masked = false, FaceCheck? Face = null,
+    string IdfyGroupId = "", string IdentifyTaskId = "", string ExtractTaskId = "", string VerifyTaskId = "",
+    string Verifier = "", bool? VerifierConfirmed = null);
 
 /// <param name="Found">Whether a face was found on this copy.</param>
 /// <param name="Score">How alike the two faces are, 0 to 100.</param>
-public sealed record FaceCheck(bool Found, int Score);
+/// <param name="TaskId">IDfy's task id for the request that compared the faces.</param>
+public sealed record FaceCheck(bool Found, int Score, string TaskId = "");
+
+/// <summary>
+/// What the checks on one holder's PAN said, for the record of their documents
+/// (t_FD_BT_KYC_document): NSDL and the PAN-Aadhaar link go on the row of their PAN
+/// copy, the proof of address against the PAN on the row of the proof. Each is null
+/// until its check answers, and again whenever it is asked and gives no answer.
+/// </summary>
+public sealed class HolderChecks
+{
+    /// <summary>What NSDL said of the PAN, the date of birth and the name.</summary>
+    public NsdlCheck? Nsdl { get; set; }
+
+    /// <summary>The name and date of birth on the proof of address, against the PAN's.</summary>
+    public ProofMatch? Proof { get; set; }
+
+    /// <summary>Whether an Aadhaar is held against the PAN.</summary>
+    public LinkCheck? Link { get; set; }
+}
+
+/// <param name="PanOk">NSDL holds the PAN.</param>
+/// <param name="DobOk">It holds the date of birth against it.</param>
+/// <param name="NameOk">It holds the name against it.</param>
+/// <param name="Remark">Said of a name taken without NSDL verifying it; empty otherwise.</param>
+public sealed record NsdlCheck(bool PanOk, bool DobOk, bool NameOk, string Remark = "");
+
+/// <param name="Name">How the name on the proof stands against the PAN's: a <see cref="NameMatchOutcome"/>
+/// (match, partial or mismatch); empty when it was not compared - no name was read, or none is known for the PAN yet.</param>
+/// <param name="Dob">Whether the date of birth on the proof is the PAN's; null when it was not compared -
+/// the proof carries none, or none was read.</param>
+public sealed record ProofMatch(string Name, bool? Dob);
+
+/// <param name="Linked">Whether an Aadhaar is held against the PAN.</param>
+/// <param name="TaskId">IDfy's task id for the request that asked.</param>
+public sealed record LinkCheck(bool Linked, string TaskId = "");
 
 /// <summary>What a card below the documents says; <see cref="Reset"/> puts back how it opened.</summary>
 public sealed class ReadCard
@@ -488,8 +545,14 @@ public sealed class ReadCard
     /// <summary>When the proof runs out, as dd-MM-yyyy, for a passport or a licence.</summary>
     public string Expiry { get; set; } = "";
 
-    /// <summary>The date of birth read off a PAN copy, as dd-MM-yyyy.</summary>
+    /// <summary>The date of birth read off a PAN copy or a proof of address, as dd-MM-yyyy.</summary>
     public string Dob { get; set; } = "";
+
+    /// <summary>
+    /// The name read off a proof of address, kept with its "PAN-POA name &amp; DOB" card
+    /// so it can be compared again once the holder's name is settled.
+    /// </summary>
+    public string Name { get; set; } = "";
 
     /// <summary>How the card opened.</summary>
     public ReadFace Opened { get; set; } = new("", "", "", "");

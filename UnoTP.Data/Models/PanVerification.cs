@@ -15,6 +15,11 @@ public interface IPanVerificationService
 /// <param name="Dob">dd-MM-yyyy.</param>
 public sealed record PanToVerify(string AppNo, string HolderType, string Pan, string Dob, string Name);
 
-/// <param name="PairOk">The PAN is a real one and the date of birth is its holder's.</param>
-/// <param name="NameOk">The name is the one held against it.</param>
-public sealed record PanVerification(bool PairOk, bool NameOk);
+/// <param name="PanOk">NSDL holds the PAN: it is a real one.</param>
+/// <param name="DobOk">The date of birth is the one held against it.</param>
+/// <param name="NameOk">The name is the one held against it. Never true unless the PAN and the date of birth are.</param>
+public sealed record PanVerification(bool PanOk, bool DobOk, bool NameOk)
+{
+    /// <summary>The PAN is a real one and the date of birth is its holder's.</summary>
+    public bool PairOk => PanOk && DobOk;
+}

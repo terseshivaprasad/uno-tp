@@ -9,8 +9,8 @@ namespace UnoTP.Infrastructure;
 /// application is saved first, always; then the page the investor pays on is built
 /// (PaymentLink:Template for a purchase, PaymentLink:RenewalTemplate for a renewal),
 /// shortened when the shortener answers, and saved against
-/// the application - in the payment link table for a purchase, in the re-payment
-/// link table for a renewal. Called on Submit &amp; send link, and later for an
+/// the application - in the link request table for a purchase, in the one for a
+/// renewal. Called on Submit &amp; send link, and later for an
 /// application submitted with Try later.
 /// </summary>
 public sealed class PaymentLinkSender(

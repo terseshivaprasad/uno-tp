@@ -50,7 +50,8 @@ public partial class DocumentsViewModel(
     UnoTP.Infrastructure.CurrentPartner currentPartner,
     ISourcingApi sourcing,
     DocumentLimiter limiter,
-    UploadProgress progress)
+    UploadProgress progress,
+    IPlaceApi places)
 {
     /// <summary>The application the session is on, read afresh for every request.</summary>
     public UnoTP.Models.Application App { get; } = app;
@@ -74,7 +75,9 @@ public partial class DocumentsViewModel(
     /// PAN), the record is not fetched on it. A PAN established before the
     /// application was opened needs no copy.
     /// </summary>
-    public bool CkycPanVerified => !HasFolio && (PanFiled || View(PanSlot).Doc is null || NsdlSettled(Investor));
+    public bool CkycPanVerified => !HasFolio && (PanFiled || View(PanSlot).Doc is null
+        // A name taken without NSDL verifying it has to match the proof of address, so the proof is not left out.
+        || NsdlSettled(Investor) && NsdlOf(Investor) != NameNotVerified);
 
     public const string CkycWaitsOnPan = Messages.UploadDocuments.CkycWaitsOnPan;
 
@@ -202,13 +205,40 @@ public partial class DocumentsViewModel(
     public const string NsdlNotAsked = "notasked";
 
     /// <summary>
+    /// NSDL holds the PAN and date of birth, but turned down the name read off the
+    /// PAN copy and then every name typed from the card (<see cref="NsdlNameTries"/>
+    /// of them). The name on the PAN copy is taken, with the remark
+    /// <see cref="NameNotVerifiedRemark"/>, and the application goes on - but the
+    /// name on the proof of address must then match it.
+    /// </summary>
+    public const string NameNotVerified = "unverified";
+
+    /// <summary>How many names may be typed from the PAN card and put to NSDL before the name on the PAN copy is taken.</summary>
+    public const int NsdlNameTries = 3;
+
+    /// <summary>The remark a name taken without NSDL verifying it carries.</summary>
+    public const string NameNotVerifiedRemark = "Name not verified with NSDL";
+
+    /// <summary>
     /// Where NSDL stands on a holder: empty until asked, "verified", "name", "failed",
-    /// <see cref="Unanswered"/> or <see cref="NsdlNotAsked"/>.
+    /// <see cref="NameNotVerified"/>, <see cref="Unanswered"/> or <see cref="NsdlNotAsked"/>.
     /// </summary>
     public string NsdlOf(DocHolder h) => h.Joint ? State.Joint[h.Code].Nsdl : State.Nsdl;
 
-    /// <summary>Whether NSDL holds nothing up for a holder: it verified the PAN, or the PAN check is switched off.</summary>
-    public bool NsdlSettled(DocHolder h) => NsdlOf(h) is "verified" or NsdlNotAsked;
+    /// <summary>
+    /// Whether NSDL holds nothing up for a holder: it verified the PAN, the name on
+    /// the PAN copy was taken after the typed names ran out, or the PAN check is switched off.
+    /// </summary>
+    public bool NsdlSettled(DocHolder h) => NsdlOf(h) is "verified" or NameNotVerified or NsdlNotAsked;
+
+    /// <summary>How many names typed from the PAN card NSDL has turned down for a holder's PAN copy.</summary>
+    public int NsdlTriesOf(DocHolder h) => h.Joint ? State.Joint[h.Code].NsdlTries : State.NsdlTries;
+
+    private void SetNsdlTries(DocHolder h, int tries)
+    {
+        if (h.Joint) State.Joint[h.Code].NsdlTries = tries;
+        else State.NsdlTries = tries;
+    }
 
     // The name a holder goes by from here on: NSDL's, or the one read off the PAN
     // copy while the PAN check is switched off.
@@ -218,11 +248,25 @@ public partial class DocumentsViewModel(
         else State.Name = name;
     }
 
-    // Where NSDL stands on a holder, and the name it was last asked with.
-    private void SetNsdl(DocHolder h, string name, string result)
+    // Where NSDL stands on a holder, and the name it was last asked with. What it
+    // said of the PAN, the date of birth and the name is kept for the record of the
+    // PAN copy; with none given - NSDL was not asked, or did not answer - none is kept.
+    private void SetNsdl(DocHolder h, string name, string result, NsdlCheck? said = null)
     {
         if (h.Joint) (State.Joint[h.Code].NsdlName, State.Joint[h.Code].Nsdl) = (name, result);
         else (State.NsdlName, State.Nsdl) = (name, result);
+        ChecksOn(h).Nsdl = said;
+    }
+
+    // What the checks on a holder's PAN said, kept for the record of their documents.
+    private HolderChecks ChecksOn(DocHolder h)
+    {
+        if (!State.PanChecks.TryGetValue(h.Code, out var checks))
+        {
+            checks = new HolderChecks();
+            State.PanChecks[h.Code] = checks;
+        }
+        return checks;
     }
 
     private string NsdlNameOf(DocHolder h) => h.Joint ? State.Joint[h.Code].NsdlName : State.NsdlName;
@@ -387,6 +431,7 @@ public partial class DocumentsViewModel(
             State.Reads.Remove(key);
         }
         State.Joint.Remove(code);
+        State.PanChecks.Remove(code);
         session.Remove(AadhaarKey(h));
         // Their attempts stay on the application's history, but no longer as any
         // holder's: whoever takes their type next does not inherit them.

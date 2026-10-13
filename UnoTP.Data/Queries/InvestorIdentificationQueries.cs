@@ -1,33 +1,90 @@
 namespace UnoTP.Data;
 
 /// <summary>
-/// The SQL that reads each big table the app only looks rows up in: folios, the deposits
-/// the folio check looks at, brokers, the staff each sourcing mode takes,
-/// staff, bank branches, PIN codes, the Axis CMS locations, the payment gateway's
-/// banks and the rate card. Change a query here when a table
-/// has another name, needs a join, or needs a condition. The small lists (categories,
-/// payouts, relations, occupations and the rest) are not here: they are rows of
-/// t_Unotp_Ref_List, read in SqlReference.
+/// The SQL Investor Identification runs when a record is checked, in the order the
+/// screen asks: is the PAN or the folio on a deposit, which holder of the folio is it,
+/// and what the FD system already holds for that holder - their KYC details, address
+/// and documents. Nothing but SQL is in this file.
+///
+/// A holder is looked up the same way wherever the app meets one, so Renew FD runs
+/// these too for the holder of a deposit, and Investor Information runs LatestKyc to
+/// show the details a holder need not type again.
+///
+/// What else the screen does is not here, because another screen runs it as well:
+///   - the applications to continue: ApplicationQueries.Drafts (the dashboard's too);
+///     Continue reads the one picked with ApplicationQueries.Header and
+///     ApplicationTableQueries.WholeApplication, as every step does, and Cancel is
+///     ApplicationQueries.CancelDraft;
+///   - the holder's deposits to renew: RenewalQueries (Renew FD's too);
+///   - Proceed, which opens the application: ApplicationQueries.NextApplicationNo and
+///     InsertApplication (a renewal's too). A holder on a folio has their copies on
+///     record read first, with DocumentCopies below;
+///   - the lists and the settings: ListQueries.
 ///
 ///   - Keep the names after AS: they are what the app reads. A column may come from
 ///     any table or expression, so long as it comes back under the same name.
 ///   - A table in another database on the same server is written by its full name:
 ///     OtherDb.dbo.Table.
-///   - A query that finds rows by a key carries that key as a parameter, written in
-///     its own WHERE (@Folio, @Pan, @Dob, @Pin). It is run as it stands, so the table
-///     is read by that key and never whole. Keep the parameter names, and compare
-///     them with the table's own column as it is (f.FOLIO_NO = @Folio): a column
-///     wrapped in a function cannot be found by its index.
-///   - No ORDER BY here: the app sorts what a query gives back.
-///   - The registers searched as they are typed (brokers, staff, bank branches, Axis
-///     CMS branches) take two parameters, both written in their own WHERE: the key
-///     of one row (@Code or @Ifsc), and what was typed - @Search, a LIKE pattern
-///     (%word%word%), or for the bank @Words, the words themselves. The app gives
-///     one and leaves the other empty (NULL): a row is found by its key, or a
-///     handful are found by what was typed. Neither ever brings back the whole register.
+///   - A query carries its key as a parameter, written in its own WHERE (@Folio,
+///     @Pan, @Dob). It is run as it stands, so the table is read by that key and
+///     never whole. Keep the parameter names, and compare them with the table's own
+///     column as it is (f.FOLIO_NO = @Folio): a column wrapped in a function cannot
+///     be found by its index.
+///   - No ORDER BY in a table's own query: the latest row is picked by the queries
+///     at the end of this file. KycSource alone keeps its own.
 /// </summary>
-internal static class MasterQueries
+internal static class InvestorIdentificationQueries
 {
+    // ----- 1. Is the PAN or the folio on a deposit --------------------------------
+
+    /// <summary>
+    /// The deposits the folio check looks at (FolioCheck) for a PAN (@Pan): one row per
+    /// deposit that is not cancelled, with its first holder, on a folio still in use.
+    /// Must give back: Folio, Pan, Dob. An investor has a folio when their PAN is on a row here.
+    /// FDR_MST holds primary holders only; the holder type is the folio holding table's,
+    /// whose first-holder row (HOLD_TYPE 1) is the one joined.
+    /// </summary>
+    public const string FolioDepositsByPan = """
+        SELECT FOLIO AS Folio, PAN1 AS Pan, DOB AS Dob
+        FROM FD.dbo.FDR_MST a WITH (NOLOCK)
+        INNER JOIN FD.dbo.t_Fd_Folio_holding b WITH (NOLOCK) ON a.FOLIO = b.FOLIO_NO AND b.f_Active = 1
+        WHERE b.HOLD_TYPE = '1' AND DEP_STATUS != 'X' AND PAN1 = @Pan
+        """;
+
+    /// <summary>The same deposits, for a folio number (@Folio). Must give back the same names.</summary>
+    public const string FolioDepositsByFolio = """
+        SELECT FOLIO AS Folio, PAN1 AS Pan, DOB AS Dob
+        FROM FD.dbo.FDR_MST a WITH (NOLOCK)
+        INNER JOIN FD.dbo.t_Fd_Folio_holding b WITH (NOLOCK) ON a.FOLIO = b.FOLIO_NO AND b.f_Active = 1
+        WHERE b.HOLD_TYPE = '1' AND DEP_STATUS != 'X' AND a.FOLIO = @Folio
+        """;
+
+    /// <summary>
+    /// The folios a deposits query finds, with their first holder's PAN and date of birth.
+    /// </summary>
+    public static string FolioDeposits(string deposits) =>
+        $"SELECT d.Folio, d.Pan, d.Dob FROM ({deposits}) d ORDER BY d.Folio";
+
+    // ----- 2. A PAN with no deposit: is it the first holder of a folio ------------
+
+    /// <summary>
+    /// The folios a PAN (@Pan) is the first holder of, in the folio master: asked for a
+    /// PAN the folio check found no deposit for, so that a holder who already has a
+    /// folio is not taken as new. Must give back: Pan, Folio.
+    /// </summary>
+    public const string FirstHolders = """
+        SELECT f.PAN_NO AS Pan, f.FOLIO_NO AS Folio
+        FROM FD.dbo.t_Fd_Folio_holding f WITH (NOLOCK)
+        WHERE f.f_Active = 1 AND f.HOLD_TYPE = '1' AND f.PAN_NO = @Pan
+        """;
+
+    /// <summary>
+    /// The folio a PAN is the first holder of, the lowest should there be more than one.
+    /// </summary>
+    public const string FolioOfFirstHolder = $"SELECT TOP (1) h.Folio FROM ({FirstHolders}) h ORDER BY h.Folio";
+
+    // ----- 3. The holder found: their row on the folio, and where their KYC is ----
+
     /// <summary>
     /// One holder of a folio, from the FD system's folio master. The master has a row
     /// for every holder of a folio - the first holder (HOLD_TYPE 1) and each joint
@@ -54,52 +111,6 @@ internal static class MasterQueries
         FROM FD.dbo.t_Fd_Folio_holding f
         WHERE f.f_Active = 1 AND f.FOLIO_NO = @Folio
           AND (f.PAN_NO = @Pan OR (@Pan = '' AND f.HOLD_TYPE = '1'))
-        """;
-
-    /// <summary>
-    /// The folios a PAN (@Pan) is the first holder of, in the folio master: asked for a
-    /// PAN the folio check found no deposit for, so that a holder who already has a
-    /// folio is not taken as new. Must give back: Pan, Folio.
-    /// </summary>
-    public const string FirstHolders = """
-        SELECT f.PAN_NO AS Pan, f.FOLIO_NO AS Folio
-        FROM FD.dbo.t_Fd_Folio_holding f WITH (NOLOCK)
-        WHERE f.f_Active = 1 AND f.HOLD_TYPE = '1' AND f.PAN_NO = @Pan
-        """;
-
-    /// <summary>
-    /// The deposits the folio check looks at (FolioCheck) for a PAN (@Pan): one row per
-    /// deposit that is not cancelled, with its first holder, on a folio still in use.
-    /// Must give back: Folio, Pan, Dob. An investor has a folio when their PAN is on a row here.
-    /// FDR_MST holds primary holders only; the holder type is the folio holding table's,
-    /// whose first-holder row (HOLD_TYPE 1) is the one joined.
-    /// </summary>
-    public const string FolioDepositsByPan = """
-        SELECT FOLIO AS Folio, PAN1 AS Pan, DOB AS Dob
-        FROM FD.dbo.FDR_MST a WITH (NOLOCK)
-        INNER JOIN FD.dbo.t_Fd_Folio_holding b WITH (NOLOCK) ON a.FOLIO = b.FOLIO_NO AND b.f_Active = 1
-        WHERE b.HOLD_TYPE = '1' AND DEP_STATUS != 'X' AND PAN1 = @Pan
-        """;
-
-    /// <summary>The same deposits, for a folio number (@Folio). Must give back the same names.</summary>
-    public const string FolioDepositsByFolio = """
-        SELECT FOLIO AS Folio, PAN1 AS Pan, DOB AS Dob
-        FROM FD.dbo.FDR_MST a WITH (NOLOCK)
-        INNER JOIN FD.dbo.t_Fd_Folio_holding b WITH (NOLOCK) ON a.FOLIO = b.FOLIO_NO AND b.f_Active = 1
-        WHERE b.HOLD_TYPE = '1' AND DEP_STATUS != 'X' AND a.FOLIO = @Folio
-        """;
-
-    /// <summary>
-    /// The deposits a PAN (@Pan) holds with us that are active, for the source-of-funds
-    /// rule: their amounts are added to the new deposit's. Must give back: Number (the
-    /// FDR number, so a renewal can leave out the deposit it renews) and Amount.
-    /// DEP_STATUS 'L' is an active deposit. PRINC_AMT is kept as text: one that is not a
-    /// number counts as nothing.
-    /// </summary>
-    public const string ActiveDeposits = """
-        SELECT a.FDR_NO AS Number, TRY_CAST(a.PRINC_AMT AS DECIMAL(18, 2)) AS Amount
-        FROM FD.dbo.FDR_MST a WITH (NOLOCK)
-        WHERE a.DEP_STATUS = 'L' AND a.PAN1 = @Pan
         """;
 
     /// <summary>
@@ -176,7 +187,7 @@ internal static class MasterQueries
     /// <summary>
     /// The KYC details the common tables hold, shown on Investor Information so they
     /// are not typed again, for one holder (@Folio, @Pan, @Dob). Must give back: SavedOn (the
-    /// latest row for the holder is the one used), NamePrefix (Mr, Mrs, Miss or Ms: the holder's
+    /// latest row for the holder is the one used), NamePrefix (MR, MRS or MS, in any case; Miss on older rows: the holder's
     /// gender, where the folio master holds none), NameType (Father, Mother or Spouse), ParentName, AnnualIncome,
     /// Occupation, SubOccupation (the names the lists show), MaritalStatus (a code of the
     /// 'maritalStatuses' list), Pep and PepRelated (yes, no or empty), Mobile, Email,
@@ -305,160 +316,35 @@ internal static class MasterQueries
           AND d.f_FolioNo = @Folio AND k.f_Kyc_PAN = @Pan AND k.f_Kyc_DOB = @Dob
         """;
 
-    /// <summary>
-    /// The brokers an application can be sourced under: one by its code (@Code), or
-    /// those whose code and name hold what was typed (@Search). Must give back: Code, Name.
-    /// </summary>
-    public const string Brokers = """
-        SELECT b.BROKER_CODE AS Code, b.NAME AS Name
-        FROM MMFSL_APP_FD_BTP.dbo.t_FD_BTP_Broker_Mst b
-        WHERE b.REC_STATUS = 'A'
-          AND (@Code IS NULL OR b.BROKER_CODE = @Code)
-          AND (@Search IS NULL OR b.BROKER_CODE + ' ' + b.NAME LIKE @Search)
-        """;
-
-    // ----- The staff a sourcing mode takes ---------------------------------------
-    // A sourcing mode names its staff rule in the 'staff' setting of its row in
-    // 'sourcingModes' (t_Unotp_Ref_List): branch, mfis or mflEx. Each rule is one
-    // query below; a mode with no rule takes any employee in service. Each finds one
-    // employee by code (@Code), or those whose code and name hold what was typed
-    // (@Search), and must give back: Code, Name.
-
-    /// <summary>Every employee in service: where a sourcing mode names no staff rule.</summary>
-    public const string Staff = """
-        SELECT DISTINCT e.EMPCODE AS Code, e.EMPNAME AS Name
-        FROM MMFSL_DATA_IMPORTED.dbo.T_PA_VIEW_EMPLOYEE e WITH (NOLOCK)
-        WHERE e.ACTIVE = 'A'
-          AND (@Code IS NULL OR e.EMPCODE = @Code)
-          AND (@Search IS NULL OR e.EMPCODE + ' ' + e.EMPNAME LIKE @Search)
-        """;
-
-    /// <summary>MMFSS - BRANCH (staff rule 'branch'): pay group 1033 outside the investment and deposit departments, and the retail branch.</summary>
-    public const string StaffForBranch = """
-        SELECT DISTINCT e.EMPCODE AS Code, e.EMPNAME AS Name
-        FROM MMFSL_DATA_IMPORTED.dbo.T_PA_VIEW_EMPLOYEE e WITH (NOLOCK)
-        WHERE e.ACTIVE = 'A'
-          AND (
-                (e.DEPARTMENT_NAME NOT IN ('INVESTMENT SOLUTIONS', 'FIXED DEPOSIT', 'INVESTMENT SOLUTIONS - DFB')
-                 AND e.PAYGRP IN ('1033'))
-                OR e.DEPARTMENT_NAME = 'RETAIL BRANCH'
-              )
-          AND (@Code IS NULL OR e.EMPCODE = @Code)
-          AND (@Search IS NULL OR e.EMPCODE + ' ' + e.EMPNAME LIKE @Search)
-        """;
-
-    /// <summary>MFIS / MFIS-DFB / FD (staff rule 'mfis'): the investment and deposit departments.</summary>
-    public const string StaffForMfis = """
-        SELECT DISTINCT e.EMPCODE AS Code, e.EMPNAME AS Name
-        FROM MMFSL_DATA_IMPORTED.dbo.T_PA_VIEW_EMPLOYEE e WITH (NOLOCK)
-        WHERE e.ACTIVE = 'A'
-          AND e.DEPARTMENT_NAME IN ('INVESTMENT SOLUTIONS', 'FIXED DEPOSIT', 'INVESTMENT SOLUTIONS - DFB')
-          AND (@Code IS NULL OR e.EMPCODE = @Code)
-          AND (@Search IS NULL OR e.EMPCODE + ' ' + e.EMPNAME LIKE @Search)
-        """;
-
-    /// <summary>MFL-EX (staff rule 'mflEx'): pay groups 1031, 1032, 1033 and 1059, and the retail branch.</summary>
-    public const string StaffForMflEx = """
-        SELECT DISTINCT e.EMPCODE AS Code, e.EMPNAME AS Name
-        FROM MMFSL_DATA_IMPORTED.dbo.T_PA_VIEW_EMPLOYEE e WITH (NOLOCK)
-        WHERE e.ACTIVE = 'A'
-          AND (
-                e.PAYGRP IN ('1031', '1032', '1033', '1059')
-                OR e.DEPARTMENT_NAME = 'RETAIL BRANCH'
-              )
-          AND (@Code IS NULL OR e.EMPCODE = @Code)
-          AND (@Search IS NULL OR e.EMPCODE + ' ' + e.EMPNAME LIKE @Search)
-        """;
+    // ----- 4. How the queries above are asked: the latest row, the copies on record
 
     /// <summary>
-    /// The bank branches, from the FD system's bank master: one by its IFSC (@Ifsc),
-    /// or those found by what was typed (@Words: the words typed, a space between
-    /// them). Must give back: Ifsc, Bank, Branch, Micr. A branch is found when every
-    /// word typed is in its search key (f_Searchkey), in any order - the rule the FD
-    /// system's own bank search goes by.
+    /// The name prefix on a holder's latest KYC row. kycDetails is the source's KYC details query.
     /// </summary>
-    public const string BankBranches = """
-        SELECT DISTINCT b.NEFT_CODE AS Ifsc, b.BANK_NAME AS Bank, b.BANK_BRANCH AS Branch, b.MICR_CODE AS Micr
-        FROM dbo.T_FD_RBI_BANK_MSTR b WITH (NOLOCK)
-        WHERE (@Ifsc IS NULL OR b.NEFT_CODE = @Ifsc)
-          AND (@Words IS NULL OR NOT EXISTS (
-                SELECT 1 FROM STRING_SPLIT(@Words, ' ') word
-                WHERE b.f_Searchkey NOT LIKE '%' + word.value + '%'))
-        """;
-
-    /// <summary>One PIN code (@Pin). Must give back: PinCode, District, State.</summary>
-    public const string PinCodes = """
-        SELECT p.f_Pin_Code AS PinCode, p.f_District AS District, p.f_State AS State
-        FROM dbo.t_Unotp_Pincode_Mst p
-        WHERE p.f_Active = 1 AND p.f_Pin_Code = @Pin
-        """;
+    public static string LatestNamePrefix(string kycDetails) =>
+        $"SELECT TOP (1) k.NamePrefix FROM ({kycDetails}) k ORDER BY k.SavedOn DESC";
 
     /// <summary>
-    /// The Axis CMS branches a cheque is presented at, from the FD system's Axis CMS
-    /// branch master, as usp_FD_BT_Get_User_AxisCMSBranch reads them: one by its code
-    /// (@Code, the branch's SOL id), or those whose label holds what was typed
-    /// (@Search). Must give back: Code, Name, Label (the text the search looks in and
-    /// shows: the branch's name, location and PIN code), State and District (the
-    /// search lists them in that order).
+    /// A holder's latest KYC row. kycDetails is the source's KYC details query.
     /// </summary>
-    public const string CmsLocations = """
-        SELECT CAST(c.f_Sol_Id AS VARCHAR(50)) AS Code, c.f_Branch_Name AS Name, c.f_LABEL AS Label,
-               c.f_State AS State, c.f_District AS District
-        FROM MMFSL_APP_FD_BTP.dbo.t_FD_Axis_CMS_Branch_Mst c WITH (NOLOCK)
-        WHERE c.f_Active = 1
-          AND (@Code IS NULL OR c.f_Sol_Id = @Code)
-          AND (@Search IS NULL OR c.f_LABEL LIKE @Search)
-        """;
+    public static string LatestKyc(string kycDetails) =>
+        $"SELECT TOP (1) * FROM ({kycDetails}) k ORDER BY k.SavedOn DESC";
 
     /// <summary>
-    /// The banks the payment gateway takes for online payment. Must give back: Code
-    /// (the bank's code, the first four letters of its IFSCs), Name. Put the gateway
-    /// bank master's own table and columns here. Until then this reads the
-    /// development rows kept under 'gatewayBanks' in t_Unotp_Ref_List.
+    /// A holder's latest address. addresses is the source's address query.
     /// </summary>
-    public const string GatewayBanks = """
-        SELECT g.f_Code AS Code, g.f_Name AS Name
-        FROM dbo.t_Unotp_Ref_List g
-        WHERE g.f_List = 'gatewayBanks' AND g.f_Active = 1
-        """;
-
-    // ----- The rate cards -----------------------------------------------------------
-    // Two tables of the same structure: a branch user's card, which also carries the
-    // employee and special schemes (and their extra tenures), and a partner's, which
-    // does not. Which one a deposit is quoted from follows who is signed in.
-    // On both, a row is in effect while its TO_DATE is empty: a row with a TO_DATE
-    // has been closed, and is not read.
+    public static string LatestAddress(string addresses) =>
+        $"SELECT TOP (1) a.Address, a.Line1, a.Line2, a.Line3, a.City, a.District, a.State, a.PinCode FROM ({addresses}) a ORDER BY a.SavedOn DESC";
 
     /// <summary>
-    /// A branch user's rate card, one row per scheme code in effect. Must give back: Category, Mode (AF or R),
-    /// Scheme, SchemeCode, InterestFreq, TenureMonths, Rate, MinAmount, MaxAmount,
-    /// FromDate, SchemeId. The numbers are read through a cast: a row whose
-    /// number does not read is left out.
+    /// The sub types of the documents a holder has on record. documents is the source's documents query.
     /// </summary>
-    public const string RateCard = """
-        SELECT RTRIM(r.CATEGORY) AS Category, RTRIM(r.MODE_STATUS) AS Mode, RTRIM(r.SCHEME) AS Scheme, RTRIM(r.SCHEME_CODE) AS SchemeCode,
-               RTRIM(r.INTEREST_FREQ) AS InterestFreq, TRY_CAST(r.PERIOD AS INT) AS TenureMonths, TRY_CAST(r.INTEREST_RATES AS DECIMAL(9,4)) AS Rate,
-               CAST(TRY_CAST(r.MINIMUM_AMOUNT AS DECIMAL(18,2)) AS BIGINT) AS MinAmount,
-               CAST(TRY_CAST(r.MAXIMUM_AMOUNT AS DECIMAL(18,2)) AS BIGINT) AS MaxAmount,
-               r.FROM_DATE AS FromDate, r.SCHEME_ID AS SchemeId
-        FROM dbo.t_FD_BOTC_SCHEME r
-        WHERE r.TO_DATE IS NULL
-        """;
+    public static string DocumentSubTypes(string documents) =>
+        $"SELECT DISTINCT d.SubTypeCode FROM ({documents}) d";
 
     /// <summary>
-    /// A partner's rate card: the same structure, without the employee and special
-    /// schemes, one row per scheme code in effect. Must give back: Category, Mode (AF or R),
-    /// Scheme, SchemeCode, InterestFreq, TenureMonths, Rate, MinAmount, MaxAmount,
-    /// FromDate, SchemeId. The numbers are read through a cast: a row whose
-    /// number does not read is left out.
+    /// The copies a holder has on record, the newest first. documents is the source's documents query.
     /// </summary>
-    public const string RateCardForPartners = """
-        SELECT RTRIM(r.CATEGORY) AS Category, RTRIM(r.MODE_STATUS) AS Mode, RTRIM(r.SCHEME) AS Scheme, RTRIM(r.SCHEME_CODE) AS SchemeCode,
-               RTRIM(r.INTEREST_FREQ) AS InterestFreq, TRY_CAST(r.PERIOD AS INT) AS TenureMonths, TRY_CAST(r.INTEREST_RATES AS DECIMAL(9,4)) AS Rate,
-               CAST(TRY_CAST(r.MINIMUM_AMOUNT AS DECIMAL(18,2)) AS BIGINT) AS MinAmount,
-               CAST(TRY_CAST(r.MAXIMUM_AMOUNT AS DECIMAL(18,2)) AS BIGINT) AS MaxAmount,
-               r.FROM_DATE AS FromDate, r.SCHEME_ID AS SchemeId
-        FROM dbo.FD_SCHEME r
-        WHERE r.TO_DATE IS NULL
-        """;
+    public static string DocumentCopies(string documents) =>
+        $"SELECT d.SubTypeCode, d.FileName, d.FilePath FROM ({documents}) d ORDER BY d.SavedOn DESC";
 }

@@ -21,6 +21,7 @@ public static class BackendServiceCollectionExtensions
         var switches = new OutsideSwitches(config);
 
         // IDfy: one client, and the five checks it answers.
+        services.AddSingleton<IdfyGroup>();
         services.AddApiClient<IdfyClient>(sp => sp.GetRequiredService<IOptions<IdfyOptions>>().Value);
         services.Check<IDocumentIdentifier, IdfyDocumentIdentifier, OffDocumentIdentifier>(switches, OutsideSwitches.Identify);
         services.Check<IOcrService, IdfyOcr, OffOcr>(switches, OutsideSwitches.Ocr);
