@@ -74,7 +74,7 @@ internal static class ShortUrlQueries
                         OR EXISTS (SELECT 1 FROM MMFSL_APP_FD_BTP.dbo.t_FD_BT_Cancelled_Application_Dtl c WITH (NOLOCK)
                                    WHERE c.f_Appl_No = m.f_App_No AND c.f_Active = 1) THEN 1 ELSE 0 END AS BIT) AS Cancelled,
             CAST(CASE WHEN EXISTS (SELECT 1 FROM MMFSL_APP_FDPGW.dbo.t_FD_PGW_Payment_Log pl WITH (NOLOCK)
-                                   WHERE pl.f_AppNo = m.f_App_No AND pl.f_Status = 'Y') THEN 1 ELSE 0 END AS BIT) AS Paid,
+                                   WHERE pl.f_Appl_No = m.f_App_No AND pl.f_Status = 'Y') THEN 1 ELSE 0 END AS BIT) AS Paid,
             i.AppType, i.Status, i.Amount,
             CAST(CASE WHEN m.f_Renew_Dep_No IS NULL THEN 0 ELSE 1 END AS BIT) AS Renewal,
             p.f_Payment_Mode AS PayMode, p.f_Cheque_DD_No AS ChequeNo, p.f_Drawn_Bank_Name AS BankName,
@@ -124,7 +124,7 @@ internal static class ShortUrlQueries
                                                   AND d.f_TermsCondition = 1
                                                   AND d.f_KycConfirmation = 1) AS AcceptedOn,
             CAST(CASE WHEN EXISTS (SELECT 1 FROM MMFSL_APP_FDPGW.dbo.t_FD_PGW_Payment_Log pl WITH (NOLOCK)
-                                   WHERE pl.f_AppNo = m.f_App_No AND pl.f_Status = 'Y') THEN 1 ELSE 0 END AS BIT) AS Paid
+                                   WHERE pl.f_Appl_No = m.f_App_No AND pl.f_Status = 'Y') THEN 1 ELSE 0 END AS BIT) AS Paid
         FROM (SELECT f_AppNo, f_Link_Expiry_Date, f_CreatedOn, f_UpdatedOn, f_Active,
                      f_Disclaimer1, f_Disclaimer2, f_TermsCondition, f_KycConfirmation
               FROM MMFSL_APP_FDPGW.dbo.t_FD_PGW_PaymentURLRequest_dtl
@@ -322,7 +322,7 @@ internal static class ShortUrlQueries
                inserted.f_Cancelled_On AS CancelledOn
         WHERE f_App_No = @AppNo AND f_Partner_Id = @Partner AND f_Status = 'APR' AND f_Active = 1
           AND NOT EXISTS (SELECT 1 FROM MMFSL_APP_FDPGW.dbo.t_FD_PGW_Payment_Log pl WITH (NOLOCK)
-                          WHERE pl.f_AppNo = f_App_No AND pl.f_Status = 'Y')
+                          WHERE pl.f_Appl_No = f_App_No AND pl.f_Status = 'Y')
           AND f_Cancelled_On IS NULL
           AND NOT EXISTS (SELECT 1 FROM MMFSL_APP_FD_BTP.dbo.t_FD_BT_Cancelled_Application_Dtl c WITH (NOLOCK)
                           WHERE c.f_Appl_No = f_App_No AND c.f_Active = 1)

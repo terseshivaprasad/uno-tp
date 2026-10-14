@@ -47,7 +47,7 @@ internal static class ApplicationSubmittedQueries
                inserted.f_Cancelled_On AS CancelledOn
         WHERE f_App_No = @AppNo AND f_Partner_Id = @Partner AND f_Status = 'APR' AND f_Active = 1
           AND NOT EXISTS (SELECT 1 FROM MMFSL_APP_FDPGW.dbo.t_FD_PGW_Payment_Log pl WITH (NOLOCK)
-                          WHERE pl.f_AppNo = f_App_No AND pl.f_Status = 'Y')
+                          WHERE pl.f_Appl_No = f_App_No AND pl.f_Status = 'Y')
           AND f_Cancelled_On IS NULL
           AND NOT EXISTS (SELECT 1 FROM MMFSL_APP_FD_BTP.dbo.t_FD_BT_Cancelled_Application_Dtl c WITH (NOLOCK)
                           WHERE c.f_Appl_No = f_App_No AND c.f_Active = 1)
@@ -103,7 +103,7 @@ internal static class ApplicationSubmittedQueries
                inserted.f_Cancelled_On AS CancelledOn
         WHERE f_App_No = @AppNo AND f_Partner_Id = @Partner AND f_Status = 'APR' AND f_Active = 1
           AND NOT EXISTS (SELECT 1 FROM MMFSL_APP_FDPGW.dbo.t_FD_PGW_Payment_Log pl WITH (NOLOCK)
-                          WHERE pl.f_AppNo = f_App_No AND pl.f_Status = 'Y')
+                          WHERE pl.f_Appl_No = f_App_No AND pl.f_Status = 'Y')
           AND f_Cancelled_On IS NULL
           AND NOT EXISTS (SELECT 1 FROM MMFSL_APP_FD_BTP.dbo.t_FD_BT_Cancelled_Application_Dtl c WITH (NOLOCK)
                           WHERE c.f_Appl_No = f_App_No AND c.f_Active = 1)

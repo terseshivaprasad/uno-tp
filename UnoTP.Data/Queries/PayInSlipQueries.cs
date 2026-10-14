@@ -235,6 +235,8 @@ internal static class PayInSlipQueries
         """;
 
     /// <summary>
+    /// The account the cheque is drawn on comes from the application's active payment row, as the
+    /// FD system's own print read joins it.
     /// The newest pay-in slip of one of the partner's applications, as it is printed. Named after
     /// the properties of SlipPrint.
     /// </summary>
@@ -244,9 +246,10 @@ internal static class PayInSlipQueries
             ISNULL(TRY_CONVERT(BIGINT, d.f_Cheque_Amt), 0) AS Amount,
             ISNULL(d.f_Cheque_Number, N'') AS ChequeNumber, ISNULL(d.f_Drawn_Bank_Name, N'') AS BankName,
             ISNULL(d.f_Drawn_Bank_IFSCCOde, N'') AS BankIfsc, ISNULL(d.f_Drawn_Branch_Name, N'') AS BranchName,
-            ISNULL(d.f_cms_location_code, N'') AS SolId
+            ISNULL(d.f_cms_location_code, N'') AS SolId, ISNULL(p.f_BankAccountNo, N'') AS AccountNumber
         FROM MMFSL_APP_FD_BTP.dbo.t_FD_BT_Payinslip_Dtl d
         JOIN dbo.t_Unotp_Application_Mst m ON m.f_App_No = d.f_Application_Number
+        LEFT JOIN MMFSL_APP_FD_BTP.dbo.t_FD_BT_Payment_Dtl p ON p.f_Appl_No = d.f_Application_Number AND p.f_Active = 1
         WHERE d.f_Application_Number = @AppNo AND m.f_Partner_Id = @Partner
         ORDER BY d.f_Pk_t_BT_Payinslip_Dtl_ID DESC
         """;

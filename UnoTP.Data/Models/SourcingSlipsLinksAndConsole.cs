@@ -95,6 +95,9 @@ public sealed record SlipPrint
     public string BankIfsc { get; init; } = "";
     public string BranchName { get; init; } = "";
 
+    /// <summary>The account the cheque is drawn on, from the application's payment row.</summary>
+    public string AccountNumber { get; init; } = "";
+
     /// <summary>The Axis branch the cheque is presented at, by its SOL id.</summary>
     public string SolId { get; init; } = "";
 }

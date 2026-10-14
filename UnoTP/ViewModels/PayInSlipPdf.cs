@@ -39,14 +39,14 @@ public static class PayInSlipPdf
     private static readonly string[] BankCopyLabels =
     [
         "MF User ID", "PAY-IN-SLIP No", "Customers Name", "Amount:", "Depositor's Signature",
-        "Customers Bank Name", "Customer's Bank IFSC", "Customers Branch Name", "Customers Cheque Number",
+        "Customers Bank Name", "Customer's Bank IFSC", "Customers Branch Name", "Customers Bank Account No", "Customers Cheque Number",
         "Axis Branch Sol Id", "Total Amount in Words", "Verified By", "Cashier Signatures/Stamp",
     ];
 
     private static readonly string[] CustomerCopyLabels =
     [
         "MF User ID", "PAY-IN-SLIP No", "Customers Name", "Amount:", "Depositor's Signature",
-        "Customer's Bank Name", "Customer's Bank IFSC", "Customer's Branch Name", "Customer's Cheque Number",
+        "Customer's Bank Name", "Customer's Bank IFSC", "Customer's Branch Name", "Customer's Bank Account No", "Customer's Cheque Number",
         "Axis Branch Sol Id", "Total Amount in Words", "Verified By", "Cashier Signatures/Stamp",
     ];
 
@@ -78,7 +78,7 @@ public static class PayInSlipPdf
     private static string[] ValuesOf(SlipPrint slip, string mfUserId) =>
     [
         mfUserId, slip.SlipNo, slip.CustomerName, slip.Amount.ToString(CultureInfo.InvariantCulture), "",
-        slip.BankName, slip.BankIfsc, slip.BranchName, slip.ChequeNumber,
+        slip.BankName, slip.BankIfsc, slip.BranchName, slip.AccountNumber, slip.ChequeNumber,
         slip.SolId, InWords(slip.Amount), "", "",
     ];
 

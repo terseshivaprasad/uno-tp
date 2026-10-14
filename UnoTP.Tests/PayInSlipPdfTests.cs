@@ -12,7 +12,7 @@ public class PayInSlipPdfTests
     {
         SlipNo = "AXPIS0007", AppNo = "DEVBB26F10001", ApplicationDate = new DateTime(2025, 11, 18),
         CustomerName = "Asha Test", Amount = 50000, ChequeNumber = "123123",
-        BankName = "Test Bank", BankIfsc = "TEST0001180", BranchName = "SHIVAJINAGAR", SolId = "866",
+        BankName = "Test Bank", BankIfsc = "TEST0001180", BranchName = "SHIVAJINAGAR", SolId = "866", AccountNumber = "123456789012",
     };
 
     // The file as text: what is drawn is not packed, so the words on the slip can be read in it.
@@ -53,7 +53,7 @@ public class PayInSlipPdfTests
         foreach (var value in new[]
         {
             "(Application Number: DEVBB26F10001)", "(Application Date: 18-Nov-2025)", "(23093276)", "(AXPIS0007)", "(Asha Test)",
-            "(50000)", "(Test Bank)", "(TEST0001180)", "(SHIVAJINAGAR)", "(123123)", "(866)", "(FIFTY THOUSAND)",
+            "(50000)", "(Test Bank)", "(TEST0001180)", "(SHIVAJINAGAR)", "(123456789012)", "(123123)", "(866)", "(FIFTY THOUSAND)",
         })
         {
             Assert.Equal(2, Times(pdf, value));
