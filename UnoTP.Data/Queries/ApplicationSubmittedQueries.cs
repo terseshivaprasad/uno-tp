@@ -111,22 +111,22 @@ internal static class ApplicationSubmittedQueries
         """;
 
     /// <summary>
-    /// A first link is about to be written for a purchase: any row the application had goes out of use.
+    /// A first link is about to be written for a purchase: any row the application had goes out of use, its link closed now (f_Link_Validity 0, f_Link_Expiry_Date now).
     /// </summary>
     public const string RetirePurchaseLink = """
         UPDATE MMFSL_APP_FDPGW.dbo.t_FD_PGW_PaymentURLRequest_dtl
-        SET f_Active = 0, f_UpdatedBy = @UpdatedBy, f_UpdatedByUName = @UserName, f_UpdatedOn = GETDATE(),
-            f_UpdatedIP = @Ip
+        SET f_Active = 0, f_Link_Validity = 0, f_Link_Expiry_Date = GETDATE(),
+            f_UpdatedBy = @UpdatedBy, f_UpdatedByUName = @UserName, f_UpdatedOn = GETDATE(), f_UpdatedIP = @Ip
         WHERE f_AppNo = @AppNo AND f_Active = 1
         """;
 
     /// <summary>
-    /// A first link is about to be written for a renewal: any row the application had goes out of use.
+    /// A first link is about to be written for a renewal: any row the application had goes out of use, its link closed now (f_Link_Validity 0, f_Link_Expiry_Date now).
     /// </summary>
     public const string RetireRenewalLink = """
         UPDATE MMFSL_APP_FDPGW.dbo.T_FD_PGW_RW_DECLARATION_URL_REQUEST_DTL
-        SET f_Active = 0, f_UpdatedBy = @UpdatedBy, f_UpdatedByUName = @UserName, f_UpdatedOn = GETDATE(),
-            f_UpdatedIP = @Ip
+        SET f_Active = 0, f_Link_Validity = 0, f_Link_Expiry_Date = GETDATE(),
+            f_UpdatedBy = @UpdatedBy, f_UpdatedByUName = @UserName, f_UpdatedOn = GETDATE(), f_UpdatedIP = @Ip
         WHERE f_AppNo = @AppNo AND f_Active = 1
         """;
 
