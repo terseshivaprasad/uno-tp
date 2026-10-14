@@ -16,7 +16,7 @@ To change what a message says:
 "Browser: yes" marks a message a script shows as the partner types. It is still
 written only in the master, which hands it to the page.
 
-313 messages.
+317 messages.
 
 ## Every page
 
@@ -327,6 +327,15 @@ written only in the master, which hands it to the page.
 | The list (View Application) | no application is under the folio searched | No application under that folio. A new customer has no folio until their first deposit books — search by application number instead. | `Lists.NoApplicationUnderFolio` | yes |
 | To Date | not a complete date | Enter a complete To Date as DD / MM / YYYY. | `Lists.ToDateIncomplete` | yes |
 | To Date | a date still to come | The To Date cannot be in the future. | `Lists.ToInFuture` | yes |
+
+## Document utilities
+
+| Field | Shown when | Message | Name | Browser |
+|---|---|---|---|---|
+| Image to JPEG, Merge two images | the file picked is not an image the browser can read | That file is not an image this browser can read. Pick a JPEG, PNG, WebP, GIF or BMP. | `Utilities.NotAnImage` | yes |
+| Merge two images | the two images together would be larger than the browser can draw | The two images together are too large to draw. Use smaller copies. | `Utilities.TooLargeToMerge` | yes |
+| PDF to JPEG | the file picked is not a PDF, or cannot be read | That file could not be read as a PDF. | `Utilities.NotAPdf` | yes |
+| PDF to JPEG | the PDF has no pages | The PDF has no pages. | `Utilities.PdfHasNoPages` | yes |
 
 ## Short URL
 

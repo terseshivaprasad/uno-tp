@@ -98,6 +98,10 @@ The joint holders' documents on Investor Information go through the same calls.
 | `IApplicationApi.SearchAsync`, `FindAsync` | The applications the search reaches (`?by=dates&from=&to=`, `?by=appno&q=`, `?by=folio&q=`), run by the database, the newest 200; one application's details in the pop-up. |
 | `IDepositApi.QuoteAsync`, `BranchAsync` | The details' figures. |
 
+## Document utilities (`UtilitiesModel`)
+
+No backend call: the page reads nothing and writes nothing. A copy to JPEG, a PDF to one JPEG a page, and two images into one are drawn in the browser (`utilities.js`, with pdf.js for the PDF) and downloaded from there; no file is sent to the server.
+
 ## Short URL (`LinksModel`) and Pay-in Slips (`PayInSlipsModel`)
 
 | Call | Used for |

@@ -59,6 +59,7 @@ on the screen waits where it need not, and where it must wait it says so:
 | Folder | What it is |
 |---|---|
 | `UnoTP/` | The web app: `Pages/`, `ViewModels/`, `wwwroot/`, `Infrastructure/`, and `Services/` |
+| `UnoTP/wwwroot/js/vendor/pdfjs/` | pdf.js (Mozilla, Apache-2.0), the one script library beside Bootstrap: draws a PDF's pages on Document utilities, in the browser. Its licence is beside it. |
 | `UnoTP/Services/` | One folder per backend API, each with its settings and its client: `Auth`, `Pan`, `UidMasking`, `Ckyc`, `Idfy`, `NameScreening`, `NameMatch`, `Shortener`. What they share (the gateway address, the switches) is at its top |
 | `UnoTP.Data/` | The database logic, in a project of its own: the `Sql*` classes that answer the pages from SQL Server through Dapper. A change to a query is deployed by replacing `UnoTP.Data.dll` alone |
 | `UnoTP.Data/Models/` | The interfaces the pages read and the records they pass. Both projects use them |

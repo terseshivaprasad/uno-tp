@@ -1,0 +1,97 @@
+/* The document utilities page only. Loaded after layout-and-controls.css and
+   journey-steps.css, whose document card (doc-slot, doc-drop) each tool reuses. */
+
+/* The three tools side by side; one under the other on a narrow window. */
+.utilities {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--field-gap);
+  margin-top: 24px;
+}
+@media (max-width: 1000px) {
+  .utilities {
+    grid-template-columns: 1fr;
+  }
+}
+.utility {
+  min-width: 0;
+}
+/* The tool's title, with Clear at the right of it: dimmed while there is nothing to clear. */
+.utility__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+}
+.utility__title {
+  font: var(--font-title);
+  color: var(--ink);
+  margin: 0;
+}
+.utility__clear:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+.utility__hint {
+  font: var(--font-label);
+  color: var(--muted);
+  margin: 4px 0 8px;
+}
+.utility .doc-slot {
+  padding-top: 0;
+}
+.utility .doc-drop {
+  min-height: 112px;
+}
+/* The two boxes of the merge, side by side within their column. */
+.utility__pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.doc-drop--small {
+  min-height: 96px;
+  padding: 12px 8px;
+}
+.utility__layout {
+  margin-top: 16px;
+}
+.utility__status {
+  font: var(--font-label);
+  color: var(--muted);
+  margin: 8px 0 0;
+}
+.utility__all {
+  margin: 8px 0 0;
+}
+
+/* The results: each a picture with its size and its download under it. */
+.utility__results {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+.utility__results:empty {
+  display: none;
+}
+.utility__result {
+  margin: 0;
+}
+.utility__result img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+}
+.utility__result figcaption {
+  padding-top: 6px;
+  font: var(--font-label);
+  color: var(--muted);
+}
+.utility__result figcaption span,
+.utility__result figcaption .link-button {
+  display: block;
+}

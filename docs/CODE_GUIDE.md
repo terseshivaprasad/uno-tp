@@ -23,6 +23,7 @@ loads everything shared; a page adds only its own two files through
 | Application submitted | `/ApplicationSubmitted/{appNo}` | `SubmittedModel` | `Pages/Submitted/Index` | `pages/submitted.css` | – |
 | View Application | `/ViewApplication` | `ApplicationsModel`, `ApplicationDetailsModel` (the pop-up's details) | `Pages/Applications/Index`, `Details` | `pages/applications.css` | `pages/applications.js` |
 | Short URL | `/ShortUrl` | `LinksModel` | `Pages/Links/Index` | `pages/links.css` | `pages/links.js` |
+| Document utilities | `/Utilities` | `UtilitiesModel` | `Pages/Utilities/Index` | `pages/utilities.css` | `pages/utilities.js` (an ES module; draws PDFs with `js/vendor/pdfjs`) |
 | Pay-in Slips | `/PayInSlip` | `PayInSlipsModel` | `Pages/PayInSlips/Index` | `pages/pay-in-slips.css` | `pages/pay-in-slips.js` |
 | Renew FD | `/RenewalDashboard` | `RenewModel` | `Pages/Renew/Index` (draws nothing: it opens Investor Identification) | `pages/renew.css` | – |
 | Console Admin | `/Admin` | `AdminModel` | `Pages/Admin/Index` | `pages/admin.css` | `pages/admin.js` |

@@ -77,7 +77,8 @@ INSERT dbo.t_Unotp_Feature_Mst (f_Feature_Key, f_Name, f_Group, f_Detail, f_Off_
     (N'app-status', N'Application status', N'FD Services', N'Where an application stands, holder by holder.', N'Under revamp', 5, 1, 1, 'SEED'),
     (N'fd-calc', N'FD Calculator', N'FD Services', N'Working out what a deposit earns before it is booked.', N'Under development', 6, 1, 1, 'SEED'),
     (N'renew', N'Renew FD', N'FD Services', N'Rolling a maturing deposit over into a new one.', N'Coming soon', 7, 1, 1, 'SEED'),
-    (N'admin', N'Console Admin', N'Administration', N'Scheduling downtime windows and notices for the console.', N'Unavailable', 8, 0, 1, 'SEED');
+    (N'utilities', N'Document utilities', N'FD Services', N'A copy turned into a JPEG, a PDF into a JPEG a page, two images into one - in the browser, nothing uploaded.', N'Unavailable', 8, 1, 1, 'SEED'),
+    (N'admin', N'Console Admin', N'Administration', N'Scheduling downtime windows and notices for the console.', N'Unavailable', 9, 0, 1, 'SEED');
 
 /* ----- The lists ---------------------------------------------------------------
    One INSERT for every list. The columns:

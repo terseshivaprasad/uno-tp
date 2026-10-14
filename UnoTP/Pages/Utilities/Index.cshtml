@@ -1,0 +1,136 @@
+@page "/Utilities"
+@model UtilitiesModel
+@{
+    ViewData["Title"] = "Document utilities";
+    ViewData["BackToDashboard"] = true;
+
+    // Each tool is a document card like Upload Documents' own: a box a file is
+    // clicked or dropped on (file-drop.js lands a drop in the card's picker), the
+    // result drawn under it. Nothing is sent anywhere: utilities.js does the work.
+    var upArrow = "<svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 16.5V4.5\"></path><path d=\"M7 9.5l5-5 5 5\"></path><path d=\"M4.5 19.5h15\"></path></svg>";
+}
+
+<div class="page-layout page-layout--wide">
+    <aside class="page-rail page-rail--steps">
+        <h2 class="page-rail__title">How these work</h2>
+        <div class="page-rail__note">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"></rect><path d="M8 21h8M12 18v3"></path></svg>
+            <div>
+                <div class="page-rail__note-title">In this browser only</div>
+                <p>A file picked here is read and drawn on this computer. Nothing is uploaded, and nothing is kept once the page is closed.</p>
+            </div>
+        </div>
+        <div class="page-rail__note">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="2"></rect><path d="M3.5 16l5-5 4 4 3-3 5 5"></path><circle cx="15.5" cy="8.5" r="1.5"></circle></svg>
+            <div>
+                <div class="page-rail__note-title">JPEG out</div>
+                <p>Every result is a JPEG on a white background, no more than 2560 px on its long side and under 2 MB &mdash; what Upload Documents and the document check take.</p>
+            </div>
+        </div>
+        <div class="page-rail__note">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 2.5H14l5 5v13a1 1 0 0 1-1 1H6.5a1.5 1.5 0 0 1-1.5-1.5V4a1.5 1.5 0 0 1 1.5-1.5z"></path><path d="M14 2.5v5h5"></path></svg>
+            <div>
+                <div class="page-rail__note-title">A PDF, page by page</div>
+                <p>Each page of a PDF becomes one JPEG. Download the page you need, or all of them.</p>
+            </div>
+        </div>
+    </aside>
+
+    <div class="page-card">
+        <div class="page-head"><h1 class="page-title">Document utilities</h1></div>
+        <p class="page-note">Click a box or drop a file on it; the result is drawn under it, ready to download. Nothing leaves this computer.</p>
+
+        <div class="utilities">
+            <section class="utility" id="utilityImage">
+                <div class="utility__head">
+                    <h2 class="utility__title">Image to JPEG</h2>
+                    <button type="button" class="link-button utility__clear" id="utilImageClear" disabled title="Nothing to clear yet">Clear</button>
+                </div>
+                <p class="utility__hint">A PNG, WebP, GIF or BMP copy drawn again as a JPEG.</p>
+                <div class="doc-slot">
+                    <label class="doc-drop" for="utilImageFile">
+                        <span class="doc-drop__idle">
+                            <span class="doc-drop__icon" aria-hidden="true">@Html.Raw(upArrow)</span>
+                            <span class="doc-drop__title" data-idle="Click or drop an image">Click or drop an image</span>
+                            <span class="doc-drop__hint">JPEG, PNG, WebP, GIF or BMP</span>
+                        </span>
+                        <input type="file" id="utilImageFile" accept="image/*" hidden>
+                    </label>
+                </div>
+                <p class="field-error" id="utilImageError" hidden></p>
+                <div class="utility__results" id="utilImageResults"></div>
+            </section>
+
+            <section class="utility" id="utilityPdf">
+                <div class="utility__head">
+                    <h2 class="utility__title">PDF to JPEG</h2>
+                    <button type="button" class="link-button utility__clear" id="utilPdfClear" disabled title="Nothing to clear yet">Clear</button>
+                </div>
+                <p class="utility__hint">Every page of the PDF, one JPEG each.</p>
+                <div class="doc-slot">
+                    <label class="doc-drop" for="utilPdfFile">
+                        <span class="doc-drop__idle">
+                            <span class="doc-drop__icon" aria-hidden="true">@Html.Raw(upArrow)</span>
+                            <span class="doc-drop__title" data-idle="Click or drop a PDF">Click or drop a PDF</span>
+                            <span class="doc-drop__hint">One JPEG for each page</span>
+                        </span>
+                        <input type="file" id="utilPdfFile" accept="application/pdf,.pdf" hidden>
+                    </label>
+                </div>
+                <p class="field-error" id="utilPdfError" hidden></p>
+                <p class="utility__status" id="utilPdfStatus" hidden></p>
+                <p class="utility__all" hidden><button type="button" class="link-button" id="utilPdfAll">Download all pages</button></p>
+                <div class="utility__results" id="utilPdfResults"></div>
+            </section>
+
+            <section class="utility" id="utilityMerge">
+                <div class="utility__head">
+                    <h2 class="utility__title">Merge two images</h2>
+                    <button type="button" class="link-button utility__clear" id="utilMergeClear" disabled title="Nothing to clear yet">Clear</button>
+                </div>
+                <p class="utility__hint">Two copies as one JPEG: the front and the back of a card, or two halves of a page.</p>
+                <div class="utility__pair">
+                    <div class="doc-slot">
+                        <label class="doc-drop doc-drop--small" for="utilMergeFirst">
+                            <span class="doc-drop__idle">
+                                <span class="doc-drop__icon" aria-hidden="true">@Html.Raw(upArrow)</span>
+                                <span class="doc-drop__title" data-idle="First image">First image</span>
+                            </span>
+                            <input type="file" id="utilMergeFirst" accept="image/*" hidden>
+                        </label>
+                    </div>
+                    <div class="doc-slot">
+                        <label class="doc-drop doc-drop--small" for="utilMergeSecond">
+                            <span class="doc-drop__idle">
+                                <span class="doc-drop__icon" aria-hidden="true">@Html.Raw(upArrow)</span>
+                                <span class="doc-drop__title" data-idle="Second image">Second image</span>
+                            </span>
+                            <input type="file" id="utilMergeSecond" accept="image/*" hidden>
+                        </label>
+                    </div>
+                </div>
+                <fieldset class="search-by utility__layout">
+                    <legend class="field-label">Put them</legend>
+                    <label class="radio-option">
+                        <input type="radio" name="utilMergeLayout" value="below" checked>
+                        <span>One below the other</span>
+                    </label>
+                    <label class="radio-option">
+                        <input type="radio" name="utilMergeLayout" value="beside">
+                        <span>Side by side</span>
+                    </label>
+                </fieldset>
+                <p class="field-error" id="utilMergeError" hidden></p>
+                <div class="utility__results" id="utilMergeResults"></div>
+            </section>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script type="module" src="~/js/pages/utilities.js" asp-append-version="true"></script>
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/pages/utilities.css" asp-append-version="true" />
+}

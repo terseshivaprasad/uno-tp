@@ -33,6 +33,9 @@ public sealed class FeatureFlags
     /// <summary>The Console Admin tile and page, for administrators only.</summary>
     public bool Admin { get; set; }
 
+    /// <summary>Document utilities: a copy to JPEG, a PDF to JPEGs, two images into one - done in the browser.</summary>
+    public bool Utilities { get; set; } = true;
+
     /// <summary>
     /// Document identification says which proof of address a copy is, and that
     /// sets its type after the upload. Off, the type is chosen from a drop-down
@@ -58,6 +61,7 @@ public sealed class FeatureFlags
         "fd-calc" => FdCalculator,
         "renew" => RenewFd,
         "admin" => Admin,
+        "utilities" => Utilities,
         _ => true,
     };
 }

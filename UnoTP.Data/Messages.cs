@@ -1119,6 +1119,27 @@ public static class Messages
             $"A date search reaches back {days} days, to {earliest}. For anything older, search by application number or folio.";
     }
 
+    /// <summary>What the document utilities cannot do with a file.</summary>
+    [Page("Document utilities")]
+    public static class Utilities
+    {
+        [Shown("Image to JPEG, Merge two images", "the file picked is not an image the browser can read", InBrowser = true)]
+        public const string NotAnImage =
+            "That file is not an image this browser can read. Pick a JPEG, PNG, WebP, GIF or BMP.";
+
+        [Shown("PDF to JPEG", "the file picked is not a PDF, or cannot be read", InBrowser = true)]
+        public const string NotAPdf =
+            "That file could not be read as a PDF.";
+
+        [Shown("PDF to JPEG", "the PDF has no pages", InBrowser = true)]
+        public const string PdfHasNoPages =
+            "The PDF has no pages.";
+
+        [Shown("Merge two images", "the two images together would be larger than the browser can draw", InBrowser = true)]
+        public const string TooLargeToMerge =
+            "The two images together are too large to draw. Use smaller copies.";
+    }
+
     /// <summary>A link that could not be sent.</summary>
     [Page("Short URL")]
     public static class ShortUrl
