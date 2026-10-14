@@ -48,18 +48,18 @@ public sealed class SqlRenewals(Db db, IPartner partner, IRenewalOpener applicat
     {
         folio = folio.Trim().ToUpperInvariant();
         if (await investors.FolioAsync(folio, ct) is null) return null;
-        return await HeldAsync(RenewalQueries.OnFolio, new { Folio = folio }, ct);
+        return await HeldAsync(RenewFdQueries.BookedOnFolio, new { Folio = folio }, ct);
     }
 
     public async Task<IReadOnlyList<HeldDeposit>?> DepositsByPanAsync(string pan, string dob, CancellationToken ct = default)
     {
-        var held = await HeldAsync(RenewalQueries.OfHolder, new { Pan = pan.Trim().ToUpperInvariant(), Dob = Dates.ParseDdMmYyyy(dob) }, ct);
+        var held = await HeldAsync(RenewFdQueries.BookedOfHolder, new { Pan = pan.Trim().ToUpperInvariant(), Dob = Dates.ParseDdMmYyyy(dob) }, ct);
         if (held.Count == 0) return null;
         return held;
     }
 
     public async Task<HeldDeposit?> DepositAsync(string number, CancellationToken ct = default) =>
-        (await HeldAsync(RenewalQueries.ByDepositNumber, new { Number = number.Trim() }, ct)).FirstOrDefault();
+        (await HeldAsync(RenewFdQueries.BookedByDepositNumber, new { Number = number.Trim() }, ct)).FirstOrDefault();
 
     public async Task<Application?> StartAsync(string depositNumber, CancellationToken ct = default)
     {
@@ -97,17 +97,17 @@ public sealed class SqlRenewals(Db db, IPartner partner, IRenewalOpener applicat
     private static Holder HolderOf(FolioRecord r) =>
         new(r.Pan, r.Dob, r.Name, r.Folio, r.Docs.Pan, r.Address, r.Docs, r.Gender, r.Source);
 
-    // The booked deposits a filter finds, each as it stands today, soonest to mature first.
-    private async Task<IReadOnlyList<HeldDeposit>> HeldAsync(string filter, object args, CancellationToken ct)
+    // The booked deposits a query finds, each as it stands today, soonest to mature first.
+    private async Task<IReadOnlyList<HeldDeposit>> HeldAsync(string booked, object args, CancellationToken ct)
     {
         var config = await reference.ConfigAsync(ct);
 
         await using var connection = await db.OpenAsync(ct);
-        var rows = (await connection.QueryAsync<BookedRow>(RenewalQueries.BookedWhere(filter), args)).ToList();
+        var rows = (await connection.QueryAsync<BookedRow>(booked, args)).ToList();
         if (rows.Count == 0) return [];
 
         // The joint holders on those applications: every holder but the first.
-        var joint = (await connection.QueryAsync<(string AppNo, string Pan, DateTime? Dob, string Name, string Folio)>(ApplicationTableQueries.JointHoldersOf, new { AppNos = rows.Select(r => r.AppNo).ToList(), HolderType.Investor })).ToList();
+        var joint = (await connection.QueryAsync<(string AppNo, string Pan, DateTime? Dob, string Name, string Folio)>(RenewFdQueries.JointHoldersOf, new { AppNos = rows.Select(r => r.AppNo).ToList(), HolderType.Investor })).ToList();
 
         var held = new List<HeldDeposit>();
         foreach (var row in rows)

@@ -15,11 +15,12 @@ internal static class AddressType
 }
 
 /// <summary>
-/// f_Kyc_NamePrefix: t_FD_BT_Kyc_Data_Dtl keeps a holder's gender as the prefix to
-/// their name, worked out from the gender and marital status, and it is read back
-/// off the prefix. The prefix is a code of the salutation master
-/// (t_FD_BT_Salutation_Mst): MR, MRS or MS. The master has none for a transgender
-/// holder, who is written as MS - and so reads back as female.
+/// f_Kyc_NamePrefix: the prefix to a holder's name in t_FD_BT_Kyc_Data_Dtl, worked
+/// out from the gender and marital status. It is a code of the salutation master
+/// (t_FD_BT_Salutation_Mst): MR, MRS or MS; the master has none for a transgender
+/// holder, who is written as MS. The gender itself is kept beside it in
+/// f_Kyc_Gender (M, F or T) and read back from there; a row written before that
+/// column was filled is read off its prefix.
 /// </summary>
 internal static class NamePrefixes
 {
@@ -59,9 +60,9 @@ internal static partial class Sections
     public static async Task WriteDetailsAsync(IDbConnection db, IDbTransaction tx, Stamp at, Holder investor, UploadState? upload,
         ApplicationDetails details, int minorUnder, MasterLists masters, IReadOnlyDictionary<string, TypedAddress> onRecord)
     {
-        await RetireAsync(db, tx, at, "t_FD_BT_Kyc_Data_Dtl");
-        await RetireAsync(db, tx, at, "t_FD_BT_Address_Dtl");
-        await RetireAsync(db, tx, at, "t_FD_BT_Nominee_Dtl");
+        await RetireAsync(db, tx, at, InvestorInformationQueries.RetireKyc);
+        await RetireAsync(db, tx, at, InvestorInformationQueries.RetireAddresses);
+        await RetireAsync(db, tx, at, InvestorInformationQueries.RetireNominee);
 
         foreach (var h in details.Holders)
         {
@@ -94,9 +95,9 @@ internal static partial class Sections
         // its codes go beside the names. One it does not hold is kept by name alone.
         var occupation = masters.OccupationOf(h.Occupation, h.SubOccupation);
         var born = Dates.ParseDdMmYyyy(who.Dob);
-        return db.ExecuteAsync(ApplicationTableQueries.InsertKyc, new
+        return db.ExecuteAsync(InvestorInformationQueries.InsertKyc, new
         {
-            HolderType = h.Holder, at.AppNo, NamePrefix = NamePrefixes.Of(gender, h.MaritalStatus),
+            HolderType = h.Holder, at.AppNo, NamePrefix = NamePrefixes.Of(gender, h.MaritalStatus), Gender = Genders.Code(gender),
             // The whole name, as the table's own note asks, in both columns.
             FirstName = who.Name, who.Name,
             Father = ParentNamed("Father", h), Spouse = ParentNamed("Spouse", h), Mother = ParentNamed("Mother", h),
@@ -130,7 +131,7 @@ internal static partial class Sections
     }
 
     private static Task InsertAddressAsync(IDbConnection db, IDbTransaction tx, Stamp at, HolderDetails h, string folio, string type, string typeName, TypedAddress a) =>
-        db.ExecuteAsync(ApplicationTableQueries.InsertAddress, new
+        db.ExecuteAsync(InvestorInformationQueries.InsertAddress, new
         {
             HolderType = h.Holder, at.AppNo, Type = type, TypeName = typeName,
             Line1 = Cut(a.Line1, 100), Line2 = Cut(a.Line2, 100), Line3 = Cut(a.Line3, 100),
@@ -145,7 +146,7 @@ internal static partial class Sections
     private static Task InsertNomineeAsync(IDbConnection db, IDbTransaction tx, Stamp at, NomineeDetails n, int minorUnder, string relationCode)
     {
         var born = Dates.ParseDdMmYyyy(n.Dob);
-        return db.ExecuteAsync(ApplicationTableQueries.InsertNominee, new
+        return db.ExecuteAsync(InvestorInformationQueries.InsertNominee, new
         {
             at.AppNo, n.Name, Relation = Cut(relationCode, 20), Dob = born, Minor = IsMinor(born, DateTime.Today, minorUnder),
             n.GuardianName, n.GuardianLine1, n.GuardianLine2, n.GuardianLine3, n.GuardianCity, n.GuardianPinCode, at.Folio,

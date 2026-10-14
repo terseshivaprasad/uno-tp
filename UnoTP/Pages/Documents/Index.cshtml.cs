@@ -33,7 +33,8 @@ public class DocumentsModel(
     /// <summary>
     /// A register searched as a code is typed (documents.js): the brokers or the staff
     /// whose code or name holds the text, as the backend finds them. Nothing is looked
-    /// up until three characters are typed. The staff are searched among those the
+    /// up until enough is typed: three characters for a broker, five for an employee.
+    /// The staff are searched among those the
     /// staff rule of the sourcing mode chosen on the page takes.
     /// </summary>
     public async Task<IActionResult> OnGetSourcingAsync(string? register, string? q, string? mode, [FromServices] UnoTP.Infrastructure.Lookups lookups)
@@ -43,7 +44,7 @@ public class DocumentsModel(
         Response.Headers.CacheControl = "private,max-age=60";
         if (HttpContext.CurrentApplication() is null) return NotFound();
         var text = (q ?? "").Trim();
-        if (!TypedSearch.LongEnough(text)) return new JsonResult(Array.Empty<Party>());
+        if (!TypedSearch.LongEnough(text, register)) return new JsonResult(Array.Empty<Party>());
         text = text[..Math.Min(text.Length, 40)];
         if (register == "brokers") return new JsonResult(await sourcing.SearchBrokersAsync(text));
         if (register != "staff") return NotFound();
@@ -71,7 +72,7 @@ public class DocumentsModel(
         if (await LoadAsync() is not { } model) return NotFound();
         var doc = model.State.Docs.GetValueOrDefault(slot);
         if (doc is null || doc.Before) return NotFound();
-        var copy = await documents.CopyAsync(model.AppNo, doc.FileName);
+        var copy = await documents.CopyAsync(model.AppNo, model.FolioOfSlot(slot), doc.FileName);
         if (copy is null) return NotFound();
         Response.Headers.CacheControl = "no-store";
         Response.Headers["X-Content-Type-Options"] = "nosniff";
@@ -121,7 +122,7 @@ public class DocumentsModel(
 
     // Proceed says what is missing where it is missing, and the page comes back to
     // the first of it; with nothing missing it goes on to Investor Information.
-    public Task<IActionResult> OnPostProceedAsync(UploadForm form) => ChangeAsync(form, model => model.ProceedAsync(HttpContext.RequestAborted));
+    public Task<IActionResult> OnPostProceedAsync(UploadForm form) => Change(form, model => model.Proceed());
 
     // The backend only ever finds the partner's own application, so a number in
     // the address that is not theirs finds nothing.

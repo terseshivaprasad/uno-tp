@@ -2,11 +2,14 @@
 // applications are on the list, the status filter over whatever it found, and
 // the read-only sheet a row opens. Nothing here changes an application - the
 // screen only looks at one.
+// The search is run by the server: this script checks the fields and sends
+// them, and the page comes back holding what the search reached. The status
+// pills, the narrowing box and the pages work on those rows alone.
 (function () {
   var form = document.getElementById('viewAppForm');
   if (!form) return;
 
-  var PER_PAGE = 8;
+  var PER_PAGE = +document.getElementById('viewAppRows').dataset.perPage;
   var rows = Array.prototype.slice.call(document.querySelectorAll('#viewAppRows tr'));
   var pills = Array.prototype.slice.call(document.querySelectorAll('.register-pill'));
   var appNo = document.getElementById('viewAppAppNo');
@@ -14,19 +17,21 @@
   var from = document.getElementById('viewAppFrom');
   var to = document.getElementById('viewAppTo');
   var error = document.getElementById('viewAppError');
-  var scope = document.getElementById('viewAppScope');
   var narrow = document.getElementById('viewAppFilter');
   var empty = document.getElementById('viewAppEmpty');
   var count = document.getElementById('viewAppCount');
   var pages = document.getElementById('viewAppPages');
   var prev = document.getElementById('viewAppPrev');
   var next = document.getElementById('viewAppNext');
-  var modes = Array.prototype.slice.call(form.querySelectorAll('[name="viewAppSearchBy"]'));
+  var modes = Array.prototype.slice.call(form.querySelectorAll('[name="by"]'));
+  var askedText = document.getElementById('viewAppAskedText');
+  var askedFrom = document.getElementById('viewAppAskedFrom');
+  var askedTo = document.getElementById('viewAppAskedTo');
 
-  // The window the page opens on, read off the dates the server put in the boxes
-  // so the two never drift apart.
-  var WINDOW = { from: readDateBoxes(from), to: readDateBoxes(to) };
-  var search = { mode: 'dates', from: WINDOW.from, to: WINDOW.to };
+  // The window a date search can reach, as the server counts it.
+  var WINDOW = { from: form.dataset.earliest, to: form.dataset.today };
+  // What the rows on the page are the answer to: 'dates', 'appno' or 'folio'.
+  var searchedBy = form.dataset.by;
   var state = 'all';
   var page = 1;
 
@@ -87,23 +92,25 @@
     return false;
   }
 
-  // Checks the search fields and, when they are right, filters the list to what they reach.
-  function runSearch() {
+  // Checks the search fields and, when they are right, puts what is searched for
+  // in the form's hidden boxes. True when the search can be sent.
+  function readySearch() {
     error.hidden = true;
     [from, to, appNo, folio].forEach(function (f) { f.classList.remove('is-invalid'); });
+    askedText.value = '';
+    askedFrom.value = '';
+    askedTo.value = '';
 
     var mode = modes.filter(function (m) { return m.checked; })[0].value;
 
     if (mode === 'appno') {
       var q = appNo.value.trim();
       if (q.length < 4) return showSearchError(message('Lists.AppNoTooShort'), appNo);
-      search = { mode: 'appno', appNo: q.toLowerCase() };
-      scope.textContent = 'Showing every application matching “' + q + '”, inside the window or older.';
+      askedText.value = q;
     } else if (mode === 'folio') {
       var f = folio.value.trim();
       if (f.length < 4) return showSearchError(message('Lists.FolioTooShort'), folio);
-      search = { mode: 'folio', folio: f.toLowerCase() };
-      scope.textContent = 'Showing every application under folio “' + f + '”, however old.';
+      askedText.value = f;
     } else {
       var a = readDateBoxes(from), b = readDateBoxes(to);
       if (!a) return showSearchError(message('Lists.FromDateIncomplete'), from);
@@ -113,23 +120,26 @@
       if (a < WINDOW.from) {
         return showSearchError(message('Lists.DateSearchReach', { days: daysBetweenInclusive(WINDOW.from, WINDOW.to), earliest: isoToDisplayDate(WINDOW.from) }), from);
       }
-      search = { mode: 'dates', from: a, to: b };
-      scope.textContent = a === WINDOW.from && b === WINDOW.to
-        ? 'Showing the last ' + daysBetweenInclusive(WINDOW.from, WINDOW.to) + ' days — ' + isoToDisplayDate(a) + ' to ' + isoToDisplayDate(b) + '.'
-        : 'Showing applications raised ' + isoToDisplayDate(a) + ' to ' + isoToDisplayDate(b) + '.';
+      askedFrom.value = a;
+      askedTo.value = b;
     }
-
-    page = 1;
-    renderTablePage();
     return true;
   }
 
+  // A search that is not right stays on the page with its error; one that is
+  // right goes to the server, which answers with what it reaches.
   form.addEventListener('submit', function (e) {
-    e.preventDefault();
-    runSearch();
+    if (!readySearch()) e.preventDefault();
   });
 
+  // Clear goes back to the list the page opens on. When that is the list already
+  // on the page, only the filters over it are taken off: nothing is asked again.
   document.getElementById('viewAppClear').addEventListener('click', function () {
+    if (form.dataset.opening !== 'yes') {
+      if (window.showLoader) window.showLoader('Loading\u2026');
+      window.location.assign(window.location.pathname);
+      return;
+    }
     modes[0].checked = true;
     showFieldsForSearchMode();
     writeDateBoxes(from, WINDOW.from);
@@ -138,31 +148,16 @@
     folio.value = '';
     narrow.value = '';
     setStatusFilter('all');
-    search = { mode: 'dates', from: WINDOW.from, to: WINDOW.to };
-    scope.textContent = 'Showing the last ' + daysBetweenInclusive(WINDOW.from, WINDOW.to) + ' days — ' + isoToDisplayDate(WINDOW.from) + ' to ' + isoToDisplayDate(WINDOW.to) + '.';
     page = 1;
     renderTablePage();
   });
 
   // ---- The list ------------------------------------------------------------
-  // What the search alone reaches, before the status filter narrows it. The
-  // pills count against this, so they always say what is there to be filtered.
-  function isReachedBySearch(row) {
-    if (search.mode === 'appno') return row.dataset.appno.indexOf(search.appNo) !== -1;
-    // A folio search follows the investor rather than the window, so it reaches
-    // their older applications too. A new customer has no folio to match.
-    if (search.mode === 'folio') return !!row.dataset.folio && row.dataset.folio.indexOf(search.folio) !== -1;
-    // A date search only ever reaches applications inside the window.
-    return row.dataset.window === 'in'
-      && row.dataset.date >= search.from
-      && row.dataset.date <= search.to;
-  }
-
-  // True when a row is reached by the search, has the chosen status and contains the filter text.
+  // True when a row has the chosen status and contains the narrowing text. Every
+  // row on the page is one the search reached.
   function matchesStatusAndFilter(row) {
     var q = narrow.value.trim().toLowerCase();
-    return isReachedBySearch(row)
-      && (state === 'all' || row.dataset.state === state)
+    return (state === 'all' || row.dataset.state === state)
       && (!q || row.dataset.search.indexOf(q) !== -1);
   }
 
@@ -182,18 +177,26 @@
 
   narrow.addEventListener('input', function () { page = 1; renderTablePage(); });
 
-  // Writes on each status pill how many reached rows have that status.
-  function updateStatusCounts(reached) {
+  // Writes on each status pill how many of the rows have that status. The pills
+  // count every row the search reached, so they say what is there to be filtered.
+  function updateStatusCounts() {
     pills.forEach(function (pill) {
       var key = pill.dataset.state;
-      var n = key === 'all' ? reached.length : reached.filter(function (r) { return r.dataset.state === key; }).length;
+      var n = key === 'all' ? rows.length : rows.filter(function (r) { return r.dataset.state === key; }).length;
       pill.querySelector('.register-pill__number').textContent = n;
     });
   }
 
+  // What the empty list says, by what was searched for.
+  function nothingFoundMessage() {
+    if (searchedBy === 'appno') return message('Lists.NoApplicationByNumberTryFolio');
+    if (searchedBy === 'folio') return message('Lists.NoApplicationUnderFolio');
+    return message('Lists.NoApplicationBetweenDates');
+  }
+
   // Shows the rows of the current page, and the pager and counts under them.
   function renderTablePage() {
-    updateStatusCounts(rows.filter(isReachedBySearch));
+    updateStatusCounts();
 
     var kept = rows.filter(matchesStatusAndFilter);
     var total = Math.max(1, Math.ceil(kept.length / PER_PAGE));
@@ -206,11 +209,7 @@
 
     empty.hidden = kept.length > 0;
     if (!kept.length) {
-      empty.textContent = search.mode === 'appno'
-        ? message('Lists.NoApplicationByNumberTryFolio')
-        : search.mode === 'folio'
-          ? message('Lists.NoApplicationUnderFolio')
-          : message('Lists.NoApplicationBetweenDates');
+      empty.textContent = nothingFoundMessage();
     }
 
     count.textContent = kept.length

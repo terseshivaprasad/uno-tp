@@ -48,6 +48,9 @@ internal sealed class KycRow
 {
     public string HolderType { get; set; } = "";
     public string NamePrefix { get; set; } = "";
+
+    /// <summary>f_Kyc_Gender: M, F or T; null on a row written before the column was filled.</summary>
+    public string? Gender { get; set; }
     public string NameType { get; set; } = "";
     public string ParentName { get; set; } = "";
     public string AnnualIncome { get; set; } = "";

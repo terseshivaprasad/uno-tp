@@ -43,8 +43,12 @@ public class DashboardModel(
         var config = await lookups.ConfigAsync();
         var today = DateTime.Today;
         var pending = on.ShortUrl ? OrEmptyWhenUnavailable(() => links.PendingAsync()) : NoWorkList<PendingRecord>();
-        var slipRows = on.PisGeneration ? OrEmptyWhenUnavailable(() => slips.SlipsAsync()) : NoWorkList<SlipRecord>();
-        var apps = on.ViewApplication ? OrEmptyWhenUnavailable(() => applications.ListAsync()) : NoWorkList<ApplicationRecord>();
+        var slipRows = on.PisGeneration ? OrEmptyWhenUnavailable(() => slips.StillOpenAsync()) : NoWorkList<SlipRecord>();
+        // Only the days that leave an application close to cancelling are read, never the partner's whole list.
+        var cancelsToday = today.AddDays(-config.CancellationDays);
+        var apps = on.ViewApplication
+            ? OrEmptyWhenUnavailable(() => applications.OpenAndRaisedBetweenAsync(cancelsToday, cancelsToday.AddDays(config.CloseToCancelDays)))
+            : NoWorkList<OpenApplication>();
         var work = new List<WorkItem>();
 
         if (await pending is { Count: > 0 } p)
@@ -60,7 +64,7 @@ public class DashboardModel(
 
         if (await apps is { } a)
         {
-            var closing = a.Where(x => x.State is not ("booked" or "cancelled"))
+            var closing = a
                 .Select(x => (App: x, Left: config.CancellationDays - (today - x.Applied.Date).Days))
                 .Where(x => x.Left >= 0 && x.Left <= config.CloseToCancelDays)
                 .OrderBy(x => x.Left).ToList();

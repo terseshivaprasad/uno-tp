@@ -75,4 +75,13 @@ public static class Genders
         "T" or "TRANSGENDER" => Transgender,
         _ => "",
     };
+
+    /// <summary>The one letter the FD system keeps a gender as (f_Kyc_Gender): M, F or T; null when it is not known.</summary>
+    public static string? Code(string? value) => Of(value) switch
+    {
+        Male => "M",
+        Female => "F",
+        Transgender => "T",
+        _ => null,
+    };
 }

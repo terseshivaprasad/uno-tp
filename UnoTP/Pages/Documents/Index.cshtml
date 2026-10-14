@@ -486,7 +486,7 @@
                 <label class="field-label" for="docsSourceCode">@sourceCodeLabel</label>
                 <input class="field-input @Invalid("docsSourceCode")" id="docsSourceCode" name="sourceCode" data-chars="code" form="docsForm" value="@state.SourceCode" maxlength="12" autocomplete="off" spellcheck="false"
                        disabled="@sourceCodeDisabled" data-submit="docsRefresh" autofocus="@Focus("docsSourceCode")"
-                       data-register-search="@(sourceRegister is null ? null : registerSearchUrl)" data-register="@sourceRegister" data-mode="@state.Sourcing" data-search-from="@TypedSearch.FromLength" data-name-label="@sourceNameLabel"
+                       data-register-search="@(sourceRegister is null ? null : registerSearchUrl)" data-register="@sourceRegister" data-mode="@state.Sourcing" data-search-from="@TypedSearch.FromLengthOf(sourceRegister)" data-name-label="@sourceNameLabel"
                        role="@(sourceRegister is null ? null : "combobox")" aria-autocomplete="@(sourceRegister is null ? null : "list")" aria-expanded="@(sourceRegister is null ? null : "false")" aria-controls="@(sourceRegister is null ? null : "docsSourceCodeSuggest")">
                 @if (sourceRegister is not null)
                 {
@@ -511,7 +511,7 @@
                 </label>
                 <input class="field-input @Invalid("docsSubBroker")" id="docsSubBroker" name="subBroker" data-chars="code" form="docsForm" value="@state.SubBroker" maxlength="12" autocomplete="off" spellcheck="false" data-submit="docsRefresh"
                        disabled="@subBrokerDisabled" autofocus="@Focus("docsSubBroker")"
-                       data-register-search="@(subRegister is null ? null : registerSearchUrl)" data-register="@subRegister" data-mode="@state.Sourcing" data-search-from="@TypedSearch.FromLength" data-name-label="@subNameLabel"
+                       data-register-search="@(subRegister is null ? null : registerSearchUrl)" data-register="@subRegister" data-mode="@state.Sourcing" data-search-from="@TypedSearch.FromLengthOf(subRegister)" data-name-label="@subNameLabel"
                        role="@(subRegister is null ? null : "combobox")" aria-autocomplete="@(subRegister is null ? null : "list")" aria-expanded="@(subRegister is null ? null : "false")" aria-controls="@(subRegister is null ? null : "docsSubBrokerSuggest")">
                 @if (subRegister is not null)
                 {
@@ -553,7 +553,7 @@
                 <div class="doc-column bank-search">
                     <label class="field-label" for="docsEmployeeCode">Employee Code</label>
                     <input class="field-input @Invalid("docsEmployeeCode")" id="docsEmployeeCode" name="empCode" data-chars="code" form="docsForm" value="@state.EmpCode" maxlength="10" autocomplete="off" spellcheck="false" autofocus="@Focus("docsEmployeeCode")"
-                           data-register-search="@registerSearchUrl" data-register="staff" data-mode="@state.Sourcing" data-search-from="@TypedSearch.FromLength" data-name-label="Employee Name" data-submit="docsRefresh"
+                           data-register-search="@registerSearchUrl" data-register="staff" data-mode="@state.Sourcing" data-search-from="@TypedSearch.StaffFromLength" data-name-label="Employee Name" data-submit="docsRefresh"
                            role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="docsEmployeeCodeSuggest">
                     <ul class="bank-suggest" id="docsEmployeeCodeSuggest" role="listbox" aria-label="Staff found" hidden></ul>
                     <p class="doc-resolved">Employee Name &mdash; <strong class="@employeeNameClass">@employeeNameText</strong></p>

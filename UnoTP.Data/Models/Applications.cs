@@ -50,7 +50,7 @@ public interface IApplicationApi
     /// (LinkTables). <paramref name="link"/> is null when the app builds no link.
     /// The submission as it now stands, or null when no link may go any more.
     /// </summary>
-    Task<Submission?> RecordPaymentLinkAsync(string appNo, PaymentLink? link, CancellationToken ct = default);
+    Task<LinkSending> RecordPaymentLinkAsync(string appNo, PaymentLink? link, LinkPage from, CancellationToken ct = default);
 
     /// <summary>
     /// POST applications/{appNo}/resend-link: sends a submitted application's payment
@@ -59,7 +59,7 @@ public interface IApplicationApi
     /// when there is none to resend: an application submitted with Try later has no
     /// link yet, and gets its first with <see cref="RecordPaymentLinkAsync"/>.
     /// </summary>
-    Task<Submission?> ResendLinkAsync(string appNo, CancellationToken ct = default);
+    Task<LinkSending> ResendLinkAsync(string appNo, CancellationToken ct = default);
 
     /// <summary>
     /// A draft cancelled by the partner who opened it: the application is marked
@@ -71,9 +71,25 @@ public interface IApplicationApi
     /// <summary>The partner's applications that are theirs to finish - opened, not yet submitted - newest first.</summary>
     Task<IReadOnlyList<DraftSummary>> DraftsAsync(CancellationToken ct = default);
 
-    /// <summary>The partner's applications, for looking one up.</summary>
-    Task<IReadOnlyList<ApplicationRecord>> ListAsync(CancellationToken ct = default);
+    /// <summary>
+    /// The partner's applications a search reaches, newest first: never the whole list, and
+    /// never more than <see cref="ApplicationSearch.Most"/> of them.
+    /// </summary>
+    Task<ApplicationsFound> SearchAsync(ApplicationSearch search, CancellationToken ct = default);
+
+    /// <summary>
+    /// The partner's open applications - not booked, not cancelled - raised from one day
+    /// to another, both included, the oldest first: those close to cancelling, for the dashboard.
+    /// </summary>
+    Task<IReadOnlyList<OpenApplication>> OpenAndRaisedBetweenAsync(DateTime from, DateTime to, CancellationToken ct = default);
 }
+
+/// <summary>
+/// A payment link sent, or why it was not: the reason the limits refused it
+/// (CommLimits), shown to the partner; null with no submission when no link may go
+/// any more (the application is paid, cancelled, or past its days).
+/// </summary>
+public sealed record LinkSending(Submission? Sent, string? Refused = null);
 
 /// <summary>Who an application is for, as Investor Identification established it.</summary>
 /// <param name="PanFiled">Set when a PAN copy is on the application already.</param>
@@ -281,7 +297,8 @@ public sealed record Submission(DateTime At, string Status, string LinkSentTo, D
 /// investor pays on, and its short form when the shortener answered. Whichever
 /// there is - the short one when there is one - goes by SMS and e-mail.
 /// </summary>
-public sealed record PaymentLink(string Url, string? ShortUrl);
+/// <param name="Key">The key on the link's query string, which the investor's page opens the application by; kept on the link row (f_Key_GUID).</param>
+public sealed record PaymentLink(string Url, string? ShortUrl, string Key = "");
 
 /// <summary>One application's upload step, as it is saved.</summary>
 public sealed class UploadState
@@ -610,6 +627,45 @@ public sealed record DraftSummary(string AppNo, string Name, string Pan, string 
     public static (int Done, string Next) Progress(params bool[] saved) =>
         (saved.Count(s => s), Steps.Where((_, i) => !saved[i]).FirstOrDefault() ?? "Review Summary");
 }
+
+/// <summary>
+/// What the partner's applications are searched by: the days they were raised on, part
+/// of an application number, or part of a folio number. The database is asked for what
+/// the search reaches and nothing else.
+/// </summary>
+/// <param name="By">One of <see cref="ByDates"/>, <see cref="ByNumber"/> and <see cref="ByFolio"/>.</param>
+/// <param name="From">The first day, for a search by dates.</param>
+/// <param name="To">The last day, for a search by dates.</param>
+/// <param name="Text">What was typed of the number, for a search by application number or folio.</param>
+public sealed record ApplicationSearch(string By, DateTime? From = null, DateTime? To = null, string Text = "")
+{
+    public const string ByDates = "dates";
+    public const string ByNumber = "appno";
+    public const string ByFolio = "folio";
+
+    /// <summary>The fewest characters of an application number or a folio number a search is run on.</summary>
+    public const int FromLength = 4;
+
+    /// <summary>The most applications one search lists: the newest of those it reaches.</summary>
+    public const int Most = 200;
+
+    /// <summary>The applications raised from one day to another, both days included.</summary>
+    public static ApplicationSearch RaisedBetween(DateTime from, DateTime to) => new(ByDates, from.Date, to.Date);
+
+    /// <summary>The applications whose number holds what was typed.</summary>
+    public static ApplicationSearch Number(string typed) => new(ByNumber, Text: typed.Trim());
+
+    /// <summary>The applications under the folios whose number holds what was typed.</summary>
+    public static ApplicationSearch Folio(string typed) => new(ByFolio, Text: typed.Trim());
+}
+
+/// <summary>An application still open, and the day it was raised.</summary>
+public sealed record OpenApplication(string AppNo, DateTime Applied);
+
+/// <summary>What a search of the partner's applications found.</summary>
+/// <param name="Applications">The newest of them, up to <see cref="ApplicationSearch.Most"/>.</param>
+/// <param name="MoreExist">Set when the search reaches more applications than are listed.</param>
+public sealed record ApplicationsFound(IReadOnlyList<ApplicationRecord> Applications, bool MoreExist);
 
 /// <summary>One application as the console lists it.</summary>
 /// <param name="Folio">Null for a new customer until the deposit books.</param>

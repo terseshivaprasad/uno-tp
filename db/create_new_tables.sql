@@ -1,13 +1,12 @@
 /* =============================================================================
    Uno TP - the tables that are new with the app (SQL Server 2016 or later): the
    application header and its working state, the settings, features and lists, the
-   console's windows and notices, the error log, the partners and the PIN codes,
-   with the running numbers for a console entry and a pay-in slip.
+   console's windows and notices and the error log,
+   with the running number for a console entry.
 
    The transaction tables - the FD system's own, whose schemas it gave - are in a
    script of their own:
 
-       sqlcmd -d UnoTP -i db/create_transaction_tables.sql
        sqlcmd -d UnoTP -i db/create_new_tables.sql
        sqlcmd -d UnoTP -i db/insert_seed.sql      (the settings, features and lists)
 
@@ -18,7 +17,7 @@
    Every small list the pages offer (categories, payouts, relations, occupations,
    sources of funds and the rest) is rows of t_Unotp_Ref_List, not a table of its
    own. What has a master of its own in the FD system is read where it is, each by
-   one query in UnoTP.Data/Queries/MasterQueries.cs, and has no table here: folios and
+   one query in the file of the page that reads it (UnoTP.Data/Queries), and has no table here: folios and
    their deposits, brokers, staff, bank branches, the Axis CMS locations and the
    payment gateway's banks.
 
@@ -343,52 +342,3 @@ CREATE INDEX IX_Unotp_Logs_Trace ON dbo.t_Unotp_Logs (f_Trace_Id);
 END
 GO
 
-/* ----- t_Unotp_Partner_Mst ---------------------------------------------------------
-   A partner who may sign in: the user id the portal sends, and how they source.
-   Uno TP itself does not read this table: who is signed in comes from the auth
-   API. The E-Sarathi login, the console and DMS Explorer read it, on this database.
-     f_Agency_Type   the sourcingAgency in t_Unotp_App_Config sources as the house;
-                     any other type sources as a broker under f_Broker_Code
-   ----------------------------------------------------------------------------- */
-IF OBJECT_ID(N'dbo.t_Unotp_Partner_Mst', N'U') IS NULL
-BEGIN
-CREATE TABLE dbo.t_Unotp_Partner_Mst
-(
-    f_User_Id            VARCHAR(20)    NOT NULL,
-    f_Name               NVARCHAR(150)  NOT NULL,
-    f_Code               VARCHAR(20)    NOT NULL,
-    f_Agency_Type        VARCHAR(10)    NOT NULL,
-    f_Broker_Code        VARCHAR(20)    NOT NULL CONSTRAINT DF_Partner_Mst_Broker DEFAULT (''),
-    f_Branch             NVARCHAR(100)  NOT NULL CONSTRAINT DF_Partner_Mst_Branch DEFAULT (''),
-    f_Active             BIT            NOT NULL CONSTRAINT DF_Partner_Mst_Active DEFAULT (1),
-    f_Created_By         VARCHAR(20)    NOT NULL,
-    f_Created_On         DATETIME2(3)   NOT NULL CONSTRAINT DF_Partner_Mst_Created DEFAULT (SYSDATETIME()),
-    f_Updated_By         VARCHAR(20)    NULL,
-    f_Updated_On         DATETIME2(3)   NULL,
-    CONSTRAINT PK_Partner_Mst PRIMARY KEY CLUSTERED (f_User_Id)
-);
-END
-GO
-
-/* ----- s_Slip_No: the running number of a pay-in slip ---------------------------------
-   A slip's number (f_Payinslip_No) is the 'slipNoPrefix' setting and this number.
-   ----------------------------------------------------------------------------- */
-IF OBJECT_ID(N'dbo.s_Slip_No', N'SO') IS NULL
-    CREATE SEQUENCE dbo.s_Slip_No AS BIGINT START WITH 1 INCREMENT BY 1 NO CACHE;
-GO
-
-/* ----- t_Unotp_Pincode_Mst ---------------------------------------------------------- */
-IF OBJECT_ID(N'dbo.t_Unotp_Pincode_Mst', N'U') IS NULL
-BEGIN
-CREATE TABLE dbo.t_Unotp_Pincode_Mst
-(
-    f_Pin_Code           CHAR(6)        NOT NULL,
-    f_District           NVARCHAR(100)  NOT NULL,
-    f_State              NVARCHAR(100)  NOT NULL,
-    f_Active             BIT            NOT NULL CONSTRAINT DF_Pincode_Mst_Active DEFAULT (1),
-    f_Created_By         VARCHAR(20)    NOT NULL,
-    f_Created_On         DATETIME2(3)   NOT NULL CONSTRAINT DF_Pincode_Mst_Created DEFAULT (SYSDATETIME()),
-    CONSTRAINT PK_Pincode_Mst PRIMARY KEY CLUSTERED (f_Pin_Code)
-);
-END
-GO

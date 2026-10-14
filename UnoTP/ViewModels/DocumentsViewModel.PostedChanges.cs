@@ -115,17 +115,10 @@ public partial class DocumentsViewModel
     }
 
     // Proceed says what is missing where it is missing, and the page comes back
-    // to the first of it. The sourcing codes are looked up again first, so the ones
-    // checked against the registers are the ones just posted.
-    public async Task<string?> ProceedAsync(CancellationToken ct = default)
+    // to the first of it.
+    public string? Proceed()
     {
         Keep();
-        await ReadSourcingNamesAsync(ct);
-        return WhatStopsProceed();
-    }
-
-    private string? WhatStopsProceed()
-    {
         var s = State;
         var flash = FlashMessages();
         void Need(bool ok, string key, string message)
@@ -137,7 +130,7 @@ public partial class DocumentsViewModel
 
         var mode = ModeOf(s.Sourcing);
         // A type chosen from the drop-down, when it is not set from the upload.
-        if (!AutoProofType && View(PoaSlot).Used) Need(s.PoaType.Length > 0, "docsPoaType", Messages.UploadDocuments.PoaTypeRequired);
+        if (!AutoProofType && View(PoaSlot).Required) Need(s.PoaType.Length > 0, "docsPoaType", Messages.UploadDocuments.PoaTypeRequired);
         if (!AutoProofType && View(MailSlot).Used) Need(s.MailPoaType.Length > 0, "docsMailType", Messages.UploadDocuments.MailTypeRequired);
         if (!IsRenewal) Need(s.PayMode.Length > 0, "docsPayMode", Messages.UploadDocuments.PayModeRequired);
         Need(s.Sourcing.Length > 0, "docsSourcing", Messages.UploadDocuments.SourcingRequired);
@@ -145,9 +138,6 @@ public partial class DocumentsViewModel
         {
             Need(s.SourceCode.Length > 0, "docsSourceCode", Messages.UploadDocuments.SourceCodeRequired(mode.CodeLabel.ToLowerInvariant()));
             if (SubRequired(mode)) Need(s.SubBroker.Length > 0, "docsSubBroker", Messages.UploadDocuments.SubBrokerRequired);
-            // A code typed against a register must be on it, for the sourcing mode chosen.
-            if (CodeProblem(mode, sub: false) is { } sourceProblem) Need(false, "docsSourceCode", sourceProblem);
-            if (CodeProblem(mode, sub: true) is { } subProblem) Need(false, "docsSubBroker", subProblem);
         }
         Need(s.Category.Length > 0, "docsCategory", Messages.UploadDocuments.CategoryNotSet);
         if (IsEmployee(s.Category))
@@ -217,15 +207,17 @@ public partial class DocumentsViewModel
     }
 
     // What stops Proceed on the PAN-POA name and date of birth; null once they match.
-    // For a holder whose name NSDL did not verify the match is mandatory: nothing
-    // but a match will do, not even the name match being switched off.
+    // Where the two were not compared - the name match or OCR is switched off -
+    // there is nothing to match with, so nothing is asked and Operations compare.
+    // For a holder whose name NSDL did not verify, the match is mandatory wherever
+    // it can be made.
     private string? DetailsNeed(DocHolder h)
     {
         var card = State.Docs.ContainsKey(h.Key("poa")) ? State.Reads.GetValueOrDefault(h.Key("details")) : null;
         if (card is { Kind: "is-done" }) return null;
+        if (card is { Kind: "is-na" }) return null;
         if (NsdlOf(h) == NameNotVerified) return Messages.UploadDocuments.NameMatchMandatory;
         if (card is null) return Messages.UploadDocuments.NameMustBeMatched;
-        if (card.Kind == "is-na") return null;
         return Messages.UploadDocuments.NameAndDobMustMatch;
     }
 
@@ -245,7 +237,7 @@ public partial class DocumentsViewModel
 
         foreach (var h in JointHolders)
         {
-            if (!AutoProofType && View(PoaSlot, h).Used && PoaTypeOf(h).Length == 0) Need(h.Key("poaType"), Messages.UploadDocuments.PoaTypeRequired);
+            if (!AutoProofType && View(PoaSlot, h).Required && PoaTypeOf(h).Length == 0) Need(h.Key("poaType"), Messages.UploadDocuments.PoaTypeRequired);
             if (!AutoProofType && View(MailSlot, h).Used && MailTypeOf(h).Length == 0) Need(h.Key("mailType"), Messages.UploadDocuments.MailTypeRequired);
             foreach (var v in HolderSlots.Select(d => View(d, h)).Where(v => v.Missing))
                 Need(v.Key, Messages.UploadDocuments.DocumentRequired, "slot-" + v.Key);

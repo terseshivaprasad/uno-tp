@@ -200,9 +200,9 @@ public partial class DocumentsViewModel
         // Only a PAN copy filed on this application can be sent: one the folio holds,
         // or one filed before this step, is not here to compare with.
         var pan = State.Docs.GetValueOrDefault(h.Key("pan")) is { Before: false } panDoc
-            ? await documents.CopyAsync(AppNo, panDoc.FileName) : null;
+            ? await documents.CopyAsync(AppNo, h.Who.Folio, panDoc.FileName) : null;
         var proof = State.Docs.GetValueOrDefault(h.Key("poa")) is { Before: false } proofDoc
-            ? await documents.CopyAsync(AppNo, proofDoc.FileName) : null;
+            ? await documents.CopyAsync(AppNo, h.Who.Folio, proofDoc.FileName) : null;
         if (pan is null || proof is null)
         {
             FlashMessages("Not compared", "No PAN copy was filed on this application to compare with.",
@@ -323,13 +323,19 @@ public partial class DocumentsViewModel
     private static ReadCard FolioAddress(DocHolder h)
     {
         if (FolioDocsOf(h)?.Poa == true)
-            return new("On record", h.Who.Address, "On the folio, with its proof on record: no proof is asked for.", "is-done");
+            return new("On record", h.Who.Address, "On the folio, with its proof on record: no proof is asked for. File a newer proof only if the address has changed.", "is-done");
         return new("Proof needed", h.Who.Address, "On the folio, but no proof of it is on record: upload one.", "is-unverified");
     }
 
-    // The address a folio holds, where post goes too.
-    private static ReadCard FolioMailAddress(DocHolder h) =>
-        new("On the folio", h.Who.Address, "On the folio; post goes there.", "is-na");
+    // The address a folio holds, where post goes too. Once a newer proof of address
+    // is filed here, post goes to the address read off it, as the permanent address does.
+    private ReadCard FolioMailAddress(DocHolder h)
+    {
+        if (State.Docs.ContainsKey(h.Key("poa")))
+            return NotRead("Same as permanent", "Post goes to the address on the newer proof.",
+                "The permanent address now comes from the proof filed here, and it is the mailing address too.");
+        return new("On the folio", h.Who.Address, "On the folio; post goes there.", "is-na");
+    }
 
     // What stands for a holder's permanent address: what a proof filed here read, or
     // until one is filed the address the folio holds, as it stands today.

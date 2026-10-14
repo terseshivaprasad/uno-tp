@@ -22,8 +22,8 @@ internal static partial class Sections
         DepositDetails deposit, string? renews, RateOption? line, ReferenceData lists)
     {
         var u = upload ?? new UploadState();
-        await RetireAsync(db, tx, at, "t_FD_BT_Investment_Dtl");
-        await db.ExecuteAsync(ApplicationTableQueries.InsertInvestment, new
+        await RetireAsync(db, tx, at, FdConfigurationQueries.RetireInvestment);
+        await db.ExecuteAsync(FdConfigurationQueries.InsertInvestment, new
         {
             at.AppNo, at.Status, deposit.Amount, Tenure = deposit.TenureMonths, deposit.Payout,
             line?.Scheme, line?.SchemeCode,

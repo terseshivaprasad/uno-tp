@@ -173,10 +173,10 @@ public partial class DocumentsViewModel(
     /// the system already holds the address - a folio with the proof of address or
     /// the address on it, whose address is the mailing address too - nor, for the
     /// investor, once CKYC is fetched, whose record stands as their KYC. Wherever a proof of
-    /// address is asked for, the address is being set now and post may go elsewhere.
+    /// address is needed, the address is being set now and post may go elsewhere.
     /// </summary>
     public bool MailCanDiffer(DocHolder h) =>
-        !(State.Ckyc && !h.Joint) && (h.Who.Folio.Length == 0 || View(PoaSlot, h).Used);
+        !(State.Ckyc && !h.Joint) && (h.Who.Folio.Length == 0 || View(PoaSlot, h).Required);
 
     // Why a holder has no communication address of their own to prove.
     private string MailWhy(DocHolder h) => h.Who.Folio.Length > 0

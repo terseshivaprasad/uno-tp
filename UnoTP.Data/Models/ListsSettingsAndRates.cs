@@ -69,7 +69,30 @@ public sealed record OccupationRow(
 public sealed record CategoryOption(string Code, string Name, bool Employee, bool Women, bool Senior);
 
 /// <summary>A payment mode, and the instrument a copy of is filed for it, if any.</summary>
-public sealed record PaymentModeOption(string Name, string? Document);
+/// <param name="Code">What is saved on the payment row (f_Payment_Mode): the FD system's code for the mode, 1, 2 or 3.</param>
+/// <param name="Name">What the pages show and the upload state holds.</param>
+/// <param name="Document">The instrument a copy is filed for (a cheque); null where none is.</param>
+public sealed record PaymentModeOption(string Code, string Name, string? Document)
+{
+    /// <summary>The mode paid online through the payment gateway, by name.</summary>
+    public const string Online = "Online";
+
+    /// <summary>The code of the mode with a name; the name itself when the list does not have it.</summary>
+    public static string CodeOf(IReadOnlyList<PaymentModeOption> modes, string name)
+    {
+        var mode = modes.FirstOrDefault(m => m.Name == name);
+        if (mode is null) return name;
+        return mode.Code;
+    }
+
+    /// <summary>The name of the mode with a code; the code itself when the list does not have it.</summary>
+    public static string NameOf(IReadOnlyList<PaymentModeOption> modes, string code)
+    {
+        var mode = modes.FirstOrDefault(m => m.Code == code);
+        if (mode is null) return code;
+        return mode.Name;
+    }
+}
 
 /// <summary>
 /// A way an application is sourced. <c>House</c> is the code the mode stands in the
@@ -79,7 +102,7 @@ public sealed record PaymentModeOption(string Name, string? Document);
 /// "free", "employee" or "employeeShut"), <c>Categories</c> the category codes
 /// a deposit under it may be booked as (the 'sourcingModeCategories' list), and
 /// <c>Staff</c> the rule for which employees can be chosen under it: "branch",
-/// "mfis" or "mflEx", each a query in MasterQueries; empty for any employee in service.
+/// "mfis" or "mflEx", each a query in UploadDocumentsQueries; empty for any employee in service.
 /// </summary>
 public sealed record SourcingModeOption(
     string Code, string Name, string CodeLabel, string NameLabel,

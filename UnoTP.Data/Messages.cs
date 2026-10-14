@@ -249,14 +249,6 @@ public static class Messages
         public const string SubBrokerRequired =
             "Enter the sub broker code";
 
-        [Shown("Broker code", "typed, and not on the broker register")]
-        public static string BrokerCodeNotFound(object? code) =>
-            $"{code} is not a broker's code. Check the broker code.";
-
-        [Shown("Sourcing employee code", "typed, and not the code of an employee who can source under the sourcing mode chosen")]
-        public static string SourcingEmployeeNotFound(object? code, object? sourcingMode) =>
-            $"{code} is not an employee who can source under {sourcingMode}. Check the sourcing employee code.";
-
         [Shown("Deposit Category", "none is set because no sourcing mode is chosen")]
         public const string CategoryNotSet =
             "No deposit category is set: choose the sourcing mode";
@@ -424,6 +416,34 @@ public static class Messages
         [Shown("Proof of address", "the address or its PIN code cannot be read")]
         public static string UploadProofWithAddress(object? proof) =>
             $"Upload a copy of the {proof} that shows the address with its PIN code, clear enough to read.";
+
+        [Shown("Proof of address", "the PIN code read off it is not in the PIN code master")]
+        public static string PinNotInMaster(object? pinCode) =>
+            $"PIN code {pinCode} on this proof is not in the PIN code master";
+
+        [Shown("Proof of address", "the PIN code read off it is not in the PIN code master, and what to do")]
+        public const string PinMustBeInMaster =
+            "A proof of address is taken only when its PIN code is in the PIN code master. Check the PIN code on the proof.";
+
+        [Shown("Proof of address", "its source says it holds no such document")]
+        public static string ProofNotConfirmed(object? source) =>
+            $"{source} did not confirm this proof";
+
+        [Shown("Proof of address", "its source could not be asked")]
+        public static string ProofSourceNotAsked(object? why) =>
+            $"This proof could not be confirmed with its source: {why}";
+
+        [Shown("Proof of address", "the proof has no source to confirm it with")]
+        public const string ProofHasNoSource =
+            "This proof has no source to confirm it with";
+
+        [Shown("Proof of address", "its source did not confirm it")]
+        public const string ProofNeedsItsSource =
+            "A proof of address is taken only when its source confirms it. Upload a proof its source confirms, or an Aadhaar.";
+
+        [Shown("Proof of address (a newer proof, where one is on record)", "its source did not confirm it")]
+        public const string NewerProofNeedsItsSource =
+            "A newer proof is taken only when its source confirms it, so the address on record stands. Upload a proof its source confirms, or an Aadhaar.";
 
         [Shown("Proof of address", "the address cannot be read")]
         public const string AddressNotRead =
@@ -1050,10 +1070,6 @@ public static class Messages
         public const string NoSlip =
             "No slip could be generated for this application.";
 
-        [Shown("Send link", "the acceptance link cannot be sent for the application")]
-        public const string AcceptanceLinkNotSent =
-            "The acceptance link could not be sent for this application.";
-
         [Shown("Application Number", "fewer than four characters typed", InBrowser = true)]
         public const string AppNoTooShort =
             "Enter at least the last four characters of the application number.";
@@ -1110,6 +1126,22 @@ public static class Messages
         [Shown("Send link", "no link can be sent for the application")]
         public const string NoLinkSent =
             "No link could be sent for this application.";
+
+        [Shown("Send link, Regenerate (every page that sends a link)", "a message went out for the application within the last two minutes")]
+        public static string LinkJustSent(object? minutes) =>
+            $"A link went to this investor less than {minutes} minutes ago. Wait before sending it again.";
+
+        [Shown("Send link, Regenerate (every page that sends a link)", "the application's messages for the day are used up")]
+        public static string TooManyForApplication(object? most) =>
+            $"No more than {most} messages go out for one application in 24 hours, and this application has had them. Try again tomorrow.";
+
+        [Shown("Send link, Regenerate (every page that sends a link)", "the investor's mobile number or e-mail address has had its messages for the day")]
+        public static string TooManyForContact(object? most) =>
+            $"No more than {most} messages go to one mobile number or e-mail address in 24 hours, and this investor's has had them. Try again tomorrow.";
+
+        [Shown("Send link, Regenerate (every page that sends a link)", "the application holds no usable mobile number and no usable e-mail address")]
+        public const string NoUsableContact =
+            "The application has no 10-digit mobile number and no valid e-mail address for a link to go to.";
     }
 
     /// <summary>A deposit that cannot be renewed, and a renewal request that cannot be cancelled.</summary>

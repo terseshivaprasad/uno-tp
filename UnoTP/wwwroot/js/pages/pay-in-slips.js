@@ -1,29 +1,39 @@
 // The classic Pay In Slip Generation screen: the search over the last fourteen
 // days of applications, and the slip made from a row. One slip carries one
-// application, so there is nothing to batch. The slip itself is not produced in
-// this mock - generating one only moves the row.
+// application, so there is nothing to batch. A slip generated is saved as a PDF
+// as soon as the page comes back from generating it.
+// The search is run by the server: this script checks the fields and sends
+// them, and the page comes back holding what the search reached. The pages
+// work on those rows alone.
 (function () {
   var form = document.getElementById('payinSlipForm');
   if (!form) return;
 
-  var PER_PAGE = 8;
+  // The slip generated just now: the page carries a link to its PDF, and following
+  // it saves the file without leaving the page.
+  var slipJustMade = document.getElementById('payinSlipDownload');
+  if (slipJustMade) slipJustMade.click();
+
+  var PER_PAGE = +document.getElementById('payinSlipRows').dataset.perPage;
   var rows = Array.prototype.slice.call(document.querySelectorAll('#payinSlipRows tr'));
   var appNo = document.getElementById('payinSlipAppNo');
   var from = document.getElementById('payinSlipFrom');
   var to = document.getElementById('payinSlipTo');
   var error = document.getElementById('payinSlipError');
-  var scope = document.getElementById('payinSlipScope');
   var empty = document.getElementById('payinSlipEmpty');
   var count = document.getElementById('payinSlipCount');
   var pages = document.getElementById('payinSlipPages');
   var prev = document.getElementById('payinSlipPrev');
   var next = document.getElementById('payinSlipNext');
-  var modes = Array.prototype.slice.call(form.querySelectorAll('[name="payinSlipSearchBy"]'));
+  var modes = Array.prototype.slice.call(form.querySelectorAll('[name="by"]'));
+  var askedText = document.getElementById('payinSlipAskedText');
+  var askedFrom = document.getElementById('payinSlipAskedFrom');
+  var askedTo = document.getElementById('payinSlipAskedTo');
 
-  // The window the page opens on, read off the dates the server put in the boxes
-  // so the two never drift apart.
-  var WINDOW = { from: readDateBoxes(from), to: readDateBoxes(to) };
-  var filter = { mode: 'dates', from: WINDOW.from, to: WINDOW.to, appNo: '' };
+  // The window a date search can reach, as the server counts it.
+  var WINDOW = { from: form.dataset.earliest, to: form.dataset.today };
+  // What the rows on the page are the answer to: 'dates' or 'appno'.
+  var searchedBy = form.dataset.by;
   var page = 1;
 
   // ---- The date boxes ------------------------------------------------------
@@ -80,18 +90,21 @@
     return false;
   }
 
-  // Checks the search fields and, when they are right, filters the list to what they reach.
-  function runSearch() {
+  // Checks the search fields and, when they are right, puts what is searched for
+  // in the form's hidden boxes. True when the search can be sent.
+  function readySearch() {
     error.hidden = true;
     [from, to, appNo].forEach(function (f) { f.classList.remove('is-invalid'); });
+    askedText.value = '';
+    askedFrom.value = '';
+    askedTo.value = '';
 
     var mode = modes.filter(function (m) { return m.checked; })[0].value;
 
     if (mode === 'appno') {
       var q = appNo.value.trim();
       if (q.length < 4) return showSearchError(message('Lists.AppNoTooShort'), appNo);
-      filter = { mode: 'appno', appNo: q.toLowerCase() };
-      scope.textContent = 'Showing every application matching “' + q + '”, inside the window or cancelled.';
+      askedText.value = q;
     } else {
       var f = readDateBoxes(from), t = readDateBoxes(to);
       if (!f) return showSearchError(message('Lists.FromDateIncomplete'), from);
@@ -101,51 +114,40 @@
       if (f < WINDOW.from) {
         return showSearchError(message('Lists.TooOldForSlip', { earliest: isoToDisplayDate(WINDOW.from) }), from);
       }
-      filter = { mode: 'dates', from: f, to: t };
-      scope.textContent = f === WINDOW.from && t === WINDOW.to
-        ? 'Showing the last ' + daysBetweenInclusive(WINDOW.from, WINDOW.to) + ' days — ' + isoToDisplayDate(f) + ' to ' + isoToDisplayDate(t) + '.'
-        : 'Showing applications raised ' + isoToDisplayDate(f) + ' to ' + isoToDisplayDate(t) + '.';
+      askedFrom.value = f;
+      askedTo.value = t;
     }
-
-    page = 1;
-    renderTablePage();
     return true;
   }
 
-  // Days from one date to another, counting both ends.
-  function daysBetweenInclusive(a, b) {
-    return Math.round((new Date(b) - new Date(a)) / 86400000) + 1;
-  }
-
+  // A search that is not right stays on the page with its error; one that is
+  // right goes to the server, which answers with what it reaches.
   form.addEventListener('submit', function (e) {
-    e.preventDefault();
-    runSearch();
+    if (!readySearch()) e.preventDefault();
   });
 
+  // Clear goes back to the list the page opens on. When that is the list already
+  // on the page, only the fields are put back: nothing is asked again.
   document.getElementById('payinSlipClear').addEventListener('click', function () {
+    if (form.dataset.opening !== 'yes') {
+      if (window.showLoader) window.showLoader('Loading\u2026');
+      window.location.assign(form.getAttribute('action'));
+      return;
+    }
     modes[0].checked = true;
     showFieldsForSearchMode();
     writeDateBoxes(from, WINDOW.from);
     writeDateBoxes(to, WINDOW.to);
     appNo.value = '';
-    filter = { mode: 'dates', from: WINDOW.from, to: WINDOW.to };
-    scope.textContent = 'Showing the last ' + daysBetweenInclusive(WINDOW.from, WINDOW.to) + ' days — ' + isoToDisplayDate(WINDOW.from) + ' to ' + isoToDisplayDate(WINDOW.to) + '.';
     page = 1;
     renderTablePage();
   });
 
   // ---- The list ------------------------------------------------------------
-  function matchesSearch(row) {
-    if (filter.mode === 'appno') return row.dataset.appno.indexOf(filter.appNo) !== -1;
-    // A date search only ever reaches applications still inside the window.
-    return row.dataset.window === 'in'
-      && row.dataset.date >= filter.from
-      && row.dataset.date <= filter.to;
-  }
-
+  // Every row on the page is one the search reached.
   // Shows the rows of the current page, and the pager under them.
   function renderTablePage() {
-    var kept = rows.filter(matchesSearch);
+    var kept = rows;
     var total = Math.max(1, Math.ceil(kept.length / PER_PAGE));
     if (page > total) page = total;
     var start = (page - 1) * PER_PAGE;
@@ -156,7 +158,7 @@
 
     empty.hidden = kept.length > 0;
     if (!kept.length) {
-      empty.textContent = filter.mode === 'appno'
+      empty.textContent = searchedBy === 'appno'
         ? message('Lists.NoApplicationByNumberTryDate')
         : message('Lists.NoApplicationBetweenDates');
     }

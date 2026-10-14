@@ -125,9 +125,14 @@
                             }
                             else
                             {
+                                @* The same link again, or a new one in place of it. *@
                                 <form method="post" asp-page-handler="Send">
                                     <input type="hidden" name="appNo" value="@l.AppNo" /><input type="hidden" name="purpose" value="@l.PurposeKey" />
-                                    <button type="submit" class="link-button" data-loader="Sending the link again&hellip;">Regenerate</button>
+                                    <button type="submit" class="link-button" data-loader="Sending the link again&hellip;">Resend</button>
+                                </form>
+                                <form method="post" asp-page-handler="NewLink">
+                                    <input type="hidden" name="appNo" value="@l.AppNo" /><input type="hidden" name="purpose" value="@l.PurposeKey" />
+                                    <button type="submit" class="link-button" data-loader="Making a new link&hellip;">New link</button>
                                 </form>
                             }
                         </td>

@@ -18,7 +18,7 @@ public enum SaveOutcome
 }
 
 /// <summary>
-/// The partner's applications, kept in SQL Server (db/create_new_tables.sql, and the FD system's own tables in db/create_transaction_tables.sql).
+/// The partner's applications, kept in SQL Server (db/create_new_tables.sql, and the FD system's own tables, which exist already; db/alter_transaction_tables.sql adds the app's columns to them).
 ///
 /// A save is checked against the version the page read, under a lock on the
 /// application's row, and inserts its section afresh at the next version with
@@ -46,7 +46,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
     public async Task<bool> CancelRenewalAsync(string depositNumber)
     {
         await using var connection = await db.OpenAsync(CancellationToken.None);
-        var rows = await connection.ExecuteAsync(ApplicationQueries.CancelRenewal, new { Number = depositNumber, Partner = partner.Id, Digital = ApplicationType.Digital });
+        var rows = await connection.ExecuteAsync(RenewFdQueries.CancelRenewal, new { Number = depositNumber, Partner = partner.Id, Digital = ApplicationType.Digital });
         return rows > 0;
     }
 
@@ -85,7 +85,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
 
         var at = StampAt(appNo, version, RowStatus.Pending, holder.Folio);
         if (upload is not null) await Sections.WriteUploadAsync(connection, tx, at, upload, documentCodes, dmsRoot, onRecord);
-        if (payment is not null) await Sections.WritePaymentAsync(connection, tx, at, upload, payment, branches);
+        if (payment is not null) await Sections.WritePaymentAsync(connection, tx, at, upload, payment, branches, (await reference.ReferenceAsync(ct)).PaymentModes);
         if (deposit is not null) await Sections.WriteDepositAsync(connection, tx, at, upload, deposit, renewal?.DepositNumber, line, lists);
         await tx.CommitAsync(ct);
 
@@ -112,17 +112,19 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
         return header is null ? null : await AssembleAsync(connection, null, header, await CancellationDaysAsync(), await reference.ReferenceAsync(ct));
     }
 
-    private async Task<HeaderRow?> HeaderAsync(IDbConnection connection, IDbTransaction? tx, string appNo, bool locked) =>
-        await connection.QuerySingleOrDefaultAsync<HeaderRow>(
-            ApplicationQueries.Header(locked),
-            new { AppNo = appNo, Partner = partner.Id }, tx);
+    // locked takes the row's lock, for a save that reads the header and then writes it.
+    private async Task<HeaderRow?> HeaderAsync(IDbConnection connection, IDbTransaction? tx, string appNo, bool locked)
+    {
+        var header = locked ? ApplicationQueries.HeaderLocked : ApplicationQueries.Header;
+        return await connection.QuerySingleOrDefaultAsync<HeaderRow>(header, new { AppNo = appNo, Partner = partner.Id }, tx);
+    }
 
     // The application as it stands: each section from its active rows in the FD
     // system's tables, and the app's own rows at the version the header holds.
     private static async Task<Application> AssembleAsync(IDbConnection connection, IDbTransaction? tx, HeaderRow h, int cancellationDays,
         ReferenceData lists)
     {
-        using var read = await connection.QueryMultipleAsync(ApplicationTableQueries.WholeApplication, new { h.AppNo, h.UploadVer, h.DetailsVer, h.PaymentVer, h.DepositVer }, tx);
+        using var read = await connection.QueryMultipleAsync(ApplicationQueries.WholeApplication, new { h.AppNo, h.UploadVer, h.DetailsVer, h.PaymentVer, h.DepositVer }, tx);
 
         var uploadJson = await read.ReadSingleOrDefaultAsync<string>();
         var upload = uploadJson is null ? null : JsonSerializer.Deserialize<UploadState>(uploadJson, Sections.Json);
@@ -174,9 +176,14 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
             var communication = c is null || c.SameAddressAs(permanent) ? null : new TypedAddress(c.Line1, c.Line2, c.Line3, c.City, c.PinCode, c.District, c.State);
 
             // The gender Investor Information took down: it asks only for a holder with
-            // none on record, and it is kept as the prefix to their name.
+            // none on record. It is read from f_Kyc_Gender; a row written before that
+            // column was filled is read off the prefix to the name.
             var gender = "";
-            if (Sections.GenderOnRecord(k.HolderType, investor, upload).Length == 0) gender = NamePrefixes.GenderOf(k.NamePrefix);
+            if (Sections.GenderOnRecord(k.HolderType, investor, upload).Length == 0)
+            {
+                gender = Genders.Of(k.Gender);
+                if (gender.Length == 0) gender = NamePrefixes.GenderOf(k.NamePrefix);
+            }
 
             // The FATCA answers are not kept: a "yes" stops the application at Investor
             // Information, so one that has gone on answered no to both.
@@ -221,7 +228,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
         var masters = (await reference.ReferenceAsync(ct)).Masters ?? MasterLists.None;
         var asSaved = await FindAsync(appNo, ct);
         var addresses = await AddressesOnRecordAsync(asSaved?.Holder, asSaved?.Upload, ct);
-        return Version(await SaveAsync(appNo, version, (c, tx, h, at, u) => Sections.WriteDetailsAsync(c, tx, at, HolderOf(h), u, details, minorUnder, masters, addresses), "f_Details_Ver", ct));
+        return Version(await SaveAsync(appNo, version, (c, tx, h, at, u) => Sections.WriteDetailsAsync(c, tx, at, HolderOf(h), u, details, minorUnder, masters, addresses), ApplicationQueries.InvestorInformationSaved, ct));
     }
 
     public async Task<int?> SavePaymentAsync(string appNo, int version, PaymentDetails payment, CancellationToken ct = default) =>
@@ -231,7 +238,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
     {
         var lists = await reference.ReferenceAsync(ct);
         var line = await FindAsync(appNo, ct) is { } seen ? await RateLineAsync(seen, deposit, ct) : null;
-        var (outcome, next) = await SaveAsync(appNo, version, (c, tx, h, at, u) => Sections.WriteDepositAsync(c, tx, at, u, deposit, h.RenewDepNo, line, lists), "f_Deposit_Ver", ct);
+        var (outcome, next) = await SaveAsync(appNo, version, (c, tx, h, at, u) => Sections.WriteDepositAsync(c, tx, at, u, deposit, h.RenewDepNo, line, lists), ApplicationQueries.FdConfigurationSaved, ct);
         if (outcome != SaveOutcome.Saved || next is null) return null;
 
         // The source of funds goes on the FD system's log as well, read back as saved
@@ -246,7 +253,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
     {
         var documentCodes = await reference.DocumentCodesAsync(ct);
         var onRecord = await CopiesOnRecordAsync(await InvestorOfAsync(appNo, ct), upload, ct);
-        return await SaveAsync(appNo, version, (c, tx, _, at, _) => Sections.WriteUploadAsync(c, tx, at, upload, documentCodes, dmsRoot, onRecord), "f_Upload_Ver", ct);
+        return await SaveAsync(appNo, version, (c, tx, _, at, _) => Sections.WriteUploadAsync(c, tx, at, upload, documentCodes, dmsRoot, onRecord), ApplicationQueries.UploadDocumentsSaved, ct);
     }
 
     // Who the application is for, as its row has them; null when it is not the partner's.
@@ -297,7 +304,8 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
     public async Task<(SaveOutcome, int?)> SavePaymentOutcomeAsync(string appNo, int version, PaymentDetails payment, CancellationToken ct)
     {
         var branches = await BranchesAsync(payment, ct);
-        return await SaveAsync(appNo, version, (c, tx, _, at, u) => Sections.WritePaymentAsync(c, tx, at, u, payment, branches), "f_Payment_Ver", ct);
+        var paymentModes = (await reference.ReferenceAsync(ct)).PaymentModes;
+        return await SaveAsync(appNo, version, (c, tx, _, at, u) => Sections.WritePaymentAsync(c, tx, at, u, payment, branches, paymentModes), ApplicationQueries.BankDetailsSaved, ct);
     }
 
     // Whether the signed-in user is a branch user: one of the sourcing agency's (the
@@ -333,7 +341,8 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
 
     // One section saved against the version the page read: the application's row
     // is locked, its version checked, moved on, and the section written at it.
-    private async Task<(SaveOutcome, int?)> SaveAsync(string appNo, int version, Write write, string sectionColumn, CancellationToken ct)
+    // stepSaved is the step's own query that moves the version on (ApplicationQueries).
+    private async Task<(SaveOutcome, int?)> SaveAsync(string appNo, int version, Write write, string stepSaved, CancellationToken ct)
     {
         await using var connection = await db.OpenAsync(ct);
         await using var tx = await connection.BeginTransactionAsync(ct);
@@ -344,9 +353,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
         var next = header.Version + 1;
         var upload = await UploadAsync(connection, tx, header);
         await write(connection, tx, header, StampAt(appNo, next, RowStatus.Pending, header.Folio), upload);
-        await connection.ExecuteAsync(
-            ApplicationQueries.NextVersion(sectionColumn),
-            new { Next = next, Partner = partner.Id, AppNo = appNo }, tx);
+        await connection.ExecuteAsync(stepSaved, new { Next = next, Partner = partner.Id, AppNo = appNo }, tx);
         await tx.CommitAsync(ct);
         return (SaveOutcome.Saved, next);
     }
@@ -373,7 +380,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
     public async Task<bool> SavePageAsync(string appNo, string page, string state, CancellationToken ct = default)
     {
         await using var connection = await db.OpenAsync(ct);
-        return await connection.ExecuteAsync(ApplicationQueries.SavePage, new { AppNo = appNo, Partner = partner.Id, Page = page, State = state }) > 0;
+        return await connection.ExecuteAsync(InvestorInformationQueries.SavePage, new { AppNo = appNo, Partner = partner.Id, Page = page, State = state }) > 0;
     }
 
     // ----- Submitting ------------------------------------------------------------
@@ -420,11 +427,11 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
         var at = StampAt(appNo, next, submittedAs, header.Folio);
         if (app.Upload is { } upload) await Sections.WriteUploadAsync(connection, tx, at, upload, documentCodes, dmsRoot, onRecord);
         if (app.Details is { } details) await Sections.WriteDetailsAsync(connection, tx, at, app.Holder, app.Upload, details, minorUnder, lists.Masters ?? MasterLists.None, addresses);
-        if (app.Payment is { } payment) await Sections.WritePaymentAsync(connection, tx, at, app.Upload, payment, branches);
+        if (app.Payment is { } payment) await Sections.WritePaymentAsync(connection, tx, at, app.Upload, payment, branches, lists.PaymentModes);
         if (app.Deposit is { } deposit) await Sections.WriteDepositAsync(connection, tx, at, app.Upload, deposit, header.RenewDepNo, line, lists);
 
         // Submitted on the database's clock, as every row on the application is dated.
-        var submitted = await connection.QuerySingleAsync<HeaderRow>(ApplicationQueries.Submit, new
+        var submitted = await connection.QuerySingleAsync<HeaderRow>(ReviewSummaryQueries.Submit, new
         {
             Next = next, quote?.InterestEach, quote?.MaturityAmount,
             MaturesOn = quote?.MaturesOn.ToDateTime(TimeOnly.MinValue), RateAsOn = quote?.RateAsOn.ToDateTime(TimeOnly.MinValue),
@@ -456,53 +463,69 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
     /// is open for linkValidityHours["payment"] from now. Null when no link may go
     /// any more: the application is paid, cancelled, or past cancellationDays.
     /// </summary>
-    public async Task<Submission?> RecordPaymentLinkAsync(string appNo, PaymentLink? link, CancellationToken ct = default)
+    public async Task<LinkSending> RecordPaymentLinkAsync(string appNo, PaymentLink? link, LinkPage from, CancellationToken ct = default)
     {
+        var q = LinkQuerySet.For(from);
+        if (q.RecordLink is null) throw new InvalidOperationException("This page does not record a payment link.");
         var app = await FindAsync(appNo, ct);
-        if (app?.Submitted is null) return null;
-        var investor = app.Details?.Holders.FirstOrDefault(h => h.Holder == HolderType.Investor);
+        if (app?.Submitted is null) return new LinkSending(null);
+        var to = ContactOf(app);
+        if (!to.AnyUsable) return new LinkSending(null, Messages.ShortUrl.NoUsableContact);
         var days = await CancellationDaysAsync();
         var hours = (await reference.ConfigAsync(ct)).LinkValidityHours.GetValueOrDefault("payment");
 
         HeaderRow? header;
         await using (var connection = await db.OpenAsync(ct))
         {
-            header = await connection.QuerySingleOrDefaultAsync<HeaderRow>(ApplicationQueries.RecordLink, new
+            header = await connection.QuerySingleOrDefaultAsync<HeaderRow>(q.RecordLink, new
             {
-                LinkSentTo = Masks.Mobile(investor?.Mobile ?? ""), LinkEmailedTo = Masks.Email(investor?.Email ?? ""),
+                LinkSentTo = Masks.Mobile(to.Mobile), LinkEmailedTo = Masks.Email(to.Email),
                 Hours = hours, ShortUrl = link?.ShortUrl ?? "", Partner = partner.Id, AppNo = appNo, Days = days,
             });
         }
-        if (header is null) return null;
+        if (header is null) return new LinkSending(null);
         var sent = SubmissionOf(header, days)!;
-        // Written once the application's own save is committed.
+        // Written once the application's own save is committed: the link row and the
+        // messages that carry it, under the limits.
         await using (var links = await db.OpenAsync(ct))
         {
-            await LinkTables.SendAsync(links, app.Renewal is not null, LinkRequestRow.For(app, link, hours), partner);
+            var wrote = await LinkTables.SendAsync(links, q, app.Renewal is not null, LinkRequestRow.For(app, link, hours), to, partner);
+            if (!wrote.Sent) return new LinkSending(null, wrote.Refused ?? Messages.ShortUrl.NoLinkSent);
         }
 
-        // No SMS or e-mail gateway is wired in yet: the link is logged for now.
         log.LogInformation("Payment link for {AppNo} to {Mobile} and {Email}: {Link}", appNo, sent.LinkSentTo,
             sent.LinkEmailedTo, link?.ShortUrl ?? link?.Url ?? "(the backend's own)");
-        return sent;
+        return new LinkSending(sent);
     }
 
     // Regenerate, allowed until cancellationDays after the application was created,
     // while it is unpaid and not cancelled. No new link is made: the same short link
     // is sent again, open for LinkRequestRow.RegeneratedForHours from now.
-    public async Task<Submission?> ResendLinkAsync(string appNo, CancellationToken ct = default)
+    public async Task<LinkSending> ResendLinkAsync(string appNo, CancellationToken ct = default)
     {
+        var app = await FindAsync(appNo, ct);
+        if (app?.Submitted is null) return new LinkSending(null);
+        var to = ContactOf(app);
         var days = await CancellationDaysAsync();
         await using var connection = await db.OpenAsync(ct);
-        var header = await connection.QuerySingleOrDefaultAsync<HeaderRow>(ApplicationQueries.ResendLink, new { AppNo = appNo, Partner = partner.Id, Hours = LinkRequestRow.RegeneratedForHours, Days = days });
-        if (header is null) return null;
+        var header = await connection.QuerySingleOrDefaultAsync<HeaderRow>(ApplicationSubmittedQueries.ResendLink, new { AppNo = appNo, Partner = partner.Id, Hours = LinkRequestRow.RegeneratedForHours, Days = days });
+        if (header is null) return new LinkSending(null);
         var submission = SubmissionOf(header, days)!;
 
         var renewal = header.RenewDepNo is not null;
-        if (!await LinkTables.SendAgainAsync(connection, renewal, appNo, partner))
+        var wrote = await LinkTables.SendAgainAsync(connection, LinkQuerySet.For(LinkPage.ApplicationSubmitted), renewal, appNo, to, partner);
+        if (wrote.Refused is not null) return new LinkSending(null, wrote.Refused);
+        if (!wrote.Sent)
             log.LogWarning("Payment link for {AppNo} sent again, but {Table} holds no live link for it", appNo, LinkTables.For(renewal));
         log.LogInformation("Payment link for {AppNo} sent again to {Mobile} and {Email}", appNo, submission.LinkSentTo, submission.LinkEmailedTo);
-        return submission;
+        return new LinkSending(submission);
+    }
+
+    // Where the application's links go: the first holder's mobile number and e-mail address.
+    private static LinkContact ContactOf(Application app)
+    {
+        var investor = app.Details?.Holders.FirstOrDefault(h => h.Holder == HolderType.Investor);
+        return new LinkContact(investor?.Mobile ?? "", investor?.Email ?? "");
     }
 
     // ----- Lists -----------------------------------------------------------------
@@ -511,7 +534,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
     public async Task<bool> CancelDraftAsync(string appNo, CancellationToken ct = default)
     {
         await using var connection = await db.OpenAsync(ct);
-        var rows = await connection.ExecuteAsync(ApplicationQueries.CancelDraft, new { AppNo = appNo, Partner = partner.Id });
+        var rows = await connection.ExecuteAsync(InvestorIdentificationQueries.CancelDraft, new { AppNo = appNo, Partner = partner.Id });
         if (rows > 0) log.LogInformation("Draft {AppNo} cancelled by {Partner}", appNo, partner.Id);
         return rows > 0;
     }
@@ -521,7 +544,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
     {
         var days = (await reference.ConfigAsync(ct)).DraftDays;
         await using var connection = await db.OpenAsync(ct);
-        var rows = await connection.QueryAsync<DraftRow>(ApplicationQueries.Drafts, new { Partner = partner.Id, Days = days });
+        var rows = await connection.QueryAsync<DraftRow>(InvestorIdentificationQueries.Drafts, new { Partner = partner.Id, Days = days });
         var now = DateTime.Now;
         return rows.Select(r =>
         {
@@ -531,25 +554,48 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
         }).ToList();
     }
 
-    public async Task<IReadOnlyList<ApplicationRecord>> ListAsync(CancellationToken ct = default)
+    // Only what the search reaches is read: the days, the number or the folio go to SQL
+    // Server as parameters of the one query, and those the search does not use as NULL.
+    // One row more than is listed is asked for, to know whether the search reaches
+    // more than the list shows.
+    public async Task<ApplicationsFound> SearchAsync(ApplicationSearch search, CancellationToken ct = default)
     {
         var payouts = (await reference.ReferenceAsync(ct)).Payouts;
-        await using var connection = await db.OpenAsync(ct);
-        var rows = (await connection.QueryAsync<ListRow>(ApplicationQueries.Applications, new { Partner = partner.Id })).ToList();
+        var asked = new DynamicParameters();
+        asked.Add("Partner", partner.Id);
+        asked.Add("Most", ApplicationSearch.Most + 1);
+        asked.AddSearch(search);
+        asked.Add("Folio", SearchParameters.Holding(search, ApplicationSearch.ByFolio), DbType.AnsiString);
 
-        return rows.Select(r =>
-        {
-            var payout = payouts.FirstOrDefault(p => p.Code == r.Payout);
-            var digital = r.AppType != "PHYSICAL";
-            return new ApplicationRecord(
-                r.AppNo, r.Folio.Length > 0 ? r.Folio : null, Masks.Name(r.Name), Masks.Pan(r.Pan),
-                r.Amount ?? 0, payout?.PerYear == 0, r.TenureMonths ?? 0, payout?.Name ?? r.Payout ?? "",
-                1 + r.JointHolders, r.SubmittedOn ?? r.CreatedOn, digital, r.PayMode ?? "",
-                StateOf(r), r.FdrNo, StepOf(r), "",
-                ApplicationStages.Of(digital, r.PayMode ?? "", r.CreatedOn, r.SubmittedOn, r.LinkSentOn, r.AcceptedOn,
-                    r.SlipOn, r.PennyDropOn, r.PennyDropStatus, r.PaidOn, r.KycVerifiedOn, r.KycStatus,
-                    r.BookedOn, r.FdrNo, r.CancelledOn));
-        }).ToList();
+        await using var connection = await db.OpenAsync(ct);
+        var rows = (await connection.QueryAsync<ListRow>(ViewApplicationQueries.Applications, asked)).ToList();
+
+        var listed = rows.Take(ApplicationSearch.Most).Select(r => RecordOf(r, payouts)).ToList();
+        return new ApplicationsFound(listed, rows.Count > ApplicationSearch.Most);
+    }
+
+    // Only the days asked for are read, and of each application only its number and its day.
+    public async Task<IReadOnlyList<OpenApplication>> OpenAndRaisedBetweenAsync(DateTime from, DateTime to, CancellationToken ct = default)
+    {
+        await using var connection = await db.OpenAsync(ct);
+        var rows = await connection.QueryAsync<OpenApplication>(DashboardQueries.CloseToCancel,
+            new { Partner = partner.Id, From = from.Date, Until = to.Date.AddDays(1) });
+        return rows.ToList();
+    }
+
+    // A row of the list as View Application reads it.
+    private static ApplicationRecord RecordOf(ListRow r, IReadOnlyList<PayoutOption> payouts)
+    {
+        var payout = payouts.FirstOrDefault(p => p.Code == r.Payout);
+        var digital = r.AppType != "PHYSICAL";
+        return new ApplicationRecord(
+            r.AppNo, r.Folio.Length > 0 ? r.Folio : null, Masks.Name(r.Name), Masks.Pan(r.Pan),
+            r.Amount ?? 0, payout?.PerYear == 0, r.TenureMonths ?? 0, payout?.Name ?? r.Payout ?? "",
+            1 + r.JointHolders, r.SubmittedOn ?? r.CreatedOn, digital, r.PayMode ?? "",
+            StateOf(r), r.FdrNo, StepOf(r), "",
+            ApplicationStages.Of(digital, r.PayMode ?? "", r.CreatedOn, r.SubmittedOn, r.LinkSentOn, r.AcceptedOn,
+                r.SlipOn, r.PennyDropOn, r.PennyDropStatus, r.PaidOn, r.KycVerifiedOn, r.KycStatus,
+                r.BookedOn, r.FdrNo, r.CancelledOn));
     }
 
     // Where an application stands, as far as what has happened to it says.

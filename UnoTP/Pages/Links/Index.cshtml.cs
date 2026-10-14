@@ -24,22 +24,33 @@ public class LinksModel(ILinkApi links, Lookups lookups, IApplicationApi applica
         return Page();
     }
 
-    /// <summary>Sends a link. An application that has one already is sent the same short link again, open for 24 hours.</summary>
-    public async Task<IActionResult> OnPostSendAsync(string appNo, string purpose)
+    /// <summary>
+    /// Send link, or Resend: an application with no link yet gets its first; one with a link
+    /// is sent the same short link again, open for 24 hours.
+    /// </summary>
+    public Task<IActionResult> OnPostSendAsync(string appNo, string purpose) => SendAsync(appNo, purpose, newLink: false);
+
+    /// <summary>New link: the application's old link goes out of use, and a fresh one is made and sent.</summary>
+    public Task<IActionResult> OnPostNewLinkAsync(string appNo, string purpose) => SendAsync(appNo, purpose, newLink: true);
+
+    private async Task<IActionResult> SendAsync(string appNo, string purpose, bool newLink)
     {
-        // An application submitted with Try later has no payment link yet: its first
-        // is made here, shortened and put on record, before it is listed as sent.
-        if (purpose == "payment" && (await applications.FindAsync(appNo))?.Submitted is { LinkSent: false })
+        // A payment link is a page the investor pays on: it is made here, shortened and
+        // put on record. The first one, for an application submitted with Try later;
+        // or a new one, in place of the one it had.
+        var noLinkYet = (await applications.FindAsync(appNo))?.Submitted is { LinkSent: false };
+        if (purpose == "payment" && (noLinkYet || newLink))
         {
-            var (sent, _) = await paymentLinks.SendAsync(appNo, HttpContext.RequestAborted);
-            TempData["toast"] = sent is null
-                ? Messages.ShortUrl.NoLinkSent
-                : $"Link sent to {SentTo.Both(sent.LinkSentTo, sent.LinkEmailedTo)}.";
+            var (sending, _) = await paymentLinks.SendAsync(appNo, LinkPage.ShortUrl, HttpContext.RequestAborted);
+            TempData["toast"] = sending.Sent is { } first
+                ? $"Link sent to {SentTo.Both(first.LinkSentTo, first.LinkEmailedTo)}."
+                : sending.Refused ?? Messages.ShortUrl.NoLinkSent;
             return RedirectToPage();
         }
-        TempData["toast"] = await links.SendAsync(appNo, purpose) is { } link
+        var sent = await links.SendAsync(appNo, purpose, LinkPage.ShortUrl, newLink);
+        TempData["toast"] = sent.Link is { } link
             ? $"Link sent to {SentTo.Both(link.Mobile, link.Email)}."
-            : Messages.ShortUrl.NoLinkSent;
+            : sent.Refused ?? Messages.ShortUrl.NoLinkSent;
         return RedirectToPage();
     }
 }

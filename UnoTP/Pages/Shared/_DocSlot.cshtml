@@ -3,7 +3,7 @@
    Investor Information.
    Empty: the box is a label over the file picker, so a click or a dropped file picks a
    copy, and the form posts through the card's Upload button. Filed: the box opens the
-   copy, and Replace picks another. A card standing outside its form names the form
+   copy, and Replace picks another - or a file dropped on the card replaces it (file-drop.js). A card standing outside its form names the form
    (Model.Form), so its picker still posts with it. *@
 @{
     var slot = Model.View;
@@ -219,7 +219,7 @@
                         <span class="doc-drop__icon" aria-hidden="true">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16.5V4.5"></path><path d="M7.5 9L12 4.5 16.5 9"></path><path d="M4.5 15v3.5a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5V15"></path></svg>
                         </span>
-                        <span class="doc-drop__title">Click to upload @slot.Title</span>
+                        <span class="doc-drop__title">Click or drop to upload @slot.Title</span>
                         <span class="doc-drop__hint">Supported format: @slot.Def.Accepts.Label (max. @(slot.Def.Accepts.MaxMb) MB)</span>
                         @if (slot.With is not null)
                         {

@@ -18,10 +18,12 @@ public interface IDocumentApi
     /// Keeps a refused copy aside for analysis, off the application, and says the
     /// reference it is kept under and when it is deleted.
     /// </summary>
+    /// <summary>A refused copy kept apart for a week, under its application in the refused store (Dms:Refused). Never called for an Aadhaar.</summary>
     Task<RefusedCopy> KeepRefusedAsync(string appNo, string holder, string slot, UploadFile file, CancellationToken ct = default);
 
     /// <summary>The copy kept on the application under this name, or null.</summary>
-    Task<UploadFile?> CopyAsync(string appNo, string fileName, CancellationToken ct = default);
+    /// <param name="folio">The folio of the holder the copy is filed for; empty for a holder with none.</param>
+    Task<UploadFile?> CopyAsync(string appNo, string folio, string fileName, CancellationToken ct = default);
 }
 
 /// <summary>What a filed copy's name is made from, beside its application number.</summary>

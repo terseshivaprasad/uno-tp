@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Net;
+using System.Net.Http.Headers;
 using System.Text.Json;
 using Microsoft.Extensions.Options;
 using UnoTP.Models;
@@ -41,6 +42,9 @@ public sealed class PanApiClient(HttpClient http, IPartner partner, IPartnerApi 
 
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
+    // The request goes with its fields named exactly as they are written here.
+    private static readonly JsonSerializerOptions AsNamed = new();
+
     public async Task<PanVerification> VerifyAsync(PanToVerify pan, CancellationToken ct = default)
     {
         var me = await partners.MeAsync(ct);
@@ -77,12 +81,12 @@ public sealed class PanApiClient(HttpClient http, IPartner partner, IPartnerApi 
         return new PanVerification(panOk, dobOk, nameOk);
     }
 
-    // The API takes a date of birth as dd/MM/yyyy; the app holds it as dd-MM-yyyy.
+    // The API takes a date of birth as yyyy-MM-dd; the app holds it as dd-MM-yyyy.
     // One that is not a date goes as it is, for the API to refuse.
     private static string ApiDate(string dob)
     {
         if (DateTime.TryParseExact(dob, "dd-MM-yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
-            return date.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture);
+            return date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
         return dob;
     }
 
@@ -97,7 +101,9 @@ public sealed class PanApiClient(HttpClient http, IPartner partner, IPartnerApi 
     {
         try
         {
-            using var body = JsonContent.Create(request, options: Json);
+            // Sent whole, with its length, and with the API's own field names.
+            using var body = new ByteArrayContent(JsonSerializer.SerializeToUtf8Bytes(request, AsNamed));
+            body.Headers.ContentType = new MediaTypeHeaderValue("application/json") { CharSet = "utf-8" };
             using var response = await http.PostAsync(path, body, ct);
 
             if (response.StatusCode == HttpStatusCode.ServiceUnavailable)

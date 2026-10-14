@@ -63,7 +63,7 @@ on the screen waits where it need not, and where it must wait it says so:
 | `UnoTP.Data/` | The database logic, in a project of its own: the `Sql*` classes that answer the pages from SQL Server through Dapper. A change to a query is deployed by replacing `UnoTP.Data.dll` alone |
 | `UnoTP.Data/Models/` | The interfaces the pages read and the records they pass. Both projects use them |
 | `UnoTP.Tests/` | The tests of the code alone: the API clients, the limit on documents, the deposit maths |
-| `db/` | The three SQL Server scripts: `create_transaction_tables.sql` (the FD system's own tables, from the schemas it gave), `create_new_tables.sql` (the tables that are new with the app) and `insert_seed.sql` (the settings, features and lists) |
+| `db/` | The three SQL Server scripts: `alter_transaction_tables.sql` (the columns the app adds to the FD system's own tables), `create_new_tables.sql` (the tables that are new with the app) and `insert_seed.sql` (the settings, features and lists) |
 | `docs/backend-api.md` | What the pages ask of the data layer, interface by interface |
 | `docs/VALIDATIONS.md` | Every validation and error message, page by page: written from `UnoTP.Data/Messages.cs`, where the words are changed |
 | `docs/BRAND_GUIDELINES.md` | The UI guidelines from the design: spacing, type, buttons, colours, and the checklist for a page |
@@ -81,7 +81,7 @@ adds only what its own body needs, in its `Styles` and `Scripts` sections.
 | | Shared - loaded by the layout | A page's own |
 |---|---|---|
 | CSS | Bootstrap 5.3 (`lib/bootstrap`) and its brand theme `css/shared/bootstrap-theme.css`, then `css/shared/`: `fonts.css`, `layout-and-controls.css` (tokens, header, controls, cards), `journey-steps.css` (what the purchase journey's steps share: rail, form controls, document and read cards), `register-pages.css` (what the list pages share), `topbar.css` | `css/pages/{page}.css` |
-| JS | Bootstrap's bundle (`lib/bootstrap/js`, vanilla - no jQuery), then `js/shared/`: `loader.js`, `field-checks.js`, `notices-bell.js`, `topbar.js`, `date-input.js`, `partial-forms.js`, `image-shrink.js`, `sticky-app-strip.js`, `console.js` | `js/pages/{page}.js` |
+| JS | Bootstrap's bundle (`lib/bootstrap/js`, vanilla - no jQuery), then `js/shared/`: `loader.js`, `field-checks.js`, `notices-bell.js`, `topbar.js`, `date-input.js`, `partial-forms.js`, `image-shrink.js`, `file-drop.js`, `sticky-app-strip.js`, `console.js` | `js/pages/{page}.js` |
 
 | Page | CSS | JS |
 |---|---|---|
@@ -141,13 +141,12 @@ address of its own (`BaseUrl`). Each is a service of its own, with its own
 settings section and its own client; none stands in for another. Documents are kept under `Dms:Root` until DMS is wired in, and no SMS
 or e-mail gateway is: sends are logged.
 
-The database is set up by three scripts. `create_transaction_tables.sql` has the
-FD system's own tables, column for column from the schemas it gave: on the
-database that already has them it does nothing. `create_new_tables.sql` has the
-tables that are new with the app. `alter_transaction_tables.sql` adds to the FD
-system's tables the columns the app needs that their schemas did not have, each
-only when it is not there yet. The two create scripts create a table, with its indexes, only when it is not there yet, and
-never touch a table that already exists. `insert_seed.sql` puts in the settings, the console's features and
+The database is set up by three scripts. The FD system's own tables exist already,
+in their own databases, and no script here creates them. `alter_transaction_tables.sql`
+adds to them the columns the app needs that their schemas did not have, each only
+when it is not there yet. `create_new_tables.sql` has the tables that are new with
+the app; it creates a table, with its indexes, only when it is not there yet, and
+never touches a table that already exists. `insert_seed.sql` puts in the settings, the console's features and
 every list. It is three INSERTs and nothing else, one for each of the three tables,
 and is for empty tables: a row already there fails on its key.
 
@@ -159,7 +158,6 @@ brokers, staff, bank branches, PIN codes, the Axis CMS locations, the payment
 gateway's banks and the rate card.
 
 ```sh
-sqlcmd -d UnoTP -i db/create_transaction_tables.sql   # the FD system's own tables: does nothing where they exist
 sqlcmd -d UnoTP -i db/alter_transaction_tables.sql    # the columns the app adds to them: IDfy's group id and task ids, and what the checks on a PAN and a proof said
 sqlcmd -d UnoTP -i db/create_new_tables.sql           # the tables that are new with the app
 sqlcmd -d UnoTP -i db/insert_seed.sql     # the settings, features and lists: review with the business
@@ -199,9 +197,9 @@ in the code. The lists, and what each uses beyond code and name:
 |---|---|---|---|
 | `applicationTypes` | How an application is signed | | |
 | `categories` | The deposit categories. Code and name are the rate card's `CATEGORY` | | `employee`, `women`, `senior`: true or false, who the category is for. What a category earns over the public rate is not kept here: the page works it out from the two rate cards, row for row |
-| `sourcingModes` | How an application is sourced | | `codeLabel`, `nameLabel`: what the first code field and its name are called. `house`: the code the mode puts in the first field itself; empty where it is typed. `search`: the field searched as it is typed, `source` or `sub`; empty for neither. `register`: what it is searched on, `brokers` or `employees`; a code typed in that field must be on it (an employee's among those the `staff` rule takes), or Proceed stops and says so. `sub`: what the second field does: `shut`, `house`, `free`, `employee` or `employeeShut`. `staff`: which employees the mode takes: `branch`, `mfis` or `mflEx`, each a query in `UnoTP.Data/Queries/MasterQueries.cs`; left out, any employee in service |
+| `sourcingModes` | How an application is sourced | | `codeLabel`, `nameLabel`: what the first code field and its name are called. `house`: the code the mode puts in the first field itself; empty where it is typed. `search`: the field searched as it is typed, `source` or `sub`; empty for neither. `register`: what it is searched on, `brokers` or `employees`; a code typed in that field must be on it (an employee's among those the `staff` rule takes), or Proceed stops and says so. `sub`: what the second field does: `shut`, `house`, `free`, `employee` or `employeeShut`. `staff`: which employees the mode takes: `branch`, `mfis` or `mflEx`, each a query in `UnoTP.Data/Queries/UploadDocumentsQueries.cs`; left out, any employee in service |
 | `sourcingModeCategories` | The categories a deposit under a sourcing mode may be booked as. The code is a category's | The sourcing mode's code | |
-| `paymentModes` | How a deposit is paid | | `document`: the instrument a copy is filed for (`cheque`); null where none is |
+| `paymentModes` | How a deposit is paid; the code (1, 2, 3) is what `t_FD_BT_Payment_Dtl.f_Payment_Mode` holds | | `document`: the instrument a copy is filed for (`cheque`); null where none is |
 | `proofsOfAddress` | The proofs of address taken | | `issuer`: who is asked to confirm it. `hasPhoto`: true where it carries a photograph, so it can prove the permanent address |
 | `employeeHolders` | Which holder is the employee. The first is the primary holder | | |
 | `employeeRelations` | What the employee is to the primary holder. The first is the employee themselves | | |
@@ -256,7 +254,7 @@ underscore (`ConnectionStrings__UnoTP`).
 | `Backend:BaseUrl` | The API gateway the backend APIs are behind. `appsettings.json` carries it as `https://<gateway-host>/`, the host left as a placeholder; the real host is set in the environment (`Backend__BaseUrl`) and never in a committed file. Each API's own settings hold its `BasePath` under the gateway, and the path of each call under that (no leading slash). |
 | `AuthApi:BaseUrl`, `PanApi:BaseUrl`, `UidMasking:BaseUrl`, `Ckyc:BaseUrl`, `Idfy:BaseUrl`, `NameScreening:BaseUrl`, `NameMatch:BaseUrl`, `Shortener:BaseUrl` | A service's own address, for one that is not behind the gateway: it is then called at `{BaseUrl}/{BasePath}/` and the gateway is not used for it. Blank (as committed), the service is called at `Backend:BaseUrl`. Set in the environment (`Ckyc__BaseUrl` and the like), never in a committed file. With every service given its own address, `Backend:BaseUrl` need not be set. |
 | `Backend:ClientId` | The name the app calls itself by on every API's `X-Client-Id` header (`unotp`). |
-| (in code) | The SQL that reads each table with a master of its own (folios, brokers, staff, bank branches, PIN codes, the Axis CMS locations, the payment gateway's banks, the two rate cards: a branch user's `t_FD_BOTC_SCHEME`, with the employee and special schemes, and a partner's `FD_SCHEME`) is in the code, not in settings: `UnoTP.Data/Queries/MasterQueries.cs` has one query per table; the folio check and what the FD system holds for a holder are in `UnoTP.Data/Queries/InvestorIdentificationQueries.cs`. A table in another database on the same server is written there by its full name, `OtherDb.dbo.Table`. |
+| (in code) | The SQL that reads each table with a master of its own (folios, brokers, staff, bank branches, PIN codes, the Axis CMS locations, the payment gateway's banks, the two rate cards: a branch user's `t_FD_BOTC_SCHEME`, with the employee and special schemes, and a partner's `FD_SCHEME`) is in the code, not in settings: each table has one query, in the file of the page that reads it under `UnoTP.Data/Queries/` (`docs/CODE_GUIDE.md`, "Where the SQL is"): the folio check in `InvestorIdentificationQueries.cs`, brokers and staff in `UploadDocumentsQueries.cs`, PIN codes in `InvestorInformationQueries.cs`, bank and Axis CMS branches in `BankDetailsQueries.cs`, the rate cards in `FdConfigurationQueries.cs`. A table in another database on the same server is written there by its full name, `OtherDb.dbo.Table`. |
 | `Backend:Switches:{PanCheck, Identify, Ocr, Verification, PanAadhaarLink, FaceMatch, NameMatch, FetchCkyc, Cheque}` | `false` switches the check off: it is not called, the page goes on, and the check is marked as not asked for Operations. With `PanCheck` off, NSDL is not asked about a PAN copy: the PAN, date of birth and name stand as the copy reads them, the application goes on, and `PanApi` needs no address. With `FetchCkyc` off, the Fetch from CKYC button stays on Upload Documents, disabled, and says the service is unavailable; `Ckyc` needs no address. With `Cheque` off, a payment instrument's copy is filed as handed over: it is not read, and the account is entered on Bank Details & Payment. Face match and the cheque check are off as committed. Masking has no switch; name screening has its own (`NameScreening:ApiCall`). |
 | `AuthApi:DecryptPath`, `AuthApi:SessionPath`, `AuthApi:MenuPath`, `AuthApi:SessionHours` | The way in: the path of each call under the gateway (`{userId}` and `{sysCode}` in the menu path are filled in), and how many hours a session lasts. |
 | `PanApi:VerifyPath` | Where a holder's PAN is checked with NSDL. Everything else the request carries - the app code, the sourcing type and sub type, who is asking - comes from the signed-in partner and the application. |
@@ -267,11 +265,12 @@ underscore (`ConnectionStrings__UnoTP`).
 | `NameScreening:ApiCall` | `0` switches screening off: the API is not called, every holder goes on, and the KYC row says the check was skipped. Anything else is sent on as `Api_call`. |
 | `NameScreening:{BlackListCheck, CustomerDataBaseCheck, RejectedListCheck, EmployeeDataBaseCheck}` | Which lists a holder is screened against, as the API takes them. |
 | `NameMatch:BasePath`, `NameMatch:MatchPath` | The name match API: whether two names are the same person's. |
-| `Dms:Root` | Where filed copies are kept until DMS is wired in. Each copy is a new file in its application's folder, named `{Folio_}{ApplNo}_{HolderType}_{DocSubType}_{yyyyMMddHHmmssfff}.ext` (the folio only for a holder on one); nothing is replaced or deleted. Its name is recorded in `t_FD_BT_KYC_document.f_Doc_FileName` and its full path, this root included, in `f_Doc_Filepath`. |
+| `Dms:Root` | Where filed copies are kept until DMS is wired in. Each copy is a new file in its application's folder (`{Root}/{ApplNo}/`; for a holder on a folio `{Root}/{Folio}/{ApplNo}/`), named `{Folio_}{ApplNo}_{HolderType}_{DocSubType}_{yyyyMMddHHmmssfff}.ext` (the folio only for a holder on one); nothing is replaced or deleted. Its name is recorded in `t_FD_BT_KYC_document.f_Doc_FileName` and its full path, this root included, in `f_Doc_Filepath`. |
+| `Dms:Refused` | Where refused copies are kept apart for a week, for analysis, under their application (`{Refused}/{ApplNo}/REJ-…/`). Blank, and they go to a `refused` folder under `Dms:Root`. A refused Aadhaar is never kept. |
 | `Ckyc:BasePath`, `Ckyc:SearchPath`, `Ckyc:IncludeImages` | The CKYC (CERSAI) search: whether a record is held for a PAN and date of birth. Asked when the partner chooses Fetch from CKYC; only an investor it holds a record for takes that route. |
 | `Idfy:BasePath` | Idfy.Api, which alone answers document identification, OCR, verification with the issuer, the PAN-Aadhaar link and face match. A cheque is read with IDfy's `ind_cheque`; nobody confirms its account with the bank, so it is carried to Bank Details as read, for the partner to check. Where IDfy has no endpoint - an Aadhaar's issuer, a bank account - nothing is asked, and the page says so; an Aadhaar's address is taken as OCR read it. A utility bill is not taken as a proof of address. |
 | `Idfy:ValidateDocumentPath`, `Idfy:ExtractPanPath`, `Idfy:ExtractAadhaarPath`, `Idfy:ExtractDrivingLicencePath`, `Idfy:ExtractPassportPath`, `Idfy:ExtractVoterIdPath`, `Idfy:ExtractChequePath`, `Idfy:VerifyDrivingLicencePath`, `Idfy:VerifyPassportPath`, `Idfy:VerifyVoterIdPath`, `Idfy:VerifyPanAadhaarLinkPath`, `Idfy:CompareFacesPath` | The path of each Idfy.Api call under the gateway. |
-| `Shortener:ShortenPath` | Where the payment link is shortened on submit. No path, and the link goes in full. |
+| `Shortener:ShortenPath` | Where the payment link is shortened on submit: a POST with `{ long_url, Source: "UNO_TP" }`, as the FD system's own app calls it. No path, and the link goes in full. |
 | `PaymentLink:Template` | The page the investor pays on, with `{appNo}` for the application's number. Blank, the app sends no link and the backend makes its own. |
 | `Apps:eSarathiLogin`, `Apps:eSarathiConsole`, `Apps:UnoTP` | The other apps' addresses, for the links out and the session-expired redirect. |
 | `Portal:Home`, `Portal:Logout` | The portal's dashboard (where "Portal" goes back to, with the encrypted UserId and SysCode) and its logout page. Blank: the console's `/Classic` and the login portal's root. |

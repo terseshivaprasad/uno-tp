@@ -10,9 +10,9 @@ namespace UnoTP.Data;
 /// </summary>
 public sealed class SqlConsole(Db db, IPartnerApi partners) : IConsoleApi
 {
-    // What is still worth sending: anything that ended within this many days. The
-    // pages only show what has not ended; the rest is on record in the tables.
-    private const int KeptDays = 30;
+    // What is still worth sending is anything that ended within 30 days: the number is in
+    // ConsoleAdminQueries.Schedule. The pages only show what has not ended; the rest is on
+    // record in the tables.
 
     private sealed class WindowRow
     {
@@ -31,7 +31,7 @@ public sealed class SqlConsole(Db db, IPartnerApi partners) : IConsoleApi
     public async Task<ConsoleSchedule> ScheduleAsync(CancellationToken ct = default)
     {
         await using var connection = await db.OpenAsync(ct);
-        using var read = await connection.QueryMultipleAsync(ConsoleQueries.Schedule(KeptDays));
+        using var read = await connection.QueryMultipleAsync(ConsoleAdminQueries.Schedule);
         var windows = (await read.ReadAsync<WindowRow>()).Select(w => w.Record()).ToList();
         var notices = (await read.ReadAsync<AnnouncementRecord>()).ToList();
         return new ConsoleSchedule(windows, notices);
@@ -41,14 +41,14 @@ public sealed class SqlConsole(Db db, IPartnerApi partners) : IConsoleApi
     {
         var by = (await partners.MeAsync(ct)).Name;
         await using var connection = await db.OpenAsync(ct);
-        return (await connection.QuerySingleAsync<WindowRow>(ConsoleQueries.AddWindow, new { Features = string.Join(',', window.Features), window.From, window.To, window.Notice, By = by })).Record();
+        return (await connection.QuerySingleAsync<WindowRow>(ConsoleAdminQueries.AddWindow, new { Features = string.Join(',', window.Features), window.From, window.To, window.Notice, By = by })).Record();
     }
 
     public async Task<AnnouncementRecord> AddAnnouncementAsync(NewAnnouncement announcement, CancellationToken ct = default)
     {
         var by = (await partners.MeAsync(ct)).Name;
         await using var connection = await db.OpenAsync(ct);
-        return await connection.QuerySingleAsync<AnnouncementRecord>(ConsoleQueries.AddNotice, new { announcement.Kind, announcement.Title, announcement.At, announcement.Detail, By = by });
+        return await connection.QuerySingleAsync<AnnouncementRecord>(ConsoleAdminQueries.AddNotice, new { announcement.Kind, announcement.Title, announcement.At, announcement.Detail, By = by });
     }
 
     // Ends a window that is on, or cancels one still to come; one already over is not touched.
@@ -56,13 +56,13 @@ public sealed class SqlConsole(Db db, IPartnerApi partners) : IConsoleApi
     {
         var by = (await partners.MeAsync(ct)).Name;
         await using var connection = await db.OpenAsync(ct);
-        return await connection.ExecuteAsync(ConsoleQueries.EndWindow, new { Id = id, By = by }) > 0;
+        return await connection.ExecuteAsync(ConsoleAdminQueries.EndWindow, new { Id = id, By = by }) > 0;
     }
 
     public async Task<bool> RemoveAnnouncementAsync(string id, CancellationToken ct = default)
     {
         var by = (await partners.MeAsync(ct)).Name;
         await using var connection = await db.OpenAsync(ct);
-        return await connection.ExecuteAsync(ConsoleQueries.RemoveNotice, new { Id = id, By = by }) > 0;
+        return await connection.ExecuteAsync(ConsoleAdminQueries.RemoveNotice, new { Id = id, By = by }) > 0;
     }
 }

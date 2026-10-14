@@ -7,9 +7,15 @@
     // The old PayinSlipGenerationAxis screen. That page opened on an empty form
     // and made you search before it would show anything; this one opens on the
     // last fourteen days of applications, which is every one a slip can still be
-    // made for, and keeps the search for narrowing that down.
+    // made for, and keeps the search for narrowing that down. The search is sent
+    // to the server, which reads only what it reaches: the page never holds the
+    // partner's whole list.
     var earliest = Model.View.Earliest;
     var today = PayInSlipsViewModel.Today;
+    var search = Model.View.Search;
+    var byNumber = search.By == ApplicationSearch.ByNumber;
+    var from = Model.View.From;
+    var to = Model.View.To;
     var listed = Model.View.Listed.ToList();
     var pending = listed.Count(r => r.State == "pending" && !r.Blocked);
     var blocked = listed.Count(r => r.Blocked);
@@ -50,48 +56,55 @@
 
     <div class="page-card">
         <div class="page-head"><h1 class="page-title">Pay In Slip Generation &mdash; Axis</h1></div>
-        <p class="page-note">Every application raised in the last @Model.View.WindowDays days whose money is coming by cheque. @pending of @listed.Count @(pending == 1 ? "is" : "are") ready for a slip@(blocked > 0 ? $", and {blocked} {(blocked == 1 ? "is" : "are")} held back for acceptance" : "").</p>
+        <p class="page-note">@(Model.View.IsOpeningList ? $"Every application raised in the last {Model.View.WindowDays} days whose money is coming by cheque. " : "")@pending of @listed.Count @(pending == 1 ? "is" : "are") ready for a slip@(blocked > 0 ? $", and {blocked} {(blocked == 1 ? "is" : "are")} held back for acceptance" : "").</p>
 
-        <form class="payin-slip-form" id="payinSlipForm" novalidate>
+        @* Sent as a GET: pay-in-slips.js checks the fields, puts what is searched
+           for in the three hidden boxes and lets the browser go. *@
+        <form class="payin-slip-form" id="payinSlipForm" method="get" asp-page="/PayInSlips/Index" asp-page-handler="" novalidate
+              data-by="@search.By" data-opening="@(Model.View.IsOpeningList ? "yes" : "no")"
+              data-earliest="@earliest.ToString("yyyy-MM-dd")" data-today="@today.ToString("yyyy-MM-dd")">
+            <input type="hidden" name="q" id="payinSlipAskedText">
+            <input type="hidden" name="from" id="payinSlipAskedFrom">
+            <input type="hidden" name="to" id="payinSlipAskedTo">
             <fieldset class="search-by search-by--first">
                 <legend class="field-label">Search By</legend>
                 <label class="radio-option">
-                    <input type="radio" name="payinSlipSearchBy" value="dates" checked>
+                    <input type="radio" name="by" value="@ApplicationSearch.ByDates" checked="@(!byNumber)">
                     <span>Application date</span>
                 </label>
                 <label class="radio-option">
-                    <input type="radio" name="payinSlipSearchBy" value="appno">
+                    <input type="radio" name="by" value="@ApplicationSearch.ByNumber" checked="@byNumber">
                     <span>Application number</span>
                 </label>
             </fieldset>
 
             <div class="payin-slip-form__row payin-slip-form__row--search">
-                <div class="form-field" data-for="dates">
+                <div class="form-field" data-for="dates" hidden="@byNumber">
                     <span class="field-label" id="payinSlipFromLabel">From Date</span>
                     @* The three-box control the old wizard steps use. *@
                     <div class="date-input" data-date id="payinSlipFrom" role="group" aria-labelledby="payinSlipFromLabel">
-                        <input class="date-input__part" data-dd inputmode="numeric" maxlength="2" placeholder="DD" aria-label="Day" autocomplete="off" value="@earliest.ToString("dd")">
+                        <input class="date-input__part" data-dd inputmode="numeric" maxlength="2" placeholder="DD" aria-label="Day" autocomplete="off" value="@from.ToString("dd")">
                         <span class="date-input__sep">/</span>
-                        <input class="date-input__part" data-mm inputmode="numeric" maxlength="2" placeholder="MM" aria-label="Month" autocomplete="off" value="@earliest.ToString("MM")">
+                        <input class="date-input__part" data-mm inputmode="numeric" maxlength="2" placeholder="MM" aria-label="Month" autocomplete="off" value="@from.ToString("MM")">
                         <span class="date-input__sep">/</span>
-                        <input class="date-input__part date-input__part--year" data-yyyy inputmode="numeric" maxlength="4" placeholder="YYYY" aria-label="Year" autocomplete="off" value="@earliest.ToString("yyyy")">
+                        <input class="date-input__part date-input__part--year" data-yyyy inputmode="numeric" maxlength="4" placeholder="YYYY" aria-label="Year" autocomplete="off" value="@from.ToString("yyyy")">
                     </div>
                 </div>
 
-                <div class="form-field" data-for="dates">
+                <div class="form-field" data-for="dates" hidden="@byNumber">
                     <span class="field-label" id="payinSlipToLabel">To Date</span>
                     <div class="date-input" data-date id="payinSlipTo" role="group" aria-labelledby="payinSlipToLabel">
-                        <input class="date-input__part" data-dd inputmode="numeric" maxlength="2" placeholder="DD" aria-label="Day" autocomplete="off" value="@today.ToString("dd")">
+                        <input class="date-input__part" data-dd inputmode="numeric" maxlength="2" placeholder="DD" aria-label="Day" autocomplete="off" value="@to.ToString("dd")">
                         <span class="date-input__sep">/</span>
-                        <input class="date-input__part" data-mm inputmode="numeric" maxlength="2" placeholder="MM" aria-label="Month" autocomplete="off" value="@today.ToString("MM")">
+                        <input class="date-input__part" data-mm inputmode="numeric" maxlength="2" placeholder="MM" aria-label="Month" autocomplete="off" value="@to.ToString("MM")">
                         <span class="date-input__sep">/</span>
-                        <input class="date-input__part date-input__part--year" data-yyyy inputmode="numeric" maxlength="4" placeholder="YYYY" aria-label="Year" autocomplete="off" value="@today.ToString("yyyy")">
+                        <input class="date-input__part date-input__part--year" data-yyyy inputmode="numeric" maxlength="4" placeholder="YYYY" aria-label="Year" autocomplete="off" value="@to.ToString("yyyy")">
                     </div>
                 </div>
 
-                <div class="form-field payin-slip-field--appno" data-for="appno" hidden>
+                <div class="form-field payin-slip-field--appno" data-for="appno" hidden="@(!byNumber)">
                     <label class="field-label" for="payinSlipAppNo">Application Number</label>
-                    <input class="field-input" id="payinSlipAppNo" data-chars="code" maxlength="18" autocomplete="off" spellcheck="false" placeholder="e.g. FBBMFL26F10000">
+                    <input class="field-input" id="payinSlipAppNo" data-chars="code" maxlength="18" autocomplete="off" spellcheck="false" placeholder="e.g. FBBMFL26F10000" value="@(byNumber ? search.Text : "")">
                 </div>
 
                 <div class="form-field form-field--check payin-slip-field--actions">
@@ -101,14 +114,18 @@
             </div>
 
             <p class="field-error" id="payinSlipError" hidden></p>
-            <p class="field-hint" id="payinSlipScope">Showing the last @Model.View.WindowDays days &mdash; @earliest.ToString("dd/MM/yyyy") to @today.ToString("dd/MM/yyyy").</p>
+            <p class="field-hint" id="payinSlipScope">@Model.View.Scope</p>
+            @if (Model.View.MoreExist)
+            {
+                <p class="field-hint" id="payinSlipMore">@ListSearch.MoreExistNote</p>
+            }
         </form>
 
         @if (blocked > 0)
         {
             <p class="payin-slip-flag">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>
-                <span><strong>@blocked digital @(blocked == 1 ? "application is" : "applications are") waiting on the investor's acceptance</strong> &mdash; no slip until it is in. Send the link from the row.</span>
+                <span><strong>@blocked digital @(blocked == 1 ? "application is" : "applications are") waiting on the investor's acceptance</strong> &mdash; no slip until it is in. The link is sent from Short URL.</span>
             </p>
         }
 
@@ -131,14 +148,13 @@
                     <th scope="col" class="register-table__actions"><span class="visually-hidden">Action</span></th>
                 </tr>
             </thead>
-            <tbody id="payinSlipRows">
-                @* The cancelled applications are in the table but never listed: only a
-                   search by number reaches them, so they can say what became of them. *@
-                @foreach (var r in listed.Concat(Model.View.Lapsed))
+            <tbody id="payinSlipRows" data-per-page="@ListSearch.PerPage">
+                @* What the search reached, and nothing else. The rows after the first
+                   page start hidden, so the list does not jump when the script pages it. *@
+                @foreach (var (r, at) in listed.Select((row, index) => (row, index)))
                 {
-                    <tr data-state="@r.State" data-appno="@r.AppNo.ToLowerInvariant()" data-date="@r.Applied.ToString("yyyy-MM-dd")"
-                        data-window="@(r.InWindow ? "in" : "out")" data-amount="@r.Amount" data-branch="@r.Branch" data-mode="@(r.Digital ? "digital" : "physical")"
-                        data-blocked="@(r.Blocked ? "yes" : "no")" hidden="@(!r.InWindow)">
+                    <tr data-state="@r.State" data-amount="@r.Amount" data-branch="@r.Branch" data-mode="@(r.Digital ? "digital" : "physical")"
+                        data-blocked="@(r.Blocked ? "yes" : "no")" hidden="@(at >= ListSearch.PerPage)">
                         <td data-label="Application">
                             <strong>@r.AppNo</strong>
                             <div class="register-table__sub@(r.Urgent ? " register-table__sub--urgent" : "")">@r.Countdown</div>
@@ -160,14 +176,7 @@
                             <div class="register-table__sub" data-slip-detail>@r.SlipNote</div>
                         </td>
                         <td class="register-table__actions">
-                            @if (r.Blocked)
-                            {
-                                <form method="post" asp-page-handler="SendAcceptance">
-                                    <input type="hidden" name="appNo" value="@r.AppNo" />
-                                    <button type="submit" class="link-button" data-loader="Sending the acceptance link&hellip;">Send link</button>
-                                </form>
-                            }
-                            else if (r.State == "pending")
+                            @if (r.State == "pending" && !r.Blocked)
                             {
                                 <form method="post" asp-page-handler="Generate">
                                     <input type="hidden" name="appNo" value="@r.AppNo" />
@@ -204,6 +213,11 @@
     </div>
 </div>
 
+@* A slip generated just now: its PDF is saved as the page opens (pay-in-slips.js). *@
+@if (Model.SlipToSave is not null)
+{
+    <a id="payinSlipDownload" asp-page-handler="Slip" asp-route-appNo="@Model.SlipToSave" download hidden></a>
+}
 <div class="app-toast" id="toast" role="status" aria-live="polite" data-toast-now="@(ViewData["Toast"] as string)"></div>
 
 @section Scripts {

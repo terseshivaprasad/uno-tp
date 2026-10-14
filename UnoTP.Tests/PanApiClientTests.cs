@@ -23,20 +23,20 @@ public class PanApiClientTests
         Assert.Equal(HttpMethod.Post, network.Method);
         Assert.Equal("http://gateway.test/some-api/api/v1/verify-pan", network.Address!.ToString());
         var sent = network.Sent;
-        // The names are the API's own, camelCased as every other app sends them.
-        Assert.Equal("APP001", sent.GetProperty("appl_No").GetString());
-        Assert.Equal("01", sent.GetProperty("holder_Type").GetString());
-        Assert.Equal("ABCDE1234F", sent.GetProperty("paN_No").GetString());
-        // The date of birth goes as dd/MM/yyyy, the way the API takes it.
-        Assert.Equal("01/02/1980", sent.GetProperty("paN_Holder_DOB").GetString());
-        Assert.Equal("A HOLDER", sent.GetProperty("paN_Holder_Name").GetString());
+        // The names are the API's own, exactly as it writes them.
+        Assert.Equal("APP001", sent.GetProperty("Appl_No").GetString());
+        Assert.Equal("01", sent.GetProperty("Holder_Type").GetString());
+        Assert.Equal("ABCDE1234F", sent.GetProperty("PAN_No").GetString());
+        // The date of birth goes as yyyy-MM-dd, the way the API takes it.
+        Assert.Equal("1980-02-01", sent.GetProperty("PAN_Holder_DOB").GetString());
+        Assert.Equal("A HOLDER", sent.GetProperty("PAN_Holder_Name").GetString());
         // What the request says of the user comes from the session, not from settings.
-        Assert.Equal("TESTAPP01", sent.GetProperty("app_Code").GetString());
-        Assert.Equal("AT1", sent.GetProperty("source_Type").GetString());
-        Assert.Equal("ST1", sent.GetProperty("source_Sub_Type").GetString());
-        Assert.Equal("user-1", sent.GetProperty("createdBy").GetString());
-        Assert.Equal("10.0.0.7", sent.GetProperty("createdIP").GetString());
-        Assert.Equal(9041, sent.GetProperty("sessionId").GetInt64());
+        Assert.Equal("TESTAPP01", sent.GetProperty("App_Code").GetString());
+        Assert.Equal("AT1", sent.GetProperty("Source_Type").GetString());
+        Assert.Equal("ST1", sent.GetProperty("Source_Sub_Type").GetString());
+        Assert.Equal("user-1", sent.GetProperty("CreatedBy").GetString());
+        Assert.Equal("10.0.0.7", sent.GetProperty("CreatedIP").GetString());
+        Assert.Equal(9041, sent.GetProperty("SessionId").GetInt64());
     }
 
     [Theory]

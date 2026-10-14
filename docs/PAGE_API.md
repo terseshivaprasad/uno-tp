@@ -26,9 +26,9 @@ the ones kept in SQL Server, and the outside services have an HTTP client each i
 
 | Call | Used for |
 |---|---|
-| `IApplicationApi.ListAsync`, `DraftsAsync` | Work waiting, and applications to pick up again. |
-| `ILinkApi.PendingAsync` | Applications waiting on the investor. |
-| `IPayInSlipApi.SlipsAsync` | Slips still to be presented. |
+| `IApplicationApi.OpenAndRaisedBetweenAsync`, `DraftsAsync` | Applications close to cancelling (only those days are read), and applications to pick up again. |
+| `ILinkApi.PendingAsync` | Applications waiting on the investor, submitted in the days an unpaid one stands. |
+| `IPayInSlipApi.StillOpenAsync` | Slips still to be generated: the cheque applications raised in the days an unpaid one stands. |
 
 ## Investor Identification (`NewApplicationModel`, `HolderSearch`)
 
@@ -43,7 +43,7 @@ the ones kept in SQL Server, and the outside services have an HTTP client each i
 | Call | Used for |
 |---|---|
 | `IApplicationApi.FindAsync`, `SaveUploadAsync` | The application; the step saved. |
-| `IDocumentApi.FileAsync`, `CopyAsync`, `KeepRefusedAsync` | Filing a copy with DMS as a new named file, showing one, keeping a refused one aside. Nothing filed is replaced or deleted. |
+| `IDocumentApi.FileAsync`, `CopyAsync`, `KeepRefusedAsync` | Filing a copy with DMS as a new named file, showing one, keeping a refused one apart under its application (never an Aadhaar) aside. Nothing filed is replaced or deleted. |
 | `IDocumentIdentifier.IdentifyAsync` | What the copy is. |
 | `IOcrService.ReadAsync` | What it says. |
 | `ICkycService.SearchAsync` | Whether CERSAI holds a record, when Fetch from CKYC is chosen (`Ckyc:SearchPath`). |
@@ -80,7 +80,7 @@ The joint holders' documents on Investor Information go through the same calls.
 |---|---|
 | `IApplicationApi.FindAsync`, `SaveDepositAsync`, `SaveUploadAsync` | The application; the step saved; the Form 121 filed. |
 | `IDepositApi.RatesAsync`, `QuoteAsync` | The rate card for the category, gender and purchase or renewal; the quote for the deposit as it stands. |
-| `IInvestorApi.ActiveDepositsAsync` | The investor's active deposits in the FD system's register (`FDR_MST`, `DEP_STATUS = 'L'`, by `PAN1`), added up for the source-of-funds rule. |
+| `IInvestorApi.ActiveDepositsAsync` | The investor's active deposits in the FD system's register (`FXFDREXP`, `DEP_STATUS = 'L'`, by `PAN1`), added up for the source-of-funds rule. |
 
 ## Review Summary and Application Submitted (`ReviewModel`, `SubmittedModel`)
 
@@ -95,15 +95,15 @@ The joint holders' documents on Investor Information go through the same calls.
 
 | Call | Used for |
 |---|---|
-| `IApplicationApi.ListAsync`, `FindAsync` | The list; one application's details in the pop-up. |
+| `IApplicationApi.SearchAsync`, `FindAsync` | The applications the search reaches (`?by=dates&from=&to=`, `?by=appno&q=`, `?by=folio&q=`), run by the database, the newest 200; one application's details in the pop-up. |
 | `IDepositApi.QuoteAsync`, `BranchAsync` | The details' figures. |
 
 ## Short URL (`LinksModel`) and Pay-in Slips (`PayInSlipsModel`)
 
 | Call | Used for |
 |---|---|
-| `ILinkApi.SentAsync`, `PendingAsync`, `SendAsync` | Links sent; applications waiting; a link sent, or the same short link sent again for 24 hours. |
-| `IPayInSlipApi.SlipsAsync`, `GenerateAsync` | Slips; a slip generated or reprinted. |
+| `ILinkApi.SentAsync`, `PendingAsync`, `SendAsync` | Links sent and applications waiting, both for applications submitted in the days an unpaid one stands (only those days are read); a link sent, or the same short link sent again for 24 hours. |
+| `IPayInSlipApi.SearchAsync`, `GenerateAsync`, `SlipToPrintAsync` | The cheque applications the search reaches (`?by=dates&from=&to=`, `?by=appno&q=`), run by the database, the newest 200; a slip generated, or the same slip again for a reprint (its staging row becomes `PRC` / `GEN`, with `f_Queue_Process_Date`); the newest slip as it is printed. Generating or reprinting saves the slip as a PDF as the page comes back (`GET /PayInSlip/Slip?appNo=`): one A4 sheet on its side, the bank's copy and the customer's, drawn by `ViewModels/PayInSlipPdf.cs` on `Infrastructure/Pdf/PdfPage.cs` with no library. |
 
 ## Renew FD (`RenewModel`)
 

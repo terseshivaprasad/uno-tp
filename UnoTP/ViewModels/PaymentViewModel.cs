@@ -168,7 +168,7 @@ public sealed class PaymentViewModel(DocumentsViewModel docs, BankForm form, Ban
     {
         get
         {
-            if (PayMode != "Online") return null;
+            if (PayMode != PaymentModeOption.Online) return null;
             var ifsc = Form.Repayment.CleanIfsc;
             if (ifsc.Length < 4) return null;
             if (Ref.OnPaymentGateway(ifsc)) return null;
@@ -182,7 +182,7 @@ public sealed class PaymentViewModel(DocumentsViewModel docs, BankForm form, Ban
         Messages.BankDetails.BankNotOnGateway(bank);
 
     /// <summary>Whether an account on the folio can be used for online payment.</summary>
-    public bool OnGateway(AccountOnRecord account) => PayMode != "Online" || Ref.OnPaymentGateway(account.Ifsc);
+    public bool OnGateway(AccountOnRecord account) => PayMode != PaymentModeOption.Online || Ref.OnPaymentGateway(account.Ifsc);
 
     private ReferenceData Ref => Docs.Ref;
 
@@ -207,8 +207,21 @@ public sealed class PaymentViewModel(DocumentsViewModel docs, BankForm form, Ban
     /// <summary>Whether the paying account or the cheque were filled in from the cheque read on Upload Documents.</summary>
     public bool FilledFromCheque { get; init; }
 
-    /// <summary>What the cheque filed on Upload Documents was read to say, if one is filed.</summary>
-    public ReadCard? ChequeRead => Docs.State.Docs.ContainsKey("payment") ? Docs.State.Reads.GetValueOrDefault("payment") : null;
+    /// <summary>
+    /// What the cheque filed on Upload Documents was read to say. Null when no cheque
+    /// is filed, or nothing was read off it - the cheque check is switched off, or the
+    /// account could not be read or was not confirmed - so there is nothing to show.
+    /// </summary>
+    public ReadCard? ChequeRead
+    {
+        get
+        {
+            if (!Docs.State.Docs.ContainsKey("payment")) return null;
+            var card = Docs.State.Reads.GetValueOrDefault("payment");
+            if (card is { Kind: "is-done" }) return card;
+            return null;
+        }
+    }
 }
 
 // ===== FD Configuration ======================================================

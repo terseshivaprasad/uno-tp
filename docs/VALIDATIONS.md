@@ -16,7 +16,7 @@ To change what a message says:
 "Browser: yes" marks a message a script shows as the partner types. It is still
 written only in the master, which hands it to the page.
 
-305 messages.
+313 messages.
 
 ## Every page
 
@@ -102,7 +102,6 @@ written only in the master, which hands it to the page.
 | Aadhaar number | not a valid number, with the last 4 read off the copy | That is not a valid Aadhaar number — check the first 8 digits against the card. If its last 4 are not {lastFour}, upload the Aadhaar again | `UploadDocuments.AadhaarInvalidCheckFirst8` |  |
 | Broker / employee code | nothing on the register matches what is typed | Nothing on the register matches “{typed}” | `UploadDocuments.NothingOnRegister` | yes |
 | Broker / employee code | left empty | Enter the {codeLabel} | `UploadDocuments.SourceCodeRequired` |  |
-| Broker code | typed, and not on the broker register | {code} is not a broker's code. Check the broker code. | `UploadDocuments.BrokerCodeNotFound` |  |
 | Communication Address | switching to Same as Permanent with a proof filed (asks first) | Post will go to the permanent address, and the communication address proof uploaded will be removed. Switch to Same as Permanent? | `UploadDocuments.ConfirmDropMailProof` |  |
 | Communication address proof (upload) | no proof type chosen yet | Choose the communication address proof first | `UploadDocuments.ChooseMailTypeFirst` |  |
 | Communication address proof type | not chosen | Choose the communication address proof | `UploadDocuments.MailTypeRequired` |  |
@@ -149,8 +148,14 @@ written only in the master, which hands it to the page.
 | Proof of address | the address cannot be read | The address could not be read off it | `UploadDocuments.AddressNotRead` |  |
 | Proof of address | a PAN card is filed as the proof | It reads as a PAN card, which is not a proof of address. Upload an Aadhaar, passport, driving licence or voter ID. | `UploadDocuments.NotAProofOfAddress` |  |
 | Proof of address | the proof is one that proves only a communication address | A {proof} is not taken as proof of the permanent address | `UploadDocuments.NotProofOfPermanentAddress` |  |
+| Proof of address | the PIN code read off it is not in the PIN code master, and what to do | A proof of address is taken only when its PIN code is in the PIN code master. Check the PIN code on the proof. | `UploadDocuments.PinMustBeInMaster` |  |
+| Proof of address | the PIN code read off it is not in the PIN code master | PIN code {pinCode} on this proof is not in the PIN code master | `UploadDocuments.PinNotInMaster` |  |
 | Proof of address | the PIN code cannot be read | The PIN code could not be read off it | `UploadDocuments.PinNotRead` |  |
+| Proof of address | the proof has no source to confirm it with | This proof has no source to confirm it with | `UploadDocuments.ProofHasNoSource` |  |
+| Proof of address | its source did not confirm it | A proof of address is taken only when its source confirms it. Upload a proof its source confirms, or an Aadhaar. | `UploadDocuments.ProofNeedsItsSource` |  |
+| Proof of address | its source says it holds no such document | {source} did not confirm this proof | `UploadDocuments.ProofNotConfirmed` |  |
 | Proof of address | it cannot be told which proof it is | It could not be told which proof of address it is. Upload a clearer copy of {proofs}. | `UploadDocuments.ProofNotIdentified` |  |
+| Proof of address | its source could not be asked | This proof could not be confirmed with its source: {why} | `UploadDocuments.ProofSourceNotAsked` |  |
 | Proof of address | the kind of proof is clear but it cannot be read | It reads as {document}, but could not be read. Upload a sharper scan, with the whole card in view. | `UploadDocuments.ReadsAsButUnreadable` |  |
 | Proof of address | the proof is one that proves only a communication address | Upload {whose} {proofs} — a {proof} proves only a communication address. | `UploadDocuments.UploadProofOfPermanentAddress` |  |
 | Proof of address | the address or its PIN code cannot be read | Upload a copy of the {proof} that shows the address with its PIN code, clear enough to read. | `UploadDocuments.UploadProofWithAddress` |  |
@@ -163,11 +168,11 @@ written only in the master, which hands it to the page.
 | Proof of address (Aadhaar) | no PAN copy is filed yet to match the name with | The PAN's name is not known yet, so the Aadhaar cannot be matched with it — file the PAN copy first | `UploadDocuments.PanNameNotKnown` |  |
 | Proof of address (Aadhaar) | neither the number nor its last 4 digits can be read | Upload a copy of the Aadhaar that shows its number — all 12 digits, or the last 4 of a masked one — clear enough to read. | `UploadDocuments.UploadAadhaarWithNumber` |  |
 | Proof of address (Aadhaar) | its name or date of birth is not the PAN's | Upload {whose} own Aadhaar, clear enough to read the name and date of birth. | `UploadDocuments.UploadOwnAadhaar` |  |
+| Proof of address (a newer proof, where one is on record) | its source did not confirm it | A newer proof is taken only when its source confirms it, so the address on record stands. Upload a proof its source confirms, or an Aadhaar. | `UploadDocuments.NewerProofNeedsItsSource` |  |
 | Proof of address (upload) | no proof type chosen yet | Choose the proof of address first | `UploadDocuments.ChoosePoaTypeFirst` |  |
 | Proof of address type | not chosen | Choose the proof of address | `UploadDocuments.PoaTypeRequired` |  |
 | Relation with the holder | not chosen | Choose the relation with the holder | `UploadDocuments.EmployeeRelationRequired` |  |
 | Sourcing Mode | not chosen | Choose the sourcing mode | `UploadDocuments.SourcingRequired` |  |
-| Sourcing employee code | typed, and not the code of an employee who can source under the sourcing mode chosen | {code} is not an employee who can source under {sourcingMode}. Check the sourcing employee code. | `UploadDocuments.SourcingEmployeeNotFound` |  |
 | Still missing | no deposit category set | the deposit category | `UploadDocuments.MissingCategory` |  |
 | Still missing | no employee code typed | the employee code | `UploadDocuments.MissingEmployeeCode` |  |
 | Still missing | no employee company typed | the employee company | `UploadDocuments.MissingEmployeeCompany` |  |
@@ -316,7 +321,6 @@ written only in the master, which hands it to the page.
 | From Date (Pay-in Slips) | earlier than the oldest application a slip can still be made for | An application older than that has cancelled itself, so no slip can be made for it. The earliest date you can search from is {earliest}. | `Lists.TooOldForSlip` | yes |
 | From Date (View Application) | earlier than a date search reaches back | A date search reaches back {days} days, to {earliest}. For anything older, search by application number or folio. | `Lists.DateSearchReach` | yes |
 | Generate slip | no slip can be made for the application | No slip could be generated for this application. | `Lists.NoSlip` |  |
-| Send link | the acceptance link cannot be sent for the application | The acceptance link could not be sent for this application. | `Lists.AcceptanceLinkNotSent` |  |
 | The list | no application was raised between the dates searched | No application was raised between those two dates. | `Lists.NoApplicationBetweenDates` | yes |
 | The list (Pay-in Slips) | no application matches the number searched | No application matches that number. Check it, or search by date instead. | `Lists.NoApplicationByNumberTryDate` | yes |
 | The list (View Application) | no application matches the number searched | No application matches that number. Check it, or search by folio instead. | `Lists.NoApplicationByNumberTryFolio` | yes |
@@ -329,6 +333,10 @@ written only in the master, which hands it to the page.
 | Field | Shown when | Message | Name | Browser |
 |---|---|---|---|---|
 | Send link | no link can be sent for the application | No link could be sent for this application. | `ShortUrl.NoLinkSent` |  |
+| Send link, Regenerate (every page that sends a link) | a message went out for the application within the last two minutes | A link went to this investor less than {minutes} minutes ago. Wait before sending it again. | `ShortUrl.LinkJustSent` |  |
+| Send link, Regenerate (every page that sends a link) | the application holds no usable mobile number and no usable e-mail address | The application has no 10-digit mobile number and no valid e-mail address for a link to go to. | `ShortUrl.NoUsableContact` |  |
+| Send link, Regenerate (every page that sends a link) | the application's messages for the day are used up | No more than {most} messages go out for one application in 24 hours, and this application has had them. Try again tomorrow. | `ShortUrl.TooManyForApplication` |  |
+| Send link, Regenerate (every page that sends a link) | the investor's mobile number or e-mail address has had its messages for the day | No more than {most} messages go to one mobile number or e-mail address in 24 hours, and this investor's has had them. Try again tomorrow. | `ShortUrl.TooManyForContact` |  |
 
 ## Renew FD
 

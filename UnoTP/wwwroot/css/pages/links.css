@@ -21,3 +21,8 @@
 .register-notice strong {
   font-weight: 600;
 }
+
+/* Resend and New link sit side by side in the row's action cell. */
+.register-table__actions form + form {
+  margin-left: 12px;
+}

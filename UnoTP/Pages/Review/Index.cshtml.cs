@@ -58,8 +58,10 @@ public class ReviewModel(IApplicationApi applications, IDepositApi deposits, ISe
         }
         if (link == LinkLater) return RedirectToPage("/Submitted/Index");
 
-        var (_, shortened) = await paymentLinks.SendAsync(docs.AppNo, HttpContext.RequestAborted);
-        if (!shortened) TempData["said"] = System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, string> { ["banner"] = PaymentLinkSender.NotShortened });
+        var (sending, shortened) = await paymentLinks.SendAsync(docs.AppNo, LinkPage.ReviewSummary, HttpContext.RequestAborted);
+        // The application is submitted either way; what stopped the link is said on the next page.
+        var banner = sending.Refused ?? (shortened ? null : PaymentLinkSender.NotShortened);
+        if (banner is not null) TempData["said"] = System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, string> { ["banner"] = banner });
         return RedirectToPage("/Submitted/Index");
     }
 }

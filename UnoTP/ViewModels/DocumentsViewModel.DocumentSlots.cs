@@ -111,14 +111,19 @@ public partial class DocumentsViewModel
 
     /// <summary>What a slot shows: whether it is asked for at all, and what is in it.</summary>
     /// <param name="Key">The slot's key for its holder, which its markup and posts carry.</param>
+    /// <param name="Optional">Open, but not needed to go on: the proof of address of a holder whose proof is on record,
+    /// who may file a newer one.</param>
     public sealed record SlotView(
         SlotDef Def, string Key, bool Used, string? NotApplicable, string? Locked, StoredDoc? Doc,
         string? With, int Attempts, string? Error, string? ErrorLog,
         ReadCard? Read = null, string? LockedHint = null, int MaxAttempts = int.MaxValue, string? Final = null,
-        DateTime? RetryAt = null)
+        DateTime? RetryAt = null, bool Optional = false)
     {
-        /// <summary>Wanted before the step can go on: asked for, and not in yet.</summary>
-        public bool Missing => Used && Doc is null;
+        /// <summary>Asked for and needed before the step can go on. An optional slot is open, and nothing waits on it.</summary>
+        public bool Required => Used && !Optional;
+
+        /// <summary>Wanted before the step can go on: needed, and not in yet.</summary>
+        public bool Missing => Required && Doc is null;
 
         /// <summary>Refused the most times in a row the rules allow: no more tries until the wait is over.</summary>
         public bool Spent => Attempts >= MaxAttempts;
@@ -219,8 +224,10 @@ public partial class DocumentsViewModel
             "pan" => held?.Pan == true ? (false, heldWhy) : (true, null),
             // CKYC is fetched for the investor only: a joint holder files their own.
             "photo" => held?.Photo == true ? (false, heldWhy) : s.Ckyc && !h.Joint ? (false, CkycWhy) : (true, null),
-            // A proof on record, with the address it proves, is not asked for again.
-            "poa" => held?.Poa == true ? (false, heldWhy) : s.Ckyc && !h.Joint ? (false, CkycWhy) : (true, null),
+            // A proof on record, with the address it proves, is not asked for again: the
+            // box stays open for a newer proof, and nothing waits on it (optional, below).
+            "poa" when held?.Poa == true => (true, null),
+            "poa" => s.Ckyc && !h.Joint ? (false, CkycWhy) : (true, null),
             "mail" => !MailCanDiffer(h) ? (false, MailWhy(h))
                 : MailTyped(h) ? (false, MailTypedWhy)
                 : MailDifferentOf(h) ? (true, null) : (false, "Post goes to the permanent address, so there is no other address to prove."),
@@ -279,13 +286,16 @@ public partial class DocumentsViewModel
             _ => null,
         };
 
+        // A holder whose proof of address is on record may file a newer one, and need not.
+        var optional = def.Key == PoaSlot.Key && held?.Poa == true;
+
         var flash = Shown;
         return new SlotView(def, key, used, used ? null : na, locked, doc,
             with, AttemptsNow(key),
             flash?.Errors.GetValueOrDefault(key), flash?.ErrorLog.GetValueOrDefault(key), read,
             // Waiting on the PAN, the box still names the proofs it will take.
             waitsOnPan ? $"Accepted: {OneOf(ProofsFor(def.Key))}. Checked against the holder the PAN copy establishes." : null, MaxAttempts,
-            FinalWhy(def, h, doc), RetryAt(key));
+            FinalWhy(def, h, doc), RetryAt(key), optional);
     }
 
     // A PAN copy NSDL has verified - the PAN, the date of birth and the name read off
@@ -330,7 +340,9 @@ public partial class DocumentsViewModel
                 : NotRead("Not applicable", $"{MaskPan(h.Who.Pan)} · on the folio",
                     "The PAN–Aadhaar link is asked only for a holder with no folio yet."), h.Key("link"),
                 Error: Shown?.Errors.GetValueOrDefault(h.Key("link"))));
-        if (View(PoaSlot, h).Used)
+        // Where a proof of address is needed, or a newer one is filed.
+        var poa = View(PoaSlot, h);
+        if (poa.Required || poa.Doc is not null)
         {
             cards.Add(new ReadItem("PAN–POA name & DOB", DetailsOf(h), h.Key("details"), Error: Shown?.Errors.GetValueOrDefault(h.Key("details"))));
             cards.Add(new ReadItem("PAN–POA face match", FaceOf(h), h.Key("face")));

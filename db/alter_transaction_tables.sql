@@ -1,14 +1,14 @@
 /* =============================================================================
    Uno TP - columns added to the transaction tables (SQL Server 2016 or later).
 
-   db/create_transaction_tables.sql has the FD system's own tables as their schemas
-   were given. This script is every column the app needs that those schemas did
-   not have. A column is added only when the table does not have it yet, so the
+   The FD system's own tables (t_FD_BT_*, the pay-in slip and link tables, the
+   communication table and the payment log) exist already, in their own databases;
+   no script here creates them. This script is every column the app needs that
+   their schemas did not have. A column is added only when the table does not have it yet, so the
    script is safe to run again; nothing else about a table is touched - no column
    is changed or dropped, no row is written. Every column added takes NULL, so
    rows already there, and whatever else writes the table, are not affected.
 
-       sqlcmd -d UnoTP -i db/create_transaction_tables.sql   (a new database only)
        sqlcmd -d UnoTP -i db/alter_transaction_tables.sql
        sqlcmd -d UnoTP -i db/create_new_tables.sql
        sqlcmd -d UnoTP -i db/insert_seed.sql

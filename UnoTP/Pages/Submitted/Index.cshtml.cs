@@ -37,13 +37,14 @@ public class SubmittedModel(IApplicationApi applications, IDepositApi deposits, 
         var submitted = (await Applications.FindAsync(appNo))?.Submitted;
         if (submitted is { LinkSent: false })
         {
-            var (sent, shortened) = await paymentLinks.SendAsync(appNo, HttpContext.RequestAborted);
-            if (sent is null) return Back(new() { ["banner"] = NoLink });
+            var (sending, shortened) = await paymentLinks.SendAsync(appNo, LinkPage.ApplicationSubmitted, HttpContext.RequestAborted);
+            if (sending.Sent is null) return Back(new() { ["banner"] = sending.Refused ?? NoLink });
             if (!shortened) return Back(new() { ["banner"] = PaymentLinkSender.NotShortened });
             return RedirectToPage();
         }
-        return await Applications.ResendLinkAsync(appNo) is null
-            ? Back(new() { ["banner"] = NoLink })
+        var again = await Applications.ResendLinkAsync(appNo);
+        return again.Sent is null
+            ? Back(new() { ["banner"] = again.Refused ?? NoLink })
             : RedirectToPage();
     }
 }

@@ -65,6 +65,19 @@ public sealed class ReviewViewModel(DocumentsViewModel docs, DepositQuote? quote
         return DetailsOf(h).Gender;
     }
 
+    // What a document's line says: why it is not asked for, what its checks said of
+    // the copy, that the one on record stands, or that it is still to file.
+    private static string DetailOf(DocumentsViewModel.SlotView v)
+    {
+        if (!v.Used) return v.NotApplicable ?? "";
+        if (v.Doc is { } doc) return doc.Check.Length > 0 ? doc.Check : "Filed";
+        if (v.Optional) return "On record: no newer proof is filed, so the one on record stands.";
+        return "Not filed yet";
+    }
+
+    // Whether the application has the document to file: it is needed, or one was filed.
+    private static bool AppliesTo(DocumentsViewModel.SlotView v) => v.Required || v.Doc is not null;
+
     /// <summary>Every document each holder files, and the payment's and the staff proof's.</summary>
     public IReadOnlyList<ReviewDocument> Documents
     {
@@ -80,16 +93,14 @@ public sealed class ReviewViewModel(DocumentsViewModel docs, DepositQuote? quote
                     if (def.Key == DocumentsViewModel.MailSlot.Key && !Docs.CommProofUpload) continue;
                     var v = Docs.View(def, h);
                     list.Add(new ReviewDocument($"{Capitalize(def.Key == "poa" ? "proof of address" : def.Label)} · {who}",
-                        !v.Used ? v.NotApplicable ?? "" : v.Doc is { } d ? (d.Check.Length > 0 ? d.Check : "Filed") : "Not filed yet",
-                        v.Doc is not null, v.Used));
+                        DetailOf(v), v.Doc is not null, AppliesTo(v)));
                 }
             }
             foreach (var def in new[] { DocumentsViewModel.FormSlot, DocumentsViewModel.PaymentSlot, DocumentsViewModel.EmpProofSlot, DocumentsViewModel.TdsFormSlot })
             {
                 var v = Docs.View(def);
                 list.Add(new ReviewDocument(Capitalize(def.Key == "payment" ? "payment instrument" : def.Label),
-                    !v.Used ? v.NotApplicable ?? "" : v.Doc is { } d ? (d.Check.Length > 0 ? d.Check : "Filed") : "Not filed yet",
-                    v.Doc is not null, v.Used));
+                    DetailOf(v), v.Doc is not null, AppliesTo(v)));
             }
             return list;
         }

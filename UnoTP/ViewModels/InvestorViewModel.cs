@@ -441,7 +441,7 @@ public sealed class InvestorViewModel(InvestorInfoState state, DocumentsViewMode
         foreach (var slot in DocumentsViewModel.HolderSlots)
         {
             var view = Docs.View(slot, h);
-            if (view.Used) slots.Add(view);
+            if (view.Required || view.Doc is not null) slots.Add(view);
         }
         var filed = slots.Count(v => v.Doc is not null);
         var fieldsToFill = UnfilledFor(State, holder, h, Docs.MailTyped, Places, Docs.Ref.SubOccupationsFor).Count;

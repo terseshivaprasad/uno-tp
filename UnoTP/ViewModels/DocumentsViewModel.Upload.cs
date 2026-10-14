@@ -222,20 +222,21 @@ public partial class DocumentsViewModel
 
         async Task RefuseAsync(string why, string whatNext, params (string Text, string Kind)[] stages)
         {
-            // An Aadhaar is kept aside masked, as it is filed masked. It is masked before
-            // the refusal is counted: one that cannot be masked is not kept and costs no attempt.
-            if (proof && type == "Aadhaar") copy = await MaskedAsync(h, copy);
             // After the wait the count starts again; the wait runs from this refusal.
             var attempts = s.Attempts[key] = AttemptsNow(key) + 1;
             s.RefusedAt[key] = DateTime.Now;
-            var kept = await documents.KeepRefusedAsync(AppNo, FiledUnder(def, h), def.Key, copy);
+            // A refused copy is kept apart for a week, for analysis - except an Aadhaar,
+            // which is never kept once refused: it carries the number unmasked.
+            var kept = proof && type == "Aadhaar" ? null : await documents.KeepRefusedAsync(AppNo, FiledUnder(def, h), def.Key, copy);
+            var keptNote = kept is null ? "The copy is not kept." : $"The copy is kept for a week as {kept.Ref}.";
             // Telling a partner to upload it again when there is nothing left to
             // upload with is worse than saying nothing.
             var message = attempts >= MaxAttempts
-                ? $"{why}, and that is {MaxAttempts} refused one after another. With a clearer copy, {TryAgainIn(RetryAt(key))}. The copy is kept for a week as {kept.Ref}."
-                : $"{why}. {whatNext} The copy is kept for a week as {kept.Ref}.";
+                ? $"{why}, and that is {MaxAttempts} refused one after another. With a clearer copy, {TryAgainIn(RetryAt(key))}. {keptNote}"
+                : $"{why}. {whatNext} {keptNote}";
             foreach (var (text, kind) in stages) entry.Add(text, kind);
-            entry.Add($"Copy kept for analysis as {kept.Ref} until {kept.KeptUntil:dd MMM yyyy}, and deleted after.", "warn");
+            if (kept is null) entry.Add("Copy not kept: a refused Aadhaar is never stored.", "warn");
+            else entry.Add($"Copy kept for analysis as {kept.Ref} until {kept.KeptUntil:dd MMM yyyy}, and deleted after.", "warn");
             entry.End("Refused", "bad");
             FlashMessages().Errors[key] = message;
             FlashMessages().ErrorLog[key] = entry.Id;
@@ -306,8 +307,21 @@ public partial class DocumentsViewModel
                 ("A proof of address is taken only when its address and PIN code can be read.", "bad"));
             return;
         }
-        // The district and the state are the PIN code master's, by the PIN code read off the proof.
-        if (proof) reading = await WithPlaceOfPinCodeAsync(reading, entry);
+        // The district and the state are the PIN code master's, by the PIN code read off
+        // the proof. A PIN code the master does not hold stops the proof: it is not taken.
+        if (proof)
+        {
+            var placed = await WithPlaceOfPinCodeAsync(reading, entry);
+            if (placed is null)
+            {
+                var pinCode = SplitPin(reading.Address.Trim()).Pin;
+                await RefuseAsync(Messages.UploadDocuments.PinNotInMaster(pinCode), Messages.UploadDocuments.PinMustBeInMaster,
+                    ($"OCR read: address {reading.Address.Trim()}.", ""),
+                    ($"PIN code {pinCode} is not in the PIN code master.", "bad"));
+                return;
+            }
+            reading = placed;
+        }
 
         // A holder with no folio is put to NSDL with the name the copy reads. NSDL not
         // answering does not cost the copy: it was identified and read, so it is filed
@@ -341,6 +355,26 @@ public partial class DocumentsViewModel
         {
             Doing("Checking the address with the issuer\u2026");
             issuerSays = await verification.ConfirmProofAsync(type, reading, h.Who.Dob);
+        }
+        // A proof of address is taken, and its address with it, only when its source
+        // confirms it - a new holder's, and the newer proof of a holder whose proof is
+        // on record alike. An Aadhaar has no source to ask: it is taken masked, as
+        // every Aadhaar is (below). One that is not confirmed is refused and nothing is
+        // filed; for a holder whose proof is on record, that proof and its address stand.
+        // With the check switched off no source can be asked, so nothing can be held to
+        // it: the proof is filed for Operations to check.
+        if (def.Key == PoaSlot.Key && type != "Aadhaar" && switches.IsOn(OutsideSwitches.Verification)
+            && NotConfirmedBySource(issuerSays) is { } notConfirmed)
+        {
+            var stages = new List<(string Text, string Kind)> { ("A proof of address is taken only when its source confirms it.", "bad") };
+            var whatNext = Messages.UploadDocuments.ProofNeedsItsSource;
+            if (View(def, h).Optional)
+            {
+                stages.Add(("The proof and the address on record stand.", "warn"));
+                whatNext = Messages.UploadDocuments.NewerProofNeedsItsSource;
+            }
+            await RefuseAsync(notConfirmed, whatNext, stages.ToArray());
+            return;
         }
         var masked = proof && type == "Aadhaar";
         if (masked)
@@ -378,6 +412,16 @@ public partial class DocumentsViewModel
 
         // Both copies filed: the faces on them are compared - again, when either is replaced.
         if (def.Key is "poa" or "pan") await FaceAsync(h, entry);
+    }
+
+    // Why a proof was not confirmed by its source - it could not be asked, the proof
+    // has none, or it said no. Null when the source confirmed it.
+    private static string? NotConfirmedBySource(Verification issuerSays)
+    {
+        if (issuerSays.NotAsked is { } why) return Messages.UploadDocuments.ProofSourceNotAsked(why);
+        if (issuerSays.Verifier.Length == 0) return Messages.UploadDocuments.ProofHasNoSource;
+        if (!issuerSays.Confirmed) return Messages.UploadDocuments.ProofNotConfirmed(Capitalize(issuerSays.Verifier));
+        return null;
     }
 
     // Why the address a proof reads is not enough: none at all, or no PIN code in it.
@@ -467,6 +511,19 @@ public partial class DocumentsViewModel
         Doing("Filing the copy\u2026");
         var name = await documents.FileAsync(AppNo, LabelOf(def, h), copy);
         return copy with { FileName = name };
+    }
+
+    /// <summary>
+    /// The folio a slot's copy is kept under: the joint holder's own for one of their
+    /// documents ("h02-pan"), the investor's for everything else. Empty for a holder with none.
+    /// </summary>
+    public string FolioOfSlot(string slotKey)
+    {
+        foreach (var joint in JointHolders)
+        {
+            if (slotKey.StartsWith($"h{joint.Code}-", StringComparison.Ordinal)) return joint.Who.Folio;
+        }
+        return Investor.Who.Folio;
     }
 
     // What a copy's file name is made from. A holder's own document goes under

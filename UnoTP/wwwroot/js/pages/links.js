@@ -33,8 +33,8 @@
 
   search.addEventListener('input', function () { page = 1; renderTablePage(); });
 
-  // Sending and regenerating a link are posts: the backend sends it, and the
-  // page comes back with the link as it now stands.
+  // Send link, Resend and New link are posts: the backend sends the link, the
+  // same one again or a fresh one, and the page comes back with it as it now stands.
 
   // True when a row has the chosen status and contains the search text.
   function matchesStatusAndSearch(row) {

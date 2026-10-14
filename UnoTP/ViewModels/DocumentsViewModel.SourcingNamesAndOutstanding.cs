@@ -17,8 +17,6 @@ public partial class DocumentsViewModel
             return ("Stands for the sourcing mode itself — filled here, not typed.", false);
         var found = sub ? subParty : sourceParty;
         if (found is not null) return ($"{NameLabelOf(mode, sub)} — {found.Name}", true);
-        // A code the user typed and its register does not hold: Proceed stops on it (CodeProblem).
-        if (CodeProblem(mode, sub) is not null) return ($"{NameLabelOf(mode, sub)} — not found", false);
         return ("No name against this code here. You can still proceed — Operations check it before the deposit is booked.", false);
     }
 
@@ -32,25 +30,6 @@ public partial class DocumentsViewModel
         if (mode is null) return sub ? "Sub Broker Name" : "Broker Name";
         if (sub && mode.Search != "sub") return "Sub Broker Name";
         return mode.NameLabel;
-    }
-
-    /// <summary>
-    /// What is wrong with the code in a sourcing field, or null. A code a branch user
-    /// types against a register must be on it: a broker's on the broker register, a
-    /// sourcing employee's among the employees the sourcing mode's staff rule takes
-    /// (MasterQueries: branch, mfis, mflEx). A partner's own code is filled for them,
-    /// not typed, and is not checked here.
-    /// </summary>
-    public string? CodeProblem(SourcingModeOption? mode, bool sub)
-    {
-        if (!Chooses || mode is null) return null;
-        var register = RegisterName(mode, sub);
-        var value = sub ? State.SubBroker : State.SourceCode;
-        if (register is null || value.Length == 0) return null;
-        var found = sub ? subParty : sourceParty;
-        if (found is not null) return null;
-        if (register == "brokers") return Messages.UploadDocuments.BrokerCodeNotFound(value);
-        return Messages.UploadDocuments.SourcingEmployeeNotFound(value, mode.Name);
     }
 
     /// <summary>The register a code field is searched against as it is typed - "brokers" or "staff" - or null where it is not searched.</summary>
@@ -90,7 +69,7 @@ public partial class DocumentsViewModel
         if (Missing(FormSlot)) left.Add(Messages.UploadDocuments.MissingForm);
         if (Missing(PanSlot)) left.Add(Messages.UploadDocuments.MissingPan);
         if (NsdlUnsettled(Investor)) left.Add(Messages.UploadDocuments.MissingNsdl);
-        if (!AutoProofType && View(PoaSlot).Used && s.PoaType.Length == 0) left.Add(Messages.UploadDocuments.MissingPoaType);
+        if (!AutoProofType && View(PoaSlot).Required && s.PoaType.Length == 0) left.Add(Messages.UploadDocuments.MissingPoaType);
         if (Missing(PoaSlot)) left.Add(Messages.UploadDocuments.MissingPoa);
         if (Missing(PhotoSlot)) left.Add(Messages.UploadDocuments.MissingPhoto);
         if (!AutoProofType && View(MailSlot).Used && s.MailPoaType.Length == 0) left.Add(Messages.UploadDocuments.MissingMailType);
@@ -102,9 +81,6 @@ public partial class DocumentsViewModel
         {
             if (s.SourceCode.Length == 0) left.Add("the " + mode.CodeLabel.ToLowerInvariant());
             if (SubRequired(mode) && s.SubBroker.Length == 0) left.Add(Messages.UploadDocuments.MissingSubBroker);
-            // A code typed that its register does not hold.
-            if (CodeProblem(mode, sub: false) is not null || CodeProblem(mode, sub: true) is not null)
-                left.Add("a valid " + mode.CodeLabel.ToLowerInvariant());
         }
         if (s.Category.Length == 0) left.Add(Messages.UploadDocuments.MissingCategory);
         if (IsEmployee(s.Category))

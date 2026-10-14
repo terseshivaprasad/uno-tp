@@ -46,7 +46,7 @@ internal static partial class Sections
     public static async Task WriteUploadAsync(IDbConnection db, IDbTransaction tx, Stamp at, UploadState upload,
         IReadOnlyDictionary<string, DocumentCode> codes, string dmsRoot, IReadOnlyList<HolderCopyOnRecord> onRecord)
     {
-        await db.ExecuteAsync(ApplicationQueries.InsertUploadState, new { at.AppNo, at.Version, Status = at.OwnStatus, Json = JsonSerializer.Serialize(upload, Json), at.By }, tx);
+        await db.ExecuteAsync(UploadDocumentsQueries.InsertUploadState, new { at.AppNo, at.Version, Status = at.OwnStatus, Json = JsonSerializer.Serialize(upload, Json), at.By }, tx);
 
         // One row per document uploaded on the application, coded as the FD system's document
         // master codes it, with what the outside checks made of it (SaveStep.DocumentCheckFlags.cs).
@@ -62,7 +62,7 @@ internal static partial class Sections
         // a check's answer, the status on submit), has its old row taken out of use and
         // a new one inserted; one no longer on the application has its row taken out
         // of use. So a row taken out of use is always an earlier state, never a copy.
-        var active = (await db.QueryAsync<DocumentRow>(ApplicationTableQueries.ActiveDocuments, new { at.AppNo }, tx)).ToList();
+        var active = (await db.QueryAsync<DocumentRow>(UploadDocumentsQueries.ActiveDocuments, new { at.AppNo }, tx)).ToList();
         var sequences = new Dictionary<(string, string), int>();
         foreach (var d in Documents(upload))
         {
@@ -73,7 +73,7 @@ internal static partial class Sections
             {
                 HolderType = holderType, TypeCode = code?.TypeCode, SubTypeCode = code?.SubTypeCode, TypeName = code?.TypeName, SubTypeName = code?.SubTypeName,
                 FileName = Cut(d.Doc.FileName, 250),
-                FilePath = DmsPaths.Under(dmsRoot, at.AppNo, d.Doc.FileName),
+                FilePath = DmsPaths.WhereKept(dmsRoot, FolioOf(d.HolderType, at, upload), at.AppNo, d.Doc.FileName),
                 Folio = FolioOf(d.HolderType, at, upload),
                 Sequence = NextSequence(sequences, holderType, code?.TypeCode ?? d.DocType),
                 UploadedFrom = Source,
@@ -109,7 +109,7 @@ internal static partial class Sections
         // What is left was replaced, or is no longer on the application.
         if (active.Count > 0)
         {
-            await db.ExecuteAsync(ApplicationTableQueries.RetireDocuments, new { Ids = active.Select(row => row.Id).ToList(), UpdatedBy = at.UserClusterId, at.UserName, at.Ip }, tx);
+            await db.ExecuteAsync(UploadDocumentsQueries.RetireDocuments, new { Ids = active.Select(row => row.Id).ToList(), UpdatedBy = at.UserClusterId, at.UserName, at.Ip }, tx);
         }
     }
 
@@ -165,7 +165,7 @@ internal static partial class Sections
     }
 
     private static Task InsertDocumentAsync(IDbConnection db, IDbTransaction tx, Stamp at, DocumentRow row) =>
-        db.ExecuteAsync(ApplicationTableQueries.InsertDocument, new
+        db.ExecuteAsync(UploadDocumentsQueries.InsertDocument, new
         {
             at.AppNo, row.HolderType, row.TypeCode, row.SubTypeCode, row.TypeName, row.SubTypeName,
             row.FileName, row.FilePath, row.Folio, row.Sequence, row.UploadedFrom, row.Number, row.Expiry,
@@ -296,9 +296,9 @@ internal static partial class Sections
     // ----- Shared ----------------------------------------------------------------
 
     // The rows a save replaces go out of use, so the section's current rows are the
-    // application's active ones. The table and column names are this file's own.
-    private static Task RetireAsync(IDbConnection db, IDbTransaction tx, Stamp at, string table, string updatedOn = "f_UpdatedOn") =>
-        db.ExecuteAsync(ApplicationTableQueries.Retire(table, updatedOn), new { at.AppNo, UpdatedBy = at.UserClusterId, at.UserName, at.Ip }, tx);
+    // application's active ones. retire is the step's own query for its table.
+    private static Task RetireAsync(IDbConnection db, IDbTransaction tx, Stamp at, string retire) =>
+        db.ExecuteAsync(retire, new { at.AppNo, UpdatedBy = at.UserClusterId, at.UserName, at.Ip }, tx);
 
     // A value cut to what its column holds, so a long one never fails the save.
     private static string Cut(string? value, int length)

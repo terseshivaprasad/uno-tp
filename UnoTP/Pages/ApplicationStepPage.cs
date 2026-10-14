@@ -107,7 +107,7 @@ public abstract class ApplicationStepPage(IApplicationApi applications, IDeposit
     /// <summary>
     /// Whether the source of funds is asked for a deposit of this amount: the investor's
     /// active deposits with us are added up from the FD system's deposit register, by
-    /// their PAN (MasterQueries.ActiveDeposits). A renewal leaves out the deposit it
+    /// their PAN (FdConfigurationQueries.ActiveDeposits). A renewal leaves out the deposit it
     /// renews, which the new one replaces.
     /// </summary>
     protected async Task<SourceOfFundsCheck> SourceOfFundsAsync(DocumentsViewModel docs, long amount)

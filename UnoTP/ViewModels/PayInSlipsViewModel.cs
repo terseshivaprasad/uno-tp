@@ -3,19 +3,46 @@ using UnoTP.Models;
 
 namespace UnoTP.ViewModels;
 
-/// <summary>Pay In Slip Generation: the applications paying on paper, and their slips.</summary>
-public class PayInSlipsViewModel(IReadOnlyList<SlipRecord> slips, int windowDays)
+/// <summary>Pay In Slip Generation: the applications paying on paper a search reaches, and their slips.</summary>
+public class PayInSlipsViewModel(SlipsFound found, int windowDays, ApplicationSearch search)
 {
     // The window the page works to. It is the Short URL page's rule seen from the
     // other side: an application that goes unpaid for this long cancels itself, so
     // a slip can only be made for one raised inside it. The list therefore opens on
     // the last fourteen days rather than on nothing.
+    // The search is run by the database: the page holds what it reached, never
+    // the partner's whole list.
     public int WindowDays { get; } = windowDays;
 
     public static DateTime Today => DateTime.Today;
 
     // The earliest application date a slip can still be made for.
-    public DateTime Earliest => Today.AddDays(-(WindowDays - 1));
+    public DateTime Earliest => ListSearch.Earliest(WindowDays);
+
+    /// <summary>The search the list on the page is the answer to.</summary>
+    public ApplicationSearch Search { get; } = search;
+
+    /// <summary>The first and the last day in the date boxes: the search's own, or the window's.</summary>
+    public DateTime From => Search.From ?? Earliest;
+
+    public DateTime To => Search.To ?? Today;
+
+    /// <summary>Set when the list is the one the page opens on: the whole window, by dates.</summary>
+    public bool IsOpeningList => ListSearch.IsOpening(Search, WindowDays);
+
+    /// <summary>Set when the search reaches more applications than the page lists.</summary>
+    public bool MoreExist { get; } = found.MoreExist;
+
+    /// <summary>What the line under the search says the list holds.</summary>
+    public string Scope
+    {
+        get
+        {
+            if (Search.By == ApplicationSearch.ByNumber) return $"Showing every application matching “{Search.Text}”, inside the window or cancelled.";
+            if (IsOpeningList) return $"Showing the last {WindowDays} days — {From:dd/MM/yyyy} to {To:dd/MM/yyyy}.";
+            return $"Showing applications raised {From:dd/MM/yyyy} to {To:dd/MM/yyyy}.";
+        }
+    }
 
     // Where the slip for an application has got to. A lapsed application has no
     // slip and never will; it is listed only when someone searches for it by
@@ -82,15 +109,15 @@ public class PayInSlipsViewModel(IReadOnlyList<SlipRecord> slips, int windowDays
 
         // What the Applied cell says underneath the date: how long the application
         // has before it cancels itself, or that it already has.
-        public string Countdown => !InWindow
-            ? $"cancelled after {WindowDays} days"
+        public string Countdown => State == "lapsed"
+            ? (InWindow ? "cancelled" : $"cancelled after {WindowDays} days")
             : DaysLeft <= 1 ? "cancels today" : $"cancels in {DaysLeft} days";
 
-        public bool Urgent => InWindow && DaysLeft <= 3;
+        public bool Urgent => State != "lapsed" && InWindow && DaysLeft <= 3;
     }
 
-    /// <summary>Every application paying on paper, from the backend.</summary>
-    public IReadOnlyList<SlipRow> Rows => rows ??= slips.Select(ToRow).ToList();
+    /// <summary>The applications paying on paper the search reached, from the backend.</summary>
+    public IReadOnlyList<SlipRow> Rows => rows ??= found.Slips.Select(ToRow).ToList();
 
     private List<SlipRow>? rows;
 
@@ -99,18 +126,14 @@ public class PayInSlipsViewModel(IReadOnlyList<SlipRecord> slips, int windowDays
         r.AppNo, r.Investor, r.Amount, r.Instrument, r.InstrumentNo, r.DrawnOn,
         (Today - r.Applied.Date).Days, r.Branch, r.Digital, r.Accepted, r.State, r.SlipNo, r.AcceptedOn, WindowDays);
 
-    // The list the page opens on: everything raised inside the window, newest
-    // first, with the slips still to be made at the top of each day.
+    // The list as the page shows it: newest first, with the slips still to be made
+    // at the top of each day. A search by dates only reaches applications inside
+    // the window; a cancelled one is reached by its number, to say what became of it.
     public IEnumerable<SlipRow> Listed =>
-        Rows.Where(r => r.InWindow)
-            .OrderBy(r => r.DaysOld)
+        Rows.OrderBy(r => r.DaysOld)
             // Within a day: the slips that can be made now, then the ones waiting
             // on an acceptance, then the ones already dealt with.
             .ThenBy(r => r.Blocked ? 1 : r.State == "pending" ? 0 : 2);
-
-    // The cancelled applications, kept out of the list but still findable by
-    // number so a search for one says what became of it.
-    public IEnumerable<SlipRow> Lapsed => Rows.Where(r => !r.InWindow);
 
     // Rupees the way the rest of the console writes them: lakh grouping, with the
     // symbol and a space in front. A custom format string cannot vary its group

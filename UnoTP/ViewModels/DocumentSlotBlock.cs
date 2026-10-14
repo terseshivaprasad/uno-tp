@@ -47,7 +47,7 @@ public sealed class SlotToolbar
     /// <summary>Why View is disabled.</summary>
     public string NoViewReason { get; private set; } = "";
 
-    /// <summary>What the action button says: Upload, Replace, Final or Try again later.</summary>
+    /// <summary>What the action button says: Upload, Newer proof, Replace, Final or Try again later.</summary>
     public string ActionLabel { get; private set; } = "Upload";
 
     /// <summary>Why the action cannot be done now, or null when it can.</summary>
@@ -130,7 +130,8 @@ public sealed class SlotToolbar
         }
         else
         {
-            toolbar.ActionLabel = "Upload";
+            // A proof on record stands; the holder may file a newer one.
+            toolbar.ActionLabel = slot.Optional ? "Newer proof" : "Upload";
         }
 
         return toolbar;

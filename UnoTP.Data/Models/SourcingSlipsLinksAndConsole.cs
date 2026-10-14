@@ -26,8 +26,21 @@ public static class TypedSearch
     /// <summary>The fewest characters a search is run on. On less, nothing is asked and nothing is listed.</summary>
     public const int FromLength = 3;
 
+    /// <summary>The fewest characters the staff register is searched on: an employee's code is searched from five.</summary>
+    public const int StaffFromLength = 5;
+
+    /// <summary>The fewest characters a register ("staff" or "brokers") is searched on.</summary>
+    public static int FromLengthOf(string? register)
+    {
+        if (register == "staff") return StaffFromLength;
+        return FromLength;
+    }
+
     /// <summary>Whether enough was typed for a search to be run.</summary>
     public static bool LongEnough(string text) => text.Trim().Length >= FromLength;
+
+    /// <summary>Whether enough was typed for a register ("staff" or "brokers") to be searched.</summary>
+    public static bool LongEnough(string text, string? register) => text.Trim().Length >= FromLengthOf(register);
 }
 
 /// <summary>A code and the name the register holds against it.</summary>
@@ -36,17 +49,60 @@ public sealed record Party(string Code, string Name);
 /// <summary>The Axis pay-in slips for the partner's applications paid on paper.</summary>
 public interface IPayInSlipApi
 {
-    /// <summary>Every application paying by cheque, cancelled ones included.</summary>
-    Task<IReadOnlyList<SlipRecord>> SlipsAsync(CancellationToken ct = default);
+    /// <summary>
+    /// The partner's applications paying by cheque that a search reaches, newest first:
+    /// by the days they were raised on, or by part of an application number (cancelled
+    /// ones included). Never the whole list, and never more than
+    /// <see cref="ApplicationSearch.Most"/> of them.
+    /// </summary>
+    Task<SlipsFound> SearchAsync(ApplicationSearch search, CancellationToken ct = default);
 
     /// <summary>
-    /// POST payin-slips/{appNo}: issues the application's pay-in slip - or a fresh
-    /// one, for a reprint - and returns the row as it now stands. Null when the
-    /// application cannot have a slip: not found, cancelled, or digital and not
-    /// yet accepted.
+    /// Every one of the partner's applications paying by cheque raised in the days an
+    /// unpaid application stands, for the dashboard to count. Only those days are read.
+    /// </summary>
+    Task<IReadOnlyList<SlipRecord>> StillOpenAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// POST payin-slips/{appNo}: issues the application's pay-in slip and returns
+    /// the row as it now stands. A slip is made once: an application that has one is
+    /// given the same slip again, for a reprint, and nothing is written. Null when the
+    /// application cannot have a slip: not found, cancelled, digital and not yet
+    /// accepted, or its deposit row not standing as APR.
     /// </summary>
     Task<SlipRecord?> GenerateAsync(string appNo, CancellationToken ct = default);
+
+    /// <summary>The newest pay-in slip generated for one of the partner's applications, as it is printed; null when it has none.</summary>
+    Task<SlipPrint?> SlipToPrintAsync(string appNo, CancellationToken ct = default);
 }
+
+/// <summary>
+/// A generated pay-in slip as it is printed: its number, the application, and the
+/// cheque on it (t_FD_BT_Payinslip_Dtl). The customer's name is whole here, as the
+/// bank needs it.
+/// </summary>
+public sealed record SlipPrint
+{
+    public string SlipNo { get; init; } = "";
+    public string AppNo { get; init; } = "";
+
+    /// <summary>When the application was submitted.</summary>
+    public DateTime ApplicationDate { get; init; }
+    public string CustomerName { get; init; } = "";
+    public long Amount { get; init; }
+    public string ChequeNumber { get; init; } = "";
+    public string BankName { get; init; } = "";
+    public string BankIfsc { get; init; } = "";
+    public string BranchName { get; init; } = "";
+
+    /// <summary>The Axis branch the cheque is presented at, by its SOL id.</summary>
+    public string SolId { get; init; } = "";
+}
+
+/// <summary>What a search of the partner's cheque applications found.</summary>
+/// <param name="Slips">The newest of them, up to <see cref="ApplicationSearch.Most"/>.</param>
+/// <param name="MoreExist">Set when the search reaches more applications than are listed.</param>
+public sealed record SlipsFound(IReadOnlyList<SlipRecord> Slips, bool MoreExist);
 
 /// <param name="State">pending, generated, deposited or lapsed.</param>
 /// <param name="AcceptedOn">When the investor accepted a digital application; null until they do.</param>
@@ -67,6 +123,17 @@ public sealed record SlipRecord(
     string? SlipNo,
     DateTime? AcceptedOn = null);
 
+/// <summary>
+/// The page a link is sent from. Each runs its own queries for the send (the page's
+/// file under UnoTP.Data/Queries), shared with no other page.
+/// </summary>
+public enum LinkPage
+{
+    ReviewSummary,
+    ApplicationSubmitted,
+    ShortUrl,
+}
+
 /// <summary>The short links sent to investors, and the applications that can carry one.</summary>
 public interface ILinkApi
 {
@@ -76,13 +143,18 @@ public interface ILinkApi
     Task<IReadOnlyList<PendingRecord>> PendingAsync(CancellationToken ct = default);
 
     /// <summary>
-    /// POST links { appNo, purpose }: sends the investor a link - payment or
-    /// acceptance. An application that has a link already is sent the same short
-    /// link again, open for LinkRequestRow.RegeneratedForHours. The link as
-    /// sent, or null when the application cannot carry one.
+    /// POST links { appNo, purpose, newLink }: sends the investor a link - payment or
+    /// acceptance. Resend (newLink false) sends the link the application has again,
+    /// the same short link, open for LinkRequestRow.RegeneratedForHours; a new link
+    /// (newLink true) takes the old one out of use and sends a fresh one. The link as
+    /// sent; or why it was not: the reason the limits refused it (CommLimits), or null
+    /// when the application cannot carry one.
     /// </summary>
-    Task<SentLinkRecord?> SendAsync(string appNo, string purpose, CancellationToken ct = default);
+    Task<LinkSent> SendAsync(string appNo, string purpose, LinkPage from, bool newLink = false, CancellationToken ct = default);
 }
+
+/// <summary>A link sent, or why it was not: the reason the limits refused it, shown to the partner; null with no link when the application cannot carry one.</summary>
+public sealed record LinkSent(SentLinkRecord? Link, string? Refused = null);
 
 /// <summary>A link sent, by SMS and e-mail both. The link itself is never returned: it goes to the investor and nowhere else.</summary>
 /// <param name="Mobile">The mobile number it went to, masked.</param>

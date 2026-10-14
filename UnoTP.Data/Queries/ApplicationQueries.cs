@@ -1,52 +1,66 @@
 namespace UnoTP.Data;
 
 /// <summary>
-/// The SQL for the app's own application tables: t_Unotp_Application_Mst (the header),
-/// t_Unotp_Upload_State and t_Unotp_Page_State. Nothing but SQL is in this file: each
-/// statement is a constant, used by name from SqlApplications.cs. To change what is read
-/// or written, change it here.
+/// The SQL every step of an application runs, whichever page it is: finding the
+/// partner's own application, opening one, moving its version on when a step is
+/// saved, and reading everything saved on it in one go.
+/// A page's own SQL is in the file named after the page. Nothing but SQL is in this file.
+///
+/// Every query in the Queries folder is one whole statement: none is built from
+/// another constant or from a piece passed to it, so any of them can be changed on
+/// its own. What several queries share is written out in each of them, and a change
+/// to it is made in each (docs/CODE_GUIDE.md lists what is shared).
 /// </summary>
 internal static class ApplicationQueries
 {
     /// <summary>
-    /// The investor's name as far as the application knows it: as NSDL verified it, else as read
-    /// off the PAN copy (or typed over it), else as the folio has it. Empty for an investor with
-    /// no folio whose PAN copy is not read yet. For a query with the header as m and the upload state as u.
+    /// The partner's own application's header.
+    /// The columns are each named after a property of HeaderRow (ApplicationTableRows.cs): a column
+    /// added here needs its property there, and is added to every query that gives the header back
+    /// (Header, HeaderLocked, ReviewSummaryQueries.Submit and RecordLink, ApplicationSubmittedQueries.ResendLink).
     /// </summary>
-    public const string KnownName = """
-        COALESCE(NULLIF(JSON_VALUE(u.f_Upload, '$.name'), ''), NULLIF(JSON_VALUE(u.f_Upload, '$.nsdlName'), ''), m.f_Name)
+    public const string Header = """
+        SELECT f_App_No AS AppNo, f_Status AS Status, f_Version AS Version, f_Upload_Ver AS UploadVer,
+               f_Details_Ver AS DetailsVer, f_Payment_Ver AS PaymentVer, f_Deposit_Ver AS DepositVer,
+               f_Pan AS Pan, f_Dob AS Dob, f_Name AS Name, f_Folio AS Folio, f_Gender AS Gender,
+               f_Address AS Address, f_Data_Source AS DataSource, f_Pan_Filed AS PanFiled, f_Rec_Pan AS RecPan,
+               f_Rec_Photo AS RecPhoto, f_Rec_Poa AS RecPoa, f_Renew_Dep_No AS RenewDepNo,
+               f_Renew_Amount AS RenewAmount, f_Renew_Matures_On AS RenewMaturesOn, f_Renew_Rate AS RenewRate,
+               f_Renew_Tenure AS RenewTenure, f_Renew_Payout AS RenewPayout,
+               f_Renew_Principal AS RenewPrincipal, f_Submitted_On AS SubmittedOn, f_Sub_Status AS SubStatus,
+               f_Link_Sent_To AS LinkSentTo, f_Link_Emailed_To AS LinkEmailedTo,
+               f_Link_Valid_Until AS LinkValidUntil, f_Resends_Left AS ResendsLeft, f_Short_Url AS ShortUrl,
+               f_Created_On AS CreatedOn, f_Cancelled_On AS CancelledOn
+        FROM dbo.t_Unotp_Application_Mst
+        WHERE f_App_No = @AppNo AND f_Partner_Id = @Partner AND f_Active = 1
         """;
 
     /// <summary>
-    /// The columns an application's header is read by, each named after a property of HeaderRow
-    /// (ApplicationTableRows.cs). A column added here needs its property there.
+    /// The partner's own application's header, with the row's lock taken: for a save that reads it
+    /// and then writes it. The same columns as Header.
     /// </summary>
-    public const string HeaderColumns = """
-        f_App_No AS AppNo, f_Status AS Status, f_Version AS Version,
-        f_Upload_Ver AS UploadVer, f_Details_Ver AS DetailsVer, f_Payment_Ver AS PaymentVer, f_Deposit_Ver AS DepositVer,
-        f_Pan AS Pan, f_Dob AS Dob, f_Name AS Name, f_Folio AS Folio, f_Gender AS Gender, f_Address AS Address, f_Data_Source AS DataSource,
-        f_Pan_Filed AS PanFiled, f_Rec_Pan AS RecPan, f_Rec_Photo AS RecPhoto, f_Rec_Poa AS RecPoa,
-        f_Renew_Dep_No AS RenewDepNo, f_Renew_Amount AS RenewAmount, f_Renew_Matures_On AS RenewMaturesOn,
-        f_Renew_Rate AS RenewRate, f_Renew_Tenure AS RenewTenure, f_Renew_Payout AS RenewPayout, f_Renew_Principal AS RenewPrincipal,
-        f_Submitted_On AS SubmittedOn, f_Sub_Status AS SubStatus, f_Link_Sent_To AS LinkSentTo,
-        f_Link_Emailed_To AS LinkEmailedTo, f_Link_Valid_Until AS LinkValidUntil, f_Resends_Left AS ResendsLeft,
-        f_Short_Url AS ShortUrl, f_Created_On AS CreatedOn, f_Cancelled_On AS CancelledOn
+    public const string HeaderLocked = """
+        SELECT f_App_No AS AppNo, f_Status AS Status, f_Version AS Version, f_Upload_Ver AS UploadVer,
+               f_Details_Ver AS DetailsVer, f_Payment_Ver AS PaymentVer, f_Deposit_Ver AS DepositVer,
+               f_Pan AS Pan, f_Dob AS Dob, f_Name AS Name, f_Folio AS Folio, f_Gender AS Gender,
+               f_Address AS Address, f_Data_Source AS DataSource, f_Pan_Filed AS PanFiled, f_Rec_Pan AS RecPan,
+               f_Rec_Photo AS RecPhoto, f_Rec_Poa AS RecPoa, f_Renew_Dep_No AS RenewDepNo,
+               f_Renew_Amount AS RenewAmount, f_Renew_Matures_On AS RenewMaturesOn, f_Renew_Rate AS RenewRate,
+               f_Renew_Tenure AS RenewTenure, f_Renew_Payout AS RenewPayout,
+               f_Renew_Principal AS RenewPrincipal, f_Submitted_On AS SubmittedOn, f_Sub_Status AS SubStatus,
+               f_Link_Sent_To AS LinkSentTo, f_Link_Emailed_To AS LinkEmailedTo,
+               f_Link_Valid_Until AS LinkValidUntil, f_Resends_Left AS ResendsLeft, f_Short_Url AS ShortUrl,
+               f_Created_On AS CreatedOn, f_Cancelled_On AS CancelledOn
+        FROM dbo.t_Unotp_Application_Mst WITH (UPDLOCK, ROWLOCK)
+        WHERE f_App_No = @AppNo AND f_Partner_Id = @Partner AND f_Active = 1
         """;
 
     /// <summary>
-    /// The same columns as an UPDATE gives them back (OUTPUT inserted.f_App_No AS AppNo, ...):
-    /// made from HeaderColumns, so the two never differ.
+    /// Whether an application is the partner's own: 1 when it is.
     /// </summary>
-    public static readonly string InsertedHeaderColumns =
-        string.Join(", ", HeaderColumns.Split(',').Select(c => "inserted." + c.Trim()));
-
-    /// <summary>
-    /// The partner's own application's header. locked takes the row's lock, for a save that
-    /// reads it and then writes it.
-    /// </summary>
-    public static string Header(bool locked) =>
-        $"SELECT {HeaderColumns} FROM dbo.t_Unotp_Application_Mst {(locked ? "WITH (UPDLOCK, ROWLOCK)" : "")} " +
-        "WHERE f_App_No = @AppNo AND f_Partner_Id = @Partner AND f_Active = 1";
+    public const string IsPartnersApplication = """
+        SELECT COUNT(*) FROM dbo.t_Unotp_Application_Mst WHERE f_App_No = @AppNo AND f_Partner_Id = @Partner AND f_Active = 1
+        """;
 
     /// <summary>
     /// The next application number, asked of the FD system's own procedure, which numbers a
@@ -74,160 +88,121 @@ internal static class ApplicationQueries
     /// A new application's header row.
     /// </summary>
     public const string InsertApplication = """
-        INSERT dbo.t_Unotp_Application_Mst (f_App_No, f_Partner_Id, f_Status, f_Version,
-            f_Upload_Ver, f_Payment_Ver, f_Deposit_Ver,
-            f_Pan, f_Dob, f_Name, f_Folio, f_Gender, f_Address, f_Data_Source, f_Pan_Filed, f_Rec_Pan, f_Rec_Photo, f_Rec_Poa,
-            f_Renew_Dep_No, f_Renew_Amount, f_Renew_Matures_On, f_Renew_Rate, f_Renew_Tenure, f_Renew_Payout, f_Renew_Principal, f_Created_By)
-        VALUES (@AppNo, @Partner, 'PEN', @Version,
-            @UploadVer, @PaymentVer, @DepositVer,
-            @Pan, @Dob, @Name, @Folio, @Gender, @Address, @Source, @PanFiled, @RecPan, @RecPhoto, @RecPoa,
-            @RenewDepNo, @RenewAmount, @RenewMaturesOn, @RenewRate, @RenewTenure, @RenewPayout, @RenewPrincipal, @Partner)
+        INSERT dbo.t_Unotp_Application_Mst (f_App_No, f_Partner_Id, f_Status, f_Version, f_Upload_Ver, f_Payment_Ver, f_Deposit_Ver, f_Pan, f_Dob, f_Name, f_Folio, f_Gender, f_Address, f_Data_Source, f_Pan_Filed, f_Rec_Pan, f_Rec_Photo, f_Rec_Poa, f_Renew_Dep_No, f_Renew_Amount, f_Renew_Matures_On, f_Renew_Rate, f_Renew_Tenure, f_Renew_Payout, f_Renew_Principal, f_Created_By)
+        VALUES (@AppNo, @Partner, 'PEN', @Version, @UploadVer, @PaymentVer, @DepositVer, @Pan, @Dob, @Name, @Folio, @Gender, @Address, @Source, @PanFiled, @RecPan, @RecPhoto, @RecPoa, @RenewDepNo, @RenewAmount, @RenewMaturesOn, @RenewRate, @RenewTenure, @RenewPayout, @RenewPrincipal, @Partner)
         """;
 
     /// <summary>
-    /// A step saved: the application's version goes up, and the step's own version column with it.
-    /// sectionColumn is that column: f_Upload_Ver, f_Details_Ver, f_Payment_Ver or f_Deposit_Ver.
+    /// Upload Documents saved: the application's version goes up, and the step's own version column
+    /// (f_Upload_Ver) with it.
     /// </summary>
-    public static string NextVersion(string sectionColumn) =>
-        $"UPDATE dbo.t_Unotp_Application_Mst SET f_Version = @Next, {sectionColumn} = @Next, f_Updated_By = @Partner, f_Updated_On = SYSDATETIME() WHERE f_App_No = @AppNo";
-
-    /// <summary>
-    /// The upload step's state, as it was saved at one version of the application.
-    /// </summary>
-    public const string UploadState = "SELECT f_Upload FROM dbo.t_Unotp_Upload_State WHERE f_App_No = @AppNo AND f_App_Version = @UploadVer AND f_Active = 1";
-
-    /// <summary>
-    /// The upload step's state, saved at a version of the application.
-    /// </summary>
-    public const string InsertUploadState = """
-        INSERT dbo.t_Unotp_Upload_State (f_App_No, f_App_Version, f_Status, f_Upload, f_Created_By)
-        VALUES (@AppNo, @Version, @Status, @Json, @By)
-        """;
-
-    /// <summary>
-    /// What a page has typed on it and not yet saved as a step: kept by application and page,
-    /// for the partner's own application only.
-    /// </summary>
-    public const string SavePage = """
-        MERGE dbo.t_Unotp_Page_State WITH (HOLDLOCK) AS t
-        USING (SELECT f_App_No FROM dbo.t_Unotp_Application_Mst WHERE f_App_No = @AppNo AND f_Partner_Id = @Partner AND f_Active = 1) AS a
-            ON t.f_App_No = a.f_App_No AND t.f_Page = @Page
-        WHEN MATCHED THEN UPDATE SET f_State = @State, f_Updated_On = SYSDATETIME()
-        WHEN NOT MATCHED THEN INSERT (f_App_No, f_Page, f_State) VALUES (a.f_App_No, @Page, @State);
-        """;
-
-    /// <summary>
-    /// The application submitted: its status becomes APR, every step takes the new version,
-    /// and the quote is locked on it. Gives the header back as it now stands.
-    /// </summary>
-    public static readonly string Submit = $"""
-        UPDATE dbo.t_Unotp_Application_Mst SET f_Status = 'APR', f_Version = @Next,
-            f_Upload_Ver = CASE WHEN f_Upload_Ver IS NULL THEN NULL ELSE @Next END,
-            f_Details_Ver = CASE WHEN f_Details_Ver IS NULL THEN NULL ELSE @Next END,
-            f_Payment_Ver = CASE WHEN f_Payment_Ver IS NULL THEN NULL ELSE @Next END,
-            f_Deposit_Ver = CASE WHEN f_Deposit_Ver IS NULL THEN NULL ELSE @Next END,
-            f_Quote_Interest_Each = @InterestEach, f_Quote_Maturity_Amount = @MaturityAmount,
-            f_Quote_Matures_On = @MaturesOn, f_Quote_Rate_As_On = @RateAsOn,
-            f_Submitted_On = SYSDATETIME(), f_Sub_Status = 'payment-pending', f_Resends_Left = @Resends,
-            f_Updated_By = @Partner, f_Updated_On = SYSDATETIME()
-        OUTPUT {InsertedHeaderColumns}
+    public const string UploadDocumentsSaved = """
+        UPDATE dbo.t_Unotp_Application_Mst
+        SET f_Version = @Next, f_Upload_Ver = @Next, f_Updated_By = @Partner, f_Updated_On = SYSDATETIME()
         WHERE f_App_No = @AppNo
         """;
 
     /// <summary>
-    /// Where a submitted application's link went and until when it is open. Only while the
-    /// application is unpaid, not cancelled and inside its days. Gives the header back.
+    /// Investor Information saved: the application's version goes up, and the step's own version
+    /// column (f_Details_Ver) with it.
     /// </summary>
-    public static readonly string RecordLink = $"""
+    public const string InvestorInformationSaved = """
         UPDATE dbo.t_Unotp_Application_Mst
-        SET f_Link_Sent_To = @LinkSentTo, f_Link_Emailed_To = @LinkEmailedTo,
-            f_Link_Valid_Until = DATEADD(HOUR, @Hours, SYSDATETIME()), f_Short_Url = @ShortUrl,
-            f_Updated_By = @Partner, f_Updated_On = SYSDATETIME()
-        OUTPUT {InsertedHeaderColumns}
-        WHERE f_App_No = @AppNo AND f_Partner_Id = @Partner AND f_Status = 'APR' AND f_Active = 1
-          AND f_Paid_On IS NULL AND f_Cancelled_On IS NULL AND f_Created_On >= DATEADD(DAY, -@Days, SYSDATETIME())
+        SET f_Version = @Next, f_Details_Ver = @Next, f_Updated_By = @Partner, f_Updated_On = SYSDATETIME()
+        WHERE f_App_No = @AppNo
         """;
 
     /// <summary>
-    /// A link sent again: its validity runs from now. Only for an application that already
-    /// has a link, is unpaid, not cancelled and inside its days. Gives the header back.
+    /// Bank Details and Payment saved: the application's version goes up, and the step's own version
+    /// column (f_Payment_Ver) with it.
     /// </summary>
-    public static readonly string ResendLink = $"""
+    public const string BankDetailsSaved = """
         UPDATE dbo.t_Unotp_Application_Mst
-        SET f_Link_Valid_Until = DATEADD(HOUR, @Hours, SYSDATETIME()), f_Updated_By = @Partner, f_Updated_On = SYSDATETIME()
-        OUTPUT {InsertedHeaderColumns}
-        WHERE f_App_No = @AppNo AND f_Partner_Id = @Partner AND f_Status = 'APR' AND f_Active = 1
-          AND f_Paid_On IS NULL AND f_Cancelled_On IS NULL AND f_Created_On >= DATEADD(DAY, -@Days, SYSDATETIME())
-          AND f_Link_Valid_Until IS NOT NULL
+        SET f_Version = @Next, f_Payment_Ver = @Next, f_Updated_By = @Partner, f_Updated_On = SYSDATETIME()
+        WHERE f_App_No = @AppNo
         """;
 
     /// <summary>
-    /// A draft cancelled by its partner.
+    /// FD Configuration saved: the application's version goes up, and the step's own version column
+    /// (f_Deposit_Ver) with it.
     /// </summary>
-    public const string CancelDraft = """
+    public const string FdConfigurationSaved = """
         UPDATE dbo.t_Unotp_Application_Mst
-        SET f_Cancelled_On = SYSDATETIME(), f_Sub_Status = 'cancelled', f_Updated_By = @Partner, f_Updated_On = SYSDATETIME()
-        WHERE f_App_No = @AppNo AND f_Partner_Id = @Partner AND f_Active = 1
-          AND f_Status = 'PEN' AND f_Submitted_On IS NULL AND f_Cancelled_On IS NULL
+        SET f_Version = @Next, f_Deposit_Ver = @Next, f_Updated_By = @Partner, f_Updated_On = SYSDATETIME()
+        WHERE f_App_No = @AppNo
         """;
 
     /// <summary>
-    /// A renewal cancelled: one not submitted yet, or a digital one the investor has not accepted.
+    /// The upload step's state, as it was saved at one version of the application.
     /// </summary>
-    public const string CancelRenewal = """
-        UPDATE m
-        SET f_Cancelled_On = SYSDATETIME(), f_Sub_Status = 'cancelled', f_Updated_By = @Partner, f_Updated_On = SYSDATETIME()
-        FROM dbo.t_Unotp_Application_Mst m
-        WHERE m.f_Renew_Dep_No = @Number AND m.f_Partner_Id = @Partner AND m.f_Cancelled_On IS NULL AND m.f_Active = 1
-          AND (m.f_Submitted_On IS NULL
-               OR (m.f_Accepted_On IS NULL AND EXISTS (
-                    SELECT 1 FROM dbo.t_FD_BT_Investment_Dtl i
-                    WHERE i.f_Appl_No = m.f_App_No AND i.f_Active = 1 AND i.f_ApplicationDeclarationType = @Digital)))
+    public const string UploadState = """
+        SELECT f_Upload FROM dbo.t_Unotp_Upload_State WHERE f_App_No = @AppNo AND f_App_Version = @UploadVer AND f_Active = 1
         """;
 
     /// <summary>
-    /// The partner's applications opened and not submitted, the one touched last first.
+    /// Everything saved on an application, read in one go, a statement to a table and in this order:
+    /// the upload state, then the active rows of each holder (named after the properties of KycRow;
+    /// the name given is the father's, the mother's or the spouse's, whichever was filled), each
+    /// address (AddressRow; the permanent address's row also carries the holder's mobile and e-mail),
+    /// the nominee (NomineeRow), the payment (PaymentBankRow), the repayment account (RepaymentBankRow;
+    /// its columns take no NULL, so one not given is blank there and NULL here), the deposit
+    /// (InvestmentRow) and what is typed and not yet saved on each page. A column added to one of
+    /// them needs its property on that row class.
     /// </summary>
-    public const string Drafts = $"""
-        SELECT m.f_App_No AS AppNo, {KnownName} AS Name, m.f_Pan AS Pan, m.f_Dob AS Dob, ISNULL(i.Amount, 0) AS Amount,
-            m.f_Upload_Ver AS UploadVer, m.f_Details_Ver AS DetailsVer, m.f_Payment_Ver AS PaymentVer, m.f_Deposit_Ver AS DepositVer,
-            m.f_Renew_Dep_No AS Renews,
-            -- On the database's clock, where the time was written; turned into the app's below.
-            DATEDIFF(MINUTE, COALESCE(m.f_Updated_On, m.f_Created_On), SYSDATETIME()) AS MinutesAgo
-        FROM dbo.t_Unotp_Application_Mst m
-        {ApplicationTableQueries.CurrentDepositOf}
-        LEFT JOIN dbo.t_Unotp_Upload_State u ON u.f_App_No = m.f_App_No AND u.f_App_Version = m.f_Upload_Ver AND u.f_Active = 1
-        WHERE m.f_Partner_Id = @Partner AND m.f_Status = 'PEN' AND m.f_Active = 1 AND m.f_Cancelled_On IS NULL
-          AND COALESCE(m.f_Updated_On, m.f_Created_On) > DATEADD(DAY, -@Days, SYSDATETIME())
-        ORDER BY COALESCE(m.f_Updated_On, m.f_Created_On) DESC
-        """;
+    public const string WholeApplication = """
+        SELECT f_Upload FROM dbo.t_Unotp_Upload_State WHERE f_App_No = @AppNo AND f_App_Version = @UploadVer AND f_Active = 1;
 
-    /// <summary>
-    /// Every application of the partner, with where each has got to, for View Application.
-    /// </summary>
-    public const string Applications = $"""
-        SELECT m.f_App_No AS AppNo, m.f_Status AS Status, m.f_Folio AS Folio, {KnownName} AS Name, m.f_Pan AS Pan, m.f_Dob AS Dob,
-            i.Amount, i.TenureMonths, i.Payout,
-            JSON_VALUE(u.f_Upload, '$.appType') AS AppType, JSON_VALUE(u.f_Upload, '$.payMode') AS PayMode,
-            ISNULL((SELECT COUNT(*) FROM OPENJSON(u.f_Upload, '$.joint')), 0) AS JointHolders,
-            m.f_Upload_Ver AS UploadVer, m.f_Details_Ver AS DetailsVer, m.f_Payment_Ver AS PaymentVer, m.f_Deposit_Ver AS DepositVer,
-            m.f_Created_On AS CreatedOn, m.f_Submitted_On AS SubmittedOn,
-            {LinkQueries.AcceptedOn} AS AcceptedOn, m.f_Paid_On AS PaidOn, m.f_Booked_On AS BookedOn, m.f_Fdr_No AS FdrNo,
-            m.f_Cancelled_On AS CancelledOn,
-            (SELECT MIN(f.f_Created_On) FROM dbo.t_Unotp_Upload_State f WHERE f.f_App_No = m.f_App_No AND f.f_Active = 1) AS UploadedOn,
-            (SELECT MIN(p.f_CreatedDate) FROM dbo.t_FD_BT_Payinslip_Dtl p WHERE p.f_Application_Number = m.f_App_No) AS SlipOn,
-            (SELECT MIN(l.f_CreatedOn) FROM {LinkQueries.BothTables} l WHERE l.f_AppNo = m.f_App_No) AS LinkSentOn,
-            m.f_Penny_Drop_On AS PennyDropOn, m.f_Penny_Drop_Status AS PennyDropStatus,
-            m.f_Kyc_Verified_On AS KycVerifiedOn, m.f_Kyc_Status AS KycStatus
-        FROM dbo.t_Unotp_Application_Mst m
-        {ApplicationTableQueries.CurrentDepositOf}
-        LEFT JOIN dbo.t_Unotp_Upload_State u ON u.f_App_No = m.f_App_No AND u.f_App_Version = m.f_Upload_Ver AND u.f_Active = 1
-        WHERE m.f_Partner_Id = @Partner AND m.f_Active = 1
-        ORDER BY m.f_Created_On DESC
-        """;
+        SELECT f_Holder_Type AS HolderType, f_Kyc_NamePrefix AS NamePrefix, f_Kyc_Gender AS Gender,
+            CASE WHEN f_Kyc_FatherFullName IS NOT NULL THEN 'Father' WHEN f_Kyc_MotherFullName IS NOT NULL THEN 'Mother'
+                 WHEN f_Kyc_SpouseFullName IS NOT NULL THEN 'Spouse' ELSE '' END AS NameType,
+            COALESCE(f_Kyc_FatherFullName, f_Kyc_MotherFullName, f_Kyc_SpouseFullName, N'') AS ParentName,
+            f_Kyc_AnnualIncome_Desc AS AnnualIncome, f_CustSeg_Type_desc AS Occupation,
+            f_CustSeg_Subtype_Desc AS SubOccupation,
+            f_Kyc_MaritalStatus AS MaritalStatus,
+            CASE f_IsPEP WHEN 1 THEN 'yes' WHEN 0 THEN 'no' ELSE '' END AS Pep,
+            CASE f_IsPEP_Relative WHEN 1 THEN 'yes' WHEN 0 THEN 'no' ELSE '' END AS PepRelated
+        FROM MMFSL_APP_FD_BTP.dbo.t_FD_BT_Kyc_Data_Dtl
+        WHERE f_Appl_No = @AppNo AND f_Active = 1
+        ORDER BY f_Holder_Type;
 
-    /// <summary>
-    /// Whether an application is the partner's own: 1 when it is.
-    /// </summary>
-    public const string IsPartnersApplication = "SELECT COUNT(*) FROM dbo.t_Unotp_Application_Mst WHERE f_App_No = @AppNo AND f_Partner_Id = @Partner AND f_Active = 1";
+        SELECT f_Holder_Type AS HolderType, f_AddType_Code AS AddrType, f_Add1 AS Line1, f_Add2 AS Line2,
+               f_Add3 AS Line3, f_AddCity_Desc AS City, f_AddPin AS PinCode, f_AddDistrict_Desc AS District,
+               f_AddState_Desc AS State, f_MobileNumber AS Mobile, f_EmailAdd AS Email
+        FROM MMFSL_APP_FD_BTP.dbo.t_FD_BT_Address_Dtl
+        WHERE f_Appl_No = @AppNo AND f_Active = 1;
+
+        SELECT TOP (1) f_Nominee_Name AS Name, f_Nominee_DOB AS Dob, f_Nominee_Relations AS Relation,
+            f_GuardianName AS GuardianName, f_Address1 AS GuardianLine1, f_Address2 AS GuardianLine2,
+            f_Address3 AS GuardianLine3, f_PIN AS GuardianPinCode, f_City AS GuardianCity
+        FROM MMFSL_APP_FD_BTP.dbo.t_FD_BT_Nominee_Dtl
+        WHERE f_Appl_No = @AppNo AND f_Active = 1
+        ORDER BY f_Pk_t_FD_BT_Nominee_Dtl_Id DESC;
+
+        SELECT TOP (1) f_Bank_NEFT AS Ifsc, f_BankAccountNo AS AccountNo, f_Cheque_DD_No AS ChequeNo,
+            f_Cheque_DD_Date AS ChequeDate, f_CMS_Loc_Desc AS CmsLocation, f_CMS_Loc_CD AS CmsLocationCode
+        FROM MMFSL_APP_FD_BTP.dbo.t_FD_BT_Payment_Dtl
+        WHERE f_Appl_No = @AppNo AND f_Active = 1
+        ORDER BY f_Pk_t_FD_BT_Other_Dtl_Id DESC;
+
+        SELECT TOP (1) ISNULL(f_sameAsCheque, 0) AS SameAsPayment, NULLIF(f_NEFTCode, N'') AS Ifsc,
+            NULLIF(f_BankAccountNo, N'') AS AccountNo
+        FROM MMFSL_APP_FD_BTP.dbo.t_FD_BT_Investor_Bank_Dtl
+        WHERE f_Appl_No = @AppNo AND f_Active = 1
+        ORDER BY f_Pk_t_FD_BT_Investor_Bank_Dtl_Id DESC;
+
+        SELECT TOP (1) CAST(f_Amount AS BIGINT) AS Amount, TRY_CAST(f_Tenure AS INT) AS TenureMonths,
+            f_Int_Freq AS Payout, f_Is_Auto_Renewal AS AutoRenewal,
+            CASE f_Renewal_For WHEN 'P' THEN 'principal' WHEN 'F' THEN 'principal-interest' ELSE '' END AS RenewInstruction,
+            CASE f_ExistingFDRNoRenewalFor WHEN 'P' THEN 'principal' WHEN 'F' THEN 'principal-interest' ELSE '' END AS RenewalFor,
+            CAST(CASE WHEN f_TDS_Flag = 'N' THEN 1 ELSE 0 END AS BIT) AS NoTds,
+            f_FDR_Dispatch_Mode AS DeliveryType,
+            f_AML_Source_Of_Funds AS SourceOfFunds, f_AML_Source_Of_Funds_Remarks AS SourceOfFundsRemark,
+            f_AML_Source_Of_Funds_reason AS SourceOfFundsReason
+        FROM MMFSL_APP_FD_BTP.dbo.t_FD_BT_Investment_Dtl
+        WHERE f_Appl_No = @AppNo AND f_Active = 1
+        ORDER BY f_Pk_t_FD_BT_Investment_Dtl_Id DESC;
+
+        SELECT f_Page AS Page,
+               f_State AS State FROM dbo.t_Unotp_Page_State WHERE f_App_No = @AppNo AND f_Active = 1;
+        """;
 }

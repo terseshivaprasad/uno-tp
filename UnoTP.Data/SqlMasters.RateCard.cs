@@ -7,14 +7,15 @@ public sealed partial class SqlMasters
 {
     // ----- The rate card: t_FD_BOTC_SCHEME ---------------------------------------------
     //
-    // The FD system's own rate cards, read by MasterQueries.RateCard (a branch user's)
-    // and MasterQueries.RateCardForPartners (a partner's). A row is one scheme code:
+    // The FD system's own rate cards, read by FdConfigurationQueries.RatesForBranchUsers and
+    // OnRateCardForBranchUsers (a branch user's card) and RatesForPartners and
+    // OnRateCardForPartners (a partner's). A row is one scheme code:
     // a category, mode (MODE_STATUS: a fresh application or a renewal), scheme, tenure
     // and interest frequency, for deposits from MINIMUM_AMOUNT to MAXIMUM_AMOUNT, in
     // effect from FROM_DATE while its TO_DATE is empty. The queries give back only the
     // rows with no TO_DATE; a row dated to start later is left out here.
 
-    // One row of MasterQueries.RateCard, as this reads it.
+    // One row of a rate card, as this reads it.
     private sealed class SchemeRow
     {
         public string? Category { get; set; }
@@ -42,7 +43,7 @@ public sealed partial class SqlMasters
         var fallback = await reference.SettingAsync("defaultRateCategory", ct);
 
         await using var connection = await db.OpenAsync(ct);
-        var rows = await connection.QueryAsync<SchemeRow>(MasterLookupQueries.Rates(RateCardOf(request.BranchUser)), new { request.Category, Fallback = fallback, Mode = request.ApplicationType, DateTime.Today });
+        var rows = await connection.QueryAsync<SchemeRow>(RatesOf(request.BranchUser), new { request.Category, Fallback = fallback, Mode = request.ApplicationType, DateTime.Today });
 
         // The rows come the category's own first and the latest first, so the first
         // row seen for a tenure, payout and minimum amount is the one that stands.
@@ -72,11 +73,18 @@ public sealed partial class SqlMasters
         return ordered;
     }
 
-    // The card a deposit is read off: a branch user's, or a partner's.
-    private static string RateCardOf(bool branchUser)
+    // The rates a deposit is quoted from: a branch user's card, or a partner's.
+    private static string RatesOf(bool branchUser)
     {
-        if (branchUser) return MasterQueries.RateCard;
-        return MasterQueries.RateCardForPartners;
+        if (branchUser) return FdConfigurationQueries.RatesForBranchUsers;
+        return FdConfigurationQueries.RatesForPartners;
+    }
+
+    // Whether a deposit as configured is on the card: a branch user's, or a partner's.
+    private static string OnRateCardOf(bool branchUser)
+    {
+        if (branchUser) return FdConfigurationQueries.OnRateCardForBranchUsers;
+        return FdConfigurationQueries.OnRateCardForPartners;
     }
 
     // One row is enough: the card may hold the same scheme more than once over time,
@@ -84,7 +92,7 @@ public sealed partial class SqlMasters
     public async Task<bool> OnRateCardAsync(SchemeCheck check, CancellationToken ct = default)
     {
         await using var connection = await db.OpenAsync(ct);
-        var rows = await connection.ExecuteScalarAsync<int>(MasterLookupQueries.OnRateCard(RateCardOf(check.BranchUser)), new
+        var rows = await connection.ExecuteScalarAsync<int>(OnRateCardOf(check.BranchUser), new
         {
             check.Category, check.Mode, check.Scheme, check.InterestFreq, check.TenureMonths, check.Rate, check.Amount, DateTime.Today,
         });

@@ -36,6 +36,9 @@ public sealed record LinkRequestRow
     /// <summary>f_FullURL: the page the short link opens.</summary>
     public string? FullUrl { get; init; }
 
+    /// <summary>f_Key_GUID: the key the page opens the application by, the one on the link's query string (?key=).</summary>
+    public string? Key { get; init; }
+
     /// <summary>f_Link_Validity: hours the link is open for from when it is sent. f_Link_Expiry_Date is worked out from it.</summary>
     public required int ValidityHours { get; init; }
 
@@ -57,6 +60,7 @@ public sealed record LinkRequestRow
             ApplicationDate = app.Submitted?.At,
             ShortUrl = EmptyAsNull(link?.ShortUrl),
             FullUrl = EmptyAsNull(link?.Url),
+            Key = EmptyAsNull(link?.Key),
             ValidityHours = validityHours,
         };
     }
@@ -68,3 +72,54 @@ public sealed record LinkRequestRow
         return value;
     }
 }
+
+/// <summary>
+/// The limits a send is held to before a row goes into the communication table
+/// (t_FD_PGW_Comm_Hdr), which is what sends the SMS and the e-mail: a row written
+/// there goes to the investor, so none is written on a slip of the hand or on a
+/// press repeated. An SMS and an e-mail each count as one message.
+/// </summary>
+public static class CommLimits
+{
+    /// <summary>No message goes out for an application within this long of its last one.</summary>
+    public const int SecondsBetweenSends = 120;
+
+    /// <summary>The most messages that go out for one application in a day.</summary>
+    public const int MostPerApplicationPerDay = 6;
+
+    /// <summary>The most messages that go to one mobile number, or to one e-mail address, in a day, whatever the applications.</summary>
+    public const int MostPerContactPerDay = 10;
+
+    /// <summary>The day the two counts are taken over, in hours.</summary>
+    public const int DayInHours = 24;
+}
+
+/// <summary>
+/// Where a link goes: the investor's mobile number and e-mail address as the
+/// application holds them. A message goes by a channel only when its contact is
+/// usable - a mobile number of ten digits, an e-mail address with an @ and a dot
+/// after it - and the unusable one is left out, as the FD system's own procedure
+/// leaves out an empty one.
+/// </summary>
+public sealed record LinkContact(string Mobile, string Email)
+{
+    /// <summary>The mobile number when it is usable, else null: what the SMS row carries.</summary>
+    public string? UsableMobile => Mobile.Trim().Length == 10 && Mobile.Trim().All(char.IsAsciiDigit) ? Mobile.Trim() : null;
+
+    /// <summary>The e-mail address when it is usable, else null: what the e-mail row carries.</summary>
+    public string? UsableEmail
+    {
+        get
+        {
+            var email = Email.Trim();
+            var at = email.IndexOf('@');
+            if (at < 1 || email.IndexOf('@', at + 1) >= 0) return null;
+            if (email.IndexOf('.', at) < at + 2 || email.EndsWith('.')) return null;
+            return email;
+        }
+    }
+
+    /// <summary>Whether any message can go at all.</summary>
+    public bool AnyUsable => UsableMobile is not null || UsableEmail is not null;
+}
+

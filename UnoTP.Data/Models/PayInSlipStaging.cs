@@ -12,6 +12,15 @@ public sealed record PayInSlipStagingRow
     /// <summary>What f_Queue_Status says of a row that has just been put in the queue.</summary>
     public const string Waiting = "PEN";
 
+    /// <summary>What f_Queue_State says of a row in the queue, from when it is put there: the FD system's list reads only PRC rows.</summary>
+    public const string InQueue = "PRC";
+
+    /// <summary>What f_Queue_Status says of a row once its pay-in slip is generated, as the FD system's procedure marks it.</summary>
+    public const string Generated = "GEN";
+
+    /// <summary>What f_Queue_State says of a row once its pay-in slip is generated.</summary>
+    public const string GeneratedState = "PRC";
+
     /// <summary>The bank a cheque is presented at (f_CMS_Bank_Name), as t_FD_BT_Payment_Dtl names it.</summary>
     public const string CmsBank = "Axis Bank";
 
@@ -56,6 +65,18 @@ public sealed record PayInSlipStagingRow
 
     /// <summary>f_Queue_Status.</summary>
     public string QueueStatus { get; init; } = Waiting;
+
+    /// <summary>f_CreatedByName: who submitted the application. Read back only; the slip number is asked for in their name.</summary>
+    public string? CreatedByName { get; init; }
+
+    /// <summary>f_CreatedIP: from where. Read back only.</summary>
+    public string? CreatedIp { get; init; }
+
+    /// <summary>f_SessionID: in which session. Read back only.</summary>
+    public string? SessionId { get; init; }
+
+    /// <summary>f_FormCode: the form code the row was written under; the app writes none. Read back only.</summary>
+    public string? FormCode { get; init; }
 
     /// <summary>
     /// The row for an application as it was submitted.

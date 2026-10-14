@@ -6,11 +6,14 @@ namespace UnoTP.Data;
 
 /// <summary>
 /// Where a filed copy is kept, and what it is called. Each copy is a file of its own
-/// in its application's folder under the store's root (Dms:Root):
+/// in its application's folder under the store's root (Dms:Root); for a holder on a
+/// folio, the application's folder is inside the folio's:
 ///
-///   a holder with no folio   {ApplNo}_{HolderType}_{DocSubType}_{yyyyMMddHHmmssfff}.ext
-///   a holder on a folio      {Folio}_{ApplNo}_{HolderType}_{DocSubType}_{yyyyMMddHHmmssfff}.ext
+///   a holder with no folio   {Root}/{ApplNo}/{ApplNo}_{HolderType}_{DocSubType}_{yyyyMMddHHmmssfff}.ext
+///   a holder on a folio      {Root}/{Folio}/{ApplNo}/{Folio}_{ApplNo}_{HolderType}_{DocSubType}_{yyyyMMddHHmmssfff}.ext
 ///
+/// The folio is the holder's own: a joint holder's copies go under their folio, and
+/// the application's own documents (the form, the cheque) under the investor's.
 /// The time in the name makes every upload a new file, so nothing is overwritten.
 /// t_FD_BT_KYC_document records the name (f_Doc_FileName) and the full path (f_Doc_Filepath).
 /// </summary>
@@ -21,6 +24,18 @@ public static class DmsPaths
     {
         var configured = config["Dms:Root"];
         if (string.IsNullOrEmpty(configured)) configured = Path.Combine(AppContext.BaseDirectory, "dms");
+        return Path.GetFullPath(configured);
+    }
+
+    /// <summary>
+    /// Where refused copies are kept, apart from the filed ones: Dms:Refused, or a "refused"
+    /// folder under the store's root when none is set. A copy goes under its application:
+    /// {Refused}/{ApplNo}/REJ-{yyMMddHHmmssfff}/{file}.
+    /// </summary>
+    public static string RefusedRoot(IConfiguration config)
+    {
+        var configured = config["Dms:Refused"];
+        if (string.IsNullOrEmpty(configured)) configured = Path.Combine(Root(config), "refused");
         return Path.GetFullPath(configured);
     }
 
@@ -39,9 +54,31 @@ public static class DmsPaths
         return string.Join("_", parts) + Extension(uploadedName);
     }
 
-    /// <summary>Where a copy is kept in full: the root, the application's folder, the file.</summary>
-    public static string Under(string root, string appNo, string fileName) =>
-        Path.GetFullPath(Path.Combine(root, SafePathSegment(appNo), SafePathSegment(fileName)));
+    /// <summary>
+    /// Where a copy is kept in full: the root, the holder's folio where they are on
+    /// one, the application's folder, the file.
+    /// </summary>
+    /// <param name="folio">The holder's folio; empty for a holder with none, and then there is no folio folder.</param>
+    public static string Under(string root, string folio, string appNo, string fileName)
+    {
+        if (folio.Trim().Length == 0)
+            return Path.GetFullPath(Path.Combine(root, SafePathSegment(appNo), SafePathSegment(fileName)));
+        return Path.GetFullPath(Path.Combine(root, SafePathSegment(folio.Trim()), SafePathSegment(appNo), SafePathSegment(fileName)));
+    }
+
+    /// <summary>
+    /// Where a copy already filed is: under its holder's folio, as copies are filed.
+    /// One filed before folio holders had a folder of their own is still straight
+    /// under the application's folder, and is found there.
+    /// </summary>
+    public static string WhereKept(string root, string folio, string appNo, string fileName)
+    {
+        var path = Under(root, folio, appNo, fileName);
+        if (folio.Trim().Length == 0 || File.Exists(path)) return path;
+
+        var filedBefore = Under(root, "", appNo, fileName);
+        return File.Exists(filedBefore) ? filedBefore : path;
+    }
 
     // The uploaded file's own extension, so the copy opens as what it is.
     private static string Extension(string fileName) =>
@@ -57,20 +94,23 @@ public static class DmsPaths
 
 /// <summary>
 /// DMS, until the real one is wired in: each copy is a file of its own under
-/// Dms:Root, in its application's folder, named by <see cref="DmsPaths.FileName"/>.
-/// Nothing filed is replaced or deleted. A refused copy is kept aside under
-/// Dms:Root/refused for a week. Only the partner's own application's copies are touched.
+/// Dms:Root, in its application's folder - inside the folio's, for a holder on a
+/// folio - named by <see cref="DmsPaths.FileName"/>.
+/// Nothing filed is replaced or deleted. A refused copy is kept apart, under its
+/// application in the refused store (Dms:Refused; DmsPaths.RefusedRoot), for a week; a
+/// refused Aadhaar is never kept. Only the partner's own application's copies are touched.
 /// </summary>
 public sealed class FileDocuments(Db db, IPartner partner, SqlReference reference, IConfiguration config) : IDocumentApi
 {
     private readonly string root = DmsPaths.Root(config);
+    private readonly string refusedRoot = DmsPaths.RefusedRoot(config);
 
     public async Task<string> FileAsync(string appNo, DocumentLabel label, UploadFile file, CancellationToken ct = default)
     {
         if (!await MineAsync(appNo, ct)) throw new InvalidOperationException($"Application {appNo} is not the partner's: nothing filed.");
 
         var name = DmsPaths.FileName(label.Folio, appNo, label.HolderType, await SubTypeOfAsync(label.Document, ct), DateTime.Now, file.FileName);
-        var path = DmsPaths.Under(root, appNo, name);
+        var path = DmsPaths.Under(root, label.Folio, appNo, name);
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         await File.WriteAllBytesAsync(path, file.Bytes, ct);
         return name;
@@ -88,16 +128,16 @@ public sealed class FileDocuments(Db db, IPartner partner, SqlReference referenc
     public async Task<RefusedCopy> KeepRefusedAsync(string appNo, string holder, string slot, UploadFile file, CancellationToken ct = default)
     {
         var keptAs = "REJ-" + DateTime.UtcNow.ToString("yyMMddHHmmssfff");
-        var dir = Path.Combine(root, "refused", keptAs);
+        var dir = Path.Combine(refusedRoot, DmsPaths.SafePathSegment(appNo), keptAs);
         Directory.CreateDirectory(dir);
         await File.WriteAllBytesAsync(Path.Combine(dir, DmsPaths.SafePathSegment(file.FileName)), file.Bytes, ct);
         return new RefusedCopy(keptAs, DateTime.Today.AddDays(7));
     }
 
-    public async Task<UploadFile?> CopyAsync(string appNo, string fileName, CancellationToken ct = default)
+    public async Task<UploadFile?> CopyAsync(string appNo, string folio, string fileName, CancellationToken ct = default)
     {
         if (!await MineAsync(appNo, ct)) return null;
-        var path = DmsPaths.Under(root, appNo, fileName);
+        var path = DmsPaths.WhereKept(root, folio, appNo, fileName);
         if (!File.Exists(path)) return null;
         return new UploadFile(Path.GetFileName(path), "application/octet-stream", await File.ReadAllBytesAsync(path, ct));
     }

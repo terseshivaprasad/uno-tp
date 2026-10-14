@@ -16,14 +16,14 @@ internal static class SourceOfFundsLog
     {
         await using var connection = await db.OpenAsync(ct);
         await connection.ExecuteAsync(
-            ApplicationTableQueries.RetireSourceOfFunds,
+            FdConfigurationQueries.RetireSourceOfFunds,
             new { at.AppNo });
 
         var deposit = app.Deposit;
         if (deposit is null || deposit.SourceOfFunds.Length == 0) return;
 
         var investor = app.Details?.Holders.FirstOrDefault(h => h.Holder == HolderType.Investor);
-        await connection.ExecuteAsync(ApplicationTableQueries.InsertSourceOfFunds, new
+        await connection.ExecuteAsync(FdConfigurationQueries.InsertSourceOfFunds, new
         {
             at.AppNo, HolderType = HolderType.Investor, deposit.Amount, investor?.AnnualIncome,
             deposit.SourceOfFunds, deposit.SourceOfFundsRemark, deposit.SourceOfFundsReason,

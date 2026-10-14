@@ -2,21 +2,49 @@ using UnoTP.Models;
 
 namespace UnoTP.ViewModels;
 
-/// <summary>View Application: the partner's applications, to look one up.</summary>
-public class ApplicationsViewModel(IReadOnlyList<ApplicationRecord> applications, int windowDays)
+/// <summary>View Application: the partner's applications a search reaches, to look one up.</summary>
+public class ApplicationsViewModel(ApplicationsFound found, int windowDays, ApplicationSearch search)
 {
     // The old ViewApplication screen asked for an application number before it
     // would show anything, and had no way to reach an investor's other
     // applications at all. This one opens on the last fourteen days - every
     // application still in flight, because one that goes unpaid for that long
     // cancels itself - and searches by application number or by folio.
+    // The search is run by the database: the page holds what it reached, never
+    // the partner's whole list.
     // The backend's cancellation window (GET config).
     public int WindowDays { get; } = windowDays;
 
     public static DateTime Today => DateTime.Today;
 
     // The oldest application day the list opens on.
-    public DateTime Earliest => Today.AddDays(-(WindowDays - 1));
+    public DateTime Earliest => ListSearch.Earliest(WindowDays);
+
+    /// <summary>The search the list on the page is the answer to.</summary>
+    public ApplicationSearch Search { get; } = search;
+
+    /// <summary>The first and the last day in the date boxes: the search's own, or the window's.</summary>
+    public DateTime From => Search.From ?? Earliest;
+
+    public DateTime To => Search.To ?? Today;
+
+    /// <summary>Set when the list is the one the page opens on: the whole window, by dates.</summary>
+    public bool IsOpeningList => ListSearch.IsOpening(Search, WindowDays);
+
+    /// <summary>Set when the search reaches more applications than the page lists.</summary>
+    public bool MoreExist { get; } = found.MoreExist;
+
+    /// <summary>What the line under the search says the list holds.</summary>
+    public string Scope
+    {
+        get
+        {
+            if (Search.By == ApplicationSearch.ByNumber) return $"Showing every application matching “{Search.Text}”, inside the window or older.";
+            if (Search.By == ApplicationSearch.ByFolio) return $"Showing every application under folio “{Search.Text}”, however old.";
+            if (IsOpeningList) return $"Showing the last {WindowDays} days — {From:dd/MM/yyyy} to {To:dd/MM/yyyy}.";
+            return $"Showing applications raised {From:dd/MM/yyyy} to {To:dd/MM/yyyy}.";
+        }
+    }
 
     // Where an application has got to. The key drives the filter; the label is
     // what the pill says and the text what the row's status cell says.
@@ -63,8 +91,6 @@ public class ApplicationsViewModel(IReadOnlyList<ApplicationRecord> applications
         IReadOnlyList<MilestoneRecord> Milestones)
     {
         public DateTime Applied => Today.AddDays(-DaysOld);
-
-        public bool InWindow => DaysOld < WindowDays;
 
         public int DaysLeft => WindowDays - DaysOld;
 
@@ -115,8 +141,8 @@ public class ApplicationsViewModel(IReadOnlyList<ApplicationRecord> applications
                 m.Applies && m.At is not null, m.Applies, m.Failed, m.Note))];
     }
 
-    /// <summary>The partner's applications, from the backend.</summary>
-    public IReadOnlyList<ApplicationRow> Rows => rows ??= applications.Select(ToRow).ToList();
+    /// <summary>The applications the search reached, from the backend.</summary>
+    public IReadOnlyList<ApplicationRow> Rows => rows ??= found.Applications.Select(ToRow).ToList();
 
     private List<ApplicationRow>? rows;
 
@@ -126,16 +152,11 @@ public class ApplicationsViewModel(IReadOnlyList<ApplicationRecord> applications
         (Today - r.Applied.Date).Days, r.Digital, r.Instrument, r.State, r.Fdr, r.Step,
         WindowDays, r.Scheme, r.Milestones ?? []);
 
-    // The list the page opens on: everything raised inside the window, newest
-    // first, with the applications that still need someone at the top of each day.
+    // The list as the page shows it: newest first, with the applications that
+    // still need someone at the top of each day.
     public IEnumerable<ApplicationRow> Listed =>
-        Rows.Where(r => r.InWindow)
-            .OrderBy(r => r.DaysOld)
+        Rows.OrderBy(r => r.DaysOld)
             .ThenBy(r => r.State switch { "progress" => 0, "awaiting" => 1, "review" => 2, _ => 3 });
-
-    // The older applications, kept out of the opening list but still findable by
-    // application number or folio, so a search for one says what became of it.
-    public IEnumerable<ApplicationRow> Older => Rows.Where(r => !r.InWindow);
 
     // The pay-in slip page writes rupees for the same applications, so the two
     // lists never disagree about an amount.

@@ -127,19 +127,15 @@ public partial class DocumentsViewModel
 
     // The district and the state of a proof's address are the PIN code master's, found
     // by the PIN code read off the proof: what IDfy itself reads for them is set
-    // aside. Only where the master does not hold the PIN code does the proof's own
-    // reading stand, so an address is never left without them for that alone.
-    private async Task<OcrReading> WithPlaceOfPinCodeAsync(OcrReading reading, LogEntry entry)
+    // aside. Null when the master does not hold the PIN code: the proof is not taken.
+    private async Task<OcrReading?> WithPlaceOfPinCodeAsync(OcrReading reading, LogEntry entry)
     {
         var pinCode = Addresses.SplitPin(reading.Address).Pin;
         if (pinCode.Length == 0) return reading;
 
         var place = await places.PinCodeAsync(pinCode);
-        if (place is null)
-        {
-            entry.Add($"PIN code {pinCode} is not in the PIN code master: the district and state are as read off the proof.", "warn");
-            return reading;
-        }
+        if (place is null) return null;
+
         entry.Add($"District and state from the PIN code master for {pinCode}: {place.District}, {place.State}.");
         return reading with { District = place.District, State = place.State };
     }

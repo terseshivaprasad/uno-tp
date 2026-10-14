@@ -1,8 +1,7 @@
 /* =============================================================================
    Uno TP - the settings, the console's features and every list, from start.
-   Run once on a new database, after the two create scripts:
+   Run once on a new database, after the other two scripts:
 
-       sqlcmd -d UnoTP -i db/create_transaction_tables.sql
        sqlcmd -d UnoTP -i db/create_new_tables.sql
        sqlcmd -d UnoTP -i db/insert_seed.sql
 
@@ -20,7 +19,7 @@
    each list is for and which settings it takes.
 
    Not in t_Unotp_Ref_List, because each is a table of its own, looked up where
-   it is (UnoTP.Data/Queries/MasterQueries.cs): investor folios, brokers, staff, bank
+   it is (by the queries of the page that reads it, in UnoTP.Data/Queries): investor folios, brokers, staff, bank
    branches, PIN codes, the rate card (t_FD_BOTC_SCHEME), the Axis CMS locations
    and the payment gateway's banks.
 
@@ -59,7 +58,6 @@ INSERT dbo.t_Unotp_App_Config (f_Key, f_Value, f_Description, f_Active, f_Create
     (N'renewFromDays', N'61', N'Days before maturity renewal entry opens', 1, 'SEED'),
     (N'renewUntilDays', N'7', N'Days before maturity renewal entry closes', 1, 'SEED'),
     (N'renewUntilDaysAutoRenewal', N'10', N'The same, for a deposit tagged for auto renewal', 1, 'SEED'),
-    (N'slipNoPrefix', N'AXPIS', N'Pay-in slip numbers: {prefix}{running number}', 1, 'SEED'),
     (N'defaultRateCategory', N'PUBLIC', N'The category (a code of the ''categories'' list) whose rates a deposit takes when its own category has none', 1, 'SEED'),
     (N'compoundingPerYear', N'1', N'Times a year a cumulative deposit compounds; the months after the last whole period earn simple interest', 1, 'SEED'),
     (N'sourceOfFundsFrom', N'10000000', N'The source of funds is asked once the investor''s active deposits, with the new one, pass this many rupees...', 1, 'SEED'),
@@ -111,18 +109,19 @@ INSERT dbo.t_Unotp_Ref_List (f_List, f_Seq, f_Code, f_Name, f_Parent, f_Attrs, f
     (N'categories', 6, N'EMPLOYEE-WOMEN', N'EMPLOYEE-WOMEN', NULL, N'{"employee":true,"women":true,"senior":false}', 1, 'SEED'),
 
     -- sourcingModes: how an application is sourced, and how its two code fields behave.
-    --   BROKER             the broker's code is typed and must be on the broker register; a sub broker may be typed
-    --   MMFSS - BRANCH     the sourcing employee's code is typed and must be an employee the 'branch' staff rule takes; no sub broker
+    --   BROKER             the broker's code is typed, and searched on the broker register; a sub broker may be typed
+    --   MMFSS - BRANCH     the sourcing employee's code is typed, and searched among the employees the 'branch' staff rule takes; no sub broker
     --   MFL-EX             the first field is MFL-EX itself; the sourcing employee's code goes in the sub broker field
-    --                      (it opens with the user's own) and must be an employee the 'mflEx' staff rule takes
-    --   MFIS/MFIS-DFB/FD   the sourcing employee's code is typed and must be an employee the 'mfis' staff rule takes; no sub broker
+    --                      (it opens with the user's own), searched among the employees the 'mflEx' staff rule takes
+    --   MFIS/FD            the sourcing employee's code is typed, and searched among the employees the 'mfis' staff rule takes; no sub broker
+    -- A code is not checked against its register: one with no name there can still proceed, for Operations to check.
     (N'sourcingModes', 1, N'2', N'BROKER', NULL, N'{"codeLabel":"Broker Code","nameLabel":"Broker Name","house":"","search":"source","register":"brokers","sub":"free"}', 1, 'SEED'),
     (N'sourcingModes', 2, N'3', N'MMFSS - BRANCH', NULL, N'{"codeLabel":"Sourcing Employee Code","nameLabel":"Sourcing Employee Name","house":"","search":"source","register":"employees","sub":"shut","staff":"branch"}', 1, 'SEED'),
     (N'sourcingModes', 3, N'5', N'MFL-EX', NULL, N'{"codeLabel":"Sourcing Employee Code","nameLabel":"Sourcing Employee Name","house":"MFL-EX","search":"sub","register":"employees","sub":"employee","staff":"mflEx"}', 1, 'SEED'),
-    (N'sourcingModes', 4, N'4', N'MFIS/MFIS-DFB/FD', NULL, N'{"codeLabel":"Sourcing Employee Code","nameLabel":"Sourcing Employee Name","house":"","search":"source","register":"employees","sub":"shut","staff":"mfis"}', 1, 'SEED'),
+    (N'sourcingModes', 4, N'4', N'MFIS/FD', NULL, N'{"codeLabel":"Sourcing Employee Code","nameLabel":"Sourcing Employee Name","house":"","search":"source","register":"employees","sub":"shut","staff":"mfis"}', 1, 'SEED'),
 
     -- sourcingModeCategories: the categories a deposit under a sourcing mode may be booked as. The parent is the sourcing mode's code, the code a category's.
-    -- (Which staff a mode takes is its 'staff' setting above: branch, mfis or mflEx, each a query in UnoTP.Data/Queries/MasterQueries.cs.)
+    -- (Which staff a mode takes is its 'staff' setting above: branch, mfis or mflEx, each a query in UnoTP.Data/Queries/UploadDocumentsQueries.cs.)
     (N'sourcingModeCategories', 1, N'PUBLIC', N'PUBLIC', N'2', NULL, 1, 'SEED'),
     (N'sourcingModeCategories', 2, N'GENERAL-WOMEN', N'GENERAL-WOMEN', N'2', NULL, 1, 'SEED'),
     (N'sourcingModeCategories', 3, N'SR CITIZEN', N'SR CITIZEN', N'2', NULL, 1, 'SEED'),
@@ -138,10 +137,11 @@ INSERT dbo.t_Unotp_Ref_List (f_List, f_Seq, f_Code, f_Name, f_Parent, f_Attrs, f
     (N'sourcingModeCategories', 13, N'SR CITIZEN', N'SR CITIZEN', N'4', NULL, 1, 'SEED'),
     (N'sourcingModeCategories', 14, N'SR CITIZEN-WOMEN', N'SR CITIZEN-WOMEN', N'4', NULL, 1, 'SEED'),
 
-    -- paymentModes: how a deposit is paid; "document" is the instrument a copy is filed for
-    (N'paymentModes', 1, N'Online', N'Online', NULL, N'{"document":null}', 1, 'SEED'),
-    (N'paymentModes', 2, N'RTGS', N'RTGS', NULL, N'{"document":null}', 1, 'SEED'),
-    (N'paymentModes', 3, N'Cheque', N'Cheque', NULL, N'{"document":"cheque"}', 1, 'SEED'),
+    -- paymentModes: how a deposit is paid. The code is what t_FD_BT_Payment_Dtl.f_Payment_Mode holds, as the FD system codes the modes;
+    -- "document" is the instrument a copy is filed for
+    (N'paymentModes', 1, N'1', N'Online', NULL, N'{"document":null}', 1, 'SEED'),
+    (N'paymentModes', 2, N'2', N'RTGS', NULL, N'{"document":null}', 1, 'SEED'),
+    (N'paymentModes', 3, N'3', N'Cheque', NULL, N'{"document":"cheque"}', 1, 'SEED'),
 
     -- proofsOfAddress: the proofs of address taken, who confirms each, and whether it carries a photograph
     (N'proofsOfAddress', 1, N'Aadhaar', N'Aadhaar', NULL, N'{"issuer":"UIDAI","hasPhoto":true}', 1, 'SEED'),
@@ -171,36 +171,28 @@ INSERT dbo.t_Unotp_Ref_List (f_List, f_Seq, f_Code, f_Name, f_Parent, f_Attrs, f
     (N'employeeProofs', 3, N'Retirement letter or any other proof', N'Retirement letter or any other proof', NULL, NULL, 1, 'SEED'),
 
     -- documentTypes: the types a document can be. The code is what is saved
-    (N'documentTypes', 1, N'ADDITIONAL', N'Additional Documents', NULL, NULL, 1, 'SEED'),
-    (N'documentTypes', 2, N'ADDPRF', N'Address Proof', NULL, NULL, 1, 'SEED'),
-    (N'documentTypes', 3, N'APPFRM', N'Application Form', NULL, NULL, 1, 'SEED'),
-    (N'documentTypes', 4, N'BANK', N'BANK', NULL, NULL, 1, 'SEED'),
-    (N'documentTypes', 5, N'EMPPRF', N'Employee Proof', NULL, NULL, 1, 'SEED'),
-    (N'documentTypes', 6, N'IDENTPRF', N'Identity Proof', NULL, NULL, 1, 'SEED'),
-    (N'documentTypes', 7, N'TAX_DOCS', N'Income Tax Related Documents', NULL, NULL, 1, 'SEED'),
-    (N'documentTypes', 8, N'Photograph', N'Photograph', NULL, NULL, 1, 'SEED'),
-    (N'documentTypes', 9, N'Signature', N'Signature', NULL, NULL, 1, 'SEED'),
-    (N'documentTypes', 10, N'Video', N'Video', NULL, NULL, 1, 'SEED'),
+    (N'documentTypes', 1, N'ADDPRF', N'Address Proof', NULL, NULL, 1, 'SEED'),
+    (N'documentTypes', 2, N'APPFRM', N'Application Form', NULL, NULL, 1, 'SEED'),
+    (N'documentTypes', 3, N'BANK', N'BANK', NULL, NULL, 1, 'SEED'),
+    (N'documentTypes', 4, N'EMPPRF', N'Employee Proof', NULL, NULL, 1, 'SEED'),
+    (N'documentTypes', 5, N'IDENTPRF', N'Identity Proof', NULL, NULL, 1, 'SEED'),
+    (N'documentTypes', 6, N'TAX_DOCS', N'Income Tax Related Documents', NULL, NULL, 1, 'SEED'),
+    (N'documentTypes', 7, N'Photograph', N'Photograph', NULL, NULL, 1, 'SEED'),
 
     -- documentSubTypes: the sub-types under each document type. The code is what is saved; the parent is the document type's code
-    (N'documentSubTypes', 1, N'INTRNL_1', N'Internal 1', N'ADDITIONAL', NULL, 1, 'SEED'),
-    (N'documentSubTypes', 2, N'INTRNL_2', N'Internal 2', N'ADDITIONAL', NULL, 1, 'SEED'),
-    (N'documentSubTypes', 3, N'AADHARCARD_A', N'Aadhar card', N'ADDPRF', NULL, 1, 'SEED'),
-    (N'documentSubTypes', 4, N'AADHARCARD_XML', N'Aadhar card', N'ADDPRF', NULL, 1, 'SEED'),
-    (N'documentSubTypes', 5, N'DRVLIC_A', N'Driving License', N'ADDPRF', NULL, 1, 'SEED'),
-    (N'documentSubTypes', 6, N'PASSPORT_A', N'Passport', N'ADDPRF', NULL, 1, 'SEED'),
-    (N'documentSubTypes', 7, N'VOTERID_A', N'Voter ID', N'ADDPRF', NULL, 1, 'SEED'),
-    (N'documentSubTypes', 8, N'APPLICATIONFRM', N'Application Form', N'APPFRM', NULL, 1, 'SEED'),
-    (N'documentSubTypes', 9, N'CANCEL_CHEQUE', N'Cancel Cheque', N'BANK', NULL, 1, 'SEED'),
-    (N'documentSubTypes', 10, N'PAYMENT_CHEQUE', N'Payment Cheque', N'BANK', NULL, 1, 'SEED'),
-    (N'documentSubTypes', 11, N'EMP_ID', N'Employee ID Card', N'EMPPRF', NULL, 1, 'SEED'),
-    (N'documentSubTypes', 12, N'Retirement_letter', N'Retirement letter or any other proof', N'EMPPRF', NULL, 1, 'SEED'),
-    (N'documentSubTypes', 13, N'EMP_PAY_SLIP_OR_HR_LETTER', N'Salary Slip or HR Letter', N'EMPPRF', NULL, 1, 'SEED'),
-    (N'documentSubTypes', 14, N'PAN', N'PAN', N'IDENTPRF', NULL, 1, 'SEED'),
-    (N'documentSubTypes', 15, N'FORM121', N'Form 121', N'TAX_DOCS', NULL, 1, 'SEED'),
-    (N'documentSubTypes', 16, N'Photograph', N'Photo', N'Photograph', NULL, 1, 'SEED'),
-    (N'documentSubTypes', 17, N'Signature', N'Signature', N'Signature', NULL, 1, 'SEED'),
-    (N'documentSubTypes', 18, N'Video', N'Video', N'Video', NULL, 1, 'SEED'),
+    (N'documentSubTypes', 1, N'AADHARCARD_A', N'Aadhar card', N'ADDPRF', NULL, 1, 'SEED'),
+    (N'documentSubTypes', 2, N'DRVLIC_A', N'Driving License', N'ADDPRF', NULL, 1, 'SEED'),
+    (N'documentSubTypes', 3, N'PASSPORT_A', N'Passport', N'ADDPRF', NULL, 1, 'SEED'),
+    (N'documentSubTypes', 4, N'VOTERID_A', N'Voter ID', N'ADDPRF', NULL, 1, 'SEED'),
+    (N'documentSubTypes', 5, N'APPLICATIONFRM', N'Application Form', N'APPFRM', NULL, 1, 'SEED'),
+    (N'documentSubTypes', 6, N'CANCEL_CHEQUE', N'Cancel Cheque', N'BANK', NULL, 1, 'SEED'),
+    (N'documentSubTypes', 7, N'PAYMENT_CHEQUE', N'Payment Cheque', N'BANK', NULL, 1, 'SEED'),
+    (N'documentSubTypes', 8, N'EMP_ID', N'Employee ID Card', N'EMPPRF', NULL, 1, 'SEED'),
+    (N'documentSubTypes', 9, N'Retirement_letter', N'Retirement letter or any other proof', N'EMPPRF', NULL, 1, 'SEED'),
+    (N'documentSubTypes', 10, N'EMP_PAY_SLIP_OR_HR_LETTER', N'Salary Slip or HR Letter', N'EMPPRF', NULL, 1, 'SEED'),
+    (N'documentSubTypes', 11, N'PAN', N'PAN', N'IDENTPRF', NULL, 1, 'SEED'),
+    (N'documentSubTypes', 12, N'FORM121', N'Form 121', N'TAX_DOCS', NULL, 1, 'SEED'),
+    (N'documentSubTypes', 13, N'Photograph', N'Photo', N'Photograph', NULL, 1, 'SEED'),
 
     -- filedDocuments: each document the app files, and the sub-type it is filed under. The code is the document as the app knows it
     -- (a proof of address is poa: and its proof type; an employee proof is empproof: and its proof); the parent is the sub-type's code
@@ -217,10 +209,10 @@ INSERT dbo.t_Unotp_Ref_List (f_List, f_Seq, f_Code, f_Name, f_Parent, f_Attrs, f
     (N'filedDocuments', 11, N'empproof:Retirement letter or any other proof', N'Employee proof - Retirement letter or any other proof', N'Retirement_letter', NULL, 1, 'SEED'),
     (N'filedDocuments', 12, N'tdsform', N'Form 121', N'FORM121', NULL, 1, 'SEED'),
 
-    -- genders: the genders offered
-    (N'genders', 1, N'Male', N'Male', NULL, NULL, 1, 'SEED'),
-    (N'genders', 2, N'Female', N'Female', NULL, NULL, 1, 'SEED'),
-    (N'genders', 3, N'Transgender', N'Transgender', NULL, NULL, 1, 'SEED'),
+    -- genders: the genders offered; the code is what t_FD_BT_Kyc_Data_Dtl.f_Kyc_Gender holds
+    (N'genders', 1, N'M', N'Male', NULL, NULL, 1, 'SEED'),
+    (N'genders', 2, N'F', N'Female', NULL, NULL, 1, 'SEED'),
+    (N'genders', 3, N'T', N'Transgender', NULL, NULL, 1, 'SEED'),
 
     -- maritalStatuses: the marital statuses offered. The code is what is saved
     (N'maritalStatuses', 1, N'01', N'Married', NULL, NULL, 1, 'SEED'),
@@ -232,16 +224,17 @@ INSERT dbo.t_Unotp_Ref_List (f_List, f_Seq, f_Code, f_Name, f_Parent, f_Attrs, f
     (N'nameTypes', 2, N'Mother', N'Mother', NULL, NULL, 1, 'SEED'),
     (N'nameTypes', 3, N'Spouse', N'Spouse', NULL, NULL, 1, 'SEED'),
 
-    -- occupations: the occupations offered. The code is what is saved
+    -- occupations: the CKYC customer segment types (f_Ckyc_CustSeg_Type_Code and _Desc), as the FD system's master holds them. The code is what is saved
     (N'occupations', 1, N'1', N'Salaried', NULL, NULL, 1, 'SEED'),
     (N'occupations', 2, N'2', N'Self Employed', NULL, NULL, 1, 'SEED'),
     (N'occupations', 3, N'4', N'Agriculture', NULL, NULL, 1, 'SEED'),
-    (N'occupations', 4, N'7', N'Pensioner', NULL, NULL, 1, 'SEED'),
-    (N'occupations', 5, N'8', N'Retired', NULL, NULL, 1, 'SEED'),
-    (N'occupations', 6, N'9', N'Housewife', NULL, NULL, 1, 'SEED'),
-    (N'occupations', 7, N'10', N'Student', NULL, NULL, 1, 'SEED'),
+    (N'occupations', 4, N'6', N'Non Individual', NULL, NULL, 0, 'SEED'),
+    (N'occupations', 5, N'7', N'Pensioner', NULL, NULL, 1, 'SEED'),
+    (N'occupations', 6, N'8', N'Retired', NULL, NULL, 1, 'SEED'),
+    (N'occupations', 7, N'9', N'Housewife', NULL, NULL, 1, 'SEED'),
+    (N'occupations', 8, N'10', N'Student', NULL, NULL, 1, 'SEED'),
 
-    -- subOccupations: the sub occupations, as the FD system's master holds them. The parent is the code of the occupation it is offered under
+    -- subOccupations: the CKYC customer segment sub types (f_Ckyc_CustSeg_SubType_Code and _Desc), as the FD system's master holds them. The parent is the code of the occupation it is offered under
     (N'subOccupations', 1, N'1', N'Central Govt Employee', N'1', NULL, 1, 'SEED'),
     (N'subOccupations', 2, N'2', N'State Govt employees', N'1', NULL, 1, 'SEED'),
     (N'subOccupations', 3, N'3', N'Corporate/Private Employee', N'1', NULL, 1, 'SEED'),
@@ -249,7 +242,7 @@ INSERT dbo.t_Unotp_Ref_List (f_List, f_Seq, f_Code, f_Name, f_Parent, f_Attrs, f
     (N'subOccupations', 5, N'6', N'Post Office Employee', N'1', NULL, 1, 'SEED'),
     (N'subOccupations', 6, N'7', N'Unorganized Sector Employee', N'1', NULL, 1, 'SEED'),
     (N'subOccupations', 7, N'8', N'Dealer Employee', N'1', NULL, 1, 'SEED'),
-    (N'subOccupations', 8, N'9', N'M&M Group Employee (other than MMFSL)', N'1', NULL, 1, 'SEED'),
+    (N'subOccupations', 8, N'9', N'M And M Group Employee (other than MMFSL)', N'1', NULL, 1, 'SEED'),
     (N'subOccupations', 9, N'10', N'MMFSL Employee', N'1', NULL, 1, 'SEED'),
     (N'subOccupations', 10, N'11', N'Trust/NGO Employee', N'1', NULL, 1, 'SEED'),
     (N'subOccupations', 11, N'12', N'Doctor', N'2', NULL, 1, 'SEED'),
@@ -269,28 +262,36 @@ INSERT dbo.t_Unotp_Ref_List (f_List, f_Seq, f_Code, f_Name, f_Parent, f_Attrs, f
     (N'subOccupations', 25, N'30', N'Contractor', N'2', NULL, 1, 'SEED'),
     (N'subOccupations', 26, N'31', N'Mining', N'2', NULL, 1, 'SEED'),
     (N'subOccupations', 27, N'33', N'Transporter', N'2', NULL, 1, 'SEED'),
-    (N'subOccupations', 28, N'34', N'Rent Owner', N'2', NULL, 1, 'SEED'),
+    (N'subOccupations', 28, N'34', N'Rent Owner', N'2', NULL, 0, 'SEED'),
     (N'subOccupations', 29, N'35', N'Money Lender', N'2', NULL, 1, 'SEED'),
-    (N'subOccupations', 30, N'69', N'Professional Services', N'2', NULL, 0, 'SEED'),
-    (N'subOccupations', 31, N'70', N'Real Estate', N'2', NULL, 0, 'SEED'),
-    (N'subOccupations', 32, N'71', N'Agriculture', N'2', NULL, 0, 'SEED'),
-    (N'subOccupations', 33, N'40', N'Farmer(Land Owner)', N'4', NULL, 1, 'SEED'),
-    (N'subOccupations', 34, N'41', N'Farmer(Rented Land)/Sharecropper', N'4', NULL, 1, 'SEED'),
-    (N'subOccupations', 35, N'42', N'Dairy', N'4', NULL, 1, 'SEED'),
-    (N'subOccupations', 36, N'43', N'Fishery', N'4', NULL, 1, 'SEED'),
-    (N'subOccupations', 37, N'44', N'Poultry', N'4', NULL, 1, 'SEED'),
-    (N'subOccupations', 38, N'45', N'Sericulture', N'4', NULL, 1, 'SEED'),
-    (N'subOccupations', 39, N'46', N'Allied services', N'4', NULL, 1, 'SEED'),
-    (N'subOccupations', 40, N'47', N'LiveStock (Animal) Farmer', N'4', NULL, 1, 'SEED'),
-    (N'subOccupations', 41, N'48', N'Other Agri Profile', N'4', NULL, 1, 'SEED'),
-    (N'subOccupations', 42, N'49', N'Haulage', N'4', NULL, 1, 'SEED'),
-    (N'subOccupations', 43, N'65', N'Pensioner', N'7', NULL, 1, 'SEED'),
-    (N'subOccupations', 44, N'66', N'Retired', N'8', NULL, 1, 'SEED'),
-    (N'subOccupations', 45, N'67', N'Housewife', N'9', NULL, 1, 'SEED'),
-    (N'subOccupations', 46, N'68', N'Student', N'10', NULL, 1, 'SEED'),
+    (N'subOccupations', 30, N'40', N'Farmer(Land Owner)', N'4', NULL, 1, 'SEED'),
+    (N'subOccupations', 31, N'41', N'Farmer(Rented Land)/Sharecropper', N'4', NULL, 1, 'SEED'),
+    (N'subOccupations', 32, N'42', N'Dairy', N'4', NULL, 1, 'SEED'),
+    (N'subOccupations', 33, N'43', N'Fishery', N'4', NULL, 1, 'SEED'),
+    (N'subOccupations', 34, N'44', N'Poultry', N'4', NULL, 1, 'SEED'),
+    (N'subOccupations', 35, N'45', N'Sericulture', N'4', NULL, 1, 'SEED'),
+    (N'subOccupations', 36, N'46', N'Allied services', N'4', NULL, 1, 'SEED'),
+    (N'subOccupations', 37, N'47', N'LiveStock (Animal) Farmer', N'4', NULL, 1, 'SEED'),
+    (N'subOccupations', 38, N'48', N'Other Agri Profile', N'4', NULL, 1, 'SEED'),
+    (N'subOccupations', 39, N'49', N'Haulage', N'4', NULL, 1, 'SEED'),
+    (N'subOccupations', 40, N'55', N'Farmer', N'6', NULL, 0, 'SEED'),
+    (N'subOccupations', 41, N'56', N'Haulage', N'6', NULL, 0, 'SEED'),
+    (N'subOccupations', 42, N'57', N'Dairy', N'6', NULL, 0, 'SEED'),
+    (N'subOccupations', 43, N'58', N'Fishery', N'6', NULL, 0, 'SEED'),
+    (N'subOccupations', 44, N'59', N'LiveStock (Animal) Farmer', N'6', NULL, 0, 'SEED'),
+    (N'subOccupations', 45, N'60', N'Other Agri Profile', N'6', NULL, 0, 'SEED'),
+    (N'subOccupations', 46, N'61', N'Large Enterprise', N'6', NULL, 0, 'SEED'),
+    (N'subOccupations', 47, N'62', N'Medium Enterprise', N'6', NULL, 0, 'SEED'),
+    (N'subOccupations', 48, N'63', N'Micro Enterprise', N'6', NULL, 0, 'SEED'),
+    (N'subOccupations', 49, N'64', N'Small Enterprise', N'6', NULL, 0, 'SEED'),
+    (N'subOccupations', 50, N'65', N'Pensioner', N'7', NULL, 1, 'SEED'),
+    (N'subOccupations', 51, N'66', N'Retired', N'8', NULL, 1, 'SEED'),
+    (N'subOccupations', 52, N'67', N'Housewife', N'9', NULL, 1, 'SEED'),
+    (N'subOccupations', 53, N'68', N'Student', N'10', NULL, 1, 'SEED'),
 
     -- subOccupationCkyc: the CKYC occupation saved with a sub occupation: its code and name. The parent is the sub occupation's code.
-    -- Rent Owner (34) has none here: its CKYC occupation code could not be read off the master.
+    -- A sub occupation with no row here is kept inactive in 'subOccupations' until its CKYC occupation code is known:
+    -- Rent Owner (34) and the Non Individual sub occupations (55 to 64) today, and Non Individual (6) itself with them.
     (N'subOccupationCkyc', 1, N'PS', N'Public Sector', N'1', NULL, 1, 'SEED'),
     (N'subOccupationCkyc', 2, N'GS', N'Government Service', N'2', NULL, 1, 'SEED'),
     (N'subOccupationCkyc', 3, N'PV', N'Private Sector', N'3', NULL, 1, 'SEED'),
@@ -319,9 +320,6 @@ INSERT dbo.t_Unotp_Ref_List (f_List, f_Seq, f_Code, f_Name, f_Parent, f_Attrs, f
     (N'subOccupationCkyc', 26, N'SE', N'Self Employed', N'31', NULL, 1, 'SEED'),
     (N'subOccupationCkyc', 27, N'SE', N'Self Employed', N'33', NULL, 1, 'SEED'),
     (N'subOccupationCkyc', 28, N'SE', N'Self Employed', N'35', NULL, 1, 'SEED'),
-    (N'subOccupationCkyc', 29, N'SE', N'Self Employed', N'69', NULL, 0, 'SEED'),
-    (N'subOccupationCkyc', 30, N'SE', N'Self Employed', N'70', NULL, 0, 'SEED'),
-    (N'subOccupationCkyc', 31, N'SE', N'Self Employed', N'71', NULL, 0, 'SEED'),
     (N'subOccupationCkyc', 32, N'4', N'Agriculture', N'40', NULL, 1, 'SEED'),
     (N'subOccupationCkyc', 33, N'4', N'Agriculture', N'41', NULL, 1, 'SEED'),
     (N'subOccupationCkyc', 34, N'4', N'Agriculture', N'42', NULL, 1, 'SEED'),
@@ -388,16 +386,20 @@ INSERT dbo.t_Unotp_Ref_List (f_List, f_Seq, f_Code, f_Name, f_Parent, f_Attrs, f
     (N'deliveryTypes', 1, N'E', N'E Receipt', NULL, NULL, 1, 'SEED'),
     (N'deliveryTypes', 2, N'D001', N'Hand Delivery', NULL, NULL, 1, 'SEED'),
     (N'deliveryTypes', 3, N'D002', N'Courier', NULL, NULL, 1, 'SEED'),
-    (N'deliveryTypes', 4, N'D003', N'Post', NULL, NULL, 1, 'SEED'),
-    (N'deliveryTypes', 5, N'D0004', N'Blue Dart', NULL, NULL, 1, 'SEED'),
-    (N'deliveryTypes', 6, N'REGIS', N'Registered Post', NULL, NULL, 1, 'SEED'),
-    (N'deliveryTypes', 7, N'RB', N'Registered Broker', NULL, NULL, 1, 'SEED'),
 
-    -- sourcesOfFunds: the sources of funds offered. The code is what is saved
+    -- sourcesOfFunds: the AML sources of funds (f_AML_Source_Of_Funds_Code and _Desc), as the FD system's master holds them. The code is what is saved.
+    -- TO CONFIRM: 02 and 04 are inactive until their full descriptions are known; only the start of each was seen.
     (N'sourcesOfFunds', 1, N'01', N'Proceeds from sale of immovable property', NULL, NULL, 1, 'SEED'),
-    (N'sourcesOfFunds', 2, N'05', N'Personal savings from salary / business income', NULL, NULL, 1, 'SEED'),
-    (N'sourcesOfFunds', 3, N'09', N'Inheritance / will proceeds', NULL, NULL, 1, 'SEED'),
-    (N'sourcesOfFunds', 4, N'11', N'Others (please specify clearly)', NULL, NULL, 1, 'SEED'),
+    (N'sourcesOfFunds', 2, N'02', N'Proceeds from sale of investments (shares, mutua', NULL, NULL, 0, 'SEED'),
+    (N'sourcesOfFunds', 3, N'03', N'Dividend income', NULL, NULL, 1, 'SEED'),
+    (N'sourcesOfFunds', 4, N'04', N'Proceeds from matured fixed deposits in other ba', NULL, NULL, 0, 'SEED'),
+    (N'sourcesOfFunds', 5, N'05', N'Personal savings from salary / business income', NULL, NULL, 1, 'SEED'),
+    (N'sourcesOfFunds', 6, N'06', N'Insurance claim proceeds', NULL, NULL, 1, 'SEED'),
+    (N'sourcesOfFunds', 7, N'07', N'Matrimonial / claim settlement proceeds', NULL, NULL, 1, 'SEED'),
+    (N'sourcesOfFunds', 8, N'08', N'Scholarship / prizes / rewards', NULL, NULL, 1, 'SEED'),
+    (N'sourcesOfFunds', 9, N'09', N'Inheritance / will proceeds', NULL, NULL, 1, 'SEED'),
+    (N'sourcesOfFunds', 10, N'10', N'Retirement funds (EPF / PPF / NPS, etc.)', NULL, NULL, 1, 'SEED'),
+    (N'sourcesOfFunds', 11, N'11', N'Others (please specify clearly)', NULL, NULL, 1, 'SEED'),
 
     -- requiredDocuments: the documents each kind of investor hands over, with the notes that go with them
     (N'requiredDocuments', 1, N'Individual KYC', N'Individual KYC', NULL, N'{"items":["Passport","Driving license","Permanent Account Number (PAN) card","‘Election Commission of India’ Voter identity card","‘NREGA’ Job card, duly signed by an officer of the State Government","‘Unique Identification Authority of India’ letter containing details of name, address and Aadhaar Number, or any document as notified by the Central Government in consultation with the regulator"],"notes":["The PAN copy is collected first, before any proof of address.","An Aadhaar is accepted masked or unmasked, when the name and date of birth on it match the PAN. Where its 12-digit number cannot be read, it is typed for the PAN–Aadhaar link."]}', 1, 'SEED'),
