@@ -239,7 +239,7 @@ the backend opens it with `renewal` set and the deposit's joint holders
 (`upload.joint`), repayment account (`payment.repayment`) and maturity amount
 (`deposit`, read-only on the page) already on it; the steps, the submit and the
 investor's acceptance are the same as for a new deposit. Upload Documents asks no
-payment mode or instrument for a renewal, and Bank Details asks only the
+payment mode or instrument for a renewal (its payment row carries the mode `RENEWAL`), and Bank Details asks only the
 repayment account.
 
 | Method | Route | Body | Answer |

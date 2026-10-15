@@ -8,16 +8,21 @@ namespace UnoTP.Data;
 // account it is paid from) and t_FD_BT_Investor_Bank_Dtl (the repayment account).
 internal static partial class Sections
 {
+    /// <summary>f_Payment_Mode of a renewal: the maturing deposit pays for the new one.</summary>
+    public const string RenewalPayMode = "RENEWAL";
+
     /// <param name="branches">The branch each IFSC names, as looked up before the save.</param>
     /// <param name="paymentModes">The 'paymentModes' list: the mode is saved by its code (1, 2 or 3), the upload state holds its name.</param>
+    /// <param name="renews">The deposit a renewal renews; null for a purchase. A renewal is not paid: its mode is RENEWAL.</param>
     public static async Task WritePaymentAsync(IDbConnection db, IDbTransaction tx, Stamp at, UploadState? upload,
-        PaymentDetails payment, IReadOnlyDictionary<string, BankBranch> branches, IReadOnlyList<PaymentModeOption> paymentModes)
+        PaymentDetails payment, IReadOnlyDictionary<string, BankBranch> branches, IReadOnlyList<PaymentModeOption> paymentModes, string? renews)
     {
         await RetireAsync(db, tx, at, BankDetailsQueries.RetirePayment);
         var pay = Branch(payment.Payment, branches);
+        var payMode = renews is null ? PaymentModeOption.CodeOf(paymentModes, upload?.PayMode ?? "") : RenewalPayMode;
         await db.ExecuteAsync(BankDetailsQueries.InsertPayment, new
         {
-            at.AppNo, PayMode = PaymentModeOption.CodeOf(paymentModes, upload?.PayMode ?? ""),
+            at.AppNo, PayMode = payMode,
             ChequeNo = payment.Cheque?.Number, ChequeDate = Dates.ParseDdMmYyyy(payment.Cheque?.Date),
             Bank = CutOrNull(pay?.Bank, 50), BranchName = CutOrNull(pay?.Branch, 50), pay?.Micr,
             payment.Payment?.Ifsc, AccountNo = payment.Payment?.AccountNumber,

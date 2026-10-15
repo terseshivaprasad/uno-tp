@@ -85,7 +85,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
 
         var at = StampAt(appNo, version, RowStatus.Pending, holder.Folio);
         if (upload is not null) await Sections.WriteUploadAsync(connection, tx, at, upload, documentCodes, dmsRoot, onRecord);
-        if (payment is not null) await Sections.WritePaymentAsync(connection, tx, at, upload, payment, branches, (await reference.ReferenceAsync(ct)).PaymentModes);
+        if (payment is not null) await Sections.WritePaymentAsync(connection, tx, at, upload, payment, branches, (await reference.ReferenceAsync(ct)).PaymentModes, renewal?.DepositNumber);
         if (deposit is not null) await Sections.WriteDepositAsync(connection, tx, at, upload, deposit, renewal?.DepositNumber, line, lists);
         await tx.CommitAsync(ct);
 
@@ -305,7 +305,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
     {
         var branches = await BranchesAsync(payment, ct);
         var paymentModes = (await reference.ReferenceAsync(ct)).PaymentModes;
-        return await SaveAsync(appNo, version, (c, tx, _, at, u) => Sections.WritePaymentAsync(c, tx, at, u, payment, branches, paymentModes), ApplicationQueries.BankDetailsSaved, ct);
+        return await SaveAsync(appNo, version, (c, tx, h, at, u) => Sections.WritePaymentAsync(c, tx, at, u, payment, branches, paymentModes, h.RenewDepNo), ApplicationQueries.BankDetailsSaved, ct);
     }
 
     // Whether the signed-in user is a branch user: one of the sourcing agency's (the
@@ -427,7 +427,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
         var at = StampAt(appNo, next, submittedAs, header.Folio);
         if (app.Upload is { } upload) await Sections.WriteUploadAsync(connection, tx, at, upload, documentCodes, dmsRoot, onRecord);
         if (app.Details is { } details) await Sections.WriteDetailsAsync(connection, tx, at, app.Holder, app.Upload, details, minorUnder, lists.Masters ?? MasterLists.None, addresses);
-        if (app.Payment is { } payment) await Sections.WritePaymentAsync(connection, tx, at, app.Upload, payment, branches, lists.PaymentModes);
+        if (app.Payment is { } payment) await Sections.WritePaymentAsync(connection, tx, at, app.Upload, payment, branches, lists.PaymentModes, header.RenewDepNo);
         if (app.Deposit is { } deposit) await Sections.WriteDepositAsync(connection, tx, at, app.Upload, deposit, header.RenewDepNo, line, lists);
 
         // Submitted on the database's clock, as every row on the application is dated.
