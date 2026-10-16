@@ -1,7 +1,7 @@
 # Uno TP screens
 
 Every page of Uno TP and each case on it, as full-page screenshots in desktop
-(1366 wide) and mobile (390 wide) view: 111 steps, 222 pictures. Steps 1 to 64
+(1366 wide) and mobile (390 wide) view: 113 steps, 222 pictures. Steps 1 to 64
 are Uno TP. The rest are apps of their own that read the same database: OVD
 Explorer (65 to 71), DMS Explorer (72 to 83), E-Sarathi Login (84 to 102) and
 E-Sarathi Console (103 to 111).
