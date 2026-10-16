@@ -129,12 +129,14 @@ reverse proxy, with SQL Server in its own zone. `UnoTP.Data` answers the pages'
 interfaces from SQL Server through Dapper: the purchase journey end to end, the
 dashboard's lists, the lists and rules, and the console. The way in is the
 E-Sarathi auth API's: it decrypts what the portal sent, starts
-the user's session and says who they are, and gives their menus. Not
-answered yet: the deposits a folio holds in the FD system. Until it is wired in,
-Renew FD and the source-of-funds rule see only the deposits booked through this app
-(an application with its booking date and deposit number on it), and the nominees
-and repayment accounts offered from a folio are those on the app's own submitted
-applications. The outside services (NSDL, OCR,
+the user's session and says who they are, and gives their menus. Renew FD lists
+the deposits a holder can renew from the FD system's deposit register, as the FD
+system's own Renew FD procedure lists them (live, KYC verified, inside the renewal
+window its web config sets, with no renewal application on either renewal table);
+a renewal submitted here writes one row to the renewal transaction table
+`t_FD_BT_RenewalDtls`. The source-of-funds rule still sees only the deposits
+booked through this app, and the nominees and repayment accounts offered from a
+folio are those on the app's own submitted applications. The outside services (NSDL, OCR,
 identification, verification, the PAN-Aadhaar link, face match: all Idfy.Api's), name
 screening, name match, the PAN check, Aadhaar masking and the link shortener are
 behind one gateway (`Backend:BaseUrl`), unless a service's own section gives it an

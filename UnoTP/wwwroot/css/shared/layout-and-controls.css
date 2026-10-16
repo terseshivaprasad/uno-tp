@@ -480,6 +480,10 @@ select.investor-control {
 select.investor-control:has(option[value=""]:checked) {
   color: var(--muted-2);
 }
+/* The list that drops down takes the select's colour, so its options are given the ink back. */
+select.investor-control option {
+  color: var(--ink);
+}
 .investor-control[readonly] {
   background: var(--tint);
   border-color: var(--divider);

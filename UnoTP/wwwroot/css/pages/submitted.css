@@ -159,10 +159,14 @@
   line-height: 16px;
   margin-top: -4px;
 }
-/* A section of the page: its title over a rule, no box round it. */
+/* The right side's sections are cards: the deposit summary, and where to go next. */
+.submitted-card {
+  background: var(--tint);
+  border: 1px solid var(--divider);
+  border-radius: 8px;
+  padding: 20px;
+}
 .submitted-card--padded {
-  padding-top: 20px;
-  border-top: 1px solid var(--divider);
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -225,18 +229,23 @@
 }
 .submitted-tiles {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0,1fr));
+  grid-template-columns: repeat(2, minmax(0,1fr));
   gap: 12px;
 }
-/* Where to go next: a link with a line under it saying what it is, no box. */
+/* Where to go next: each way is a card, its name over a line saying what it is. */
 .submitted-tile {
   display: flex;
   flex-direction: column;
   gap: 4px;
   color: var(--ink);
+  background: #fff;
+  border: 1px solid var(--divider);
+  border-radius: 8px;
+  padding: 14px 16px;
 }
 .submitted-tile:hover {
   text-decoration: none;
+  border-color: var(--red);
 }
 .submitted-tile__title {
   font-size: 14px;

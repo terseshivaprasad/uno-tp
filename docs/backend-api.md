@@ -250,8 +250,9 @@ repayment account.
 | POST | `renewals` | `{ depositNumber }` | `Application`: the renewal opened, with `renewal` set and what comes over from the deposit on it; 409 when the deposit is not due |
 
 - **`HeldDeposit`:** `number`, `folio`, `investor`, `category` (a category code), `amount`, `rate`, `tenureMonths`, `payout` (a payout code), `maturesOn`, `maturityAmount`, `status`, `renewable`, `why` it is not, `jointHolders` (`{ pan, dob, name, folio }`, in order), `repayment` (`{ ifsc, accountNumber }` or null) and `autoRenewal`.
-- **`status`:** `running` (too early), `due` (inside the window), `late` (too near maturity: Operations'), `matured`, `renewed`. Only `due` is `renewable`.
-- **The window**, in `config`: from `renewFromDays` (61) to `renewUntilDays` (7) days before maturity, or `renewUntilDaysAutoRenewal` (10) for a deposit tagged for auto renewal. A renewal entered in advance takes the rate prevailing on the maturity date.
+- **`status`:** `due`, `auto` (tagged for auto renewal: listed, never renewable here), `requested` (a renewal request is already raised in the FD system), `held` (a loan or a freeze on it), `renewing`, `renewed`. Only `due` is `renewable`.
+- **The window** comes from the FD system's web config (`t_Web_Config`, type `RENEWAL_PERIOD`, source `CPTP_UNI` for a partner and `BOTC_UNI` for a branch user): entry opens `MAX` days before maturity and closes `MIN` days before; `CAN_MIN` is for cancelling. A value the config does not hold falls back to `renewFromDays` and `renewUntilDays` in `config`. The register lists only deposits inside the window, so a deposit outside it is not listed at all.
+- **The renewal transaction row:** a renewal submitted here writes one row to `t_FD_BT_RenewalDtls` (`STEPS_COMPLETED` 4, `F_Existing_FDR_No` the deposit, `f_Source` UNO_TP); the FD system's list leaves the deposit out while the row is live. Sending the renewal's link sets `F_IsRenewalReqGen`; cancelling the request retires the row.
 - **`Application.renewal`:** `depositNumber`, `amount` (the maturity amount the new deposit is opened for), `maturesOn`, `rate`, `tenureMonths`, `payout`; null for a new deposit.
 - `reference` carries `renewalNotes`: the lines the search page shows under the search.
 

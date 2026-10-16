@@ -185,6 +185,14 @@ public sealed class ReviewViewModel(DocumentsViewModel docs, DepositQuote? quote
 
     public int PaymentLinkHours => Config.LinkValidityHours.GetValueOrDefault("payment");
 
+    /// <summary>
+    /// Whether nothing is sent to the investor on submit: a physical application paid
+    /// offline (cheque or RTGS) is accepted by its signed form, so it has no link to
+    /// send - unless the investor's KYC came from CKYC, which they confirm online.
+    /// </summary>
+    public bool NoLinkToSend => Docs.State.AppType == DocumentsViewModel.Physical && !Docs.State.Ckyc
+        && Ref.PaymentModes.Any(m => m.Name == Docs.State.PayMode && m.Name != PaymentModeOption.Online);
+
     /// <summary>How long a payment link stays open, as the pages say it: in days when it is whole days, else in hours.</summary>
     public string PaymentLinkValidFor
     {

@@ -112,7 +112,6 @@
                     <div><div class="submitted-key-value__key">Tenure</div><div class="submitted-key-value__value">@d.TenureMonths months</div></div>
                     <div><div class="submitted-key-value__key">Scheme</div><div class="submitted-key-value__value">@(payout?.PerYear == 0 ? "Cumulative" : "Non-cumulative") &middot; @Model.View.Docs.CategoryName(Model.View.Docs.State.Category)</div></div>
                     <div><div class="submitted-key-value__key">Interest payout</div><div class="submitted-key-value__value">@(payout?.Name ?? d.Payout)</div></div>
-                    <div><div class="submitted-key-value__key">Maturity value</div><div class="submitted-key-value__value">@(q is null ? "—" : Money.Rupees(q.MaturityAmount))</div></div>
                     @if (d.RenewalFor.Length > 0)
                     {
                         <div><div class="submitted-key-value__key">Renewal for</div><div class="submitted-key-value__value">@Model.View.Option(Model.View.Ref.RenewInstructions, d.RenewalFor)</div></div>

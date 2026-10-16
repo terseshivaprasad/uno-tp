@@ -206,4 +206,49 @@ internal static class ReviewSummaryQueries
         FROM MMFSL_APP_FDPGW.dbo.T_FD_PGW_RW_DECLARATION_URL_REQUEST_DTL l WITH (NOLOCK)
         WHERE l.f_AppNo = @AppNo AND l.f_Active = 1
         """;
+
+    /// <summary>
+    /// A renewal's link is sent: its row in the renewal transaction table says the renewal request is
+    /// generated (F_IsRenewalReqGen), as the FD system's Renew FD list reads it.
+    /// </summary>
+    public const string MarkRenewalRequested = """
+        UPDATE MMFSL_APP_FD_BTP.dbo.t_FD_BT_RenewalDtls
+        SET F_IsRenewalReqGen = 1, UPDATED_DATE = GETDATE()
+        WHERE APPLNO = @AppNo AND f_Active = 1
+        """;
+
+    /// <summary>
+    /// The deposit a renewal renews, on the FD system's deposit register (@Number): its broker code, which the
+    /// renewal transaction row keeps as the old broker.
+    /// </summary>
+    public const string RenewedDepositBroker = """
+        SELECT TOP (1) BROK_CODE FROM FD.dbo.fxfdrexp WITH (NOLOCK) WHERE FDR_NO = @Number
+        """;
+
+    /// <summary>
+    /// Submit, for a renewal: one row in the FD system's renewal transaction table, written once the four
+    /// steps are complete (RenewalRow). The FD system's Renew FD list leaves the deposit out while this row
+    /// is live. F_IsRenewalReqGen is set once the renewal's link is sent (MarkRenewalRequested).
+    /// </summary>
+    public const string InsertRenewalRow = """
+        INSERT MMFSL_APP_FD_BTP.dbo.t_FD_BT_RenewalDtls
+            (APPLNO, NewAppNo, F_Existing_FDR_No, FOLIO, HOLDER1_NAME, HOLDER2_NAME, HOLDER3_NAME,
+             ADDRESS1, ADDRESS2, ADDRESS3, PINCODE, STATE_DES, DISTRICT_DESC, VILLA_CITY_DESC, MOBILE, EMAIL,
+             PAN, DOB, AGE, G_NAME, SCHEME, SCHEME_CODE, INT_FREQ, TENURE, CATEGORY, RENEWAL_OPTION, AMOUNT, INT_RATE,
+             MICR, NEFT, BANK_NAME, BRANCH, ACCOUNT_NUMBER, NOM_NAME, NOM_DOB, NOM_RELATION, NOM_GUARDIAN, NOM_ADDRESS,
+             KYC_CANCELLED_CHK_FILENAME, KYC_PASSPORT_FILENAME, KYC_VOTER_CARD_FILENAME, KYC_DRIVING_LIC_FILENAME,
+             KYC_AADHAR_FILENAME, KYC_PAN_FILENAME, APPL_FORM, PAPERLESS_DISC, STEPS_COMPLETED,
+             IsIdentityChanged, IsAddressChanged, IsBankChanged, IsRenewed, CREATED_ID, CREATED_BY, CREATED_DATE,
+             BROKER_CODE, OldBROKER_CODE, F_IsRenewalReqGen, f_Active, f_IsBrokerRemove, f_Source,
+             f_Sourcing_Mode_Code, f_Sourcing_Mode_Desc, f_Sub_Broker_Code, f_Agency_Code)
+        VALUES (@AppNo, @AppNo, @DepositNumber, @Folio, @Holder1Name, @Holder2Name, @Holder3Name,
+             @Address1, @Address2, @Address3, @PinCode, @State, @District, @City, @Mobile, @Email,
+             @Pan, @Dob, @Age, @ParentName, @Scheme, @SchemeCode, @PayoutCode, @Tenure, @Category, @RenewalOption, @Amount, @Rate,
+             @Micr, @Ifsc, @BankName, @BranchName, @AccountNumber, @NomineeName, @NomineeDob, @NomineeRelation, @NomineeGuardian, @NomineeAddress,
+             @ChequeFile, @PassportFile, @VoterIdFile, @DrivingLicenceFile,
+             @AadhaarFile, @PanFile, @FormFile, @Paperless, @StepsCompleted,
+             0, 0, 0, 0, @CreatedId, @CreatedBy, GETDATE(),
+             @BrokerCode, @OldBrokerCode, 0, 1, 0, @Source,
+             @SourcingModeCode, @SourcingModeName, @SubBrokerCode, @AgencyCode)
+        """;
 }

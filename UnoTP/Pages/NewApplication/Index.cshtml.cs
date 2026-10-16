@@ -71,7 +71,7 @@ public class NewApplicationModel(
         else held = await renewals.DepositsByPanAsync(record.Pan, record.Dob);
 
         if (held is null || held.Count == 0) return null;
-        return new DepositsBlock(held, await lookups.ReferenceAsync(), await lookups.ConfigAsync(), renewOff);
+        return new DepositsBlock(held, await lookups.ReferenceAsync(), await renewals.WindowAsync(), renewOff);
     }
 
     /// <summary>Check record: what was typed is kept, and the page checks it.</summary>

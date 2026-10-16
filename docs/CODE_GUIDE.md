@@ -150,7 +150,7 @@ to find them all. What is shared today:
 | `ShortUrlQueries.cs` | Short URL | the applications a link can go to and the live link of each, in one query apiece (those submitted in the days an unpaid one stands, or the one application); its own copies of everything Send link, Resend and New link write: the link row, the same link again, the count behind the limits, the messages |
 | `ViewApplicationQueries.cs` | View Application | the partner's applications a search reaches, in one query: by the days raised, by application number or by folio, the newest 200 |
 | `DashboardQueries.cs` | Dashboard | the open applications close to cancelling |
-| `RenewFdQueries.cs` | Renew FD | the booked deposits and their joint holders; cancelling a renewal |
+| `RenewFdQueries.cs` | Renew FD | the deposits a holder can renew, from the FD system's deposit register as its own Renew FD procedure lists them, the renewal window from its web config, the joint holders on a folio; cancelling a renewal and retiring its row in the renewal transaction table |
 | `ConsoleAdminQueries.cs` | Console Admin | the maintenance windows and the notices |
 | `ApplicationQueries.cs` | every step | finding, opening and versioning an application; everything saved on it, read in one go; the column list of each table; the two link tables |
 | `ListQueries.cs` | every page | the settings, the features, the lists, the payment gateway's banks |

@@ -217,4 +217,14 @@ internal static class ApplicationSubmittedQueries
         FROM MMFSL_APP_FDPGW.dbo.T_FD_PGW_RW_DECLARATION_URL_REQUEST_DTL l WITH (NOLOCK)
         WHERE l.f_AppNo = @AppNo AND l.f_Active = 1
         """;
+
+    /// <summary>
+    /// A renewal's link is sent: its row in the renewal transaction table says the renewal request is
+    /// generated (F_IsRenewalReqGen), as the FD system's Renew FD list reads it.
+    /// </summary>
+    public const string MarkRenewalRequested = """
+        UPDATE MMFSL_APP_FD_BTP.dbo.t_FD_BT_RenewalDtls
+        SET F_IsRenewalReqGen = 1, UPDATED_DATE = GETDATE()
+        WHERE APPLNO = @AppNo AND f_Active = 1
+        """;
 }

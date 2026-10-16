@@ -27,7 +27,8 @@ internal sealed record LinkQuerySet(
     string? SubmittedApplications, string? SentLinks, string? RecordLink,
     string RetirePurchaseLink, string RetireRenewalLink, string InsertPurchaseLink, string InsertRenewalLink,
     string? SendPurchaseLinkAgain, string? SendRenewalLinkAgain, string MessagesSentLately,
-    string TellPurchaseBySms, string TellPurchaseByEmail, string TellRenewalBySms, string TellRenewalByEmail)
+    string TellPurchaseBySms, string TellPurchaseByEmail, string TellRenewalBySms, string TellRenewalByEmail,
+    string MarkRenewalRequested)
 {
     /// <summary>The set the page runs.</summary>
     public static LinkQuerySet For(LinkPage page)
@@ -44,7 +45,8 @@ internal sealed record LinkQuerySet(
         ReviewSummaryQueries.InsertPurchaseLink, ReviewSummaryQueries.InsertRenewalLink,
         null, null, ReviewSummaryQueries.MessagesSentLately,
         ReviewSummaryQueries.TellPurchaseBySms, ReviewSummaryQueries.TellPurchaseByEmail,
-        ReviewSummaryQueries.TellRenewalBySms, ReviewSummaryQueries.TellRenewalByEmail);
+        ReviewSummaryQueries.TellRenewalBySms, ReviewSummaryQueries.TellRenewalByEmail,
+        ReviewSummaryQueries.MarkRenewalRequested);
 
     // Send again; and the first link, for an application submitted with Try later.
     private static readonly LinkQuerySet OfApplicationSubmitted = new(
@@ -54,7 +56,8 @@ internal sealed record LinkQuerySet(
         ApplicationSubmittedQueries.SendPurchaseLinkAgain, ApplicationSubmittedQueries.SendRenewalLinkAgain,
         ApplicationSubmittedQueries.MessagesSentLately,
         ApplicationSubmittedQueries.TellPurchaseBySms, ApplicationSubmittedQueries.TellPurchaseByEmail,
-        ApplicationSubmittedQueries.TellRenewalBySms, ApplicationSubmittedQueries.TellRenewalByEmail);
+        ApplicationSubmittedQueries.TellRenewalBySms, ApplicationSubmittedQueries.TellRenewalByEmail,
+        ApplicationSubmittedQueries.MarkRenewalRequested);
 
     // Send link, Resend and New link.
     private static readonly LinkQuerySet OfShortUrl = new(
@@ -64,7 +67,8 @@ internal sealed record LinkQuerySet(
         ShortUrlQueries.SendPurchaseLinkAgain, ShortUrlQueries.SendRenewalLinkAgain,
         ShortUrlQueries.MessagesSentLately,
         ShortUrlQueries.TellPurchaseBySms, ShortUrlQueries.TellPurchaseByEmail,
-        ShortUrlQueries.TellRenewalBySms, ShortUrlQueries.TellRenewalByEmail);
+        ShortUrlQueries.TellRenewalBySms, ShortUrlQueries.TellRenewalByEmail,
+        ShortUrlQueries.MarkRenewalRequested);
 }
 
 /// <summary>
@@ -126,6 +130,8 @@ internal static class LinkTables
 
         var told = await TellAsync(db, tx, q, renewal, row.AppNo, to);
         if (!told.Sent) return told;
+        // A renewal's request stands generated once its link has gone out.
+        if (renewal) await db.ExecuteAsync(q.MarkRenewalRequested, new { row.AppNo }, tx);
         await tx.CommitAsync();
         return LinkWrite.Done;
     }

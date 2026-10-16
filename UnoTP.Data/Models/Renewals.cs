@@ -32,17 +32,28 @@ public interface IRenewalApi
     /// for renewal again. False when there is none to cancel.
     /// </summary>
     Task<bool> CancelAsync(string depositNumber, CancellationToken ct = default);
+
+    /// <summary>GET renewals/window: how many days before maturity renewal entry opens and closes, as the FD system's config has it for this user.</summary>
+    Task<RenewalWindow> WindowAsync(CancellationToken ct = default);
 }
+
+/// <summary>
+/// The renewal window, from the FD system's web config (RENEWAL_PERIOD): entry opens
+/// <paramref name="MaxDays"/> days before a deposit matures and closes
+/// <paramref name="MinDays"/> days before; a request can be cancelled until
+/// <paramref name="CancelMinDays"/> days before.
+/// </summary>
+public sealed record RenewalWindow(int MinDays, int MaxDays, int CancelMinDays);
 
 /// <summary>A deposit on a folio, as the register holds it.</summary>
 /// <param name="Category">A <see cref="CategoryOption.Code"/>: a renewal is quoted under it.</param>
 /// <param name="Payout">A <see cref="PayoutOption.Code"/>.</param>
-/// <param name="Status">running (too early), due (inside the renewal window), late (too near maturity: Operations'), matured, renewing (a renewal is being entered) or renewed (one is submitted).</param>
+/// <param name="Status">due (a renewal can be entered), auto (tagged for auto renewal: it renews by itself), requested (a renewal request is already raised in the FD system), held (a loan or a freeze stands on it), renewing (a renewal is being entered here) or renewed (one is submitted here, or processed by the FD system). The register lists only deposits inside the renewal window.</param>
 /// <param name="Renewable">Whether a renewal can be entered now: due, and not renewed already.</param>
 /// <param name="Why">Why not, when it cannot be; empty otherwise.</param>
 /// <param name="JointHolders">The joint holders on the deposit, in order; they come on to a renewal.</param>
 /// <param name="Repayment">The account the deposit repays into, which a renewal opens with.</param>
-/// <param name="AutoRenewal">Tagged for auto renewal: its renewal window closes earlier.</param>
+/// <param name="AutoRenewal">Tagged for auto renewal: it renews on maturity by itself, so no renewal is entered here.</param>
 /// <param name="Renewal">The application that renews it, while one is being entered or is submitted; null otherwise.</param>
 public sealed record HeldDeposit(
     string Number, string Folio, string Investor, string Category,

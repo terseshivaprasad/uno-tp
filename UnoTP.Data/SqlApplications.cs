@@ -46,7 +46,11 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
     public async Task<bool> CancelRenewalAsync(string depositNumber)
     {
         await using var connection = await db.OpenAsync(CancellationToken.None);
-        var rows = await connection.ExecuteAsync(RenewFdQueries.CancelRenewal, new { Number = depositNumber, Partner = partner.Id, Digital = ApplicationType.Digital });
+        await using var tx = await connection.BeginTransactionAsync();
+        var rows = await connection.ExecuteAsync(RenewFdQueries.CancelRenewal, new { Number = depositNumber, Partner = partner.Id, Digital = ApplicationType.Digital }, tx);
+        // The cancelled renewal's row in the renewal transaction table goes out of use, so the deposit is listed again.
+        if (rows > 0) await connection.ExecuteAsync(RenewFdQueries.RetireRenewalRows, new { Number = depositNumber }, tx);
+        await tx.CommitAsync();
         return rows > 0;
     }
 
@@ -442,6 +446,25 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
         // pay-in slip staging table to wait for its slip, whichever way it was submitted.
         if (PaidByInstrument(app.Upload, lists))
             await PayInSlipStaging.InsertAsync(connection, tx, at, PayInSlipStagingRow.For(app, branches, partner.AgencyCode));
+
+        // A renewal: one row in the FD system's renewal transaction table, now that its
+        // four steps are complete. The deposit's old broker is read off the register.
+        if (header.RenewDepNo is { } renewed)
+        {
+            var oldBroker = await connection.QueryFirstOrDefaultAsync<string>(ReviewSummaryQueries.RenewedDepositBroker, new { Number = renewed }, tx);
+            var row = RenewalRow.For(app, renewed, oldBroker, branches, line, addresses, lists, partner);
+            await connection.ExecuteAsync(ReviewSummaryQueries.InsertRenewalRow, new
+            {
+                row.AppNo, row.DepositNumber, row.Folio, row.Holder1Name, row.Holder2Name, row.Holder3Name,
+                row.Address1, row.Address2, row.Address3, row.PinCode, row.State, row.District, row.City, row.Mobile, row.Email,
+                row.Pan, row.Dob, row.Age, row.ParentName, row.Scheme, row.SchemeCode, row.PayoutCode, row.Tenure, row.Category, row.RenewalOption, row.Amount, row.Rate,
+                row.Micr, row.Ifsc, row.BankName, row.BranchName, row.AccountNumber, row.NomineeName, row.NomineeDob, row.NomineeRelation, row.NomineeGuardian, row.NomineeAddress,
+                row.ChequeFile, row.PassportFile, row.VoterIdFile, row.DrivingLicenceFile, row.AadhaarFile, row.PanFile, row.FormFile, row.Paperless,
+                StepsCompleted = RenewalRow.StepsCompleted, CreatedId = partner.UserClusterId, CreatedBy = partner.UserName,
+                row.BrokerCode, row.OldBrokerCode, Source = RenewalRow.Source,
+                row.SourcingModeCode, row.SourcingModeName, row.SubBrokerCode, row.AgencyCode,
+            }, tx);
+        }
 
         var submission = SubmissionOf(submitted, await CancellationDaysAsync())!;
         await tx.CommitAsync(ct);
