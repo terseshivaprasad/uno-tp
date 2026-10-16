@@ -66,6 +66,7 @@ Paths are under `UnoTP/`; stylesheets and scripts under `UnoTP/wwwroot/css/` and
 | `js/shared/field-checks.js` | Client-side checks: `data-required`, `data-check`, `data-chars` on a field. |
 | `js/shared/date-input.js` | The DD / MM / YYYY boxes: digits only, roll on to the next box. |
 | `js/shared/loader.js` | The full-screen wait (`showLoader`, `hideLoader`, `setLoaderHint`). |
+| `js/shared/pdf-upload.js` | A one-page PDF picked for a document box is drawn as a JPEG within what IDfy takes before upload, with pdf.js from `js/vendor/pdfjs`; more pages go as picked (`data-shrink`). |
 | `js/shared/image-shrink.js` | Shrinks a large photo before upload (`data-shrink`). |
 | `js/shared/file-drop.js` | Takes a file dropped on a document card, empty or filed, and marks the box while a file is over it (`is-over`). |
 | `js/shared/sticky-app-strip.js` | The application strip under the header once the page head scrolls away (`data-pin-head`). |

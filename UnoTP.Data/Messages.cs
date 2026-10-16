@@ -229,6 +229,10 @@ public static class Messages
         public const string PoaTypeRequired =
             "Choose the proof of address";
 
+        [Shown("Upload (every box but the application form)", "a PDF of more than one page is picked: it is refused in the browser before upload")]
+        public const string PdfHasManyPages =
+            "Multiple pages found. A PDF uploaded here must be a single page: upload that page alone, or a photo of the document.";
+
         [Shown("Communication address proof type", "not chosen")]
         public const string MailTypeRequired =
             "Choose the communication address proof";

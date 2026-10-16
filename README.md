@@ -82,7 +82,7 @@ adds only what its own body needs, in its `Styles` and `Scripts` sections.
 | | Shared - loaded by the layout | A page's own |
 |---|---|---|
 | CSS | Bootstrap 5.3 (`lib/bootstrap`) and its brand theme `css/shared/bootstrap-theme.css`, then `css/shared/`: `fonts.css`, `layout-and-controls.css` (tokens, header, controls, cards), `journey-steps.css` (what the purchase journey's steps share: rail, form controls, document and read cards), `register-pages.css` (what the list pages share), `topbar.css` | `css/pages/{page}.css` |
-| JS | Bootstrap's bundle (`lib/bootstrap/js`, vanilla - no jQuery), then `js/shared/`: `loader.js`, `field-checks.js`, `notices-bell.js`, `topbar.js`, `date-input.js`, `partial-forms.js`, `image-shrink.js`, `file-drop.js`, `sticky-app-strip.js`, `console.js` | `js/pages/{page}.js` |
+| JS | Bootstrap's bundle (`lib/bootstrap/js`, vanilla - no jQuery), then `js/shared/`: `loader.js`, `field-checks.js`, `notices-bell.js`, `topbar.js`, `date-input.js`, `partial-forms.js`, `pdf-upload.js`, `image-shrink.js`, `file-drop.js`, `sticky-app-strip.js`, `console.js` | `js/pages/{page}.js` |
 
 | Page | CSS | JS |
 |---|---|---|

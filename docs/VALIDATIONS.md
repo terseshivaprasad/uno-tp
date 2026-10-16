@@ -16,7 +16,7 @@ To change what a message says:
 "Browser: yes" marks a message a script shows as the partner types. It is still
 written only in the master, which hands it to the page.
 
-318 messages.
+319 messages.
 
 ## Every page
 
@@ -194,6 +194,7 @@ written only in the master, which hands it to the page.
 | Still missing | no sourcing mode chosen | the sourcing mode | `UploadDocuments.MissingSourcing` |  |
 | Still missing | no sub broker code typed | the sub broker code | `UploadDocuments.MissingSubBroker` |  |
 | Sub Broker Code | left empty where the sourcing mode asks for it | Enter the sub broker code | `UploadDocuments.SubBrokerRequired` |  |
+| Upload (every box but the application form) | a PDF of more than one page is picked: it is refused in the browser before upload | Multiple pages found. A PDF uploaded here must be a single page: upload that page alone, or a photo of the document. | `UploadDocuments.PdfHasManyPages` |  |
 
 ## Investor Information
 

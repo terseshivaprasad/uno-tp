@@ -86,7 +86,7 @@
                 }
                 <span>@tools.ActionLabel</span>
             </label>
-            <input type="file" id="file-@key" name="file_@key" accept="@slot.Def.Accepts.Mime" hidden data-submit="upload-@key" form="@form" data-shrink="@shrinkTo">
+            <input type="file" id="file-@key" name="file_@key" accept="@slot.Def.Accepts.Mime" hidden data-submit="upload-@key" form="@form" data-shrink="@shrinkTo" data-pages-message="@Messages.UploadDocuments.PdfHasManyPages">
         }
         else
         {
@@ -229,7 +229,7 @@
                 }
                 @* The picker covers the whole box, so a click opens it and a dropped file lands in it. *@
                 <input class="doc-drop__input" type="file" id="file-@key" name="file_@key" accept="@slot.Def.Accepts.Mime"
-                       data-shrink="@shrinkTo"
+                       data-shrink="@shrinkTo" data-pages-message="@Messages.UploadDocuments.PdfHasManyPages"
                        disabled="@pickerDisabled" aria-describedby="@(key)Error" data-submit="upload-@key" form="@form">
             </label>
         }
