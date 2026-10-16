@@ -97,13 +97,13 @@
         </div>
         @if (Model.View.NoLinkToSend)
         {
-            @* A physical application paid by cheque or RTGS: accepted by its signed form, so no link goes to the investor. *@
+            @* A physical application paid by cheque or RTGS, or a physical renewal: accepted by its signed form, so no link goes to the investor. *@
             <div class="pay-link-body">
-                <p class="pay-link-intro pay-link-intro--long" id="paymentLinkIntro">On Submit the application is submitted. A physical application paid by @Model.View.Docs.State.PayMode.ToLowerInvariant() is accepted by its signed form, so <strong>no acceptance link is sent to the investor</strong>.</p>
+                <p class="pay-link-intro pay-link-intro--long" id="paymentLinkIntro">On Submit the application is submitted. A physical @Model.View.AcceptedByFormAs is accepted by its signed form, so <strong>no acceptance link is sent to the investor</strong>.</p>
                 <dl class="pay-link-terms">
-                    <div><dt>Amount</dt><dd>@(d is null ? "—" : Money.Rupees(d.Amount))</dd><dd class="pay-link-terms__note">as on the form and the instrument</dd></div>
+                    <div><dt>Amount</dt><dd>@(d is null ? "—" : Money.Rupees(d.Amount))</dd><dd class="pay-link-terms__note">@(Model.View.Docs.IsRenewal ? "the maturity amount of the deposit renewed" : "as on the form and the instrument")</dd></div>
                 </dl>
-                <p class="pay-link-foot">The deposit is booked once the payment is realised and Operations verify the documents.</p>
+                <p class="pay-link-foot">@(Model.View.Docs.IsRenewal ? "The deposit is renewed once Operations verify the signed form." : "The deposit is booked once the payment is realised and Operations verify the documents.")</p>
             </div>
             <div class="pay-link-actions">
                 <button type="submit" form="reviewForm" name="link" value="@ReviewModel.LinkLater" class="btn btn-primary pay-link-actions__send" data-loader="Submitting&hellip;" data-loader-hint="The application is saved; nothing is sent to the investor">Submit</button>

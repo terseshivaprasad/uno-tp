@@ -94,7 +94,7 @@ internal static class ShortUrlQueries
             AND a.f_Holder_Type = '01' AND a.f_AddType_Code = 'PER' AND a.f_Active = 1
         WHERE m.f_Partner_Id = @Partner AND m.f_Status = 'APR' AND m.f_Active = 1
 
-            AND NOT (ISNULL(i.AppType, N'') = @Physical AND ISNULL(p.f_Payment_Mode, N'') IN @OfflineModes AND ISNULL(i.Status, N'') <> 'PEN_E')
+            AND NOT (ISNULL(i.AppType, N'') = @Physical AND (ISNULL(p.f_Payment_Mode, N'') IN @OfflineModes OR m.f_Renew_Dep_No IS NOT NULL) AND ISNULL(i.Status, N'') <> 'PEN_E')
           AND (@From IS NULL OR m.f_Submitted_On >= @From)
           AND (@AppNo IS NULL OR m.f_App_No = @AppNo)
         ORDER BY m.f_Submitted_On DESC
@@ -149,7 +149,7 @@ internal static class ShortUrlQueries
           AND NOT EXISTS (SELECT 1 FROM MMFSL_APP_FD_BTP.dbo.t_FD_BT_Cancelled_Application_Dtl c WITH (NOLOCK)
                           WHERE c.f_Appl_No = m.f_App_No AND c.f_Active = 1)
 
-            AND NOT (ISNULL(i.AppType, N'') = @Physical AND ISNULL(p.f_Payment_Mode, N'') IN @OfflineModes AND ISNULL(i.Status, N'') <> 'PEN_E')
+            AND NOT (ISNULL(i.AppType, N'') = @Physical AND (ISNULL(p.f_Payment_Mode, N'') IN @OfflineModes OR m.f_Renew_Dep_No IS NOT NULL) AND ISNULL(i.Status, N'') <> 'PEN_E')
           AND l.f_Active = 1
 
             AND l.f_CreatedOn = (SELECT MAX(latest.f_CreatedOn) FROM (SELECT f_AppNo, f_Link_Expiry_Date, f_CreatedOn, f_UpdatedOn, f_Active, f_Disclaimer1, f_Disclaimer2, f_TermsCondition, f_KycConfirmation FROM MMFSL_APP_FDPGW.dbo.t_FD_PGW_PaymentURLRequest_dtl

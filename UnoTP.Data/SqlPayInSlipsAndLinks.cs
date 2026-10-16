@@ -269,9 +269,12 @@ public sealed class SqlLinks(Db db, IPartner partner, SqlReference reference, IL
             .ToList();
     }
 
-    // What the application is waiting on the investor for; null for nothing.
+    // What the application is waiting on the investor for; null for nothing. A physical
+    // application paid offline, or a physical renewal, is accepted by its signed form
+    // and waits on nothing - unless its rows are PEN_E, when the investor confirms the CKYC.
     private static string? DueOf(SubmittedRow r, HashSet<string> offline)
     {
+        if (!r.Digital && (r.Renewal || offline.Contains(r.PayMode ?? "")) && r.Status != RowStatus.PendingCkyc) return null;
         if (r.Renewal || offline.Contains(r.PayMode ?? ""))
         {
             if (r.Accepted || r.Paid) return null;

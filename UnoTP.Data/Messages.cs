@@ -1148,6 +1148,10 @@ public static class Messages
         public const string NoLinkSent =
             "No link could be sent for this application.";
 
+        [Shown("Send link, Resend, New link (every page that sends a link)", "the application is physical and paid offline, or a physical renewal, and the investor's KYC did not come from CKYC: it is accepted by its signed form")]
+        public const string NoLinkForPhysical =
+            "A physical application accepted by its signed form has no link to send.";
+
         [Shown("Send link, Regenerate (every page that sends a link)", "a message went out for the application within the last two minutes")]
         public static string LinkJustSent(object? minutes) =>
             $"A link went to this investor less than {minutes} minutes ago. Wait before sending it again.";

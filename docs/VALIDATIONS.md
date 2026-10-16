@@ -16,7 +16,7 @@ To change what a message says:
 "Browser: yes" marks a message a script shows as the partner types. It is still
 written only in the master, which hands it to the page.
 
-317 messages.
+318 messages.
 
 ## Every page
 
@@ -346,6 +346,7 @@ written only in the master, which hands it to the page.
 | Send link, Regenerate (every page that sends a link) | the application holds no usable mobile number and no usable e-mail address | The application has no 10-digit mobile number and no valid e-mail address for a link to go to. | `ShortUrl.NoUsableContact` |  |
 | Send link, Regenerate (every page that sends a link) | the application's messages for the day are used up | No more than {most} messages go out for one application in 24 hours, and this application has had them. Try again tomorrow. | `ShortUrl.TooManyForApplication` |  |
 | Send link, Regenerate (every page that sends a link) | the investor's mobile number or e-mail address has had its messages for the day | No more than {most} messages go to one mobile number or e-mail address in 24 hours, and this investor's has had them. Try again tomorrow. | `ShortUrl.TooManyForContact` |  |
+| Send link, Resend, New link (every page that sends a link) | the application is physical and paid offline, or a physical renewal, and the investor's KYC did not come from CKYC: it is accepted by its signed form | A physical application accepted by its signed form has no link to send. | `ShortUrl.NoLinkForPhysical` |  |
 
 ## Renew FD
 

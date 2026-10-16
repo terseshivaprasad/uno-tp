@@ -186,12 +186,16 @@ public sealed class ReviewViewModel(DocumentsViewModel docs, DepositQuote? quote
     public int PaymentLinkHours => Config.LinkValidityHours.GetValueOrDefault("payment");
 
     /// <summary>
-    /// Whether nothing is sent to the investor on submit: a physical application paid
-    /// offline (cheque or RTGS) is accepted by its signed form, so it has no link to
-    /// send - unless the investor's KYC came from CKYC, which they confirm online.
+    /// Whether nothing is sent to the investor: a physical application paid offline
+    /// (cheque or RTGS), and a physical renewal, are accepted by their signed form, so
+    /// they have no link to send - unless the investor's KYC came from CKYC, which they
+    /// confirm online.
     /// </summary>
     public bool NoLinkToSend => Docs.State.AppType == DocumentsViewModel.Physical && !Docs.State.Ckyc
-        && Ref.PaymentModes.Any(m => m.Name == Docs.State.PayMode && m.Name != PaymentModeOption.Online);
+        && (Docs.IsRenewal || Ref.PaymentModes.Any(m => m.Name == Docs.State.PayMode && m.Name != PaymentModeOption.Online));
+
+    /// <summary>What such an application is, for the pages' words: "renewal", or "application paid by cheque".</summary>
+    public string AcceptedByFormAs => Docs.IsRenewal ? "renewal" : $"application paid by {Docs.State.PayMode.ToLowerInvariant()}";
 
     /// <summary>How long a payment link stays open, as the pages say it: in days when it is whole days, else in hours.</summary>
     public string PaymentLinkValidFor

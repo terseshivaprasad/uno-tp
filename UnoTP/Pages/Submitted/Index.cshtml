@@ -12,12 +12,32 @@
     var validFor = Model.View.PaymentLinkValidFor;
     var payout = Model.View.Payout;
     var appNo = Model.View.Docs.AppNo;
+    // What happens next: for an application with a link, the investor acts on it first;
+    // for one accepted by its signed form, Operations take it from the form.
     var nextSteps = new[]
     {
         (Lead: "Investor pays the link", Detail: $" — from any account in a holder’s name. Within {validFor} of the link being sent."),
         (Lead: "Rate locks on realisation", Detail: " and the FD is booked from that date — not from today."),
         (Lead: "Operations verifies the documents", Detail: " — the e-receipt is e-mailed to the investor once booked."),
     };
+    if (Model.View.NoLinkToSend && Model.View.Docs.IsRenewal)
+    {
+        nextSteps = new[]
+        {
+            (Lead: "Operations verifies the signed form", Detail: " and the documents filed with it."),
+            (Lead: "The deposit is renewed on maturity", Detail: " at the card rate on the day of application."),
+            (Lead: "The e-receipt is e-mailed to the investor", Detail: " once the renewal is booked."),
+        };
+    }
+    else if (Model.View.NoLinkToSend)
+    {
+        nextSteps = new[]
+        {
+            (Lead: "The pay-in slip is generated", Detail: " from Pay In Slip Generation, and the instrument is presented."),
+            (Lead: "Rate locks on realisation", Detail: " and the FD is booked from that date — not from today."),
+            (Lead: "Operations verifies the signed form and the documents", Detail: " — the e-receipt is e-mailed to the investor once booked."),
+        };
+    }
 }
 
 <div class="submitted-page">
@@ -44,8 +64,18 @@
             </div>
         }
 
-        @* Submitted with Try later: the application is saved, and no link has been made yet. *@
-        @if (!sub.LinkSent)
+        @* Accepted by its signed form: a physical application paid offline, or a physical renewal, has no link. *@
+        @if (Model.View.NoLinkToSend)
+        {
+            <div class="submitted-pending">
+                <div class="submitted-pending__head">
+                    <div class="submitted-pending__title">No link to send</div>
+                    <div class="submitted-pending__tag">Signed form</div>
+                </div>
+                <div class="submitted-pending__text">A physical @Model.View.AcceptedByFormAs is accepted by its signed form, so <strong>nothing is sent to the investor</strong>.</div>
+            </div>
+        }
+        else if (!sub.LinkSent)
         {
             <div class="submitted-pending">
                 <div class="submitted-pending__head">
@@ -92,11 +122,20 @@
             var sendLabel = sub.LinkSent ? "Regenerate payment link" : "Generate payment link";
             var sendLoader = sub.LinkSent ? "Sending the link again…" : "Generating the payment link…";
         }
+        @if (Model.View.NoLinkToSend)
+        {
+            <div class="submitted-actions">
+                <a class="btn btn-primary submitted-actions__primary" asp-page="/Dashboard/Index">Back to dashboard</a>
+            </div>
+        }
+        else
+        {
         <form method="post" asp-page-handler="Resend" class="submitted-actions">
             <button type="submit" class="btn btn-primary submitted-actions__primary" disabled="@(!canRegenerate)" data-loader="@sendLoader">@sendLabel</button>
             <a class="submitted-actions__link submitted-actions__link--plain" asp-page="/Dashboard/Index">Back to dashboard</a>
         </form>
         <div class="submitted-note">@regenerateNote</div>
+        }
     </div>
 
     <div class="submitted-side">

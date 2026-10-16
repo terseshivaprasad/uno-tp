@@ -474,6 +474,17 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
         return (SaveOutcome.Saved, app);
     }
 
+    // Whether the application is accepted by its signed form, so no link goes to the
+    // investor: a physical application paid offline (not online), or a physical
+    // renewal - unless the investor's KYC came from CKYC, which they confirm online.
+    private static bool AcceptedByForm(Application app, ReferenceData lists)
+    {
+        var upload = app.Upload;
+        if (upload is null || upload.AppType != ApplicationType.Physical || upload.Ckyc) return false;
+        if (app.Renewal is not null) return true;
+        return lists.PaymentModes.Any(mode => mode.Name == upload.PayMode && mode.Name != PaymentModeOption.Online);
+    }
+
     // Whether the application is paid by an instrument - a cheque - rather than
     // electronically: the payment mode chosen is one a copy of the instrument is filed for.
     private static bool PaidByInstrument(UploadState? upload, ReferenceData lists) =>
@@ -492,6 +503,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
         if (q.RecordLink is null) throw new InvalidOperationException("This page does not record a payment link.");
         var app = await FindAsync(appNo, ct);
         if (app?.Submitted is null) return new LinkSending(null);
+        if (AcceptedByForm(app, await reference.ReferenceAsync(ct))) return new LinkSending(null, Messages.ShortUrl.NoLinkForPhysical);
         var to = ContactOf(app);
         if (!to.AnyUsable) return new LinkSending(null, Messages.ShortUrl.NoUsableContact);
         var days = await CancellationDaysAsync();
@@ -528,6 +540,7 @@ public sealed class SqlApplications(Db db, IPartner partner, IDepositApi deposit
     {
         var app = await FindAsync(appNo, ct);
         if (app?.Submitted is null) return new LinkSending(null);
+        if (AcceptedByForm(app, await reference.ReferenceAsync(ct))) return new LinkSending(null, Messages.ShortUrl.NoLinkForPhysical);
         var to = ContactOf(app);
         var days = await CancellationDaysAsync();
         await using var connection = await db.OpenAsync(ct);
