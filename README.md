@@ -1,12 +1,11 @@
 # Uno TP screens
 
 Every page of Uno TP and each case on it, as full-page screenshots in desktop
-(1366 wide) and mobile (390 wide) view: 113 steps, 222 pictures. Steps 1 to 64
-are Uno TP, and 112 and 113 are two Uno TP cases added on 16 Oct 2026 (the submit
-popup of a physical application paid by cheque, and a CKYC investor's Investor
-Information). The rest are apps of their own that read the same database: OVD
-Explorer (65 to 71), DMS Explorer (72 to 83), E-Sarathi Login (84 to 102) and
-E-Sarathi Console (103 to 111).
+(1366 wide) and mobile (390 wide) view: 116 steps, 232 pictures. Steps 1 and 2 are the
+journey map, a page that shows the whole journey and every message the screens can show;
+3 to 69 are Uno TP in the order a partner meets the screens. The rest are apps of their own
+that read the same database: OVD Explorer (70 to 76), DMS Explorer (77 to 88), E-Sarathi
+Login (89 to 107) and E-Sarathi Console (108 to 116).
 
 Open `index.html` in a browser to go through them step by step. Previous and
 Next, or the arrow keys, move between steps; the switch at the top changes
