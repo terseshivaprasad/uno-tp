@@ -47,7 +47,7 @@ public sealed class NameScreeningClient(HttpClient http, IPartner partner, IOpti
     private const string Service = "Name screening";
 
     /// <summary>Where the request says it comes from: this app, for a fixed deposit.</summary>
-    private const string Source = "UNO_TP";
+    private const string Source = "UNO_TP_V2";
     private const string SourceType = "FD";
 
     private static readonly JsonSerializerOptions AnyCase = new() { PropertyNameCaseInsensitive = true };

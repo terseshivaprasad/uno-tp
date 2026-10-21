@@ -46,7 +46,7 @@ public class UidMaskingClientTests
         Assert.Equal(["MaskLength", "Trans_Ref_No", "Source", "CreatedIP", "FileType", "FileData"], sent.EnumerateObject().Select(p => p.Name).ToArray());
         Assert.Equal("8", sent.GetProperty("MaskLength").GetString());
         Assert.Equal("APP001_01", sent.GetProperty("Trans_Ref_No").GetString());
-        Assert.Equal("UNO_TP", sent.GetProperty("Source").GetString());
+        Assert.Equal("UNO_TP_V2", sent.GetProperty("Source").GetString());
         Assert.Equal("10.0.0.7", sent.GetProperty("CreatedIP").GetString());
         Assert.Equal("IMAGE", sent.GetProperty("FileType").GetString());
         Assert.Equal(Convert.ToBase64String(Original), sent.GetProperty("FileData").GetString());

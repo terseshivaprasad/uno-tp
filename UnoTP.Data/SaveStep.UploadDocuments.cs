@@ -36,7 +36,7 @@ internal static partial class Sections
     public static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
     /// <summary>What every row written from here carries in f_Source.</summary>
-    private const string Source = "UNO_TP";
+    private const string Source = "UNO_TP_V2";
 
     // ----- Upload Documents: t_Unotp_Upload_State, t_FD_BT_KYC_document ----------------
 
@@ -119,7 +119,7 @@ internal static partial class Sections
     // A row for each photograph and proof of address a holder on a folio has on
     // record and did not upload here: the newest copy of each, under the file name
     // and path the record keeps it at. f_Document_Source says which source it came
-    // from (KycSources), where an uploaded row says UNO_TP.
+    // from (KycSources), where an uploaded row says UNO_TP_V2.
     private static IEnumerable<DocumentRow> RowsOnRecord(IReadOnlyList<HolderCopyOnRecord> onRecord, UploadState upload,
         IReadOnlyDictionary<string, DocumentCode> codes, Stamp at, Dictionary<(string, string), int> sequences)
     {

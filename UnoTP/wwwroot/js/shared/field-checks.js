@@ -76,6 +76,9 @@
     var empty = el.matches('[role=group], .date-input') ? value.replace(/\//g, '') === '' : value === '';
     if (empty) return el.getAttribute('data-required') || null;
     var said = findShapeProblem(el, value);
+    // A message the check gives in so many words (said.exact) stands; any other is
+    // replaced by the box's own data-message where it has one.
+    if (said && said.exact) return said.exact;
     return said && (el.getAttribute('data-message') || said);
   }
 
@@ -99,6 +102,12 @@
       var date = toRealDate(parts[0], parts[1], parts[2]);
       if (!date) return message('Shared.DateNotReal');
       if (name === 'date' && date > new Date()) return message('Shared.DateInFuture');
+      // A dmy group may bound the date: not after today (data-not-future), and not more
+      // than data-within-days before it (data-too-old) - the cheque date's rule.
+      var today = new Date(); today.setHours(0, 0, 0, 0);
+      if (el.getAttribute('data-not-future') && date > today) return { exact: el.getAttribute('data-not-future') };
+      var withinDays = +el.getAttribute('data-within-days');
+      if (withinDays && date < new Date(today.getTime() - withinDays * 86400000)) return { exact: el.getAttribute('data-too-old') };
       return null;
     }
     if (name === 'amount') {

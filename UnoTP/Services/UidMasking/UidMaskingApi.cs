@@ -27,7 +27,7 @@ public sealed class UidMaskingOptions : IApiAddress
     public int MaskLength { get; set; } = 8;
 
     /// <summary>The name the API knows this app by.</summary>
-    public string Source { get; set; } = "UNO_TP";
+    public string Source { get; set; } = "UNO_TP_V2";
 }
 
 /// <summary>

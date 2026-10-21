@@ -174,6 +174,6 @@ internal static class FdConfigurationQueries
     /// </summary>
     public const string InsertSourceOfFunds = """
         INSERT MMFSL_APP_FD_Common.dbo.t_FD_CMN_AML_Source_Of_Funds_Log (f_Appl_No, f_Holder_Type, f_Investment_Amt, f_AnnualIncome_Desc, f_AML_Source_Of_Funds, f_AML_Source_Of_Funds_Remarks, f_AML_Source_Of_Funds_reason, f_FormCode, f_Source, f_Folio_No, f_Occupation_Desc, f_Active, f_CreatedBy, f_CreatedByUName, f_CreatedOn, f_CreatedIP, f_SessionId)
-        VALUES (@AppNo, @HolderType, @Amount, @AnnualIncome, @SourceOfFunds, @SourceOfFundsRemark, @SourceOfFundsReason, @FormNo, 'UNO_TP', @Folio, @Occupation, 1, @CreatedBy, @UserName, GETDATE(), @Ip, @SessionId)
+        VALUES (@AppNo, @HolderType, @Amount, @AnnualIncome, @SourceOfFunds, @SourceOfFundsRemark, @SourceOfFundsReason, @FormNo, 'UNO_TP_V2', @Folio, @Occupation, 1, @CreatedBy, @UserName, GETDATE(), @Ip, @SessionId)
         """;
 }

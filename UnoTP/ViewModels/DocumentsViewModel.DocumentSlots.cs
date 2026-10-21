@@ -12,7 +12,7 @@ public partial class DocumentsViewModel
     public record Accepts(string Mime, string Label, int MaxMb);
 
     public static readonly Accepts Form = new("application/pdf,image/jpeg", "PDF/JPG/JPEG", 4);
-    public static readonly Accepts Image = new("image/jpeg", "JPG/JPEG", 2);
+    // A copy may come as a one-page PDF: the browser draws it as a JPEG before upload (js/shared/pdf-upload.js).
     public static readonly Accepts Proof = new("application/pdf,image/jpeg", "PDF/JPG/JPEG", 2);
 
     // An application made on paper carries a signed form; a digital one is
@@ -70,10 +70,10 @@ public partial class DocumentsViewModel
 
     public static readonly SlotDef FormSlot = new("form", "Application Form", Form);
     public static readonly SlotDef PanSlot = new("pan", "PAN copy", Proof);
-    public static readonly SlotDef PhotoSlot = new("photo", "photograph", Image);
-    public static readonly SlotDef PoaSlot = new("poa", "POA", Image);
-    public static readonly SlotDef MailSlot = new("mail", "communication address proof", Image);
-    public static readonly SlotDef PaymentSlot = new("payment", "the instrument", Image);
+    public static readonly SlotDef PhotoSlot = new("photo", "photograph", Proof);
+    public static readonly SlotDef PoaSlot = new("poa", "POA", Proof);
+    public static readonly SlotDef MailSlot = new("mail", "communication address proof", Proof);
+    public static readonly SlotDef PaymentSlot = new("payment", "the instrument", Proof);
     public static readonly SlotDef EmpProofSlot = new("empproof", "Employee Proof", Proof);
 
     /// <summary>Form 121, the TDS declaration, filed on FD Configuration when no TDS is to be deducted.</summary>

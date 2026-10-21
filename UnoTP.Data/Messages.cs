@@ -839,6 +839,14 @@ public static class Messages
         public const string ChequeDateNotReal =
             "Enter the cheque date as a real date, DD/MM/YYYY";
 
+        [Shown("Cheque Date", "after today")]
+        public const string ChequeDateInFuture =
+            "The cheque date cannot be after today";
+
+        [Shown("Cheque Date", "more than the allowed days (90) before today")]
+        public static string ChequeDateTooOld(object? days) =>
+            $"The cheque date cannot be more than {days} days before today";
+
         [Shown("Axis CMS Branch", "none searched and picked")]
         public const string CmsBranchRequired =
             "Search for the Axis CMS branch and pick it";

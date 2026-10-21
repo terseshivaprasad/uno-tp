@@ -203,7 +203,7 @@
                     </div>
                     <div class="doc-column">
                         <label class="field-label" id="cheque-date-label" for="cheque-date">Cheque Date</label>
-                        <div class="date-input @Invalid("Cheque.Date")" role="group" data-required="@Messages.BankDetails.ChequeDateRequired" data-check="dmy" data-message="@Messages.BankDetails.ChequeDateNotReal" data-error-id="cheque-dateError" aria-labelledby="cheque-date-label" aria-describedby="@DescribedBy("Cheque.Date", "cheque-date")">
+                        <div class="date-input @Invalid("Cheque.Date")" role="group" data-required="@Messages.BankDetails.ChequeDateRequired" data-check="dmy" data-message="@Messages.BankDetails.ChequeDateNotReal" data-not-future="@Messages.BankDetails.ChequeDateInFuture" data-within-days="@BankForm.ChequeDateWithinDays" data-too-old="@Messages.BankDetails.ChequeDateTooOld(BankForm.ChequeDateWithinDays)" data-error-id="cheque-dateError" aria-labelledby="cheque-date-label" aria-describedby="@DescribedBy("Cheque.Date", "cheque-date")">
                             <input class="date-input__part" id="cheque-date" name="Cheque.Dd" value="@form.Cheque.Dd" inputmode="numeric" maxlength="2" placeholder="DD" aria-label="Day" autocomplete="off" aria-invalid="@AriaInvalid("Cheque.Date")">
                             <span class="date-input__sep">/</span>
                             <input class="date-input__part" name="Cheque.Mm" value="@form.Cheque.Mm" inputmode="numeric" maxlength="2" placeholder="MM" aria-label="Month" autocomplete="off">

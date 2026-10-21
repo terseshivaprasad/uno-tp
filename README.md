@@ -242,7 +242,7 @@ saves after it. Nothing is deleted, so the earlier rows stay as the audit trail.
 The document table (`t_FD_BT_KYC_document`) is written more sparingly: a save
 touches only the documents that changed, so choosing a sourcing mode or a category
 does not write every document's row again.
-Every row carries `f_Source = 'UNO_TP'`, the user's `Agency_Usr_Clustered_ID`, and
+Every row carries `f_Source = 'UNO_TP_V2'`, the user's `Agency_Usr_Clustered_ID`, and
 the session and address it was written from. A page's working state
 (`t_Unotp_Page_State`) is scratch and is overwritten.
 
@@ -273,7 +273,7 @@ underscore (`ConnectionStrings__UnoTP`).
 | `Ckyc:BasePath`, `Ckyc:SearchPath`, `Ckyc:IncludeImages` | The CKYC (CERSAI) search: whether a record is held for a PAN and date of birth. Asked when the partner chooses Fetch from CKYC; only an investor it holds a record for takes that route. |
 | `Idfy:BasePath` | Idfy.Api, which alone answers document identification, OCR, verification with the issuer, the PAN-Aadhaar link and face match. A cheque is read with IDfy's `ind_cheque`; nobody confirms its account with the bank, so it is carried to Bank Details as read, for the partner to check. Where IDfy has no endpoint - an Aadhaar's issuer, a bank account - nothing is asked, and the page says so; an Aadhaar's address is taken as OCR read it. A utility bill is not taken as a proof of address. |
 | `Idfy:ValidateDocumentPath`, `Idfy:ExtractPanPath`, `Idfy:ExtractAadhaarPath`, `Idfy:ExtractDrivingLicencePath`, `Idfy:ExtractPassportPath`, `Idfy:ExtractVoterIdPath`, `Idfy:ExtractChequePath`, `Idfy:VerifyDrivingLicencePath`, `Idfy:VerifyPassportPath`, `Idfy:VerifyVoterIdPath`, `Idfy:VerifyPanAadhaarLinkPath`, `Idfy:CompareFacesPath` | The path of each Idfy.Api call under the gateway. |
-| `Shortener:ShortenPath` | Where the payment link is shortened on submit: a POST with `{ long_url, Source: "UNO_TP" }`, as the FD system's own app calls it. No path, and the link goes in full. |
+| `Shortener:ShortenPath` | Where the payment link is shortened on submit: a POST with `{ long_url, Source: "UNO_TP_V2" }`, as the FD system's own app calls it. No path, and the link goes in full. |
 | `PaymentLink:Template` | The page the investor pays on, with `{appNo}` for the application's number. Blank, the app sends no link and the backend makes its own. |
 | `Apps:eSarathiLogin`, `Apps:eSarathiConsole`, `Apps:UnoTP` | The other apps' addresses, for the links out and the session-expired redirect. |
 | `Portal:Home`, `Portal:Logout` | The portal's dashboard (where "Portal" goes back to, with the encrypted UserId and SysCode) and its logout page. Blank: the console's `/Classic` and the login portal's root. |

@@ -16,7 +16,7 @@ To change what a message says:
 "Browser: yes" marks a message a script shows as the partner types. It is still
 written only in the master, which hands it to the page.
 
-319 messages.
+321 messages.
 
 ## Every page
 
@@ -244,8 +244,10 @@ written only in the master, which hands it to the page.
 | Bank | no bank searched and picked | Search for the bank and pick its branch | `BankDetails.BankRequired` |  |
 | Bank | no branch has the IFSC typed | No branch has this IFSC — pick one from the search, or check it against the cheque | `BankDetails.IfscNotFound` |  |
 | Bank | no branch matches what is typed | No branch matches “{typed}” | `BankDetails.NoBranchMatches` | yes |
+| Cheque Date | after today | The cheque date cannot be after today | `BankDetails.ChequeDateInFuture` |  |
 | Cheque Date | not a real date | Enter the cheque date as a real date, DD/MM/YYYY | `BankDetails.ChequeDateNotReal` |  |
 | Cheque Date | left empty | Enter the cheque date | `BankDetails.ChequeDateRequired` |  |
+| Cheque Date | more than the allowed days (90) before today | The cheque date cannot be more than {days} days before today | `BankDetails.ChequeDateTooOld` |  |
 | Cheque Number | not six digits | Enter the six-digit cheque number | `BankDetails.ChequeNumberInvalid` |  |
 | Re-enter Account Number | left empty | Enter the account number again | `BankDetails.AccountAgainRequired` |  |
 | Re-enter Account Number | not the same as the account number | Does not match the account number | `BankDetails.AccountMismatch` | yes |

@@ -122,12 +122,12 @@ internal static class ReviewSummaryQueries
     /// <summary>
     /// A purchase's link sent for the first time: a new row, open for @ValidityHours from now.
     /// Written as the FD system's own app writes it: the key (f_Key_GUID), the user as f_CreatedID and
-    /// f_CreatedBy both, f_CreatedType empty, and f_SourceAPI UNO_TP. TO CONFIRM: f_FormCode, which that app
+    /// f_CreatedBy both, f_CreatedType empty, and f_SourceAPI UNO_TP_V2. TO CONFIRM: f_FormCode, which that app
     /// writes too (its value was not seen), is left empty.
     /// </summary>
     public const string InsertPurchaseLink = """
         INSERT MMFSL_APP_FDPGW.dbo.t_FD_PGW_PaymentURLRequest_dtl (f_AppNo, f_InvestorName, f_InvestmentAmount, f_Investor_Pan, F_ApplicationDate, f_ShotrURL, f_FullURL, f_Key_GUID, f_Link_Validity, f_Link_Expiry_Date, f_SourceAPI, f_CreatedID, f_CreatedType, f_Active, f_CreatedBy, f_CreatedByUName, f_CreatedOn, f_CreatedIP, f_SessionId)
-        VALUES (@AppNo, @InvestorName, @InvestmentAmount, @InvestorPan, @ApplicationDate, @ShortUrl, @FullUrl, @Key, @ValidityHours, DATEADD(HOUR, @ValidityHours, GETDATE()), 'UNO_TP', @CreatedBy, '', 1, @CreatedBy, @UserName, GETDATE(), @Ip, @SessionId)
+        VALUES (@AppNo, @InvestorName, @InvestmentAmount, @InvestorPan, @ApplicationDate, @ShortUrl, @FullUrl, @Key, @ValidityHours, DATEADD(HOUR, @ValidityHours, GETDATE()), 'UNO_TP_V2', @CreatedBy, '', 1, @CreatedBy, @UserName, GETDATE(), @Ip, @SessionId)
         """;
 
     /// <summary>
@@ -135,7 +135,7 @@ internal static class ReviewSummaryQueries
     /// </summary>
     public const string InsertRenewalLink = """
         INSERT MMFSL_APP_FDPGW.dbo.T_FD_PGW_RW_DECLARATION_URL_REQUEST_DTL (f_AppNo, f_InvestorName, f_InvestmentAmount, f_Investor_Pan, F_ApplicationDate, f_ShotrURL, f_FullURL, f_Key_GUID, f_Link_Validity, f_Link_Expiry_Date, f_SourceAPI, f_CreatedID, f_CreatedType, f_Active, f_CreatedBy, f_CreatedByUName, f_CreatedOn, f_CreatedIP, f_SessionId)
-        VALUES (@AppNo, @InvestorName, @InvestmentAmount, @InvestorPan, @ApplicationDate, @ShortUrl, @FullUrl, @Key, @ValidityHours, DATEADD(HOUR, @ValidityHours, GETDATE()), 'UNO_TP', @CreatedBy, '', 1, @CreatedBy, @UserName, GETDATE(), @Ip, @SessionId)
+        VALUES (@AppNo, @InvestorName, @InvestmentAmount, @InvestorPan, @ApplicationDate, @ShortUrl, @FullUrl, @Key, @ValidityHours, DATEADD(HOUR, @ValidityHours, GETDATE()), 'UNO_TP_V2', @CreatedBy, '', 1, @CreatedBy, @UserName, GETDATE(), @Ip, @SessionId)
         """;
 
     /// <summary>

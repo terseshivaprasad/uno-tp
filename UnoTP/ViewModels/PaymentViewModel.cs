@@ -118,10 +118,26 @@ public sealed class BankForm
         return new PaymentDetails(payment, repayment, same, cheque);
     }
 
+    /// <summary>A cheque is taken dated today or within this many days before: not a future date, not a stale one.</summary>
+    public const int ChequeDateWithinDays = 90;
+
     /// <summary>The cheque date as dd-MM-yyyy, or null when it is not a date.</summary>
-    public string? ChequeDay =>
+    public string? ChequeDay => ChequeDate?.ToString("dd-MM-yyyy", CultureInfo.InvariantCulture);
+
+    // The cheque date as typed, when it is a real date.
+    private DateTime? ChequeDate =>
         DateTime.TryParseExact(new string(Cheque.Date.Where(char.IsAsciiDigit).ToArray()), "ddMMyyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out var d)
-            ? d.ToString("dd-MM-yyyy", CultureInfo.InvariantCulture) : null;
+            ? d : null;
+
+    // Why the cheque date cannot be taken: after today, or more than ChequeDateWithinDays before it; null when it can.
+    private string? ChequeDateProblem()
+    {
+        if (ChequeDate is not { } date) return Messages.BankDetails.ChequeDateRequired;
+        var today = DateTime.Today;
+        if (date > today) return Messages.BankDetails.ChequeDateInFuture;
+        if (date < today.AddDays(-ChequeDateWithinDays)) return Messages.BankDetails.ChequeDateTooOld(ChequeDateWithinDays);
+        return null;
+    }
 
     /// <summary>What stops the step, by field; empty when nothing does.</summary>
     /// <param name="cmsLocationOnMaster">Whether the Axis CMS master holds the branch picked for the cheque, by its code.</param>
@@ -140,7 +156,7 @@ public sealed class BankForm
         if (byCheque)
         {
             if (Cheque.Number.Trim() is not { Length: 6 } n || !n.All(char.IsAsciiDigit)) problems["Cheque.Number"] = Messages.BankDetails.ChequeNumberInvalid;
-            if (ChequeDay is null) problems["Cheque.Date"] = Messages.BankDetails.ChequeDateRequired;
+            if (ChequeDateProblem() is { } chequeDate) problems["Cheque.Date"] = chequeDate;
             if (!cmsLocationOnMaster) problems["Cheque.CmsLocation"] = Cheque.CmsLocation.Trim().Length == 0 ? Messages.BankDetails.CmsBranchRequired : Messages.BankDetails.CmsBranchNotPicked;
         }
         return problems;

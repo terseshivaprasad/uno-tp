@@ -22,7 +22,7 @@ public sealed class ShortenerOptions : IApiAddress
     /// <summary>The API's base path under the gateway. Every path below is relative to it.</summary>
     public string BasePath { get; set; } = "";
 
-    /// <summary>POST: the long URL shortened. The URL goes in the body, as long_url, with Source UNO_TP.</summary>
+    /// <summary>POST: the long URL shortened. The URL goes in the body, as long_url, with Source UNO_TP_V2.</summary>
     public string ShortenPath { get; set; } = "";
 
     /// <summary>Whether a path is set for the shortener; without one, links go in full.</summary>
@@ -31,13 +31,13 @@ public sealed class ShortenerOptions : IApiAddress
 }
 
 /// <summary>
-/// POST ShortenPath { long_url, Source: "UNO_TP" } → { ShortURL }, as the FD system's own
+/// POST ShortenPath { long_url, Source: "UNO_TP_V2" } → { ShortURL }, as the FD system's own
 /// app calls MMFSL_FD_Shortner_API and reads its answer.
 /// </summary>
 public sealed class ShortenerClient(HttpClient http, IPartner partner, IOptions<ShortenerOptions> options)
     : ExternalClient(http, partner, "The link shortener"), IShortLinkService
 {
-    private const string Source = "UNO_TP";
+    private const string Source = "UNO_TP_V2";
 
     private static readonly JsonSerializerOptions AsNamed = new();
 

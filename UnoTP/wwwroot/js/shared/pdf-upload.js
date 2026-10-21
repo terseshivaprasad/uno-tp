@@ -6,7 +6,8 @@
 // so (data-pages-message, Messages.UploadDocuments.PdfHasManyPages) and the pick is
 // cleared. One the browser cannot read or draw goes exactly as picked. The PDF is
 // drawn by pdf.js (js/vendor/pdfjs), loaded only when a PDF is picked. The
-// application form's box has no data-shrink, so a form of any length goes as picked.
+// application form's box has no data-shrink, and the employee proof's says
+// data-pdf-as-picked, so those go as picked whatever their length.
 //
 // It runs before image-shrink.js and partial-forms.js see the file: the change is
 // held, the file in the box replaced with the JPEG, and the change let through again.
@@ -27,6 +28,8 @@
     var longEdge = parseInt(input.dataset.shrink, 10);
     var file = input.files[0];
     if (!longEdge || !isPdf(file)) return;
+    // A box that takes a PDF as picked, whatever its length: the employee proof.
+    if (input.dataset.pdfAsPicked === '1') return;
 
     // Held: the change goes on once the JPEG is in the box - or the PDF, as picked.
     // A PDF of more than one page is refused: the pick is cleared and nothing goes on.

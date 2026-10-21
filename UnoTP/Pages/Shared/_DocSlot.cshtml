@@ -17,6 +17,10 @@
     // application form: OCR has to read its small print in full.
     var isApplicationForm = slot.Def.Key == DocumentsViewModel.FormSlot.Key;
     string? shrinkTo = isApplicationForm ? null : "2560";
+    // A PDF of any length goes as picked for the employee proof (pdf-upload.js leaves it
+    // alone); the application form has no shrink size, so it is left alone by both scripts.
+    // Razor writes a data- attribute even for null, so the script reads the value: 1 means as picked.
+    var pdfAsPicked = slot.Def.Key == DocumentsViewModel.EmpProofSlot.Key ? "1" : "";
 
     var cardClass = "doc-slot";
     if (slot.Error is not null) cardClass += " is-invalid";
@@ -86,7 +90,7 @@
                 }
                 <span>@tools.ActionLabel</span>
             </label>
-            <input type="file" id="file-@key" name="file_@key" accept="@slot.Def.Accepts.Mime" hidden data-submit="upload-@key" form="@form" data-shrink="@shrinkTo" data-pages-message="@Messages.UploadDocuments.PdfHasManyPages">
+            <input type="file" id="file-@key" name="file_@key" accept="@slot.Def.Accepts.Mime" hidden data-submit="upload-@key" form="@form" data-shrink="@shrinkTo" data-pages-message="@Messages.UploadDocuments.PdfHasManyPages" data-pdf-as-picked="@pdfAsPicked">
         }
         else
         {
@@ -229,7 +233,7 @@
                 }
                 @* The picker covers the whole box, so a click opens it and a dropped file lands in it. *@
                 <input class="doc-drop__input" type="file" id="file-@key" name="file_@key" accept="@slot.Def.Accepts.Mime"
-                       data-shrink="@shrinkTo" data-pages-message="@Messages.UploadDocuments.PdfHasManyPages"
+                       data-shrink="@shrinkTo" data-pages-message="@Messages.UploadDocuments.PdfHasManyPages" data-pdf-as-picked="@pdfAsPicked"
                        disabled="@pickerDisabled" aria-describedby="@(key)Error" data-submit="upload-@key" form="@form">
             </label>
         }

@@ -205,7 +205,7 @@ internal static class RenewFdQueries
         UPDATE t
         SET f_Active = 0, UPDATED_DATE = GETDATE()
         FROM MMFSL_APP_FD_BTP.dbo.t_FD_BT_RenewalDtls t
-        WHERE t.F_Existing_FDR_No = @Number AND t.f_Active = 1 AND t.f_Source = 'UNO_TP'
+        WHERE t.F_Existing_FDR_No = @Number AND t.f_Active = 1 AND t.f_Source = 'UNO_TP_V2'
           AND t.APPLNO IN (SELECT m.f_App_No FROM dbo.t_Unotp_Application_Mst m
                            WHERE m.f_Renew_Dep_No = @Number AND m.f_Cancelled_On IS NOT NULL)
         """;
