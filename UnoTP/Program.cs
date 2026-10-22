@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Routing;
@@ -39,6 +40,7 @@ builder.Services.AddRazorPages(options =>
 {
     // Nobody reaches a page without a session from Home (see SessionAuthenticationFilter).
     options.Filters.Add(new SessionAuthenticationFilter());
+    options.Filters.Add(new OutOfDatePageFilter());
     options.Filters.Add(new HandlerInAddress());
     options.Filters.Add(new FeatureGate());
 });
@@ -134,6 +136,20 @@ builder.Services.AddAntiforgery(options =>
     options.Cookie.Name = "unotp.antiforgery";
     options.Cookie.SecurePolicy = cookieSecure;
 });
+
+// The keys the cookies, the antiforgery tokens and TempData are encrypted with.
+// With DataProtection:KeysPath set, they are kept in that folder, so they outlive
+// an app restart or an app pool recycle and are shared by every worker process:
+// a page open across a restart still posts. Blank, ASP.NET keeps them as it does
+// by default, which on IIS can be in memory alone - then every restart makes
+// every open page out of date (OutOfDatePageFilter).
+var keysPath = builder.Configuration["DataProtection:KeysPath"];
+if (!string.IsNullOrWhiteSpace(keysPath))
+{
+    builder.Services.AddDataProtection()
+        .SetApplicationName("UnoTP")
+        .PersistKeysToFileSystem(new DirectoryInfo(keysPath));
+}
 
 // TempData rides in a cookie encrypted with the keys below: the search typed on
 // Investor Identification until Proceed, and what a post has to say once.

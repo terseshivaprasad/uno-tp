@@ -18,6 +18,10 @@ public static class Messages
     [Page("Every page")]
     public static class Shared
     {
+        [Shown("Any page posted", "the page was open since before the app restarted, so its post could not be accepted: it is opened afresh")]
+        public const string PageOutOfDate =
+            "This page was out of date, so it has been opened again. Check it and press the button once more.";
+
         [Shown("Any typed text", "a character other than a letter, digit, space or - , & / .")]
         public const string OnlyAllowedCharacters =
             "Only letters, digits, spaces and - , & / . are allowed";

@@ -16,7 +16,7 @@ To change what a message says:
 "Browser: yes" marks a message a script shows as the partner types. It is still
 written only in the master, which hands it to the page.
 
-321 messages.
+322 messages.
 
 ## Every page
 
@@ -29,6 +29,7 @@ written only in the master, which hands it to the page.
 | A search-as-you-type field | the search could not be answered | Could not search just now. Check the connection and type again. | `Shared.SearchFailed` | yes |
 | An address line | a character an address does not take | No special characters | `Shared.NoSpecialCharacters` | yes |
 | An upload or a check | more tries in a minute than are allowed | That is more than {perMinute} tries in a minute. Wait a minute, then do it again. Nothing was sent this time, and no attempt was used. | `Shared.TooManyTries` |  |
+| Any page posted | the page was open since before the app restarted, so its post could not be accepted: it is opened afresh | This page was out of date, so it has been opened again. Check it and press the button once more. | `Shared.PageOutOfDate` |  |
 | Any request | an error nobody caught, and the error page failed too | Uno TP could not finish that. Reference: {reference} | `Shared.CouldNotFinish` |  |
 | Any request | the request carries input no page takes | The request carried input this page does not take. | `Shared.InputRefused` |  |
 | Any request | an error nobody caught, answered to a script | Something went wrong. | `Shared.SomethingWentWrong` |  |
