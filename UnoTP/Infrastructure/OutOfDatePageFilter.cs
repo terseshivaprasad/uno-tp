@@ -10,8 +10,8 @@ namespace UnoTP.Infrastructure;
 
 /// <summary>
 /// A post whose antiforgery token the app cannot accept - a page open since before
-/// the app restarted, or from another worker's keys - is turned down by ASP.NET
-/// with a 400 and no page, which the browser shows as a blank screen. Here it is
+/// the app restarted - is turned down by ASP.NET with a 400 and no page, which the
+/// browser shows as a blank screen. Here it is
 /// taken as an out-of-date page instead: the partner is sent back to the same
 /// address, opened afresh, with a line saying so (Messages.Shared.PageOutOfDate),
 /// and presses the button again.
