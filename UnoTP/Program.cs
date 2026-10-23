@@ -8,6 +8,7 @@ using UnoTP.Infrastructure;
 using UnoTP.Models;
 using UnoTP.Services;
 using UnoTP.Services.Auth;
+using UnoTP.Services.Decrypt;
 using UnoTP.Services.Ckyc;
 using UnoTP.Services.Idfy;
 using UnoTP.Services.NameMatch;
@@ -51,10 +52,11 @@ builder.Services.AddSingleton<IUrlHelperFactory>(new ApplicationUrlHelperFactory
 // the interfaces the pages read (UnoTP.Data). The backend APIs are behind one
 // gateway (Backend:BaseUrl), unless an API's own section gives it an address of its
 // own (BaseUrl); each has a settings section with that, its base path and the path
-// of its calls: the way in (AuthApi), the PAN check (PanApi),
+// of its calls: decryption (DecryptApi), the way in (AuthApi), the PAN check (PanApi),
 // Aadhaar masking (UidMasking), the CKYC search (Ckyc), the document checks (Idfy),
 // name screening, name match and the link shortener.
 builder.Services.Configure<BackendOptions>(builder.Configuration.GetSection(BackendOptions.Section));
+builder.Services.Configure<DecryptApiOptions>(builder.Configuration.GetSection(DecryptApiOptions.Section));
 builder.Services.Configure<AuthApiOptions>(builder.Configuration.GetSection(AuthApiOptions.Section));
 builder.Services.Configure<PanApiOptions>(builder.Configuration.GetSection(PanApiOptions.Section));
 builder.Services.Configure<UidMaskingOptions>(builder.Configuration.GetSection(UidMaskingOptions.Section));
@@ -75,7 +77,7 @@ if (!SqlDataServiceCollectionExtensions.Configured(builder.Configuration))
     throw new InvalidOperationException("ConnectionStrings:UnoTP is not set. The app runs only on its database.");
 builder.Services.AddSqlData();
 // Every API the app calls needs an address: its own, or the gateway's.
-var apiSections = new List<string> { AuthApiOptions.Section, UidMaskingOptions.Section, IdfyOptions.Section, NameScreeningOptions.Section };
+var apiSections = new List<string> { DecryptApiOptions.Section, AuthApiOptions.Section, UidMaskingOptions.Section, IdfyOptions.Section, NameScreeningOptions.Section };
 var outsideSwitches = new OutsideSwitches(builder.Configuration);
 if (outsideSwitches.IsOn(OutsideSwitches.PanCheck)) apiSections.Add(PanApiOptions.Section);
 if (outsideSwitches.IsOn(OutsideSwitches.FetchCkyc)) apiSections.Add(CkycOptions.Section);
@@ -87,6 +89,7 @@ if (shortensLinks) apiSections.Add(ShortenerOptions.Section);
 var unaddressed = BackendHttpClients.Unaddressed(builder.Configuration, [.. apiSections]);
 if (unaddressed.Count > 0)
     throw new InvalidOperationException($"No address is set for {string.Join(", ", unaddressed)}. Set Backend:BaseUrl to the gateway they are behind (appsettings.json carries it with a <gateway-host> placeholder), or BaseUrl in each one's own section.");
+builder.Services.AddDecryptApi();
 builder.Services.AddAuthApi();
 // Who the partner is: what the auth API said when their session started (see PartnerSession).
 builder.Services.AddScoped<IPartnerApi, SessionPartnerApi>();

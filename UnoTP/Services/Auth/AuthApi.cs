@@ -7,7 +7,8 @@ namespace UnoTP.Services.Auth;
 
 /// <summary>
 /// The E-Sarathi auth API, from the "AuthApi" section of appsettings: the path of
-/// each call under the gateway (<see cref="BackendOptions.BaseUrl"/>).
+/// each call under the gateway (<see cref="BackendOptions.BaseUrl"/>). Decryption
+/// is a service of its own (Decrypt/DecryptApi.cs).
 /// </summary>
 public sealed class AuthApiOptions : IApiAddress
 {
@@ -18,9 +19,6 @@ public sealed class AuthApiOptions : IApiAddress
 
     /// <summary>The API's base path under the gateway. Every path below is relative to it.</summary>
     public string BasePath { get; set; } = "";
-
-    /// <summary>POST: the portal's encrypted user id and system code, decrypted.</summary>
-    public string DecryptPath { get; set; } = "cipher/decrypt";
 
     /// <summary>POST: starts the user's session, and says who they are.</summary>
     public string SessionPath { get; set; } = "auth/sessions";
@@ -36,24 +34,15 @@ public sealed class AuthApiOptions : IApiAddress
 /// <summary>
 /// The E-Sarathi auth API, which the way in from the portal uses. Its address and
 /// the path of each call come from appsettings (<see cref="AuthApiOptions"/>):
-///   POST DecryptPath   the portal's encrypted user id and system code
 ///   POST SessionPath   starts the user's session, and says who they are
 ///   GET  MenuPath      the menus the user may open
 /// Every answer is { success, message, data }.
 /// </summary>
-public sealed class AuthApiClient(HttpClient http, IOptions<AuthApiOptions> options) : IDecryptionService, ISessionApi
+public sealed class AuthApiClient(HttpClient http, IOptions<AuthApiOptions> options) : ISessionApi
 {
     private const string Service = "The E-Sarathi sign-in service";
 
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
-
-    public async Task<string?> DecryptAsync(string cipherText, CancellationToken ct = default)
-    {
-        var body = JsonBody(new { Text = cipherText });
-        var answer = await SendAsync<string>(HttpMethod.Post, options.Value.DecryptPath, body, ct);
-        if (answer is null || !answer.Success) return null;
-        return answer.Data;
-    }
 
     public async Task<UserSession?> StartAsync(SessionStart start, CancellationToken ct = default)
     {
@@ -147,10 +136,9 @@ public sealed class AuthApiClient(HttpClient http, IOptions<AuthApiOptions> opti
 
 public static class AuthApiServiceCollectionExtensions
 {
-    /// <summary>Puts the E-Sarathi auth API behind the way in: decryption, the session and the menus.</summary>
+    /// <summary>Puts the E-Sarathi auth API behind the way in: the session and the menus.</summary>
     public static IServiceCollection AddAuthApi(this IServiceCollection services)
     {
-        services.AddApiClient<IDecryptionService, AuthApiClient>(Api);
         services.AddApiClient<ISessionApi, AuthApiClient>(Api);
         return services;
     }

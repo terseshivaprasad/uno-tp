@@ -52,7 +52,8 @@ page that took their place, with their query.
 | `ConnectionStrings:UnoTP` | The database. If blank, the app does not start. |
 | `Backend:BaseUrl` | The one gateway every backend API is behind. Blank or still the placeholder, the app does not start. |
 | `Backend:TimeoutSeconds` | Seconds an API is given to answer. Default 55. |
-| `AuthApi:DecryptPath`, `AuthApi:SessionPath`, `AuthApi:MenuPath` | The way in's three calls, by their path under the gateway. |
+| `DecryptApi:DecryptPath` | Decryption, a service of its own: the first call on the way in. |
+| `AuthApi:SessionPath`, `AuthApi:MenuPath` | The way in's other two calls, by their path under the gateway. |
 | `PanApi:VerifyPath`, `UidMasking:MaskPath` | The PAN check and Aadhaar masking, by their path under the gateway. |
 | `NameScreening:*`, `NameMatch:*` | The name screening and name match APIs, each with its base path and the path of its call. |
 | `Idfy:*` | Idfy.Api's base path and the path of each call. It alone answers the checks listed below. |
